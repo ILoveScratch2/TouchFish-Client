@@ -1,13 +1,14 @@
 from distutils.core import setup
 from setuptools import find_packages
 
-with open("README.rst", "r", encoding="utf-8") as f:
+with open("README.md", "r", encoding="utf-8") as f:
   long_description = f.read()
 
 setup(name='touchfish_client',
       version='0.1.1',
       description='TouchFish 客户端模块',
       long_description=long_description,
+      long_description_content_type='text/markdown',
       author='ILoveScratch2',
       author_email='ilovescratch@foxmail.com',
       url='https://github.com/ILoveScratch2/TouchFish-Client.git',
