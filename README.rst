@@ -14,8 +14,11 @@ TouchFish: https://github.com/2044-space-elevator/TouchFish
 
 
 
+
 快速开始
 --------
+
+可参考 [example_client.py] 文件中的示例代码。
 
 基本示例
 ~~~~~~~~
