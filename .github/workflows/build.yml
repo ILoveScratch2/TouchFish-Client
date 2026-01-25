@@ -1,0 +1,267 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  release:
+    types: [published]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.7'
+          channel: 'stable'
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Build Windows
+        run: flutter build windows --release
+      
+      - name: Create Windows archive
+        run: |
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath touchfish-windows-x64.zip
+      
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: touchfish-windows-x64.zip
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.7'
+          channel: 'stable'
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Build macOS
+        run: flutter build macos --release
+      
+      - name: Create macOS archive
+        run: |
+          cd build/macos/Build/Products/Release
+          zip -r ../../../../../touchfish-macos.zip touchfish_client.app
+      
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: touchfish-macos.zip
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.7'
+          channel: 'stable'
+      
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ninja-build libgtk-3-dev
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Build Linux
+        run: flutter build linux --release
+      
+      - name: Create Linux archive
+        run: |
+          cd build/linux/x64/release/bundle
+          zip -r ../../../../../touchfish-linux-x64.zip .
+      
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: touchfish-linux-x64.zip
+
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.7'
+          channel: 'stable'
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Build Android APK
+        run: flutter build apk --release
+      
+      - name: Build Android App Bundle
+        run: flutter build appbundle --release
+      
+      - name: Rename builds
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk touchfish-android.apk
+          mv build/app/outputs/bundle/release/app-release.aab touchfish-android.aab
+      
+      - name: Create Android archive
+        run: |
+          zip touchfish-android.zip touchfish-android.apk touchfish-android.aab
+      
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build
+          path: touchfish-android.zip
+
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.7'
+          channel: 'stable'
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Build iOS (no codesign)
+        run: flutter build ios --release --no-codesign
+      
+      - name: Create iOS archive
+        run: |
+          cd build/ios/iphoneos
+          zip -r ../../../touchfish-ios.zip Runner.app
+      
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: touchfish-ios.zip
+
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.7'
+          channel: 'stable'
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Build Web
+        run: flutter build web --release
+      
+      - name: Create Web archive
+        run: |
+          cd build/web
+          zip -r ../../touchfish-web.zip .
+      
+      - name: Upload Web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: touchfish-web.zip
+
+  release:
+    needs: [build-windows, build-macos, build-linux, build-android, build-ios, build-web]
+    runs-on: ubuntu-latest
+    if: always()
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Prepare release files
+        run: |
+          mkdir -p release-files
+          find artifacts -name "*.zip" -exec cp {} release-files/ \;
+          ls -lh release-files/
+      
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release (Tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-files/*
+          body: |      
+            **Build Time / 编译时间:** ${{ steps.date.outputs.date }}
+
+            **Commit:** ${{ github.sha }}
+            
+            
+            ### Installation / 安装
+            Please refer to the README for installation instructions.
+
+            请参考 README 获取安装说明。
+          draft: false
+          prerelease: false
+      
+      - name: Create or update dev-build tag
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        id: create-or-update-ref
+        uses: ovsds/create-or-update-ref-action@v1
+        with:
+          ref: tags/dev-build
+          sha: ${{ github.sha }}
+      
+      - name: Delete old dev-build tag locally
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: git tag -d dev-build || true
+        continue-on-error: true
+      
+      - name: Upload assets to dev-build release
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-files/*
+          body: |     
+            > [!WARINING]
+            > This is an automated development build and may be unstable.
+            > 这是一个自动生成的开发构建版本，可能不稳定。
+            
+            **Build Time / 编译时间:** ${{ steps.date.outputs.date }}
+            **Commit:** ${{ github.sha }}
+          prerelease: true
+          tag_name: dev-build
+          name: Development Build
