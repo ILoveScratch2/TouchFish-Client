@@ -1,5 +1,3 @@
-# touchfish_client
-
 <div align="center">
   <img src="assets/logo.png" alt="TouchFish Logo" width="200"/>
   <p><em>TouchFish Client 是 TouchFish 的现代化的聊天客户端，基于Flutter构建</em></p>

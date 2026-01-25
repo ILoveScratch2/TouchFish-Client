@@ -1,5 +1,3 @@
-# touchfish_client
-
 <div align="center">
   <img src="assets/logo.png" alt="TouchFish Logo" width="200"/>
   <p><em>TouchFish Client is a modern chat client for TouchFish, built with Flutter</em></p>
