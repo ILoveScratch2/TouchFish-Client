@@ -228,7 +228,7 @@ jobs:
         with:
           files: release-files/*
           body: |     
-            > [!WARINING]
+            > [!WARNING]
             > This is an automated development build and may be unstable.
             > 这是一个自动生成的开发构建版本，可能不稳定。
             
