@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/app_localizations.dart';
 import 'login_screen.dart';
 
 
@@ -44,7 +45,7 @@ class WelcomeScreen extends StatelessWidget {
               
               // Title
               Text(
-                'TouchFish',
+                AppLocalizations.of(context)!.appName,
                 style: Theme.of(context).textTheme.displayMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: colorScheme.primary,
@@ -55,7 +56,7 @@ class WelcomeScreen extends StatelessWidget {
               
               // Subtitle
               Text(
-                '现代化的即时通讯',
+                AppLocalizations.of(context)!.appSubtitle,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -71,20 +72,20 @@ class WelcomeScreen extends StatelessWidget {
                     children: [
                       _FeatureItem(
                         icon: Icons.speed_rounded,
-                        title: '轻量级',
-                        description: '高效且节省资源的设计',
+                        title: AppLocalizations.of(context)!.welcomeFeatureLightweightTitle,
+                        description: AppLocalizations.of(context)!.welcomeFeatureLightweightDesc,
                       ),
                       const SizedBox(height: 16),
                       _FeatureItem(
                         icon: Icons.devices_rounded,
-                        title: '多平台',
-                        description: '支持 Windows、macOS、Linux、Android 和 Web',
+                        title: AppLocalizations.of(context)!.welcomeFeatureMultiplatformTitle,
+                        description: AppLocalizations.of(context)!.welcomeFeatureMultiplatformDesc,
                       ),
                       const SizedBox(height: 16),
                       _FeatureItem(
                         icon: Icons.dns_rounded,
-                        title: '无公网',
-                        description: '无需 Internet 连接，局域网内畅通无阻',
+                        title: AppLocalizations.of(context)!.welcomeFeatureLanTitle,
+                        description: AppLocalizations.of(context)!.welcomeFeatureLanDesc,
                       ),
                     ],
                   ),
@@ -95,9 +96,9 @@ class WelcomeScreen extends StatelessWidget {
               // Start Button
               FilledButton(
                 onPressed: () => _completeWelcome(context),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                  child: Text('开始使用'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  child: Text(AppLocalizations.of(context)!.welcomeStart),
                 ),
               ),
             ],

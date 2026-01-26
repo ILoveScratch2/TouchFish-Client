@@ -1,0 +1,45 @@
+{
+  "@@locale": "en",
+  "appName": "TouchFish",
+  "@appName": {
+    "description": "Application name"
+  },
+  "appSubtitle": "Modern instant messaging",
+  "@appSubtitle": {
+    "description": "Application subtitle on welcome screen"
+  },
+  
+  "welcomeStart": "Get Started",
+  "@welcomeStart": {
+    "description": "Button to start using the app"
+  },
+  "welcomeFeatureLightweightTitle": "Lightweight",
+  "welcomeFeatureLightweightDesc": "Efficient and resource-friendly design",
+  "welcomeFeatureMultiplatformTitle": "Multi-platform",
+  "welcomeFeatureMultiplatformDesc": "Support Windows, macOS, Linux, Android and Web",
+  "welcomeFeatureLanTitle": "No Internet",
+  "welcomeFeatureLanDesc": "No Internet connection needed, works seamlessly on LAN",
+  
+  "loginUsername": "Username",
+  "loginPassword": "Password",
+  "loginLogin": "Login",
+  "loginRegister": "Register",
+  "loginMsgLoginNotImpl": "Login function not implemented yet",
+  "loginMsgRegisterNotImpl": "Register function not implemented yet",
+  
+  "settingsTitle": "Settings",
+  "settingsTooltip": "Settings",
+  "settingsEmpty": "No settings",
+  
+  "serverTitle": "Server",
+  "serverAdd": "Add Server",
+  "serverEdit": "Edit Server",
+  "serverDelete": "Delete Server",
+  "serverSelect": "Select Server",
+  "serverUrlLabel": "Server URL",
+  "serverUrlHint": "e.g., touchfish.xin",
+  "serverCannotDeleteLast": "Cannot delete the last server",
+  "serverInvalidUrl": "Invalid server URL",
+  "serverAddServer": "Add",
+  "serverCancel": "Cancel"
+}

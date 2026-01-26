@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/server_selector.dart';
 import 'settings_screen.dart';
 
@@ -23,13 +24,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('暂时无登录功能实现')),
+      SnackBar(content: Text(AppLocalizations.of(context)!.loginMsgLoginNotImpl)),
     );
   }
 
   void _register() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('暂时无注册功能实现')),
+      SnackBar(content: Text(AppLocalizations.of(context)!.loginMsgRegisterNotImpl)),
     );
   }
 
@@ -45,12 +46,12 @@ class _LoginScreenState extends State<LoginScreen> {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('TouchFish'),
+        title: Text(AppLocalizations.of(context)!.appName),
         actions: [
           IconButton(
             onPressed: _openSettings,
             icon: const Icon(Icons.settings_outlined),
-            tooltip: '设置',
+            tooltip: AppLocalizations.of(context)!.settingsTooltip,
           ),
         ],
       ),
@@ -77,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
                   
                   Text(
-                    'TouchFish',
+                    AppLocalizations.of(context)!.appName,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -92,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextField(
                     controller: _usernameController,
                     decoration: InputDecoration(
-                      labelText: '用户名',
+                      labelText: AppLocalizations.of(context)!.loginUsername,
                       prefixIcon: const Icon(Icons.person_outline),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -107,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
-                      labelText: '密码',
+                      labelText: AppLocalizations.of(context)!.loginPassword,
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -130,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     height: 48,
                     child: FilledButton(
                       onPressed: _login,
-                      child: const Text('登录'),
+                      child: Text(AppLocalizations.of(context)!.loginLogin),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -141,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     height: 48,
                     child: OutlinedButton(
                       onPressed: _register,
-                      child: const Text('注册'),
+                      child: Text(AppLocalizations.of(context)!.loginRegister),
                     ),
                   ),
                 ],

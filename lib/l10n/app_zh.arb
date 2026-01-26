@@ -1,0 +1,36 @@
+{
+  "@@locale": "zh",
+  "appName": "TouchFish",
+  "appSubtitle": "现代化的即时通讯",
+  
+  "welcomeStart": "开始使用",
+  "welcomeFeatureLightweightTitle": "轻量级",
+  "welcomeFeatureLightweightDesc": "高效且节省资源的设计",
+  "welcomeFeatureMultiplatformTitle": "多平台",
+  "welcomeFeatureMultiplatformDesc": "支持 Windows、macOS、Linux、Android 和 Web",
+  "welcomeFeatureLanTitle": "无公网",
+  "welcomeFeatureLanDesc": "无需 Internet 连接,局域网内畅通无阻",
+  
+  "loginUsername": "用户名",
+  "loginPassword": "密码",
+  "loginLogin": "登录",
+  "loginRegister": "注册",
+  "loginMsgLoginNotImpl": "暂时无登录功能实现",
+  "loginMsgRegisterNotImpl": "暂时无注册功能实现",
+  
+  "settingsTitle": "设置",
+  "settingsTooltip": "设置",
+  "settingsEmpty": "设置暂无",
+  
+  "serverTitle": "服务器",
+  "serverAdd": "添加服务器",
+  "serverEdit": "编辑服务器",
+  "serverDelete": "删除服务器",
+  "serverSelect": "选择服务器",
+  "serverUrlLabel": "服务器地址",
+  "serverUrlHint": "例如：touchfish.xin",
+  "serverCannotDeleteLast": "不能删除最后一个服务器",
+  "serverInvalidUrl": "无效的服务器地址",
+  "serverAddServer": "添加",
+  "serverCancel": "取消"
+}

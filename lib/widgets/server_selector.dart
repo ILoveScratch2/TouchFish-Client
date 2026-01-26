@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/app_localizations.dart';
 
 class ServerSelector extends StatefulWidget {
   const ServerSelector({super.key});
@@ -164,17 +165,18 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
 
   void _showAddDialog() {
     final controller = TextEditingController();
+    final l10n = AppLocalizations.of(context)!;
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('添加服务器'),
+        title: Text(l10n.serverAdd),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            labelText: '服务器地址',
-            hintText: '例如: api.example.com:8080',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: l10n.serverUrlLabel,
+            hintText: l10n.serverUrlHint,
+            border: const OutlineInputBorder(),
           ),
           autofocus: true,
           onSubmitted: (value) {
@@ -191,7 +193,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text(l10n.serverCancel),
           ),
           FilledButton(
             onPressed: () {
@@ -205,7 +207,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                 widget.onAdd(value);
               }
             },
-            child: const Text('添加'),
+            child: Text(l10n.serverAddServer),
           ),
         ],
       ),
@@ -243,14 +245,14 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
               child: Row(
                 children: [
                   Text(
-                    '选择服务器',
+                    AppLocalizations.of(context)!.serverSelect,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const Spacer(),
                   FilledButton.tonalIcon(
                     onPressed: _showAddDialog,
                     icon: const Icon(Icons.add, size: 18),
-                    label: const Text('添加'),
+                    label: Text(AppLocalizations.of(context)!.serverAdd),
                   ),
                 ],
               ),
@@ -314,7 +316,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                                 Icons.delete_outline,
                                 color: colorScheme.error,
                               ),
-                              tooltip: '删除',
+                              tooltip: AppLocalizations.of(context)!.serverDelete,
                             ),
                         ],
                       ),

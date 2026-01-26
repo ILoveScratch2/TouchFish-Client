@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -7,10 +8,10 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('设置'),
+        title: Text(AppLocalizations.of(context)!.settingsTitle),
       ),
-      body: const Center(
-        child: Text('设置暂无'),
+      body: Center(
+        child: Text(AppLocalizations.of(context)!.settingsEmpty),
       ),
     );
   }
