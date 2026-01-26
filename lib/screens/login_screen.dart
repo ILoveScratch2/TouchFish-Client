@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/server_selector.dart';
-import 'settings_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -35,9 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _openSettings() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SettingsScreen()),
-    );
+    Navigator.of(context).pushNamed('/settings');
   }
 
   @override

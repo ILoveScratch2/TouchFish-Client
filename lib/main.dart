@@ -7,6 +7,7 @@ import 'package:window_manager/window_manager.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/settings_screen.dart';
 import 'widgets/window_frame.dart';
 
 void main() async {
@@ -100,6 +101,26 @@ class TouchFishApp extends StatelessWidget {
       home: WindowFrame(
         child: isFirstLaunch ? const WelcomeScreen() : const LoginScreen(),
       ),
+      onGenerateRoute: (settings) {
+        Widget page;
+        switch (settings.name) {
+          case '/welcome':
+            page = const WelcomeScreen();
+            break;
+          case '/login':
+            page = const LoginScreen();
+            break;
+          case '/settings':
+            page = const SettingsScreen();
+            break;
+          default:
+            page = const LoginScreen();
+        }
+        return MaterialPageRoute(
+          builder: (context) => WindowFrame(child: page),
+          settings: settings,
+        );
+      },
     );
   }
 }

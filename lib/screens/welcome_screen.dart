@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
-import 'login_screen.dart';
 
 
 class WelcomeScreen extends StatelessWidget {
@@ -12,9 +11,7 @@ class WelcomeScreen extends StatelessWidget {
     await prefs.setBool('isFirstLaunch', false);
     
     if (context.mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+      Navigator.of(context).pushReplacementNamed('/login');
     }
   }
 
