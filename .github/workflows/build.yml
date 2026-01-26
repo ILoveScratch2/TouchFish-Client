@@ -154,7 +154,7 @@ jobs:
         run: flutter pub get
       
       - name: Build Web
-        run: flutter build web --release
+        run: flutter build web --release --no-web-resources-cdn
       
       - name: Create Web archive
         run: |
