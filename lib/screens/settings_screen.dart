@@ -80,36 +80,31 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
         ),
         const VerticalDivider(width: 1),
         Expanded(
-          child: ListenableBuilder(
-            listenable: _settingsService,
-            builder: (context, _) {
-              final enableAnimations = _settingsService.getValue<bool>(
-                'enableAnimations',
-                true,
-              );
-              
-              return AnimatedSwitcher(
-                duration: Duration(milliseconds: enableAnimations ? 300 : 0),
-                switchInCurve: Curves.easeInOut,
-                switchOutCurve: Curves.easeInOut,
-                transitionBuilder: (child, animation) {
-                  if (!enableAnimations) return child;
-                  return FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0.05, 0),
-                        end: Offset.zero,
-                      ).animate(animation),
-                      child: child,
-                    ),
-                  );
-                },
-                child: _selectedCategory == null
-                    ? _buildEmptyState(context)
-                    : _buildSettingsContent(context, _selectedCategory!),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            switchInCurve: Curves.easeInOut,
+            switchOutCurve: Curves.easeInOut,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.05, 0),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
               );
             },
+            child: _selectedCategory == null
+                ? KeyedSubtree(
+                    key: const ValueKey('empty'),
+                    child: _buildEmptyState(context),
+                  )
+                : KeyedSubtree(
+                    key: ValueKey(_selectedCategory),
+                    child: _buildSettingsContent(context, _selectedCategory!),
+                  ),
           ),
         ),
       ],
@@ -117,33 +112,28 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
   }
 
   Widget _buildNarrowLayout(BuildContext context) {
-    return ListenableBuilder(
-      listenable: _settingsService,
-      builder: (context, _) {
-        final enableAnimations = _settingsService.getValue<bool>(
-          'enableAnimations',
-          true,
-        );
-        
-        return AnimatedSwitcher(
-          duration: Duration(milliseconds: enableAnimations ? 300 : 0),
-          switchInCurve: Curves.easeInOut,
-          switchOutCurve: Curves.easeInOut,
-          transitionBuilder: (child, animation) {
-            if (!enableAnimations) return child;
-            return SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(1.0, 0.0),
-                end: Offset.zero,
-              ).animate(animation),
-              child: child,
-            );
-          },
-          child: _selectedCategory == null
-              ? _buildCategoryList(context, isWideLayout: false)
-              : _buildSettingsContent(context, _selectedCategory!),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeInOut,
+      switchOutCurve: Curves.easeInOut,
+      transitionBuilder: (child, animation) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1.0, 0.0),
+            end: Offset.zero,
+          ).animate(animation),
+          child: child,
         );
       },
+      child: _selectedCategory == null
+          ? KeyedSubtree(
+              key: const ValueKey('category_list'),
+              child: _buildCategoryList(context, isWideLayout: false),
+            )
+          : KeyedSubtree(
+              key: ValueKey(_selectedCategory),
+              child: _buildSettingsContent(context, _selectedCategory!),
+            ),
     );
   }
 
@@ -507,10 +497,6 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
         return l10n.settingsSendModeEnter;
       case 'settingsSendModeCtrlEnter':
         return l10n.settingsSendModeCtrlEnter;
-      case 'settingsAnimationsTitle':
-        return l10n.settingsAnimationsTitle;
-      case 'settingsAnimationsDesc':
-        return l10n.settingsAnimationsDesc;
       // Notifications
       case 'settingsSystemNotificationsTitle':
         return l10n.settingsSystemNotificationsTitle;

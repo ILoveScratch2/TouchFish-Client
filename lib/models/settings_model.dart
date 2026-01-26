@@ -120,14 +120,6 @@ class SettingsData {
                 value: 'ctrlEnter', labelKey: 'settingsSendModeCtrlEnter'),
           ],
         ),
-        SettingItem(
-          key: 'enableAnimations',
-          titleKey: 'settingsAnimationsTitle',
-          descriptionKey: 'settingsAnimationsDesc',
-          type: SettingType.switchSetting,
-          defaultValue: true,
-          icon: Icons.animation,
-        ),
       ],
     ),
     SettingCategoryData(

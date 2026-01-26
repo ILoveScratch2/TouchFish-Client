@@ -138,13 +138,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSendModeCtrlEnter => 'Press Ctrl+Enter to send';
 
   @override
-  String get settingsAnimationsTitle => 'Enable Animations';
-
-  @override
-  String get settingsAnimationsDesc =>
-      'Enable or disable animations. Disabling on low-end devices may improve performance';
-
-  @override
   String get settingsSystemNotificationsTitle => 'System Notifications';
 
   @override

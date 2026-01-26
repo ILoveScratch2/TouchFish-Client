@@ -136,12 +136,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSendModeCtrlEnter => '按 Ctrl+Enter 发送';
 
   @override
-  String get settingsAnimationsTitle => '开启动画';
-
-  @override
-  String get settingsAnimationsDesc => '开启或关闭动画，在低性能设备上关闭可能有助于提升应用速度';
-
-  @override
   String get settingsSystemNotificationsTitle => '系统通知';
 
   @override

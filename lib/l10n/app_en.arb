@@ -60,9 +60,6 @@
   "settingsSendModeEnter": "Press Enter to send",
   "settingsSendModeCtrlEnter": "Press Ctrl+Enter to send",
   
-  "settingsAnimationsTitle": "Enable Animations",
-  "settingsAnimationsDesc": "Enable or disable animations. Disabling on low-end devices may improve performance",
-  
   "settingsSystemNotificationsTitle": "System Notifications",
   "settingsSystemNotificationsDesc": "Use system notifications for messages",
   

@@ -51,9 +51,6 @@
   "settingsSendModeEnter": "按 Enter 发送",
   "settingsSendModeCtrlEnter": "按 Ctrl+Enter 发送",
   
-  "settingsAnimationsTitle": "开启动画",
-  "settingsAnimationsDesc": "开启或关闭动画，在低性能设备上关闭可能有助于提升应用速度",
-  
   "settingsSystemNotificationsTitle": "系统通知",
   "settingsSystemNotificationsDesc": "使用操作系统通知进行消息通知",
   

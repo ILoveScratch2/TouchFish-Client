@@ -350,18 +350,6 @@ abstract class AppLocalizations {
   /// **'Press Ctrl+Enter to send'**
   String get settingsSendModeCtrlEnter;
 
-  /// No description provided for @settingsAnimationsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable Animations'**
-  String get settingsAnimationsTitle;
-
-  /// No description provided for @settingsAnimationsDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable or disable animations. Disabling on low-end devices may improve performance'**
-  String get settingsAnimationsDesc;
-
   /// No description provided for @settingsSystemNotificationsTitle.
   ///
   /// In en, this message translates to:
