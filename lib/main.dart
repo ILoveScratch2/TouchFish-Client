@@ -5,6 +5,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 import 'l10n/app_localizations.dart';
+import 'models/app_state.dart';
+import 'models/settings_service.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/settings_screen.dart';
@@ -14,6 +16,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
   
+  // Initialize settings service first
+  await SettingsService.instance.init();
+  
   if (isDesktop) {
     await windowManager.ensureInitialized();
   }
@@ -22,7 +27,7 @@ void main() async {
   
   if (isDesktop) {
     const defaultSize = Size(1280, 800);
-    const minSize = Size(800, 600);
+    const minSize = Size(400, 700);
     final savedWidth = prefs.getDouble('window_width');
     final savedHeight = prefs.getDouble('window_height');
     final savedX = prefs.getDouble('window_x');
@@ -63,62 +68,75 @@ void main() async {
   runApp(TouchFishApp(isFirstLaunch: isFirstLaunch));
 }
 
-class TouchFishApp extends StatelessWidget {
+class TouchFishApp extends StatefulWidget {
   final bool isFirstLaunch;
   
   const TouchFishApp({super.key, required this.isFirstLaunch});
 
   @override
+  State<TouchFishApp> createState() => _TouchFishAppState();
+}
+
+class _TouchFishAppState extends State<TouchFishApp> {
+  final _appState = AppState.instance;
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      onGenerateTitle: (context) => AppLocalizations.of(context)!.appName,
-      debugShowCheckedModeBanner: false,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('en'),
-        Locale('zh'),
-      ],
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6750A4),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6750A4),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
-      themeMode: ThemeMode.system,
-      home: WindowFrame(
-        child: isFirstLaunch ? const WelcomeScreen() : const LoginScreen(),
-      ),
-      onGenerateRoute: (settings) {
-        Widget page;
-        switch (settings.name) {
-          case '/welcome':
-            page = const WelcomeScreen();
-            break;
-          case '/login':
-            page = const LoginScreen();
-            break;
-          case '/settings':
-            page = const SettingsScreen();
-            break;
-          default:
-            page = const LoginScreen();
-        }
-        return MaterialPageRoute(
-          builder: (context) => WindowFrame(child: page),
-          settings: settings,
+    return ListenableBuilder(
+      listenable: _appState,
+      builder: (context, _) {
+        return MaterialApp(
+          onGenerateTitle: (context) => AppLocalizations.of(context)!.appName,
+          debugShowCheckedModeBanner: false,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en'),
+            Locale('zh'),
+          ],
+          locale: _appState.locale,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: _appState.themeColor,
+              brightness: Brightness.light,
+            ),
+            useMaterial3: true,
+          ),
+          darkTheme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: _appState.themeColor,
+              brightness: Brightness.dark,
+            ),
+            useMaterial3: true,
+          ),
+          themeMode: _appState.themeMode,
+          home: WindowFrame(
+            child: widget.isFirstLaunch ? const WelcomeScreen() : const LoginScreen(),
+          ),
+          onGenerateRoute: (settings) {
+            Widget page;
+            switch (settings.name) {
+              case '/welcome':
+                page = const WelcomeScreen();
+                break;
+              case '/login':
+                page = const LoginScreen();
+                break;
+              case '/settings':
+                page = const SettingsScreen();
+                break;
+              default:
+                page = const LoginScreen();
+            }
+            return MaterialPageRoute(
+              builder: (context) => WindowFrame(child: page),
+              settings: settings,
+            );
+          },
         );
       },
     );

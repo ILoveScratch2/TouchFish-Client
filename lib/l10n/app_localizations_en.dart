@@ -66,6 +66,118 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsEmpty => 'No settings';
 
   @override
+  String get settingsCategoryAppearance => 'Appearance';
+
+  @override
+  String get settingsCategoryNotifications => 'Notifications';
+
+  @override
+  String get settingsCategoryAbout => 'About';
+
+  @override
+  String get settingsLanguageTitle => 'Language';
+
+  @override
+  String get settingsLanguageDesc => 'Language of the application';
+
+  @override
+  String get settingsLanguageSystem => 'System Default';
+
+  @override
+  String get settingsLanguageZh => '简体中文';
+
+  @override
+  String get settingsLanguageEn => 'English';
+
+  @override
+  String get settingsThemeTitle => 'Theme';
+
+  @override
+  String get settingsThemeDesc => 'Appearance theme of the application';
+
+  @override
+  String get settingsThemeSystem => 'System Default';
+
+  @override
+  String get settingsThemeLight => 'Light';
+
+  @override
+  String get settingsThemeDark => 'Dark';
+
+  @override
+  String get settingsThemeColorTitle => 'Theme Color';
+
+  @override
+  String get settingsThemeColorDesc => 'Primary color used in the application';
+
+  @override
+  String get settingsColorDefault => 'Default';
+
+  @override
+  String get settingsColorRed => 'Red';
+
+  @override
+  String get settingsColorGreen => 'Green';
+
+  @override
+  String get settingsColorPurple => 'Purple';
+
+  @override
+  String get settingsColorOrange => 'Orange';
+
+  @override
+  String get settingsSendModeTitle => 'Send Mode';
+
+  @override
+  String get settingsSendModeDesc => 'Keyboard shortcut for sending messages';
+
+  @override
+  String get settingsSendModeEnter => 'Press Enter to send';
+
+  @override
+  String get settingsSendModeCtrlEnter => 'Press Ctrl+Enter to send';
+
+  @override
+  String get settingsAnimationsTitle => 'Enable Animations';
+
+  @override
+  String get settingsAnimationsDesc =>
+      'Enable or disable animations. Disabling on low-end devices may improve performance';
+
+  @override
+  String get settingsSystemNotificationsTitle => 'System Notifications';
+
+  @override
+  String get settingsSystemNotificationsDesc =>
+      'Use system notifications for messages';
+
+  @override
+  String get settingsInAppNotificationsTitle => 'In-App Notifications';
+
+  @override
+  String get settingsInAppNotificationsDesc =>
+      'Show notifications within the application';
+
+  @override
+  String get settingsNotificationSoundTitle => 'Notification Sound';
+
+  @override
+  String get settingsNotificationSoundDesc =>
+      'Play sound for in-app notifications';
+
+  @override
+  String get settingsChatNotificationsTitle => 'Chat Notifications';
+
+  @override
+  String get settingsPrivateChatTitle => 'Private Chat Notifications';
+
+  @override
+  String get settingsGroupChatTitle => 'Group Chat Notifications';
+
+  @override
+  String get settingsAboutAppTitle => 'About Application';
+
+  @override
   String get serverTitle => 'Server';
 
   @override

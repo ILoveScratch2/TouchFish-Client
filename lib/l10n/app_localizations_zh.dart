@@ -64,6 +64,114 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsEmpty => '设置暂无';
 
   @override
+  String get settingsCategoryAppearance => '界面';
+
+  @override
+  String get settingsCategoryNotifications => '通知';
+
+  @override
+  String get settingsCategoryAbout => '关于';
+
+  @override
+  String get settingsLanguageTitle => '语言';
+
+  @override
+  String get settingsLanguageDesc => '应用的语言';
+
+  @override
+  String get settingsLanguageSystem => '跟随系统';
+
+  @override
+  String get settingsLanguageZh => '简体中文';
+
+  @override
+  String get settingsLanguageEn => 'English';
+
+  @override
+  String get settingsThemeTitle => '主题';
+
+  @override
+  String get settingsThemeDesc => '应用的外观主题';
+
+  @override
+  String get settingsThemeSystem => '跟随系统';
+
+  @override
+  String get settingsThemeLight => '浅色';
+
+  @override
+  String get settingsThemeDark => '深色';
+
+  @override
+  String get settingsThemeColorTitle => '主题颜色';
+
+  @override
+  String get settingsThemeColorDesc => '应用内使用的主颜色';
+
+  @override
+  String get settingsColorDefault => '默认';
+
+  @override
+  String get settingsColorRed => '红色';
+
+  @override
+  String get settingsColorGreen => '绿色';
+
+  @override
+  String get settingsColorPurple => '紫色';
+
+  @override
+  String get settingsColorOrange => '橙色';
+
+  @override
+  String get settingsSendModeTitle => '发送模式';
+
+  @override
+  String get settingsSendModeDesc => '发送使用的快捷键';
+
+  @override
+  String get settingsSendModeEnter => '按 Enter 发送';
+
+  @override
+  String get settingsSendModeCtrlEnter => '按 Ctrl+Enter 发送';
+
+  @override
+  String get settingsAnimationsTitle => '开启动画';
+
+  @override
+  String get settingsAnimationsDesc => '开启或关闭动画，在低性能设备上关闭可能有助于提升应用速度';
+
+  @override
+  String get settingsSystemNotificationsTitle => '系统通知';
+
+  @override
+  String get settingsSystemNotificationsDesc => '使用操作系统通知进行消息通知';
+
+  @override
+  String get settingsInAppNotificationsTitle => '应用内通知';
+
+  @override
+  String get settingsInAppNotificationsDesc => '在应用内进行消息通知';
+
+  @override
+  String get settingsNotificationSoundTitle => '通知声音';
+
+  @override
+  String get settingsNotificationSoundDesc => '应用内通知时播放声音';
+
+  @override
+  String get settingsChatNotificationsTitle => '对话通知';
+
+  @override
+  String get settingsPrivateChatTitle => '私聊通知';
+
+  @override
+  String get settingsGroupChatTitle => '群组通知';
+
+  @override
+  String get settingsAboutAppTitle => '关于应用';
+
+  @override
   String get serverTitle => '服务器';
 
   @override

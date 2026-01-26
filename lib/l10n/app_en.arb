@@ -31,6 +31,53 @@
   "settingsTooltip": "Settings",
   "settingsEmpty": "No settings",
   
+  "settingsCategoryAppearance": "Appearance",
+  "settingsCategoryNotifications": "Notifications",
+  "settingsCategoryAbout": "About",
+  
+  "settingsLanguageTitle": "Language",
+  "settingsLanguageDesc": "Language of the application",
+  "settingsLanguageSystem": "System Default",
+  "settingsLanguageZh": "简体中文",
+  "settingsLanguageEn": "English",
+  
+  "settingsThemeTitle": "Theme",
+  "settingsThemeDesc": "Appearance theme of the application",
+  "settingsThemeSystem": "System Default",
+  "settingsThemeLight": "Light",
+  "settingsThemeDark": "Dark",
+  
+  "settingsThemeColorTitle": "Theme Color",
+  "settingsThemeColorDesc": "Primary color used in the application",
+  "settingsColorDefault": "Default",
+  "settingsColorRed": "Red",
+  "settingsColorGreen": "Green",
+  "settingsColorPurple": "Purple",
+  "settingsColorOrange": "Orange",
+  
+  "settingsSendModeTitle": "Send Mode",
+  "settingsSendModeDesc": "Keyboard shortcut for sending messages",
+  "settingsSendModeEnter": "Press Enter to send",
+  "settingsSendModeCtrlEnter": "Press Ctrl+Enter to send",
+  
+  "settingsAnimationsTitle": "Enable Animations",
+  "settingsAnimationsDesc": "Enable or disable animations. Disabling on low-end devices may improve performance",
+  
+  "settingsSystemNotificationsTitle": "System Notifications",
+  "settingsSystemNotificationsDesc": "Use system notifications for messages",
+  
+  "settingsInAppNotificationsTitle": "In-App Notifications",
+  "settingsInAppNotificationsDesc": "Show notifications within the application",
+  
+  "settingsNotificationSoundTitle": "Notification Sound",
+  "settingsNotificationSoundDesc": "Play sound for in-app notifications",
+  
+  "settingsChatNotificationsTitle": "Chat Notifications",
+  "settingsPrivateChatTitle": "Private Chat Notifications",
+  "settingsGroupChatTitle": "Group Chat Notifications",
+  
+  "settingsAboutAppTitle": "About Application",
+  
   "serverTitle": "Server",
   "serverAdd": "Add Server",
   "serverEdit": "Edit Server",

@@ -22,6 +22,53 @@
   "settingsTooltip": "设置",
   "settingsEmpty": "设置暂无",
   
+  "settingsCategoryAppearance": "界面",
+  "settingsCategoryNotifications": "通知",
+  "settingsCategoryAbout": "关于",
+  
+  "settingsLanguageTitle": "语言",
+  "settingsLanguageDesc": "应用的语言",
+  "settingsLanguageSystem": "跟随系统",
+  "settingsLanguageZh": "简体中文",
+  "settingsLanguageEn": "English",
+  
+  "settingsThemeTitle": "主题",
+  "settingsThemeDesc": "应用的外观主题",
+  "settingsThemeSystem": "跟随系统",
+  "settingsThemeLight": "浅色",
+  "settingsThemeDark": "深色",
+  
+  "settingsThemeColorTitle": "主题颜色",
+  "settingsThemeColorDesc": "应用内使用的主颜色",
+  "settingsColorDefault": "默认",
+  "settingsColorRed": "红色",
+  "settingsColorGreen": "绿色",
+  "settingsColorPurple": "紫色",
+  "settingsColorOrange": "橙色",
+  
+  "settingsSendModeTitle": "发送模式",
+  "settingsSendModeDesc": "发送使用的快捷键",
+  "settingsSendModeEnter": "按 Enter 发送",
+  "settingsSendModeCtrlEnter": "按 Ctrl+Enter 发送",
+  
+  "settingsAnimationsTitle": "开启动画",
+  "settingsAnimationsDesc": "开启或关闭动画，在低性能设备上关闭可能有助于提升应用速度",
+  
+  "settingsSystemNotificationsTitle": "系统通知",
+  "settingsSystemNotificationsDesc": "使用操作系统通知进行消息通知",
+  
+  "settingsInAppNotificationsTitle": "应用内通知",
+  "settingsInAppNotificationsDesc": "在应用内进行消息通知",
+  
+  "settingsNotificationSoundTitle": "通知声音",
+  "settingsNotificationSoundDesc": "应用内通知时播放声音",
+  
+  "settingsChatNotificationsTitle": "对话通知",
+  "settingsPrivateChatTitle": "私聊通知",
+  "settingsGroupChatTitle": "群组通知",
+  
+  "settingsAboutAppTitle": "关于应用",
+  
   "serverTitle": "服务器",
   "serverAdd": "添加服务器",
   "serverEdit": "编辑服务器",

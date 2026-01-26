@@ -206,6 +206,222 @@ abstract class AppLocalizations {
   /// **'No settings'**
   String get settingsEmpty;
 
+  /// No description provided for @settingsCategoryAppearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settingsCategoryAppearance;
+
+  /// No description provided for @settingsCategoryNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get settingsCategoryNotifications;
+
+  /// No description provided for @settingsCategoryAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get settingsCategoryAbout;
+
+  /// No description provided for @settingsLanguageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settingsLanguageTitle;
+
+  /// No description provided for @settingsLanguageDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Language of the application'**
+  String get settingsLanguageDesc;
+
+  /// No description provided for @settingsLanguageSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System Default'**
+  String get settingsLanguageSystem;
+
+  /// No description provided for @settingsLanguageZh.
+  ///
+  /// In en, this message translates to:
+  /// **'简体中文'**
+  String get settingsLanguageZh;
+
+  /// No description provided for @settingsLanguageEn.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get settingsLanguageEn;
+
+  /// No description provided for @settingsThemeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get settingsThemeTitle;
+
+  /// No description provided for @settingsThemeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance theme of the application'**
+  String get settingsThemeDesc;
+
+  /// No description provided for @settingsThemeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System Default'**
+  String get settingsThemeSystem;
+
+  /// No description provided for @settingsThemeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get settingsThemeLight;
+
+  /// No description provided for @settingsThemeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get settingsThemeDark;
+
+  /// No description provided for @settingsThemeColorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme Color'**
+  String get settingsThemeColorTitle;
+
+  /// No description provided for @settingsThemeColorDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary color used in the application'**
+  String get settingsThemeColorDesc;
+
+  /// No description provided for @settingsColorDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get settingsColorDefault;
+
+  /// No description provided for @settingsColorRed.
+  ///
+  /// In en, this message translates to:
+  /// **'Red'**
+  String get settingsColorRed;
+
+  /// No description provided for @settingsColorGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get settingsColorGreen;
+
+  /// No description provided for @settingsColorPurple.
+  ///
+  /// In en, this message translates to:
+  /// **'Purple'**
+  String get settingsColorPurple;
+
+  /// No description provided for @settingsColorOrange.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange'**
+  String get settingsColorOrange;
+
+  /// No description provided for @settingsSendModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Mode'**
+  String get settingsSendModeTitle;
+
+  /// No description provided for @settingsSendModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcut for sending messages'**
+  String get settingsSendModeDesc;
+
+  /// No description provided for @settingsSendModeEnter.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Enter to send'**
+  String get settingsSendModeEnter;
+
+  /// No description provided for @settingsSendModeCtrlEnter.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Ctrl+Enter to send'**
+  String get settingsSendModeCtrlEnter;
+
+  /// No description provided for @settingsAnimationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Animations'**
+  String get settingsAnimationsTitle;
+
+  /// No description provided for @settingsAnimationsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable or disable animations. Disabling on low-end devices may improve performance'**
+  String get settingsAnimationsDesc;
+
+  /// No description provided for @settingsSystemNotificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'System Notifications'**
+  String get settingsSystemNotificationsTitle;
+
+  /// No description provided for @settingsSystemNotificationsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Use system notifications for messages'**
+  String get settingsSystemNotificationsDesc;
+
+  /// No description provided for @settingsInAppNotificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'In-App Notifications'**
+  String get settingsInAppNotificationsTitle;
+
+  /// No description provided for @settingsInAppNotificationsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Show notifications within the application'**
+  String get settingsInAppNotificationsDesc;
+
+  /// No description provided for @settingsNotificationSoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Sound'**
+  String get settingsNotificationSoundTitle;
+
+  /// No description provided for @settingsNotificationSoundDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Play sound for in-app notifications'**
+  String get settingsNotificationSoundDesc;
+
+  /// No description provided for @settingsChatNotificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat Notifications'**
+  String get settingsChatNotificationsTitle;
+
+  /// No description provided for @settingsPrivateChatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Private Chat Notifications'**
+  String get settingsPrivateChatTitle;
+
+  /// No description provided for @settingsGroupChatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Chat Notifications'**
+  String get settingsGroupChatTitle;
+
+  /// No description provided for @settingsAboutAppTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About Application'**
+  String get settingsAboutAppTitle;
+
   /// No description provided for @serverTitle.
   ///
   /// In en, this message translates to:
