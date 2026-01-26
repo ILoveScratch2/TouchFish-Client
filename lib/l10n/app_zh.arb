@@ -64,6 +64,7 @@
   "settingsNotificationSoundDesc": "应用内通知时播放声音",
   
   "settingsChatNotificationsTitle": "对话通知",
+  "settingsChatNotificationsDesc": "配置私聊和群组的通知设置",
   "settingsPrivateChatTitle": "私聊通知",
   "settingsGroupChatTitle": "群组通知",
   

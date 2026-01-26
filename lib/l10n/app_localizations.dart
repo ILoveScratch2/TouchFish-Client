@@ -404,6 +404,12 @@ abstract class AppLocalizations {
   /// **'Chat Notifications'**
   String get settingsChatNotificationsTitle;
 
+  /// No description provided for @settingsChatNotificationsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure notification settings for private and group chats'**
+  String get settingsChatNotificationsDesc;
+
   /// No description provided for @settingsPrivateChatTitle.
   ///
   /// In en, this message translates to:

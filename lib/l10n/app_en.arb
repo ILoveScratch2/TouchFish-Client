@@ -73,6 +73,7 @@
   "settingsNotificationSoundDesc": "Play sound for in-app notifications",
   
   "settingsChatNotificationsTitle": "Chat Notifications",
+  "settingsChatNotificationsDesc": "Configure notification settings for private and group chats",
   "settingsPrivateChatTitle": "Private Chat Notifications",
   "settingsGroupChatTitle": "Group Chat Notifications",
   

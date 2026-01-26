@@ -10,14 +10,26 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStateMixin {
   final _settingsService = SettingsService.instance;
   SettingCategory? _selectedCategory;
+  late AnimationController _categoryAnimationController;
 
   @override
   void initState() {
     super.initState();
     _settingsService.init();
+    
+    _categoryAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+  }
+  
+  @override
+  void dispose() {
+    _categoryAnimationController.dispose();
+    super.dispose();
   }
 
   @override
@@ -68,31 +80,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const VerticalDivider(width: 1),
         Expanded(
-          child: _selectedCategory == null
-              ? _buildEmptyState(context)
-              : _buildSettingsContent(context, _selectedCategory!),
+          child: ListenableBuilder(
+            listenable: _settingsService,
+            builder: (context, _) {
+              final enableAnimations = _settingsService.getValue<bool>(
+                'enableAnimations',
+                true,
+              );
+              
+              return AnimatedSwitcher(
+                duration: Duration(milliseconds: enableAnimations ? 300 : 0),
+                switchInCurve: Curves.easeInOut,
+                switchOutCurve: Curves.easeInOut,
+                transitionBuilder: (child, animation) {
+                  if (!enableAnimations) return child;
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0.05, 0),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  );
+                },
+                child: _selectedCategory == null
+                    ? _buildEmptyState(context)
+                    : _buildSettingsContent(context, _selectedCategory!),
+              );
+            },
+          ),
         ),
       ],
     );
   }
 
   Widget _buildNarrowLayout(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      switchInCurve: Curves.easeInOut,
-      switchOutCurve: Curves.easeInOut,
-      transitionBuilder: (child, animation) {
-        return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(1.0, 0.0),
-            end: Offset.zero,
-          ).animate(animation),
-          child: child,
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        final enableAnimations = _settingsService.getValue<bool>(
+          'enableAnimations',
+          true,
+        );
+        
+        return AnimatedSwitcher(
+          duration: Duration(milliseconds: enableAnimations ? 300 : 0),
+          switchInCurve: Curves.easeInOut,
+          switchOutCurve: Curves.easeInOut,
+          transitionBuilder: (child, animation) {
+            if (!enableAnimations) return child;
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(1.0, 0.0),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            );
+          },
+          child: _selectedCategory == null
+              ? _buildCategoryList(context, isWideLayout: false)
+              : _buildSettingsContent(context, _selectedCategory!),
         );
       },
-      child: _selectedCategory == null
-          ? _buildCategoryList(context, isWideLayout: false)
-          : _buildSettingsContent(context, _selectedCategory!),
     );
   }
 
@@ -176,6 +227,113 @@ class _SettingsScreenState extends State<SettingsScreen> {
           item.defaultValue as bool,
         );
 
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: SwitchListTile(
+              secondary: item.icon != null ? Icon(item.icon) : null,
+              title: Text(_getSettingTitle(l10n, item.titleKey)),
+              subtitle: item.descriptionKey != null
+                  ? Text(_getSettingTitle(l10n, item.descriptionKey!))
+                  : null,
+              value: value,
+              onChanged: (newValue) {
+                _settingsService.setValue(item.key, newValue);
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDropdownSetting(
+      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        if (item.subItems != null && item.options!.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ListTile(
+                    leading: item.icon != null ? Icon(item.icon) : null,
+                    title: Text(_getSettingTitle(l10n, item.titleKey)),
+                    subtitle: item.descriptionKey != null
+                        ? Text(_getSettingTitle(l10n, item.descriptionKey!))
+                        : null,
+                  ),
+                  const Divider(height: 1),
+                  ...item.subItems!.map((subItem) {
+                    return _buildSubSwitchSetting(context, l10n, subItem);
+                  }),
+                ],
+              ),
+            ),
+          );
+        }
+        final value = _settingsService.getValue<String>(
+          item.key,
+          item.defaultValue as String,
+        );
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Card(
+                child: ListTile(
+                  leading: item.icon != null ? Icon(item.icon) : null,
+                  title: Text(_getSettingTitle(l10n, item.titleKey)),
+                  subtitle: item.descriptionKey != null
+                      ? Text(_getSettingTitle(l10n, item.descriptionKey!))
+                      : null,
+                  trailing: DropdownButton<String>(
+                    value: value,
+                    items: item.options!.map((option) {
+                      return DropdownMenuItem(
+                        value: option.value,
+                        child: Text(_getSettingTitle(l10n, option.labelKey)),
+                      );
+                    }).toList(),
+                    onChanged: (newValue) {
+                      if (newValue != null) {
+                        _settingsService.setValue(item.key, newValue);
+                      }
+                    },
+                  ),
+                ),
+              ),
+              if (item.subItems != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 16.0, top: 8.0),
+                  child: Column(
+                    children: item.subItems!
+                        .map((subItem) => _buildSettingItem(context, subItem))
+                        .toList(),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+  
+  Widget _buildSubSwitchSetting(
+      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        final value = _settingsService.getValue<bool>(
+          item.key,
+          item.defaultValue as bool,
+        );
+
         return SwitchListTile(
           secondary: item.icon != null ? Icon(item.icon) : null,
           title: Text(_getSettingTitle(l10n, item.titleKey)),
@@ -191,55 +349,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildDropdownSetting(
-      BuildContext context, AppLocalizations l10n, SettingItem item) {
-    return ListenableBuilder(
-      listenable: _settingsService,
-      builder: (context, _) {
-        final value = _settingsService.getValue<String>(
-          item.key,
-          item.defaultValue as String,
-        );
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ListTile(
-              leading: item.icon != null ? Icon(item.icon) : null,
-              title: Text(_getSettingTitle(l10n, item.titleKey)),
-              subtitle: item.descriptionKey != null
-                  ? Text(_getSettingTitle(l10n, item.descriptionKey!))
-                  : null,
-              trailing: DropdownButton<String>(
-                value: value,
-                items: item.options!.map((option) {
-                  return DropdownMenuItem(
-                    value: option.value,
-                    child: Text(_getSettingTitle(l10n, option.labelKey)),
-                  );
-                }).toList(),
-                onChanged: (newValue) {
-                  if (newValue != null) {
-                    _settingsService.setValue(item.key, newValue);
-                  }
-                },
-              ),
-            ),
-            if (item.subItems != null)
-              Padding(
-                padding: const EdgeInsets.only(left: 32.0),
-                child: Column(
-                  children: item.subItems!
-                      .map((subItem) => _buildSettingItem(context, subItem))
-                      .toList(),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _buildRadioSetting(
       BuildContext context, AppLocalizations l10n, SettingItem item) {
     return ListenableBuilder(
@@ -250,44 +359,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
           item.defaultValue as String,
         );
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _getSettingTitle(l10n, item.titleKey),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  if (item.descriptionKey != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4.0),
-                      child: Text(
-                        _getSettingTitle(l10n, item.descriptionKey!),
-                        style: Theme.of(context).textTheme.bodySmall,
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          if (item.icon != null) ...[
+                            Icon(item.icon),
+                            const SizedBox(width: 16),
+                          ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _getSettingTitle(l10n, item.titleKey),
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                                if (item.descriptionKey != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Text(
+                                      _getSettingTitle(l10n, item.descriptionKey!),
+                                      style: Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                ],
-              ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                ...item.options!.map((option) {
+                  return RadioListTile<String>(
+                    title: Text(_getSettingTitle(l10n, option.labelKey)),
+                    value: option.value,
+                    // ignore: deprecated_member_use
+                    groupValue: value,
+                    // ignore: deprecated_member_use
+                    onChanged: (newValue) {
+                      if (newValue != null) {
+                        _settingsService.setValue(item.key, newValue);
+                      }
+                    },
+                  );
+                }),
+              ],
             ),
-            ...item.options!.map((option) {
-              return RadioListTile<String>(
-                title: Text(_getSettingTitle(l10n, option.labelKey)),
-                value: option.value,
-                // ignore: deprecated_member_use
-                groupValue: value,
-                // ignore: deprecated_member_use
-                onChanged: (newValue) {
-                  if (newValue != null) {
-                    _settingsService.setValue(item.key, newValue);
-                  }
-                },
-              );
-            }),
-          ],
+          ),
         );
       },
     );
@@ -295,13 +425,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildNavigationSetting(
       BuildContext context, AppLocalizations l10n, SettingItem item) {
-    return ListTile(
-      leading: item.icon != null ? Icon(item.icon) : null,
-      title: Text(_getSettingTitle(l10n, item.titleKey)),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () {
-        // 没写完
-      },
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Card(
+        child: ListTile(
+          leading: item.icon != null ? Icon(item.icon) : null,
+          title: Text(_getSettingTitle(l10n, item.titleKey)),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            // 没写完
+          },
+        ),
+      ),
     );
   }
 
@@ -391,6 +526,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return l10n.settingsNotificationSoundDesc;
       case 'settingsChatNotificationsTitle':
         return l10n.settingsChatNotificationsTitle;
+      case 'settingsChatNotificationsDesc':
+        return l10n.settingsChatNotificationsDesc;
       case 'settingsPrivateChatTitle':
         return l10n.settingsPrivateChatTitle;
       case 'settingsGroupChatTitle':

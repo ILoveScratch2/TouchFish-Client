@@ -169,6 +169,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsChatNotificationsTitle => 'Chat Notifications';
 
   @override
+  String get settingsChatNotificationsDesc =>
+      'Configure notification settings for private and group chats';
+
+  @override
   String get settingsPrivateChatTitle => 'Private Chat Notifications';
 
   @override

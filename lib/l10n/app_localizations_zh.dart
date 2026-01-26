@@ -163,6 +163,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsChatNotificationsTitle => '对话通知';
 
   @override
+  String get settingsChatNotificationsDesc => '配置私聊和群组的通知设置';
+
+  @override
   String get settingsPrivateChatTitle => '私聊通知';
 
   @override
