@@ -57,6 +57,83 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginMsgRegisterNotImpl => 'Register function not implemented yet';
 
   @override
+  String get registerTitle => 'Register';
+
+  @override
+  String get registerCreateAccount => 'Create New Account';
+
+  @override
+  String get registerAccountInfo => 'Set up your account';
+
+  @override
+  String get registerEmailInfo => 'Enter your email';
+
+  @override
+  String get registerVerifyInfo => 'Enter verification code';
+
+  @override
+  String get registerUsername => 'Username';
+
+  @override
+  String get registerPassword => 'Password';
+
+  @override
+  String get registerConfirmPassword => 'Confirm Password';
+
+  @override
+  String get registerEmail => 'Email';
+
+  @override
+  String get registerVerificationCode => 'Verification Code (6 digits)';
+
+  @override
+  String get registerNextStep => 'Next';
+
+  @override
+  String get registerPreviousStep => 'Previous';
+
+  @override
+  String get registerComplete => 'Complete Registration';
+
+  @override
+  String get registerHaveAccount => 'Already have an account? Back to login';
+
+  @override
+  String get registerSuccess => 'Registration Successful!';
+
+  @override
+  String get registerSuccessMessage =>
+      'Your account has been created successfully';
+
+  @override
+  String get registerBackToLogin => 'Back to Login';
+
+  @override
+  String get registerErrorUsernameRequired => 'Please enter username';
+
+  @override
+  String get registerErrorUsernameMinLength =>
+      'Username must be at least 3 characters';
+
+  @override
+  String get registerErrorPasswordRequired => 'Please enter password';
+
+  @override
+  String get registerErrorConfirmPasswordRequired =>
+      'Please enter password again';
+
+  @override
+  String get registerErrorPasswordMismatch => 'Passwords do not match';
+
+  @override
+  String get registerErrorVerificationCodeRequired =>
+      'Please enter verification code';
+
+  @override
+  String get registerErrorVerificationCodeInvalid =>
+      'Verification code must be 6 digits';
+
+  @override
   String get settingsTitle => 'Settings';
 
   @override

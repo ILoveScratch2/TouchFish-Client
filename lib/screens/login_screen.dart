@@ -28,8 +28,16 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _register() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context)!.loginMsgRegisterNotImpl)),
+    Navigator.of(context).pushNamed(
+      '/register',
+      arguments: {
+        'username': _usernameController.text.trim().isEmpty 
+            ? null 
+            : _usernameController.text,
+        'password': _passwordController.text.trim().isEmpty 
+            ? null 
+            : _passwordController.text,
+      },
     );
   }
 

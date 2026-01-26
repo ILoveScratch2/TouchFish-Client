@@ -450,6 +450,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  smart_form_guard:
+    dependency: "direct main"
+    description:
+      name: smart_form_guard
+      sha256: "9cf7236dc2469f9ddb1179c84ec3fc4157ef52dd983c2c6505065b1c8d2cec6d"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "2.0.2"
   source_span:
     dependency: transitive
     description:

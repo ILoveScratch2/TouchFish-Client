@@ -55,6 +55,78 @@ class AppLocalizationsZh extends AppLocalizations {
   String get loginMsgRegisterNotImpl => '暂时无注册功能实现';
 
   @override
+  String get registerTitle => '注册';
+
+  @override
+  String get registerCreateAccount => '创建新账户';
+
+  @override
+  String get registerAccountInfo => '设置账户信息';
+
+  @override
+  String get registerEmailInfo => '输入邮箱地址';
+
+  @override
+  String get registerVerifyInfo => '输入验证码';
+
+  @override
+  String get registerUsername => '用户名';
+
+  @override
+  String get registerPassword => '密码';
+
+  @override
+  String get registerConfirmPassword => '确认密码';
+
+  @override
+  String get registerEmail => 'Email';
+
+  @override
+  String get registerVerificationCode => '验证码（6位数字）';
+
+  @override
+  String get registerNextStep => '下一步';
+
+  @override
+  String get registerPreviousStep => '上一步';
+
+  @override
+  String get registerComplete => '完成注册';
+
+  @override
+  String get registerHaveAccount => '已有账户？返回登录';
+
+  @override
+  String get registerSuccess => '注册成功！';
+
+  @override
+  String get registerSuccessMessage => '您的账户已成功创建';
+
+  @override
+  String get registerBackToLogin => '返回登录页面';
+
+  @override
+  String get registerErrorUsernameRequired => '请输入用户名';
+
+  @override
+  String get registerErrorUsernameMinLength => '用户名至少需要3个字符';
+
+  @override
+  String get registerErrorPasswordRequired => '请输入密码';
+
+  @override
+  String get registerErrorConfirmPasswordRequired => '请再次输入密码';
+
+  @override
+  String get registerErrorPasswordMismatch => '两次输入的密码不一致';
+
+  @override
+  String get registerErrorVerificationCodeRequired => '请输入验证码';
+
+  @override
+  String get registerErrorVerificationCodeInvalid => '验证码必须是6位数字';
+
+  @override
   String get settingsTitle => '设置';
 
   @override

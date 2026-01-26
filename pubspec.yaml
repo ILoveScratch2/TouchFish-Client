@@ -40,6 +40,7 @@ dependencies:
   shared_preferences: ^2.2.2
   window_manager: ^0.5.1
   material_symbols_icons: ^4.2785.1
+  smart_form_guard: ^2.0.2
 
 dev_dependencies:
   flutter_test:

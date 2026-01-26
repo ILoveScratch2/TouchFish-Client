@@ -10,13 +10,15 @@ import 'models/settings_service.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/register_screen.dart';
+import 'screens/register_step2_screen.dart';
+import 'screens/register_step3_screen.dart';
+import 'screens/register_success_screen.dart';
 import 'widgets/window_frame.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
-  
-  // Initialize settings service first
   await SettingsService.instance.init();
   
   if (isDesktop) {
@@ -128,6 +130,31 @@ class _TouchFishAppState extends State<TouchFishApp> {
                 break;
               case '/settings':
                 page = const SettingsScreen();
+                break;
+              case '/register':
+                final args = settings.arguments as Map<String, String?>?;
+                page = RegisterScreen(
+                  initialUsername: args?['username'],
+                  initialPassword: args?['password'],
+                );
+                break;
+              case '/register/step2':
+                final args = settings.arguments as Map<String, String>;
+                page = RegisterStep2Screen(
+                  username: args['username']!,
+                  password: args['password']!,
+                );
+                break;
+              case '/register/step3':
+                final args = settings.arguments as Map<String, String>;
+                page = RegisterStep3Screen(
+                  username: args['username']!,
+                  password: args['password']!,
+                  email: args['email']!,
+                );
+                break;
+              case '/register/success':
+                page = const RegisterSuccessScreen();
                 break;
               default:
                 page = const LoginScreen();

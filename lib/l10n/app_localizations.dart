@@ -188,6 +188,150 @@ abstract class AppLocalizations {
   /// **'Register function not implemented yet'**
   String get loginMsgRegisterNotImpl;
 
+  /// No description provided for @registerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Register'**
+  String get registerTitle;
+
+  /// No description provided for @registerCreateAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Account'**
+  String get registerCreateAccount;
+
+  /// No description provided for @registerAccountInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up your account'**
+  String get registerAccountInfo;
+
+  /// No description provided for @registerEmailInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email'**
+  String get registerEmailInfo;
+
+  /// No description provided for @registerVerifyInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter verification code'**
+  String get registerVerifyInfo;
+
+  /// No description provided for @registerUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get registerUsername;
+
+  /// No description provided for @registerPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get registerPassword;
+
+  /// No description provided for @registerConfirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Password'**
+  String get registerConfirmPassword;
+
+  /// No description provided for @registerEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get registerEmail;
+
+  /// No description provided for @registerVerificationCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification Code (6 digits)'**
+  String get registerVerificationCode;
+
+  /// No description provided for @registerNextStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get registerNextStep;
+
+  /// No description provided for @registerPreviousStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get registerPreviousStep;
+
+  /// No description provided for @registerComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Registration'**
+  String get registerComplete;
+
+  /// No description provided for @registerHaveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account? Back to login'**
+  String get registerHaveAccount;
+
+  /// No description provided for @registerSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration Successful!'**
+  String get registerSuccess;
+
+  /// No description provided for @registerSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account has been created successfully'**
+  String get registerSuccessMessage;
+
+  /// No description provided for @registerBackToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Login'**
+  String get registerBackToLogin;
+
+  /// No description provided for @registerErrorUsernameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter username'**
+  String get registerErrorUsernameRequired;
+
+  /// No description provided for @registerErrorUsernameMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Username must be at least 3 characters'**
+  String get registerErrorUsernameMinLength;
+
+  /// No description provided for @registerErrorPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter password'**
+  String get registerErrorPasswordRequired;
+
+  /// No description provided for @registerErrorConfirmPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter password again'**
+  String get registerErrorConfirmPasswordRequired;
+
+  /// No description provided for @registerErrorPasswordMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get registerErrorPasswordMismatch;
+
+  /// No description provided for @registerErrorVerificationCodeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter verification code'**
+  String get registerErrorVerificationCodeRequired;
+
+  /// No description provided for @registerErrorVerificationCodeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code must be 6 digits'**
+  String get registerErrorVerificationCodeInvalid;
+
   /// No description provided for @settingsTitle.
   ///
   /// In en, this message translates to:
