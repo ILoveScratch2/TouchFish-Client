@@ -635,7 +635,7 @@ abstract class AppLocalizations {
   /// No description provided for @navAnnouncement.
   ///
   /// In en, this message translates to:
-  /// **'Announcements'**
+  /// **'Announce'**
   String get navAnnouncement;
 
   /// No description provided for @navForum.
