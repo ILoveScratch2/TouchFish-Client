@@ -41,6 +41,8 @@ dependencies:
   window_manager: ^0.5.1
   material_symbols_icons: ^4.2785.1
   smart_form_guard: ^2.0.2
+  animated_toggle_switch: ^0.8.3
+  animated_custom_dropdown: ^3.1.1
 
 dev_dependencies:
   flutter_test:

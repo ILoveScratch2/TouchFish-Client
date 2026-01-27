@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:animated_toggle_switch/animated_toggle_switch.dart';
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import '../l10n/app_localizations.dart';
 import '../models/settings_model.dart';
 import '../models/settings_service.dart';
@@ -199,12 +201,176 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
       case SettingType.switchSetting:
         return _buildSwitchSetting(context, l10n, item);
       case SettingType.dropdown:
+        if (item.key == 'language' || item.key == 'themeColor') {
+          return _buildCustomDropdownSetting(context, l10n, item);
+        }
+        if (item.key == 'theme') {
+          return _buildToggleSwitchSetting(context, l10n, item);
+        }
         return _buildDropdownSetting(context, l10n, item);
       case SettingType.radio:
         return _buildRadioSetting(context, l10n, item);
       case SettingType.navigation:
         return _buildNavigationSetting(context, l10n, item);
     }
+  }
+
+  Widget _buildCustomDropdownSetting(
+      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        final value = _settingsService.getValue<String>(
+          item.key,
+          item.defaultValue as String,
+        );
+
+        final selectedLabel = _getSettingTitle(
+          l10n, 
+          item.options!.firstWhere((o) => o.value == value).labelKey
+        );
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              child: Row(
+                children: [
+                  if (item.icon != null) ...[
+                    Icon(item.icon),
+                    const SizedBox(width: 16),
+                  ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _getSettingTitle(l10n, item.titleKey),
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        if (item.descriptionKey != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              _getSettingTitle(l10n, item.descriptionKey!),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  SizedBox(
+                    width: 140,
+                    child: CustomDropdown<String>(
+                      hintText: '',
+                      initialItem: selectedLabel,
+                      items: item.options!.map((o) => _getSettingTitle(l10n, o.labelKey)).toList(),
+                      decoration: CustomDropdownDecoration(
+                        closedBorderRadius: BorderRadius.circular(8),
+                        expandedBorderRadius: BorderRadius.circular(8),
+                        closedFillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        expandedFillColor: Theme.of(context).colorScheme.surface,
+                      ),
+                      onChanged: (newValue) {
+                        if (newValue != null) {
+                          final option = item.options!.firstWhere(
+                            (o) => _getSettingTitle(l10n, o.labelKey) == newValue,
+                          );
+                          _settingsService.setValue(item.key, option.value);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildToggleSwitchSetting(
+      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        final value = _settingsService.getValue<String>(
+          item.key,
+          item.defaultValue as String,
+        );
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              child: Row(
+                children: [
+                  if (item.icon != null) ...[
+                    Icon(item.icon),
+                    const SizedBox(width: 16),
+                  ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _getSettingTitle(l10n, item.titleKey),
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        if (item.descriptionKey != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              _getSettingTitle(l10n, item.descriptionKey!),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  AnimatedToggleSwitch<String>.size(
+                    current: value,
+                    values: item.options!.map((o) => o.value).toList(),
+                    iconOpacity: 0.8,
+                    indicatorSize: const Size.square(40),
+                    iconAnimationType: AnimationType.onHover,
+                    style: ToggleStyle(
+                      borderColor: Colors.transparent,
+                      borderRadius: BorderRadius.circular(10.0),
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      indicatorColor: Theme.of(context).colorScheme.primary,
+                    ),
+                    customIconBuilder: (context, local, global) {
+                      final iconData = _getToggleIcon(item.key, local.value);
+                      return Center(
+                        child: Icon(
+                          iconData,
+                          size: 20,
+                          color: Color.lerp(
+                            Theme.of(context).colorScheme.onSurfaceVariant,
+                            Theme.of(context).colorScheme.onPrimary,
+                            local.animationValue,
+                          ),
+                        ),
+                      );
+                    },
+                    onChanged: (newValue) {
+                      _settingsService.setValue(item.key, newValue);
+                    },
+                    height: 40,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildSwitchSetting(
@@ -524,5 +690,32 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
       default:
         return key;
     }
+  }
+
+  IconData _getToggleIcon(String settingKey, String value) {
+    if (settingKey == 'language') {
+      switch (value) {
+        case 'system':
+          return Icons.settings_suggest;
+        case 'zh':
+          return Icons.translate;
+        case 'en':
+          return Icons.abc;
+        default:
+          return Icons.language;
+      }
+    } else if (settingKey == 'theme') {
+      switch (value) {
+        case 'system':
+          return Icons.brightness_auto;
+        case 'light':
+          return Icons.light_mode;
+        case 'dark':
+          return Icons.dark_mode;
+        default:
+          return Icons.brightness_medium;
+      }
+    }
+    return Icons.circle;
   }
 }
