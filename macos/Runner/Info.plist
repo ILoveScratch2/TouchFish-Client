@@ -28,5 +28,22 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+	<key>NSAllowsArbitraryLoads</key>
+	<true/>
+	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>TouchFish Client need to access the camera.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>TouchFish Client need to access the microphone to record audio.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>TouchFish Client need to access biometric hardware for authentication.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>TouchFish Client need to access the documents folder for reading and writing received files.</string>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>TouchFish Client need to access the desktop folder for reading and writing received files.</string>
+	<key>NSUserNotificationCenter</key>
+	<string>TouchFish Client need to send notifications to notify user about messages.</string>
 </dict>
 </plist>
