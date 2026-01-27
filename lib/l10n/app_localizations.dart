@@ -625,6 +625,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get serverCancel;
+
+  /// No description provided for @navChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get navChat;
+
+  /// No description provided for @navAnnouncement.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements'**
+  String get navAnnouncement;
+
+  /// No description provided for @navForum.
+  ///
+  /// In en, this message translates to:
+  /// **'Forum'**
+  String get navForum;
+
+  /// No description provided for @navAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get navAccount;
 }
 
 class _AppLocalizationsDelegate

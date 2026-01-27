@@ -22,9 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _login() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context)!.loginMsgLoginNotImpl)),
-    );
+    Navigator.of(context).pushReplacementNamed('/main');
   }
 
   void _register() {

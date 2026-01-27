@@ -103,5 +103,10 @@
   "serverCannotDeleteLast": "不能删除最后一个服务器",
   "serverInvalidUrl": "无效的服务器地址",
   "serverAddServer": "添加",
-  "serverCancel": "取消"
+  "serverCancel": "取消",
+  
+  "navChat": "聊天",
+  "navAnnouncement": "公告",
+  "navForum": "论坛",
+  "navAccount": "账户"
 }

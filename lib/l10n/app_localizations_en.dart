@@ -283,4 +283,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverCancel => 'Cancel';
+
+  @override
+  String get navChat => 'Chat';
+
+  @override
+  String get navAnnouncement => 'Announcements';
+
+  @override
+  String get navForum => 'Forum';
+
+  @override
+  String get navAccount => 'Account';
 }

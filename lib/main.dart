@@ -9,6 +9,7 @@ import 'models/app_state.dart';
 import 'models/settings_service.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/main_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/register_step2_screen.dart';
@@ -127,6 +128,9 @@ class _TouchFishAppState extends State<TouchFishApp> {
                 break;
               case '/login':
                 page = const LoginScreen();
+                break;
+              case '/main':
+                page = const MainScreen();
                 break;
               case '/settings':
                 page = const SettingsScreen();

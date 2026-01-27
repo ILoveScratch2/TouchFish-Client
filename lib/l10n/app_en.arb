@@ -112,5 +112,10 @@
   "serverCannotDeleteLast": "Cannot delete the last server",
   "serverInvalidUrl": "Invalid server URL",
   "serverAddServer": "Add",
-  "serverCancel": "Cancel"
+  "serverCancel": "Cancel",
+  
+  "navChat": "Chat",
+  "navAnnouncement": "Announcements",
+  "navForum": "Forum",
+  "navAccount": "Account"
 }

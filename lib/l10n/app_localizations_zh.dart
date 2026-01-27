@@ -272,4 +272,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get serverCancel => '取消';
+
+  @override
+  String get navChat => '聊天';
+
+  @override
+  String get navAnnouncement => '公告';
+
+  @override
+  String get navForum => '论坛';
+
+  @override
+  String get navAccount => '账户';
 }
