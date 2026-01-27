@@ -328,4 +328,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatYesterday => 'Yesterday';
+
+  @override
+  String get chatDetailLoading => 'Loading...';
+
+  @override
+  String get chatDetailUnknownUser => 'Unknown User';
+
+  @override
+  String get chatDetailOther => 'Other';
+
+  @override
+  String get chatDetailGroupChat => 'Group Chat';
+
+  @override
+  String get chatDetailNoMessages =>
+      'No messages yet\nSend a message to start chatting';
+
+  @override
+  String get chatInputCollapse => 'Collapse';
+
+  @override
+  String get chatInputExpand => 'More';
+
+  @override
+  String get chatInputAttachment => 'Attachment';
+
+  @override
+  String get chatInputTakePhoto => 'Take Photo';
+
+  @override
+  String get chatInputTakeVideo => 'Record Video';
+
+  @override
+  String get chatInputUploadFile => 'Upload File';
+
+  @override
+  String get chatInputRecordAudio => 'Record Audio';
+
+  @override
+  String get chatInputPlaceholder => 'Type a message...';
+
+  @override
+  String get chatInputFeatureArea => 'Feature Area';
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../models/chat_model.dart';
 import '../l10n/app_localizations.dart';
 
@@ -65,7 +66,7 @@ class ContactListWidget extends StatelessWidget {
             )
           : null,
       onTap: () {
-        // 打开与该联系人的聊天，但是没有写
+        context.go('/chat/${contact.id}');
       },
     );
   }

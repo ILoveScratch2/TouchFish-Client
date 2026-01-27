@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../models/chat_model.dart';
 import '../l10n/app_localizations.dart';
@@ -95,7 +96,7 @@ class ChatListWidget extends StatelessWidget {
         ],
       ),
       onTap: () {
-        // 导航到聊天详情页，但是也没有写
+        context.go('/chat/${room.id}');
       },
     );
   }

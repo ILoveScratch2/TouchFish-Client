@@ -129,5 +129,21 @@
   "chatOnline": "Online",
   "chatOffline": "Offline",
   "chatAway": "Away",
-  "chatYesterday": "Yesterday"
+  "chatYesterday": "Yesterday",
+  
+  "chatDetailLoading": "Loading...",
+  "chatDetailUnknownUser": "Unknown User",
+  "chatDetailOther": "Other",
+  "chatDetailGroupChat": "Group Chat",
+  "chatDetailNoMessages": "No messages yet\nSend a message to start chatting",
+  
+  "chatInputCollapse": "Collapse",
+  "chatInputExpand": "More",
+  "chatInputAttachment": "Attachment",
+  "chatInputTakePhoto": "Take Photo",
+  "chatInputTakeVideo": "Record Video",
+  "chatInputUploadFile": "Upload File",
+  "chatInputRecordAudio": "Record Audio",
+  "chatInputPlaceholder": "Type a message...",
+  "chatInputFeatureArea": "Feature Area"
 }

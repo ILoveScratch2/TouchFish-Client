@@ -317,4 +317,46 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get chatYesterday => '昨天';
+
+  @override
+  String get chatDetailLoading => '加载中...';
+
+  @override
+  String get chatDetailUnknownUser => '未知用户';
+
+  @override
+  String get chatDetailOther => '对方';
+
+  @override
+  String get chatDetailGroupChat => '群聊';
+
+  @override
+  String get chatDetailNoMessages => '暂无消息\n发送一条消息开始聊天吧';
+
+  @override
+  String get chatInputCollapse => '收起';
+
+  @override
+  String get chatInputExpand => '更多';
+
+  @override
+  String get chatInputAttachment => '附件';
+
+  @override
+  String get chatInputTakePhoto => '拍摄照片';
+
+  @override
+  String get chatInputTakeVideo => '拍摄视频';
+
+  @override
+  String get chatInputUploadFile => '上传文件';
+
+  @override
+  String get chatInputRecordAudio => '录制语音';
+
+  @override
+  String get chatInputPlaceholder => '输入消息...';
+
+  @override
+  String get chatInputFeatureArea => '功能区域';
 }

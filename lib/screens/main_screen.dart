@@ -22,6 +22,11 @@ class _MainScreenState extends State<MainScreen> {
     return 0;
   }
 
+  bool _isInChatDetail(BuildContext context) {
+    final String location = GoRouterState.of(context).uri.toString();
+    return location.startsWith('/chat/') && location != '/chat';
+  }
+
   void _onItemTapped(BuildContext context, int index) {
     switch (index) {
       case 0:
@@ -66,11 +71,12 @@ class _MainScreenState extends State<MainScreen> {
             ),
           );
         }
+        final showBottomNav = !_isInChatDetail(context);
         return Scaffold(
           backgroundColor: Colors.transparent,
           extendBody: true,
           body: widget.child,
-          bottomNavigationBar: _buildBottomNav(l10n, selectedIndex, context),
+          bottomNavigationBar: showBottomNav ? _buildBottomNav(l10n, selectedIndex, context) : null,
         );
       },
     );

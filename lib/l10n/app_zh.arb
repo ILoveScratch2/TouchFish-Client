@@ -120,5 +120,21 @@
   "chatOnline": "在线",
   "chatOffline": "离线",
   "chatAway": "离开",
-  "chatYesterday": "昨天"
+  "chatYesterday": "昨天",
+  
+  "chatDetailLoading": "加载中...",
+  "chatDetailUnknownUser": "未知用户",
+  "chatDetailOther": "对方",
+  "chatDetailGroupChat": "群聊",
+  "chatDetailNoMessages": "暂无消息\n发送一条消息开始聊天吧",
+  
+  "chatInputCollapse": "收起",
+  "chatInputExpand": "更多",
+  "chatInputAttachment": "附件",
+  "chatInputTakePhoto": "拍摄照片",
+  "chatInputTakeVideo": "拍摄视频",
+  "chatInputUploadFile": "上传文件",
+  "chatInputRecordAudio": "录制语音",
+  "chatInputPlaceholder": "输入消息...",
+  "chatInputFeatureArea": "功能区域"
 }

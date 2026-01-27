@@ -9,6 +9,7 @@ import '../screens/register_step2_screen.dart';
 import '../screens/register_step3_screen.dart';
 import '../screens/register_success_screen.dart';
 import '../screens/chat_screen.dart';
+import '../screens/chat_detail_screen.dart';
 import '../screens/announcement_screen.dart';
 import '../screens/forum_screen.dart';
 import '../screens/account_screen.dart';
@@ -19,6 +20,7 @@ class AppRoutes {
   static const String login = '/login';
   static const String main = '/';
   static const String chat = '/chat';
+  static const String chatDetail = '/chat/:roomId';
   static const String announcement = '/announcement';
   static const String forum = '/forum';
   static const String account = '/account';
@@ -89,24 +91,55 @@ class AppRoutes {
                 return MainScreen(child: child);
               },
               routes: [
-                ShellRoute(
-                  pageBuilder: (context, state, child) => NoTransitionPage(
-                    child: ChatShellScreen(child: child),
+                GoRoute(
+                  path: main,
+                  pageBuilder: (context, state) => NoTransitionPage(
+                    child: ChatShellScreen(
+                      child: Container(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        child: Center(
+                          child: Text(
+                            '选择一个聊天开始对话',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  routes: [
-                    GoRoute(
-                      path: main,
-                      pageBuilder: (context, state) => const NoTransitionPage(
-                        child: ChatDetailScreen(),
+                ),
+                GoRoute(
+                  path: chat,
+                  pageBuilder: (context, state) => NoTransitionPage(
+                    child: ChatShellScreen(
+                      child: Container(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        child: Center(
+                          child: Text(
+                            '选择一个聊天开始对话',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    GoRoute(
-                      path: chat,
-                      pageBuilder: (context, state) => const NoTransitionPage(
-                        child: ChatDetailScreen(),
+                  ),
+                ),
+                GoRoute(
+                  path: '/chat/:roomId',
+                  pageBuilder: (context, state) {
+                    final roomId = state.pathParameters['roomId']!;
+                    return NoTransitionPage(
+                      child: ChatShellScreen(
+                        child: ChatDetailScreen(
+                          key: ValueKey(roomId),
+                          roomId: roomId,
+                        ),
                       ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
                 GoRoute(
                   path: announcement,

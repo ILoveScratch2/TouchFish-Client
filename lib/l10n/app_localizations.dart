@@ -715,6 +715,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Yesterday'**
   String get chatYesterday;
+
+  /// No description provided for @chatDetailLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get chatDetailLoading;
+
+  /// No description provided for @chatDetailUnknownUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown User'**
+  String get chatDetailUnknownUser;
+
+  /// No description provided for @chatDetailOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get chatDetailOther;
+
+  /// No description provided for @chatDetailGroupChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Chat'**
+  String get chatDetailGroupChat;
+
+  /// No description provided for @chatDetailNoMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet\nSend a message to start chatting'**
+  String get chatDetailNoMessages;
+
+  /// No description provided for @chatInputCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get chatInputCollapse;
+
+  /// No description provided for @chatInputExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get chatInputExpand;
+
+  /// No description provided for @chatInputAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment'**
+  String get chatInputAttachment;
+
+  /// No description provided for @chatInputTakePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take Photo'**
+  String get chatInputTakePhoto;
+
+  /// No description provided for @chatInputTakeVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Record Video'**
+  String get chatInputTakeVideo;
+
+  /// No description provided for @chatInputUploadFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload File'**
+  String get chatInputUploadFile;
+
+  /// No description provided for @chatInputRecordAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Record Audio'**
+  String get chatInputRecordAudio;
+
+  /// No description provided for @chatInputPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a message...'**
+  String get chatInputPlaceholder;
+
+  /// No description provided for @chatInputFeatureArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Feature Area'**
+  String get chatInputFeatureArea;
 }
 
 class _AppLocalizationsDelegate

@@ -4,6 +4,7 @@ import '../models/chat_model.dart';
 import '../widgets/chat_list_widget.dart';
 import '../widgets/contact_list_widget.dart';
 import '../widgets/invite_sheet.dart';
+import 'chat_detail_screen.dart';
 
 class ChatShellScreen extends StatelessWidget {
   final Widget child;
@@ -44,9 +45,9 @@ class ChatShellScreen extends StatelessWidget {
         ),
       );
     }
-    return const ChatListScreen(
-      isAside: false,
-    );
+    return child is ChatDetailScreen
+        ? child
+        : const ChatListScreen(isAside: false);
   }
 }
 
@@ -217,17 +218,6 @@ class _ChatListScreenState extends State<ChatListScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) => const InviteSheet(),
-    );
-  }
-}
-
-class ChatDetailScreen extends StatelessWidget {
-  const ChatDetailScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
     );
   }
 }
