@@ -649,6 +649,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account'**
   String get navAccount;
+
+  /// No description provided for @chatTabMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get chatTabMessages;
+
+  /// No description provided for @chatTabContacts.
+  ///
+  /// In en, this message translates to:
+  /// **'Contacts'**
+  String get chatTabContacts;
+
+  /// No description provided for @chatInvites.
+  ///
+  /// In en, this message translates to:
+  /// **'Invites'**
+  String get chatInvites;
+
+  /// No description provided for @chatNoInvites.
+  ///
+  /// In en, this message translates to:
+  /// **'No invites'**
+  String get chatNoInvites;
+
+  /// No description provided for @chatPinned.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned'**
+  String get chatPinned;
+
+  /// No description provided for @chatDirectMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct'**
+  String get chatDirectMessage;
+
+  /// No description provided for @chatGroupMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get chatGroupMessage;
+
+  /// No description provided for @chatOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get chatOnline;
+
+  /// No description provided for @chatOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get chatOffline;
+
+  /// No description provided for @chatAway.
+  ///
+  /// In en, this message translates to:
+  /// **'Away'**
+  String get chatAway;
+
+  /// No description provided for @chatYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get chatYesterday;
 }
 
 class _AppLocalizationsDelegate

@@ -284,4 +284,37 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get navAccount => '账户';
+
+  @override
+  String get chatTabMessages => '聊天';
+
+  @override
+  String get chatTabContacts => '联系人';
+
+  @override
+  String get chatInvites => '邀请';
+
+  @override
+  String get chatNoInvites => '没有邀请';
+
+  @override
+  String get chatPinned => '置顶会话';
+
+  @override
+  String get chatDirectMessage => '私聊';
+
+  @override
+  String get chatGroupMessage => '群组';
+
+  @override
+  String get chatOnline => '在线';
+
+  @override
+  String get chatOffline => '离线';
+
+  @override
+  String get chatAway => '离开';
+
+  @override
+  String get chatYesterday => '昨天';
 }

@@ -108,5 +108,17 @@
   "navChat": "聊天",
   "navAnnouncement": "公告",
   "navForum": "论坛",
-  "navAccount": "账户"
+  "navAccount": "账户",
+  
+  "chatTabMessages": "聊天",
+  "chatTabContacts": "联系人",
+  "chatInvites": "邀请",
+  "chatNoInvites": "没有邀请",
+  "chatPinned": "置顶会话",
+  "chatDirectMessage": "私聊",
+  "chatGroupMessage": "群组",
+  "chatOnline": "在线",
+  "chatOffline": "离线",
+  "chatAway": "离开",
+  "chatYesterday": "昨天"
 }

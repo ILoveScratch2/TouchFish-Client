@@ -295,4 +295,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navAccount => 'Account';
+
+  @override
+  String get chatTabMessages => 'Messages';
+
+  @override
+  String get chatTabContacts => 'Contacts';
+
+  @override
+  String get chatInvites => 'Invites';
+
+  @override
+  String get chatNoInvites => 'No invites';
+
+  @override
+  String get chatPinned => 'Pinned';
+
+  @override
+  String get chatDirectMessage => 'Direct';
+
+  @override
+  String get chatGroupMessage => 'Group';
+
+  @override
+  String get chatOnline => 'Online';
+
+  @override
+  String get chatOffline => 'Offline';
+
+  @override
+  String get chatAway => 'Away';
+
+  @override
+  String get chatYesterday => 'Yesterday';
 }

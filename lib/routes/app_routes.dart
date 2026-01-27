@@ -89,17 +89,24 @@ class AppRoutes {
                 return MainScreen(child: child);
               },
               routes: [
-                GoRoute(
-                  path: main,
-                  pageBuilder: (context, state) => const NoTransitionPage(
-                    child: ChatScreen(),
+                ShellRoute(
+                  pageBuilder: (context, state, child) => NoTransitionPage(
+                    child: ChatShellScreen(child: child),
                   ),
-                ),
-                GoRoute(
-                  path: chat,
-                  pageBuilder: (context, state) => const NoTransitionPage(
-                    child: ChatScreen(),
-                  ),
+                  routes: [
+                    GoRoute(
+                      path: main,
+                      pageBuilder: (context, state) => const NoTransitionPage(
+                        child: ChatDetailScreen(),
+                      ),
+                    ),
+                    GoRoute(
+                      path: chat,
+                      pageBuilder: (context, state) => const NoTransitionPage(
+                        child: ChatDetailScreen(),
+                      ),
+                    ),
+                  ],
                 ),
                 GoRoute(
                   path: announcement,

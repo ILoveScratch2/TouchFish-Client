@@ -117,5 +117,17 @@
   "navChat": "Chat",
   "navAnnouncement": "Announce",
   "navForum": "Forum",
-  "navAccount": "Account"
+  "navAccount": "Account",
+  
+  "chatTabMessages": "Messages",
+  "chatTabContacts": "Contacts",
+  "chatInvites": "Invites",
+  "chatNoInvites": "No invites",
+  "chatPinned": "Pinned",
+  "chatDirectMessage": "Direct",
+  "chatGroupMessage": "Group",
+  "chatOnline": "Online",
+  "chatOffline": "Offline",
+  "chatAway": "Away",
+  "chatYesterday": "Yesterday"
 }
