@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:smart_form_guard/smart_form_guard.dart';
 import '../l10n/app_localizations.dart';
+import '../routes/app_routes.dart';
 
 class RegisterScreen extends StatefulWidget {
   final String? initialUsername;
@@ -41,9 +43,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _nextStep() {
-    Navigator.of(context).pushNamed(
-      '/register/step2',
-      arguments: {
+    context.push(
+      AppRoutes.registerStep2,
+      extra: {
         'username': _usernameController.text,
         'password': _passwordController.text,
       },

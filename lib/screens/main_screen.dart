@@ -1,37 +1,48 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
-import 'chat_screen.dart';
-import 'announcement_screen.dart';
-import 'forum_screen.dart';
-import 'account_screen.dart';
+import '../routes/app_routes.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final Widget child;
+  const MainScreen({super.key, required this.child});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
-  static const List<Widget> _pages = [
-    ChatScreen(),
-    AnnouncementScreen(),
-    ForumScreen(),
-    AccountScreen(),
-  ];
+  int _getCurrentIndex(BuildContext context) {
+    final String location = GoRouterState.of(context).uri.toString();
+    if (location == AppRoutes.chat || location == AppRoutes.main) return 0;
+    if (location == AppRoutes.announcement) return 1;
+    if (location == AppRoutes.forum) return 2;
+    if (location == AppRoutes.account) return 3;
+    return 0;
+  }
 
-  void _onItemTapped(int index) {
-    if (_selectedIndex == index) return;
-    setState(() {
-      _selectedIndex = index;
-    });
+  void _onItemTapped(BuildContext context, int index) {
+    switch (index) {
+      case 0:
+        context.go(AppRoutes.chat);
+        break;
+      case 1:
+        context.go(AppRoutes.announcement);
+        break;
+      case 2:
+        context.go(AppRoutes.forum);
+        break;
+      case 3:
+        context.go(AppRoutes.account);
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final selectedIndex = _getCurrentIndex(context);
     
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -42,13 +53,13 @@ class _MainScreenState extends State<MainScreen> {
             color: Theme.of(context).colorScheme.surfaceContainer,
             child: Row(
               children: [
-                _buildNavRail(l10n),
+                _buildNavRail(l10n, selectedIndex, context),
                 Expanded(
                   child: ClipRRect(
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(16),
                     ),
-                    child: _pages[_selectedIndex],
+                    child: widget.child,
                   ),
                 ),
               ],
@@ -58,17 +69,18 @@ class _MainScreenState extends State<MainScreen> {
         return Scaffold(
           backgroundColor: Colors.transparent,
           extendBody: true,
-          body: _pages[_selectedIndex],
-          bottomNavigationBar: _buildBottomNav(l10n),
+          body: widget.child,
+          bottomNavigationBar: _buildBottomNav(l10n, selectedIndex, context),
         );
       },
     );
   }
-  Widget _buildNavRail(AppLocalizations l10n) {
+  
+  Widget _buildNavRail(AppLocalizations l10n, int selectedIndex, BuildContext context) {
     return NavigationRail(
       backgroundColor: Colors.transparent,
-      selectedIndex: _selectedIndex,
-      onDestinationSelected: _onItemTapped,
+      selectedIndex: selectedIndex,
+      onDestinationSelected: (index) => _onItemTapped(context, index),
       labelType: NavigationRailLabelType.all,
       destinations: [
         NavigationRailDestination(
@@ -95,7 +107,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildBottomNav(AppLocalizations l10n) {
+  Widget _buildBottomNav(AppLocalizations l10n, int selectedIndex, BuildContext context) {
     return ClipRRect(
       borderRadius: const BorderRadius.only(
         topLeft: Radius.circular(16),
@@ -109,8 +121,8 @@ class _MainScreenState extends State<MainScreen> {
           ),
           child: NavigationBar(
             backgroundColor: Colors.transparent,
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: _onItemTapped,
+            selectedIndex: selectedIndex,
+            onDestinationSelected: (index) => _onItemTapped(context, index),
             destinations: [
               NavigationDestination(
                 icon: const Icon(Icons.chat_bubble_outline),

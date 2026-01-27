@@ -7,14 +7,7 @@ import 'package:window_manager/window_manager.dart';
 import 'l10n/app_localizations.dart';
 import 'models/app_state.dart';
 import 'models/settings_service.dart';
-import 'screens/welcome_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/main_screen.dart';
-import 'screens/settings_screen.dart';
-import 'screens/register_screen.dart';
-import 'screens/register_step2_screen.dart';
-import 'screens/register_step3_screen.dart';
-import 'screens/register_success_screen.dart';
+import 'routes/app_routes.dart';
 import 'widgets/window_frame.dart';
 
 void main() async {
@@ -82,13 +75,15 @@ class TouchFishApp extends StatefulWidget {
 
 class _TouchFishAppState extends State<TouchFishApp> {
   final _appState = AppState.instance;
+  late final _router = AppRoutes.createRouter(isFirstLaunch: widget.isFirstLaunch);
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: _appState,
       builder: (context, _) {
-        return MaterialApp(
+        return MaterialApp.router(
+          routerConfig: _router,
           onGenerateTitle: (context) => AppLocalizations.of(context)!.appName,
           debugShowCheckedModeBanner: false,
           localizationsDelegates: const [
@@ -117,57 +112,6 @@ class _TouchFishAppState extends State<TouchFishApp> {
             useMaterial3: true,
           ),
           themeMode: _appState.themeMode,
-          home: WindowFrame(
-            child: widget.isFirstLaunch ? const WelcomeScreen() : const LoginScreen(),
-          ),
-          onGenerateRoute: (settings) {
-            Widget page;
-            switch (settings.name) {
-              case '/welcome':
-                page = const WelcomeScreen();
-                break;
-              case '/login':
-                page = const LoginScreen();
-                break;
-              case '/main':
-                page = const MainScreen();
-                break;
-              case '/settings':
-                page = const SettingsScreen();
-                break;
-              case '/register':
-                final args = settings.arguments as Map<String, String?>?;
-                page = RegisterScreen(
-                  initialUsername: args?['username'],
-                  initialPassword: args?['password'],
-                );
-                break;
-              case '/register/step2':
-                final args = settings.arguments as Map<String, String>;
-                page = RegisterStep2Screen(
-                  username: args['username']!,
-                  password: args['password']!,
-                );
-                break;
-              case '/register/step3':
-                final args = settings.arguments as Map<String, String>;
-                page = RegisterStep3Screen(
-                  username: args['username']!,
-                  password: args['password']!,
-                  email: args['email']!,
-                );
-                break;
-              case '/register/success':
-                page = const RegisterSuccessScreen();
-                break;
-              default:
-                page = const LoginScreen();
-            }
-            return MaterialPageRoute(
-              builder: (context) => WindowFrame(child: page),
-              settings: settings,
-            );
-          },
         );
       },
     );

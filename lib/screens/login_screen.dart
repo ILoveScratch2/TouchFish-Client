@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
+import '../routes/app_routes.dart';
 import '../widgets/server_selector.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -22,13 +24,13 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _login() {
-    Navigator.of(context).pushReplacementNamed('/main');
+    context.go(AppRoutes.main);
   }
 
   void _register() {
-    Navigator.of(context).pushNamed(
-      '/register',
-      arguments: {
+    context.push(
+      AppRoutes.register,
+      extra: {
         'username': _usernameController.text.trim().isEmpty 
             ? null 
             : _usernameController.text,
@@ -40,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _openSettings() {
-    Navigator.of(context).pushNamed('/settings');
+    context.push(AppRoutes.settings);
   }
 
   @override

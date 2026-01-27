@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
+import '../routes/app_routes.dart';
 
 class RegisterSuccessScreen extends StatelessWidget {
   const RegisterSuccessScreen({super.key});
@@ -58,10 +60,7 @@ class RegisterSuccessScreen extends StatelessWidget {
                     height: 48,
                     child: FilledButton.icon(
                       onPressed: () {
-                        Navigator.of(context).pushNamedAndRemoveUntil(
-                          '/login',
-                          (route) => false,
-                        );
+                        context.go(AppRoutes.login);
                       },
                       icon: const Icon(Icons.login),
                       label: Text(l10n.registerBackToLogin),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:smart_form_guard/smart_form_guard.dart';
 import '../l10n/app_localizations.dart';
+import '../routes/app_routes.dart';
 
 class RegisterStep3Screen extends StatefulWidget {
   final String username;
@@ -28,10 +30,7 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
   }
 
   void _register() {
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      '/register/success',
-      (route) => route.settings.name == '/login',
-    );
+    context.go(AppRoutes.registerSuccess);
   }
 
   @override

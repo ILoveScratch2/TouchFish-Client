@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
+import '../routes/app_routes.dart';
 
 
 class WelcomeScreen extends StatelessWidget {
@@ -11,7 +13,7 @@ class WelcomeScreen extends StatelessWidget {
     await prefs.setBool('isFirstLaunch', false);
     
     if (context.mounted) {
-      Navigator.of(context).pushReplacementNamed('/login');
+      context.go(AppRoutes.login);
     }
   }
 
