@@ -237,3 +237,39 @@ jobs:
           prerelease: true
           tag_name: dev-build
           name: Development Build
+
+  deploy-pages:
+    needs: build-web
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download Web artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: web-artifact
+      
+      - name: Extract Web build
+        run: |
+          unzip web-artifact/touchfish-web.zip -d ./web-build
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './web-build'
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
