@@ -288,7 +288,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navChat => 'Chat';
 
   @override
-  String get navAnnouncement => 'Announcements';
+  String get navAnnouncement => 'Announce';
 
   @override
   String get navForum => 'Forum';
