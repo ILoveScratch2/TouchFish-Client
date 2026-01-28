@@ -25,11 +25,20 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   ChatRoom? _currentRoom;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _loadChatRoom();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      _loadChatRoom();
+      _isInitialized = true;
+    }
   }
 
   @override
