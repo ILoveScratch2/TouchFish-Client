@@ -128,16 +128,17 @@ jobs:
         run: |
           mv build/app/outputs/flutter-apk/app-release.apk touchfish-android.apk
           mv build/app/outputs/bundle/release/app-release.aab touchfish-android.aab
-      
-      - name: Create Android archive
-        run: |
-          zip touchfish-android.zip touchfish-android.apk touchfish-android.aab
-      
-      - name: Upload Android artifact
+      - name: Upload Android APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-build
-          path: touchfish-android.zip
+          name: android-apk
+          path: touchfish-android.apk
+
+      - name: Upload Android AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: touchfish-android.aab
 
   build-web:
     runs-on: ubuntu-latest
@@ -184,7 +185,7 @@ jobs:
       - name: Prepare release files
         run: |
           mkdir -p release-files
-          find artifacts -name "*.zip" -exec cp {} release-files/ \;
+          find artifacts -type f -exec cp {} release-files/ \;
           ls -lh release-files/
       
       - name: Get current date
