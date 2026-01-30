@@ -30,6 +30,18 @@ jobs:
       - name: Create Windows archive
         run: |
           Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath touchfish-windows-x64.zip
+
+      - name: Install msix pub tool
+        run: flutter pub global activate msix
+
+      - name: Build Windows MSIX installer
+        run: flutter pub global run msix:create
+
+      - name: Upload Windows MSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msix
+          path: build/windows/runner/*.msix
       
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
