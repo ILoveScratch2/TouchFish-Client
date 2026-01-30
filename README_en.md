@@ -1,3 +1,4 @@
+
 <div align="center">
   <img src="assets/logo.png" alt="TouchFish Logo" width="200"/>
   <p><em>TouchFish Client is a modern chat client for TouchFish, built with Flutter</em></p>
@@ -12,42 +13,66 @@
 
 ## Introduction
 
-TouchFish Client is a modern chat client built with Flutter, designed to provide a smooth and cross-platform chat experience for TouchFish. It supports Windows, macOS, Linux, and mobile devices (iOS and Android), and is fully compatible with the TouchFish chat protocol.
+TouchFish Client is a modern chat client built with Flutter, aiming to provide a smooth and cross-platform chat experience for TouchFish. It supports Windows, macOS, Linux, and mobile devices (iOS and Android), and is fully compatible with the TouchFish chat protocol.
+
+## Screenshots
+
+Still under development, stay tuned!
+
+## Usage
+Go to the Releases page to download the executable file for your platform, then install or run it directly.
+
+You need to connect to a running TouchFish or other compatible server.
+
+### Download and Install
+
+#### Windows
+
+Go to the [Releases page](https://github.com/ILoveScratch2/TouchFish-Client/releases) to download the `.exe` file or the `.zip` file with `windows` in its name.
+
+Note: MSIX files are unsigned and not recommended for installation!
+
+Minimum system requirement: Windows 10
+
+Requires Microsoft Visual C++ Redistributable. If not installed, visit https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170 to download and install. No reboot is required after installation.
 
 
-## Download and Installation
 
-### Windows
+##### Portable Version
+Download the `.zip` file with `windows` in its name from the Release, extract it (do not run directly from the zip), and run the `exe` file.
 
-Visit the [Releases page](https://github.com/ILoveScratch2/TouchFish-Client/releases) to download.
+##### Installer Version
+Download the `.exe` file with `windows` in its name from the Release, double-click to run, and follow the installation wizard.
 
+#### macOS
 
-#### Portable Version
-Download the `.zip` file with `windows` in its name from the Release, extract it (do not run directly), and then run the `exe` file.
+Go to the [Releases page](https://github.com/ILoveScratch2/TouchFish-Client/releases) to download the file for `macos`.
 
-#### Installer Version
-Download the `.exe` file with `windows` in its name from the Release, double-click to run it, and follow the installation wizard to complete the installation.
+You may need to enable apps from uncertified developers in your settings.
 
-### macOS
+#### Linux
 
-Visit the [Releases page](https://github.com/ILoveScratch2/TouchFish-Client/releases) to download the `macos` file.
+Go to the [Releases page](https://github.com/ILoveScratch2/TouchFish-Client/releases) to download the file for `linux`.
 
-### Linux
+#### Android
 
-Visit the [Releases page](https://github.com/ILoveScratch2/TouchFish-Client/releases) to download the `linux` file.
+Go to the [Releases page](https://github.com/ILoveScratch2/TouchFish-Client/releases) to download the `.apk` file and install it directly.
 
+If you know how to use `.aab` files, you can also download and install the `.aab` file.
 
-### Android
+SDK Compile Version 36 (Android 16.0)
 
-Visit the [Releases page](https://github.com/ILoveScratch2/TouchFish-Client/releases) to download the `.apk` file and install it directly.
+SDK Runtime Version 36 (Android 16.0)
 
-### iOS
+SDK Minimum Compatibility Version 24 (Android 7.0)
 
-Currently, there is no iOS version of TouchFish Client available (although it is theoretically supported, we do not have the appropriate device for debugging and release). Please stay tuned for future updates.
+#### iOS
+
+Currently, there is no iOS version of TouchFish Client available (although it is theoretically supported, there is no device for debugging and publishing). Please stay tuned for future updates.
 
 ## Build and Run
 
-Make sure you have Flutter SDK installed and your development environment is configured. Then clone this repository:
+Please make sure you have installed the Flutter SDK and set up your development environment. Then clone this repository:
 
 ```bash
 git clone https://github.com/ILoveScratch2/TouchFish-Client.git
@@ -61,10 +86,10 @@ flutter run
 
 ## Contributing
 
-Contributions of any kind are welcome! Whether it's reporting issues, suggesting features, or submitting code directly, we appreciate it all. Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
-
+Any form of contribution is welcome! Whether it's reporting issues, requesting features, or submitting code directly, we appreciate it all. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
 
 ## License
 
 TouchFish Client is licensed under the [GNU Affero General Public License v3.0](LICENSE).
 
+This strong copyleft license allows you to use, modify, and distribute the software under the same license, provided that the complete source code of the licensed work and modifications is made available. Copyright and license notices must be retained. Patent rights are granted as expressly stated by contributors. If you provide the modified version as a service over a network, you must also provide the complete source code of the modified version.
