@@ -126,4 +126,5 @@ msix_config:
   identity_name: ci.us.ilovescratch.touchfish.astra.v3
   msix_version: 1.0.0.0
   logo_path: assets/logo.png
+  install_certificate: false
   capabilities: internetClient, location, microphone, webcam
