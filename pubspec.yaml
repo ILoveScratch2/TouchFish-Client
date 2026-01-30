@@ -119,3 +119,11 @@ flutter_native_splash:
   web: false
   android: false
   ios: false
+
+msix_config:
+  display_name: TouchFish Client
+  publisher_display_name: ILoveScratch2
+  identity_name: ci.us.ilovescratch.touchfish.astra.v3
+  msix_version: 1.0.0.0
+  logo_path: assets/logo.png
+  capabilities: internetClient, location, microphone, webcam
