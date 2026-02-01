@@ -371,4 +371,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatInputFeatureArea => 'Feature Area';
+
+  @override
+  String get networkStatusTitle => 'Network Status';
+
+  @override
+  String get networkStatusConnected => 'Connected to Internet';
+
+  @override
+  String get networkStatusConnectedDesc =>
+      'You are connected to the internet and can connect to TouchFish servers on the public network';
+
+  @override
+  String get networkStatusDisconnected => 'Disconnected from Internet';
+
+  @override
+  String get networkStatusDisconnectedDesc =>
+      'You are disconnected from the internet and can only connect to local network servers';
+
+  @override
+  String get networkStatusCheckingConnection =>
+      'Checking network connection...';
 }

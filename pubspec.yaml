@@ -44,6 +44,7 @@ dependencies:
   animated_toggle_switch: ^0.8.3
   animated_custom_dropdown: ^3.1.1
   go_router: ^14.6.2
+  connectivity_plus: ^6.1.2
 
 dev_dependencies:
   flutter_test:

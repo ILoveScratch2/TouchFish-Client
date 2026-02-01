@@ -145,5 +145,12 @@
   "chatInputUploadFile": "Upload File",
   "chatInputRecordAudio": "Record Audio",
   "chatInputPlaceholder": "Type a message...",
-  "chatInputFeatureArea": "Feature Area"
+  "chatInputFeatureArea": "Feature Area",
+  
+  "networkStatusTitle": "Network Status",
+  "networkStatusConnected": "Connected to Internet",
+  "networkStatusConnectedDesc": "You are connected to the internet and can connect to TouchFish servers on the public network",
+  "networkStatusDisconnected": "Disconnected from Internet",
+  "networkStatusDisconnectedDesc": "You are disconnected from the internet and can only connect to local network servers",
+  "networkStatusCheckingConnection": "Checking network connection..."
 }

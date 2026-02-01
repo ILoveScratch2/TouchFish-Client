@@ -799,6 +799,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Feature Area'**
   String get chatInputFeatureArea;
+
+  /// No description provided for @networkStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Network Status'**
+  String get networkStatusTitle;
+
+  /// No description provided for @networkStatusConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected to Internet'**
+  String get networkStatusConnected;
+
+  /// No description provided for @networkStatusConnectedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'You are connected to the internet and can connect to TouchFish servers on the public network'**
+  String get networkStatusConnectedDesc;
+
+  /// No description provided for @networkStatusDisconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnected from Internet'**
+  String get networkStatusDisconnected;
+
+  /// No description provided for @networkStatusDisconnectedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'You are disconnected from the internet and can only connect to local network servers'**
+  String get networkStatusDisconnectedDesc;
+
+  /// No description provided for @networkStatusCheckingConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking network connection...'**
+  String get networkStatusCheckingConnection;
 }
 
 class _AppLocalizationsDelegate

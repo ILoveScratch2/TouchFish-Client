@@ -136,5 +136,12 @@
   "chatInputUploadFile": "上传文件",
   "chatInputRecordAudio": "录制语音",
   "chatInputPlaceholder": "输入消息...",
-  "chatInputFeatureArea": "功能区域"
+  "chatInputFeatureArea": "功能区域",
+  
+  "networkStatusTitle": "网络状态",
+  "networkStatusConnected": "已连接到互联网",
+  "networkStatusConnectedDesc": "您已连接到互联网，可以连接公共网络上的 TouchFish 服务器",
+  "networkStatusDisconnected": "已断开互联网连接",
+  "networkStatusDisconnectedDesc": "您已断开互联网连接，仅能连接内网服务器",
+  "networkStatusCheckingConnection": "正在检查网络连接..."
 }

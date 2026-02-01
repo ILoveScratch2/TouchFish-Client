@@ -359,4 +359,22 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get chatInputFeatureArea => '功能区域';
+
+  @override
+  String get networkStatusTitle => '网络状态';
+
+  @override
+  String get networkStatusConnected => '已连接到互联网';
+
+  @override
+  String get networkStatusConnectedDesc => '您已连接到互联网，可以连接公共网络上的 TouchFish 服务器';
+
+  @override
+  String get networkStatusDisconnected => '已断开互联网连接';
+
+  @override
+  String get networkStatusDisconnectedDesc => '您已断开互联网连接，仅能连接内网服务器';
+
+  @override
+  String get networkStatusCheckingConnection => '正在检查网络连接...';
 }
