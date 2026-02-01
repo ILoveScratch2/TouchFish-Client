@@ -1,6 +1,35 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
+
+class ServerInfo {
+  final String displayName;
+  final String address;
+  final String apiPort;
+  final String tcpPort;
+
+  ServerInfo({
+    required this.displayName,
+    required this.address,
+    required this.apiPort,
+    required this.tcpPort,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'displayName': displayName,
+    'address': address,
+    'apiPort': apiPort,
+    'tcpPort': tcpPort,
+  };
+
+  factory ServerInfo.fromJson(Map<String, dynamic> json) => ServerInfo(
+    displayName: json['displayName'] ?? '',
+    address: json['address'] ?? '',
+    apiPort: json['apiPort'] ?? '',
+    tcpPort: json['tcpPort'] ?? '',
+  );
+}
 
 class ServerSelector extends StatefulWidget {
   const ServerSelector({super.key});
@@ -10,7 +39,14 @@ class ServerSelector extends StatefulWidget {
 }
 
 class _ServerSelectorState extends State<ServerSelector> {
-  List<String> _servers = ['touchfish.xin'];
+  List<ServerInfo> _servers = [
+    ServerInfo(
+      displayName: 'touchfish.xin',
+      address: 'touchfish.xin',
+      apiPort: '8080',
+      tcpPort: '9090',
+    )
+  ];
   int _selectedIndex = 0;
   bool _isLoading = true;
 
@@ -22,19 +58,49 @@ class _ServerSelectorState extends State<ServerSelector> {
 
   Future<void> _loadServers() async {
     final prefs = await SharedPreferences.getInstance();
-    final servers = prefs.getStringList('servers') ?? ['touchfish.xin'];
-    final selectedIndex = prefs.getInt('selectedServerIndex') ?? 0;
+    final serversJson = prefs.getStringList('serversV2');
     
-    setState(() {
-      _servers = servers;
-      _selectedIndex = selectedIndex.clamp(0, servers.length - 1);
-      _isLoading = false;
-    });
+    if (serversJson != null && serversJson.isNotEmpty) {
+      final servers = serversJson
+          .map((json) => ServerInfo.fromJson(jsonDecode(json)))
+          .toList();
+      final selectedIndex = prefs.getInt('selectedServerIndex') ?? 0;
+      
+      setState(() {
+        _servers = servers;
+        _selectedIndex = selectedIndex.clamp(0, servers.length - 1);
+        _isLoading = false;
+      });
+    } else {
+      final oldServers = prefs.getStringList('servers');
+      if (oldServers != null && oldServers.isNotEmpty) {
+        final migratedServers = oldServers
+            .map((url) => ServerInfo(
+                  displayName: _extractDisplayName(url),
+                  address: url,
+                  apiPort: '',
+                  tcpPort: '',
+                ))
+            .toList();
+        setState(() {
+          _servers = migratedServers;
+          _isLoading = false;
+        });
+        await _saveServers();
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _saveServers() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('servers', _servers);
+    final serversJson = _servers
+        .map((server) => jsonEncode(server.toJson()))
+        .toList();
+    await prefs.setStringList('serversV2', serversJson);
     await prefs.setInt('selectedServerIndex', _selectedIndex);
   }
 
@@ -87,7 +153,7 @@ class _ServerSelectorState extends State<ServerSelector> {
       return const SizedBox(height: 40);
     }
 
-    final displayName = _extractDisplayName(_servers[_selectedIndex]);
+    final displayName = _servers[_selectedIndex].displayName;
     
     return InkWell(
       onTap: _showServerDialog,
@@ -128,10 +194,10 @@ class _ServerSelectorState extends State<ServerSelector> {
 }
 
 class _ServerBottomSheet extends StatefulWidget {
-  final List<String> servers;
+  final List<ServerInfo> servers;
   final int selectedIndex;
   final ValueChanged<int> onSelect;
-  final ValueChanged<String> onAdd;
+  final ValueChanged<ServerInfo> onAdd;
   final ValueChanged<int> onDelete;
 
   const _ServerBottomSheet({
@@ -147,7 +213,7 @@ class _ServerBottomSheet extends StatefulWidget {
 }
 
 class _ServerBottomSheetState extends State<_ServerBottomSheet> {
-  late List<String> _servers;
+  late List<ServerInfo> _servers;
   late int _selectedIndex;
 
   @override
@@ -157,59 +223,175 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
     _selectedIndex = widget.selectedIndex;
   }
 
-  String _extractDisplayName(String url) {
-    var display = url.replaceFirst(RegExp(r'^https?://'), '');
-    display = display.replaceFirst(RegExp(r'/$'), '');
-    return display;
-  }
-
   void _showAddDialog() {
-    final controller = TextEditingController();
+    final displayNameController = TextEditingController();
+    final addressController = TextEditingController();
+    final apiPortController = TextEditingController();
+    final tcpPortController = TextEditingController();
     final l10n = AppLocalizations.of(context)!;
+    
+    String? addressError;
+    String? apiPortError;
+    String? tcpPortError;
     
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.serverAdd),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: l10n.serverUrlLabel,
-            hintText: l10n.serverUrlHint,
-            border: const OutlineInputBorder(),
-          ),
-          autofocus: true,
-          onSubmitted: (value) {
-            if (value.trim().isNotEmpty) {
-              Navigator.pop(context);
-              setState(() {
-                _servers.add(value.trim());
-                _selectedIndex = _servers.length - 1;
-              });
-              widget.onAdd(value.trim());
-            }
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.serverCancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              final value = controller.text.trim();
-              if (value.isNotEmpty) {
-                Navigator.pop(context);
-                setState(() {
-                  _servers.add(value);
-                  _selectedIndex = _servers.length - 1;
-                });
-                widget.onAdd(value);
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          bool validateAddress(String address) {
+            if (address.isEmpty) return true;
+            final regex = RegExp(r'.+\..{2,}');
+            return regex.hasMatch(address);
+          }
+          
+          bool validatePort(String port) {
+            if (port.isEmpty) return true;
+            final portNum = int.tryParse(port);
+            return portNum != null && portNum >= 0 && portNum <= 65535;
+          }
+          
+          bool checkDuplicatePorts(String apiPort, String tcpPort) {
+            if (apiPort.isEmpty || tcpPort.isEmpty) return false;
+            return apiPort == tcpPort;
+          }
+          
+          void validate() {
+            setDialogState(() {
+              final address = addressController.text.trim();
+              final apiPort = apiPortController.text.trim();
+              final tcpPort = tcpPortController.text.trim();
+              
+              addressError = validateAddress(address) ? null : l10n.serverErrorInvalidAddress;
+              if (!validatePort(apiPort)) {
+                apiPortError = l10n.serverErrorInvalidPort;
+              } else if (checkDuplicatePorts(apiPort, tcpPort)) {
+                apiPortError = l10n.serverErrorDuplicatePort;
+              } else {
+                apiPortError = null;
               }
-            },
-            child: Text(l10n.serverAddServer),
-          ),
-        ],
+              if (!validatePort(tcpPort)) {
+                tcpPortError = l10n.serverErrorInvalidPort;
+              } else if (checkDuplicatePorts(apiPort, tcpPort)) {
+                tcpPortError = l10n.serverErrorDuplicatePort;
+              } else {
+                tcpPortError = null;
+              }
+            });
+          }
+          
+          return AlertDialog(
+            title: Text(l10n.serverAdd),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: 80,
+                    child: TextField(
+                      controller: displayNameController,
+                      decoration: InputDecoration(
+                        labelText: l10n.serverDisplayName,
+                        hintText: l10n.serverDisplayNameHint,
+                        border: const OutlineInputBorder(),
+                      ),
+                      autofocus: true,
+                    ),
+                  ),
+                  SizedBox(
+                    height: 80,
+                    child: TextField(
+                      controller: addressController,
+                      decoration: InputDecoration(
+                        labelText: l10n.serverAddress,
+                        hintText: l10n.serverAddressHint,
+                        border: const OutlineInputBorder(),
+                        errorText: addressError,
+                      ),
+                      onChanged: (_) => validate(),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 80,
+                    child: TextField(
+                      controller: apiPortController,
+                      decoration: InputDecoration(
+                        labelText: l10n.serverApiPort,
+                        hintText: l10n.serverApiPortHint,
+                        border: const OutlineInputBorder(),
+                        errorText: apiPortError,
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) => validate(),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 80,
+                    child: TextField(
+                      controller: tcpPortController,
+                      decoration: InputDecoration(
+                        labelText: l10n.serverTcpPort,
+                        hintText: l10n.serverTcpPortHint,
+                        border: const OutlineInputBorder(),
+                        errorText: tcpPortError,
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) => validate(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l10n.serverCancel),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final displayName = displayNameController.text.trim();
+                  final address = addressController.text.trim();
+                  final apiPort = apiPortController.text.trim();
+                  final tcpPort = tcpPortController.text.trim();
+                  if (!validateAddress(address)) {
+                    setDialogState(() => addressError = l10n.serverErrorInvalidAddress);
+                    return;
+                  }
+                  if (!validatePort(apiPort)) {
+                    setDialogState(() => apiPortError = l10n.serverErrorInvalidPort);
+                    return;
+                  }
+                  if (!validatePort(tcpPort)) {
+                    setDialogState(() => tcpPortError = l10n.serverErrorInvalidPort);
+                    return;
+                  }
+                  if (checkDuplicatePorts(apiPort, tcpPort)) {
+                    setDialogState(() {
+                      apiPortError = l10n.serverErrorDuplicatePort;
+                      tcpPortError = l10n.serverErrorDuplicatePort;
+                    });
+                    return;
+                  }
+                  
+                  if (displayName.isNotEmpty || address.isNotEmpty) {
+                    Navigator.pop(context);
+                    final server = ServerInfo(
+                      displayName: displayName.isEmpty ? address : displayName,
+                      address: address,
+                      apiPort: apiPort,
+                      tcpPort: tcpPort,
+                    );
+                    setState(() {
+                      _servers.add(server);
+                      _selectedIndex = _servers.length - 1;
+                    });
+                    widget.onAdd(server);
+                  }
+                },
+                child: Text(l10n.serverAddServer),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -267,7 +449,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 itemBuilder: (context, index) {
                   final isSelected = index == _selectedIndex;
-                  final displayName = _extractDisplayName(_servers[index]);
+                  final server = _servers[index];
                   
                   return Card(
                     elevation: 0,
@@ -283,7 +465,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                             : colorScheme.onSurfaceVariant,
                       ),
                       title: Text(
-                        displayName,
+                        server.displayName,
                         style: TextStyle(
                           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                           color: isSelected 
@@ -291,6 +473,17 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                               : colorScheme.onSurface,
                         ),
                       ),
+                      subtitle: server.address.isNotEmpty
+                          ? Text(
+                              server.address,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isSelected
+                                    ? colorScheme.onPrimaryContainer.withOpacity(0.7)
+                                    : colorScheme.onSurfaceVariant,
+                              ),
+                            )
+                          : null,
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

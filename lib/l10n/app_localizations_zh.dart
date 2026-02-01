@@ -274,6 +274,39 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serverCancel => '取消';
 
   @override
+  String get serverDisplayName => '显示名称';
+
+  @override
+  String get serverDisplayNameHint => '例如：我的服务器';
+
+  @override
+  String get serverAddress => '服务器地址';
+
+  @override
+  String get serverAddressHint => '例如：touchfish.xin';
+
+  @override
+  String get serverApiPort => 'API服务端口';
+
+  @override
+  String get serverApiPortHint => '例如：8080';
+
+  @override
+  String get serverTcpPort => 'TCP服务端口';
+
+  @override
+  String get serverTcpPortHint => '例如：9090';
+
+  @override
+  String get serverErrorInvalidAddress => '地址无效';
+
+  @override
+  String get serverErrorInvalidPort => '端口需为0到65535间的整数';
+
+  @override
+  String get serverErrorDuplicatePort => '端口不能重复';
+
+  @override
   String get navChat => '聊天';
 
   @override

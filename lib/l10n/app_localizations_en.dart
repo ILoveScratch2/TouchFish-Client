@@ -285,6 +285,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serverCancel => 'Cancel';
 
   @override
+  String get serverDisplayName => 'Display Name';
+
+  @override
+  String get serverDisplayNameHint => 'e.g., TOUCHFISH Server';
+
+  @override
+  String get serverAddress => 'Server Address';
+
+  @override
+  String get serverAddressHint => 'e.g., touchfish.xin';
+
+  @override
+  String get serverApiPort => 'API Port';
+
+  @override
+  String get serverApiPortHint => 'e.g., 8080';
+
+  @override
+  String get serverTcpPort => 'TCP Port';
+
+  @override
+  String get serverTcpPortHint => 'e.g., 9090';
+
+  @override
+  String get serverErrorInvalidAddress => 'Invalid address';
+
+  @override
+  String get serverErrorInvalidPort =>
+      'Port must be an integer between 0 and 65535';
+
+  @override
+  String get serverErrorDuplicatePort => 'Ports cannot be the same';
+
+  @override
   String get navChat => 'Chat';
 
   @override

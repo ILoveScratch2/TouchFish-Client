@@ -626,6 +626,72 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get serverCancel;
 
+  /// No description provided for @serverDisplayName.
+  ///
+  /// In en, this message translates to:
+  /// **'Display Name'**
+  String get serverDisplayName;
+
+  /// No description provided for @serverDisplayNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., TOUCHFISH Server'**
+  String get serverDisplayNameHint;
+
+  /// No description provided for @serverAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Address'**
+  String get serverAddress;
+
+  /// No description provided for @serverAddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., touchfish.xin'**
+  String get serverAddressHint;
+
+  /// No description provided for @serverApiPort.
+  ///
+  /// In en, this message translates to:
+  /// **'API Port'**
+  String get serverApiPort;
+
+  /// No description provided for @serverApiPortHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., 8080'**
+  String get serverApiPortHint;
+
+  /// No description provided for @serverTcpPort.
+  ///
+  /// In en, this message translates to:
+  /// **'TCP Port'**
+  String get serverTcpPort;
+
+  /// No description provided for @serverTcpPortHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., 9090'**
+  String get serverTcpPortHint;
+
+  /// No description provided for @serverErrorInvalidAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid address'**
+  String get serverErrorInvalidAddress;
+
+  /// No description provided for @serverErrorInvalidPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Port must be an integer between 0 and 65535'**
+  String get serverErrorInvalidPort;
+
+  /// No description provided for @serverErrorDuplicatePort.
+  ///
+  /// In en, this message translates to:
+  /// **'Ports cannot be the same'**
+  String get serverErrorDuplicatePort;
+
   /// No description provided for @navChat.
   ///
   /// In en, this message translates to:
