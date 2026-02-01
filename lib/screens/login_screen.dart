@@ -141,13 +141,18 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            _isConnectedToInternet 
-              ? l10n.networkStatusConnectedDesc 
-              : l10n.networkStatusDisconnectedDesc,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
+          SizedBox(
+            height: 40,
+            child: Center(
+              child: Text(
+                _isConnectedToInternet 
+                  ? l10n.networkStatusConnectedDesc 
+                  : l10n.networkStatusDisconnectedDesc,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 24),
