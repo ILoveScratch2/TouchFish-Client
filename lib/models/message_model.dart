@@ -13,6 +13,7 @@ class MessageMedia {
   final String? mimeType;
   final double? aspectRatio; // images and videos
   final Duration? duration; // audio and video
+  final List<int>? bytes; // fix web
 
   const MessageMedia({
     required this.path,
@@ -21,6 +22,7 @@ class MessageMedia {
     this.mimeType,
     this.aspectRatio,
     this.duration,
+    this.bytes,
   });
 }
 

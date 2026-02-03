@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as path;
+import 'package:file_picker/file_picker.dart';
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
 import '../widgets/message_bubble.dart';
@@ -119,10 +121,21 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     });
   }
 
-  void _sendMediaMessage(String filePath, MessageType type) {
-    final file = File(filePath);
-    final fileName = path.basename(filePath);
-    final fileSize = file.lengthSync();
+  void _sendMediaMessage(PlatformFile platformFile, MessageType type) {
+    String filePath;
+    String fileName;
+    int fileSize;
+
+    if (kIsWeb) {
+      fileName = platformFile.name;
+      filePath = 'web_upload_${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      fileSize = platformFile.bytes?.length ?? 0;
+    } else {
+      filePath = platformFile.path!;
+      fileName = path.basename(filePath);
+      final file = File(filePath);
+      fileSize = file.lengthSync();
+    }
 
     String messageText = '';
     switch (type) {
@@ -146,6 +159,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       path: filePath,
       fileName: fileName,
       fileSize: fileSize,
+      bytes: kIsWeb ? platformFile.bytes : null,
     );
 
     final userMessage = ChatMessage(

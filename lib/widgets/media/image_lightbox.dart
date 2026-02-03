@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:math' as math;
 import 'package:dismissible_page/dismissible_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -9,12 +11,14 @@ import 'exif_info_overlay.dart';
 
 class ImageLightbox extends HookWidget {
   final String imagePath;
+  final Uint8List? imageBytes;
   final String heroTag;
   final Map<String, dynamic>? exifData;
 
   const ImageLightbox({
     super.key,
     required this.imagePath,
+    this.imageBytes,
     required this.heroTag,
     this.exifData,
   });
@@ -57,7 +61,6 @@ class ImageLightbox extends HookWidget {
                     photoViewController.scale = clampedScale;
                   }
                 } catch (e) {
-                  // Ignore non-scroll events
                 }
               },
               child: PhotoView(
@@ -66,7 +69,9 @@ class ImageLightbox extends HookWidget {
                 ),
                 controller: photoViewController,
                 heroAttributes: PhotoViewHeroAttributes(tag: heroTag),
-                imageProvider: FileImage(File(imagePath)),
+                imageProvider: kIsWeb && imageBytes != null
+                    ? MemoryImage(imageBytes!)
+                    : FileImage(File(imagePath)) as ImageProvider,
                 customSize: MediaQuery.of(context).size,
                 basePosition: Alignment.center,
                 filterQuality: FilterQuality.high,

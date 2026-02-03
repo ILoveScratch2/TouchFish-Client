@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:mime/mime.dart';
@@ -9,7 +10,7 @@ import '../models/message_model.dart';
 class ChatInputBar extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
-  final Function(String filePath, MessageType type)? onFilePicked;
+  final Function(PlatformFile file, MessageType type)? onFilePicked;
 
   const ChatInputBar({
     super.key,
@@ -192,9 +193,14 @@ class _ChatInputBarState extends State<ChatInputBar> {
         result = await FilePicker.platform.pickFiles(
           type: FileType.image,
           allowMultiple: false,
+          withData: kIsWeb,
         );
-        if (result != null && result.files.single.path != null && widget.onFilePicked != null) {
-          widget.onFilePicked!(result.files.single.path!, MessageType.image);
+        if (result != null && widget.onFilePicked != null) {
+          if (kIsWeb && result.files.single.bytes != null) {
+            widget.onFilePicked!(result.files.single, MessageType.image);
+          } else if (!kIsWeb && result.files.single.path != null) {
+            widget.onFilePicked!(result.files.single, MessageType.image);
+          }
         }
         break;
 
@@ -202,9 +208,14 @@ class _ChatInputBarState extends State<ChatInputBar> {
         result = await FilePicker.platform.pickFiles(
           type: FileType.video,
           allowMultiple: false,
+          withData: kIsWeb,
         );
-        if (result != null && result.files.single.path != null && widget.onFilePicked != null) {
-          widget.onFilePicked!(result.files.single.path!, MessageType.video);
+        if (result != null && widget.onFilePicked != null) {
+          if (kIsWeb && result.files.single.bytes != null) {
+            widget.onFilePicked!(result.files.single, MessageType.video);
+          } else if (!kIsWeb && result.files.single.path != null) {
+            widget.onFilePicked!(result.files.single, MessageType.video);
+          }
         }
         break;
 
@@ -212,9 +223,14 @@ class _ChatInputBarState extends State<ChatInputBar> {
         result = await FilePicker.platform.pickFiles(
           type: FileType.audio,
           allowMultiple: false,
+          withData: kIsWeb,
         );
-        if (result != null && result.files.single.path != null && widget.onFilePicked != null) {
-          widget.onFilePicked!(result.files.single.path!, MessageType.audio);
+        if (result != null && widget.onFilePicked != null) {
+          if (kIsWeb && result.files.single.bytes != null) {
+            widget.onFilePicked!(result.files.single, MessageType.audio);
+          } else if (!kIsWeb && result.files.single.path != null) {
+            widget.onFilePicked!(result.files.single, MessageType.audio);
+          }
         }
         break;
 
@@ -222,23 +238,31 @@ class _ChatInputBarState extends State<ChatInputBar> {
         result = await FilePicker.platform.pickFiles(
           type: FileType.any,
           allowMultiple: false,
+          withData: kIsWeb,
         );
-        if (result != null && result.files.single.path != null && widget.onFilePicked != null) {
-          final filePath = result.files.single.path!;
-          final mimeType = lookupMimeType(filePath);
-          
-          MessageType messageType = MessageType.file;
-          if (mimeType != null) {
-            if (mimeType.startsWith('image/')) {
-              messageType = MessageType.image;
-            } else if (mimeType.startsWith('video/')) {
-              messageType = MessageType.video;
-            } else if (mimeType.startsWith('audio/')) {
-              messageType = MessageType.audio;
+        if (result != null && widget.onFilePicked != null) {
+          final file = result.files.single;
+          if ((kIsWeb && file.bytes != null) || (!kIsWeb && file.path != null)) {
+            String? mimeType;
+            if (kIsWeb) {
+              mimeType = lookupMimeType(file.name);
+            } else {
+              mimeType = lookupMimeType(file.path!);
             }
+            
+            MessageType messageType = MessageType.file;
+            if (mimeType != null) {
+              if (mimeType.startsWith('image/')) {
+                messageType = MessageType.image;
+              } else if (mimeType.startsWith('video/')) {
+                messageType = MessageType.video;
+              } else if (mimeType.startsWith('audio/')) {
+                messageType = MessageType.audio;
+              }
+            }
+            
+            widget.onFilePicked!(file, messageType);
           }
-          
-          widget.onFilePicked!(filePath, messageType);
         }
         break;
     }

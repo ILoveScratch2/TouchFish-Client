@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -6,12 +9,14 @@ import 'package:touchfish_client/l10n/app_localizations.dart';
 
 class AudioPlayer extends HookWidget {
   final String audioPath;
+  final Uint8List? audioBytes;
   final String? filename;
   final bool autoplay;
 
   const AudioPlayer({
     super.key,
     required this.audioPath,
+    this.audioBytes,
     this.filename,
     this.autoplay = false,
   });
@@ -45,7 +50,15 @@ class AudioPlayer extends HookWidget {
         isPlaying.value = value;
       });
 
-      player.open(Media(audioPath), play: autoplay);
+      String mediaSource;
+      if (kIsWeb && audioBytes != null) {
+        final base64String = base64Encode(audioBytes!);
+        mediaSource = 'data:audio/mpeg;base64,$base64String';
+      } else {
+        mediaSource = audioPath;
+      }
+
+      player.open(Media(mediaSource), play: autoplay);
 
       return () {
         player.dispose();

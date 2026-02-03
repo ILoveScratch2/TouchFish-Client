@@ -1,6 +1,9 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import '../models/message_model.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -11,7 +14,7 @@ import '../widgets/media/audio_player.dart';
 import 'package:path/path.dart' as path;
 import 'package:exif/exif.dart';
 
-class MessageBubble extends StatefulWidget {
+class MessageBubble extends HookWidget {
   final ChatMessage message;
 
   const MessageBubble({
@@ -20,10 +23,34 @@ class MessageBubble extends StatefulWidget {
   });
 
   @override
-  State<MessageBubble> createState() => _MessageBubbleState();
+  Widget build(BuildContext context) {
+    // cache for web
+    final cachedBytes = useMemoized<Uint8List?>(() {
+      final media = message.media;
+      return kIsWeb && media?.bytes != null ? Uint8List.fromList(media!.bytes!) : null;
+    }, [message.media?.bytes]);
+
+    return _MessageBubbleContent(
+      message: message,
+      cachedBytes: cachedBytes,
+    );
+  }
 }
 
-class _MessageBubbleState extends State<MessageBubble> {
+class _MessageBubbleContent extends StatefulWidget {
+  final ChatMessage message;
+  final Uint8List? cachedBytes;
+
+  const _MessageBubbleContent({
+    required this.message,
+    this.cachedBytes,
+  });
+
+  @override
+  State<_MessageBubbleContent> createState() => _MessageBubbleState();
+}
+
+class _MessageBubbleState extends State<_MessageBubbleContent> {
   bool _isHovered = false;
 
   void _showActionSheet() {
@@ -210,29 +237,39 @@ class _MessageBubbleState extends State<MessageBubble> {
       onTap: () async {
         Map<String, dynamic>? exifData;
         try {
-          final file = File(media.path);
-          final bytes = await file.readAsBytes();
-          final tags = await readExifFromBytes(bytes);
+          Uint8List bytes;
+          if (kIsWeb && widget.cachedBytes != null) {
+            bytes = widget.cachedBytes!;
+          } else if (!kIsWeb) {
+            final file = File(media.path);
+            bytes = await file.readAsBytes();
+          } else {
+            bytes = Uint8List(0);
+          }
           
-          if (tags.isNotEmpty) {
-            exifData = {};
-            if (tags.containsKey('Image DateTime')) {
-              exifData['DateTime'] = tags['Image DateTime'].toString();
-            }
-            if (tags.containsKey('Image Model')) {
-              exifData['Model'] = tags['Image Model'].toString();
-            }
-            if (tags.containsKey('EXIF ISOSpeedRatings')) {
-              exifData['ISOSpeedRatings'] = tags['EXIF ISOSpeedRatings'].toString();
-            }
-            if (tags.containsKey('EXIF FNumber')) {
-              exifData['FNumber'] = tags['EXIF FNumber'].toString();
-            }
-            if (tags.containsKey('EXIF ExposureTime')) {
-              exifData['ExposureTime'] = tags['EXIF ExposureTime'].toString();
-            }
-            if (tags.containsKey('EXIF FocalLength')) {
-              exifData['FocalLength'] = tags['EXIF FocalLength'].toString();
+          if (bytes.isNotEmpty) {
+            final tags = await readExifFromBytes(bytes);
+            
+            if (tags.isNotEmpty) {
+              exifData = {};
+              if (tags.containsKey('Image DateTime')) {
+                exifData['DateTime'] = tags['Image DateTime'].toString();
+              }
+              if (tags.containsKey('Image Model')) {
+                exifData['Model'] = tags['Image Model'].toString();
+              }
+              if (tags.containsKey('EXIF ISOSpeedRatings')) {
+                exifData['ISOSpeedRatings'] = tags['EXIF ISOSpeedRatings'].toString();
+              }
+              if (tags.containsKey('EXIF FNumber')) {
+                exifData['FNumber'] = tags['EXIF FNumber'].toString();
+              }
+              if (tags.containsKey('EXIF ExposureTime')) {
+                exifData['ExposureTime'] = tags['EXIF ExposureTime'].toString();
+              }
+              if (tags.containsKey('EXIF FocalLength')) {
+                exifData['FocalLength'] = tags['EXIF FocalLength'].toString();
+              }
             }
           }
         } catch (e) {
@@ -245,6 +282,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             MaterialPageRoute(
               builder: (context) => ImageLightbox(
                 imagePath: media.path,
+                imageBytes: widget.cachedBytes,
                 heroTag: 'image_${widget.message.id}',
                 exifData: exifData,
               ),
@@ -261,10 +299,16 @@ class _MessageBubbleState extends State<MessageBubble> {
               maxWidth: 300,
               maxHeight: 400,
             ),
-            child: Image.file(
-              File(media.path),
-              fit: BoxFit.cover,
-            ),
+            child: kIsWeb && widget.cachedBytes != null
+                ? Image.memory(
+                    widget.cachedBytes!,
+                    fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                  )
+                : Image.file(
+                    File(media.path),
+                    fit: BoxFit.cover,
+                  ),
           ),
         ),
       ),
@@ -286,6 +330,7 @@ class _MessageBubbleState extends State<MessageBubble> {
           aspectRatio: media.aspectRatio ?? 16 / 9,
           child: VideoViewer(
             videoPath: media.path,
+            videoBytes: widget.cachedBytes,
             aspectRatio: media.aspectRatio ?? 16 / 9,
             autoplay: false,
           ),
@@ -302,6 +347,7 @@ class _MessageBubbleState extends State<MessageBubble> {
       constraints: const BoxConstraints(maxWidth: 300),
       child: AudioPlayer(
         audioPath: media.path,
+        audioBytes: widget.cachedBytes,
         filename: media.fileName,
         autoplay: false,
       ),
