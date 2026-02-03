@@ -410,4 +410,127 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get networkStatusCheckingConnection => '正在检查网络连接...';
+
+  @override
+  String get messageActions => '消息操作';
+
+  @override
+  String get messageActionReply => '回复';
+
+  @override
+  String get messageActionForward => '转发';
+
+  @override
+  String get messageActionDelete => '删除';
+
+  @override
+  String get chatRoomSettings => '聊天设置';
+
+  @override
+  String get chatRoomMembers => '聊天成员';
+
+  @override
+  String get chatRoomEdit => '编辑聊天';
+
+  @override
+  String get chatRoomEditName => '编辑名称';
+
+  @override
+  String get chatRoomPin => '置顶聊天';
+
+  @override
+  String get chatRoomPinDescription => '将此聊天固定在列表顶部';
+
+  @override
+  String get chatRoomPinned => '已置顶聊天';
+
+  @override
+  String get chatRoomUnpinned => '已取消置顶';
+
+  @override
+  String get chatRoomName => '聊天名称';
+
+  @override
+  String get chatRoomContactName => '联系人备注名';
+
+  @override
+  String get chatRoomNameHelp => '仅当您有权限时可修改';
+
+  @override
+  String get chatRoomAlias => '聊天别名';
+
+  @override
+  String get chatRoomAliasHelp => '仅您可见的自定义名称';
+
+  @override
+  String get chatRoomDescription => '聊天描述';
+
+  @override
+  String get chatRoomDescriptionHelp => '仅您可见的自定义描述';
+
+  @override
+  String get chatRoomNoDescription => '暂无描述';
+
+  @override
+  String get chatRoomNameUpdated => '聊天名称已更新';
+
+  @override
+  String get chatRoomUpdated => '聊天信息已更新';
+
+  @override
+  String get chatNotifyLevel => '通知级别';
+
+  @override
+  String get chatNotifyLevelAll => '全部消息';
+
+  @override
+  String get chatNotifyLevelAllDescription => '接收所有消息的通知';
+
+  @override
+  String get chatNotifyLevelMention => '仅提及';
+
+  @override
+  String get chatNotifyLevelMentionDescription => '仅当有人提及您时接收通知';
+
+  @override
+  String get chatNotifyLevelNone => '静音';
+
+  @override
+  String get chatNotifyLevelNoneDescription => '不接收任何通知';
+
+  @override
+  String get chatSearchMessages => '搜索消息';
+
+  @override
+  String get chatSearchMessagesDescription => '在此聊天中搜索消息';
+
+  @override
+  String get chatSearchMessagesPlaceholder => '搜索消息内容...';
+
+  @override
+  String get chatSearchMessagesHint => '输入关键词搜索消息';
+
+  @override
+  String get chatSearchMessagesNoResults => '未找到相关消息';
+
+  @override
+  String get chatLeaveRoom => '退出聊天';
+
+  @override
+  String get chatLeaveRoomDescription => '离开此聊天室';
+
+  @override
+  String get chatLeaveRoomConfirm => '确定要退出此聊天吗？';
+
+  @override
+  String get chatRoomLeft => '已退出聊天室';
+
+  @override
+  String get cancel => '取消';
+
+  @override
+  String get save => '保存';
+
+  @override
+  String get leave => '退出';
 }

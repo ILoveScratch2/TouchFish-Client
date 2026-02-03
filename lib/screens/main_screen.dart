@@ -28,6 +28,8 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _onItemTapped(BuildContext context, int index) {
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    
     switch (index) {
       case 0:
         context.go(AppRoutes.chat);

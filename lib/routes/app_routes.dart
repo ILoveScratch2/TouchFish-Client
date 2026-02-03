@@ -131,6 +131,21 @@ class AppRoutes {
                   path: '/chat/:roomId',
                   pageBuilder: (context, state) {
                     final roomId = state.pathParameters['roomId']!;
+                    final isWide = MediaQuery.of(context).size.width >= 600;
+                    
+                    // Use MaterialPage for narrow screens to enable slide animation
+                    if (!isWide) {
+                      return MaterialPage(
+                        child: ChatShellScreen(
+                          child: ChatDetailScreen(
+                            key: ValueKey(roomId),
+                            roomId: roomId,
+                          ),
+                        ),
+                      );
+                    }
+                    
+                    // Use NoTransitionPage for wide screens
                     return NoTransitionPage(
                       child: ChatShellScreen(
                         child: ChatDetailScreen(

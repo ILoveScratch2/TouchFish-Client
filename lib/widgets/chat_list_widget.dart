@@ -21,7 +21,6 @@ class ChatListWidget extends StatelessWidget {
       children: [
         if (pinnedRooms.isNotEmpty) ...[
           _buildPinnedSection(context, pinnedRooms),
-          const Divider(height: 1),
         ],
         ...unpinnedRooms.map((room) => _buildChatRoomTile(context, room)),
       ],
@@ -30,12 +29,18 @@ class ChatListWidget extends StatelessWidget {
 
   Widget _buildPinnedSection(BuildContext context, List<ChatRoom> rooms) {
     final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
     
-    return ExpansionTile(
-      title: Text(l10n.chatPinned),
-      leading: const Icon(Icons.push_pin),
-      initiallyExpanded: true,
-      children: rooms.map((room) => _buildChatRoomTile(context, room)).toList(),
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        collapsedBackgroundColor: colorScheme.surfaceContainer.withOpacity(0.5),
+        title: Text(l10n.chatPinned),
+        leading: const Icon(Icons.push_pin),
+        initiallyExpanded: true,
+        children: rooms.map((room) => _buildChatRoomTile(context, room)).toList(),
+      ),
     );
   }
 

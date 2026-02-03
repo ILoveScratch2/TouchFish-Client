@@ -426,4 +426,133 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get networkStatusCheckingConnection =>
       'Checking network connection...';
+
+  @override
+  String get messageActions => 'Message Actions';
+
+  @override
+  String get messageActionReply => 'Reply';
+
+  @override
+  String get messageActionForward => 'Forward';
+
+  @override
+  String get messageActionDelete => 'Delete';
+
+  @override
+  String get chatRoomSettings => 'Chat Settings';
+
+  @override
+  String get chatRoomMembers => 'Chat Members';
+
+  @override
+  String get chatRoomEdit => 'Edit Chat';
+
+  @override
+  String get chatRoomEditName => 'Edit Name';
+
+  @override
+  String get chatRoomPin => 'Pin Chat';
+
+  @override
+  String get chatRoomPinDescription => 'Pin this chat to the top of the list';
+
+  @override
+  String get chatRoomPinned => 'Chat pinned';
+
+  @override
+  String get chatRoomUnpinned => 'Chat unpinned';
+
+  @override
+  String get chatRoomName => 'Chat Name';
+
+  @override
+  String get chatRoomContactName => 'Contact Remark Name';
+
+  @override
+  String get chatRoomNameHelp => 'Only editable if you have permission';
+
+  @override
+  String get chatRoomAlias => 'Chat Alias';
+
+  @override
+  String get chatRoomAliasHelp => 'Custom name visible only to you';
+
+  @override
+  String get chatRoomDescription => 'Chat Description';
+
+  @override
+  String get chatRoomDescriptionHelp =>
+      'Custom description visible only to you';
+
+  @override
+  String get chatRoomNoDescription => 'No description yet';
+
+  @override
+  String get chatRoomNameUpdated => 'Chat name updated';
+
+  @override
+  String get chatRoomUpdated => 'Chat information updated';
+
+  @override
+  String get chatNotifyLevel => 'Notification Level';
+
+  @override
+  String get chatNotifyLevelAll => 'All Messages';
+
+  @override
+  String get chatNotifyLevelAllDescription =>
+      'Receive notifications for all messages';
+
+  @override
+  String get chatNotifyLevelMention => 'Mentions Only';
+
+  @override
+  String get chatNotifyLevelMentionDescription =>
+      'Only receive notifications when mentioned';
+
+  @override
+  String get chatNotifyLevelNone => 'Mute';
+
+  @override
+  String get chatNotifyLevelNoneDescription =>
+      'Do not receive any notifications';
+
+  @override
+  String get chatSearchMessages => 'Search Messages';
+
+  @override
+  String get chatSearchMessagesDescription =>
+      'Search for messages in this chat';
+
+  @override
+  String get chatSearchMessagesPlaceholder => 'Search message content...';
+
+  @override
+  String get chatSearchMessagesHint => 'Enter keywords to search messages';
+
+  @override
+  String get chatSearchMessagesNoResults => 'No matching messages found';
+
+  @override
+  String get chatLeaveRoom => 'Leave Chat';
+
+  @override
+  String get chatLeaveRoomDescription => 'Leave this chat room';
+
+  @override
+  String get chatLeaveRoomConfirm =>
+      'Are you sure you want to leave this chat?';
+
+  @override
+  String get chatRoomLeft => 'Left chat room';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get leave => 'Leave';
 }

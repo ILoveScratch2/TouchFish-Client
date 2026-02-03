@@ -901,6 +901,252 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Checking network connection...'**
   String get networkStatusCheckingConnection;
+
+  /// No description provided for @messageActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Message Actions'**
+  String get messageActions;
+
+  /// No description provided for @messageActionReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get messageActionReply;
+
+  /// No description provided for @messageActionForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward'**
+  String get messageActionForward;
+
+  /// No description provided for @messageActionDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get messageActionDelete;
+
+  /// No description provided for @chatRoomSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat Settings'**
+  String get chatRoomSettings;
+
+  /// No description provided for @chatRoomMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat Members'**
+  String get chatRoomMembers;
+
+  /// No description provided for @chatRoomEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Chat'**
+  String get chatRoomEdit;
+
+  /// No description provided for @chatRoomEditName.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Name'**
+  String get chatRoomEditName;
+
+  /// No description provided for @chatRoomPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin Chat'**
+  String get chatRoomPin;
+
+  /// No description provided for @chatRoomPinDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin this chat to the top of the list'**
+  String get chatRoomPinDescription;
+
+  /// No description provided for @chatRoomPinned.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat pinned'**
+  String get chatRoomPinned;
+
+  /// No description provided for @chatRoomUnpinned.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat unpinned'**
+  String get chatRoomUnpinned;
+
+  /// No description provided for @chatRoomName.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat Name'**
+  String get chatRoomName;
+
+  /// No description provided for @chatRoomContactName.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Remark Name'**
+  String get chatRoomContactName;
+
+  /// No description provided for @chatRoomNameHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Only editable if you have permission'**
+  String get chatRoomNameHelp;
+
+  /// No description provided for @chatRoomAlias.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat Alias'**
+  String get chatRoomAlias;
+
+  /// No description provided for @chatRoomAliasHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom name visible only to you'**
+  String get chatRoomAliasHelp;
+
+  /// No description provided for @chatRoomDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat Description'**
+  String get chatRoomDescription;
+
+  /// No description provided for @chatRoomDescriptionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom description visible only to you'**
+  String get chatRoomDescriptionHelp;
+
+  /// No description provided for @chatRoomNoDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'No description yet'**
+  String get chatRoomNoDescription;
+
+  /// No description provided for @chatRoomNameUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat name updated'**
+  String get chatRoomNameUpdated;
+
+  /// No description provided for @chatRoomUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat information updated'**
+  String get chatRoomUpdated;
+
+  /// No description provided for @chatNotifyLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Level'**
+  String get chatNotifyLevel;
+
+  /// No description provided for @chatNotifyLevelAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All Messages'**
+  String get chatNotifyLevelAll;
+
+  /// No description provided for @chatNotifyLevelAllDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive notifications for all messages'**
+  String get chatNotifyLevelAllDescription;
+
+  /// No description provided for @chatNotifyLevelMention.
+  ///
+  /// In en, this message translates to:
+  /// **'Mentions Only'**
+  String get chatNotifyLevelMention;
+
+  /// No description provided for @chatNotifyLevelMentionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Only receive notifications when mentioned'**
+  String get chatNotifyLevelMentionDescription;
+
+  /// No description provided for @chatNotifyLevelNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute'**
+  String get chatNotifyLevelNone;
+
+  /// No description provided for @chatNotifyLevelNoneDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not receive any notifications'**
+  String get chatNotifyLevelNoneDescription;
+
+  /// No description provided for @chatSearchMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Messages'**
+  String get chatSearchMessages;
+
+  /// No description provided for @chatSearchMessagesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for messages in this chat'**
+  String get chatSearchMessagesDescription;
+
+  /// No description provided for @chatSearchMessagesPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search message content...'**
+  String get chatSearchMessagesPlaceholder;
+
+  /// No description provided for @chatSearchMessagesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter keywords to search messages'**
+  String get chatSearchMessagesHint;
+
+  /// No description provided for @chatSearchMessagesNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching messages found'**
+  String get chatSearchMessagesNoResults;
+
+  /// No description provided for @chatLeaveRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave Chat'**
+  String get chatLeaveRoom;
+
+  /// No description provided for @chatLeaveRoomDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave this chat room'**
+  String get chatLeaveRoomDescription;
+
+  /// No description provided for @chatLeaveRoomConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to leave this chat?'**
+  String get chatLeaveRoomConfirm;
+
+  /// No description provided for @chatRoomLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Left chat room'**
+  String get chatRoomLeft;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @leave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get leave;
 }
 
 class _AppLocalizationsDelegate

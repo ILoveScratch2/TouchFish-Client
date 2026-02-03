@@ -6,6 +6,7 @@ import '../widgets/message_bubble.dart';
 import '../widgets/chat_input_bar.dart';
 import '../routes/app_routes.dart';
 import '../l10n/app_localizations.dart';
+import 'chat_room_settings_screen.dart';
 
 
 class ChatDetailScreen extends StatefulWidget {
@@ -212,6 +213,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           IconButton(
             icon: const Icon(Icons.more_vert),
             onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatRoomSettingsScreen(
+                    chatRoom: _currentRoom!,
+                  ),
+                ),
+              );
             },
           ),
         ],
