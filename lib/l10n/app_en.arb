@@ -206,5 +206,17 @@
   "chatRoomLeft": "Left chat room",
   "cancel": "Cancel",
   "save": "Save",
-  "leave": "Leave"
+  "leave": "Leave",
+  
+  "mediaPickImage": "Pick Image",
+  "mediaPickVideo": "Pick Video",
+  "mediaPickAudio": "Pick Audio",
+  "mediaPickFile": "Pick File",
+  "mediaImageMessage": "[Image]",
+  "mediaVideoMessage": "[Video]",
+  "mediaAudioMessage": "[Audio]",
+  "mediaFileMessage": "[File]",
+  "mediaUnknown": "Unknown",
+  "mediaPlayAudio": "Play Audio",
+  "mediaPauseAudio": "Pause Audio"
 }

@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:mime/mime.dart';
 import '../l10n/app_localizations.dart';
+import '../models/message_model.dart';
 
 class ChatInputBar extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
-  final VoidCallback? onAttachmentTap;
+  final Function(String filePath, MessageType type)? onFilePicked;
 
   const ChatInputBar({
     super.key,
     required this.controller,
     required this.onSend,
-    this.onAttachmentTap,
+    this.onFilePicked,
   });
 
   @override
@@ -68,16 +71,17 @@ class _ChatInputBarState extends State<ChatInputBar> {
                 PopupMenuButton<String>(
                   icon: const Icon(Symbols.attach_file),
                   tooltip: l10n.chatInputAttachment,
-                  onSelected: (value) {
+                  onSelected: (value) async {
+                    await _handleAttachment(value);
                   },
                   itemBuilder: (context) => [
                     PopupMenuItem(
-                      value: 'photo',
+                      value: 'image',
                       child: Row(
                         children: [
-                          const Icon(Symbols.add_a_photo),
+                          const Icon(Symbols.image),
                           const SizedBox(width: 12),
-                          Text(l10n.chatInputTakePhoto),
+                          Text(l10n.mediaPickImage),
                         ],
                       ),
                     ),
@@ -87,7 +91,17 @@ class _ChatInputBarState extends State<ChatInputBar> {
                         children: [
                           const Icon(Symbols.videocam),
                           const SizedBox(width: 12),
-                          Text(l10n.chatInputTakeVideo),
+                          Text(l10n.mediaPickVideo),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'audio',
+                      child: Row(
+                        children: [
+                          const Icon(Symbols.audiotrack),
+                          const SizedBox(width: 12),
+                          Text(l10n.mediaPickAudio),
                         ],
                       ),
                     ),
@@ -98,16 +112,6 @@ class _ChatInputBarState extends State<ChatInputBar> {
                           const Icon(Symbols.file_upload),
                           const SizedBox(width: 12),
                           Text(l10n.chatInputUploadFile),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'audio',
-                      child: Row(
-                        children: [
-                          const Icon(Symbols.mic),
-                          const SizedBox(width: 12),
-                          Text(l10n.chatInputRecordAudio),
                         ],
                       ),
                     ),
@@ -178,5 +182,65 @@ class _ChatInputBarState extends State<ChatInputBar> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleAttachment(String type) async {
+    FilePickerResult? result;
+
+    switch (type) {
+      case 'image':
+        result = await FilePicker.platform.pickFiles(
+          type: FileType.image,
+          allowMultiple: false,
+        );
+        if (result != null && result.files.single.path != null && widget.onFilePicked != null) {
+          widget.onFilePicked!(result.files.single.path!, MessageType.image);
+        }
+        break;
+
+      case 'video':
+        result = await FilePicker.platform.pickFiles(
+          type: FileType.video,
+          allowMultiple: false,
+        );
+        if (result != null && result.files.single.path != null && widget.onFilePicked != null) {
+          widget.onFilePicked!(result.files.single.path!, MessageType.video);
+        }
+        break;
+
+      case 'audio':
+        result = await FilePicker.platform.pickFiles(
+          type: FileType.audio,
+          allowMultiple: false,
+        );
+        if (result != null && result.files.single.path != null && widget.onFilePicked != null) {
+          widget.onFilePicked!(result.files.single.path!, MessageType.audio);
+        }
+        break;
+
+      case 'file':
+        result = await FilePicker.platform.pickFiles(
+          type: FileType.any,
+          allowMultiple: false,
+        );
+        if (result != null && result.files.single.path != null && widget.onFilePicked != null) {
+          final filePath = result.files.single.path!;
+          final mimeType = lookupMimeType(filePath);
+          
+          MessageType messageType = MessageType.file;
+          if (mimeType != null) {
+            if (mimeType.startsWith('image/')) {
+              messageType = MessageType.image;
+            } else if (mimeType.startsWith('video/')) {
+              messageType = MessageType.video;
+            } else if (mimeType.startsWith('audio/')) {
+              messageType = MessageType.audio;
+            }
+          }
+          
+          widget.onFilePicked!(filePath, messageType);
+        }
+        break;
+    }
   }
 }

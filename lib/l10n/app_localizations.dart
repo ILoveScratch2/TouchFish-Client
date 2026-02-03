@@ -1147,6 +1147,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Leave'**
   String get leave;
+
+  /// No description provided for @mediaPickImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick Image'**
+  String get mediaPickImage;
+
+  /// No description provided for @mediaPickVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick Video'**
+  String get mediaPickVideo;
+
+  /// No description provided for @mediaPickAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick Audio'**
+  String get mediaPickAudio;
+
+  /// No description provided for @mediaPickFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick File'**
+  String get mediaPickFile;
+
+  /// No description provided for @mediaImageMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'[Image]'**
+  String get mediaImageMessage;
+
+  /// No description provided for @mediaVideoMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'[Video]'**
+  String get mediaVideoMessage;
+
+  /// No description provided for @mediaAudioMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'[Audio]'**
+  String get mediaAudioMessage;
+
+  /// No description provided for @mediaFileMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'[File]'**
+  String get mediaFileMessage;
+
+  /// No description provided for @mediaUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get mediaUnknown;
+
+  /// No description provided for @mediaPlayAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Play Audio'**
+  String get mediaPlayAudio;
+
+  /// No description provided for @mediaPauseAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause Audio'**
+  String get mediaPauseAudio;
 }
 
 class _AppLocalizationsDelegate

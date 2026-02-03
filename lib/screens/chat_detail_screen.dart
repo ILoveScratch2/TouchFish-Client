@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path/path.dart' as path;
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
 import '../widgets/message_bubble.dart';
@@ -89,6 +91,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       text: text,
       timestamp: DateTime.now(),
       isMe: true,
+      type: MessageType.text,
     );
 
     setState(() {
@@ -96,16 +99,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     });
 
     _messageController.clear();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-
+    _scrollToBottom();
     Future.delayed(const Duration(milliseconds: 500), () {
       final l10n = AppLocalizations.of(context)!;
       final replyMessage = ChatMessage(
@@ -115,20 +109,88 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         isMe: false,
         senderName: _currentRoom?.name ?? l10n.chatDetailOther,
         senderAvatar: _currentRoom?.avatar,
+        type: MessageType.text,
       );
 
       setState(() {
         _messages.add(replyMessage);
       });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
+      _scrollToBottom();
+    });
+  }
+
+  void _sendMediaMessage(String filePath, MessageType type) {
+    final file = File(filePath);
+    final fileName = path.basename(filePath);
+    final fileSize = file.lengthSync();
+
+    String messageText = '';
+    switch (type) {
+      case MessageType.image:
+        messageText = '[IMAGE]';
+        break;
+      case MessageType.video:
+        messageText = '[VIDEO]';
+        break;
+      case MessageType.audio:
+        messageText = '[AUDIO]';
+        break;
+      case MessageType.file:
+        messageText = '[FILE] $fileName';
+        break;
+      default:
+        messageText = fileName;
+    }
+
+    final media = MessageMedia(
+      path: filePath,
+      fileName: fileName,
+      fileSize: fileSize,
+    );
+
+    final userMessage = ChatMessage(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      text: messageText,
+      timestamp: DateTime.now(),
+      isMe: true,
+      type: type,
+      media: media,
+    );
+
+    setState(() {
+      _messages.add(userMessage);
+    });
+
+    _scrollToBottom();
+    Future.delayed(const Duration(milliseconds: 500), () {
+      final l10n = AppLocalizations.of(context)!;
+      final replyMessage = ChatMessage(
+        id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
+        text: messageText,
+        timestamp: DateTime.now(),
+        isMe: false,
+        senderName: _currentRoom?.name ?? l10n.chatDetailOther,
+        senderAvatar: _currentRoom?.avatar,
+        type: type,
+        media: media,
+      );
+
+      setState(() {
+        _messages.add(replyMessage);
       });
+      _scrollToBottom();
+    });
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     });
   }
 
@@ -251,6 +313,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             ChatInputBar(
               controller: _messageController,
               onSend: _sendMessage,
+              onFilePicked: _sendMediaMessage,
             ),
           ],
         ),

@@ -1,9 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/message_model.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
+import '../widgets/media/image_lightbox.dart';
+import '../widgets/media/video_viewer.dart';
+import '../widgets/media/audio_player.dart';
+import 'package:path/path.dart' as path;
+import 'package:exif/exif.dart';
 
 class MessageBubble extends StatefulWidget {
   final ChatMessage message;
@@ -100,35 +106,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                 ),
                               ),
                             ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: widget.message.isMe
-                                  ? colorScheme.primaryContainer
-                                  : colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.only(
-                                topLeft: widget.message.isMe
-                                    ? const Radius.circular(18)
-                                    : const Radius.circular(4),
-                                topRight: widget.message.isMe
-                                    ? const Radius.circular(4)
-                                    : const Radius.circular(18),
-                                bottomLeft: const Radius.circular(18),
-                                bottomRight: const Radius.circular(18),
-                              ),
-                            ),
-                            child: Text(
-                              widget.message.text,
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: widget.message.isMe
-                                    ? colorScheme.onPrimaryContainer
-                                    : colorScheme.onSurface,
-                              ),
-                            ),
-                          ),
+                          _buildMessageContent(context, colorScheme, textTheme),
                           Padding(
                             padding: const EdgeInsets.only(top: 2, left: 12, right: 12),
                             child: Text(
@@ -183,6 +161,213 @@ class _MessageBubbleState extends State<MessageBubble> {
     } else {
       return DateFormat.MMMd('zh_CN').add_Hm().format(time);
     }
+  }
+
+  Widget _buildMessageContent(BuildContext context, ColorScheme colorScheme, TextTheme textTheme) {
+    switch (widget.message.type) {
+      case MessageType.image:
+        return _buildImageMessage(context, colorScheme);
+      case MessageType.video:
+        return _buildVideoMessage(context, colorScheme);
+      case MessageType.audio:
+        return _buildAudioMessage(context, colorScheme);
+      case MessageType.file:
+        return _buildFileMessage(context, colorScheme, textTheme);
+      case MessageType.text:
+      default:
+        return _buildTextMessage(context, colorScheme, textTheme);
+    }
+  }
+
+  Widget _buildTextMessage(BuildContext context, ColorScheme colorScheme, TextTheme textTheme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: widget.message.isMe
+            ? colorScheme.primaryContainer
+            : colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.only(
+          topLeft: widget.message.isMe ? const Radius.circular(18) : const Radius.circular(4),
+          topRight: widget.message.isMe ? const Radius.circular(4) : const Radius.circular(18),
+          bottomLeft: const Radius.circular(18),
+          bottomRight: const Radius.circular(18),
+        ),
+      ),
+      child: Text(
+        widget.message.text,
+        style: textTheme.bodyMedium?.copyWith(
+          color: widget.message.isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageMessage(BuildContext context, ColorScheme colorScheme) {
+    final media = widget.message.media;
+    if (media == null) return _buildTextMessage(context, colorScheme, Theme.of(context).textTheme);
+
+    return GestureDetector(
+      onTap: () async {
+        Map<String, dynamic>? exifData;
+        try {
+          final file = File(media.path);
+          final bytes = await file.readAsBytes();
+          final tags = await readExifFromBytes(bytes);
+          
+          if (tags.isNotEmpty) {
+            exifData = {};
+            if (tags.containsKey('Image DateTime')) {
+              exifData['DateTime'] = tags['Image DateTime'].toString();
+            }
+            if (tags.containsKey('Image Model')) {
+              exifData['Model'] = tags['Image Model'].toString();
+            }
+            if (tags.containsKey('EXIF ISOSpeedRatings')) {
+              exifData['ISOSpeedRatings'] = tags['EXIF ISOSpeedRatings'].toString();
+            }
+            if (tags.containsKey('EXIF FNumber')) {
+              exifData['FNumber'] = tags['EXIF FNumber'].toString();
+            }
+            if (tags.containsKey('EXIF ExposureTime')) {
+              exifData['ExposureTime'] = tags['EXIF ExposureTime'].toString();
+            }
+            if (tags.containsKey('EXIF FocalLength')) {
+              exifData['FocalLength'] = tags['EXIF FocalLength'].toString();
+            }
+          }
+        } catch (e) {
+          print('Failed to read EXIF: $e');
+        }
+
+        if (context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ImageLightbox(
+                imagePath: media.path,
+                heroTag: 'image_${widget.message.id}',
+                exifData: exifData,
+              ),
+            ),
+          );
+        }
+      },
+      child: Hero(
+        tag: 'image_${widget.message.id}',
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 300,
+              maxHeight: 400,
+            ),
+            child: Image.file(
+              File(media.path),
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoMessage(BuildContext context, ColorScheme colorScheme) {
+    final media = widget.message.media;
+    if (media == null) return _buildTextMessage(context, colorScheme, Theme.of(context).textTheme);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: 300,
+          maxHeight: 400,
+        ),
+        child: AspectRatio(
+          aspectRatio: media.aspectRatio ?? 16 / 9,
+          child: VideoViewer(
+            videoPath: media.path,
+            aspectRatio: media.aspectRatio ?? 16 / 9,
+            autoplay: false,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAudioMessage(BuildContext context, ColorScheme colorScheme) {
+    final media = widget.message.media;
+    if (media == null) return _buildTextMessage(context, colorScheme, Theme.of(context).textTheme);
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 300),
+      child: AudioPlayer(
+        audioPath: media.path,
+        filename: media.fileName,
+        autoplay: false,
+      ),
+    );
+  }
+
+  Widget _buildFileMessage(BuildContext context, ColorScheme colorScheme, TextTheme textTheme) {
+    final media = widget.message.media;
+    if (media == null) return _buildTextMessage(context, colorScheme, textTheme);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: widget.message.isMe
+            ? colorScheme.primaryContainer
+            : colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Symbols.insert_drive_file,
+            color: widget.message.isMe
+                ? colorScheme.onPrimaryContainer
+                : colorScheme.onSurface,
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  media.fileName ?? AppLocalizations.of(context)!.mediaFileMessage,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: widget.message.isMe
+                        ? colorScheme.onPrimaryContainer
+                        : colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (media.fileSize != null)
+                  Text(
+                    _formatFileSize(media.fileSize!),
+                    style: textTheme.bodySmall?.copyWith(
+                      color: widget.message.isMe
+                          ? colorScheme.onPrimaryContainer.withOpacity(0.7)
+                          : colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 }
 

@@ -197,5 +197,17 @@
   "chatRoomLeft": "已退出聊天室",
   "cancel": "取消",
   "save": "保存",
-  "leave": "退出"
+  "leave": "退出",
+  
+  "mediaPickImage": "选择图片",
+  "mediaPickVideo": "选择视频",
+  "mediaPickAudio": "选择音频",
+  "mediaPickFile": "选择文件",
+  "mediaImageMessage": "[图片]",
+  "mediaVideoMessage": "[视频]",
+  "mediaAudioMessage": "[音频]",
+  "mediaFileMessage": "[文件]",
+  "mediaUnknown": "未知",
+  "mediaPlayAudio": "播放音频",
+  "mediaPauseAudio": "暂停音频"
 }

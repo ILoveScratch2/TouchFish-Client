@@ -555,4 +555,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get leave => 'Leave';
+
+  @override
+  String get mediaPickImage => 'Pick Image';
+
+  @override
+  String get mediaPickVideo => 'Pick Video';
+
+  @override
+  String get mediaPickAudio => 'Pick Audio';
+
+  @override
+  String get mediaPickFile => 'Pick File';
+
+  @override
+  String get mediaImageMessage => '[Image]';
+
+  @override
+  String get mediaVideoMessage => '[Video]';
+
+  @override
+  String get mediaAudioMessage => '[Audio]';
+
+  @override
+  String get mediaFileMessage => '[File]';
+
+  @override
+  String get mediaUnknown => 'Unknown';
+
+  @override
+  String get mediaPlayAudio => 'Play Audio';
+
+  @override
+  String get mediaPauseAudio => 'Pause Audio';
 }

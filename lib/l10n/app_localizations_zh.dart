@@ -533,4 +533,37 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get leave => '退出';
+
+  @override
+  String get mediaPickImage => '选择图片';
+
+  @override
+  String get mediaPickVideo => '选择视频';
+
+  @override
+  String get mediaPickAudio => '选择音频';
+
+  @override
+  String get mediaPickFile => '选择文件';
+
+  @override
+  String get mediaImageMessage => '[图片]';
+
+  @override
+  String get mediaVideoMessage => '[视频]';
+
+  @override
+  String get mediaAudioMessage => '[音频]';
+
+  @override
+  String get mediaFileMessage => '[文件]';
+
+  @override
+  String get mediaUnknown => '未知';
+
+  @override
+  String get mediaPlayAudio => '播放音频';
+
+  @override
+  String get mediaPauseAudio => '暂停音频';
 }
