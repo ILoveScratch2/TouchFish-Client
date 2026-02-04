@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -190,11 +191,20 @@ class _ChatInputBarState extends State<ChatInputBar> {
 
     switch (type) {
       case 'image':
-        result = await FilePicker.platform.pickFiles(
-          type: FileType.image,
-          allowMultiple: false,
-          withData: true,
-        );
+        if (!kIsWeb && Platform.isAndroid) {
+          result = await FilePicker.platform.pickFiles(
+            type: FileType.custom,
+            allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'],
+            allowMultiple: false,
+            withData: false,
+          );
+        } else {
+          result = await FilePicker.platform.pickFiles(
+            type: FileType.image,
+            allowMultiple: false,
+            withData: true,
+          );
+        }
         if (result != null && widget.onFilePicked != null) {
           final file = result.files.single;
           if (file.bytes != null || file.path != null) {
