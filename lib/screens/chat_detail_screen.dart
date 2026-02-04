@@ -125,16 +125,21 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     String filePath;
     String fileName;
     int fileSize;
+    List<int>? bytes;
 
     if (kIsWeb) {
       fileName = platformFile.name;
       filePath = 'web_upload_${DateTime.now().millisecondsSinceEpoch}_$fileName';
       fileSize = platformFile.bytes?.length ?? 0;
+      bytes = platformFile.bytes;
     } else {
       filePath = platformFile.path!;
       fileName = path.basename(filePath);
       final file = File(filePath);
       fileSize = file.lengthSync();
+      if (type == MessageType.image && platformFile.bytes != null) {
+        bytes = platformFile.bytes;
+      }
     }
 
     String messageText = '';
@@ -159,7 +164,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       path: filePath,
       fileName: fileName,
       fileSize: fileSize,
-      bytes: kIsWeb ? platformFile.bytes : null,
+      bytes: bytes,
     );
 
     final userMessage = ChatMessage(

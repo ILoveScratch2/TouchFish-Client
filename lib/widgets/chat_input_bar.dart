@@ -193,13 +193,12 @@ class _ChatInputBarState extends State<ChatInputBar> {
         result = await FilePicker.platform.pickFiles(
           type: FileType.image,
           allowMultiple: false,
-          withData: kIsWeb,
+          withData: true,
         );
         if (result != null && widget.onFilePicked != null) {
-          if (kIsWeb && result.files.single.bytes != null) {
-            widget.onFilePicked!(result.files.single, MessageType.image);
-          } else if (!kIsWeb && result.files.single.path != null) {
-            widget.onFilePicked!(result.files.single, MessageType.image);
+          final file = result.files.single;
+          if (file.bytes != null || file.path != null) {
+            widget.onFilePicked!(file, MessageType.image);
           }
         }
         break;
