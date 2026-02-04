@@ -22,7 +22,7 @@ UsePreviousAppDir=no
 
 OutputDir=.\Installer
 OutputBaseFilename=windows-x86_64-setup
-SetupIconFile=.\assets\icon.ico
+SetupIconFile=.\windows\runner\resources\app_icon.ico
 
 Compression=lzma2/ultra64
 SolidCompression=yes
