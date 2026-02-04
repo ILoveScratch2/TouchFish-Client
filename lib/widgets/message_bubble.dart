@@ -24,10 +24,9 @@ class MessageBubble extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    // cache for web
     final cachedBytes = useMemoized<Uint8List?>(() {
       final media = message.media;
-      return kIsWeb && media?.bytes != null ? Uint8List.fromList(media!.bytes!) : null;
+      return media?.bytes != null ? Uint8List.fromList(media!.bytes!) : null;
     }, [message.media?.bytes]);
 
     return _MessageBubbleContent(
@@ -238,9 +237,10 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
         Map<String, dynamic>? exifData;
         try {
           Uint8List bytes;
-          if (kIsWeb && widget.cachedBytes != null) {
+          // Priority: cachedBytes > read from file
+          if (widget.cachedBytes != null) {
             bytes = widget.cachedBytes!;
-          } else if (!kIsWeb) {
+          } else if (!kIsWeb && media.path.isNotEmpty) {
             final file = File(media.path);
             bytes = await file.readAsBytes();
           } else {
@@ -299,7 +299,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
               maxWidth: 300,
               maxHeight: 400,
             ),
-            child: kIsWeb && widget.cachedBytes != null
+            child: widget.cachedBytes != null
                 ? Image.memory(
                     widget.cachedBytes!,
                     fit: BoxFit.cover,
