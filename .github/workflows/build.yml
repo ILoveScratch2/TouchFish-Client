@@ -37,17 +37,28 @@ jobs:
       - name: Build Windows MSIX installer
         run: flutter pub global run msix:create
 
+      - name: Compile Inno Setup Installer
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with:
+          path: setup.iss
+
       - name: Upload Windows MSIX artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-msix
           path: build/windows/x64/runner/Release/*.msix
       
-      - name: Upload Windows artifact
+      - name: Upload Windows ZIP artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
           path: touchfish-windows-x64.zip
+
+      - name: Upload Windows Setup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-setup
+          path: Installer/windows-x86_64-setup.exe
 
   build-macos:
     runs-on: macos-latest
