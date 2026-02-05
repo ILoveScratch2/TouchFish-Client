@@ -3,7 +3,7 @@
 #define BuildNumber "1"
 ; ==================================================
 
-#define FullVersion AppVersion + "-" + BuildNumber
+#define FullVersion AppVersion + "." + BuildNumber
 
 [Setup]
 AppName=TouchFish Client
