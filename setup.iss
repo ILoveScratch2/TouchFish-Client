@@ -33,7 +33,7 @@ ArchitecturesAllowed=x64compatible
 PrivilegesRequired=admin
 
 [Files]
-Source: ".\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ".\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.msix"
 
 [Icons]
 Name: "{group}\TouchFish Client"; Filename: "{app}\touchfish_client.exe";IconFilename: "{app}\touchfish_client.exe"
