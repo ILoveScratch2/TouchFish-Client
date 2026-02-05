@@ -3,7 +3,7 @@
 #define BuildNumber "1"
 ; ==================================================
 
-#define FullVersion AppVersion + "." + BuildNumber
+#define FullVersion AppVersion + "-" + BuildNumber
 
 [Setup]
 AppName=TouchFish Client
@@ -17,7 +17,7 @@ VersionInfoVersion={#FullVersion}
 UninstallDisplayName=TouchFish Client
 UninstallDisplayIcon={app}\touchfish_client.exe
 
-DefaultDirName={commonpf}\TouchFish
+DefaultDirName={commonpf}\TouchFish Client
 UsePreviousAppDir=no
 
 OutputDir=.\Installer
@@ -44,7 +44,7 @@ Name: "{autodesktop}\TouchFish Client"; Filename: "{app}\touchfish_client.exe"; 
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Run]
-Filename: "{app}\touchfish_client.exe"; Description: "Launch TF"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\touchfish_client.exe"; Description: "Launch TouchFish Client"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{userappdata}\ILoveScratch2\TouchFish Client"
