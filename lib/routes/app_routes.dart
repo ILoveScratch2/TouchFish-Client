@@ -13,6 +13,7 @@ import '../screens/chat_detail_screen.dart';
 import '../screens/announcement_screen.dart';
 import '../screens/forum_screen.dart';
 import '../screens/account_screen.dart';
+import '../screens/user_profile_screen.dart';
 import '../widgets/window_frame.dart';
 
 class AppRoutes {
@@ -29,6 +30,7 @@ class AppRoutes {
   static const String registerStep2 = '/register/step2';
   static const String registerStep3 = '/register/step3';
   static const String registerSuccess = '/register/success';
+  static const String userProfile = '/profile/:userId';
 
   static GoRouter createRouter({required bool isFirstLaunch}) {
     return GoRouter(
@@ -132,8 +134,6 @@ class AppRoutes {
                   pageBuilder: (context, state) {
                     final roomId = state.pathParameters['roomId']!;
                     final isWide = MediaQuery.of(context).size.width >= 600;
-                    
-                    // Use MaterialPage for narrow screens to enable slide animation
                     if (!isWide) {
                       return MaterialPage(
                         child: ChatShellScreen(
@@ -145,7 +145,6 @@ class AppRoutes {
                       );
                     }
                     
-                    // Use NoTransitionPage for wide screens
                     return NoTransitionPage(
                       child: ChatShellScreen(
                         child: ChatDetailScreen(
@@ -177,6 +176,21 @@ class AppRoutes {
               ],
             ),
           ],
+        ),
+        // User profile route - outside ShellRoute to avoid bottom bar on narrow screens
+        GoRoute(
+          path: '/profile/:userId',
+          pageBuilder: (context, state) {
+            final userId = state.pathParameters['userId']!;
+            return MaterialPage(
+              child: WindowFrame(
+                child: UserProfileScreen(
+                  key: ValueKey(userId),
+                  userId: userId,
+                ),
+              ),
+            );
+          },
         ),
       ],
     );
