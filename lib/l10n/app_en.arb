@@ -218,30 +218,5 @@
   "mediaFileMessage": "[File]",
   "mediaUnknown": "Unknown",
   "mediaPlayAudio": "Play Audio",
-  "mediaPauseAudio": "Pause Audio",
-  
-  "profileTitle": "User Profile",
-  "profileNotFound": "User not found",
-  "profileUsernameCopied": "Username copied to clipboard",
-  "profileBio": "Bio",
-  "profileEmail": "Email",
-  "profileLocation": "Location",
-  "profileBirthday": "Birthday",
-  "profileAge": "{age} years old",
-  "@profileAge": {
-    "description": "User age",
-    "placeholders": {
-      "age": {
-        "type": "int"
-      }
-    }
-  },
-  "profileJoinedAt": "Joined At",
-  "profileDetails": "Details",
-  "profileBadges": "Badges",
-  "profileSendMessage": "Send Message",
-  "profileAddFriend": "Add Friend",
-  "profileBlock": "Block User",
-  "profileReport": "Report User",
-  "profileFeatureNotImplemented": "This feature is not yet implemented"
+  "mediaPauseAudio": "Pause Audio"
 }

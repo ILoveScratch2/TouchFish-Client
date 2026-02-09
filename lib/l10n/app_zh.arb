@@ -209,22 +209,5 @@
   "mediaFileMessage": "[文件]",
   "mediaUnknown": "未知",
   "mediaPlayAudio": "播放音频",
-  "mediaPauseAudio": "暂停音频",
-  
-  "profileTitle": "用户资料",
-  "profileNotFound": "未找到该用户",
-  "profileUsernameCopied": "用户名已复制到剪贴板",
-  "profileBio": "个人简介",
-  "profileEmail": "邮箱",
-  "profileLocation": "所在地",
-  "profileBirthday": "生日",
-  "profileAge": "{age} 岁",
-  "profileJoinedAt": "加入时间",
-  "profileDetails": "详细信息",
-  "profileBadges": "徽章",
-  "profileSendMessage": "发送消息",
-  "profileAddFriend": "添加好友",
-  "profileBlock": "拉黑用户",
-  "profileReport": "举报用户",
-  "profileFeatureNotImplemented": "该功能尚未实现"
+  "mediaPauseAudio": "暂停音频"
 }

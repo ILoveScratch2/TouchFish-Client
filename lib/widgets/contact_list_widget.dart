@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../models/chat_model.dart';
 import '../l10n/app_localizations.dart';
-import '../screens/user_profile_screen.dart';
 
 class ContactListWidget extends StatelessWidget {
   final List<Contact> contacts;
@@ -67,13 +66,7 @@ class ContactListWidget extends StatelessWidget {
             )
           : null,
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => UserProfileScreen(
-              userId: contact.id,
-            ),
-          ),
-        );
+        context.go('/chat/${contact.id}');
       },
     );
   }

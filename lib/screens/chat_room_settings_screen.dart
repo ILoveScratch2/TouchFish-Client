@@ -5,7 +5,6 @@ import '../l10n/app_localizations.dart';
 import '../models/chat_model.dart';
 import '../widgets/sheet_scaffold.dart';
 import 'chat_search_messages_screen.dart';
-import 'user_profile_screen.dart';
 
 class ChatRoomSettingsScreen extends StatefulWidget {
   final ChatRoom chatRoom;
@@ -265,10 +264,10 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
     
     // Demo data
     final demoMembers = [
-      {'id': '1', 'name': 'XSFX', 'status': 'online'},
-      {'id': '3', 'name': 'Piaoztsdy', 'status': 'offline'},
-      {'id': '4', 'name': 'JohnChiao', 'status': 'online'},
-      {'id': '2', 'name': 'L3', 'status': 'away'},
+      {'name': 'XSFX', 'status': 'online'},
+      {'name': 'Piaoztsdy', 'status': 'offline'},
+      {'name': 'JohnChiao', 'status': 'online'},
+      {'name': 'L3', 'status': 'away'},
     ];
 
     showModalBottomSheet(
@@ -330,16 +329,6 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                       ),
                       title: Text(member['name']!),
                       subtitle: Text(member['status']!),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => UserProfileScreen(
-                              userId: member['id']!,
-                            ),
-                          ),
-                        );
-                      },
                     );
                   },
                 ),
