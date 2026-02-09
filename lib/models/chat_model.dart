@@ -51,13 +51,11 @@ class Contact {
   final String id;
   final String name;
   final String? avatar;
-  final String? status;
 
   Contact({
     required this.id,
     required this.name,
     this.avatar,
-    this.status,
   });
 }
 
@@ -114,31 +112,26 @@ class ChatDemoData {
         id: '1',
         name: 'XSFX',
         avatar: null,
-        status: '在线',
       ),
       Contact(
         id: '2',
         name: 'L3',
         avatar: null,
-        status: '离开',
       ),
       Contact(
         id: '3',
         name: 'Pztsdy',
         avatar: null,
-        status: 'Offline!',
       ),
       Contact(
         id: '4',
         name: 'JohnChiao',
         avatar: null,
-        status: 'Developing',
       ),
       Contact(
         id: '5',
         name: 'Hughpig',
         avatar: null,
-        status: '在线',
       ),
     ];
   }

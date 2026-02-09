@@ -218,5 +218,25 @@
   "mediaFileMessage": "[File]",
   "mediaUnknown": "Unknown",
   "mediaPlayAudio": "Play Audio",
-  "mediaPauseAudio": "Pause Audio"
+  "mediaPauseAudio": "Pause Audio",
+  
+  "userProfileTitle": "User Profile",
+  "userProfileUsername": "Username",
+  "userProfileEmail": "Email",
+  "userProfileUid": "User ID",
+  "userProfileJoinedAt": "Joined",
+  "userProfilePermission": "Permission",
+  "userProfilePermissionAdmin": "Admin",
+  "userProfilePermissionModerator": "Moderator",
+  "userProfilePermissionUser": "User",
+  "userProfilePersonalSign": "Personal Sign",
+  "userProfileIntroduction": "Introduction",
+  "userProfileNoPersonalSign": "No personal sign",
+  "userProfileNoIntroduction": "No introduction",
+  "userProfileCopyUid": "Copy User ID",
+  "userProfileUidCopied": "User ID copied",
+  "userProfileSendMessage": "Send Message",
+  "userProfileLoading": "Loading profile...",
+  "userProfileAddFriend": "Add Friend",
+  "userProfileUnknownEmail": "Unknown"
 }

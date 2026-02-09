@@ -66,7 +66,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             id: widget.roomId,
             name: l10n.chatDetailUnknownUser,
             avatar: null,
-            status: 'offline',
           ),
         );
         return ChatRoom(

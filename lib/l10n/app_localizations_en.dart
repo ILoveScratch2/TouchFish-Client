@@ -588,4 +588,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mediaPauseAudio => 'Pause Audio';
+
+  @override
+  String get userProfileTitle => 'User Profile';
+
+  @override
+  String get userProfileUsername => 'Username';
+
+  @override
+  String get userProfileEmail => 'Email';
+
+  @override
+  String get userProfileUid => 'User ID';
+
+  @override
+  String get userProfileJoinedAt => 'Joined';
+
+  @override
+  String get userProfilePermission => 'Permission';
+
+  @override
+  String get userProfilePermissionAdmin => 'Admin';
+
+  @override
+  String get userProfilePermissionModerator => 'Moderator';
+
+  @override
+  String get userProfilePermissionUser => 'User';
+
+  @override
+  String get userProfilePersonalSign => 'Personal Sign';
+
+  @override
+  String get userProfileIntroduction => 'Introduction';
+
+  @override
+  String get userProfileNoPersonalSign => 'No personal sign';
+
+  @override
+  String get userProfileNoIntroduction => 'No introduction';
+
+  @override
+  String get userProfileCopyUid => 'Copy User ID';
+
+  @override
+  String get userProfileUidCopied => 'User ID copied';
+
+  @override
+  String get userProfileSendMessage => 'Send Message';
+
+  @override
+  String get userProfileLoading => 'Loading profile...';
+
+  @override
+  String get userProfileAddFriend => 'Add Friend';
+
+  @override
+  String get userProfileUnknownEmail => 'Unknown';
 }

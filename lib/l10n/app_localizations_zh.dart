@@ -566,4 +566,61 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mediaPauseAudio => '暂停音频';
+
+  @override
+  String get userProfileTitle => '用户资料';
+
+  @override
+  String get userProfileUsername => '用户名';
+
+  @override
+  String get userProfileEmail => '邮箱';
+
+  @override
+  String get userProfileUid => '用户ID';
+
+  @override
+  String get userProfileJoinedAt => '加入时间';
+
+  @override
+  String get userProfilePermission => '权限';
+
+  @override
+  String get userProfilePermissionAdmin => '管理员';
+
+  @override
+  String get userProfilePermissionModerator => '版主';
+
+  @override
+  String get userProfilePermissionUser => '用户';
+
+  @override
+  String get userProfilePersonalSign => '个性签名';
+
+  @override
+  String get userProfileIntroduction => '自我介绍';
+
+  @override
+  String get userProfileNoPersonalSign => '暂无个性签名';
+
+  @override
+  String get userProfileNoIntroduction => '暂无自我介绍';
+
+  @override
+  String get userProfileCopyUid => '复制用户ID';
+
+  @override
+  String get userProfileUidCopied => '用户ID已复制';
+
+  @override
+  String get userProfileSendMessage => '发送消息';
+
+  @override
+  String get userProfileLoading => '加载用户资料中...';
+
+  @override
+  String get userProfileAddFriend => '添加好友';
+
+  @override
+  String get userProfileUnknownEmail => '未知';
 }

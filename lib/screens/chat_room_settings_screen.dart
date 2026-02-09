@@ -264,10 +264,10 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
     
     // Demo data
     final demoMembers = [
-      {'name': 'XSFX', 'status': 'online'},
-      {'name': 'Piaoztsdy', 'status': 'offline'},
-      {'name': 'JohnChiao', 'status': 'online'},
-      {'name': 'L3', 'status': 'away'},
+      {'id': '1', 'name': 'XSFX'},
+      {'id': '3', 'name': 'Pztsdy'},
+      {'id': '4', 'name': 'JohnChiao'},
+      {'id': '2', 'name': 'L3'},
     ];
 
     showModalBottomSheet(
@@ -296,39 +296,18 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                   itemBuilder: (context, index) {
                     final member = demoMembers[index];
                     return ListTile(
-                      leading: Stack(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                            child: Icon(
-                              Icons.person,
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
-                            ),
-                          ),
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(
-                                color: member['status'] == 'online'
-                                    ? Colors.green
-                                    : member['status'] == 'away'
-                                        ? Colors.orange
-                                        : Colors.grey,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Theme.of(context).colorScheme.surface,
-                                  width: 2,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      leading: CircleAvatar(
+                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                        child: Icon(
+                          Icons.person,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
                       ),
                       title: Text(member['name']!),
-                      subtitle: Text(member['status']!),
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.push('/user/${member['id']}');
+                      },
                     );
                   },
                 ),

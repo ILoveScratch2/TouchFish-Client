@@ -1213,6 +1213,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pause Audio'**
   String get mediaPauseAudio;
+
+  /// No description provided for @userProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'User Profile'**
+  String get userProfileTitle;
+
+  /// No description provided for @userProfileUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get userProfileUsername;
+
+  /// No description provided for @userProfileEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get userProfileEmail;
+
+  /// No description provided for @userProfileUid.
+  ///
+  /// In en, this message translates to:
+  /// **'User ID'**
+  String get userProfileUid;
+
+  /// No description provided for @userProfileJoinedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Joined'**
+  String get userProfileJoinedAt;
+
+  /// No description provided for @userProfilePermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission'**
+  String get userProfilePermission;
+
+  /// No description provided for @userProfilePermissionAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get userProfilePermissionAdmin;
+
+  /// No description provided for @userProfilePermissionModerator.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderator'**
+  String get userProfilePermissionModerator;
+
+  /// No description provided for @userProfilePermissionUser.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get userProfilePermissionUser;
+
+  /// No description provided for @userProfilePersonalSign.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Sign'**
+  String get userProfilePersonalSign;
+
+  /// No description provided for @userProfileIntroduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Introduction'**
+  String get userProfileIntroduction;
+
+  /// No description provided for @userProfileNoPersonalSign.
+  ///
+  /// In en, this message translates to:
+  /// **'No personal sign'**
+  String get userProfileNoPersonalSign;
+
+  /// No description provided for @userProfileNoIntroduction.
+  ///
+  /// In en, this message translates to:
+  /// **'No introduction'**
+  String get userProfileNoIntroduction;
+
+  /// No description provided for @userProfileCopyUid.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy User ID'**
+  String get userProfileCopyUid;
+
+  /// No description provided for @userProfileUidCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'User ID copied'**
+  String get userProfileUidCopied;
+
+  /// No description provided for @userProfileSendMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Message'**
+  String get userProfileSendMessage;
+
+  /// No description provided for @userProfileLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading profile...'**
+  String get userProfileLoading;
+
+  /// No description provided for @userProfileAddFriend.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Friend'**
+  String get userProfileAddFriend;
+
+  /// No description provided for @userProfileUnknownEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get userProfileUnknownEmail;
 }
 
 class _AppLocalizationsDelegate

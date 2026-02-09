@@ -209,5 +209,25 @@
   "mediaFileMessage": "[文件]",
   "mediaUnknown": "未知",
   "mediaPlayAudio": "播放音频",
-  "mediaPauseAudio": "暂停音频"
+  "mediaPauseAudio": "暂停音频",
+  
+  "userProfileTitle": "用户资料",
+  "userProfileUsername": "用户名",
+  "userProfileEmail": "邮箱",
+  "userProfileUid": "用户ID",
+  "userProfileJoinedAt": "加入时间",
+  "userProfilePermission": "权限",
+  "userProfilePermissionAdmin": "管理员",
+  "userProfilePermissionModerator": "版主",
+  "userProfilePermissionUser": "用户",
+  "userProfilePersonalSign": "个性签名",
+  "userProfileIntroduction": "自我介绍",
+  "userProfileNoPersonalSign": "暂无个性签名",
+  "userProfileNoIntroduction": "暂无自我介绍",
+  "userProfileCopyUid": "复制用户ID",
+  "userProfileUidCopied": "用户ID已复制",
+  "userProfileSendMessage": "发送消息",
+  "userProfileLoading": "加载用户资料中...",
+  "userProfileAddFriend": "添加好友",
+  "userProfileUnknownEmail": "未知"
 }

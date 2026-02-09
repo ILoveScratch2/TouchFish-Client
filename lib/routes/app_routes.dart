@@ -13,6 +13,7 @@ import '../screens/chat_detail_screen.dart';
 import '../screens/announcement_screen.dart';
 import '../screens/forum_screen.dart';
 import '../screens/account_screen.dart';
+import '../screens/user_profile_screen.dart';
 import '../widgets/window_frame.dart';
 
 class AppRoutes {
@@ -29,6 +30,7 @@ class AppRoutes {
   static const String registerStep2 = '/register/step2';
   static const String registerStep3 = '/register/step3';
   static const String registerSuccess = '/register/success';
+  static const String userProfile = '/user/:userId';
 
   static GoRouter createRouter({required bool isFirstLaunch}) {
     return GoRouter(
@@ -85,6 +87,13 @@ class AppRoutes {
             GoRoute(
               path: registerSuccess,
               builder: (context, state) => const RegisterSuccessScreen(),
+            ),
+            GoRoute(
+              path: '/user/:userId',
+              builder: (context, state) {
+                final userId = state.pathParameters['userId']!;
+                return UserProfileScreen(userId: userId);
+              },
             ),
             ShellRoute(
               builder: (context, state, child) {
