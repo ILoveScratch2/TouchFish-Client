@@ -494,6 +494,18 @@ abstract class AppLocalizations {
   /// **'Press Ctrl+Enter to send'**
   String get settingsSendModeCtrlEnter;
 
+  /// No description provided for @settingsEnableMarkdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Render Markdown/LaTeX'**
+  String get settingsEnableMarkdownTitle;
+
+  /// No description provided for @settingsEnableMarkdownDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Render Markdown and LaTeX formatted text'**
+  String get settingsEnableMarkdownDesc;
+
   /// No description provided for @settingsSystemNotificationsTitle.
   ///
   /// In en, this message translates to:
@@ -1327,6 +1339,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown'**
   String get userProfileUnknownEmail;
+
+  /// No description provided for @markdownCopyCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy code'**
+  String get markdownCopyCode;
+
+  /// No description provided for @markdownCodeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Code copied to clipboard'**
+  String get markdownCodeCopied;
 }
 
 class _AppLocalizationsDelegate

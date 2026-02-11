@@ -77,6 +77,9 @@
   "settingsSendModeEnter": "按 Enter 发送",
   "settingsSendModeCtrlEnter": "按 Ctrl+Enter 发送",
   
+  "settingsEnableMarkdownTitle": "渲染Markdown/LaTeX内容",
+  "settingsEnableMarkdownDesc": "将可渲染的Markdown/LaTeX文本进行渲染",
+  
   "settingsSystemNotificationsTitle": "系统通知",
   "settingsSystemNotificationsDesc": "使用操作系统通知进行消息通知",
   
@@ -229,5 +232,8 @@
   "userProfileSendMessage": "发送消息",
   "userProfileLoading": "加载用户资料中...",
   "userProfileAddFriend": "添加好友",
-  "userProfileUnknownEmail": "未知"
+  "userProfileUnknownEmail": "未知",
+  
+  "markdownCopyCode": "复制代码",
+  "markdownCodeCopied": "代码已复制到剪贴板"
 }

@@ -120,6 +120,14 @@ class SettingsData {
                 value: 'ctrlEnter', labelKey: 'settingsSendModeCtrlEnter'),
           ],
         ),
+        SettingItem(
+          key: 'enableMarkdownRendering',
+          titleKey: 'settingsEnableMarkdownTitle',
+          descriptionKey: 'settingsEnableMarkdownDesc',
+          type: SettingType.switchSetting,
+          defaultValue: true,
+          icon: Icons.text_format,
+        ),
       ],
     ),
     SettingCategoryData(

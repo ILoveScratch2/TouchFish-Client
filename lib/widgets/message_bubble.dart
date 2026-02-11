@@ -11,7 +11,8 @@ import '../l10n/app_localizations.dart';
 import '../widgets/media/image_lightbox.dart';
 import '../widgets/media/video_viewer.dart';
 import '../widgets/media/audio_player.dart';
-import 'package:path/path.dart' as path;
+import '../widgets/markdown_renderer.dart';
+import '../models/settings_service.dart';
 import 'package:exif/exif.dart';
 
 class MessageBubble extends HookWidget {
@@ -200,12 +201,14 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
       case MessageType.file:
         return _buildFileMessage(context, colorScheme, textTheme);
       case MessageType.text:
-      default:
         return _buildTextMessage(context, colorScheme, textTheme);
     }
   }
 
   Widget _buildTextMessage(BuildContext context, ColorScheme colorScheme, TextTheme textTheme) {
+    final settingsService = SettingsService.instance;
+    final enableMarkdown = settingsService.getValue<bool>('enableMarkdownRendering', true);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
@@ -219,12 +222,30 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
           bottomRight: const Radius.circular(18),
         ),
       ),
-      child: Text(
-        widget.message.text,
-        style: textTheme.bodyMedium?.copyWith(
-          color: widget.message.isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
-        ),
-      ),
+      child: enableMarkdown
+          ? Theme(
+              data: Theme.of(context).copyWith(
+                textTheme: textTheme.copyWith(
+                  bodyMedium: textTheme.bodyMedium?.copyWith(
+                    color: widget.message.isMe
+                        ? colorScheme.onPrimaryContainer
+                        : colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              child: MarkdownRenderer(
+                data: widget.message.text,
+                selectable: true,
+              ),
+            )
+          : Text(
+              widget.message.text,
+              style: textTheme.bodyMedium?.copyWith(
+                color: widget.message.isMe
+                    ? colorScheme.onPrimaryContainer
+                    : colorScheme.onSurface,
+              ),
+            ),
     );
   }
 

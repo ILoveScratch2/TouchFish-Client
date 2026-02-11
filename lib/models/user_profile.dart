@@ -56,9 +56,44 @@ class UserProfileDemoData {
         username: 'XSFX',
         email: 'xsfx@example.com',
         stat: 'admin',
-        createTime: '1640000000', // 2021-12-20
-        personalSign: '摸鱼开发者 🐟',
-        introduction: '# 关于我\n\n热爱编程，喜欢摸鱼。\n\n## 技能\n\n- Flutter 开发\n- Python 后端\n- 摸鱼',
+        createTime: '1640000000',
+        personalSign: '摸鱼开发者',
+        introduction: '''# 关于我
+
+热爱编程，喜欢摸鱼。
+
+## 技能
+
+- **摸鱼**
+
+## 代码示例
+
+\`\`\`dart
+void main() {
+  print('Hello, TouchFish!');
+  runApp(MyApp());
+}
+\`\`\`
+
+
+## 数学公式
+
+行内公式：\$E = mc^2\$
+
+块级公式：
+
+\$\$
+\\int_{0}^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}
+\$\$
+
+> 这是一条引用文本
+
+---
+
+[GitHub](https://github.com)
+
+![Image](https://avatars.githubusercontent.com/u/161606492?v=4)
+''',
         avatar: null,
       ),
       '2': UserProfile(
@@ -68,7 +103,49 @@ class UserProfileDemoData {
         stat: 'user',
         createTime: '1645000000', // 2022-02-16
         personalSign: '代码即艺术',
-        introduction: '## Hello World\n\n我是L3，一名开发者。',
+        introduction: '''## Hello World
+
+我是L3，一名开发者。
+
+
+
+### 代码片段
+
+\`\`\`javascript
+const greeting = (name) => {
+  console.log(\`Hello, \${name}!\`);
+};
+greeting('TouchFish');
+\`\`\`
+
+**粗体文本** 和 *斜体文本*
+''',
+        avatar: null,
+      ),
+      '4': UserProfile(
+        uid: '4',
+        username: 'JohnChiao',
+        email: 'johnchiao@example.com',
+        stat: 'moderator',
+        createTime: '1655000000',
+        personalSign: 'Developing the future',
+        introduction: '''# Developer & Designer
+
+Working on **TouchFish V5**
+
+### Tech Stack
+
+\`\`\`python
+# Python backend
+from flask import Flask
+app = Flask(__name__)
+
+@app.route('/')
+def hello():
+    return 'Hello, TouchFish!'
+\`\`\`
+
+''',
         avatar: null,
       ),
       '3': UserProfile(
@@ -81,22 +158,12 @@ class UserProfileDemoData {
         introduction: null,
         avatar: null,
       ),
-      '4': UserProfile(
-        uid: '4',
-        username: 'JohnChiao',
-        email: 'johnchiao@example.com',
-        stat: 'moderator',
-        createTime: '1655000000', // 2022-06-12
-        personalSign: 'Developing the future',
-        introduction: '# Developer & Designer\n\nBuilding amazing apps with Flutter.',
-        avatar: null,
-      ),
       '5': UserProfile(
         uid: '5',
         username: 'Hughpig',
         email: 'hughpig@example.com',
         stat: 'user',
-        createTime: '1660000000', // 2022-08-09
+        createTime: '1660000000',
         personalSign: '快乐摸鱼人',
         introduction: null,
         avatar: null,
@@ -106,7 +173,7 @@ class UserProfileDemoData {
     return demoUsers[userId] ?? UserProfile(
       uid: userId,
       username: 'Unknown User',
-      email: 'unknown@example.com',
+      email: '',
       stat: 'user',
       createTime: DateTime.now().millisecondsSinceEpoch.toString(),
       personalSign: null,

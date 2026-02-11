@@ -215,6 +215,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSendModeCtrlEnter => 'Press Ctrl+Enter to send';
 
   @override
+  String get settingsEnableMarkdownTitle => 'Render Markdown/LaTeX';
+
+  @override
+  String get settingsEnableMarkdownDesc =>
+      'Render Markdown and LaTeX formatted text';
+
+  @override
   String get settingsSystemNotificationsTitle => 'System Notifications';
 
   @override
@@ -645,4 +652,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get userProfileUnknownEmail => 'Unknown';
+
+  @override
+  String get markdownCopyCode => 'Copy code';
+
+  @override
+  String get markdownCodeCopied => 'Code copied to clipboard';
 }

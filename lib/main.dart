@@ -9,7 +9,6 @@ import 'l10n/app_localizations.dart';
 import 'models/app_state.dart';
 import 'models/settings_service.dart';
 import 'routes/app_routes.dart';
-import 'widgets/window_frame.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

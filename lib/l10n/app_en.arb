@@ -86,6 +86,9 @@
   "settingsSendModeEnter": "Press Enter to send",
   "settingsSendModeCtrlEnter": "Press Ctrl+Enter to send",
   
+  "settingsEnableMarkdownTitle": "Render Markdown/LaTeX",
+  "settingsEnableMarkdownDesc": "Render Markdown and LaTeX formatted text",
+  
   "settingsSystemNotificationsTitle": "System Notifications",
   "settingsSystemNotificationsDesc": "Use system notifications for messages",
   
@@ -238,5 +241,8 @@
   "userProfileSendMessage": "Send Message",
   "userProfileLoading": "Loading profile...",
   "userProfileAddFriend": "Add Friend",
-  "userProfileUnknownEmail": "Unknown"
+  "userProfileUnknownEmail": "Unknown",
+  
+  "markdownCopyCode": "Copy code",
+  "markdownCodeCopied": "Code copied to clipboard"
 }

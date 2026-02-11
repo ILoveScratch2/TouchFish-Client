@@ -82,6 +82,71 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
 
     setState(() {});
+    
+    // examples
+    if (_messages.isEmpty && widget.roomId == '1') {
+      _messages.addAll([
+        ChatMessage(
+          id: '1',
+          text: 'Welcome to use **TouchFish**!',
+          timestamp: DateTime.now().subtract(const Duration(minutes: 10)),
+          isMe: false,
+          senderName: _currentRoom?.name,
+          type: MessageType.text,
+        ),
+        ChatMessage(
+          id: '2',
+          text: '''Now it supports **Markdown** rendering!
+
+MARKDOWN:
+- *italic text*
+- **bold text**
+- \`inline code\`
+
+CODE:
+
+\`\`\`dart
+void main() {
+  print('Hello, Flutter!');
+}
+\`\`\`''',
+          timestamp: DateTime.now().subtract(const Duration(minutes: 9)),
+          isMe: false,
+          senderName: _currentRoom?.name,
+          type: MessageType.text,
+        ),
+        ChatMessage(
+          id: '3',
+          text: '''It also supports tables:
+
+| Feature | Status |
+|------|------|
+| TCP Trans | ✅ |
+| Register API | ✅ |
+| Info API | ✅ |
+| Forum API | Developing |''',
+          timestamp: DateTime.now().subtract(const Duration(minutes: 8)),
+          isMe: false,
+          senderName: _currentRoom?.name,
+          type: MessageType.text,
+        ),
+        ChatMessage(
+          id: '4',
+          text: r'It also supports math: $E = mc^2$ and $$\int_{0}^{\infty} e^{-x^2} dx = \frac{\sqrt{\pi}}{2}$$',
+          timestamp: DateTime.now().subtract(const Duration(minutes: 7)),
+          isMe: false,
+          senderName: _currentRoom?.name,
+          type: MessageType.text,
+        ),
+        ChatMessage(
+          id: '5',
+          text: 'You can disable Markdown rendering in the settings.',
+          timestamp: DateTime.now().subtract(const Duration(minutes: 6)),
+          isMe: true,
+          type: MessageType.text,
+        ),
+      ]);
+    }
   }
 
   void _sendMessage() {

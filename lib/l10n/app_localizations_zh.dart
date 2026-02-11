@@ -208,6 +208,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSendModeCtrlEnter => '按 Ctrl+Enter 发送';
 
   @override
+  String get settingsEnableMarkdownTitle => '渲染Markdown/LaTeX内容';
+
+  @override
+  String get settingsEnableMarkdownDesc => '将可渲染的Markdown/LaTeX文本进行渲染';
+
+  @override
   String get settingsSystemNotificationsTitle => '系统通知';
 
   @override
@@ -623,4 +629,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get userProfileUnknownEmail => '未知';
+
+  @override
+  String get markdownCopyCode => '复制代码';
+
+  @override
+  String get markdownCodeCopied => '代码已复制到剪贴板';
 }

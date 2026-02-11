@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:photo_view/photo_view.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'exif_info_overlay.dart';
 
 class ImageLightbox extends HookWidget {

@@ -663,6 +663,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
         return l10n.settingsSendModeEnter;
       case 'settingsSendModeCtrlEnter':
         return l10n.settingsSendModeCtrlEnter;
+      case 'settingsEnableMarkdownTitle':
+        return l10n.settingsEnableMarkdownTitle;
+      case 'settingsEnableMarkdownDesc':
+        return l10n.settingsEnableMarkdownDesc;
       // Notifications
       case 'settingsSystemNotificationsTitle':
         return l10n.settingsSystemNotificationsTitle;

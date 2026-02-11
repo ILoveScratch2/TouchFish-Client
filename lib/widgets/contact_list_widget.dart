@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../models/chat_model.dart';
-import '../l10n/app_localizations.dart';
 
 class ContactListWidget extends StatelessWidget {
   final List<Contact> contacts;

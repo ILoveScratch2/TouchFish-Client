@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
+import '../widgets/markdown_renderer.dart';
+import '../models/settings_service.dart';
 
 class UserProfileScreen extends StatelessWidget {
   final String userId;
@@ -297,6 +298,9 @@ class UserProfileScreen extends StatelessWidget {
     AppLocalizations l10n,
     ColorScheme colorScheme,
   ) {
+    final settingsService = SettingsService.instance;
+    final enableMarkdown = settingsService.getValue<bool>('enableMarkdownRendering', true);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -310,15 +314,15 @@ class UserProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            MarkdownBody(
-              data: profile.introduction!,
-              styleSheet: MarkdownStyleSheet(
-                p: Theme.of(context).textTheme.bodyMedium,
-                h1: Theme.of(context).textTheme.headlineSmall,
-                h2: Theme.of(context).textTheme.titleLarge,
-                h3: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
+            enableMarkdown
+                ? MarkdownRenderer(
+                    data: profile.introduction!,
+                    selectable: true,
+                  )
+                : Text(
+                    profile.introduction!,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
           ],
         ),
       ),
