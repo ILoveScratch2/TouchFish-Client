@@ -84,8 +84,8 @@
   "settingsSendModeTitle": "Send Mode",
   "settingsSendModeDesc": "Keyboard shortcut for sending messages",
   "settingsSendModeEnter": "Press Enter to send",
-  "settingsSendModeCtrlEnter": "Press Ctrl+Enter to send",
-  
+  "settingsSendModeCtrlEnter": "Press Ctrl+Enter to send",  
+
   "settingsEnableMarkdownTitle": "Render Markdown/LaTeX",
   "settingsEnableMarkdownDesc": "Render Markdown and LaTeX formatted text",
   
@@ -242,6 +242,59 @@
   "userProfileLoading": "Loading profile...",
   "userProfileAddFriend": "Add Friend",
   "userProfileUnknownEmail": "Unknown",
+  
+  "aboutTitle": "About",
+  "aboutVersionInfo": "Version {version} ({buildNumber})",
+  "@aboutVersionInfo": {
+    "placeholders": {
+      "version": {"type": "String"},
+      "buildNumber": {"type": "String"}
+    }
+  },
+  "aboutAppInfoSection": "Application Information",
+  "aboutPackageName": "Package Name",
+  "aboutVersion": "Version",
+  "aboutBuildNumber": "Build Number",
+  "aboutLinksSection": "Links",
+  "aboutDocumentation": "Documentation",
+  "aboutServerRepository": "Backend Server Repository",
+  "aboutOpenSourceLicenses": "Open Source Licenses",
+  "aboutDeveloperSection": "Developer Information",
+  "aboutContactUs": "Contact Author",
+  "aboutSourceCode": "Source Code",
+  "aboutLicense": "License",
+  "aboutLicenseContent": "This project is licensed under the AGPLv3 License",
+  "aboutLicenseDialogTitle": "Software License",
+  "aboutLicenseDescription": "TouchFish Client is Copyleft free software: you can use, study, share and improve it at any time. You can redistribute or modify it under the GNU Affero General Public License (AGPLv3) published by the Free Software Foundation.",
+  "aboutLicenseFullText": "Full License Text",
+  "aboutLicenseClose": "Close",
+  "aboutCopyright": "© {year} ILoveScratch2. All rights reserved.",
+  "@aboutCopyright": {
+    "placeholders": {
+      "year": {"type": "String"}
+    }
+  },
+  "aboutMadeWith": "By ILoveScratch2 & TouchFish Dev Team",
+  "aboutCopiedToClipboard": "Copied to clipboard",
+  "aboutCopyToClipboard": "Copy to clipboard",
+  
+  "licensesTitle": "Open Source Licenses",
+  "licensesSearchHint": "Search packages...",
+  "licensesPackageCount": "{count} packages",
+  "@licensesPackageCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "licensesNoResults": "No packages found",
+  "licensesVersion": "Version",
+  "licensesDescription": "Description",
+  "licensesLicenseType": "License Type",
+  "licensesLinks": "Links",
+  "licensesHomepage": "Homepage",
+  "licensesRepository": "Repository",
+  "licensesLicenseText": "License Text",
+  "licensesLicenseCopied": "License text copied to clipboard",
   
   "markdownCopyCode": "Copy code",
   "markdownCodeCopied": "Code copied to clipboard"

@@ -631,6 +631,118 @@ class AppLocalizationsZh extends AppLocalizations {
   String get userProfileUnknownEmail => '未知';
 
   @override
+  String get aboutTitle => '关于';
+
+  @override
+  String aboutVersionInfo(String version, String buildNumber) {
+    return '版本 $version ($buildNumber)';
+  }
+
+  @override
+  String get aboutAppInfoSection => '应用信息';
+
+  @override
+  String get aboutPackageName => '包名';
+
+  @override
+  String get aboutVersion => '版本';
+
+  @override
+  String get aboutBuildNumber => '构建号';
+
+  @override
+  String get aboutLinksSection => '链接';
+
+  @override
+  String get aboutDocumentation => '文档';
+
+  @override
+  String get aboutServerRepository => '后端服务器仓库';
+
+  @override
+  String get aboutOpenSourceLicenses => '开源许可证';
+
+  @override
+  String get aboutDeveloperSection => '开发者信息';
+
+  @override
+  String get aboutContactUs => '联系作者';
+
+  @override
+  String get aboutSourceCode => '源代码';
+
+  @override
+  String get aboutLicense => '许可证';
+
+  @override
+  String get aboutLicenseContent => '本项目基于 AGPLv3 许可证开源';
+
+  @override
+  String get aboutLicenseDialogTitle => '软件许可证';
+
+  @override
+  String get aboutLicenseDescription =>
+      'TouchFish Client 是 Copyleft 的自由软件：您可以随时使用、研究、共享和改进它。您可以根据自由软件基金会发布的 GNU Affero 通用公共许可证 (AGPLv3) 重新分发或修改。';
+
+  @override
+  String get aboutLicenseFullText => '完整许可证文本';
+
+  @override
+  String get aboutLicenseClose => '关闭';
+
+  @override
+  String aboutCopyright(String year) {
+    return '© $year ILoveScratch2。保留所有权利。';
+  }
+
+  @override
+  String get aboutMadeWith => 'By ILoveScratch2 & TouchFish Dev Team';
+
+  @override
+  String get aboutCopiedToClipboard => '已复制到剪贴板';
+
+  @override
+  String get aboutCopyToClipboard => '复制到剪贴板';
+
+  @override
+  String get licensesTitle => '开源许可证';
+
+  @override
+  String get licensesSearchHint => '搜索包...';
+
+  @override
+  String licensesPackageCount(int count) {
+    return '$count 个包';
+  }
+
+  @override
+  String get licensesNoResults => '未找到包';
+
+  @override
+  String get licensesVersion => '版本';
+
+  @override
+  String get licensesDescription => '描述';
+
+  @override
+  String get licensesLicenseType => '许可证类型';
+
+  @override
+  String get licensesLinks => '链接';
+
+  @override
+  String get licensesHomepage => '主页';
+
+  @override
+  String get licensesRepository => '仓库';
+
+  @override
+  String get licensesLicenseText => '许可证文本';
+
+  @override
+  String get licensesLicenseCopied => '许可证文本已复制到剪贴板';
+
+  @override
   String get markdownCopyCode => '复制代码';
 
   @override

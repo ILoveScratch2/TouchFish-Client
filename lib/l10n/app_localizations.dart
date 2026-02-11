@@ -1340,6 +1340,216 @@ abstract class AppLocalizations {
   /// **'Unknown'**
   String get userProfileUnknownEmail;
 
+  /// No description provided for @aboutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get aboutTitle;
+
+  /// No description provided for @aboutVersionInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} ({buildNumber})'**
+  String aboutVersionInfo(String version, String buildNumber);
+
+  /// No description provided for @aboutAppInfoSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Application Information'**
+  String get aboutAppInfoSection;
+
+  /// No description provided for @aboutPackageName.
+  ///
+  /// In en, this message translates to:
+  /// **'Package Name'**
+  String get aboutPackageName;
+
+  /// No description provided for @aboutVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get aboutVersion;
+
+  /// No description provided for @aboutBuildNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Build Number'**
+  String get aboutBuildNumber;
+
+  /// No description provided for @aboutLinksSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Links'**
+  String get aboutLinksSection;
+
+  /// No description provided for @aboutDocumentation.
+  ///
+  /// In en, this message translates to:
+  /// **'Documentation'**
+  String get aboutDocumentation;
+
+  /// No description provided for @aboutServerRepository.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend Server Repository'**
+  String get aboutServerRepository;
+
+  /// No description provided for @aboutOpenSourceLicenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Source Licenses'**
+  String get aboutOpenSourceLicenses;
+
+  /// No description provided for @aboutDeveloperSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Developer Information'**
+  String get aboutDeveloperSection;
+
+  /// No description provided for @aboutContactUs.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Author'**
+  String get aboutContactUs;
+
+  /// No description provided for @aboutSourceCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Source Code'**
+  String get aboutSourceCode;
+
+  /// No description provided for @aboutLicense.
+  ///
+  /// In en, this message translates to:
+  /// **'License'**
+  String get aboutLicense;
+
+  /// No description provided for @aboutLicenseContent.
+  ///
+  /// In en, this message translates to:
+  /// **'This project is licensed under the AGPLv3 License'**
+  String get aboutLicenseContent;
+
+  /// No description provided for @aboutLicenseDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Software License'**
+  String get aboutLicenseDialogTitle;
+
+  /// No description provided for @aboutLicenseDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish Client is Copyleft free software: you can use, study, share and improve it at any time. You can redistribute or modify it under the GNU Affero General Public License (AGPLv3) published by the Free Software Foundation.'**
+  String get aboutLicenseDescription;
+
+  /// No description provided for @aboutLicenseFullText.
+  ///
+  /// In en, this message translates to:
+  /// **'Full License Text'**
+  String get aboutLicenseFullText;
+
+  /// No description provided for @aboutLicenseClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get aboutLicenseClose;
+
+  /// No description provided for @aboutCopyright.
+  ///
+  /// In en, this message translates to:
+  /// **'© {year} ILoveScratch2. All rights reserved.'**
+  String aboutCopyright(String year);
+
+  /// No description provided for @aboutMadeWith.
+  ///
+  /// In en, this message translates to:
+  /// **'By ILoveScratch2 & TouchFish Dev Team'**
+  String get aboutMadeWith;
+
+  /// No description provided for @aboutCopiedToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get aboutCopiedToClipboard;
+
+  /// No description provided for @aboutCopyToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to clipboard'**
+  String get aboutCopyToClipboard;
+
+  /// No description provided for @licensesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Source Licenses'**
+  String get licensesTitle;
+
+  /// No description provided for @licensesSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search packages...'**
+  String get licensesSearchHint;
+
+  /// No description provided for @licensesPackageCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} packages'**
+  String licensesPackageCount(int count);
+
+  /// No description provided for @licensesNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No packages found'**
+  String get licensesNoResults;
+
+  /// No description provided for @licensesVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get licensesVersion;
+
+  /// No description provided for @licensesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get licensesDescription;
+
+  /// No description provided for @licensesLicenseType.
+  ///
+  /// In en, this message translates to:
+  /// **'License Type'**
+  String get licensesLicenseType;
+
+  /// No description provided for @licensesLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Links'**
+  String get licensesLinks;
+
+  /// No description provided for @licensesHomepage.
+  ///
+  /// In en, this message translates to:
+  /// **'Homepage'**
+  String get licensesHomepage;
+
+  /// No description provided for @licensesRepository.
+  ///
+  /// In en, this message translates to:
+  /// **'Repository'**
+  String get licensesRepository;
+
+  /// No description provided for @licensesLicenseText.
+  ///
+  /// In en, this message translates to:
+  /// **'License Text'**
+  String get licensesLicenseText;
+
+  /// No description provided for @licensesLicenseCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'License text copied to clipboard'**
+  String get licensesLicenseCopied;
+
   /// No description provided for @markdownCopyCode.
   ///
   /// In en, this message translates to:

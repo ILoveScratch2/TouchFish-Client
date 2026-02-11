@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:window_manager/window_manager.dart';
+import '../constants/app_constants.dart';
 
 /// Custom Title Bar by ILoveScratch2
 class CustomTitleBar extends StatefulWidget {
@@ -10,7 +11,7 @@ class CustomTitleBar extends StatefulWidget {
   
   const CustomTitleBar({
     super.key,
-    this.title = 'TouchFish Client',
+    this.title = AppConstants.appName,
     this.showTitle = true,
   });
 

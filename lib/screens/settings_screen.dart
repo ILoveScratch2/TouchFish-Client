@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../models/settings_model.dart';
 import '../models/settings_service.dart';
@@ -589,7 +590,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
           title: Text(_getSettingTitle(l10n, item.titleKey)),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
-            // 没写完
+            // Navigate based on setting key
+            if (item.key == 'aboutApp') {
+              context.push('/about');
+            }
           },
         ),
       ),

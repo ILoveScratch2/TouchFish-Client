@@ -14,6 +14,8 @@ import '../screens/announcement_screen.dart';
 import '../screens/forum_screen.dart';
 import '../screens/account_screen.dart';
 import '../screens/user_profile_screen.dart';
+import '../screens/about_screen.dart';
+import '../screens/licenses_screen.dart';
 import '../widgets/window_frame.dart';
 
 class AppRoutes {
@@ -31,6 +33,8 @@ class AppRoutes {
   static const String registerStep3 = '/register/step3';
   static const String registerSuccess = '/register/success';
   static const String userProfile = '/user/:userId';
+  static const String about = '/about';
+  static const String licenses = '/licenses';
 
   static GoRouter createRouter({required bool isFirstLaunch}) {
     return GoRouter(
@@ -94,6 +98,14 @@ class AppRoutes {
                 final userId = state.pathParameters['userId']!;
                 return UserProfileScreen(userId: userId);
               },
+            ),
+            GoRoute(
+              path: about,
+              builder: (context, state) => const AboutScreen(),
+            ),
+            GoRoute(
+              path: licenses,
+              builder: (context, state) => const LicensesScreen(),
             ),
             ShellRoute(
               builder: (context, state, child) {

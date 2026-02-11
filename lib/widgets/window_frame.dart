@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 import 'custom_title_bar.dart';
+import '../constants/app_constants.dart';
 
 /// Custom Window Frame by ILoveScratch2
 class WindowFrame extends StatefulWidget {
@@ -13,7 +14,7 @@ class WindowFrame extends StatefulWidget {
   const WindowFrame({
     super.key,
     required this.child,
-    this.title = 'TouchFish Client',
+    this.title = AppConstants.appName,
   });
 
   @override

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
+import '../constants/app_constants.dart';
 
 class ServerInfo {
   final String displayName;
@@ -41,10 +42,10 @@ class ServerSelector extends StatefulWidget {
 class _ServerSelectorState extends State<ServerSelector> {
   List<ServerInfo> _servers = [
     ServerInfo(
-      displayName: 'touchfish.xin',
-      address: 'touchfish.xin',
-      apiPort: '8080',
-      tcpPort: '9090',
+      displayName: AppConstants.defaultServerDisplayName,
+      address: AppConstants.defaultServerAddress,
+      apiPort: AppConstants.defaultApiPort.toString(),
+      tcpPort: AppConstants.defaultTcpPort.toString(),
     )
   ];
   int _selectedIndex = 0;

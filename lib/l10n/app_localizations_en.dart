@@ -654,6 +654,119 @@ class AppLocalizationsEn extends AppLocalizations {
   String get userProfileUnknownEmail => 'Unknown';
 
   @override
+  String get aboutTitle => 'About';
+
+  @override
+  String aboutVersionInfo(String version, String buildNumber) {
+    return 'Version $version ($buildNumber)';
+  }
+
+  @override
+  String get aboutAppInfoSection => 'Application Information';
+
+  @override
+  String get aboutPackageName => 'Package Name';
+
+  @override
+  String get aboutVersion => 'Version';
+
+  @override
+  String get aboutBuildNumber => 'Build Number';
+
+  @override
+  String get aboutLinksSection => 'Links';
+
+  @override
+  String get aboutDocumentation => 'Documentation';
+
+  @override
+  String get aboutServerRepository => 'Backend Server Repository';
+
+  @override
+  String get aboutOpenSourceLicenses => 'Open Source Licenses';
+
+  @override
+  String get aboutDeveloperSection => 'Developer Information';
+
+  @override
+  String get aboutContactUs => 'Contact Author';
+
+  @override
+  String get aboutSourceCode => 'Source Code';
+
+  @override
+  String get aboutLicense => 'License';
+
+  @override
+  String get aboutLicenseContent =>
+      'This project is licensed under the AGPLv3 License';
+
+  @override
+  String get aboutLicenseDialogTitle => 'Software License';
+
+  @override
+  String get aboutLicenseDescription =>
+      'TouchFish Client is Copyleft free software: you can use, study, share and improve it at any time. You can redistribute or modify it under the GNU Affero General Public License (AGPLv3) published by the Free Software Foundation.';
+
+  @override
+  String get aboutLicenseFullText => 'Full License Text';
+
+  @override
+  String get aboutLicenseClose => 'Close';
+
+  @override
+  String aboutCopyright(String year) {
+    return '© $year ILoveScratch2. All rights reserved.';
+  }
+
+  @override
+  String get aboutMadeWith => 'By ILoveScratch2 & TouchFish Dev Team';
+
+  @override
+  String get aboutCopiedToClipboard => 'Copied to clipboard';
+
+  @override
+  String get aboutCopyToClipboard => 'Copy to clipboard';
+
+  @override
+  String get licensesTitle => 'Open Source Licenses';
+
+  @override
+  String get licensesSearchHint => 'Search packages...';
+
+  @override
+  String licensesPackageCount(int count) {
+    return '$count packages';
+  }
+
+  @override
+  String get licensesNoResults => 'No packages found';
+
+  @override
+  String get licensesVersion => 'Version';
+
+  @override
+  String get licensesDescription => 'Description';
+
+  @override
+  String get licensesLicenseType => 'License Type';
+
+  @override
+  String get licensesLinks => 'Links';
+
+  @override
+  String get licensesHomepage => 'Homepage';
+
+  @override
+  String get licensesRepository => 'Repository';
+
+  @override
+  String get licensesLicenseText => 'License Text';
+
+  @override
+  String get licensesLicenseCopied => 'License text copied to clipboard';
+
+  @override
   String get markdownCopyCode => 'Copy code';
 
   @override
