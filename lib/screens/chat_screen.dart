@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../models/chat_model.dart';
 import '../widgets/chat_list_widget.dart';
@@ -6,10 +7,58 @@ import '../widgets/contact_list_widget.dart';
 import '../widgets/invite_sheet.dart';
 import 'chat_detail_screen.dart';
 
-class ChatShellScreen extends StatelessWidget {
+class ChatShellScreen extends StatefulWidget {
   final Widget child;
   
   const ChatShellScreen({super.key, required this.child});
+
+  @override
+  State<ChatShellScreen> createState() => _ChatShellScreenState();
+}
+
+class _ChatShellScreenState extends State<ChatShellScreen> {
+  static const String _dividerPositionKey = 'chat_divider_position';
+  static const double _minLeftWidth = 200.0;
+  static const double _minRightWidth = 300.0;
+  
+  double _leftFlex = 2.0;
+  double _rightFlex = 4.0;
+  bool _isDragging = false;
+  bool _isHovering = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDividerPosition();
+  }
+
+  Future<void> _loadDividerPosition() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedRatio = prefs.getDouble(_dividerPositionKey);
+    if (savedRatio != null) {
+      setState(() {
+        _leftFlex = savedRatio;
+        _rightFlex = 1.0 - savedRatio;
+      });
+    }
+  }
+
+  Future<void> _saveDividerPosition() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ratio = _leftFlex / (_leftFlex + _rightFlex);
+    await prefs.setDouble(_dividerPositionKey, ratio);
+  }
+
+  void _updateDividerPosition(double dx, double totalWidth) {
+    final currentLeftWidth = (_leftFlex / (_leftFlex + _rightFlex)) * totalWidth;
+    final newLeftWidth = currentLeftWidth + dx;
+    final clampedLeftWidth = newLeftWidth.clamp(_minLeftWidth, totalWidth - _minRightWidth);
+    
+    setState(() {
+      _leftFlex = clampedLeftWidth;
+      _rightFlex = totalWidth - clampedLeftWidth;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,36 +66,104 @@ class ChatShellScreen extends StatelessWidget {
 
     if (isWide) {
       return Scaffold(
-        body: Row(
-          children: [
-            Flexible(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
-                child: const ChatListScreen(
-                  isAside: true,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              flex: 4,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(8),
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final totalWidth = constraints.maxWidth;
+            final currentLeftWidth = (_leftFlex / (_leftFlex + _rightFlex)) * totalWidth;
+            double adjustedLeftWidth = currentLeftWidth;
+            
+            if (currentLeftWidth < _minLeftWidth) {
+              adjustedLeftWidth = _minLeftWidth;
+            } else if (totalWidth - currentLeftWidth < _minRightWidth) {
+              adjustedLeftWidth = totalWidth - _minRightWidth;
+            }
+            if (adjustedLeftWidth != currentLeftWidth) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() {
+                    _leftFlex = adjustedLeftWidth;
+                    _rightFlex = totalWidth - adjustedLeftWidth;
+                  });
+                }
+              });
+            }
+            
+            final leftWidth = (adjustedLeftWidth / totalWidth) * totalWidth;
+            
+            return Row(
+              children: [
+                SizedBox(
+                  width: leftWidth,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+                    child: const ChatListScreen(
+                      isAside: true,
+                    ),
                   ),
-                  child: child,
                 ),
-              ),
-            ),
-          ],
+                MouseRegion(
+                  cursor: SystemMouseCursors.resizeColumn,
+                  onEnter: (_) {
+                    setState(() {
+                      _isHovering = true;
+                    });
+                  },
+                  onExit: (_) {
+                    setState(() {
+                      _isHovering = false;
+                    });
+                  },
+                  child: GestureDetector(
+                    onHorizontalDragStart: (_) {
+                      setState(() {
+                        _isDragging = true;
+                      });
+                    },
+                    onHorizontalDragUpdate: (details) {
+                      _updateDividerPosition(details.delta.dx, totalWidth);
+                    },
+                    onHorizontalDragEnd: (_) {
+                      setState(() {
+                        _isDragging = false;
+                      });
+                      _saveDividerPosition();
+                    },
+                    child: Container(
+                      width: 8,
+                      color: _isDragging 
+                          ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                          : Colors.transparent,
+                      child: Center(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: (_isHovering || _isDragging) ? 2 : 0,
+                          color: (_isHovering || _isDragging) 
+                              ? Theme.of(context).dividerColor
+                              : Colors.transparent,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(8),
+                      ),
+                      child: widget.child,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       );
     }
-    return child is ChatDetailScreen
-        ? child
+    return widget.child is ChatDetailScreen
+        ? widget.child
         : const ChatListScreen(isAside: false);
   }
 }
