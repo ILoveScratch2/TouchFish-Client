@@ -15,7 +15,7 @@ class AboutScreen extends StatefulWidget {
   State<AboutScreen> createState() => _AboutScreenState();
 }
 
-class _AboutScreenState extends State<AboutScreen> {
+class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStateMixin {
   PackageInfo _packageInfo = PackageInfo(
     appName: AppConstants.appName,
     packageName: AppConstants.packageName,
@@ -24,11 +24,47 @@ class _AboutScreenState extends State<AboutScreen> {
   );
   bool _isLoading = true;
   String? _errorMessage;
+  late AnimationController _rotationController;
+  late Animation<double> _rotationAnimation;
 
   @override
   void initState() {
     super.initState();
     _initPackageInfo();
+    _rotationController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _rotationAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _rotationController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    super.dispose();
+  }
+
+  void _onLogoTap() {
+    final l10n = AppLocalizations.of(context)!;
+    _rotationController.forward(from: 0);
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          l10n.aboutEasterEggFound,
+          style: const TextStyle(fontSize: 12),
+        ),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom + 16,
+          left: 16,
+          right: 16,
+        ),
+      ),
+    );
   }
 
   Future<void> _initPackageInfo() async {
@@ -36,7 +72,6 @@ class _AboutScreenState extends State<AboutScreen> {
       final info = await PackageInfo.fromPlatform();
       if (mounted) {
         setState(() {
-          // 保留我们自定义的应用名称，使用从平台获取的其他信息
           _packageInfo = PackageInfo(
             appName: AppConstants.appName,
             packageName: info.packageName,
@@ -238,16 +273,28 @@ class _AboutScreenState extends State<AboutScreen> {
                         children: [
                           const SizedBox(height: 24),
                           // App Icon and Name
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundColor:
-                                theme.colorScheme.primary.withOpacity(0.1),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(50),
-                              child: Image.asset(
-                                'assets/logo.png',
-                                width: 80,
-                                height: 80,
+                          GestureDetector(
+                            onTap: _onLogoTap,
+                            child: AnimatedBuilder(
+                              animation: _rotationAnimation,
+                              builder: (context, child) {
+                                return Transform.rotate(
+                                  angle: _rotationAnimation.value * 2 * 3.14159,
+                                  child: child,
+                                );
+                              },
+                              child: CircleAvatar(
+                                radius: 50,
+                                backgroundColor:
+                                    theme.colorScheme.primary.withOpacity(0.1),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(50),
+                                  child: Image.asset(
+                                    'assets/logo.png',
+                                    width: 80,
+                                    height: 80,
+                                  ),
+                                ),
                               ),
                             ),
                           ),

@@ -729,6 +729,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutCopyToClipboard => 'Copy to clipboard';
 
   @override
+  String get aboutEasterEggFound => 'Congratulations! You found an easter egg!';
+
+  @override
   String get licensesTitle => 'Open Source Licenses';
 
   @override

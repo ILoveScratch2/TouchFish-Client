@@ -1478,6 +1478,12 @@ abstract class AppLocalizations {
   /// **'Copy to clipboard'**
   String get aboutCopyToClipboard;
 
+  /// No description provided for @aboutEasterEggFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Congratulations! You found an easter egg!'**
+  String get aboutEasterEggFound;
+
   /// No description provided for @licensesTitle.
   ///
   /// In en, this message translates to:

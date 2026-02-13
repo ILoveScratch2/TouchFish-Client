@@ -705,6 +705,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutCopyToClipboard => '复制到剪贴板';
 
   @override
+  String get aboutEasterEggFound => '恭喜你发现了彩蛋！';
+
+  @override
   String get licensesTitle => '开源许可证';
 
   @override
