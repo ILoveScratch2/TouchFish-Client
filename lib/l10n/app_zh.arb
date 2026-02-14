@@ -250,7 +250,7 @@
   "aboutLicense": "许可证",
   "aboutLicenseContent": "本项目基于 AGPLv3 许可证开源",
   "aboutLicenseDialogTitle": "软件许可证",
-  "aboutLicenseDescription": "TouchFish Client 是 Copyleft 的自由软件：您可以随时使用、研究、共享和改进它。您可以根据自由软件基金会发布的 GNU Affero 通用公共许可证 (AGPLv3) 重新分发或修改。",
+  "aboutLicenseDescription": "TouchFish Client 是 Copyleft 的自由软件：您可以随时使用、研究、共享和改进它。您可以根据自由软件基金会发布的 GNU Affero 通用公共许可证 3.0 (AGPLv3) 重新分发或修改。",
   "aboutLicenseFullText": "完整许可证文本",
   "aboutLicenseClose": "关闭",
   "aboutCopyright": "© {year} ILoveScratch2。保留所有权利。",
