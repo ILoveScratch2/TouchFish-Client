@@ -699,7 +699,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutLicenseContent =>
-      'This project is licensed under the (AGPLv3 License';
+      'This project is licensed under the AGPLv3 License';
 
   @override
   String get aboutLicenseDialogTitle => 'Software License';

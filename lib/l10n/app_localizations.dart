@@ -1427,7 +1427,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutLicenseContent.
   ///
   /// In en, this message translates to:
-  /// **'This project is licensed under the (AGPLv3 License'**
+  /// **'This project is licensed under the AGPLv3 License'**
   String get aboutLicenseContent;
 
   /// No description provided for @aboutLicenseDialogTitle.
