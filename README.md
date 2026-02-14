@@ -12,7 +12,7 @@
 
 ## 简介
 
-TouchFish Client 是一个基于 Flutter 构建的现代化聊天客户端，旨在为 TouchFish 提供流畅且跨平台的聊天体验。支持 Windows、macOS、Linux 以及移动设备（iOS 和 Android），与 TouchFish 聊天协议完全兼容。
+TouchFish Client 是一个基于 Flutter 构建的现代化聊天客户端，旨在为 TouchFish 提供流畅且跨平台的聊天体验。支持 Windows、macOS、Linux 以及移动设备（~~iOS~~ 和 Android），与 TouchFish 聊天协议完全兼容。
 
 
 ## 截图

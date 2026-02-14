@@ -13,7 +13,7 @@
 
 ## Introduction
 
-TouchFish Client is a modern chat client built with Flutter, aiming to provide a smooth and cross-platform chat experience for TouchFish. It supports Windows, macOS, Linux, and mobile devices (iOS and Android), and is fully compatible with the TouchFish chat protocol.
+TouchFish Client is a modern chat client built with Flutter, aiming to provide a smooth and cross-platform chat experience for TouchFish. It supports Windows, macOS, Linux, and mobile devices (~~iOS~~ and Android), and is fully compatible with the TouchFish chat protocol.
 
 ## Screenshots
 
