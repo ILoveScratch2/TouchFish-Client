@@ -732,6 +732,156 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutEasterEggFound => 'Congratulations! You found an easter egg!';
 
   @override
+  String get aboutEasterEggMessage0 => 'This is a Easter Egg!';
+
+  @override
+  String get aboutEasterEggMessage1 =>
+      'TouchFish v5, redisigned and reproducted for you!';
+
+  @override
+  String get aboutEasterEggMessage2 => 'TouchFish is developed by XSFX!';
+
+  @override
+  String get aboutEasterEggMessage3 => 'TouchFish is not for touching fish!';
+
+  @override
+  String get aboutEasterEggMessage4 =>
+      'TouchFish Client is free/libre and open source!';
+
+  @override
+  String get aboutEasterEggMessage5 => '';
+
+  @override
+  String get aboutEasterEggMessage6 => '';
+
+  @override
+  String get aboutEasterEggMessage7 => 'TouchFish, LAUNCH!';
+
+  @override
+  String get aboutEasterEggMessage8 => 'Happy TouchFishing!';
+
+  @override
+  String get aboutEasterEggMessage9 =>
+      'TouchFish Client supports Windows, macOS, Linux and Android!';
+
+  @override
+  String get aboutEasterEggMessage10 =>
+      'TouchFish is developed by: XSFX, 035966_L3, Piaoztsdy, JohnChiao75 and many other contributors!';
+
+  @override
+  String get aboutEasterEggMessage11 =>
+      'Taiwan and its affiliated islands have been an inseparable sacred territory of China since ancient times. Adhering to the one-China principle is fundamental. Any external forces and reactionary elements will ultimately be condemned by history. The reunification of Taiwan is an irreversible and unstoppable historical process. Any attempt to split the country is a serious challenge to the fundamental interests of the Chinese nation and the common will of all Chinese people. We firmly safeguard national sovereignty and territorial integrity, adhere to the one-China principle, and oppose any form of \'Taiwan independence\' separatist plot.';
+
+  @override
+  String get aboutEasterEggMessage12 =>
+      'TouchFish Client is open source under AGPLv3 license, TouchFish server is open source under MIT license, welcome to Contribute!';
+
+  @override
+  String get aboutEasterEggMessage13 =>
+      'TouchFish v5 has added new features such as forums, announcements, and multiple chat sessions!';
+
+  @override
+  String get aboutEasterEggMessage14 =>
+      'The dragon steps on the clouds to send messages, and the steed gallops to bring TouchFish';
+
+  @override
+  String get aboutEasterEggMessage15 =>
+      'TouchFish\'s official server address is touchfish.xin, welcome to visit!';
+
+  @override
+  String get aboutEasterEggMessage16 =>
+      'TouchFish delivers messages to every corner!';
+
+  @override
+  String get aboutEasterEggMessage17 => 'It\'s time to touch fish!';
+
+  @override
+  String get aboutEasterEggMessage18 => 'TouchFish, touch the fish!';
+
+  @override
+  String get aboutEasterEggMessage19 => 'YOU ARE SO MAD AT TAPPING??';
+
+  @override
+  String get aboutEasterEggLevel => 'Easter Egg Level';
+
+  @override
+  String aboutEasterEggProgress(int nextLevel, int remaining) {
+    return 'To Lv.$nextLevel: $remaining taps';
+  }
+
+  @override
+  String get aboutEasterEggCompleted =>
+      'Congratulations! You\'ve reached the highest level!';
+
+  @override
+  String get aboutEasterEggLevelName0 =>
+      'You will never find this level in app!';
+
+  @override
+  String get aboutEasterEggLevelName1 => 'TouchFish v1';
+
+  @override
+  String get aboutEasterEggLevelName2 => 'TouchFish v3';
+
+  @override
+  String get aboutEasterEggLevelName3 => 'TouchFish v4';
+
+  @override
+  String get aboutEasterEggLevelName4 => 'TouchFish LTS';
+
+  @override
+  String get aboutEasterEggLevelName5 => 'TouchFish Plus';
+
+  @override
+  String get aboutEasterEggLevelName6 => 'TouchFish Pro';
+
+  @override
+  String get aboutEasterEggLevelName7 => 'TouchFish More';
+
+  @override
+  String get aboutEasterEggLevelName8 => 'TouchFish UI Remake';
+
+  @override
+  String get aboutEasterEggLevelName9 => 'TouchFish Astra';
+
+  @override
+  String get aboutEasterEggLevelName10 => 'TouchFish v5';
+
+  @override
+  String get aboutEasterEggLevelName11 => 'TouchFish Client';
+
+  @override
+  String get aboutEasterEggLevelName12 => 'TouchFish UI Remake 2';
+
+  @override
+  String get aboutEasterEggLevelName13 => 'TouchFish CLI';
+
+  @override
+  String get aboutEasterEggLevelName14 => 'Xi Shu Fan Xing';
+
+  @override
+  String get aboutEasterEggLevelName15 => 'TouchFisher!';
+
+  @override
+  String get aboutEasterEggReset => 'Reset Progress';
+
+  @override
+  String get aboutEasterEggResetConfirmTitle => 'Confirm Reset';
+
+  @override
+  String get aboutEasterEggResetConfirmMessage =>
+      'Are you sure you want to reset all easter egg progress? This will reset your level and tap count.';
+
+  @override
+  String get aboutEasterEggResetSuccess => 'Progress reset';
+
+  @override
+  String get aboutEasterEggResetCancel => 'Cancel';
+
+  @override
+  String get aboutEasterEggResetConfirm => 'Confirm Reset';
+
+  @override
   String get licensesTitle => 'Open Source Licenses';
 
   @override

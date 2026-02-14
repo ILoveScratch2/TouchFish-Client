@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math';
 import '../l10n/app_localizations.dart';
 import '../constants/app_constants.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -15,7 +17,7 @@ class AboutScreen extends StatefulWidget {
   State<AboutScreen> createState() => _AboutScreenState();
 }
 
-class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStateMixin {
+class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin {
   PackageInfo _packageInfo = PackageInfo(
     appName: AppConstants.appName,
     packageName: AppConstants.packageName,
@@ -26,11 +28,17 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
   String? _errorMessage;
   late AnimationController _rotationController;
   late Animation<double> _rotationAnimation;
+  late AnimationController _shakeController;
+  late Animation<double> _shakeAnimation;
+  int _easterEggTapCount = 0;
+  int _currentLevel = 0;
+  final Random _random = Random();
 
   @override
   void initState() {
     super.initState();
     _initPackageInfo();
+    _loadEasterEggProgress();
     _rotationController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -38,11 +46,19 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
     _rotationAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _rotationController, curve: Curves.easeInOut),
     );
+    _shakeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _shakeAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _shakeController, curve: Curves.elasticOut),
+    );
   }
 
   @override
   void dispose() {
     _rotationController.dispose();
+    _shakeController.dispose();
     super.dispose();
   }
 
@@ -57,6 +73,176 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
           style: const TextStyle(fontSize: 12),
         ),
         duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom + 16,
+          left: 16,
+          right: 16,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _loadEasterEggProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _easterEggTapCount = prefs.getInt('easter_egg_tap_count') ?? 0;
+        _currentLevel = _calculateLevel(_easterEggTapCount);
+      });
+    }
+  }
+
+  Future<void> _saveEasterEggProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('easter_egg_tap_count', _easterEggTapCount);
+  }
+
+  Future<void> _resetEasterEggProgress() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.aboutEasterEggResetConfirmTitle),
+        content: Text(l10n.aboutEasterEggResetConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.aboutEasterEggResetCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.aboutEasterEggResetConfirm),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('easter_egg_tap_count', 0);
+      setState(() {
+        _easterEggTapCount = 0;
+        _currentLevel = 0;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.aboutEasterEggResetSuccess),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.only(
+              bottom: MediaQuery.of(context).padding.bottom + 16,
+              left: 16,
+              right: 16,
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  int _calculateLevel(int tapCount) {
+    for (int level = 1; level <= 15; level++) {
+      if (tapCount < _getRequiredTapsForLevel(level)) {
+        return level - 1;
+      }
+    }
+    return 15; // Max level
+  }
+
+  int _getRequiredTapsForLevel(int level) {
+    switch (level) {
+      case 0: return 0;
+      case 1: return 1;
+      case 2: return 5;
+      case 3: return 15;
+      case 4: return 30;
+      case 5: return 60;
+      case 6: return 100;
+      case 7: return 180;
+      case 8: return 280;
+      case 9: return 390;
+      case 10: return 600;
+      case 11: return 700;
+      case 12: return 860;
+      case 13: return 1000;
+      case 14: return 1100;
+      case 15: return 1450;
+      default: return 1450;
+    }
+  }
+
+  String _getLevelName(AppLocalizations l10n, int level) {
+    switch (level) {
+      case 0: return l10n.aboutEasterEggLevelName0;
+      case 1: return l10n.aboutEasterEggLevelName1;
+      case 2: return l10n.aboutEasterEggLevelName2;
+      case 3: return l10n.aboutEasterEggLevelName3;
+      case 4: return l10n.aboutEasterEggLevelName4;
+      case 5: return l10n.aboutEasterEggLevelName5;
+      case 6: return l10n.aboutEasterEggLevelName6;
+      case 7: return l10n.aboutEasterEggLevelName7;
+      case 8: return l10n.aboutEasterEggLevelName8;
+      case 9: return l10n.aboutEasterEggLevelName9;
+      case 10: return l10n.aboutEasterEggLevelName10;
+      case 11: return l10n.aboutEasterEggLevelName11;
+      case 12: return l10n.aboutEasterEggLevelName12;
+      case 13: return l10n.aboutEasterEggLevelName13;
+      case 14: return l10n.aboutEasterEggLevelName14;
+      case 15: return l10n.aboutEasterEggLevelName15;
+      default: return l10n.aboutEasterEggLevelName0;
+    }
+  }
+
+  void _onAppNameTap() {
+    final l10n = AppLocalizations.of(context)!;
+    _shakeController.forward(from: 0);
+    ScaffoldMessenger.of(context).clearSnackBars();
+    
+    setState(() {
+      _easterEggTapCount++;
+      _currentLevel = _calculateLevel(_easterEggTapCount);
+    });
+    
+    _saveEasterEggProgress();
+    
+    final messageIndex = _random.nextInt(20);
+    String message;
+    switch (messageIndex) {
+      case 0: message = l10n.aboutEasterEggMessage0; break;
+      case 1: message = l10n.aboutEasterEggMessage1; break;
+      case 2: message = l10n.aboutEasterEggMessage2; break;
+      case 3: message = l10n.aboutEasterEggMessage3; break;
+      case 4: message = l10n.aboutEasterEggMessage4; break;
+      case 5: message = l10n.aboutEasterEggMessage5; break;
+      case 6: message = l10n.aboutEasterEggMessage6; break;
+      case 7: message = l10n.aboutEasterEggMessage7; break;
+      case 8: message = l10n.aboutEasterEggMessage8; break;
+      case 9: message = l10n.aboutEasterEggMessage9; break;
+      case 10: message = l10n.aboutEasterEggMessage10; break;
+      case 11: message = l10n.aboutEasterEggMessage11; break;
+      case 12: message = l10n.aboutEasterEggMessage12; break;
+      case 13: message = l10n.aboutEasterEggMessage13; break;
+      case 14: message = l10n.aboutEasterEggMessage14; break;
+      case 15: message = l10n.aboutEasterEggMessage15; break;
+      case 16: message = l10n.aboutEasterEggMessage16; break;
+      case 17: message = l10n.aboutEasterEggMessage17; break;
+      case 18: message = l10n.aboutEasterEggMessage18; break;
+      case 19: message = l10n.aboutEasterEggMessage19; break;
+      default: message = l10n.aboutEasterEggMessage0;
+    }
+    
+    final levelName = _getLevelName(l10n, _currentLevel);
+    final displayMessage = '${l10n.aboutEasterEggLevel} $_currentLevel （$levelName）\n$message';
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          displayMessage,
+          style: const TextStyle(fontSize: 13),
+        ),
+        duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.only(
           bottom: MediaQuery.of(context).padding.bottom + 16,
@@ -299,10 +485,23 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
                             ),
                           ),
                           const SizedBox(height: 16),
-                          Text(
-                            _packageInfo.appName,
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
+                          GestureDetector(
+                            onTap: _onAppNameTap,
+                            child: AnimatedBuilder(
+                              animation: _shakeAnimation,
+                              builder: (context, child) {
+                                final shake = sin(_shakeAnimation.value * pi * 4) * 10 * (1 - _shakeAnimation.value);
+                                return Transform.translate(
+                                  offset: Offset(shake, 0),
+                                  child: child,
+                                );
+                              },
+                              child: Text(
+                                _packageInfo.appName,
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ),
                           Text(
@@ -314,6 +513,13 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
                               color: theme.textTheme.bodySmall?.color,
                             ),
                           ),
+                          
+                          // Easter egg progress bar
+                          if (_easterEggTapCount > 0) ...[
+                            const SizedBox(height: 16),
+                            _buildEasterEggProgress(context, l10n),
+                          ],
+                          
                           const SizedBox(height: 32),
 
                           // App Info Card
@@ -540,6 +746,104 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       minLeadingWidth: 24,
+    );
+  }
+
+  Widget _buildEasterEggProgress(BuildContext context, AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    if (_currentLevel >= 15) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Symbols.trophy,
+              color: theme.colorScheme.onPrimaryContainer,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                l10n.aboutEasterEggCompleted,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    final nextLevel = _currentLevel + 1;
+    final currentLevelTaps = _getRequiredTapsForLevel(_currentLevel);
+    final nextLevelTaps = _getRequiredTapsForLevel(nextLevel);
+    final remaining = nextLevelTaps - _easterEggTapCount;
+    final progress = (_easterEggTapCount - currentLevelTaps) / (nextLevelTaps - currentLevelTaps);
+    final currentLevelName = _getLevelName(l10n, _currentLevel);
+    
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 300),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${l10n.aboutEasterEggLevel} $_currentLevel （$currentLevelName）',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                l10n.aboutEasterEggProgress(nextLevel, remaining),
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: progress.clamp(0.0, 1.0),
+                    minHeight: 8,
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Symbols.restart_alt, size: 18),
+                onPressed: _resetEasterEggProgress,
+                tooltip: l10n.aboutEasterEggReset,
+                iconSize: 18,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 32,
+                  minHeight: 32,
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: theme.colorScheme.errorContainer,
+                  foregroundColor: theme.colorScheme.onErrorContainer,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

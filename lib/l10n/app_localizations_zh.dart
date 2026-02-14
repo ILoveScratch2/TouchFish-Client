@@ -708,6 +708,148 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutEasterEggFound => '恭喜你发现了彩蛋！';
 
   @override
+  String get aboutEasterEggMessage0 => '这是一个彩蛋！';
+
+  @override
+  String get aboutEasterEggMessage1 => 'TouchFish v5！重新设计，焕然一新！';
+
+  @override
+  String get aboutEasterEggMessage2 => 'TouchFish 的作者是 XSFX！';
+
+  @override
+  String get aboutEasterEggMessage3 => 'TouchFish 不是让你摸鱼！';
+
+  @override
+  String get aboutEasterEggMessage4 => 'TouchFish Client 是自由且开源的！';
+
+  @override
+  String get aboutEasterEggMessage5 => '感谢你对 TouchFish 的支持！';
+
+  @override
+  String get aboutEasterEggMessage6 => '你好中国！';
+
+  @override
+  String get aboutEasterEggMessage7 => 'TouchFish，启动！';
+
+  @override
+  String get aboutEasterEggMessage8 => '摸鱼快乐！';
+
+  @override
+  String get aboutEasterEggMessage9 =>
+      'TouchFish Client 支持Windows、macOS、Linux 以及 Android！';
+
+  @override
+  String get aboutEasterEggMessage10 =>
+      'TouchFish 由：细数繁星、035966_L3、Piaoztsdy、JohnChiao75 和其他许多贡献者开发！';
+
+  @override
+  String get aboutEasterEggMessage11 =>
+      '台湾及其附属岛屿自古以来就是中国不可分割的神圣领土，坚持一个中国原则不动摇是最基本的。任何外部势力以及反动分子最终只会被历史唾弃。台湾回归是不可逆转，不可停止的历史进程。任何企图分裂国家的行为都是对中华民族根本利益和全体中国人民共同意志的严重挑战。我们坚决维护国家主权和领土完整，坚持一个中国原则，反对任何形式的“台独”分裂图谋。';
+
+  @override
+  String get aboutEasterEggMessage12 =>
+      'TouchFish Client 使用 AGPLv3 许可证开源，TouchFish 服务器使用 MIT 许可证开源，欢迎 Contribute！';
+
+  @override
+  String get aboutEasterEggMessage13 => 'TouchFish v5加入了论坛、公告、多聊天会话等新功能！';
+
+  @override
+  String get aboutEasterEggMessage14 => '龙踏祥云传讯去，骏马奔驰 TouchFish 来';
+
+  @override
+  String get aboutEasterEggMessage15 =>
+      'TouchFish 的官方服务器地址是 touchfish.xin，欢迎访问！';
+
+  @override
+  String get aboutEasterEggMessage16 => 'TouchFish 将信息传递到每一个角落！';
+
+  @override
+  String get aboutEasterEggMessage17 => '是时候摸鱼了！';
+
+  @override
+  String get aboutEasterEggMessage18 => '摸鱼摸到 TouchFish！';
+
+  @override
+  String get aboutEasterEggMessage19 => '你这么能点吗？？';
+
+  @override
+  String get aboutEasterEggLevel => 'TouchFisher 等级';
+
+  @override
+  String aboutEasterEggProgress(int nextLevel, int remaining) {
+    return '距离 Lv.$nextLevel: $remaining次';
+  }
+
+  @override
+  String get aboutEasterEggCompleted => '恭喜通关！你已达到最高等级！';
+
+  @override
+  String get aboutEasterEggLevelName0 => '其实这是个永远不会显示的等级，你发现了吗？恭喜你！';
+
+  @override
+  String get aboutEasterEggLevelName1 => 'TouchFish v1';
+
+  @override
+  String get aboutEasterEggLevelName2 => 'TouchFish v3';
+
+  @override
+  String get aboutEasterEggLevelName3 => 'TouchFish v4';
+
+  @override
+  String get aboutEasterEggLevelName4 => 'TouchFish LTS';
+
+  @override
+  String get aboutEasterEggLevelName5 => 'TouchFish Plus';
+
+  @override
+  String get aboutEasterEggLevelName6 => 'TouchFish Pro';
+
+  @override
+  String get aboutEasterEggLevelName7 => 'TouchFish More';
+
+  @override
+  String get aboutEasterEggLevelName8 => 'TouchFish UI Remake';
+
+  @override
+  String get aboutEasterEggLevelName9 => 'TouchFish Astra';
+
+  @override
+  String get aboutEasterEggLevelName10 => 'TouchFish v5';
+
+  @override
+  String get aboutEasterEggLevelName11 => 'TouchFish Client';
+
+  @override
+  String get aboutEasterEggLevelName12 => 'TouchFish UI Remake 2';
+
+  @override
+  String get aboutEasterEggLevelName13 => 'TouchFish CLI';
+
+  @override
+  String get aboutEasterEggLevelName14 => 'Xi Shu Fan Xing';
+
+  @override
+  String get aboutEasterEggLevelName15 => 'TouchFisher!';
+
+  @override
+  String get aboutEasterEggReset => '清除进度';
+
+  @override
+  String get aboutEasterEggResetConfirmTitle => '确认清除进度';
+
+  @override
+  String get aboutEasterEggResetConfirmMessage => '确定要清除所有彩蛋进度吗？这将重置你的等级和点击次数。';
+
+  @override
+  String get aboutEasterEggResetSuccess => '进度已清除';
+
+  @override
+  String get aboutEasterEggResetCancel => '取消';
+
+  @override
+  String get aboutEasterEggResetConfirm => '确认清除';
+
+  @override
   String get licensesTitle => '开源许可证';
 
   @override

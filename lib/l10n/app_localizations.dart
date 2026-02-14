@@ -1484,6 +1484,276 @@ abstract class AppLocalizations {
   /// **'Congratulations! You found an easter egg!'**
   String get aboutEasterEggFound;
 
+  /// No description provided for @aboutEasterEggMessage0.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a Easter Egg!'**
+  String get aboutEasterEggMessage0;
+
+  /// No description provided for @aboutEasterEggMessage1.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish v5, redisigned and reproducted for you!'**
+  String get aboutEasterEggMessage1;
+
+  /// No description provided for @aboutEasterEggMessage2.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish is developed by XSFX!'**
+  String get aboutEasterEggMessage2;
+
+  /// No description provided for @aboutEasterEggMessage3.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish is not for touching fish!'**
+  String get aboutEasterEggMessage3;
+
+  /// No description provided for @aboutEasterEggMessage4.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish Client is free/libre and open source!'**
+  String get aboutEasterEggMessage4;
+
+  /// No description provided for @aboutEasterEggMessage5.
+  ///
+  /// In en, this message translates to:
+  /// **''**
+  String get aboutEasterEggMessage5;
+
+  /// No description provided for @aboutEasterEggMessage6.
+  ///
+  /// In en, this message translates to:
+  /// **''**
+  String get aboutEasterEggMessage6;
+
+  /// No description provided for @aboutEasterEggMessage7.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish, LAUNCH!'**
+  String get aboutEasterEggMessage7;
+
+  /// No description provided for @aboutEasterEggMessage8.
+  ///
+  /// In en, this message translates to:
+  /// **'Happy TouchFishing!'**
+  String get aboutEasterEggMessage8;
+
+  /// No description provided for @aboutEasterEggMessage9.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish Client supports Windows, macOS, Linux and Android!'**
+  String get aboutEasterEggMessage9;
+
+  /// No description provided for @aboutEasterEggMessage10.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish is developed by: XSFX, 035966_L3, Piaoztsdy, JohnChiao75 and many other contributors!'**
+  String get aboutEasterEggMessage10;
+
+  /// No description provided for @aboutEasterEggMessage11.
+  ///
+  /// In en, this message translates to:
+  /// **'Taiwan and its affiliated islands have been an inseparable sacred territory of China since ancient times. Adhering to the one-China principle is fundamental. Any external forces and reactionary elements will ultimately be condemned by history. The reunification of Taiwan is an irreversible and unstoppable historical process. Any attempt to split the country is a serious challenge to the fundamental interests of the Chinese nation and the common will of all Chinese people. We firmly safeguard national sovereignty and territorial integrity, adhere to the one-China principle, and oppose any form of \'Taiwan independence\' separatist plot.'**
+  String get aboutEasterEggMessage11;
+
+  /// No description provided for @aboutEasterEggMessage12.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish Client is open source under AGPLv3 license, TouchFish server is open source under MIT license, welcome to Contribute!'**
+  String get aboutEasterEggMessage12;
+
+  /// No description provided for @aboutEasterEggMessage13.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish v5 has added new features such as forums, announcements, and multiple chat sessions!'**
+  String get aboutEasterEggMessage13;
+
+  /// No description provided for @aboutEasterEggMessage14.
+  ///
+  /// In en, this message translates to:
+  /// **'The dragon steps on the clouds to send messages, and the steed gallops to bring TouchFish'**
+  String get aboutEasterEggMessage14;
+
+  /// No description provided for @aboutEasterEggMessage15.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish\'s official server address is touchfish.xin, welcome to visit!'**
+  String get aboutEasterEggMessage15;
+
+  /// No description provided for @aboutEasterEggMessage16.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish delivers messages to every corner!'**
+  String get aboutEasterEggMessage16;
+
+  /// No description provided for @aboutEasterEggMessage17.
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s time to touch fish!'**
+  String get aboutEasterEggMessage17;
+
+  /// No description provided for @aboutEasterEggMessage18.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish, touch the fish!'**
+  String get aboutEasterEggMessage18;
+
+  /// No description provided for @aboutEasterEggMessage19.
+  ///
+  /// In en, this message translates to:
+  /// **'YOU ARE SO MAD AT TAPPING??'**
+  String get aboutEasterEggMessage19;
+
+  /// No description provided for @aboutEasterEggLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Easter Egg Level'**
+  String get aboutEasterEggLevel;
+
+  /// No description provided for @aboutEasterEggProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'To Lv.{nextLevel}: {remaining} taps'**
+  String aboutEasterEggProgress(int nextLevel, int remaining);
+
+  /// No description provided for @aboutEasterEggCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Congratulations! You\'ve reached the highest level!'**
+  String get aboutEasterEggCompleted;
+
+  /// No description provided for @aboutEasterEggLevelName0.
+  ///
+  /// In en, this message translates to:
+  /// **'You will never find this level in app!'**
+  String get aboutEasterEggLevelName0;
+
+  /// No description provided for @aboutEasterEggLevelName1.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish v1'**
+  String get aboutEasterEggLevelName1;
+
+  /// No description provided for @aboutEasterEggLevelName2.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish v3'**
+  String get aboutEasterEggLevelName2;
+
+  /// No description provided for @aboutEasterEggLevelName3.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish v4'**
+  String get aboutEasterEggLevelName3;
+
+  /// No description provided for @aboutEasterEggLevelName4.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish LTS'**
+  String get aboutEasterEggLevelName4;
+
+  /// No description provided for @aboutEasterEggLevelName5.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish Plus'**
+  String get aboutEasterEggLevelName5;
+
+  /// No description provided for @aboutEasterEggLevelName6.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish Pro'**
+  String get aboutEasterEggLevelName6;
+
+  /// No description provided for @aboutEasterEggLevelName7.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish More'**
+  String get aboutEasterEggLevelName7;
+
+  /// No description provided for @aboutEasterEggLevelName8.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish UI Remake'**
+  String get aboutEasterEggLevelName8;
+
+  /// No description provided for @aboutEasterEggLevelName9.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish Astra'**
+  String get aboutEasterEggLevelName9;
+
+  /// No description provided for @aboutEasterEggLevelName10.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish v5'**
+  String get aboutEasterEggLevelName10;
+
+  /// No description provided for @aboutEasterEggLevelName11.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish Client'**
+  String get aboutEasterEggLevelName11;
+
+  /// No description provided for @aboutEasterEggLevelName12.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish UI Remake 2'**
+  String get aboutEasterEggLevelName12;
+
+  /// No description provided for @aboutEasterEggLevelName13.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish CLI'**
+  String get aboutEasterEggLevelName13;
+
+  /// No description provided for @aboutEasterEggLevelName14.
+  ///
+  /// In en, this message translates to:
+  /// **'Xi Shu Fan Xing'**
+  String get aboutEasterEggLevelName14;
+
+  /// No description provided for @aboutEasterEggLevelName15.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFisher!'**
+  String get aboutEasterEggLevelName15;
+
+  /// No description provided for @aboutEasterEggReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Progress'**
+  String get aboutEasterEggReset;
+
+  /// No description provided for @aboutEasterEggResetConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Reset'**
+  String get aboutEasterEggResetConfirmTitle;
+
+  /// No description provided for @aboutEasterEggResetConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to reset all easter egg progress? This will reset your level and tap count.'**
+  String get aboutEasterEggResetConfirmMessage;
+
+  /// No description provided for @aboutEasterEggResetSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress reset'**
+  String get aboutEasterEggResetSuccess;
+
+  /// No description provided for @aboutEasterEggResetCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get aboutEasterEggResetCancel;
+
+  /// No description provided for @aboutEasterEggResetConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Reset'**
+  String get aboutEasterEggResetConfirm;
+
   /// No description provided for @licensesTitle.
   ///
   /// In en, this message translates to:
