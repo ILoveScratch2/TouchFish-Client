@@ -682,7 +682,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aboutLicenseDescription =>
-      'TouchFish Client 是 Copyleft 的自由软件：您可以随时使用、研究、共享和改进它。您可以根据自由软件基金会发布的 GNU Affero 通用公共许可证 (AGPLv3) 重新分发或修改。';
+      'TouchFish Client 是 Copyleft 的自由软件：您可以随时使用、研究、共享和改进它。您可以根据自由软件基金会发布的 GNU Affero 通用公共许可证 3.0 (AGPLv3) 重新分发或修改。';
 
   @override
   String get aboutLicenseFullText => '完整许可证文本';

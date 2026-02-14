@@ -699,14 +699,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutLicenseContent =>
-      'This project is licensed under the AGPLv3 License';
+      'This project is licensed under the (AGPLv3 License';
 
   @override
   String get aboutLicenseDialogTitle => 'Software License';
 
   @override
   String get aboutLicenseDescription =>
-      'TouchFish Client is Copyleft free software: you can use, study, share and improve it at any time. You can redistribute or modify it under the GNU Affero General Public License (AGPLv3) published by the Free Software Foundation.';
+      'TouchFish Client is Copyleft free software: you can use, study, share and improve it at any time. You can redistribute or modify it under the GNU Affero General Public License 3.0(AGPLv3) published by the Free Software Foundation.';
 
   @override
   String get aboutLicenseFullText => 'Full License Text';

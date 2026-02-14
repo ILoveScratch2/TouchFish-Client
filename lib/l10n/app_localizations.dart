@@ -1427,7 +1427,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutLicenseContent.
   ///
   /// In en, this message translates to:
-  /// **'This project is licensed under the AGPLv3 License'**
+  /// **'This project is licensed under the (AGPLv3 License'**
   String get aboutLicenseContent;
 
   /// No description provided for @aboutLicenseDialogTitle.
@@ -1439,7 +1439,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutLicenseDescription.
   ///
   /// In en, this message translates to:
-  /// **'TouchFish Client is Copyleft free software: you can use, study, share and improve it at any time. You can redistribute or modify it under the GNU Affero General Public License (AGPLv3) published by the Free Software Foundation.'**
+  /// **'TouchFish Client is Copyleft free software: you can use, study, share and improve it at any time. You can redistribute or modify it under the GNU Affero General Public License 3.0(AGPLv3) published by the Free Software Foundation.'**
   String get aboutLicenseDescription;
 
   /// No description provided for @aboutLicenseFullText.
