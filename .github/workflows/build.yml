@@ -80,14 +80,28 @@ jobs:
       - name: Generate licenses file
         run: dart run dart_pubspec_licenses:generate
       
+      - name: Install dmg package
+        run: flutter pub add --dev dmg
+      
+      - name: Install dmgbuild
+        run: pip3 install dmgbuild --break-system-packages
       
       - name: Build macOS
         run: flutter build macos --release
+      
+      - name: Create macOS DMG
+        run: dart run dmg --no-sign --no-notarization --license-path "./LICENSE"
       
       - name: Create macOS archive
         run: |
           cd build/macos/Build/Products/Release
           zip -r ../../../../../touchfish-macos.zip touchfish_client.app
+      
+      - name: Upload macOS DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: build/macos/Build/Products/Release/*.dmg
       
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
