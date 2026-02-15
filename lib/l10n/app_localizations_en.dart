@@ -338,6 +338,72 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navAccount => 'Account';
 
   @override
+  String get account => 'Account';
+
+  @override
+  String get accountUnauthorized => 'Not Logged In';
+
+  @override
+  String get accountLogin => 'Log in';
+
+  @override
+  String get accountCreateAccount => 'Create Account';
+
+  @override
+  String get accountCreateAccountDescription => 'Sign up for a new account';
+
+  @override
+  String get accountLoginDescription => 'Log in to your account';
+
+  @override
+  String get accountNotifications => 'Notifications';
+
+  @override
+  String get accountSettings => 'Settings';
+
+  @override
+  String get accountEditProfile => 'Edit Profile';
+
+  @override
+  String get accountProfile => 'Profile';
+
+  @override
+  String get accountAbout => 'About';
+
+  @override
+  String get accountDebugOptions => 'Debug Options';
+
+  @override
+  String get accountLogout => 'Logout';
+
+  @override
+  String get accountLogoutConfirm => 'Are you sure you want to logout?';
+
+  @override
+  String get accountDescriptionNone => 'No signature';
+
+  @override
+  String get accountSignature => 'Personal Signature';
+
+  @override
+  String get accountEditSignature => 'Edit Signature';
+
+  @override
+  String get accountCreateSignature => 'Create Signature';
+
+  @override
+  String get accountUpdateSignature => 'Update Signature';
+
+  @override
+  String get accountSignaturePlaceholder => 'Enter your personal signature...';
+
+  @override
+  String get accountAppSettings => 'App Settings';
+
+  @override
+  String get accountUpdateYourProfile => 'Update Your Profile';
+
+  @override
   String get chatTabMessages => 'Messages';
 
   @override

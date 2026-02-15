@@ -728,6 +728,138 @@ abstract class AppLocalizations {
   /// **'Account'**
   String get navAccount;
 
+  /// No description provided for @account.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get account;
+
+  /// No description provided for @accountUnauthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Logged In'**
+  String get accountUnauthorized;
+
+  /// No description provided for @accountLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Log in'**
+  String get accountLogin;
+
+  /// No description provided for @accountCreateAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Account'**
+  String get accountCreateAccount;
+
+  /// No description provided for @accountCreateAccountDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign up for a new account'**
+  String get accountCreateAccountDescription;
+
+  /// No description provided for @accountLoginDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Log in to your account'**
+  String get accountLoginDescription;
+
+  /// No description provided for @accountNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get accountNotifications;
+
+  /// No description provided for @accountSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get accountSettings;
+
+  /// No description provided for @accountEditProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Profile'**
+  String get accountEditProfile;
+
+  /// No description provided for @accountProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get accountProfile;
+
+  /// No description provided for @accountAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get accountAbout;
+
+  /// No description provided for @accountDebugOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Debug Options'**
+  String get accountDebugOptions;
+
+  /// No description provided for @accountLogout.
+  ///
+  /// In en, this message translates to:
+  /// **'Logout'**
+  String get accountLogout;
+
+  /// No description provided for @accountLogoutConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to logout?'**
+  String get accountLogoutConfirm;
+
+  /// No description provided for @accountDescriptionNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No signature'**
+  String get accountDescriptionNone;
+
+  /// No description provided for @accountSignature.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Signature'**
+  String get accountSignature;
+
+  /// No description provided for @accountEditSignature.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Signature'**
+  String get accountEditSignature;
+
+  /// No description provided for @accountCreateSignature.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Signature'**
+  String get accountCreateSignature;
+
+  /// No description provided for @accountUpdateSignature.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Signature'**
+  String get accountUpdateSignature;
+
+  /// No description provided for @accountSignaturePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your personal signature...'**
+  String get accountSignaturePlaceholder;
+
+  /// No description provided for @accountAppSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'App Settings'**
+  String get accountAppSettings;
+
+  /// No description provided for @accountUpdateYourProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Your Profile'**
+  String get accountUpdateYourProfile;
+
   /// No description provided for @chatTabMessages.
   ///
   /// In en, this message translates to:

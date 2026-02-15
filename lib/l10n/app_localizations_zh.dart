@@ -325,6 +325,72 @@ class AppLocalizationsZh extends AppLocalizations {
   String get navAccount => '账户';
 
   @override
+  String get account => '账户';
+
+  @override
+  String get accountUnauthorized => '未登录';
+
+  @override
+  String get accountLogin => '登录';
+
+  @override
+  String get accountCreateAccount => '创建账户';
+
+  @override
+  String get accountCreateAccountDescription => '注册一个新账户';
+
+  @override
+  String get accountLoginDescription => '登录到您的账户';
+
+  @override
+  String get accountNotifications => '通知';
+
+  @override
+  String get accountSettings => '设置';
+
+  @override
+  String get accountEditProfile => '编辑资料';
+
+  @override
+  String get accountProfile => '个人资料';
+
+  @override
+  String get accountAbout => '关于';
+
+  @override
+  String get accountDebugOptions => '调试选项';
+
+  @override
+  String get accountLogout => '退出登录';
+
+  @override
+  String get accountLogoutConfirm => '确定要退出登录吗？';
+
+  @override
+  String get accountDescriptionNone => '暂无签名';
+
+  @override
+  String get accountSignature => '个性签名';
+
+  @override
+  String get accountEditSignature => '编辑签名';
+
+  @override
+  String get accountCreateSignature => '创建签名';
+
+  @override
+  String get accountUpdateSignature => '更新签名';
+
+  @override
+  String get accountSignaturePlaceholder => '输入您的个性签名...';
+
+  @override
+  String get accountAppSettings => '应用设置';
+
+  @override
+  String get accountUpdateYourProfile => '编辑个人资料';
+
+  @override
   String get chatTabMessages => '聊天';
 
   @override
