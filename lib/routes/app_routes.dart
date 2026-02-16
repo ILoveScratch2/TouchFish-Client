@@ -16,6 +16,7 @@ import '../screens/account_screen.dart';
 import '../screens/user_profile_screen.dart';
 import '../screens/about_screen.dart';
 import '../screens/licenses_screen.dart';
+import '../screens/profile_edit_screen.dart';
 import '../widgets/window_frame.dart';
 
 class AppRoutes {
@@ -35,6 +36,7 @@ class AppRoutes {
   static const String userProfile = '/user/:userId';
   static const String about = '/about';
   static const String licenses = '/licenses';
+  static const String profileEdit = '/profile/edit';
 
   static GoRouter createRouter({required bool isFirstLaunch}) {
     return GoRouter(
@@ -106,6 +108,10 @@ class AppRoutes {
             GoRoute(
               path: licenses,
               builder: (context, state) => const LicensesScreen(),
+            ),
+            GoRoute(
+              path: profileEdit,
+              builder: (context, state) => const ProfileEditScreen(),
             ),
             ShellRoute(
               builder: (context, state, child) {

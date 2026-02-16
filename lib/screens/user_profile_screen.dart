@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
 import '../widgets/markdown_renderer.dart';
 import '../models/settings_service.dart';
+import '../widgets/account/profile_picture.dart';
 
 class UserProfileScreen extends StatelessWidget {
   final String userId;
@@ -21,17 +23,40 @@ class UserProfileScreen extends StatelessWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // App Bar with back button
+          // App Bar with background
           SliverAppBar(
             pinned: true,
-            expandedHeight: 180,
+            expandedHeight: 200,
             leading: IconButton(
               icon: const Icon(Icons.close),
               onPressed: () => context.pop(),
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Symbols.share),
+                onPressed: () {
+                  // Share profile
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Share ${profile.username}'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                color: colorScheme.surfaceContainerHighest,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      colorScheme.primaryContainer,
+                      colorScheme.secondaryContainer,
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -44,20 +69,20 @@ class UserProfileScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Avatar and basic info
-                  _buildBasicInfo(context, profile, l10n, colorScheme),
+                  _buildBasicInfoCard(context, profile, l10n, colorScheme),
                   const SizedBox(height: 16),
                   
                   // Personal sign
-                  if (profile.personalSign != null)
-                    _buildPersonalSign(context, profile, l10n, colorScheme),
+                  if (profile.personalSign != null && profile.personalSign!.isNotEmpty)
+                    _buildBioCard(context, profile, l10n, colorScheme),
                   
                   // Details card
                   _buildDetailsCard(context, profile, l10n, colorScheme),
                   const SizedBox(height: 16),
                   
                   // Introduction
-                  if (profile.introduction != null)
-                    _buildIntroduction(context, profile, l10n, colorScheme),
+                  if (profile.introduction != null && profile.introduction!.isNotEmpty)
+                    _buildIntroductionCard(context, profile, l10n, colorScheme),
                   
                   const SizedBox(height: 16),
                   
@@ -74,7 +99,7 @@ class UserProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBasicInfo(
+  Widget _buildBasicInfoCard(
     BuildContext context,
     UserProfile profile,
     AppLocalizations l10n,
@@ -87,16 +112,9 @@ class UserProfileScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Avatar
-            CircleAvatar(
+            ProfilePictureWidget(
+              avatarUrl: profile.avatar,
               radius: 40,
-              backgroundColor: colorScheme.primaryContainer,
-              child: profile.avatar != null
-                  ? null
-                  : Icon(
-                      Icons.person,
-                      size: 48,
-                      color: colorScheme.onPrimaryContainer,
-                    ),
             ),
             const SizedBox(width: 16),
             
@@ -105,11 +123,31 @@ class UserProfileScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    profile.username,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          profile.username,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Text(
+                            '@${profile.username}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   _buildPermissionBadge(context, profile, l10n, colorScheme),
@@ -163,7 +201,8 @@ class UserProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPersonalSign(
+  // Bio
+  Widget _buildBioCard(
     BuildContext context,
     UserProfile profile,
     AppLocalizations l10n,
@@ -171,13 +210,25 @@ class UserProfileScreen extends StatelessWidget {
   ) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text(
-          '“${profile.personalSign!}”',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            fontStyle: FontStyle.italic,
-            color: colorScheme.onSurfaceVariant,
-          ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.userProfilePersonalSign,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '"${profile.personalSign!}"',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontStyle: FontStyle.italic,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -197,7 +248,7 @@ class UserProfileScreen extends StatelessWidget {
           children: [
             _buildDetailRow(
               context,
-              Icons.fingerprint,
+              Symbols.fingerprint,
               l10n.userProfileUid,
               profile.uid,
               onTap: () {
@@ -213,7 +264,7 @@ class UserProfileScreen extends StatelessWidget {
             const SizedBox(height: 12),
             _buildDetailRow(
               context,
-              Icons.email_outlined,
+              Symbols.email,
               l10n.userProfileEmail,
               profile.email.isEmpty ? l10n.userProfileUnknownEmail : profile.email,
               onTap: profile.email.isEmpty ? null : () {
@@ -229,7 +280,7 @@ class UserProfileScreen extends StatelessWidget {
             const SizedBox(height: 12),
             _buildDetailRow(
               context,
-              Icons.event_outlined,
+              Symbols.event,
               l10n.userProfileJoinedAt,
               _formatTimestamp(profile.createTime),
             ),
@@ -258,14 +309,15 @@ class UserProfileScreen extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                style: TextStyle(
+                  fontSize: 12,
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 2),
               Text(
                 value,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                style: const TextStyle(
+                  fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -274,7 +326,7 @@ class UserProfileScreen extends StatelessWidget {
         ),
         if (onTap != null)
           Icon(
-            Icons.copy,
+            Symbols.content_copy,
             size: 16,
             color: colorScheme.onSurfaceVariant,
           ),
@@ -292,7 +344,7 @@ class UserProfileScreen extends StatelessWidget {
     return content;
   }
 
-  Widget _buildIntroduction(
+  Widget _buildIntroductionCard(
     BuildContext context,
     UserProfile profile,
     AppLocalizations l10n,
@@ -347,7 +399,7 @@ class UserProfileScreen extends StatelessWidget {
                 ),
               );
             },
-            icon: const Icon(Icons.person_add),
+            icon: const Icon(Symbols.person_add),
             label: Text(l10n.userProfileAddFriend),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -361,7 +413,7 @@ class UserProfileScreen extends StatelessWidget {
               // 跳转到聊天页面
               context.go('/chat/${profile.uid}');
             },
-            icon: const Icon(Icons.send),
+            icon: const Icon(Symbols.send),
             label: Text(l10n.userProfileSendMessage),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),

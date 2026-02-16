@@ -262,7 +262,7 @@ class _AccountScreenState extends State<AccountScreen> {
                         radius: 32,
                       ),
                       onTap: () {
-                        context.push('${AppRoutes.userProfile}/${user.uid}'.replaceAll('/user/', '/user/'));
+                        context.push('/user/${user.uid}');
                       },
                     ),
                   ),
@@ -286,7 +286,7 @@ class _AccountScreenState extends State<AccountScreen> {
                         radius: 24,
                       ),
                       onTap: () {
-                        context.push('${AppRoutes.userProfile}/${user.uid}'.replaceAll('/user/', '/user/'));
+                        context.push('/user/${user.uid}');
                       },
                     ),
                   Expanded(
@@ -416,13 +416,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   ),
                 ),
                 onTap: () {
-                  // 也没有编辑资料
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(l10n.accountUpdateYourProfile),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  context.push(AppRoutes.profileEdit);
                 },
               ),
             ),

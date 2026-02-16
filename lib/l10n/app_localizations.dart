@@ -860,6 +860,108 @@ abstract class AppLocalizations {
   /// **'Update Your Profile'**
   String get accountUpdateYourProfile;
 
+  /// No description provided for @profileEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Profile'**
+  String get profileEditTitle;
+
+  /// No description provided for @profileEditAvatar.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar'**
+  String get profileEditAvatar;
+
+  /// No description provided for @profileEditBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get profileEditBackground;
+
+  /// No description provided for @profileEditBasicInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Information'**
+  String get profileEditBasicInfo;
+
+  /// No description provided for @profileEditUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get profileEditUsername;
+
+  /// No description provided for @profileEditEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get profileEditEmail;
+
+  /// No description provided for @profileEditBio.
+  ///
+  /// In en, this message translates to:
+  /// **'Bio'**
+  String get profileEditBio;
+
+  /// No description provided for @profileEditBioPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us about yourself...'**
+  String get profileEditBioPlaceholder;
+
+  /// No description provided for @profileEditIntroduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Introduction'**
+  String get profileEditIntroduction;
+
+  /// No description provided for @profileEditIntroductionPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Write something about yourself...'**
+  String get profileEditIntroductionPlaceholder;
+
+  /// No description provided for @profileEditSaveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Changes'**
+  String get profileEditSaveChanges;
+
+  /// No description provided for @profileEditChangeAvatar.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Avatar'**
+  String get profileEditChangeAvatar;
+
+  /// No description provided for @profileEditChangeBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Background'**
+  String get profileEditChangeBackground;
+
+  /// No description provided for @profileEditRemoveAvatar.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Avatar'**
+  String get profileEditRemoveAvatar;
+
+  /// No description provided for @profileEditRemoveBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Background'**
+  String get profileEditRemoveBackground;
+
+  /// No description provided for @profileEditUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile updated'**
+  String get profileEditUpdated;
+
+  /// No description provided for @profileEditUsernameCannotChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Username cannot be changed'**
+  String get profileEditUsernameCannotChange;
+
   /// No description provided for @chatTabMessages.
   ///
   /// In en, this message translates to:

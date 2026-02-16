@@ -404,6 +404,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountUpdateYourProfile => 'Update Your Profile';
 
   @override
+  String get profileEditTitle => 'Edit Profile';
+
+  @override
+  String get profileEditAvatar => 'Avatar';
+
+  @override
+  String get profileEditBackground => 'Background';
+
+  @override
+  String get profileEditBasicInfo => 'Basic Information';
+
+  @override
+  String get profileEditUsername => 'Username';
+
+  @override
+  String get profileEditEmail => 'Email';
+
+  @override
+  String get profileEditBio => 'Bio';
+
+  @override
+  String get profileEditBioPlaceholder => 'Tell us about yourself...';
+
+  @override
+  String get profileEditIntroduction => 'Introduction';
+
+  @override
+  String get profileEditIntroductionPlaceholder =>
+      'Write something about yourself...';
+
+  @override
+  String get profileEditSaveChanges => 'Save Changes';
+
+  @override
+  String get profileEditChangeAvatar => 'Change Avatar';
+
+  @override
+  String get profileEditChangeBackground => 'Change Background';
+
+  @override
+  String get profileEditRemoveAvatar => 'Remove Avatar';
+
+  @override
+  String get profileEditRemoveBackground => 'Remove Background';
+
+  @override
+  String get profileEditUpdated => 'Profile updated';
+
+  @override
+  String get profileEditUsernameCannotChange => 'Username cannot be changed';
+
+  @override
   String get chatTabMessages => 'Messages';
 
   @override

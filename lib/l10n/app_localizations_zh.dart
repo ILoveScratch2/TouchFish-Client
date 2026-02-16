@@ -391,6 +391,57 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountUpdateYourProfile => '编辑个人资料';
 
   @override
+  String get profileEditTitle => '编辑资料';
+
+  @override
+  String get profileEditAvatar => '头像';
+
+  @override
+  String get profileEditBackground => '背景图';
+
+  @override
+  String get profileEditBasicInfo => '基本信息';
+
+  @override
+  String get profileEditUsername => '用户名';
+
+  @override
+  String get profileEditEmail => '邮箱';
+
+  @override
+  String get profileEditBio => '个性签名';
+
+  @override
+  String get profileEditBioPlaceholder => '介绍一下自己...';
+
+  @override
+  String get profileEditIntroduction => '个人简介';
+
+  @override
+  String get profileEditIntroductionPlaceholder => '写一段关于你自己的介绍...';
+
+  @override
+  String get profileEditSaveChanges => '保存更改';
+
+  @override
+  String get profileEditChangeAvatar => '更改头像';
+
+  @override
+  String get profileEditChangeBackground => '更改背景';
+
+  @override
+  String get profileEditRemoveAvatar => '移除头像';
+
+  @override
+  String get profileEditRemoveBackground => '移除背景';
+
+  @override
+  String get profileEditUpdated => '资料已更新';
+
+  @override
+  String get profileEditUsernameCannotChange => '用户名不可更改';
+
+  @override
   String get chatTabMessages => '聊天';
 
   @override
