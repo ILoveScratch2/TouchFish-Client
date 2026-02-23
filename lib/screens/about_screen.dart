@@ -9,6 +9,7 @@ import 'dart:math';
 import '../l10n/app_localizations.dart';
 import '../constants/app_constants.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'debug/debug_options_screen.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -613,6 +614,18 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
                                 title: l10n.aboutLicense,
                                 subtitle: l10n.aboutLicenseContent,
                                 onTap: () => _showLicenseDialog(context),
+                              ),
+                              _buildListTile(
+                                context,
+                                icon: Symbols.terminal,
+                                title: l10n.accountDebugOptions,
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) => const DebugOptionsScreen(),
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),

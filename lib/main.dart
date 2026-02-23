@@ -9,6 +9,7 @@ import 'l10n/app_localizations.dart';
 import 'models/app_state.dart';
 import 'models/settings_service.dart';
 import 'routes/app_routes.dart';
+import 'utils/talker.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,6 +63,8 @@ void main() async {
   }
   
   final isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
+  
+  talker.info('TouchFish Client started!');
   
   runApp(TouchFishApp(isFirstLaunch: isFirstLaunch));
 }
