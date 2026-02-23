@@ -46,3 +46,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Other Files for testing
+DOCUMENTATION.md
+server_test.py
+test.py
+key.pem
+key.pub
