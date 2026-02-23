@@ -366,5 +366,8 @@
 
   
   "markdownCopyCode": "复制代码",
-  "markdownCodeCopied": "代码已复制到剪贴板"
+  "markdownCodeCopied": "代码已复制到剪贴板",
+  
+  "debugLogs": "调试日志",
+  "debugLogsDescription": "查看应用运行日志"
 }

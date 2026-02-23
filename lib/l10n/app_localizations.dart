@@ -2071,6 +2071,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Code copied to clipboard'**
   String get markdownCodeCopied;
+
+  /// No description provided for @debugLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Debug Logs'**
+  String get debugLogs;
+
+  /// No description provided for @debugLogsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'View application logs'**
+  String get debugLogsDescription;
 }
 
 class _AppLocalizationsDelegate

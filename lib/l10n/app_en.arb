@@ -390,5 +390,8 @@
   "licensesLicenseCopied": "License text copied to clipboard",
   
   "markdownCopyCode": "Copy code",
-  "markdownCodeCopied": "Code copied to clipboard"
+  "markdownCodeCopied": "Code copied to clipboard",
+  
+  "debugLogs": "Debug Logs",
+  "debugLogsDescription": "View application logs"
 }

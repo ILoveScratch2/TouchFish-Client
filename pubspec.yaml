@@ -63,6 +63,8 @@ dependencies:
   flutter_math_fork: ^0.7.2
   package_info_plus: ^8.1.2
   image_picker: ^1.1.2
+  talker: ^4.7.1
+  talker_flutter: ^4.7.1
 
 dev_dependencies:
   flutter_test:

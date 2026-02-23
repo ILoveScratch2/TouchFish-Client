@@ -14,6 +14,7 @@ import '../widgets/media/audio_player.dart';
 import '../widgets/markdown_renderer.dart';
 import '../models/settings_service.dart';
 import 'package:exif/exif.dart';
+import '../utils/talker.dart';
 
 class MessageBubble extends HookWidget {
   final ChatMessage message;
@@ -294,7 +295,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
             }
           }
         } catch (e) {
-          print('Failed to read EXIF: $e');
+          talker.error('Failed to read EXIF', e);
         }
 
         if (context.mounted) {

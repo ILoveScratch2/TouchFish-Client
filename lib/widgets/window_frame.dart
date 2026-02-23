@@ -2,8 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:window_manager/window_manager.dart';
-import 'custom_title_bar.dart';
+import 'package:window_manager/window_manager.dart';import '../utils/talker.dart';import 'custom_title_bar.dart';
 import '../constants/app_constants.dart';
 
 /// Custom Window Frame by ILoveScratch2
@@ -74,7 +73,7 @@ class _WindowFrameState extends State<WindowFrame>
       await prefs.setDouble('window_x', bounds.left);
       await prefs.setDouble('window_y', bounds.top);
     } catch (e) {
-      debugPrint('windows size save error: $e');
+      talker.error('Windows size save error', e);
     }
   }
 

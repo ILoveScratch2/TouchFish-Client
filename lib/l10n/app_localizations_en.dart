@@ -1042,4 +1042,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get markdownCodeCopied => 'Code copied to clipboard';
+
+  @override
+  String get debugLogs => 'Debug Logs';
+
+  @override
+  String get debugLogsDescription => 'View application logs';
 }

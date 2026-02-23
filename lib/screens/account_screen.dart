@@ -7,6 +7,7 @@ import '../widgets/account/account_name.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/account/signature_editor.dart';
 import '../routes/app_routes.dart';
+import 'debug/debug_options_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -543,11 +544,9 @@ class _AccountScreenState extends State<AccountScreen> {
           title: Text(l10n.accountDebugOptions),
           dense: true,
           onTap: () {
-            // 调试选项？
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.accountDebugOptions),
-                behavior: SnackBarBehavior.floating,
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const DebugOptionsScreen(),
               ),
             );
           },
