@@ -1625,7 +1625,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutServerRepository.
   ///
   /// In en, this message translates to:
-  /// **'Backend Server Repository'**
+  /// **'Backend Server'**
   String get aboutServerRepository;
 
   /// No description provided for @aboutOpenSourceLicenses.

@@ -798,7 +798,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutDocumentation => 'Documentation';
 
   @override
-  String get aboutServerRepository => 'Backend Server Repository';
+  String get aboutServerRepository => 'Backend Server';
 
   @override
   String get aboutOpenSourceLicenses => 'Open Source Licenses';
