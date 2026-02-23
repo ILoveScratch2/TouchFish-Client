@@ -397,9 +397,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileEditAvatar => '头像';
 
   @override
-  String get profileEditBackground => '背景图';
-
-  @override
   String get profileEditBasicInfo => '基本信息';
 
   @override
@@ -427,13 +424,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileEditChangeAvatar => '更改头像';
 
   @override
-  String get profileEditChangeBackground => '更改背景';
-
-  @override
   String get profileEditRemoveAvatar => '移除头像';
-
-  @override
-  String get profileEditRemoveBackground => '移除背景';
 
   @override
   String get profileEditUpdated => '资料已更新';

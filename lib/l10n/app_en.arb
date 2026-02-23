@@ -158,7 +158,6 @@
   
   "profileEditTitle": "Edit Profile",
   "profileEditAvatar": "Avatar",
-  "profileEditBackground": "Background",
   "profileEditBasicInfo": "Basic Information",
   "profileEditUsername": "Username",
   "profileEditEmail": "Email",
@@ -168,9 +167,7 @@
   "profileEditIntroductionPlaceholder": "Write something about yourself...",
   "profileEditSaveChanges": "Save Changes",
   "profileEditChangeAvatar": "Change Avatar",
-  "profileEditChangeBackground": "Change Background",
   "profileEditRemoveAvatar": "Remove Avatar",
-  "profileEditRemoveBackground": "Remove Background",
   "profileEditUpdated": "Profile updated",
   "profileEditUsernameCannotChange": "Username cannot be changed",
   

@@ -410,9 +410,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileEditAvatar => 'Avatar';
 
   @override
-  String get profileEditBackground => 'Background';
-
-  @override
   String get profileEditBasicInfo => 'Basic Information';
 
   @override
@@ -441,13 +438,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileEditChangeAvatar => 'Change Avatar';
 
   @override
-  String get profileEditChangeBackground => 'Change Background';
-
-  @override
   String get profileEditRemoveAvatar => 'Remove Avatar';
-
-  @override
-  String get profileEditRemoveBackground => 'Remove Background';
 
   @override
   String get profileEditUpdated => 'Profile updated';

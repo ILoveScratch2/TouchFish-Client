@@ -872,12 +872,6 @@ abstract class AppLocalizations {
   /// **'Avatar'**
   String get profileEditAvatar;
 
-  /// No description provided for @profileEditBackground.
-  ///
-  /// In en, this message translates to:
-  /// **'Background'**
-  String get profileEditBackground;
-
   /// No description provided for @profileEditBasicInfo.
   ///
   /// In en, this message translates to:
@@ -932,23 +926,11 @@ abstract class AppLocalizations {
   /// **'Change Avatar'**
   String get profileEditChangeAvatar;
 
-  /// No description provided for @profileEditChangeBackground.
-  ///
-  /// In en, this message translates to:
-  /// **'Change Background'**
-  String get profileEditChangeBackground;
-
   /// No description provided for @profileEditRemoveAvatar.
   ///
   /// In en, this message translates to:
   /// **'Remove Avatar'**
   String get profileEditRemoveAvatar;
-
-  /// No description provided for @profileEditRemoveBackground.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove Background'**
-  String get profileEditRemoveBackground;
 
   /// No description provided for @profileEditUpdated.
   ///

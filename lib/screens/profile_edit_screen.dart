@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
@@ -18,10 +19,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   UserProfile? _currentUser;
   bool _isSubmitting = false;
   
-  // Image pickers
-  final ImagePicker _imagePicker = ImagePicker();
-  XFile? _selectedAvatar;
-  XFile? _selectedBackground;
+  // File picker
+  PlatformFile? _selectedAvatar;
   
   // Form fields
   late TextEditingController _emailController;
@@ -81,44 +80,36 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     );
     
     if (choice == 'change') {
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 85,
-      );
+      FilePickerResult? result;
       
-      if (image != null) {
-        setState(() {
-          _selectedAvatar = image;
-        });
+      if (!kIsWeb && Platform.isAndroid) {
+        result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'],
+          allowMultiple: false,
+          withData: false,
+        );
+      } else {
+        result = await FilePicker.platform.pickFiles(
+          type: FileType.image,
+          allowMultiple: false,
+          withData: true,
+        );
+      }
+      
+      if (result != null) {
+        final file = result.files.single;
+        if (file.bytes != null || file.path != null) {
+          setState(() {
+            _selectedAvatar = file;
+          });
+        }
       }
     } else if (choice == 'remove') {
       setState(() {
         _selectedAvatar = null;
       });
     }
-  }
-
-  Future<void> _selectBackground() async {
-    final XFile? image = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1920,
-      maxHeight: 1080,
-      imageQuality: 85,
-    );
-    
-    if (image != null) {
-      setState(() {
-        _selectedBackground = image;
-      });
-    }
-  }
-
-  void _removeBackground() {
-    setState(() {
-      _selectedBackground = null;
-    });
   }
 
   Future<void> _saveProfile() async {
@@ -140,7 +131,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           createTime: _currentUser!.createTime,
           personalSign: _bioController.text,
           introduction: _introductionController.text,
-          avatar: _selectedAvatar?.path ?? _currentUser!.avatar,
+          avatar: (_selectedAvatar?.path ?? (_selectedAvatar?.bytes != null ? 'bytes' : null)) ?? _currentUser!.avatar,
         );
         _isSubmitting = false;
       });
@@ -181,115 +172,62 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Background and Avatar Section
-            AspectRatio(
-              aspectRatio: 16 / 7,
-              child: Stack(
-                clipBehavior: Clip.none,
-                fit: StackFit.expand,
-                children: [
-                  // Background
-                  GestureDetector(
-                    onTap: _selectBackground,
-                    child: Container(
-                      color: colorScheme.surfaceContainerHigh,
-                      child: _selectedBackground != null
-                          ? Image.file(
-                              File(_selectedBackground!.path),
-                              fit: BoxFit.cover,
-                            )
-                          : Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Symbols.add_photo_alternate,
-                                    size: 48,
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    l10n.profileEditChangeBackground,
-                                    style: TextStyle(
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                    ),
-                  ),
-                  
-                  // Background remove button
-                  if (_selectedBackground != null)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: IconButton.filled(
-                        icon: const Icon(Symbols.delete),
-                        onPressed: _removeBackground,
-                        tooltip: l10n.profileEditRemoveBackground,
-                      ),
-                    ),
-                  
-                  // Avatar
-                  Positioned(
-                    left: 20,
-                    bottom: -32,
-                    child: GestureDetector(
-                      onTap: _selectAvatar,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: colorScheme.surface,
-                                width: 4,
-                              ),
-                            ),
-                            child: _selectedAvatar != null
-                                ? CircleAvatar(
-                                    radius: 40,
-                                    backgroundImage: FileImage(
-                                      File(_selectedAvatar!.path),
-                                    ),
-                                  )
-                                : ProfilePictureWidget(
-                                    avatarUrl: _currentUser!.avatar,
-                                    radius: 40,
-                                  ),
+            // Avatar Section
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: GestureDetector(
+                  onTap: _selectAvatar,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: colorScheme.outline.withOpacity(0.2),
+                            width: 3,
                           ),
-                          Positioned(
-                            right: -4,
-                            bottom: -4,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: colorScheme.primaryContainer,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: colorScheme.surface,
-                                  width: 2,
-                                ),
+                        ),
+                        child: _selectedAvatar != null
+                            ? CircleAvatar(
+                                radius: 60,
+                                backgroundImage: kIsWeb && _selectedAvatar!.bytes != null
+                                    ? MemoryImage(_selectedAvatar!.bytes!)
+                                    : (_selectedAvatar!.path != null
+                                        ? FileImage(File(_selectedAvatar!.path!)) as ImageProvider
+                                        : null),
+                              )
+                            : ProfilePictureWidget(
+                                avatarUrl: _currentUser!.avatar,
+                                radius: 60,
                               ),
-                              padding: const EdgeInsets.all(6),
-                              child: Icon(
-                                Symbols.edit,
-                                size: 16,
-                                color: colorScheme.onPrimaryContainer,
-                              ),
+                      ),
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: colorScheme.primaryContainer,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: colorScheme.surface,
+                              width: 3,
                             ),
                           ),
-                        ],
+                          padding: const EdgeInsets.all(10),
+                          child: Icon(
+                            Symbols.edit,
+                            size: 20,
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-            
-            const SizedBox(height: 48),
             
             // Basic Info Section
             Padding(
