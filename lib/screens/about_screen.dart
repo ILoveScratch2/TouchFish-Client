@@ -434,6 +434,252 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
     );
   }
 
+  Future<void> _showFontLicenseDialog(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+
+    // Show font selection dialog
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400, maxHeight: 300),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Title bar
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    const Icon(Symbols.font_download),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        l10n.aboutFontLicenseDialogTitle,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Symbols.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              
+              // Font selection list
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16.0),
+                  children: [
+                    _buildFontLicenseOption(
+                      context,
+                      fontName: 'HarmonyOS Sans SC',
+                      licensePath: 'assets/font/LICENSE.txt',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildFontLicenseOption(
+                      context,
+                      fontName: 'LXGW WenKai',
+                      licensePath: 'assets/font-wenkai/LICENSE.txt',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFontLicenseOption(
+    BuildContext context, {
+    required String fontName,
+    required String licensePath,
+  }) {
+    return Card(
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).pop();
+          _showLicenseContent(context, fontName, licensePath);
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              const Icon(Symbols.description),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  fontName,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontFamily: fontName,
+                  ),
+                ),
+              ),
+              const Icon(Symbols.chevron_right),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showLicenseContent(
+    BuildContext context,
+    String fontName,
+    String licensePath,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    String licenseText = '';
+    
+    try {
+      licenseText = await rootBundle.loadString(licensePath);
+    } catch (e) {
+      licenseText = 'Load license font fail: $e';
+    }
+
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
+          child: Column(
+            children: [
+              // Title bar
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Symbols.arrow_back),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _showFontLicenseDialog(context);
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        fontName,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontFamily: fontName,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Symbols.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              
+              // Description
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                color: Theme.of(context).colorScheme.primaryContainer,
+                child: Row(
+                  children: [
+                    Icon(
+                      Symbols.info,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        l10n.aboutFontLicenseDescription,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // License text
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(12.0),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            l10n.aboutFontLicenseFullText,
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Symbols.content_copy, size: 20),
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: licenseText));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(l10n.aboutCopiedToClipboard),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            tooltip: l10n.aboutCopyToClipboard,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: SelectableText(
+                            licenseText,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontFamily: 'monospace',
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Actions
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(l10n.aboutFontLicenseClose),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -571,6 +817,12 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
                                 onTap: () => _launchURL(
                                   AppConstants.githubServerRepoUrl,
                                 ),
+                              ),
+                              _buildListTile(
+                                context,
+                                icon: Symbols.font_download,
+                                title: l10n.aboutFontLicense,
+                                onTap: () => _showFontLicenseDialog(context),
                               ),
                               _buildListTile(
                                 context,

@@ -72,6 +72,11 @@
   "settingsColorPurple": "紫色",
   "settingsColorOrange": "橙色",
   
+  "settingsFontFamilyTitle": "字体",
+  "settingsFontFamilyDesc": "应用使用的字体",
+  "settingsFontHarmonyOS": "HarmonyOS Sans SC (默认,推荐)",
+  "settingsFontSystem": "系统默认",
+  
   "settingsSendModeTitle": "发送模式",
   "settingsSendModeDesc": "发送使用的快捷键",
   "settingsSendModeEnter": "按 Enter 发送",
@@ -281,6 +286,11 @@
   "aboutLinksSection": "链接",
   "aboutDocumentation": "文档",
   "aboutServerRepository": "后端服务器",
+  "aboutFontLicense": "字体许可",
+  "aboutFontLicenseDialogTitle": "HarmonyOS Sans Fonts License Agreement",
+  "aboutFontLicenseDescription": "本应用使用 HarmonyOS Sans SC 与 LXGW WenKai 字体，由华为终端有限公司根据 HarmonyOS Sans Fonts License Agreement 提供和 LXGW 根据 SIL Open Font License 1.1 提供。这些字体的使用遵循各自的许可证协议。",
+  "aboutFontLicenseFullText": "完整许可证文本",
+  "aboutFontLicenseClose": "关闭",
   "aboutOpenSourceLicenses": "开源许可证",
   "aboutDeveloperSection": "开发者信息",
   "aboutContactUs": "联系作者",

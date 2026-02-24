@@ -65,6 +65,7 @@ dependencies:
   image_picker: ^1.1.2
   talker: ^4.7.1
   talker_flutter: ^4.7.1
+  system_fonts: ^1.0.1
 
 dev_dependencies:
   flutter_test:
@@ -95,6 +96,10 @@ flutter:
   assets:
     - assets/logo.png
     - assets/icon.ico
+    - assets/font/HarmonyOS_Sans_SC.ttf
+    - assets/font/LICENSE.txt
+    - assets/font-wenkai/LXGWWenKai.ttf
+    - assets/font-wenkai/LICENSE.txt
     - LICENSE
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -121,6 +126,13 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+  fonts:
+    - family: HarmonyOS Sans SC
+      fonts:
+        - asset: assets/font/HarmonyOS_Sans_SC.ttf
+    - family: LXGW WenKai
+      fonts:
+        - asset: assets/font-wenkai/LXGWWenKai.ttf
 
 # flutter_launcher_icons configuration
 flutter_launcher_icons:

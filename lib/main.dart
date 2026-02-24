@@ -108,6 +108,7 @@ class _TouchFishAppState extends State<TouchFishApp> {
               brightness: Brightness.light,
             ),
             useMaterial3: true,
+            fontFamily: _appState.fontFamily,
           ),
           darkTheme: ThemeData(
             colorScheme: ColorScheme.fromSeed(
@@ -115,6 +116,7 @@ class _TouchFishAppState extends State<TouchFishApp> {
               brightness: Brightness.dark,
             ),
             useMaterial3: true,
+            fontFamily: _appState.fontFamily,
           ),
           themeMode: _appState.themeMode,
         );

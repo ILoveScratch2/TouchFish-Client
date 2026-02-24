@@ -203,6 +203,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsColorOrange => 'Orange';
 
   @override
+  String get settingsFontFamilyTitle => 'Font';
+
+  @override
+  String get settingsFontFamilyDesc => 'Application font family';
+
+  @override
+  String get settingsFontHarmonyOS =>
+      'HarmonyOS Sans SC (Default, Recommended)';
+
+  @override
+  String get settingsFontSystem => 'System Default';
+
+  @override
   String get settingsSendModeTitle => 'Send Mode';
 
   @override
@@ -790,6 +803,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutServerRepository => 'Backend Server';
+
+  @override
+  String get aboutFontLicense => 'Font License';
+
+  @override
+  String get aboutFontLicenseDialogTitle => 'HarmonyOS Sans SC Font License';
+
+  @override
+  String get aboutFontLicenseDescription =>
+      'This application uses HarmonyOS Sans SC  & LXGW WenKai fonts, provided by Huawei Device Co., Ltd. under the HarmonyOS Sans Fonts License Agreement and LXGW under the SIL Open Font License 1.1. The use of these fonts is subject to their respective license agreements.';
+
+  @override
+  String get aboutFontLicenseFullText => 'Full License Text';
+
+  @override
+  String get aboutFontLicenseClose => 'Close';
 
   @override
   String get aboutOpenSourceLicenses => 'Open Source Licenses';

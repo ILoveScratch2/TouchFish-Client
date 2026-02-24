@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../models/settings_model.dart';
 import '../models/settings_service.dart';
+import '../services/font_loader_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -202,6 +203,9 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
       case SettingType.switchSetting:
         return _buildSwitchSetting(context, l10n, item);
       case SettingType.dropdown:
+        if (item.key == 'fontFamily') {
+          return _buildFontDropdownSetting(context, l10n, item);
+        }
         if (item.key == 'language' || item.key == 'themeColor') {
           return _buildCustomDropdownSetting(context, l10n, item);
         }
@@ -288,6 +292,177 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
               ),
             ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFontDropdownSetting(
+      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    return FutureBuilder<List<String>>(
+      future: FontLoaderService.instance.getSystemFonts(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                child: Row(
+                  children: [
+                    if (item.icon != null) ...[
+                      Icon(item.icon),
+                      const SizedBox(width: 16),
+                    ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _getSettingTitle(l10n, item.titleKey),
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          if (item.descriptionKey != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Text(
+                                _getSettingTitle(l10n, item.descriptionKey!),
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const SizedBox(
+                      width: 140,
+                      height: 40,
+                      child: Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        final fonts = snapshot.data!;
+        
+        return ListenableBuilder(
+          listenable: _settingsService,
+          builder: (context, _) {
+            var value = _settingsService.getValue<String>(
+              item.key,
+              item.defaultValue as String,
+            );
+            if (value == 'harmonyos') {
+              value = 'HarmonyOS Sans SC';
+              _settingsService.setValue(item.key, value);
+            } else if (value == 'system') {
+              value = 'System Default';
+              _settingsService.setValue(item.key, value);
+            }
+            if (!fonts.contains(value)) {
+              value = 'System Default';
+              _settingsService.setValue(item.key, value);
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  child: Row(
+                    children: [
+                      if (item.icon != null) ...[
+                        Icon(item.icon),
+                        const SizedBox(width: 16),
+                      ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _getSettingTitle(l10n, item.titleKey),
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            if (item.descriptionKey != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Text(
+                                  _getSettingTitle(l10n, item.descriptionKey!),
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      SizedBox(
+                        width: 200,
+                        child: CustomDropdown<String>(
+                          hintText: '',
+                          initialItem: value,
+                          items: fonts,
+                          decoration: CustomDropdownDecoration(
+                            closedBorderRadius: BorderRadius.circular(8),
+                            expandedBorderRadius: BorderRadius.circular(8),
+                            closedFillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            expandedFillColor: Theme.of(context).colorScheme.surface,
+                            listItemStyle: TextStyle(
+                              fontFamily: null, // Will be set per item
+                            ),
+                          ),
+                          listItemBuilder: (context, item, isSelected, onItemSelect) {
+                            return GestureDetector(
+                              onTap: onItemSelect,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: isSelected 
+                                      ? Theme.of(context).colorScheme.primaryContainer
+                                      : null,
+                                ),
+                                child: Text(
+                                  item,
+                                  style: TextStyle(
+                                    fontFamily: item == 'System Default' ? null : item,
+                                    color: isSelected
+                                        ? Theme.of(context).colorScheme.onPrimaryContainer
+                                        : Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          headerBuilder: (context, selectedItem, enabled) {
+                            return Text(
+                              selectedItem,
+                              style: TextStyle(
+                                fontFamily: selectedItem == 'System Default' ? null : selectedItem,
+                              ),
+                            );
+                          },
+                          onChanged: (newValue) async {
+                            if (newValue != null) {
+                              await FontLoaderService.instance.loadFont(newValue);
+                              _settingsService.setValue(item.key, newValue);
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -659,6 +834,14 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
         return l10n.settingsColorPurple;
       case 'settingsColorOrange':
         return l10n.settingsColorOrange;
+      case 'settingsFontFamilyTitle':
+        return l10n.settingsFontFamilyTitle;
+      case 'settingsFontFamilyDesc':
+        return l10n.settingsFontFamilyDesc;
+      case 'settingsFontHarmonyOS':
+        return l10n.settingsFontHarmonyOS;
+      case 'settingsFontSystem':
+        return l10n.settingsFontSystem;
       case 'settingsSendModeTitle':
         return l10n.settingsSendModeTitle;
       case 'settingsSendModeDesc':

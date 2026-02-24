@@ -108,6 +108,15 @@ class SettingsData {
           ],
         ),
         SettingItem(
+          key: 'fontFamily',
+          titleKey: 'settingsFontFamilyTitle',
+          descriptionKey: 'settingsFontFamilyDesc',
+          type: SettingType.dropdown,
+          defaultValue: 'System Default',
+          icon: Icons.font_download,
+          options: [],
+        ),
+        SettingItem(
           key: 'sendMode',
           titleKey: 'settingsSendModeTitle',
           descriptionKey: 'settingsSendModeDesc',

@@ -196,6 +196,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsColorOrange => '橙色';
 
   @override
+  String get settingsFontFamilyTitle => '字体';
+
+  @override
+  String get settingsFontFamilyDesc => '应用使用的字体';
+
+  @override
+  String get settingsFontHarmonyOS => 'HarmonyOS Sans SC (默认,推荐)';
+
+  @override
+  String get settingsFontSystem => '系统默认';
+
+  @override
   String get settingsSendModeTitle => '发送模式';
 
   @override
@@ -766,6 +778,23 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aboutServerRepository => '后端服务器';
+
+  @override
+  String get aboutFontLicense => '字体许可';
+
+  @override
+  String get aboutFontLicenseDialogTitle =>
+      'HarmonyOS Sans Fonts License Agreement';
+
+  @override
+  String get aboutFontLicenseDescription =>
+      '本应用使用 HarmonyOS Sans SC 与 LXGW WenKai 字体，由华为终端有限公司根据 HarmonyOS Sans Fonts License Agreement 提供和 LXGW 根据 SIL Open Font License 1.1 提供。这些字体的使用遵循各自的许可证协议。';
+
+  @override
+  String get aboutFontLicenseFullText => '完整许可证文本';
+
+  @override
+  String get aboutFontLicenseClose => '关闭';
 
   @override
   String get aboutOpenSourceLicenses => '开源许可证';

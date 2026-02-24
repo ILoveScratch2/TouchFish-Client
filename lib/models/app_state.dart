@@ -51,6 +51,13 @@ class AppState extends ChangeNotifier {
         return const Color(0xFF6750A4);
     }
   }
+
+  String? get fontFamily {
+    final font = _settingsService.getValue<String>('fontFamily', 'System Default');
+    if (font == 'System Default') return null;
+    return font;
+  }
+
   bool get animationsEnabled {
     return _settingsService.getValue<bool>('enableAnimations', true);
   }

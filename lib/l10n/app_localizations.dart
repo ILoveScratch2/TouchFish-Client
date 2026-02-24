@@ -470,6 +470,30 @@ abstract class AppLocalizations {
   /// **'Orange'**
   String get settingsColorOrange;
 
+  /// No description provided for @settingsFontFamilyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Font'**
+  String get settingsFontFamilyTitle;
+
+  /// No description provided for @settingsFontFamilyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Application font family'**
+  String get settingsFontFamilyDesc;
+
+  /// No description provided for @settingsFontHarmonyOS.
+  ///
+  /// In en, this message translates to:
+  /// **'HarmonyOS Sans SC (Default, Recommended)'**
+  String get settingsFontHarmonyOS;
+
+  /// No description provided for @settingsFontSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System Default'**
+  String get settingsFontSystem;
+
   /// No description provided for @settingsSendModeTitle.
   ///
   /// In en, this message translates to:
@@ -1609,6 +1633,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Backend Server'**
   String get aboutServerRepository;
+
+  /// No description provided for @aboutFontLicense.
+  ///
+  /// In en, this message translates to:
+  /// **'Font License'**
+  String get aboutFontLicense;
+
+  /// No description provided for @aboutFontLicenseDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'HarmonyOS Sans SC Font License'**
+  String get aboutFontLicenseDialogTitle;
+
+  /// No description provided for @aboutFontLicenseDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This application uses HarmonyOS Sans SC  & LXGW WenKai fonts, provided by Huawei Device Co., Ltd. under the HarmonyOS Sans Fonts License Agreement and LXGW under the SIL Open Font License 1.1. The use of these fonts is subject to their respective license agreements.'**
+  String get aboutFontLicenseDescription;
+
+  /// No description provided for @aboutFontLicenseFullText.
+  ///
+  /// In en, this message translates to:
+  /// **'Full License Text'**
+  String get aboutFontLicenseFullText;
+
+  /// No description provided for @aboutFontLicenseClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get aboutFontLicenseClose;
 
   /// No description provided for @aboutOpenSourceLicenses.
   ///

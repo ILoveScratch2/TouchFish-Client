@@ -81,6 +81,11 @@
   "settingsColorPurple": "Purple",
   "settingsColorOrange": "Orange",
   
+  "settingsFontFamilyTitle": "Font",
+  "settingsFontFamilyDesc": "Application font family",
+  "settingsFontHarmonyOS": "HarmonyOS Sans SC (Default, Recommended)",
+  "settingsFontSystem": "System Default",
+  
   "settingsSendModeTitle": "Send Mode",
   "settingsSendModeDesc": "Keyboard shortcut for sending messages",
   "settingsSendModeEnter": "Press Enter to send",
@@ -296,6 +301,11 @@
   "aboutLinksSection": "Links",
   "aboutDocumentation": "Documentation",
   "aboutServerRepository": "Backend Server",
+  "aboutFontLicense": "Font License",
+  "aboutFontLicenseDialogTitle": "HarmonyOS Sans SC Font License",
+  "aboutFontLicenseDescription": "This application uses HarmonyOS Sans SC  & LXGW WenKai fonts, provided by Huawei Device Co., Ltd. under the HarmonyOS Sans Fonts License Agreement and LXGW under the SIL Open Font License 1.1. The use of these fonts is subject to their respective license agreements.",
+  "aboutFontLicenseFullText": "Full License Text",
+  "aboutFontLicenseClose": "Close",
   "aboutOpenSourceLicenses": "Open Source Licenses",
   "aboutDeveloperSection": "Developer Information",
   "aboutContactUs": "Contact Author",
