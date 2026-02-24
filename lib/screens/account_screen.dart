@@ -101,7 +101,7 @@ class _AccountScreenState extends State<AccountScreen> {
         }
 
         return Scaffold(
-          backgroundColor: isWide ? Colors.transparent : Theme.of(context).scaffoldBackgroundColor,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             toolbarHeight: 0,
