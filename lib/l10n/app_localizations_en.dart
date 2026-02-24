@@ -1039,4 +1039,188 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get debugLogsDescription => 'View application logs';
+
+  @override
+  String get forumTitle => 'Forum';
+
+  @override
+  String get forumNotFound => 'Forum not found';
+
+  @override
+  String get forumDescription => 'Description';
+
+  @override
+  String get forumJoin => 'Join Forum';
+
+  @override
+  String get forumJoinSuccess => 'Successfully joined the forum';
+
+  @override
+  String get forumLeave => 'Leave Forum';
+
+  @override
+  String get forumLeaveHint =>
+      'Are you sure you want to leave this forum? You will lose access to forum content.';
+
+  @override
+  String get forumEdit => 'Edit Forum';
+
+  @override
+  String get forumDelete => 'Delete Forum';
+
+  @override
+  String get forumDeleteHint =>
+      'Are you sure to delete this forum? This will also delete all the posts under this forum.';
+
+  @override
+  String get forumPinnedPosts => 'Pinned Posts';
+
+  @override
+  String get forumNoPosts => 'No posts yet';
+
+  @override
+  String get forumPostDetail => 'Post Detail';
+
+  @override
+  String get forumPostNotFound => 'Post not found';
+
+  @override
+  String get forumReply => 'Reply';
+
+  @override
+  String forumReplies(int count) {
+    return '$count replies';
+  }
+
+  @override
+  String forumComments(int count) {
+    return '$count comments';
+  }
+
+  @override
+  String get forumNoComments => 'No comments yet';
+
+  @override
+  String get forumCommentPlaceholder => 'Write a comment...';
+
+  @override
+  String get forumCommentSuccess => 'Comment posted successfully';
+
+  @override
+  String get forumShare => 'Share';
+
+  @override
+  String get forumPublish => 'Publish';
+
+  @override
+  String get forumComposePost => 'New Post';
+
+  @override
+  String get forumComposeReply => 'Reply to Post';
+
+  @override
+  String get forumPostTitle => 'Title';
+
+  @override
+  String get forumPostTitleRequired => 'Please enter a title';
+
+  @override
+  String get forumPostContent => 'Content';
+
+  @override
+  String get forumPostContentRequired => 'Please enter content';
+
+  @override
+  String get forumPostContentMarkdown => 'Supports Markdown formatting';
+
+  @override
+  String get forumPostSuccess => 'Post published successfully';
+
+  @override
+  String get forumReplySuccess => 'Reply posted successfully';
+
+  @override
+  String forumMembersCount(int count) {
+    return '$count members';
+  }
+
+  @override
+  String get forumInviteMember => 'Invite Member';
+
+  @override
+  String get forumRemoveMember => 'Remove Member';
+
+  @override
+  String get forumRemoveMemberHint => 'Are you sure to remove this member?';
+
+  @override
+  String forumMemberRoleEdit(String name) {
+    return 'Edit role of $name';
+  }
+
+  @override
+  String get forumMemberRole => 'Role';
+
+  @override
+  String get forumMemberRoleHint => '0=Member, 50=Admin, 100=Owner';
+
+  @override
+  String get forumRoleOwner => 'Owner';
+
+  @override
+  String get forumRoleAdmin => 'Admin';
+
+  @override
+  String get forumRoleMember => 'Member';
+
+  @override
+  String get forumTabJoined => 'Joined';
+
+  @override
+  String get forumTabExplore => 'Explore';
+
+  @override
+  String get forumNoJoined => 'You haven\'t joined any forums yet';
+
+  @override
+  String get forumPostDescription => 'Description (optional)';
+
+  @override
+  String get forumComposeAttachImage => 'Attach image';
+
+  @override
+  String get forumComposeAttachFile => 'Attach file';
+
+  @override
+  String get forumCopyLink => 'Copy Link';
+
+  @override
+  String get forumCommentSend => 'Send';
+
+  @override
+  String get forumExpandEditor => 'Expand editor';
+
+  @override
+  String get forumMdBold => 'Bold';
+
+  @override
+  String get forumMdItalic => 'Italic';
+
+  @override
+  String get forumMdStrikethrough => 'Strikethrough';
+
+  @override
+  String get forumMdHeading => 'Heading';
+
+  @override
+  String get forumMdList => 'List';
+
+  @override
+  String get forumMdQuote => 'Quote';
+
+  @override
+  String get forumMdCode => 'Code';
+
+  @override
+  String get forumMdLink => 'Link';
 }

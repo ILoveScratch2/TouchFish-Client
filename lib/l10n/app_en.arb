@@ -390,5 +390,84 @@
   "markdownCodeCopied": "Code copied to clipboard",
   
   "debugLogs": "Debug Logs",
-  "debugLogsDescription": "View application logs"
+  "debugLogsDescription": "View application logs",
+
+  "forumTitle": "Forum",
+  "forumNotFound": "Forum not found",
+  "forumDescription": "Description",
+  "forumJoin": "Join Forum",
+  "forumJoinSuccess": "Successfully joined the forum",
+  "forumLeave": "Leave Forum",
+  "forumLeaveHint": "Are you sure you want to leave this forum? You will lose access to forum content.",
+  "forumEdit": "Edit Forum",
+  "forumDelete": "Delete Forum",
+  "forumDeleteHint": "Are you sure to delete this forum? This will also delete all the posts under this forum.",
+  "forumPinnedPosts": "Pinned Posts",
+  "forumNoPosts": "No posts yet",
+  "forumPostDetail": "Post Detail",
+  "forumPostNotFound": "Post not found",
+  "forumReply": "Reply",
+  "forumReplies": "{count} replies",
+  "@forumReplies": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "forumComments": "{count} comments",
+  "@forumComments": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "forumNoComments": "No comments yet",
+  "forumCommentPlaceholder": "Write a comment...",
+  "forumCommentSuccess": "Comment posted successfully",
+  "forumShare": "Share",
+  "forumPublish": "Publish",
+  "forumComposePost": "New Post",
+  "forumComposeReply": "Reply to Post",
+  "forumPostTitle": "Title",
+  "forumPostTitleRequired": "Please enter a title",
+  "forumPostContent": "Content",
+  "forumPostContentRequired": "Please enter content",
+  "forumPostContentMarkdown": "Supports Markdown formatting",
+  "forumPostSuccess": "Post published successfully",
+  "forumReplySuccess": "Reply posted successfully",
+  "forumMembersCount": "{count} members",
+  "@forumMembersCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "forumInviteMember": "Invite Member",
+  "forumRemoveMember": "Remove Member",
+  "forumRemoveMemberHint": "Are you sure to remove this member?",
+  "forumMemberRoleEdit": "Edit role of {name}",
+  "@forumMemberRoleEdit": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "forumMemberRole": "Role",
+  "forumMemberRoleHint": "0=Member, 50=Admin, 100=Owner",
+  "forumRoleOwner": "Owner",
+  "forumRoleAdmin": "Admin",
+  "forumRoleMember": "Member",
+  "forumTabJoined": "Joined",
+  "forumTabExplore": "Explore",
+  "forumNoJoined": "You haven't joined any forums yet",
+  "forumPostDescription": "Description (optional)",
+  "forumComposeAttachImage": "Attach image",
+  "forumComposeAttachFile": "Attach file",
+  "forumCopyLink": "Copy Link",
+  "forumCommentSend": "Send",
+  "forumExpandEditor": "Expand editor",
+  "forumMdBold": "Bold",
+  "forumMdItalic": "Italic",
+  "forumMdStrikethrough": "Strikethrough",
+  "forumMdHeading": "Heading",
+  "forumMdList": "List",
+  "forumMdQuote": "Quote",
+  "forumMdCode": "Code",
+  "forumMdLink": "Link"
 }

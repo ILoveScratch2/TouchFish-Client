@@ -1006,4 +1006,186 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get debugLogsDescription => '查看应用运行日志';
+
+  @override
+  String get forumTitle => '论坛';
+
+  @override
+  String get forumNotFound => '论坛未找到';
+
+  @override
+  String get forumDescription => '简介';
+
+  @override
+  String get forumJoin => '加入论坛';
+
+  @override
+  String get forumJoinSuccess => '成功加入论坛';
+
+  @override
+  String get forumLeave => '退出论坛';
+
+  @override
+  String get forumLeaveHint => '确定要退出此论坛吗？退出后将无法访问论坛内容。';
+
+  @override
+  String get forumEdit => '编辑论坛';
+
+  @override
+  String get forumDelete => '删除论坛';
+
+  @override
+  String get forumDeleteHint => '确定要删除此论坛吗？这将同时删除该论坛下的所有帖子。';
+
+  @override
+  String get forumPinnedPosts => '置顶帖子';
+
+  @override
+  String get forumNoPosts => '暂无帖子';
+
+  @override
+  String get forumPostDetail => '帖子详情';
+
+  @override
+  String get forumPostNotFound => '帖子未找到';
+
+  @override
+  String get forumReply => '回复';
+
+  @override
+  String forumReplies(int count) {
+    return '$count 条回复';
+  }
+
+  @override
+  String forumComments(int count) {
+    return '$count 条评论';
+  }
+
+  @override
+  String get forumNoComments => '暂无评论';
+
+  @override
+  String get forumCommentPlaceholder => '写下你的评论…';
+
+  @override
+  String get forumCommentSuccess => '评论发布成功';
+
+  @override
+  String get forumShare => '分享';
+
+  @override
+  String get forumPublish => '发布';
+
+  @override
+  String get forumComposePost => '发帖';
+
+  @override
+  String get forumComposeReply => '回复帖子';
+
+  @override
+  String get forumPostTitle => '标题';
+
+  @override
+  String get forumPostTitleRequired => '请输入标题';
+
+  @override
+  String get forumPostContent => '内容';
+
+  @override
+  String get forumPostContentRequired => '请输入内容';
+
+  @override
+  String get forumPostContentMarkdown => '支持 Markdown 格式';
+
+  @override
+  String get forumPostSuccess => '帖子发布成功';
+
+  @override
+  String get forumReplySuccess => '回复发布成功';
+
+  @override
+  String forumMembersCount(int count) {
+    return '$count 位成员';
+  }
+
+  @override
+  String get forumInviteMember => '邀请成员';
+
+  @override
+  String get forumRemoveMember => '移除成员';
+
+  @override
+  String get forumRemoveMemberHint => '确定要移除此成员吗？';
+
+  @override
+  String forumMemberRoleEdit(String name) {
+    return '编辑 $name 的角色';
+  }
+
+  @override
+  String get forumMemberRole => '角色';
+
+  @override
+  String get forumMemberRoleHint => '0=成员, 50=管理员, 100=所有者';
+
+  @override
+  String get forumRoleOwner => '所有者';
+
+  @override
+  String get forumRoleAdmin => '管理员';
+
+  @override
+  String get forumRoleMember => '成员';
+
+  @override
+  String get forumTabJoined => '我加入的';
+
+  @override
+  String get forumTabExplore => '探索';
+
+  @override
+  String get forumNoJoined => '你还没有加入任何论坛';
+
+  @override
+  String get forumPostDescription => '描述（可选）';
+
+  @override
+  String get forumComposeAttachImage => '添加图片';
+
+  @override
+  String get forumComposeAttachFile => '添加附件';
+
+  @override
+  String get forumCopyLink => '复制链接';
+
+  @override
+  String get forumCommentSend => '发送';
+
+  @override
+  String get forumExpandEditor => '展开编辑器';
+
+  @override
+  String get forumMdBold => '加粗';
+
+  @override
+  String get forumMdItalic => '斜体';
+
+  @override
+  String get forumMdStrikethrough => '删除线';
+
+  @override
+  String get forumMdHeading => '标题';
+
+  @override
+  String get forumMdList => '列表';
+
+  @override
+  String get forumMdQuote => '引用';
+
+  @override
+  String get forumMdCode => '代码';
+
+  @override
+  String get forumMdLink => '链接';
 }

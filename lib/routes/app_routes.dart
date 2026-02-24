@@ -12,6 +12,8 @@ import '../screens/chat_screen.dart';
 import '../screens/chat_detail_screen.dart';
 import '../screens/announcement_screen.dart';
 import '../screens/forum_screen.dart';
+import '../screens/forum_detail_screen.dart';
+import '../screens/forum_post_detail_screen.dart';
 import '../screens/account_screen.dart';
 import '../screens/user_profile_screen.dart';
 import '../screens/about_screen.dart';
@@ -27,6 +29,8 @@ class AppRoutes {
   static const String chatDetail = '/chat/:roomId';
   static const String announcement = '/announcement';
   static const String forum = '/forum';
+  static const String forumDetail = '/forum/:forumId';
+  static const String forumPostDetail = '/forum/:forumId/post/:postId';
   static const String account = '/account';
   static const String settings = '/settings';
   static const String register = '/register';
@@ -113,6 +117,21 @@ class AppRoutes {
               path: profileEdit,
               builder: (context, state) => const ProfileEditScreen(),
             ),
+            GoRoute(
+              path: '/forum/:forumId',
+              builder: (context, state) {
+                final forumId = state.pathParameters['forumId']!;
+                return ForumDetailScreen(forumId: forumId);
+              },
+            ),
+            GoRoute(
+              path: '/forum/:forumId/post/:postId',
+              builder: (context, state) {
+                final forumId = state.pathParameters['forumId']!;
+                final postId = state.pathParameters['postId']!;
+                return ForumPostDetailScreen(forumId: forumId, postId: postId);
+              },
+            ),
             ShellRoute(
               builder: (context, state, child) {
                 return MainScreen(child: child);
@@ -160,7 +179,6 @@ class AppRoutes {
                     final roomId = state.pathParameters['roomId']!;
                     final isWide = MediaQuery.of(context).size.width >= 600;
                     
-                    // Use MaterialPage for narrow screens to enable slide animation
                     if (!isWide) {
                       return MaterialPage(
                         child: ChatShellScreen(
@@ -171,8 +189,6 @@ class AppRoutes {
                         ),
                       );
                     }
-                    
-                    // Use NoTransitionPage for wide screens
                     return NoTransitionPage(
                       child: ChatShellScreen(
                         child: ChatDetailScreen(

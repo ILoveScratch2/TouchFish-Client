@@ -2065,6 +2065,354 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View application logs'**
   String get debugLogsDescription;
+
+  /// No description provided for @forumTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Forum'**
+  String get forumTitle;
+
+  /// No description provided for @forumNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Forum not found'**
+  String get forumNotFound;
+
+  /// No description provided for @forumDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get forumDescription;
+
+  /// No description provided for @forumJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Forum'**
+  String get forumJoin;
+
+  /// No description provided for @forumJoinSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Successfully joined the forum'**
+  String get forumJoinSuccess;
+
+  /// No description provided for @forumLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave Forum'**
+  String get forumLeave;
+
+  /// No description provided for @forumLeaveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to leave this forum? You will lose access to forum content.'**
+  String get forumLeaveHint;
+
+  /// No description provided for @forumEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Forum'**
+  String get forumEdit;
+
+  /// No description provided for @forumDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Forum'**
+  String get forumDelete;
+
+  /// No description provided for @forumDeleteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure to delete this forum? This will also delete all the posts under this forum.'**
+  String get forumDeleteHint;
+
+  /// No description provided for @forumPinnedPosts.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned Posts'**
+  String get forumPinnedPosts;
+
+  /// No description provided for @forumNoPosts.
+  ///
+  /// In en, this message translates to:
+  /// **'No posts yet'**
+  String get forumNoPosts;
+
+  /// No description provided for @forumPostDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Post Detail'**
+  String get forumPostDetail;
+
+  /// No description provided for @forumPostNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Post not found'**
+  String get forumPostNotFound;
+
+  /// No description provided for @forumReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get forumReply;
+
+  /// No description provided for @forumReplies.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} replies'**
+  String forumReplies(int count);
+
+  /// No description provided for @forumComments.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} comments'**
+  String forumComments(int count);
+
+  /// No description provided for @forumNoComments.
+  ///
+  /// In en, this message translates to:
+  /// **'No comments yet'**
+  String get forumNoComments;
+
+  /// No description provided for @forumCommentPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a comment...'**
+  String get forumCommentPlaceholder;
+
+  /// No description provided for @forumCommentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment posted successfully'**
+  String get forumCommentSuccess;
+
+  /// No description provided for @forumShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get forumShare;
+
+  /// No description provided for @forumPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish'**
+  String get forumPublish;
+
+  /// No description provided for @forumComposePost.
+  ///
+  /// In en, this message translates to:
+  /// **'New Post'**
+  String get forumComposePost;
+
+  /// No description provided for @forumComposeReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to Post'**
+  String get forumComposeReply;
+
+  /// No description provided for @forumPostTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get forumPostTitle;
+
+  /// No description provided for @forumPostTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a title'**
+  String get forumPostTitleRequired;
+
+  /// No description provided for @forumPostContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Content'**
+  String get forumPostContent;
+
+  /// No description provided for @forumPostContentRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter content'**
+  String get forumPostContentRequired;
+
+  /// No description provided for @forumPostContentMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Supports Markdown formatting'**
+  String get forumPostContentMarkdown;
+
+  /// No description provided for @forumPostSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Post published successfully'**
+  String get forumPostSuccess;
+
+  /// No description provided for @forumReplySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply posted successfully'**
+  String get forumReplySuccess;
+
+  /// No description provided for @forumMembersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} members'**
+  String forumMembersCount(int count);
+
+  /// No description provided for @forumInviteMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite Member'**
+  String get forumInviteMember;
+
+  /// No description provided for @forumRemoveMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Member'**
+  String get forumRemoveMember;
+
+  /// No description provided for @forumRemoveMemberHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure to remove this member?'**
+  String get forumRemoveMemberHint;
+
+  /// No description provided for @forumMemberRoleEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit role of {name}'**
+  String forumMemberRoleEdit(String name);
+
+  /// No description provided for @forumMemberRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get forumMemberRole;
+
+  /// No description provided for @forumMemberRoleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'0=Member, 50=Admin, 100=Owner'**
+  String get forumMemberRoleHint;
+
+  /// No description provided for @forumRoleOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get forumRoleOwner;
+
+  /// No description provided for @forumRoleAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get forumRoleAdmin;
+
+  /// No description provided for @forumRoleMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Member'**
+  String get forumRoleMember;
+
+  /// No description provided for @forumTabJoined.
+  ///
+  /// In en, this message translates to:
+  /// **'Joined'**
+  String get forumTabJoined;
+
+  /// No description provided for @forumTabExplore.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore'**
+  String get forumTabExplore;
+
+  /// No description provided for @forumNoJoined.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t joined any forums yet'**
+  String get forumNoJoined;
+
+  /// No description provided for @forumPostDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get forumPostDescription;
+
+  /// No description provided for @forumComposeAttachImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach image'**
+  String get forumComposeAttachImage;
+
+  /// No description provided for @forumComposeAttachFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach file'**
+  String get forumComposeAttachFile;
+
+  /// No description provided for @forumCopyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Link'**
+  String get forumCopyLink;
+
+  /// No description provided for @forumCommentSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get forumCommentSend;
+
+  /// No description provided for @forumExpandEditor.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand editor'**
+  String get forumExpandEditor;
+
+  /// No description provided for @forumMdBold.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get forumMdBold;
+
+  /// No description provided for @forumMdItalic.
+  ///
+  /// In en, this message translates to:
+  /// **'Italic'**
+  String get forumMdItalic;
+
+  /// No description provided for @forumMdStrikethrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Strikethrough'**
+  String get forumMdStrikethrough;
+
+  /// No description provided for @forumMdHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading'**
+  String get forumMdHeading;
+
+  /// No description provided for @forumMdList.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get forumMdList;
+
+  /// No description provided for @forumMdQuote.
+  ///
+  /// In en, this message translates to:
+  /// **'Quote'**
+  String get forumMdQuote;
+
+  /// No description provided for @forumMdCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get forumMdCode;
+
+  /// No description provided for @forumMdLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get forumMdLink;
 }
 
 class _AppLocalizationsDelegate

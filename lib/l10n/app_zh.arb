@@ -366,5 +366,84 @@
   "markdownCodeCopied": "代码已复制到剪贴板",
   
   "debugLogs": "调试日志",
-  "debugLogsDescription": "查看应用运行日志"
+  "debugLogsDescription": "查看应用运行日志",
+
+  "forumTitle": "论坛",
+  "forumNotFound": "论坛未找到",
+  "forumDescription": "简介",
+  "forumJoin": "加入论坛",
+  "forumJoinSuccess": "成功加入论坛",
+  "forumLeave": "退出论坛",
+  "forumLeaveHint": "确定要退出此论坛吗？退出后将无法访问论坛内容。",
+  "forumEdit": "编辑论坛",
+  "forumDelete": "删除论坛",
+  "forumDeleteHint": "确定要删除此论坛吗？这将同时删除该论坛下的所有帖子。",
+  "forumPinnedPosts": "置顶帖子",
+  "forumNoPosts": "暂无帖子",
+  "forumPostDetail": "帖子详情",
+  "forumPostNotFound": "帖子未找到",
+  "forumReply": "回复",
+  "forumReplies": "{count} 条回复",
+  "@forumReplies": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "forumComments": "{count} 条评论",
+  "@forumComments": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "forumNoComments": "暂无评论",
+  "forumCommentPlaceholder": "写下你的评论…",
+  "forumCommentSuccess": "评论发布成功",
+  "forumShare": "分享",
+  "forumPublish": "发布",
+  "forumComposePost": "发帖",
+  "forumComposeReply": "回复帖子",
+  "forumPostTitle": "标题",
+  "forumPostTitleRequired": "请输入标题",
+  "forumPostContent": "内容",
+  "forumPostContentRequired": "请输入内容",
+  "forumPostContentMarkdown": "支持 Markdown 格式",
+  "forumPostSuccess": "帖子发布成功",
+  "forumReplySuccess": "回复发布成功",
+  "forumMembersCount": "{count} 位成员",
+  "@forumMembersCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "forumInviteMember": "邀请成员",
+  "forumRemoveMember": "移除成员",
+  "forumRemoveMemberHint": "确定要移除此成员吗？",
+  "forumMemberRoleEdit": "编辑 {name} 的角色",
+  "@forumMemberRoleEdit": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "forumMemberRole": "角色",
+  "forumMemberRoleHint": "0=成员, 50=管理员, 100=所有者",
+  "forumRoleOwner": "所有者",
+  "forumRoleAdmin": "管理员",
+  "forumRoleMember": "成员",
+  "forumTabJoined": "我加入的",
+  "forumTabExplore": "探索",
+  "forumNoJoined": "你还没有加入任何论坛",
+  "forumPostDescription": "描述（可选）",
+  "forumComposeAttachImage": "添加图片",
+  "forumComposeAttachFile": "添加附件",
+  "forumCopyLink": "复制链接",
+  "forumCommentSend": "发送",
+  "forumExpandEditor": "展开编辑器",
+  "forumMdBold": "加粗",
+  "forumMdItalic": "斜体",
+  "forumMdStrikethrough": "删除线",
+  "forumMdHeading": "标题",
+  "forumMdList": "列表",
+  "forumMdQuote": "引用",
+  "forumMdCode": "代码",
+  "forumMdLink": "链接"
 }
