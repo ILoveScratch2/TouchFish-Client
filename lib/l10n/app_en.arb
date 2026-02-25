@@ -85,6 +85,10 @@
   "settingsFontFamilyDesc": "Application font family",
   "settingsFontHarmonyOS": "HarmonyOS Sans SC (Default, Recommended)",
   "settingsFontSystem": "System Default",
+  "settingsFontCustomOption": "Custom",
+  "settingsCustomFontTitle": "Custom font",
+  "settingsCustomFontDesc": "Enter the name of the system font to use",
+  "settingsCustomFontHint": "e.g. LXGW WenKai Screen",
   
   "settingsSendModeTitle": "Send Mode",
   "settingsSendModeDesc": "Keyboard shortcut for sending messages",

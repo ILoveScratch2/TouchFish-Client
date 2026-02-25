@@ -76,6 +76,10 @@
   "settingsFontFamilyDesc": "应用使用的字体",
   "settingsFontHarmonyOS": "HarmonyOS Sans SC (默认,推荐)",
   "settingsFontSystem": "系统默认",
+  "settingsFontCustomOption": "自定义",
+  "settingsCustomFontTitle": "自定义字体",
+  "settingsCustomFontDesc": "输入要使用的系统字体名称",
+  "settingsCustomFontHint": "例如：LXGW WenKai Screen",
   
   "settingsSendModeTitle": "发送模式",
   "settingsSendModeDesc": "发送使用的快捷键",

@@ -15,14 +15,19 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStateMixin {
+  static const String _customFontSentinel = '__custom__';
+
   final _settingsService = SettingsService.instance;
   SettingCategory? _selectedCategory;
   late AnimationController _categoryAnimationController;
+  final TextEditingController _customFontController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _settingsService.init();
+    _customFontController.text =
+        _settingsService.getValue<String>('customFontName', '');
     
     _categoryAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -32,6 +37,7 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
   
   @override
   void dispose() {
+    _customFontController.dispose();
     _categoryAnimationController.dispose();
     super.dispose();
   }
@@ -373,93 +379,185 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
               _settingsService.setValue(item.key, value);
             }
 
+            final isCustom = value == _customFontSentinel;
+            final customFontName =
+                _settingsService.getValue<String>('customFontName', '');
+
             return Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                  child: Row(
-                    children: [
-                      if (item.icon != null) ...[
-                        Icon(item.icon),
-                        const SizedBox(width: 16),
-                      ],
-                      Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 12.0),
+                      child: Row(
+                        children: [
+                          if (item.icon != null) ...[
+                            Icon(item.icon),
+                            const SizedBox(width: 16),
+                          ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _getSettingTitle(l10n, item.titleKey),
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium,
+                                ),
+                                if (item.descriptionKey != null)
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.only(top: 4.0),
+                                    child: Text(
+                                      _getSettingTitle(
+                                          l10n, item.descriptionKey!),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          SizedBox(
+                            width: 200,
+                            child: CustomDropdown<String>(
+                              hintText: '',
+                              initialItem: value,
+                              items: fonts,
+                              decoration: CustomDropdownDecoration(
+                                closedBorderRadius: BorderRadius.circular(8),
+                                expandedBorderRadius: BorderRadius.circular(8),
+                                closedFillColor: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
+                                expandedFillColor: Theme.of(context)
+                                    .colorScheme
+                                    .surface,
+                                listItemStyle: const TextStyle(
+                                  fontFamily: null, // Will be set per item
+                                ),
+                              ),
+                              listItemBuilder:
+                                  (context, item, isSelected, onItemSelect) {
+                                final displayName =
+                                    _getFontDisplayName(l10n, item);
+                                return GestureDetector(
+                                  onTap: onItemSelect,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .primaryContainer
+                                          : null,
+                                    ),
+                                    child: Text(
+                                      displayName,
+                                      style: TextStyle(
+                                        fontFamily: (item == 'System Default' ||
+                                                item == _customFontSentinel)
+                                            ? null
+                                            : item,
+                                        color: isSelected
+                                            ? Theme.of(context)
+                                                .colorScheme
+                                                .onPrimaryContainer
+                                            : Theme.of(context)
+                                                .colorScheme
+                                                .onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              headerBuilder:
+                                  (context, selectedItem, enabled) {
+                                final displayName = _getFontDisplayName(
+                                    l10n, selectedItem);
+                                return Text(
+                                  displayName,
+                                  style: TextStyle(
+                                    fontFamily:
+                                        selectedItem == 'System Default'
+                                            ? null
+                                            : (selectedItem ==
+                                                        _customFontSentinel &&
+                                                    customFontName
+                                                        .isNotEmpty)
+                                                ? customFontName
+                                                : selectedItem,
+                                  ),
+                                );
+                              },
+                              onChanged: (newValue) async {
+                                if (newValue != null) {
+                                  if (newValue == _customFontSentinel) {
+                                    final name = _settingsService.getValue<
+                                        String>('customFontName', '');
+                                    if (name.isNotEmpty) {
+                                      await FontLoaderService.instance
+                                          .loadFont(name);
+                                    }
+                                  } else {
+                                    await FontLoaderService.instance
+                                        .loadFont(newValue);
+                                  }
+                                  _settingsService.setValue(
+                                      item.key, newValue);
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (isCustom) ...[
+                    const SizedBox(height: 8),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0, vertical: 12.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _getSettingTitle(l10n, item.titleKey),
-                              style: Theme.of(context).textTheme.titleMedium,
+                              l10n.settingsCustomFontTitle,
+                              style:
+                                  Theme.of(context).textTheme.titleMedium,
                             ),
-                            if (item.descriptionKey != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4.0),
-                                child: Text(
-                                  _getSettingTitle(l10n, item.descriptionKey!),
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
+                            const SizedBox(height: 8),
+                            Text(
+                              l10n.settingsCustomFontDesc,
+                              style:
+                                  Theme.of(context).textTheme.bodySmall,
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _customFontController,
+                              decoration: InputDecoration(
+                                labelText: l10n.settingsCustomFontTitle,
+                                hintText: l10n.settingsCustomFontHint,
+                                border: const OutlineInputBorder(),
                               ),
+                              onChanged: (value) {
+                                _settingsService.setValue(
+                                    'customFontName', value);
+                              },
+                            ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      SizedBox(
-                        width: 200,
-                        child: CustomDropdown<String>(
-                          hintText: '',
-                          initialItem: value,
-                          items: fonts,
-                          decoration: CustomDropdownDecoration(
-                            closedBorderRadius: BorderRadius.circular(8),
-                            expandedBorderRadius: BorderRadius.circular(8),
-                            closedFillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            expandedFillColor: Theme.of(context).colorScheme.surface,
-                            listItemStyle: TextStyle(
-                              fontFamily: null, // Will be set per item
-                            ),
-                          ),
-                          listItemBuilder: (context, item, isSelected, onItemSelect) {
-                            return GestureDetector(
-                              onTap: onItemSelect,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: isSelected 
-                                      ? Theme.of(context).colorScheme.primaryContainer
-                                      : null,
-                                ),
-                                child: Text(
-                                  item,
-                                  style: TextStyle(
-                                    fontFamily: item == 'System Default' ? null : item,
-                                    color: isSelected
-                                        ? Theme.of(context).colorScheme.onPrimaryContainer
-                                        : Theme.of(context).colorScheme.onSurface,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                          headerBuilder: (context, selectedItem, enabled) {
-                            return Text(
-                              selectedItem,
-                              style: TextStyle(
-                                fontFamily: selectedItem == 'System Default' ? null : selectedItem,
-                              ),
-                            );
-                          },
-                          onChanged: (newValue) async {
-                            if (newValue != null) {
-                              await FontLoaderService.instance.loadFont(newValue);
-                              _settingsService.setValue(item.key, newValue);
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                  ],
+                ],
               ),
             );
           },
@@ -842,6 +940,8 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
         return l10n.settingsFontHarmonyOS;
       case 'settingsFontSystem':
         return l10n.settingsFontSystem;
+      case 'settingsFontCustomOption':
+        return l10n.settingsFontCustomOption;
       case 'settingsSendModeTitle':
         return l10n.settingsSendModeTitle;
       case 'settingsSendModeDesc':
@@ -881,6 +981,19 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
       default:
         return key;
     }
+  }
+
+  String _getFontDisplayName(AppLocalizations l10n, String font) {
+    if (font == 'System Default') {
+      return l10n.settingsFontSystem;
+    }
+    if (font == 'HarmonyOS Sans SC') {
+      return l10n.settingsFontHarmonyOS;
+    }
+    if (font == _customFontSentinel) {
+      return l10n.settingsFontCustomOption;
+    }
+    return font;
   }
 
   IconData _getToggleIcon(String settingKey, String value) {

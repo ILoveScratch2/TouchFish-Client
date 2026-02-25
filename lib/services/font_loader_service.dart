@@ -19,7 +19,12 @@ class FontLoaderService {
     if (!kIsWeb) {
       fonts = await FontLoaderPlatform.getSystemFontList();
     }
-    final builtInFonts = ['System Default', 'HarmonyOS Sans SC', 'LXGW WenKai'];
+    final builtInFonts = [
+      'System Default',
+      'HarmonyOS Sans SC',
+      'LXGW WenKai',
+      '__custom__',
+    ];
     fonts = [...builtInFonts, ...fonts];
 
     _cachedFonts = fonts;

@@ -208,6 +208,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsFontSystem => '系统默认';
 
   @override
+  String get settingsFontCustomOption => '自定义';
+
+  @override
+  String get settingsCustomFontTitle => '自定义字体';
+
+  @override
+  String get settingsCustomFontDesc => '输入要使用的系统字体名称';
+
+  @override
+  String get settingsCustomFontHint => '例如：LXGW WenKai Screen';
+
+  @override
   String get settingsSendModeTitle => '发送模式';
 
   @override

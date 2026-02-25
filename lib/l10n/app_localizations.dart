@@ -494,6 +494,30 @@ abstract class AppLocalizations {
   /// **'System Default'**
   String get settingsFontSystem;
 
+  /// No description provided for @settingsFontCustomOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get settingsFontCustomOption;
+
+  /// No description provided for @settingsCustomFontTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom font'**
+  String get settingsCustomFontTitle;
+
+  /// No description provided for @settingsCustomFontDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the name of the system font to use'**
+  String get settingsCustomFontDesc;
+
+  /// No description provided for @settingsCustomFontHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. LXGW WenKai Screen'**
+  String get settingsCustomFontHint;
+
   /// No description provided for @settingsSendModeTitle.
   ///
   /// In en, this message translates to:

@@ -55,6 +55,12 @@ class AppState extends ChangeNotifier {
   String? get fontFamily {
     final font = _settingsService.getValue<String>('fontFamily', 'System Default');
     if (font == 'System Default') return null;
+    if (font == '__custom__') {
+      final customFontName =
+          _settingsService.getValue<String>('customFontName', '');
+      if (customFontName.isEmpty) return null;
+      return customFontName;
+    }
     return font;
   }
 

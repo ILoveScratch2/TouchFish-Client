@@ -216,6 +216,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsFontSystem => 'System Default';
 
   @override
+  String get settingsFontCustomOption => 'Custom';
+
+  @override
+  String get settingsCustomFontTitle => 'Custom font';
+
+  @override
+  String get settingsCustomFontDesc =>
+      'Enter the name of the system font to use';
+
+  @override
+  String get settingsCustomFontHint => 'e.g. LXGW WenKai Screen';
+
+  @override
   String get settingsSendModeTitle => 'Send Mode';
 
   @override
