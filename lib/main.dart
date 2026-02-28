@@ -89,33 +89,22 @@ class _TouchFishAppState extends State<TouchFishApp> {
     return ListenableBuilder(
       listenable: _appState,
       builder: (context, _) {
-        // Determine theme color - only use custom colors if 'custom' is selected
         final isCustomTheme = _appState.themeColorKey == 'custom';
         final seedColor = _appState.themeColor;
-
-        // Build light theme
         var lightColorScheme = ColorScheme.fromSeed(
           seedColor: seedColor,
           brightness: Brightness.light,
         );
-
-        // Build dark theme
         var darkColorScheme = ColorScheme.fromSeed(
           seedColor: seedColor,
           brightness: Brightness.dark,
         );
-
-        // Apply custom colors only if custom theme is selected
         final customColors = _appState.customColors;
         if (isCustomTheme && customColors != null) {
           lightColorScheme = _applyCustomColors(lightColorScheme, customColors);
           darkColorScheme = _applyCustomColors(darkColorScheme, customColors);
         }
-
-        // Get card opacity
         final cardOpacity = _appState.cardOpacity;
-
-        // Get background image path
         final backgroundImagePath = _appState.backgroundImagePath;
         final hasBackgroundImage = backgroundImagePath != null && backgroundImagePath.isNotEmpty;
 

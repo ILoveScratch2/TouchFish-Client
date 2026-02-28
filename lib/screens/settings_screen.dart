@@ -1147,10 +1147,8 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
     );
   }
 
-  // Build background image setting
   Widget _buildBackgroundImageSetting(
       BuildContext context, AppLocalizations l10n, SettingItem item) {
-    // Don't show on Web
     if (kIsWeb) {
       return const SizedBox.shrink();
     }
