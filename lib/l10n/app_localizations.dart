@@ -470,6 +470,162 @@ abstract class AppLocalizations {
   /// **'Orange'**
   String get settingsColorOrange;
 
+  /// No description provided for @settingsColorCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get settingsColorCustom;
+
+  /// No description provided for @settingsCardOpacityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Card Opacity'**
+  String get settingsCardOpacityTitle;
+
+  /// No description provided for @settingsCardOpacityDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust the opacity of card backgrounds'**
+  String get settingsCardOpacityDesc;
+
+  /// No description provided for @settingsWindowOpacityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Window Transparency'**
+  String get settingsWindowOpacityTitle;
+
+  /// No description provided for @settingsWindowOpacityDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust the transparency of the application window (desktop only)'**
+  String get settingsWindowOpacityDesc;
+
+  /// No description provided for @settingsBackgroundImageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Background Image'**
+  String get settingsBackgroundImageTitle;
+
+  /// No description provided for @settingsBackgroundImageDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the application background image'**
+  String get settingsBackgroundImageDesc;
+
+  /// No description provided for @settingsBackgroundImageSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Background Image'**
+  String get settingsBackgroundImageSelect;
+
+  /// No description provided for @settingsBackgroundImageClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Background Image'**
+  String get settingsBackgroundImageClear;
+
+  /// No description provided for @settingsBackgroundImageGenColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Theme from Background'**
+  String get settingsBackgroundImageGenColor;
+
+  /// No description provided for @settingsBackgroundImageGenColorDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Extract dominant color from background as theme color'**
+  String get settingsBackgroundImageGenColorDesc;
+
+  /// No description provided for @settingsBackgroundImageSelectSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Background image selected'**
+  String get settingsBackgroundImageSelectSuccess;
+
+  /// No description provided for @settingsBackgroundImageClearSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Background image cleared'**
+  String get settingsBackgroundImageClearSuccess;
+
+  /// No description provided for @settingsBackgroundImageGenColorSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme colors extracted from background'**
+  String get settingsBackgroundImageGenColorSuccess;
+
+  /// No description provided for @settingsBackgroundImageGenColorError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to extract colors: {error}'**
+  String settingsBackgroundImageGenColorError(String error);
+
+  /// No description provided for @settingsCustomThemeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Theme Colors'**
+  String get settingsCustomThemeTitle;
+
+  /// No description provided for @settingsCustomThemeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize various theme colors of the application'**
+  String get settingsCustomThemeDesc;
+
+  /// No description provided for @settingsCustomThemeSeedColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Seed Color'**
+  String get settingsCustomThemeSeedColor;
+
+  /// No description provided for @settingsCustomThemePrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary Color'**
+  String get settingsCustomThemePrimary;
+
+  /// No description provided for @settingsCustomThemeSecondary.
+  ///
+  /// In en, this message translates to:
+  /// **'Secondary Color'**
+  String get settingsCustomThemeSecondary;
+
+  /// No description provided for @settingsCustomThemeTertiary.
+  ///
+  /// In en, this message translates to:
+  /// **'Tertiary Color'**
+  String get settingsCustomThemeTertiary;
+
+  /// No description provided for @settingsCustomThemeSurface.
+  ///
+  /// In en, this message translates to:
+  /// **'Surface Color'**
+  String get settingsCustomThemeSurface;
+
+  /// No description provided for @settingsCustomThemeBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Background Color'**
+  String get settingsCustomThemeBackground;
+
+  /// No description provided for @settingsCustomThemeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error Color'**
+  String get settingsCustomThemeError;
+
+  /// No description provided for @settingsCustomThemeReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Custom Colors'**
+  String get settingsCustomThemeReset;
+
+  /// No description provided for @settingsCustomThemeResetConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to reset all custom colors?'**
+  String get settingsCustomThemeResetConfirm;
+
   /// No description provided for @settingsFontFamilyTitle.
   ///
   /// In en, this message translates to:
@@ -1411,6 +1567,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get cancel;
+
+  /// No description provided for @confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
+  /// No description provided for @clear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clear;
 
   /// No description provided for @save.
   ///

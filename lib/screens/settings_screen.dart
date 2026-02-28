@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io';
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:window_manager/window_manager.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image/image.dart' as img;
 import '../l10n/app_localizations.dart';
 import '../models/settings_model.dart';
 import '../models/settings_service.dart';
@@ -223,6 +229,25 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
         return _buildRadioSetting(context, l10n, item);
       case SettingType.navigation:
         return _buildNavigationSetting(context, l10n, item);
+      case SettingType.slider:
+        return _buildSliderSetting(context, l10n, item);
+      case SettingType.customWidget:
+        if (item.key == 'backgroundImage') {
+          return _buildBackgroundImageSetting(context, l10n, item);
+        }
+        if (item.key == 'customTheme') {
+          return ListenableBuilder(
+            listenable: _settingsService,
+            builder: (context, _) {
+              final themeColor = _settingsService.getValue<String>('themeColor', 'blue');
+              if (themeColor != 'custom') {
+                return const SizedBox.shrink();
+              }
+              return _buildCustomThemeSetting(context, l10n, item);
+            },
+          );
+        }
+        return const SizedBox.shrink();
     }
   }
 
@@ -932,6 +957,8 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
         return l10n.settingsColorPurple;
       case 'settingsColorOrange':
         return l10n.settingsColorOrange;
+      case 'settingsColorCustom':
+        return l10n.settingsColorCustom;
       case 'settingsFontFamilyTitle':
         return l10n.settingsFontFamilyTitle;
       case 'settingsFontFamilyDesc':
@@ -954,6 +981,22 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
         return l10n.settingsEnableMarkdownTitle;
       case 'settingsEnableMarkdownDesc':
         return l10n.settingsEnableMarkdownDesc;
+      case 'settingsCardOpacityTitle':
+        return l10n.settingsCardOpacityTitle;
+      case 'settingsCardOpacityDesc':
+        return l10n.settingsCardOpacityDesc;
+      case 'settingsWindowOpacityTitle':
+        return l10n.settingsWindowOpacityTitle;
+      case 'settingsWindowOpacityDesc':
+        return l10n.settingsWindowOpacityDesc;
+      case 'settingsBackgroundImageTitle':
+        return l10n.settingsBackgroundImageTitle;
+      case 'settingsBackgroundImageDesc':
+        return l10n.settingsBackgroundImageDesc;
+      case 'settingsCustomThemeTitle':
+        return l10n.settingsCustomThemeTitle;
+      case 'settingsCustomThemeDesc':
+        return l10n.settingsCustomThemeDesc;
       // Notifications
       case 'settingsSystemNotificationsTitle':
         return l10n.settingsSystemNotificationsTitle;
@@ -1021,5 +1064,416 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
       }
     }
     return Icons.circle;
+  }
+
+  Widget _buildSliderSetting(
+      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    final isDesktopOnly = item.key == 'windowOpacity';
+    final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+    if (isDesktopOnly && !isDesktop) {
+      return const SizedBox.shrink();
+    }
+
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        final value = _settingsService.getValue<double>(
+          item.key,
+          item.defaultValue as double,
+        );
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      if (item.icon != null) ...[
+                        Icon(item.icon),
+                        const SizedBox(width: 16),
+                      ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _getSettingTitle(l10n, item.titleKey),
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            if (item.descriptionKey != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Text(
+                                  _getSettingTitle(l10n, item.descriptionKey!),
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '${(value * 100).round()}%',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Slider(
+                    value: value,
+                    min: item.key == 'windowOpacity' ? 0.1 : 0.0,
+                    max: 1.0,
+                    divisions: item.key == 'windowOpacity' ? 18 : 20,
+                    label: '${(value * 100).round()}%',
+                    onChanged: (newValue) async {
+                      await _settingsService.setValue(item.key, newValue);
+                      if (item.key == 'windowOpacity' && !kIsWeb) {
+                        final isDesktop = Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+                        if (isDesktop) {
+                          await windowManager.setOpacity(newValue);
+                        }
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Build background image setting
+  Widget _buildBackgroundImageSetting(
+      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    // Don't show on Web
+    if (kIsWeb) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Card(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              leading: item.icon != null ? Icon(item.icon) : null,
+              title: Text(_getSettingTitle(l10n, item.titleKey)),
+              subtitle: item.descriptionKey != null
+                  ? Text(_getSettingTitle(l10n, item.descriptionKey!))
+                  : null,
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.image_outlined),
+              title: Text(l10n.settingsBackgroundImageSelect),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                final picker = ImagePicker();
+                final image = await picker.pickImage(source: ImageSource.gallery);
+                if (image != null) {
+                  await _settingsService.setValue('backgroundImagePath', image.path);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.settingsBackgroundImageSelectSuccess)),
+                    );
+                  }
+                }
+              },
+            ),
+            ListenableBuilder(
+              listenable: _settingsService,
+              builder: (context, _) {
+                final imagePath = _settingsService.getValue<String>('backgroundImagePath', '');
+                if (imagePath.isEmpty) return const SizedBox.shrink();
+                
+                return Column(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.delete_outline),
+                      title: Text(l10n.settingsBackgroundImageClear),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () async {
+                        await _settingsService.remove('backgroundImagePath');
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(l10n.settingsBackgroundImageClearSuccess)),
+                          );
+                        }
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.color_lens),
+                      title: Text(l10n.settingsBackgroundImageGenColor),
+                      subtitle: Text(l10n.settingsBackgroundImageGenColorDesc),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () async {
+                        await _generateThemeFromImage(context, imagePath);
+                      },
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _generateThemeFromImage(BuildContext context, String imagePath) async {
+    try {
+      final file = File(imagePath);
+      final bytes = await file.readAsBytes();
+      final image = img.decodeImage(bytes);
+      
+      if (image == null) {
+        throw Exception('Failed to decode image');
+      }
+      
+      // Extract dominant colors using a simple algorithm
+      // Resize image for faster processing
+      final resized = img.copyResize(image, width: 100);
+      
+      // Count color frequencies
+      final colorMap = <int, int>{};
+      for (int y = 0; y < resized.height; y++) {
+        for (int x = 0; x < resized.width; x++) {
+          final pixel = resized.getPixel(x, y);
+          final r = pixel.r.toInt();
+          final g = pixel.g.toInt();
+          final b = pixel.b.toInt();
+          
+          // Quantize colors to reduce variations
+          final quantizedR = (r ~/ 32) * 32;
+          final quantizedG = (g ~/ 32) * 32;
+          final quantizedB = (b ~/ 32) * 32;
+          
+          final colorValue = (0xFF << 24) | (quantizedR << 16) | (quantizedG << 8) | quantizedB;
+          colorMap[colorValue] = (colorMap[colorValue] ?? 0) + 1;
+        }
+      }
+      
+      // Sort by frequency and get most common color
+      final sortedColors = colorMap.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+      
+      if (sortedColors.isNotEmpty) {
+        final dominantColor = sortedColors.first.key;
+        
+        // Generate custom color scheme
+        final customColors = <String, int>{
+          'seedColor': dominantColor,
+        };
+        
+        // Try to find vibrant and muted colors from top colors
+        if (sortedColors.length > 1) {
+          customColors['primary'] = sortedColors[1].key;
+        }
+        if (sortedColors.length > 2) {
+          customColors['secondary'] = sortedColors[2].key;
+        }
+        
+        await _settingsService.setJsonValue('customColors', customColors);
+        // Switch to custom theme to apply the generated colors
+        await _settingsService.setValue('themeColor', 'custom');
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context)!.settingsBackgroundImageGenColorSuccess)),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.settingsBackgroundImageGenColorError(e.toString()))),
+        );
+      }
+    }
+  }
+
+  Widget _buildCustomThemeSetting(
+      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Card(
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            dividerColor: Colors.transparent,
+          ),
+          child: ExpansionTile(
+            leading: item.icon != null ? Icon(item.icon) : null,
+            title: Text(_getSettingTitle(l10n, item.titleKey)),
+            subtitle: item.descriptionKey != null
+                ? Text(_getSettingTitle(l10n, item.descriptionKey!))
+                : null,
+            children: [
+              const Divider(height: 1),
+              _buildColorPickerTile(
+                context,
+                l10n.settingsCustomThemeSeedColor,
+                'seedColor',
+              ),
+              _buildColorPickerTile(
+                context,
+                l10n.settingsCustomThemePrimary,
+                'primary',
+              ),
+              _buildColorPickerTile(
+                context,
+                l10n.settingsCustomThemeSecondary,
+                'secondary',
+              ),
+              _buildColorPickerTile(
+                context,
+                l10n.settingsCustomThemeTertiary,
+                'tertiary',
+              ),
+              _buildColorPickerTile(
+                context,
+                l10n.settingsCustomThemeSurface,
+                'surface',
+              ),
+              _buildColorPickerTile(
+                context,
+                l10n.settingsCustomThemeBackground,
+                'background',
+              ),
+              _buildColorPickerTile(
+                context,
+                l10n.settingsCustomThemeError,
+                'error',
+              ),
+              ListTile(
+                leading: const Icon(Icons.refresh),
+                title: Text(l10n.settingsCustomThemeReset),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(l10n.settingsCustomThemeReset),
+                      content: Text(l10n.settingsCustomThemeResetConfirm),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: Text(l10n.cancel),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: Text(l10n.confirm),
+                        ),
+                      ],
+                    ),
+                  );
+                  
+                  if (confirmed == true) {
+                    await _settingsService.remove('customColors');
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l10n.settingsCustomThemeReset)),
+                      );
+                    }
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorPickerTile(BuildContext context, String title, String colorKey) {
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        final l10n = AppLocalizations.of(context)!;
+        final customColors = _settingsService.getJsonValue('customColors') ?? {};
+        final colorValue = customColors[colorKey] as int?;
+        final color = colorValue != null ? Color(colorValue) : null;
+
+        return ListTile(
+          title: Text(title),
+          trailing: GestureDetector(
+            onTap: () async {
+              Color selectedColor = color ?? Theme.of(context).colorScheme.primary;
+              
+              final result = await showDialog<Color>(
+                context: context,
+                builder: (context) {
+                  Color tempColor = selectedColor;
+                  return AlertDialog(
+                    title: Text(title),
+                    content: SingleChildScrollView(
+                      child: ColorPicker(
+                        pickerColor: selectedColor,
+                        onColorChanged: (c) => tempColor = c,
+                        labelTypes: const [],
+                        pickerAreaHeightPercent: 0.8,
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text(l10n.cancel),
+                      ),
+                      if (color != null)
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop(null);
+                          },
+                          child: Text(l10n.clear),
+                        ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(tempColor),
+                        child: Text(l10n.confirm),
+                      ),
+                    ],
+                  );
+                },
+              );
+
+              if (result == null && color != null) {
+                final newColors = Map<String, dynamic>.from(customColors);
+                newColors.remove(colorKey);
+                await _settingsService.setJsonValue('customColors', 
+                  newColors.isEmpty ? null : newColors);
+              } else if (result != null) {
+                final newColors = Map<String, dynamic>.from(customColors);
+                newColors[colorKey] = result.value;
+                await _settingsService.setJsonValue('customColors', newColors);
+              }
+            },
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: color ?? Colors.transparent,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                  width: 2,
+                ),
+              ),
+              child: color == null
+                  ? Icon(
+                      Icons.add,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    )
+                  : null,
+            ),
+          ),
+        );
+      },
+    );
   }
 }

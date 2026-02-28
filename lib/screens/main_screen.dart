@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
+import '../models/app_state.dart';
 
 class MainScreen extends StatefulWidget {
   final Widget child;
@@ -50,6 +51,9 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final selectedIndex = _getCurrentIndex(context);
+    final appState = AppState.instance;
+    final backgroundImagePath = appState.backgroundImagePath;
+    final hasBackgroundImage = backgroundImagePath != null && backgroundImagePath.isNotEmpty;
     
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -57,10 +61,15 @@ class _MainScreenState extends State<MainScreen> {
         
         if (isWide) {
           return Container(
-            color: Theme.of(context).colorScheme.surfaceContainer,
+            color: hasBackgroundImage ? Colors.transparent : Theme.of(context).colorScheme.surfaceContainer,
             child: Row(
               children: [
-                _buildNavRail(l10n, selectedIndex, context),
+                Container(
+                  color: hasBackgroundImage 
+                    ? Theme.of(context).colorScheme.surfaceContainer.withOpacity(0.7)
+                    : Colors.transparent,
+                  child: _buildNavRail(l10n, selectedIndex, context),
+                ),
                 Expanded(
                   child: ClipRRect(
                     borderRadius: const BorderRadius.only(
@@ -75,7 +84,6 @@ class _MainScreenState extends State<MainScreen> {
         }
         final showBottomNav = !_isInChatDetail(context);
         return Scaffold(
-          backgroundColor: Colors.transparent,
           extendBody: true,
           body: widget.child,
           bottomNavigationBar: showBottomNav ? _buildBottomNav(l10n, selectedIndex, context) : null,

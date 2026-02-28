@@ -203,6 +203,95 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsColorOrange => 'Orange';
 
   @override
+  String get settingsColorCustom => 'Custom';
+
+  @override
+  String get settingsCardOpacityTitle => 'Card Opacity';
+
+  @override
+  String get settingsCardOpacityDesc =>
+      'Adjust the opacity of card backgrounds';
+
+  @override
+  String get settingsWindowOpacityTitle => 'Window Transparency';
+
+  @override
+  String get settingsWindowOpacityDesc =>
+      'Adjust the transparency of the application window (desktop only)';
+
+  @override
+  String get settingsBackgroundImageTitle => 'Background Image';
+
+  @override
+  String get settingsBackgroundImageDesc =>
+      'Select the application background image';
+
+  @override
+  String get settingsBackgroundImageSelect => 'Select Background Image';
+
+  @override
+  String get settingsBackgroundImageClear => 'Clear Background Image';
+
+  @override
+  String get settingsBackgroundImageGenColor =>
+      'Generate Theme from Background';
+
+  @override
+  String get settingsBackgroundImageGenColorDesc =>
+      'Extract dominant color from background as theme color';
+
+  @override
+  String get settingsBackgroundImageSelectSuccess =>
+      'Background image selected';
+
+  @override
+  String get settingsBackgroundImageClearSuccess => 'Background image cleared';
+
+  @override
+  String get settingsBackgroundImageGenColorSuccess =>
+      'Theme colors extracted from background';
+
+  @override
+  String settingsBackgroundImageGenColorError(String error) {
+    return 'Failed to extract colors: $error';
+  }
+
+  @override
+  String get settingsCustomThemeTitle => 'Custom Theme Colors';
+
+  @override
+  String get settingsCustomThemeDesc =>
+      'Customize various theme colors of the application';
+
+  @override
+  String get settingsCustomThemeSeedColor => 'Seed Color';
+
+  @override
+  String get settingsCustomThemePrimary => 'Primary Color';
+
+  @override
+  String get settingsCustomThemeSecondary => 'Secondary Color';
+
+  @override
+  String get settingsCustomThemeTertiary => 'Tertiary Color';
+
+  @override
+  String get settingsCustomThemeSurface => 'Surface Color';
+
+  @override
+  String get settingsCustomThemeBackground => 'Background Color';
+
+  @override
+  String get settingsCustomThemeError => 'Error Color';
+
+  @override
+  String get settingsCustomThemeReset => 'Reset Custom Colors';
+
+  @override
+  String get settingsCustomThemeResetConfirm =>
+      'Are you sure you want to reset all custom colors?';
+
+  @override
   String get settingsFontFamilyTitle => 'Font';
 
   @override
@@ -691,6 +780,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cancel => 'Cancel';
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
+  String get clear => 'Clear';
 
   @override
   String get save => 'Save';

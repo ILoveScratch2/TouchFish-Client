@@ -196,6 +196,86 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsColorOrange => '橙色';
 
   @override
+  String get settingsColorCustom => '自定义';
+
+  @override
+  String get settingsCardOpacityTitle => '卡片不透明度';
+
+  @override
+  String get settingsCardOpacityDesc => '调整卡片背景的不透明度';
+
+  @override
+  String get settingsWindowOpacityTitle => '窗口透明度';
+
+  @override
+  String get settingsWindowOpacityDesc => '调整应用窗口的透明度（仅桌面平台）';
+
+  @override
+  String get settingsBackgroundImageTitle => '背景图片';
+
+  @override
+  String get settingsBackgroundImageDesc => '选择应用的背景图片';
+
+  @override
+  String get settingsBackgroundImageSelect => '选择背景图片';
+
+  @override
+  String get settingsBackgroundImageClear => '清除背景图片';
+
+  @override
+  String get settingsBackgroundImageGenColor => '从背景生成主题色';
+
+  @override
+  String get settingsBackgroundImageGenColorDesc => '从背景图片提取主色调作为应用主题色';
+
+  @override
+  String get settingsBackgroundImageSelectSuccess => '已选择背景图片';
+
+  @override
+  String get settingsBackgroundImageClearSuccess => '已清除背景图片';
+
+  @override
+  String get settingsBackgroundImageGenColorSuccess => '已从背景图片提取主题色';
+
+  @override
+  String settingsBackgroundImageGenColorError(String error) {
+    return '提取颜色失败: $error';
+  }
+
+  @override
+  String get settingsCustomThemeTitle => '自定义主题颜色';
+
+  @override
+  String get settingsCustomThemeDesc => '自定义应用的各种主题颜色';
+
+  @override
+  String get settingsCustomThemeSeedColor => '种子颜色';
+
+  @override
+  String get settingsCustomThemePrimary => '主要颜色';
+
+  @override
+  String get settingsCustomThemeSecondary => '次要颜色';
+
+  @override
+  String get settingsCustomThemeTertiary => '第三颜色';
+
+  @override
+  String get settingsCustomThemeSurface => '表面颜色';
+
+  @override
+  String get settingsCustomThemeBackground => '背景颜色';
+
+  @override
+  String get settingsCustomThemeError => '错误颜色';
+
+  @override
+  String get settingsCustomThemeReset => '重置自定义颜色';
+
+  @override
+  String get settingsCustomThemeResetConfirm => '确定要重置所有自定义颜色吗？';
+
+  @override
   String get settingsFontFamilyTitle => '字体';
 
   @override
@@ -665,6 +745,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cancel => '取消';
+
+  @override
+  String get confirm => '确认';
+
+  @override
+  String get clear => '清除';
 
   @override
   String get save => '保存';

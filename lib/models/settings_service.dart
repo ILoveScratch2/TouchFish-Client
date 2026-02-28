@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import 'settings_model.dart';
 
 // Settings persistence - Simple, no magic
@@ -38,6 +39,16 @@ class SettingsService extends ChangeNotifier {
 
     return defaultValue;
   }
+  Map<String, dynamic>? getJsonValue(String key) {
+    if (!_initialized) return null;
+    final jsonString = _prefs.getString(key);
+    if (jsonString == null || jsonString.isEmpty) return null;
+    try {
+      return jsonDecode(jsonString) as Map<String, dynamic>;
+    } catch (e) {
+      return null;
+    }
+  }
 
   // Set setting value - notify listeners
   Future<void> setValue(String key, dynamic value) async {
@@ -53,6 +64,26 @@ class SettingsService extends ChangeNotifier {
       await _prefs.setDouble(key, value);
     }
 
+    notifyListeners();
+  }
+
+  // Set JSON value
+  Future<void> setJsonValue(String key, Map<String, dynamic>? value) async {
+    if (!_initialized) await init();
+    
+    if (value != null) {
+      final jsonString = jsonEncode(value);
+      await _prefs.setString(key, jsonString);
+    } else {
+      await _prefs.remove(key);
+    }
+    
+    notifyListeners();
+  }
+
+  Future<void> remove(String key) async {
+    if (!_initialized) await init();
+    await _prefs.remove(key);
     notifyListeners();
   }
 

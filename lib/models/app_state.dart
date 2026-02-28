@@ -36,8 +36,12 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  String get themeColorKey {
+    return _settingsService.getValue<String>('themeColor', 'blue');
+  }
+
   Color get themeColor {
-    final color = _settingsService.getValue<String>('themeColor', 'blue');
+    final color = themeColorKey;
     switch (color) {
       case 'red':
         return Colors.red;
@@ -47,13 +51,39 @@ class AppState extends ChangeNotifier {
         return Colors.purple;
       case 'orange':
         return Colors.orange;
+      case 'custom':
+        if (customSeedColor != null) {
+          return Color(customSeedColor!);
+        }
+        return const Color(0xFF6750A4);
       default:
         return const Color(0xFF6750A4);
     }
   }
+  int? get customSeedColor {
+    final customColors = _settingsService.getJsonValue('customColors');
+    return customColors?['seedColor'] as int?;
+  }
+  Map<String, int>? get customColors {
+    final json = _settingsService.getJsonValue('customColors');
+    if (json == null) return null;
+    return json.map((key, value) => MapEntry(key, value as int));
+  }
+
+  double get cardOpacity {
+    return _settingsService.getValue<double>('cardOpacity', 1.0);
+  }
+
+  double get windowOpacity {
+    return _settingsService.getValue<double>('windowOpacity', 1.0);
+  }
+
+  String? get backgroundImagePath {
+    return _settingsService.getValue<String>('backgroundImagePath', '');
+  }
 
   String? get fontFamily {
-    final font = _settingsService.getValue<String>('fontFamily', 'System Default');
+    final font = _settingsService.getValue<String>('fontFamily', 'HarmonyOS Sans SC');
     if (font == 'System Default') return null;
     if (font == '__custom__') {
       final customFontName =

@@ -80,6 +80,41 @@
   "settingsColorGreen": "Green",
   "settingsColorPurple": "Purple",
   "settingsColorOrange": "Orange",
+  "settingsColorCustom": "Custom",
+  
+  "settingsCardOpacityTitle": "Card Opacity",
+  "settingsCardOpacityDesc": "Adjust the opacity of card backgrounds",
+  
+  "settingsWindowOpacityTitle": "Window Transparency",
+  "settingsWindowOpacityDesc": "Adjust the transparency of the application window (desktop only)",
+  
+  "settingsBackgroundImageTitle": "Background Image",
+  "settingsBackgroundImageDesc": "Select the application background image",
+  "settingsBackgroundImageSelect": "Select Background Image",
+  "settingsBackgroundImageClear": "Clear Background Image",
+  "settingsBackgroundImageGenColor": "Generate Theme from Background",
+  "settingsBackgroundImageGenColorDesc": "Extract dominant color from background as theme color",
+  "settingsBackgroundImageSelectSuccess": "Background image selected",
+  "settingsBackgroundImageClearSuccess": "Background image cleared",
+  "settingsBackgroundImageGenColorSuccess": "Theme colors extracted from background",
+  "settingsBackgroundImageGenColorError": "Failed to extract colors: {error}",
+  "@settingsBackgroundImageGenColorError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  
+  "settingsCustomThemeTitle": "Custom Theme Colors",
+  "settingsCustomThemeDesc": "Customize various theme colors of the application",
+  "settingsCustomThemeSeedColor": "Seed Color",
+  "settingsCustomThemePrimary": "Primary Color",
+  "settingsCustomThemeSecondary": "Secondary Color",
+  "settingsCustomThemeTertiary": "Tertiary Color",
+  "settingsCustomThemeSurface": "Surface Color",
+  "settingsCustomThemeBackground": "Background Color",
+  "settingsCustomThemeError": "Error Color",
+  "settingsCustomThemeReset": "Reset Custom Colors",
+  "settingsCustomThemeResetConfirm": "Are you sure you want to reset all custom colors?",
   
   "settingsFontFamilyTitle": "Font",
   "settingsFontFamilyDesc": "Application font family",
@@ -255,6 +290,8 @@
   "chatLeaveRoomConfirm": "Are you sure you want to leave this chat?",
   "chatRoomLeft": "Left chat room",
   "cancel": "Cancel",
+  "confirm": "Confirm",
+  "clear": "Clear",
   "save": "Save",
   "leave": "Leave",
   
