@@ -18,6 +18,7 @@ UninstallDisplayName=TouchFish Client
 UninstallDisplayIcon={app}\touchfish_client.exe
 
 DefaultDirName={commonpf}\TouchFish Client
+DefaultGroupName=TouchFish Client
 UsePreviousAppDir=no
 
 OutputDir=.\Installer
