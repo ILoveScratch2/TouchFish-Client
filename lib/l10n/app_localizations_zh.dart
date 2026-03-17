@@ -612,6 +612,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatInputFeatureArea => '功能区域';
 
   @override
+  String get chatListExpand => '展开';
+
+  @override
+  String get chatListCollapse => '折叠';
+
+  @override
   String get networkStatusTitle => '网络状态';
 
   @override

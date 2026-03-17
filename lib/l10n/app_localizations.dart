@@ -1298,6 +1298,18 @@ abstract class AppLocalizations {
   /// **'Feature Area'**
   String get chatInputFeatureArea;
 
+  /// No description provided for @chatListExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand'**
+  String get chatListExpand;
+
+  /// No description provided for @chatListCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get chatListCollapse;
+
   /// No description provided for @networkStatusTitle.
   ///
   /// In en, this message translates to:

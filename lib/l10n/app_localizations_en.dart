@@ -638,6 +638,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatInputFeatureArea => 'Feature Area';
 
   @override
+  String get chatListExpand => 'Expand';
+
+  @override
+  String get chatListCollapse => 'Collapse';
+
+  @override
   String get networkStatusTitle => 'Network Status';
 
   @override

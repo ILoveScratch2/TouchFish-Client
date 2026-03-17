@@ -243,6 +243,9 @@
   "chatInputPlaceholder": "Type a message...",
   "chatInputFeatureArea": "Feature Area",
   
+  "chatListExpand": "Expand",
+  "chatListCollapse": "Collapse",
+  
   "networkStatusTitle": "Network Status",
   "networkStatusConnected": "Connected to Internet",
   "networkStatusConnectedDesc": "You are connected to the internet and can connect to TouchFish servers on the public network",

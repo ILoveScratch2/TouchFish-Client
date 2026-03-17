@@ -229,6 +229,9 @@
   "chatInputPlaceholder": "输入消息...",
   "chatInputFeatureArea": "功能区域",
   
+  "chatListExpand": "展开",
+  "chatListCollapse": "折叠",
+  
   "networkStatusTitle": "网络状态",
   "networkStatusConnected": "已连接到互联网",
   "networkStatusConnectedDesc": "您已连接到互联网，可以连接公共网络上的 TouchFish 服务器",

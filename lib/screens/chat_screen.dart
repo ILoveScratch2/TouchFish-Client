@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:material_symbols_icons/symbols.dart';
+import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../models/chat_model.dart';
 import '../widgets/chat_list_widget.dart';
@@ -18,13 +20,17 @@ class ChatShellScreen extends StatefulWidget {
 
 class _ChatShellScreenState extends State<ChatShellScreen> {
   static const String _dividerPositionKey = 'chat_divider_position';
-  static const double _minLeftWidth = 200.0;
-  static const double _minRightWidth = 300.0;
+  static const String _collapsedStateKey = 'chat_list_collapsed';
+  static const double _collapsedWidth = 64.0;
+  static const double _minSidebarWidth = 260.0;
+  static const double _maxSidebarWidth = 520.0;
+  static const double _collapseThreshold = 210.0;
   
   double _leftFlex = 2.0;
   double _rightFlex = 4.0;
-  bool _isDragging = false;
   bool _isHovering = false;
+  bool _isCollapsed = false;
+  double _sidebarWidth = 320.0;
 
   @override
   void initState() {
@@ -35,10 +41,17 @@ class _ChatShellScreenState extends State<ChatShellScreen> {
   Future<void> _loadDividerPosition() async {
     final prefs = await SharedPreferences.getInstance();
     final savedRatio = prefs.getDouble(_dividerPositionKey);
-    if (savedRatio != null) {
+    final savedCollapsed = prefs.getBool(_collapsedStateKey) ?? false;
+    final savedWidth = prefs.getDouble('chat_sidebar_width') ?? 320.0;
+    
+    if (mounted) {
       setState(() {
-        _leftFlex = savedRatio;
-        _rightFlex = 1.0 - savedRatio;
+        _isCollapsed = savedCollapsed;
+        _sidebarWidth = savedWidth;
+        if (savedRatio != null) {
+          _leftFlex = savedRatio;
+          _rightFlex = 1.0 - savedRatio;
+        }
       });
     }
   }
@@ -47,16 +60,21 @@ class _ChatShellScreenState extends State<ChatShellScreen> {
     final prefs = await SharedPreferences.getInstance();
     final ratio = _leftFlex / (_leftFlex + _rightFlex);
     await prefs.setDouble(_dividerPositionKey, ratio);
+    await prefs.setBool(_collapsedStateKey, _isCollapsed);
+    await prefs.setDouble('chat_sidebar_width', _sidebarWidth);
   }
 
   void _updateDividerPosition(double dx, double totalWidth) {
-    final currentLeftWidth = (_leftFlex / (_leftFlex + _rightFlex)) * totalWidth;
-    final newLeftWidth = currentLeftWidth + dx;
-    final clampedLeftWidth = newLeftWidth.clamp(_minLeftWidth, totalWidth - _minRightWidth);
+    if (_isCollapsed) {
+      setState(() {
+        _isCollapsed = false;
+        _sidebarWidth = _minSidebarWidth;
+      });
+    }
     
+    final next = (_sidebarWidth + dx).clamp(_collapseThreshold, _maxSidebarWidth);
     setState(() {
-      _leftFlex = clampedLeftWidth;
-      _rightFlex = totalWidth - clampedLeftWidth;
+      _sidebarWidth = next;
     });
   }
 
@@ -65,44 +83,16 @@ class _ChatShellScreenState extends State<ChatShellScreen> {
     final isWide = MediaQuery.of(context).size.width >= 600;
 
     if (isWide) {
+      final currentWidth = _isCollapsed ? _collapsedWidth : _sidebarWidth;
+      
       return Scaffold(
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            final totalWidth = constraints.maxWidth;
-            final currentLeftWidth = (_leftFlex / (_leftFlex + _rightFlex)) * totalWidth;
-            double adjustedLeftWidth = currentLeftWidth;
-            
-            if (currentLeftWidth < _minLeftWidth) {
-              adjustedLeftWidth = _minLeftWidth;
-            } else if (totalWidth - currentLeftWidth < _minRightWidth) {
-              adjustedLeftWidth = totalWidth - _minRightWidth;
-            }
-            if (adjustedLeftWidth != currentLeftWidth) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  setState(() {
-                    _leftFlex = adjustedLeftWidth;
-                    _rightFlex = totalWidth - adjustedLeftWidth;
-                  });
-                }
-              });
-            }
-            
-            final leftWidth = (adjustedLeftWidth / totalWidth) * totalWidth;
-            
-            return Row(
-              children: [
-                SizedBox(
-                  width: leftWidth,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
-                    child: const ChatListScreen(
-                      isAside: true,
-                    ),
-                  ),
-                ),
-                MouseRegion(
-                  cursor: SystemMouseCursors.resizeColumn,
+        body: Row(
+          children: [
+            SizedBox(
+              width: currentWidth,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+                child: MouseRegion(
                   onEnter: (_) {
                     setState(() {
                       _isHovering = true;
@@ -113,67 +103,73 @@ class _ChatShellScreenState extends State<ChatShellScreen> {
                       _isHovering = false;
                     });
                   },
-                  child: GestureDetector(
-                    onHorizontalDragStart: (_) {
+                  child: ChatListScreen(
+                    isAside: true,
+                    isCollapsed: _isCollapsed,
+                    isHovering: _isHovering,
+                    onToggleCollapse: () {
                       setState(() {
-                        _isDragging = true;
-                      });
-                    },
-                    onHorizontalDragUpdate: (details) {
-                      _updateDividerPosition(details.delta.dx, totalWidth);
-                    },
-                    onHorizontalDragEnd: (_) {
-                      setState(() {
-                        _isDragging = false;
+                        _isCollapsed = !_isCollapsed;
                       });
                       _saveDividerPosition();
                     },
-                    child: Container(
-                      width: 8,
-                      color: _isDragging 
-                          ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
-                          : Colors.transparent,
-                      child: Center(
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          width: (_isHovering || _isDragging) ? 2 : 0,
-                          color: (_isHovering || _isDragging) 
-                              ? Theme.of(context).dividerColor
-                              : Colors.transparent,
-                        ),
-                      ),
-                    ),
+                    onDragUpdate: (dx) {
+                      _updateDividerPosition(dx, MediaQuery.of(context).size.width);
+                    },
+                    onDragEnd: () {
+                      if (_sidebarWidth <= _collapseThreshold) {
+                        setState(() {
+                          _isCollapsed = true;
+                          _sidebarWidth = _minSidebarWidth;
+                        });
+                      }
+                      _saveDividerPosition();
+                    },
                   ),
                 ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(8),
-                      ),
-                      child: widget.child,
-                    ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
                   ),
+                  child: widget.child,
                 ),
-              ],
-            );
-          },
+              ),
+            ),
+          ],
         ),
       );
     }
     return widget.child is ChatDetailScreen
         ? widget.child
-        : const ChatListScreen(isAside: false);
+        : const ChatListScreen(
+            isAside: false,
+            isCollapsed: false,
+            isHovering: false,
+          );
   }
 }
 
 class ChatListScreen extends StatefulWidget {
   final bool isAside;
+  final bool isCollapsed;
+  final bool isHovering;
+  final VoidCallback? onToggleCollapse;
+  final Function(double)? onDragUpdate;
+  final VoidCallback? onDragEnd;
   
   const ChatListScreen({
     super.key,
     this.isAside = false,
+    this.isCollapsed = false,
+    this.isHovering = false,
+    this.onToggleCollapse,
+    this.onDragUpdate,
+    this.onDragEnd,
   });
 
   @override
@@ -216,49 +212,317 @@ class _ChatListScreenState extends State<ChatListScreen>
   Widget _buildAsideView(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     
+    if (widget.isCollapsed) {
+      return Card(
+        margin: EdgeInsets.zero,
+        child: ClipRRect(
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  Expanded(
+                    child: _buildCollapsedView(context),
+                  ),
+                ],
+              ),
+              // 拖动区
+              Positioned(
+                top: 0,
+                bottom: 0,
+                right: 0,
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.resizeColumn,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onHorizontalDragUpdate: (details) {
+                      widget.onDragUpdate?.call(details.delta.dx);
+                    },
+                    onHorizontalDragEnd: (_) {
+                      widget.onDragEnd?.call();
+                    },
+                    child: const SizedBox(width: 10),
+                  ),
+                ),
+              ),
+              // 展折
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: IgnorePointer(
+                  ignoring: !widget.isHovering,
+                  child: AnimatedOpacity(
+                    opacity: widget.isHovering ? 1 : 0,
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    child: AnimatedSlide(
+                      offset: widget.isHovering
+                          ? Offset.zero
+                          : const Offset(0.25, 0),
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOut,
+                      child: Center(
+                        child: Material(
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          borderRadius: const BorderRadius.horizontal(
+                            left: Radius.circular(10),
+                          ),
+                          child: InkWell(
+                            borderRadius: const BorderRadius.horizontal(
+                              left: Radius.circular(10),
+                            ),
+                            onTap: widget.onToggleCollapse,
+                            child: Tooltip(
+                              message: widget.isCollapsed
+                                  ? l10n.chatListExpand
+                                  : l10n.chatListCollapse,
+                              child: SizedBox(
+                                width: 36,
+                                height: 36,
+                                child: Icon(
+                                  widget.isCollapsed
+                                      ? Symbols.left_panel_open
+                                      : Symbols.left_panel_close,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     return Card(
       margin: EdgeInsets.zero,
       child: ClipRRect(
         borderRadius: const BorderRadius.all(Radius.circular(8)),
-        child: Column(
+        child: Stack(
           children: [
-            Row(
+            Column(
               children: [
-                Expanded(
-                  child: TabBar(
-                    dividerColor: Colors.transparent,
-                    controller: _tabController,
-                    tabAlignment: TabAlignment.start,
-                    isScrollable: true,
-                    tabs: [
-                      Tab(icon: Icon(Icons.chat)),
-                      Tab(icon: Icon(Icons.contacts)),
-                    ],
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TabBar(
+                        dividerColor: Colors.transparent,
+                        controller: _tabController,
+                        tabAlignment: TabAlignment.start,
+                        isScrollable: true,
+                        tabs: [
+                          Tab(icon: Icon(Icons.chat)),
+                          Tab(icon: Icon(Icons.contacts)),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: IconButton(
+                        icon: const Icon(Icons.mail_outline),
+                        onPressed: () => _showInviteSheet(context),
+                        tooltip: l10n.chatInvites,
+                      ),
+                    ),
+                  ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: IconButton(
-                    icon: const Icon(Icons.mail_outline),
-                    onPressed: () => _showInviteSheet(context),
-                    tooltip: l10n.chatInvites,
+                const Divider(height: 1),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      ChatListWidget(chatRooms: _chatRooms),
+                      ContactListWidget(contacts: _contacts),
+                    ],
                   ),
                 ),
               ],
             ),
-            const Divider(height: 1),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  ChatListWidget(chatRooms: _chatRooms),
-                  ContactListWidget(contacts: _contacts),
-                ],
+            // 拖动区
+            Positioned(
+              top: 0,
+              bottom: 0,
+              right: 0,
+              child: MouseRegion(
+                cursor: SystemMouseCursors.resizeColumn,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onHorizontalDragUpdate: (details) {
+                    widget.onDragUpdate?.call(details.delta.dx);
+                  },
+                  onHorizontalDragEnd: (_) {
+                    widget.onDragEnd?.call();
+                  },
+                  child: const SizedBox(width: 10),
+                ),
+              ),
+            ),
+            // 展折
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: IgnorePointer(
+                ignoring: !widget.isHovering,
+                child: AnimatedOpacity(
+                  opacity: widget.isHovering ? 1 : 0,
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  child: AnimatedSlide(
+                    offset: widget.isHovering
+                        ? Offset.zero
+                        : const Offset(0.25, 0),
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    child: Center(
+                      child: Material(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(10),
+                        ),
+                        child: InkWell(
+                          borderRadius: const BorderRadius.horizontal(
+                            left: Radius.circular(10),
+                          ),
+                          onTap: widget.onToggleCollapse,
+                          child: Tooltip(
+                            message: widget.isCollapsed
+                                ? l10n.chatListExpand
+                                : l10n.chatListCollapse,
+                            child: SizedBox(
+                              width: 36,
+                              height: 36,
+                              child: Icon(
+                                widget.isCollapsed
+                                    ? Symbols.left_panel_open
+                                    : Symbols.left_panel_close,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCollapsedView(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final items = _tabController.index == 0 ? _chatRooms : [];
+    final contactItems = _tabController.index == 1 ? _contacts : [];
+    
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [
+        for (final room in items.take(10))
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+            child: IconButton(
+              tooltip: room.name,
+              onPressed: () {
+                context.go('/chat/${room.id}');
+              },
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(
+                width: 48,
+                height: 48,
+              ),
+              splashRadius: 24,
+              icon: Stack(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: colorScheme.primaryContainer,
+                    ),
+                    child: Center(
+                      child: Icon(
+                        room.type == ChatType.direct ? Icons.person : Icons.group,
+                        color: colorScheme.onPrimaryContainer,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                  if (room.unreadCount > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: colorScheme.error,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Center(
+                          child: Text(
+                            room.unreadCount > 99 ? '99+' : room.unreadCount.toString(),
+                            style: TextStyle(
+                              color: colorScheme.onError,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              height: 1.0,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        for (final contact in contactItems.take(10))
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+            child: IconButton(
+              tooltip: contact.name,
+              onPressed: () {
+                context.go('/user/${contact.id}');
+              },
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(
+                width: 48,
+                height: 48,
+              ),
+              splashRadius: 24,
+              icon: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colorScheme.primaryContainer,
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.person,
+                    color: colorScheme.onPrimaryContainer,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
