@@ -7,17 +7,20 @@ import 'package:file_picker/file_picker.dart';
 import 'package:mime/mime.dart';
 import '../l10n/app_localizations.dart';
 import '../models/message_model.dart';
+import 'mention_text_field.dart';
 
 class ChatInputBar extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
   final Function(PlatformFile file, MessageType type)? onFilePicked;
+  final List<MentionUser> mentionUsers;
 
   const ChatInputBar({
     super.key,
     required this.controller,
     required this.onSend,
     this.onFilePicked,
+    this.mentionUsers = const [],
   });
 
   @override
@@ -120,8 +123,9 @@ class _ChatInputBarState extends State<ChatInputBar> {
                   ],
                 ),
                 Expanded(
-                  child: TextField(
+                  child: MentionTextField(
                     controller: widget.controller,
+                    mentionUsers: widget.mentionUsers,
                     maxLines: 5,
                     minLines: 1,
                     keyboardType: TextInputType.multiline,

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
+import '../models/chat_model.dart';
 import '../models/user_profile.dart';
 import '../widgets/account/profile_picture.dart';
+import '../widgets/mention_text_field.dart';
 
 class ForumPostComposeSheet extends StatefulWidget {
   final String forumId;
@@ -41,6 +43,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  late final List<MentionUser> _mentionUsers;
 
   final _currentUser = UserProfileDemoData.getDemoProfile('1');
 
@@ -50,6 +53,9 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     if (widget.initialContent != null) {
       _contentController.text = widget.initialContent!;
     }
+    _mentionUsers = ChatDemoData.getDemoContacts()
+        .map((c) => MentionUser(id: c.id, username: c.name, avatarUrl: c.avatar))
+        .toList();
   }
 
   @override
@@ -155,8 +161,9 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                             if (!widget.isReply)
                               const SizedBox(height: 4),
                             // Content field
-                            TextFormField(
+                            MentionTextField(
                               controller: _contentController,
+                              mentionUsers: _mentionUsers,
                               style: Theme.of(context).textTheme.bodyLarge,
                               maxLines: null,
                               minLines: 6,
@@ -169,12 +176,6 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                                   vertical: 8,
                                 ),
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return l10n.forumPostContentRequired;
-                                }
-                                return null;
-                              },
                             ),
                           ],
                         ),
@@ -306,16 +307,21 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
   }
 
   void _submit() {
-    if (_formKey.currentState!.validate()) {
-      final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context)!;
+    if (!_formKey.currentState!.validate()) return;
+    if (_contentController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.isReply ? l10n.forumCommentSuccess : l10n.forumPostSuccess,
-          ),
-        ),
+        SnackBar(content: Text(l10n.forumPostContentRequired)),
       );
-      Navigator.pop(context, true);
+      return;
     }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          widget.isReply ? l10n.forumCommentSuccess : l10n.forumPostSuccess,
+        ),
+      ),
+    );
+    Navigator.pop(context, true);
   }
 }

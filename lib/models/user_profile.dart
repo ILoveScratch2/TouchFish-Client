@@ -181,4 +181,14 @@ def hello():
       avatar: null,
     );
   }
+  static UserProfile? findByUsername(String username) {
+    const knownUids = ['1', '2', '3', '4', '5'];
+    for (final uid in knownUids) {
+      final profile = getDemoProfile(uid);
+      if (profile.username.toLowerCase() == username.toLowerCase()) {
+        return profile;
+      }
+    }
+    return null;
+  }
 }

@@ -10,6 +10,7 @@ import '../widgets/message_bubble.dart';
 import '../widgets/chat_input_bar.dart';
 import '../routes/app_routes.dart';
 import '../l10n/app_localizations.dart';
+import '../widgets/mention_text_field.dart';
 import 'chat_room_settings_screen.dart';
 
 
@@ -30,6 +31,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   ChatRoom? _currentRoom;
+  List<MentionUser> _mentionUsers = [];
   bool _isInitialized = false;
 
   @override
@@ -57,6 +59,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final allRooms = ChatDemoData.getDemoChatRooms();
     final allContacts = ChatDemoData.getDemoContacts();
     final l10n = AppLocalizations.of(context)!;
+    _mentionUsers = allContacts
+        .map((c) => MentionUser(id: c.id, username: c.name, avatarUrl: c.avatar))
+        .toList();
     _currentRoom = allRooms.firstWhere(
       (room) => room.id == widget.roomId,
       orElse: () {
@@ -397,6 +402,7 @@ void main() {
               controller: _messageController,
               onSend: _sendMessage,
               onFilePicked: _sendMediaMessage,
+              mentionUsers: _mentionUsers,
             ),
           ],
         ),

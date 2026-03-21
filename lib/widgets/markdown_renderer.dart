@@ -9,6 +9,8 @@ import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:photo_view/photo_view.dart';
 import '../l10n/app_localizations.dart';
+import '../models/user_profile.dart';
+import 'account/profile_picture.dart';
 
 /// Markdown Renderer
 class MarkdownRenderer extends StatelessWidget {
@@ -118,6 +120,8 @@ class MarkdownRenderer extends StatelessWidget {
         'code': CustomCodeBuilder(),
         // LaTeX 支持
         'latex': LatexBuilder(),
+        // @mention 支持
+        'mention': MentionChipBuilder(),
       },
       // 自定义图片
       imageBuilder: (uri, title, alt) {
@@ -140,6 +144,7 @@ class MarkdownRenderer extends StatelessWidget {
       extensionSet: md.ExtensionSet(
         md.ExtensionSet.gitHubFlavored.blockSyntaxes,
         [
+          MentionInlineSyntax(),
           md.EmojiSyntax(),
           ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
           LatexSyntax(),
@@ -270,6 +275,77 @@ class _CodeBlockWidget extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// @mention
+class MentionInlineSyntax extends md.InlineSyntax {
+  MentionInlineSyntax() : super(r'@([A-Za-z0-9_]+)(?=\s|$)');
+
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    final username = match[1]!;
+    if (UserProfileDemoData.findByUsername(username) == null) {
+      parser.addNode(md.Text('@$username'));
+      return true;
+    }
+    final element = md.Element.text('mention', '@$username');
+    element.attributes['username'] = username;
+    parser.addNode(element);
+    return true;
+  }
+}
+
+class MentionChipBuilder extends MarkdownElementBuilder {
+  @override
+  Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
+    final username = element.attributes['username'] ??
+        element.textContent.replaceFirst('@', '');
+    final profile = UserProfileDemoData.findByUsername(username);
+    return _MentionChipWidget(username: username, profile: profile);
+  }
+}
+
+class _MentionChipWidget extends StatelessWidget {
+  final String username;
+  final UserProfile? profile;
+
+  const _MentionChipWidget({required this.username, this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final avatarUrl = profile?.avatar;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 1),
+      padding: const EdgeInsets.fromLTRB(4, 2, 6, 2),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildAvatar(avatarUrl, colorScheme),
+          const SizedBox(width: 4),
+          Text(
+            '@$username',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: colorScheme.onPrimaryContainer,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatar(String? avatarUrl, ColorScheme colorScheme) {
+    return ProfilePictureWidget(
+      avatarUrl: avatarUrl,
+      radius: 8,
     );
   }
 }
