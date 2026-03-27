@@ -8,6 +8,7 @@ import '../widgets/markdown_renderer.dart';
 import '../models/settings_service.dart';
 import 'forum_members_screen.dart';
 import 'forum_post_compose_screen.dart';
+import '../utils/talker.dart';
 
 class ForumDetailScreen extends StatefulWidget {
   final String forumId;
@@ -34,7 +35,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     final forums = ForumDemoData.getDemoForums();
     try {
       _forum = forums.firstWhere((f) => f.id == widget.forumId);
-    } catch (_) {
+    } catch (e) {
+      talker.error('Forum not found: ${widget.forumId}', e);
       _forum = null;
     }
     _identity = ForumDemoData.getDemoIdentity(widget.forumId, _currentUserUid);

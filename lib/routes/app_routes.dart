@@ -20,6 +20,7 @@ import '../screens/about_screen.dart';
 import '../screens/licenses_screen.dart';
 import '../screens/profile_edit_screen.dart';
 import '../widgets/window_frame.dart';
+import '../utils/talker.dart';
 
 class AppRoutes {
   static const String welcome = '/welcome';
@@ -45,6 +46,7 @@ class AppRoutes {
   static GoRouter createRouter({required bool isFirstLaunch}) {
     return GoRouter(
       initialLocation: isFirstLaunch ? welcome : login,
+      observers: [TalkerRouteObserver()],
       routes: [
         ShellRoute(
           builder: (context, state, child) {

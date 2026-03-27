@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:photo_view/photo_view.dart';
 import 'exif_info_overlay.dart';
+import '../../utils/talker.dart';
 
 class ImageLightbox extends HookWidget {
   final String imagePath;
@@ -60,6 +61,7 @@ class ImageLightbox extends HookWidget {
                     photoViewController.scale = clampedScale;
                   }
                 } catch (e) {
+                  talker.error('Failed to handle scroll event in image lightbox', e);
                 }
               },
               child: PhotoView(

@@ -12,6 +12,7 @@ import '../l10n/app_localizations.dart';
 import '../models/settings_model.dart';
 import '../models/settings_service.dart';
 import '../services/font_loader_service.dart';
+import '../utils/talker.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -1288,6 +1289,7 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
         }
       }
     } catch (e) {
+      talker.error('Failed to generate theme from image', e);
       if (context.mounted) {
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(

@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../widgets/server_selector.dart';
 import '../widgets/network_indicator.dart';
+import '../utils/talker.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -36,6 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _connectionStatus = result;
       });
     } catch (e) {
+      talker.error('Failed to check connectivity', e);
     }
   }
 

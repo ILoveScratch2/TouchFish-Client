@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'settings_model.dart';
+import '../utils/talker.dart';
 
 // Settings persistence - Simple, no magic
 class SettingsService extends ChangeNotifier {
@@ -46,6 +47,7 @@ class SettingsService extends ChangeNotifier {
     try {
       return jsonDecode(jsonString) as Map<String, dynamic>;
     } catch (e) {
+      talker.error('Failed to decode JSON setting for key: $key', e);
       return null;
     }
   }

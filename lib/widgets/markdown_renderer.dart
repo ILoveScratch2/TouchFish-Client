@@ -11,6 +11,7 @@ import 'package:photo_view/photo_view.dart';
 import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
 import 'account/profile_picture.dart';
+import '../utils/talker.dart';
 
 /// Markdown Renderer
 class MarkdownRenderer extends StatelessWidget {
@@ -395,6 +396,7 @@ class LatexBuilder extends MarkdownElementBuilder {
 
       return widget;
     } catch (e) {
+      talker.error('LaTeX parse failed: $latex', e);
       // LaTeX 解析失败就显示原始文本
       return Text(
         isBlock ? '\$\$$latex\$\$' : '\$$latex\$',

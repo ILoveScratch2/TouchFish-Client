@@ -7,6 +7,7 @@ import '../models/user_profile.dart';
 import '../widgets/markdown_renderer.dart';
 import '../models/settings_service.dart';
 import '../widgets/account/profile_picture.dart';
+import '../utils/talker.dart';
 
 class UserProfileScreen extends StatelessWidget {
   final String userId;
@@ -431,6 +432,7 @@ class UserProfileScreen extends StatelessWidget {
       );
       return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     } catch (e) {
+      talker.error('Failed to parse timestamp: $timestamp', e);
       return timestamp;
     }
   }

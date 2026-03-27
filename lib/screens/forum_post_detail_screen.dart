@@ -7,6 +7,7 @@ import '../widgets/account/profile_picture.dart';
 import '../widgets/markdown_renderer.dart';
 import '../models/settings_service.dart';
 import 'forum_post_compose_screen.dart';
+import '../utils/talker.dart';
 
 const double _kPostDetailMaxWidth = 680;
 
@@ -40,7 +41,8 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     final allPosts = ForumDemoData.getDemoPosts(widget.forumId);
     try {
       _post = allPosts.firstWhere((p) => p.id == widget.postId);
-    } catch (_) {
+    } catch (e) {
+      talker.error('Forum post not found: ${widget.postId}', e);
       _post = null;
     }
     _comments = ForumDemoData.getDemoComments(widget.postId);

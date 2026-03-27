@@ -10,6 +10,7 @@ import '../l10n/app_localizations.dart';
 import '../constants/app_constants.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'debug/debug_options_screen.dart';
+import '../utils/talker.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -269,6 +270,7 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
         });
       }
     } catch (e) {
+      talker.error('Failed to load package info', e);
       if (mounted) {
         setState(() {
           _errorMessage = 'Failed to load package info: $e';
@@ -302,6 +304,7 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
     try {
       licenseText = await rootBundle.loadString('LICENSE');
     } catch (e) {
+      talker.error('Failed to load LICENSE file', e);
       licenseText = 'Failed to load license file: $e';
     }
 
@@ -541,6 +544,7 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
     try {
       licenseText = await rootBundle.loadString(licensePath);
     } catch (e) {
+      talker.error('Failed to load font license: $licensePath', e);
       licenseText = 'Load license font fail: $e';
     }
 

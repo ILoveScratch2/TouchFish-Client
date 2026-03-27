@@ -1,3 +1,5 @@
+import '../utils/talker.dart';
+
 class Forum {
   final String id;
   final String name;
@@ -281,7 +283,8 @@ class ForumDemoData {
     final members = getDemoMembers(forumId);
     try {
       return members.firstWhere((m) => m.accountUid == currentUid);
-    } catch (_) {
+    } catch (e) {
+      talker.error('Forum member not found for uid: $currentUid in forum: $forumId', e);
       return null;
     }
   }
