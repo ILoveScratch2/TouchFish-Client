@@ -9,6 +9,8 @@ import '../models/settings_service.dart';
 import '../widgets/account/profile_picture.dart';
 import '../utils/talker.dart';
 
+const double _kProfileMaxWidth = 680;
+
 class UserProfileScreen extends StatelessWidget {
   final String userId;
 
@@ -27,7 +29,7 @@ class UserProfileScreen extends StatelessWidget {
           // App Bar with background
           SliverAppBar(
             pinned: true,
-            expandedHeight: 200,
+            expandedHeight: 160,
             leading: IconButton(
               icon: const Icon(Icons.close),
               onPressed: () => context.pop(),
@@ -36,7 +38,6 @@ class UserProfileScreen extends StatelessWidget {
               IconButton(
                 icon: const Icon(Symbols.share),
                 onPressed: () {
-                  // Share profile
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Share ${profile.username}'),
@@ -61,37 +62,44 @@ class UserProfileScreen extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Content
           SliverToBoxAdapter(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Avatar and basic info
-                  _buildBasicInfoCard(context, profile, l10n, colorScheme),
-                  const SizedBox(height: 16),
-                  
-                  // Personal sign
-                  if (profile.personalSign != null && profile.personalSign!.isNotEmpty)
-                    _buildBioCard(context, profile, l10n, colorScheme),
-                  
-                  // Details card
-                  _buildDetailsCard(context, profile, l10n, colorScheme),
-                  const SizedBox(height: 16),
-                  
-                  // Introduction
-                  if (profile.introduction != null && profile.introduction!.isNotEmpty)
-                    _buildIntroductionCard(context, profile, l10n, colorScheme),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Action buttons
-                  _buildActionButtons(context, profile, l10n),
-                  
-                  const SizedBox(height: 32),
-                ],
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: _kProfileMaxWidth),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Avatar + name header
+                      _buildProfileHeader(context, profile, l10n, colorScheme),
+
+                      // Action buttons
+                      _buildActionButtons(context, profile, l10n),
+                      const SizedBox(height: 16),
+
+                      // Personal sign
+                      if (profile.personalSign != null && profile.personalSign!.isNotEmpty) ...[
+                        _buildBioCard(context, profile, l10n, colorScheme),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // Details card
+                      _buildDetailsCard(context, profile, l10n, colorScheme),
+                      const SizedBox(height: 16),
+
+                      // Introduction
+                      if (profile.introduction != null && profile.introduction!.isNotEmpty) ...[
+                        _buildIntroductionCard(context, profile, l10n, colorScheme),
+                        const SizedBox(height: 16),
+                      ],
+
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -100,105 +108,48 @@ class UserProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBasicInfoCard(
+  Widget _buildProfileHeader(
     BuildContext context,
     UserProfile profile,
     AppLocalizations l10n,
     ColorScheme colorScheme,
   ) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Avatar
-            ProfilePictureWidget(
-              avatarUrl: profile.avatar,
-              radius: 40,
+    return Column(
+      children: [
+        const SizedBox(height: 24),
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: colorScheme.surface,
+              width: 4,
             ),
-            const SizedBox(width: 16),
-            
-            // Name and stats
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          profile.username,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 2),
-                          child: Text(
-                            '@${profile.username}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  _buildPermissionBadge(context, profile, l10n, colorScheme),
-                ],
-              ),
-            ),
-          ],
+          ),
+          child: ProfilePictureWidget(
+            avatarUrl: profile.avatar,
+            radius: 72,
+            fallbackText: profile.username,
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildPermissionBadge(
-    BuildContext context,
-    UserProfile profile,
-    AppLocalizations l10n,
-    ColorScheme colorScheme,
-  ) {
-    String permissionText;
-    Color badgeColor;
-    
-    switch (profile.stat.toLowerCase()) {
-      case 'admin':
-        permissionText = l10n.userProfilePermissionAdmin;
-        badgeColor = Colors.red;
-        break;
-      case 'moderator':
-        permissionText = l10n.userProfilePermissionModerator;
-        badgeColor = Colors.orange;
-        break;
-      default:
-        permissionText = l10n.userProfilePermissionUser;
-        badgeColor = colorScheme.primary;
-    }
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: badgeColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: badgeColor.withOpacity(0.3)),
-      ),
-      child: Text(
-        permissionText,
-        style: TextStyle(
-          color: badgeColor,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
+        const SizedBox(height: 12),
+        Text(
+          profile.username,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
         ),
-      ),
+        const SizedBox(height: 4),
+        Text(
+          '@${profile.username}',
+          style: TextStyle(
+            fontSize: 14,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 20),
+      ],
     );
   }
 
