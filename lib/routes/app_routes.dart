@@ -78,21 +78,23 @@ class AppRoutes {
             GoRoute(
               path: registerStep2,
               builder: (context, state) {
-                final args = state.extra as Map<String, String>;
+                final args = state.extra as Map<String, dynamic>;
                 return RegisterStep2Screen(
-                  username: args['username']!,
-                  password: args['password']!,
+                  username: args['username'] as String,
+                  password: args['password'] as String,
+                  requiresEmail: args['requiresEmail'] as bool? ?? false,
+                  captchaStamp: args['captchaStamp'] as String?,
+                  captchaCode: args['captchaCode'] as String?,
                 );
               },
             ),
             GoRoute(
               path: registerStep3,
               builder: (context, state) {
-                final args = state.extra as Map<String, String>;
+                final args = state.extra as Map<String, dynamic>;
                 return RegisterStep3Screen(
-                  username: args['username']!,
-                  password: args['password']!,
-                  email: args['email']!,
+                  username: args['username'] as String,
+                  uid: args['uid'] as int,
                 );
               },
             ),

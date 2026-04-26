@@ -2,12 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../models/forum_model.dart';
+import '../services/api/tf_api_client.dart';
+import '../utils/talker.dart';
 
-class ForumScreen extends StatelessWidget {
+class ForumScreen extends StatefulWidget {
   const ForumScreen({super.key});
 
-  // Demo: current user uid
-  static const _currentUserUid = '1';
+  @override
+  State<ForumScreen> createState() => _ForumScreenState();
+}
+
+class _ForumScreenState extends State<ForumScreen> {
+  List<Forum>? _allForums;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadForums();
+  }
+
+  Future<void> _loadForums() async {
+    setState(() { _isLoading = true; _error = null; });
+    try {
+      final forums = await TfApiClient.instance.getForumList();
+      if (mounted) setState(() { _allForums = forums; _isLoading = false; });
+    } catch (e) {
+      talker.error('ForumScreen: getForumList failed', e);
+      if (mounted) setState(() { _isLoading = false; _error = e.toString(); });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,17 +50,36 @@ class ForumScreen extends StatelessWidget {
             ],
           ),
         ),
-        body: TabBarView(
-          children: [
-            _ForumListView(
-              forums: ForumDemoData.getJoinedForums(_currentUserUid),
-              emptyMessage: l10n.forumNoJoined,
-            ),
-            _ForumListView(
-              forums: ForumDemoData.getDemoForums(),
-            ),
-          ],
-        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(l10n.forumLoadFailed),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: _loadForums,
+                          child: Text(l10n.retry),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _loadForums,
+                    child: TabBarView(
+                      children: [
+                        _ForumListView(
+                          forums: _allForums ?? [],
+                          emptyMessage: l10n.forumNoJoined,
+                        ),
+                        _ForumListView(
+                          forums: _allForums ?? [],
+                        ),
+                      ],
+                    ),
+                  ),
       ),
     );
   }

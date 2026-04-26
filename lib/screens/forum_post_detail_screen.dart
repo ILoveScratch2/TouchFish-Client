@@ -6,6 +6,8 @@ import '../models/user_profile.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/markdown_renderer.dart';
 import '../models/settings_service.dart';
+import '../services/api/tf_api_client.dart';
+import '../services/auth_state.dart';
 import 'forum_post_compose_screen.dart';
 import '../utils/talker.dart';
 
@@ -26,8 +28,10 @@ class ForumPostDetailScreen extends StatefulWidget {
 }
 
 class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
-  late ForumPost? _post;
-  late List<ForumComment> _comments;
+  ForumPost? _post;
+  List<ForumComment> _comments = [];
+  bool _isLoading = true;
+  bool _isSendingComment = false;
   final _commentController = TextEditingController();
   final _scrollController = ScrollController();
 
@@ -37,15 +41,25 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     _loadData();
   }
 
-  void _loadData() {
-    final allPosts = ForumDemoData.getDemoPosts(widget.forumId);
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
     try {
-      _post = allPosts.firstWhere((p) => p.id == widget.postId);
+      final fid = int.tryParse(widget.forumId);
+      final pid = int.tryParse(widget.postId);
+      if (fid == null || pid == null) throw Exception('Invalid IDs');
+      final posts = await TfApiClient.instance.getPostList(fid);
+      try {
+        _post = posts.firstWhere((p) => p.id == widget.postId);
+      } catch (_) {
+        _post = null;
+      }
+
+      final comments = await TfApiClient.instance.getAllComments(fid, pid);
+      if (mounted) setState(() { _comments = comments; _isLoading = false; });
     } catch (e) {
-      talker.error('Forum post not found: ${widget.postId}', e);
-      _post = null;
+      talker.error('ForumPostDetail: _loadData failed', e);
+      if (mounted) setState(() => _isLoading = false);
     }
-    _comments = ForumDemoData.getDemoComments(widget.postId);
   }
 
   @override
@@ -58,6 +72,13 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     if (_post == null) {
       return Scaffold(
@@ -425,14 +446,43 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     }
   }
 
-  void _submitComment() {
+  Future<void> _submitComment() async {
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
     final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.forumCommentSuccess)),
-    );
-    _commentController.clear();
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+
+    final fid = int.tryParse(widget.forumId);
+    final pid = int.tryParse(widget.postId);
+    if (fid == null || pid == null) return;
+
+    setState(() => _isSendingComment = true);
+    try {
+      final success = await TfApiClient.instance.addComment(uid, password, fid, pid, text);
+      if (!mounted) return;
+      setState(() => _isSendingComment = false);
+      if (success) {
+        _commentController.clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.forumCommentSuccess)),
+        );
+        await _loadData();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.forumCommentFailed), behavior: SnackBarBehavior.floating),
+        );
+      }
+    } catch (e) {
+      talker.error('_submitComment failed', e);
+      if (mounted) {
+        setState(() => _isSendingComment = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.forumCommentFailed), behavior: SnackBarBehavior.floating),
+        );
+      }
+    }
   }
 
   String _formatDateTime(DateTime date) {

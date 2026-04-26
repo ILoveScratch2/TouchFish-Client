@@ -332,6 +332,108 @@ abstract class AppLocalizations {
   /// **'Verification code must be 6 digits'**
   String get registerErrorVerificationCodeInvalid;
 
+  /// No description provided for @loginErrorEmptyFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter username and password'**
+  String get loginErrorEmptyFields;
+
+  /// No description provided for @loginErrorUserNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'User not found'**
+  String get loginErrorUserNotFound;
+
+  /// No description provided for @loginErrorInvalidCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect password'**
+  String get loginErrorInvalidCredentials;
+
+  /// No description provided for @loginErrorNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error, please try again'**
+  String get loginErrorNetwork;
+
+  /// No description provided for @registerErrorCaptchaRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the captcha'**
+  String get registerErrorCaptchaRequired;
+
+  /// No description provided for @registerCaptchaLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading captcha...'**
+  String get registerCaptchaLoad;
+
+  /// No description provided for @registerCaptchaCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Captcha'**
+  String get registerCaptchaCode;
+
+  /// No description provided for @registerCaptchaRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get registerCaptchaRefresh;
+
+  /// No description provided for @registerErrorFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration failed, please try again'**
+  String get registerErrorFailed;
+
+  /// No description provided for @registerConfirmInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your registration details'**
+  String get registerConfirmInfo;
+
+  /// No description provided for @registerActivateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Activation failed, please check the code'**
+  String get registerActivateFailed;
+
+  /// No description provided for @forumLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load forums'**
+  String get forumLoadFailed;
+
+  /// No description provided for @forumPostLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load posts'**
+  String get forumPostLoadFailed;
+
+  /// No description provided for @forumCommentFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to post comment'**
+  String get forumCommentFailed;
+
+  /// No description provided for @forumPostFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to publish post'**
+  String get forumPostFailed;
+
+  /// No description provided for @userProfileNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'User not found'**
+  String get userProfileNotFound;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
   /// No description provided for @settingsTitle.
   ///
   /// In en, this message translates to:
@@ -1141,6 +1243,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Profile updated'**
   String get profileEditUpdated;
+
+  /// No description provided for @profileEditSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save some changes'**
+  String get profileEditSaveFailed;
 
   /// No description provided for @profileEditUsernameCannotChange.
   ///

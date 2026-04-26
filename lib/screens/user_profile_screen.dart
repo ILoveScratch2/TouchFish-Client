@@ -7,21 +7,69 @@ import '../models/user_profile.dart';
 import '../widgets/markdown_renderer.dart';
 import '../models/settings_service.dart';
 import '../widgets/account/profile_picture.dart';
+import '../services/api/tf_api_client.dart';
 import '../utils/talker.dart';
 
 const double _kProfileMaxWidth = 680;
 
-class UserProfileScreen extends StatelessWidget {
+class UserProfileScreen extends StatefulWidget {
   final String userId;
 
   const UserProfileScreen({super.key, required this.userId});
 
   @override
+  State<UserProfileScreen> createState() => _UserProfileScreenState();
+}
+
+class _UserProfileScreenState extends State<UserProfileScreen> {
+  UserProfile? _profile;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    setState(() { _isLoading = true; _error = null; });
+    try {
+      final uid = int.tryParse(widget.userId);
+      if (uid == null) throw Exception('Invalid userId');
+      final profile = await TfApiClient.instance.getUserByUid(uid);
+      if (mounted) setState(() { _profile = profile; _isLoading = false; });
+    } catch (e) {
+      talker.error('UserProfileScreen: _loadProfile failed', e);
+      if (mounted) setState(() { _isLoading = false; _error = e.toString(); });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // 使用 demo 数据
-    final profile = UserProfileDemoData.getDemoProfile(userId);
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
+
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null || _profile == null) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(l10n.userProfileNotFound),
+            const SizedBox(height: 8),
+            TextButton(onPressed: _loadProfile, child: Text(l10n.retry)),
+          ]),
+        ),
+      );
+    }
+    final profile = _profile!;
 
     return Scaffold(
       body: CustomScrollView(

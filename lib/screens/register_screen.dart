@@ -1,8 +1,12 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smart_form_guard/smart_form_guard.dart';
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
+import '../services/api/tf_api_client.dart';
+import '../utils/talker.dart';
 
 class RegisterScreen extends StatefulWidget {
   final String? initialUsername;
@@ -22,6 +26,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _captchaController = TextEditingController();
+
+  bool _isLoadingServerInfo = true;
+  bool _requiresEmail = false;
+  bool _requiresCaptcha = false;
+  TfCaptchaInfo? _captchaInfo;
+  bool _isLoadingCaptcha = false;
 
   @override
   void initState() {
@@ -32,6 +43,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (widget.initialPassword != null) {
       _passwordController.text = widget.initialPassword!;
     }
+    _fetchServerInfo();
+  }
+
+  Future<void> _fetchServerInfo() async {
+    try {
+      final info = await TfApiClient.instance.fetchServerInfo();
+      if (!mounted) return;
+      setState(() {
+        _requiresEmail = info?.emailActivate ?? false;
+        _requiresCaptcha = info?.captcha ?? false;
+        _isLoadingServerInfo = false;
+      });
+      if (_requiresCaptcha) await _refreshCaptcha();
+    } catch (e) {
+      talker.error('RegisterScreen: fetchServerInfo failed', e);
+      if (mounted) setState(() => _isLoadingServerInfo = false);
+    }
+  }
+
+  Future<void> _refreshCaptcha() async {
+    setState(() => _isLoadingCaptcha = true);
+    try {
+      final info = await TfApiClient.instance.getCaptcha();
+      if (mounted) {
+        setState(() {
+          _captchaInfo = info;
+          _captchaController.clear();
+          _isLoadingCaptcha = false;
+        });
+      }
+    } catch (e) {
+      talker.error('RegisterScreen: getCaptcha failed', e);
+      if (mounted) setState(() => _isLoadingCaptcha = false);
+    }
   }
 
   @override
@@ -39,6 +84,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _usernameController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _captchaController.dispose();
     super.dispose();
   }
 
@@ -48,6 +94,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       extra: {
         'username': _usernameController.text,
         'password': _passwordController.text,
+        'requiresEmail': _requiresEmail,
+        'captchaStamp': _captchaInfo?.stamp,
+        'captchaCode': _requiresCaptcha ? _captchaController.text : null,
       },
     );
   }
@@ -142,13 +191,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           },
                         ]),
                       ),
+
+                      // 验证码（服务器要求时显示）
+                      if (_requiresCaptcha) ...[                        
+                        const SizedBox(height: 16),
+                        _buildCaptchaSection(l10n),
+                      ],
+
                       const SizedBox(height: 24),
                       
                       // Next button
-                      SmartSubmitButton(
-                        text: l10n.registerNextStep,
-                        icon: Icons.arrow_forward,
-                      ),
+                      _isLoadingServerInfo
+                          ? const CircularProgressIndicator()
+                          : SmartSubmitButton(
+                              text: l10n.registerNextStep,
+                              icon: Icons.arrow_forward,
+                            ),
                       const SizedBox(height: 12),
                       
                       // Back to login button
@@ -164,6 +222,60 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCaptchaSection(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _captchaInfo == null
+                  ? Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                            color: Theme.of(context).colorScheme.outline),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: _isLoadingCaptcha
+                          ? const Center(
+                              child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2)))
+                          : Center(
+                              child: Text(l10n.registerCaptchaLoad,
+                                  style: Theme.of(context).textTheme.bodySmall)),
+                    )
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.memory(
+                        base64.decode(_captchaInfo!.pic),
+                        height: 56,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: _isLoadingCaptcha ? null : _refreshCaptcha,
+              icon: const Icon(Icons.refresh),
+              tooltip: l10n.registerCaptchaRefresh,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SmartField(
+          controller: _captchaController,
+          label: l10n.registerCaptchaCode,
+          prefixIcon: Icons.security_outlined,
+          validator: SmartValidators.required(l10n.registerErrorCaptchaRequired),
+        ),
+      ],
     );
   }
 }

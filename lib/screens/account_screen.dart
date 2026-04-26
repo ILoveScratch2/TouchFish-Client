@@ -7,6 +7,9 @@ import '../widgets/account/account_name.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/account/signature_editor.dart';
 import '../routes/app_routes.dart';
+import '../services/auth_state.dart';
+import '../services/api/tf_api_client.dart';
+import '../utils/talker.dart';
 import 'debug/debug_options_screen.dart';
 
 class AccountScreen extends StatefulWidget {
@@ -28,14 +31,12 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   void _loadUser() {
-    // 还没做登录
     setState(() {
-      _currentUser = UserProfileDemoData.getDemoProfile('1');
+      _currentUser = AuthState.instance.currentUser;
     });
   }
 
   void _logout() async {
-    // 登出肯定也没做的
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -56,38 +57,31 @@ class _AccountScreenState extends State<AccountScreen> {
     );
 
     if (confirmed == true && mounted) {
-      setState(() {
-        _currentUser = null;
-      });
-      
-      // 应该清除数据的，但现在直接跳转到登录界面，因为根本没有好吧
-      if (mounted) {
-        GoRouter.of(context).go(AppRoutes.login);
-      }
+      await AuthState.instance.logout();
+      setState(() => _currentUser = null);
+      if (mounted) GoRouter.of(context).go(AppRoutes.login);
     }
   }
 
   void _updateSignature(String newSignature) {
-    // 签名修改诶！但是也没做
-    setState(() {
-      _currentUser = UserProfile(
-        uid: _currentUser!.uid,
-        username: _currentUser!.username,
-        email: _currentUser!.email,
-        stat: _currentUser!.stat,
-        createTime: _currentUser!.createTime,
-        personalSign: newSignature,
-        introduction: _currentUser!.introduction,
-        avatar: _currentUser!.avatar,
-      );
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+    TfApiClient.instance.changeSign(uid, password, newSignature).then((success) {
+      if (!mounted) return;
+      if (success) {
+        AuthState.instance.refreshProfile().then((_) {
+          if (!mounted) return;
+          setState(() => _currentUser = AuthState.instance.currentUser);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(AppLocalizations.of(context)!.accountUpdateSignature),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    }).catchError((e) {
+      talker.error('_updateSignature failed', e);
     });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.accountUpdateSignature),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   @override
@@ -112,17 +106,22 @@ class _AccountScreenState extends State<AccountScreen> {
                 top: 8,
                 bottom: MediaQuery.of(context).padding.bottom,
               ),
-              child: Column(
-                spacing: 4,
-                children: [
-                  _buildProfileCard(context),
-                  _buildSignatureCard(context),
-                  _buildActionButtons(context, isWide),
-                  _buildMenuItems(context),
-                  const Divider(height: 1),
-                  _buildAdditionalOptions(context),
-                  _buildLogoutButton(context),
-                ],
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: Column(
+                    spacing: 4,
+                    children: [
+                      _buildProfileCard(context),
+                      _buildSignatureCard(context),
+                      _buildActionButtons(context, isWide),
+                      _buildMenuItems(context),
+                      const Divider(height: 1),
+                      _buildAdditionalOptions(context),
+                      _buildLogoutButton(context),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),

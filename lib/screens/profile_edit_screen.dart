@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -6,7 +7,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
+import '../services/auth_state.dart';
+import '../services/api/tf_api_client.dart';
 import '../widgets/account/profile_picture.dart';
+import '../utils/talker.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   const ProfileEditScreen({super.key});
@@ -37,11 +41,13 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   }
 
   void _loadUser() {
+    final user = AuthState.instance.currentUser;
+    if (user == null) return;
     setState(() {
-      _currentUser = UserProfileDemoData.getDemoProfile('1');
-      _emailController.text = _currentUser!.email;
-      _bioController.text = _currentUser!.personalSign ?? '';
-      _introductionController.text = _currentUser!.introduction ?? '';
+      _currentUser = user;
+      _emailController.text = user.email;
+      _bioController.text = user.personalSign ?? '';
+      _introductionController.text = user.introduction ?? '';
     });
   }
 
@@ -114,35 +120,65 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   Future<void> _saveProfile() async {
     final l10n = AppLocalizations.of(context)!;
-    
-    setState(() {
-      _isSubmitting = true;
-    });
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null || _currentUser == null) return;
 
-    // 以为有网络吗？
-    await Future.delayed(const Duration(seconds: 1));
-    if (mounted) {
-      setState(() {
-        _currentUser = UserProfile(
-          uid: _currentUser!.uid,
-          username: _currentUser!.username,
-          email: _emailController.text,
-          stat: _currentUser!.stat,
-          createTime: _currentUser!.createTime,
-          personalSign: _bioController.text,
-          introduction: _introductionController.text,
-          avatar: (_selectedAvatar?.path ?? (_selectedAvatar?.bytes != null ? 'bytes' : null)) ?? _currentUser!.avatar,
-        );
-        _isSubmitting = false;
-      });
+    setState(() => _isSubmitting = true);
+    try {
+      bool allOk = true;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.profileEditUpdated),
+      // 修改个性签名
+      final newSign = _bioController.text.trim();
+      if (newSign != (_currentUser!.personalSign ?? '')) {
+        final ok = await TfApiClient.instance.changeSign(uid, password, newSign);
+        if (!ok) allOk = false;
+      }
+
+      // 修改个人介绍
+      final newIntro = _introductionController.text.trim();
+      if (newIntro != (_currentUser!.introduction ?? '')) {
+        final ok = await TfApiClient.instance.changeIntroduction(uid, password, newIntro);
+        if (!ok) allOk = false;
+      }
+
+      // 修改邮筱
+      final newEmail = _emailController.text.trim();
+      if (newEmail != _currentUser!.email && newEmail.isNotEmpty) {
+        final ok = await TfApiClient.instance.changeEmail(uid, password, newEmail);
+        if (!ok) allOk = false;
+      }
+
+      // 上传头像
+      if (_selectedAvatar != null) {
+        final bytes = _selectedAvatar!.bytes ?? 
+            ((_selectedAvatar!.path != null) ? await File(_selectedAvatar!.path!).readAsBytes() : null);
+        if (bytes != null) {
+          final b64 = base64.encode(bytes);
+          final ok = await TfApiClient.instance.uploadUserAvatar(uid, password, b64);
+          if (!ok) allOk = false;
+        }
+      }
+
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+
+      await AuthState.instance.refreshProfile();
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(allOk ? l10n.profileEditUpdated : l10n.profileEditSaveFailed),
+        behavior: SnackBarBehavior.floating,
+      ));
+      if (allOk) context.pop();
+    } catch (e) {
+      talker.error('_saveProfile failed', e);
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(l10n.profileEditSaveFailed),
           behavior: SnackBarBehavior.floating,
-        ),
-      );
-      context.pop();
+        ));
+      }
     }
   }
 

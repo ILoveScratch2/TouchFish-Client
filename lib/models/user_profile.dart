@@ -21,14 +21,28 @@ class UserProfile {
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
-      uid: json['uid'] as String,
+      uid: json['uid'].toString(),
       username: json['username'] as String,
-      email: json['email'] as String,
+      email: (json['email'] as String?) ?? '',
       stat: json['stat'] as String,
-      createTime: json['create_time'] as String,
+      createTime: json['create_time'].toString(),
       personalSign: json['personal_sign'] as String?,
       introduction: json['introduction'] as String?,
       avatar: json['avatar'] as String?,
+    );
+  }
+
+  factory UserProfile.fromServerJson(
+      Map<String, dynamic> json, String avatarUrl) {
+    return UserProfile(
+      uid: json['uid'].toString(),
+      username: json['username'] as String,
+      email: (json['email'] as String?) ?? '',
+      stat: json['stat'] as String,
+      createTime: json['create_time'].toString(),
+      personalSign: json['personal_sign'] as String?,
+      introduction: json['introduction'] as String?,
+      avatar: avatarUrl,
     );
   }
 

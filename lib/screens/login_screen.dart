@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
+import '../services/auth_state.dart';
 import '../widgets/server_selector.dart';
 import '../widgets/network_indicator.dart';
 import '../utils/talker.dart';
@@ -19,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
   List<ConnectivityResult> _connectionStatus = [ConnectivityResult.none];
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
@@ -66,8 +68,39 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
-    context.go(AppRoutes.main);
+  void _login() async {
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text;
+    final l10n = AppLocalizations.of(context)!;
+
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.loginErrorEmptyFields),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    final error = await AuthState.instance.login(username, password);
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (error == null) {
+      context.go(AppRoutes.main);
+    } else {
+      final msg = switch (error) {
+        'userNotFound' => l10n.loginErrorUserNotFound,
+        'invalidCredentials' => l10n.loginErrorInvalidCredentials,
+        'networkError' => l10n.loginErrorNetwork,
+        _ => l10n.loginErrorNetwork,
+      };
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating),
+      );
+    }
   }
 
   void _register() {
@@ -246,7 +279,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         textInputAction: TextInputAction.done,
-                        onSubmitted: (_) => _login(),
+                        onSubmitted: (_) => _isLoading ? null : _login(),
                       ),
                       const SizedBox(height: 24),
                       
@@ -255,8 +288,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: double.infinity,
                         height: 48,
                         child: FilledButton(
-                          onPressed: _login,
-                          child: Text(AppLocalizations.of(context)!.loginLogin),
+                          onPressed: _isLoading ? null : _login,
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2),
+                                )
+                              : Text(AppLocalizations.of(context)!.loginLogin),
                         ),
                       ),
                       const SizedBox(height: 12),

@@ -6,6 +6,7 @@ import '../models/user_profile.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/markdown_renderer.dart';
 import '../models/settings_service.dart';
+import '../services/api/tf_api_client.dart';
 import 'forum_members_screen.dart';
 import 'forum_post_compose_screen.dart';
 import '../utils/talker.dart';
@@ -19,11 +20,12 @@ class ForumDetailScreen extends StatefulWidget {
 }
 
 class _ForumDetailScreenState extends State<ForumDetailScreen> {
-  late Forum? _forum;
-  late ForumMember? _identity;
-  late List<ForumPost> _posts;
-  late List<ForumPost> _pinnedPosts;
-  static const String _currentUserUid = '1';
+  Forum? _forum;
+  ForumMember? _identity;
+  List<ForumPost> _posts = [];
+  List<ForumPost> _pinnedPosts = [];
+  bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -31,35 +33,52 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     _loadData();
   }
 
-  void _loadData() {
-    final forums = ForumDemoData.getDemoForums();
+  Future<void> _loadData() async {
+    setState(() { _isLoading = true; _error = null; });
     try {
-      _forum = forums.firstWhere((f) => f.id == widget.forumId);
+      final forums = await TfApiClient.instance.getForumList();
+      final fid = int.tryParse(widget.forumId);
+      if (fid == null) throw Exception('Invalid forumId');
+      try {
+        _forum = forums.firstWhere((f) => f.id == widget.forumId);
+      } catch (_) {
+        _forum = null;
+      }
+      final allPosts = await TfApiClient.instance.getPostList(fid);
+      _pinnedPosts = allPosts.where((p) => p.isPinned).toList();
+      _posts = allPosts.where((p) => !p.isPinned).toList();
+      _identity = null;
+      if (mounted) setState(() => _isLoading = false);
     } catch (e) {
-      talker.error('Forum not found: ${widget.forumId}', e);
-      _forum = null;
+      talker.error('ForumDetailScreen: _loadData failed', e);
+      if (mounted) setState(() { _isLoading = false; _error = e.toString(); });
     }
-    _identity = ForumDemoData.getDemoIdentity(widget.forumId, _currentUserUid);
-    final allPosts = ForumDemoData.getDemoPosts(widget.forumId);
-    _pinnedPosts = allPosts.where((p) => p.isPinned).toList();
-    _posts = allPosts.where((p) => !p.isPinned).toList();
   }
 
-  void _refresh() {
-    setState(() {
-      _loadData();
-    });
-  }
+  void _refresh() => _loadData();
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (_forum == null) {
+    if (_isLoading) {
       return Scaffold(
         appBar: AppBar(),
-        body: Center(child: Text(l10n.forumNotFound)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null || _forum == null) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(_forum == null ? l10n.forumNotFound : l10n.forumPostLoadFailed),
+            const SizedBox(height: 8),
+            TextButton(onPressed: _refresh, child: Text(l10n.retry)),
+          ]),
+        ),
       );
     }
     final forum = _forum!;

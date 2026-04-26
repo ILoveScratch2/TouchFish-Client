@@ -134,6 +134,58 @@ class AppLocalizationsEn extends AppLocalizations {
       'Verification code must be 6 digits';
 
   @override
+  String get loginErrorEmptyFields => 'Please enter username and password';
+
+  @override
+  String get loginErrorUserNotFound => 'User not found';
+
+  @override
+  String get loginErrorInvalidCredentials => 'Incorrect password';
+
+  @override
+  String get loginErrorNetwork => 'Network error, please try again';
+
+  @override
+  String get registerErrorCaptchaRequired => 'Please enter the captcha';
+
+  @override
+  String get registerCaptchaLoad => 'Loading captcha...';
+
+  @override
+  String get registerCaptchaCode => 'Captcha';
+
+  @override
+  String get registerCaptchaRefresh => 'Refresh';
+
+  @override
+  String get registerErrorFailed => 'Registration failed, please try again';
+
+  @override
+  String get registerConfirmInfo => 'Confirm your registration details';
+
+  @override
+  String get registerActivateFailed =>
+      'Activation failed, please check the code';
+
+  @override
+  String get forumLoadFailed => 'Failed to load forums';
+
+  @override
+  String get forumPostLoadFailed => 'Failed to load posts';
+
+  @override
+  String get forumCommentFailed => 'Failed to post comment';
+
+  @override
+  String get forumPostFailed => 'Failed to publish post';
+
+  @override
+  String get userProfileNotFound => 'User not found';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
   String get settingsTitle => 'Settings';
 
   @override
@@ -557,6 +609,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileEditUpdated => 'Profile updated';
+
+  @override
+  String get profileEditSaveFailed => 'Failed to save some changes';
 
   @override
   String get profileEditUsernameCannotChange => 'Username cannot be changed';

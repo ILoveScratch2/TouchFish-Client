@@ -3,17 +3,17 @@ import 'package:go_router/go_router.dart';
 import 'package:smart_form_guard/smart_form_guard.dart';
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
+import '../services/api/tf_api_client.dart';
+import '../utils/talker.dart';
 
 class RegisterStep3Screen extends StatefulWidget {
   final String username;
-  final String password;
-  final String email;
+  final int uid;
 
   const RegisterStep3Screen({
     super.key,
     required this.username,
-    required this.password,
-    required this.email,
+    required this.uid,
   });
 
   @override
@@ -22,6 +22,7 @@ class RegisterStep3Screen extends StatefulWidget {
 
 class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
   final _verificationCodeController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -29,8 +30,39 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
     super.dispose();
   }
 
-  void _register() {
-    context.go(AppRoutes.registerSuccess);
+  Future<void> _activate() async {
+    final l10n = AppLocalizations.of(context)!;
+    final code = int.tryParse(_verificationCodeController.text.trim());
+    if (code == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l10n.registerErrorVerificationCodeInvalid),
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      final success = await TfApiClient.instance.activateAccount(widget.uid, code);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      if (success) {
+        context.go(AppRoutes.registerSuccess);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(l10n.registerActivateFailed),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } catch (e) {
+      talker.error('RegisterStep3: activate failed', e);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(l10n.registerActivateFailed),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    }
   }
 
   @override
@@ -49,7 +81,7 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: SmartForm(
-                onValid: _register,
+                onValid: () => _activate(),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -101,10 +133,12 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
                       const SizedBox(height: 24),
                       
                       // Register button
-                      SmartSubmitButton(
-                        text: l10n.registerComplete,
-                        icon: Icons.check_circle,
-                      ),
+                      _isLoading
+                          ? const CircularProgressIndicator()
+                          : SmartSubmitButton(
+                              text: l10n.registerComplete,
+                              icon: Icons.check_circle,
+                            ),
                       const SizedBox(height: 12),
                       
                       // Back button

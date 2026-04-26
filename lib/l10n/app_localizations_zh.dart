@@ -127,6 +127,57 @@ class AppLocalizationsZh extends AppLocalizations {
   String get registerErrorVerificationCodeInvalid => '验证码必须是6位数字';
 
   @override
+  String get loginErrorEmptyFields => '请输入用户名和密码';
+
+  @override
+  String get loginErrorUserNotFound => '用户不存在';
+
+  @override
+  String get loginErrorInvalidCredentials => '密码错误';
+
+  @override
+  String get loginErrorNetwork => '网络错误，请重试';
+
+  @override
+  String get registerErrorCaptchaRequired => '请输入验证码';
+
+  @override
+  String get registerCaptchaLoad => '正在加载验证码...';
+
+  @override
+  String get registerCaptchaCode => '验证码';
+
+  @override
+  String get registerCaptchaRefresh => '刷新';
+
+  @override
+  String get registerErrorFailed => '注册失败，请重试';
+
+  @override
+  String get registerConfirmInfo => '确认注册信息';
+
+  @override
+  String get registerActivateFailed => '激活失败，请检查激活码';
+
+  @override
+  String get forumLoadFailed => '加载论坛失败';
+
+  @override
+  String get forumPostLoadFailed => '加载帖子失败';
+
+  @override
+  String get forumCommentFailed => '评论发送失败';
+
+  @override
+  String get forumPostFailed => '发布帖子失败';
+
+  @override
+  String get userProfileNotFound => '用户不存在';
+
+  @override
+  String get retry => '重试';
+
+  @override
   String get settingsTitle => '设置';
 
   @override
@@ -532,6 +583,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get profileEditUpdated => '资料已更新';
+
+  @override
+  String get profileEditSaveFailed => '部分修改保存失败';
 
   @override
   String get profileEditUsernameCannotChange => '用户名不可更改';

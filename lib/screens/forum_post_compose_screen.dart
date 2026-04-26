@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/chat_model.dart';
 import '../models/user_profile.dart';
+import '../services/api/tf_api_client.dart';
+import '../services/auth_state.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/mention_text_field.dart';
+import '../utils/talker.dart';
 
 class ForumPostComposeSheet extends StatefulWidget {
   final String forumId;
@@ -45,7 +48,8 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
   final _formKey = GlobalKey<FormState>();
   late final List<MentionUser> _mentionUsers;
 
-  final _currentUser = UserProfileDemoData.getDemoProfile('1');
+  final _currentUser = AuthState.instance.currentUser ?? UserProfileDemoData.getDemoProfile('1');
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -306,7 +310,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
     if (_contentController.text.trim().isEmpty) {
@@ -315,13 +319,42 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
       );
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          widget.isReply ? l10n.forumCommentSuccess : l10n.forumPostSuccess,
-        ),
-      ),
-    );
-    Navigator.pop(context, true);
+
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final fid = int.tryParse(widget.forumId);
+    if (uid == null || password == null || fid == null) {
+      Navigator.pop(context, false);
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      final success = await TfApiClient.instance.sendPost(
+        uid, password, fid,
+        _titleController.text.trim(),
+        _contentController.text.trim(),
+      );
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(widget.isReply ? l10n.forumCommentSuccess : l10n.forumPostSuccess)),
+        );
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.forumPostFailed), behavior: SnackBarBehavior.floating),
+        );
+      }
+    } catch (e) {
+      talker.error('_submit post failed', e);
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.forumPostFailed), behavior: SnackBarBehavior.floating),
+        );
+      }
+    }
   }
 }

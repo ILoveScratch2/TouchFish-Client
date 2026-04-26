@@ -34,6 +34,20 @@ class Forum {
     );
   }
 
+  factory Forum.fromServerRow(List<dynamic> row) {
+    final ms = ((row[3] as num).toDouble() * 1000).toInt();
+    return Forum(
+      id: row[0].toString(),
+      name: row[1] as String,
+      description: (row[4] as String?) ?? '',
+      isPublic: true,
+      isCommunity: true,
+      createdByUid: row[2].toString(),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(ms),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(ms),
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -121,6 +135,20 @@ class ForumPost {
       isPinned: json['is_pinned'] as bool,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+    );
+  }
+
+  factory ForumPost.fromServerRow(String forumId, List<dynamic> row) {
+    final ms = ((row[4] as num).toDouble() * 1000).toInt();
+    return ForumPost(
+      id: row[0].toString(),
+      forumId: forumId,
+      authorUid: row[2].toString(),
+      title: (row[1] as String?) ?? '',
+      content: (row[3] as String?) ?? '',
+      isPinned: false,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(ms),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(ms),
     );
   }
 

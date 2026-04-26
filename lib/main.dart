@@ -9,6 +9,7 @@ import 'l10n/app_localizations.dart';
 import 'models/app_state.dart';
 import 'models/settings_service.dart';
 import 'routes/app_routes.dart';
+import 'services/auth_state.dart';
 import 'utils/talker.dart';
 
 void main() async {
@@ -67,6 +68,9 @@ void main() async {
   final isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
   
   talker.info('TouchFish Client started!');
+  AuthState.instance.init().catchError((e) {
+    talker.error('AuthState.init error', e);
+  });
   
   runApp(TouchFishApp(isFirstLaunch: isFirstLaunch));
 }
