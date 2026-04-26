@@ -44,9 +44,8 @@ class AppRoutes {
   static const String profileEdit = '/profile/edit';
 
   static GoRouter createRouter({required bool isFirstLaunch}) {
-    return GoRouter(
+    final router = GoRouter(
       initialLocation: isFirstLaunch ? welcome : login,
-      observers: [TalkerRouteObserver()],
       routes: [
         ShellRoute(
           builder: (context, state, child) {
@@ -227,5 +226,17 @@ class AppRoutes {
         ),
       ],
     );
+
+    String? _previousUri;
+    router.routerDelegate.addListener(() {
+      final uri =
+          router.routerDelegate.currentConfiguration.uri.toString();
+      if (uri != _previousUri) {
+        talker.debug('Route: $_previousUri -> $uri');
+        _previousUri = uri;
+      }
+    });
+
+    return router;
   }
 }
