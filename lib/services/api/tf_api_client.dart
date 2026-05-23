@@ -61,6 +61,7 @@ class TfApiClient {
   String? _cachedBaseUrl;
 
   Future<String> getBaseUrl() async {
+    if (_cachedBaseUrl != null) return _cachedBaseUrl!;
     final prefs = await SharedPreferences.getInstance();
     final serversJson = prefs.getStringList('serversV2');
     final selectedIndex = prefs.getInt('selectedServerIndex') ?? 0;
@@ -71,9 +72,11 @@ class TfApiClient {
       final port = serverInfo.apiPort.isNotEmpty
           ? serverInfo.apiPort
           : AppConstants.defaultApiPort.toString();
-      return 'http://${serverInfo.address}:$port';
+      _cachedBaseUrl = 'http://${serverInfo.address}:$port';
+      return _cachedBaseUrl!;
     }
-    return 'http://${AppConstants.defaultServerAddress}:${AppConstants.defaultApiPort}';
+    _cachedBaseUrl = 'http://${AppConstants.defaultServerAddress}:${AppConstants.defaultApiPort}';
+    return _cachedBaseUrl!;
   }
 
   void invalidateCache() {

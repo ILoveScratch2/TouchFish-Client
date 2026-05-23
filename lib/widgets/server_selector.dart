@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../constants/app_constants.dart';
+import '../services/api/tf_api_client.dart';
 
 class ServerInfo {
   final String displayName;
@@ -122,6 +123,7 @@ class _ServerSelectorState extends State<ServerSelector> {
         onSelect: (index) {
           setState(() => _selectedIndex = index);
           _saveServers();
+          TfApiClient.instance.invalidateCache();
           Navigator.pop(context);
         },
         onAdd: (server) {
@@ -130,6 +132,7 @@ class _ServerSelectorState extends State<ServerSelector> {
             _selectedIndex = _servers.length - 1;
           });
           _saveServers();
+          TfApiClient.instance.invalidateCache();
         },
         onDelete: (index) {
           if (_servers.length > 1) {
@@ -140,6 +143,7 @@ class _ServerSelectorState extends State<ServerSelector> {
               }
             });
             _saveServers();
+            TfApiClient.instance.invalidateCache();
           }
         },
       ),
