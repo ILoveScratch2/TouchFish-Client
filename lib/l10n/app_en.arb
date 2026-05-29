@@ -465,6 +465,22 @@
   
   "debugLogs": "Debug Logs",
   "debugLogsDescription": "View application logs",
+  "debugCustomInfoDialog": "Custom Info Dialog",
+  "debugCustomInfoDialogDescription": "Preview the reusable info dialog with caller-defined actions",
+  "debugCustomErrorDialog": "Custom Error Dialog",
+  "debugCustomErrorDialogDescription": "Preview the reusable error dialog with caller-defined actions",
+  "debugInfoDialogDemoTitle": "Server Profile Updated",
+  "debugInfoDialogDemoMessage": "A refreshed server profile is available. Choose what to do next.",
+  "debugErrorDialogDemoTitle": "Message Sync Failed",
+  "debugErrorDialogDemoMessage": "The current sync task did not finish successfully. You can retry now or open settings to inspect the connection.",
+  "debugDialogSelectedAction": "Selected action: {action}",
+  "@debugDialogSelectedAction": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
 
   "forumTitle": "Forum",
   "forumNotFound": "Forum not found",

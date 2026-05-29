@@ -2444,6 +2444,60 @@ abstract class AppLocalizations {
   /// **'View application logs'**
   String get debugLogsDescription;
 
+  /// No description provided for @debugCustomInfoDialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Info Dialog'**
+  String get debugCustomInfoDialog;
+
+  /// No description provided for @debugCustomInfoDialogDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview the reusable info dialog with caller-defined actions'**
+  String get debugCustomInfoDialogDescription;
+
+  /// No description provided for @debugCustomErrorDialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Error Dialog'**
+  String get debugCustomErrorDialog;
+
+  /// No description provided for @debugCustomErrorDialogDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview the reusable error dialog with caller-defined actions'**
+  String get debugCustomErrorDialogDescription;
+
+  /// No description provided for @debugInfoDialogDemoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Profile Updated'**
+  String get debugInfoDialogDemoTitle;
+
+  /// No description provided for @debugInfoDialogDemoMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A refreshed server profile is available. Choose what to do next.'**
+  String get debugInfoDialogDemoMessage;
+
+  /// No description provided for @debugErrorDialogDemoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Message Sync Failed'**
+  String get debugErrorDialogDemoTitle;
+
+  /// No description provided for @debugErrorDialogDemoMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The current sync task did not finish successfully. You can retry now or open settings to inspect the connection.'**
+  String get debugErrorDialogDemoMessage;
+
+  /// No description provided for @debugDialogSelectedAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected action: {action}'**
+  String debugDialogSelectedAction(String action);
+
   /// No description provided for @forumTitle.
   ///
   /// In en, this message translates to:

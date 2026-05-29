@@ -436,6 +436,22 @@
   
   "debugLogs": "调试日志",
   "debugLogsDescription": "查看应用运行日志",
+  "debugCustomInfoDialog": "自定义信息框",
+  "debugCustomInfoDialogDescription": "预览支持调用方自定义按钮的可复用信息框",
+  "debugCustomErrorDialog": "自定义错误框",
+  "debugCustomErrorDialogDescription": "预览支持调用方自定义按钮的可复用错误框",
+  "debugInfoDialogDemoTitle": "服务器配置已更新",
+  "debugInfoDialogDemoMessage": "检测到新的服务器配置，请选择下一步操作。",
+  "debugErrorDialogDemoTitle": "消息同步失败",
+  "debugErrorDialogDemoMessage": "当前同步任务未成功完成，你可以立即重试，或打开设置检查连接状态。",
+  "debugDialogSelectedAction": "已选择操作：{action}",
+  "@debugDialogSelectedAction": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
 
   "forumTitle": "论坛",
   "forumNotFound": "论坛未找到",

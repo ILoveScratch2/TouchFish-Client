@@ -1201,6 +1201,35 @@ class AppLocalizationsZh extends AppLocalizations {
   String get debugLogsDescription => '查看应用运行日志';
 
   @override
+  String get debugCustomInfoDialog => '自定义信息框';
+
+  @override
+  String get debugCustomInfoDialogDescription => '预览支持调用方自定义按钮的可复用信息框';
+
+  @override
+  String get debugCustomErrorDialog => '自定义错误框';
+
+  @override
+  String get debugCustomErrorDialogDescription => '预览支持调用方自定义按钮的可复用错误框';
+
+  @override
+  String get debugInfoDialogDemoTitle => '服务器配置已更新';
+
+  @override
+  String get debugInfoDialogDemoMessage => '检测到新的服务器配置，请选择下一步操作。';
+
+  @override
+  String get debugErrorDialogDemoTitle => '消息同步失败';
+
+  @override
+  String get debugErrorDialogDemoMessage => '当前同步任务未成功完成，你可以立即重试，或打开设置检查连接状态。';
+
+  @override
+  String debugDialogSelectedAction(String action) {
+    return '已选择操作：$action';
+  }
+
+  @override
   String get forumTitle => '论坛';
 
   @override

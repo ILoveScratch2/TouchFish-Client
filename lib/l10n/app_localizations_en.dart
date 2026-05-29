@@ -1246,6 +1246,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get debugLogsDescription => 'View application logs';
 
   @override
+  String get debugCustomInfoDialog => 'Custom Info Dialog';
+
+  @override
+  String get debugCustomInfoDialogDescription =>
+      'Preview the reusable info dialog with caller-defined actions';
+
+  @override
+  String get debugCustomErrorDialog => 'Custom Error Dialog';
+
+  @override
+  String get debugCustomErrorDialogDescription =>
+      'Preview the reusable error dialog with caller-defined actions';
+
+  @override
+  String get debugInfoDialogDemoTitle => 'Server Profile Updated';
+
+  @override
+  String get debugInfoDialogDemoMessage =>
+      'A refreshed server profile is available. Choose what to do next.';
+
+  @override
+  String get debugErrorDialogDemoTitle => 'Message Sync Failed';
+
+  @override
+  String get debugErrorDialogDemoMessage =>
+      'The current sync task did not finish successfully. You can retry now or open settings to inspect the connection.';
+
+  @override
+  String debugDialogSelectedAction(String action) {
+    return 'Selected action: $action';
+  }
+
+  @override
   String get forumTitle => 'Forum';
 
   @override
