@@ -193,6 +193,51 @@
   "navAnnouncement": "Announce",
   "navForum": "Forum",
   "navAccount": "Account",
+  "navAdmin": "Admin",
+
+  "adminTitle": "Administrator",
+  "adminDescription": "Manage TouchFish server",
+  "adminAccessDenied": "You do not have administrator access.",
+  "adminPendingForums": "Pending Forums",
+  "adminPendingForumsDescription": "Review and approve newly created forums.",
+  "adminPendingForumsEmpty": "No forums are waiting for review.",
+  "adminPendingForumsLoadFailed": "Failed to load pending forums",
+  "adminPendingForumQueueId": "Queue #{queueId}",
+  "@adminPendingForumQueueId": {
+    "placeholders": {
+      "queueId": {
+        "type": "int"
+      }
+    }
+  },
+  "adminPendingForumCreator": "Creator UID: {uid}",
+  "@adminPendingForumCreator": {
+    "placeholders": {
+      "uid": {
+        "type": "String"
+      }
+    }
+  },
+  "adminPendingForumNoIntroduction": "No introduction provided.",
+  "adminApproveForumAction": "Approve Forum",
+  "adminApproveForumConfirmTitle": "Approve forum",
+  "adminApproveForumConfirmMessage": "Approve \"{forumName}\" and publish it to the forum list?",
+  "@adminApproveForumConfirmMessage": {
+    "placeholders": {
+      "forumName": {
+        "type": "String"
+      }
+    }
+  },
+  "adminApproveForumSuccess": "Approved \"{forumName}\".",
+  "@adminApproveForumSuccess": {
+    "placeholders": {
+      "forumName": {
+        "type": "String"
+      }
+    }
+  },
+  "adminApproveForumFailed": "Failed to approve forum.",
   
   "account": "Account",
   "accountUnauthorized": "Not Logged In",

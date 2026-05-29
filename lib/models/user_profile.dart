@@ -58,6 +58,11 @@ class UserProfile {
       if (avatar != null) 'avatar': avatar,
     };
   }
+
+  bool get hasAdminAccess {
+    final normalizedStat = stat.trim().toLowerCase();
+    return normalizedStat == 'admin' || normalizedStat == 'root';
+  }
 }
 
 // Demo 数据

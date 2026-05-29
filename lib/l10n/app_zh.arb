@@ -179,6 +179,51 @@
   "navAnnouncement": "公告",
   "navForum": "论坛",
   "navAccount": "账户",
+  "navAdmin": "管理员",
+
+  "adminTitle": "管理员",
+  "adminDescription": "管理 TouchFish 服务器",
+  "adminAccessDenied": "您当前没有管理员权限。",
+  "adminPendingForums": "待审论坛",
+  "adminPendingForumsDescription": "审核新创建的论坛并决定是否通过。",
+  "adminPendingForumsEmpty": "当前没有待审批的论坛。",
+  "adminPendingForumsLoadFailed": "加载待审论坛失败",
+  "adminPendingForumQueueId": "队列 #{queueId}",
+  "@adminPendingForumQueueId": {
+    "placeholders": {
+      "queueId": {
+        "type": "int"
+      }
+    }
+  },
+  "adminPendingForumCreator": "创建者 UID：{uid}",
+  "@adminPendingForumCreator": {
+    "placeholders": {
+      "uid": {
+        "type": "String"
+      }
+    }
+  },
+  "adminPendingForumNoIntroduction": "暂无论坛简介。",
+  "adminApproveForumAction": "通过论坛",
+  "adminApproveForumConfirmTitle": "通过论坛审核",
+  "adminApproveForumConfirmMessage": "确认将“{forumName}”通过审核并发布到论坛列表吗？",
+  "@adminApproveForumConfirmMessage": {
+    "placeholders": {
+      "forumName": {
+        "type": "String"
+      }
+    }
+  },
+  "adminApproveForumSuccess": "已通过“{forumName}”的审核。",
+  "@adminApproveForumSuccess": {
+    "placeholders": {
+      "forumName": {
+        "type": "String"
+      }
+    }
+  },
+  "adminApproveForumFailed": "论坛审核通过失败。",
   
   "account": "账户",
   "accountUnauthorized": "未登录",

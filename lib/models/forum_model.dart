@@ -62,6 +62,32 @@ class Forum {
   }
 }
 
+class PendingForumApproval {
+  final int queueId;
+  final String creatorUid;
+  final String forumName;
+  final String introduction;
+
+  const PendingForumApproval({
+    required this.queueId,
+    required this.creatorUid,
+    required this.forumName,
+    required this.introduction,
+  });
+
+  factory PendingForumApproval.fromQueueEntry(
+    String queueId,
+    Map<String, dynamic> json,
+  ) {
+    return PendingForumApproval(
+      queueId: int.tryParse(queueId) ?? 0,
+      creatorUid: json['creater'].toString(),
+      forumName: json['forumname'] as String? ?? '',
+      introduction: json['introduction'] as String? ?? '',
+    );
+  }
+}
+
 class ForumMember {
   final String forumId;
   final String accountUid;

@@ -14,11 +14,14 @@ import '../screens/announcement_screen.dart';
 import '../screens/forum_screen.dart';
 import '../screens/forum_detail_screen.dart';
 import '../screens/forum_post_detail_screen.dart';
+import '../screens/admin_screen.dart';
 import '../screens/account_screen.dart';
+import '../screens/pending_forums_screen.dart';
 import '../screens/user_profile_screen.dart';
 import '../screens/about_screen.dart';
 import '../screens/licenses_screen.dart';
 import '../screens/profile_edit_screen.dart';
+import '../services/auth_state.dart';
 import '../widgets/window_frame.dart';
 import '../utils/talker.dart';
 
@@ -33,6 +36,8 @@ class AppRoutes {
   static const String forumDetail = '/forum/:forumId';
   static const String forumPostDetail = '/forum/:forumId/post/:postId';
   static const String account = '/account';
+  static const String admin = '/admin';
+  static const String adminPendingForums = '/admin/pending-forums';
   static const String settings = '/settings';
   static const String register = '/register';
   static const String registerStep2 = '/register/step2';
@@ -46,6 +51,7 @@ class AppRoutes {
   static GoRouter createRouter({required bool isFirstLaunch}) {
     final router = GoRouter(
       initialLocation: isFirstLaunch ? welcome : login,
+      refreshListenable: AuthState.instance,
       routes: [
         ShellRoute(
           builder: (context, state, child) {
@@ -220,6 +226,28 @@ class AppRoutes {
                     child: AccountScreen(),
                   ),
                 ),
+                GoRoute(
+                  path: admin,
+                  redirect: (context, state) {
+                    return AuthState.instance.currentUser?.hasAdminAccess == true
+                        ? null
+                        : AppRoutes.account;
+                  },
+                  pageBuilder: (context, state) => const NoTransitionPage(
+                    child: AdminScreen(),
+                  ),
+                ),
+                GoRoute(
+                  path: adminPendingForums,
+                  redirect: (context, state) {
+                    return AuthState.instance.currentUser?.hasAdminAccess == true
+                        ? null
+                        : AppRoutes.account;
+                  },
+                  pageBuilder: (context, state) => const NoTransitionPage(
+                    child: PendingForumsScreen(),
+                  ),
+                ),
               ],
             ),
           ],
@@ -227,13 +255,13 @@ class AppRoutes {
       ],
     );
 
-    String? _previousUri;
+    String? previousUri;
     router.routerDelegate.addListener(() {
       final uri =
           router.routerDelegate.currentConfiguration.uri.toString();
-      if (uri != _previousUri) {
-        talker.debug('Route: $_previousUri -> $uri');
-        _previousUri = uri;
+      if (uri != previousUri) {
+        talker.debug('Route: $previousUri -> $uri');
+        previousUri = uri;
       }
     });
 

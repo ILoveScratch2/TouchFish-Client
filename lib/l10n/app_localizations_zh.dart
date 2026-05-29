@@ -480,6 +480,62 @@ class AppLocalizationsZh extends AppLocalizations {
   String get navAccount => '账户';
 
   @override
+  String get navAdmin => '管理员';
+
+  @override
+  String get adminTitle => '管理员';
+
+  @override
+  String get adminDescription => '管理 TouchFish 服务器';
+
+  @override
+  String get adminAccessDenied => '您当前没有管理员权限。';
+
+  @override
+  String get adminPendingForums => '待审论坛';
+
+  @override
+  String get adminPendingForumsDescription => '审核新创建的论坛并决定是否通过。';
+
+  @override
+  String get adminPendingForumsEmpty => '当前没有待审批的论坛。';
+
+  @override
+  String get adminPendingForumsLoadFailed => '加载待审论坛失败';
+
+  @override
+  String adminPendingForumQueueId(int queueId) {
+    return '队列 #$queueId';
+  }
+
+  @override
+  String adminPendingForumCreator(String uid) {
+    return '创建者 UID：$uid';
+  }
+
+  @override
+  String get adminPendingForumNoIntroduction => '暂无论坛简介。';
+
+  @override
+  String get adminApproveForumAction => '通过论坛';
+
+  @override
+  String get adminApproveForumConfirmTitle => '通过论坛审核';
+
+  @override
+  String adminApproveForumConfirmMessage(String forumName) {
+    return '确认将“$forumName”通过审核并发布到论坛列表吗？';
+  }
+
+  @override
+  String adminApproveForumSuccess(String forumName) {
+    return '已通过“$forumName”的审核。';
+  }
+
+  @override
+  String get adminApproveForumFailed => '论坛审核通过失败。';
+
+  @override
   String get account => '账户';
 
   @override

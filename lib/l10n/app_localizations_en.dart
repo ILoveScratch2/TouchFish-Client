@@ -505,6 +505,63 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navAccount => 'Account';
 
   @override
+  String get navAdmin => 'Admin';
+
+  @override
+  String get adminTitle => 'Administrator';
+
+  @override
+  String get adminDescription => 'Manage TouchFish server';
+
+  @override
+  String get adminAccessDenied => 'You do not have administrator access.';
+
+  @override
+  String get adminPendingForums => 'Pending Forums';
+
+  @override
+  String get adminPendingForumsDescription =>
+      'Review and approve newly created forums.';
+
+  @override
+  String get adminPendingForumsEmpty => 'No forums are waiting for review.';
+
+  @override
+  String get adminPendingForumsLoadFailed => 'Failed to load pending forums';
+
+  @override
+  String adminPendingForumQueueId(int queueId) {
+    return 'Queue #$queueId';
+  }
+
+  @override
+  String adminPendingForumCreator(String uid) {
+    return 'Creator UID: $uid';
+  }
+
+  @override
+  String get adminPendingForumNoIntroduction => 'No introduction provided.';
+
+  @override
+  String get adminApproveForumAction => 'Approve Forum';
+
+  @override
+  String get adminApproveForumConfirmTitle => 'Approve forum';
+
+  @override
+  String adminApproveForumConfirmMessage(String forumName) {
+    return 'Approve \"$forumName\" and publish it to the forum list?';
+  }
+
+  @override
+  String adminApproveForumSuccess(String forumName) {
+    return 'Approved \"$forumName\".';
+  }
+
+  @override
+  String get adminApproveForumFailed => 'Failed to approve forum.';
+
+  @override
   String get account => 'Account';
 
   @override

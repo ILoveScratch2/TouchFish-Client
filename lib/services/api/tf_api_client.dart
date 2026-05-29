@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:pointycastle/export.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -330,6 +329,54 @@ class TfApiClient {
     }
   }
 
+  Future<List<PendingForumApproval>> getApprovingForumList(
+    int uid,
+    String password,
+  ) async {
+    final result = await secretPost(
+      '/forum/get_approving_forum_list',
+      const {},
+      uid: uid,
+      password: password,
+    );
+
+    if (result == null) {
+      throw Exception('Failed to fetch pending forums.');
+    }
+    if (_parseBool(result)) {
+      throw Exception('Pending forums request was rejected.');
+    }
+
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return const [];
+
+      final approvals = <PendingForumApproval>[];
+      for (final entry in data.entries) {
+        if (entry.key == 'queue_num') continue;
+        final rawValue = entry.value;
+        if (rawValue is Map<String, dynamic>) {
+          approvals.add(PendingForumApproval.fromQueueEntry(entry.key, rawValue));
+          continue;
+        }
+        if (rawValue is Map) {
+          approvals.add(
+            PendingForumApproval.fromQueueEntry(
+              entry.key,
+              Map<String, dynamic>.from(rawValue),
+            ),
+          );
+        }
+      }
+
+      approvals.sort((left, right) => left.queueId.compareTo(right.queueId));
+      return approvals;
+    } catch (e) {
+      talker.error('getApprovingForumList failed', e);
+      throw Exception('Failed to parse pending forums.');
+    }
+  }
+
   Future<List<ForumPost>> getPostList(int fid) async {
     try {
       final baseUrl = await getBaseUrl();
@@ -438,6 +485,20 @@ class TfApiClient {
     final result = await secretPost(
       '/forum/create_forum',
       {'forum_name': forumName, 'introduction': introduction},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<bool> approveForum(
+    int uid,
+    String password,
+    int queueId,
+  ) async {
+    final result = await secretPost(
+      '/forum/approve_forum',
+      {'qid': queueId},
       uid: uid,
       password: password,
     );

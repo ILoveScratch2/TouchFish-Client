@@ -1034,6 +1034,102 @@ abstract class AppLocalizations {
   /// **'Account'**
   String get navAccount;
 
+  /// No description provided for @navAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get navAdmin;
+
+  /// No description provided for @adminTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator'**
+  String get adminTitle;
+
+  /// No description provided for @adminDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage TouchFish server'**
+  String get adminDescription;
+
+  /// No description provided for @adminAccessDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have administrator access.'**
+  String get adminAccessDenied;
+
+  /// No description provided for @adminPendingForums.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Forums'**
+  String get adminPendingForums;
+
+  /// No description provided for @adminPendingForumsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Review and approve newly created forums.'**
+  String get adminPendingForumsDescription;
+
+  /// No description provided for @adminPendingForumsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No forums are waiting for review.'**
+  String get adminPendingForumsEmpty;
+
+  /// No description provided for @adminPendingForumsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load pending forums'**
+  String get adminPendingForumsLoadFailed;
+
+  /// No description provided for @adminPendingForumQueueId.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue #{queueId}'**
+  String adminPendingForumQueueId(int queueId);
+
+  /// No description provided for @adminPendingForumCreator.
+  ///
+  /// In en, this message translates to:
+  /// **'Creator UID: {uid}'**
+  String adminPendingForumCreator(String uid);
+
+  /// No description provided for @adminPendingForumNoIntroduction.
+  ///
+  /// In en, this message translates to:
+  /// **'No introduction provided.'**
+  String get adminPendingForumNoIntroduction;
+
+  /// No description provided for @adminApproveForumAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve Forum'**
+  String get adminApproveForumAction;
+
+  /// No description provided for @adminApproveForumConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve forum'**
+  String get adminApproveForumConfirmTitle;
+
+  /// No description provided for @adminApproveForumConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve \"{forumName}\" and publish it to the forum list?'**
+  String adminApproveForumConfirmMessage(String forumName);
+
+  /// No description provided for @adminApproveForumSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved \"{forumName}\".'**
+  String adminApproveForumSuccess(String forumName);
+
+  /// No description provided for @adminApproveForumFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to approve forum.'**
+  String get adminApproveForumFailed;
+
   /// No description provided for @account.
   ///
   /// In en, this message translates to:
