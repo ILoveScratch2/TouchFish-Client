@@ -1236,6 +1236,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get markdownSpoilerHidden => 'Hidden';
 
   @override
+  String get settingsCorruptedResetNotice =>
+      'Local settings seem corrupted and have been reset.';
+
+  @override
   String get debugLogs => 'Debug Logs';
 
   @override

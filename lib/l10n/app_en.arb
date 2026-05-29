@@ -461,6 +461,7 @@
   "markdownCopyCode": "Copy code",
   "markdownCodeCopied": "Code copied to clipboard",
   "markdownSpoilerHidden": "Hidden",
+  "settingsCorruptedResetNotice": "Local settings seem corrupted and have been reset.",
   
   "debugLogs": "Debug Logs",
   "debugLogsDescription": "View application logs",

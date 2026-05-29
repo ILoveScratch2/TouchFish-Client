@@ -1192,6 +1192,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get markdownSpoilerHidden => '已隐藏';
 
   @override
+  String get settingsCorruptedResetNotice => '本地设置似乎损坏，已重置';
+
+  @override
   String get debugLogs => '调试日志';
 
   @override

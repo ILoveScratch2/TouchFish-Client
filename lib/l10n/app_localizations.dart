@@ -2426,6 +2426,12 @@ abstract class AppLocalizations {
   /// **'Hidden'**
   String get markdownSpoilerHidden;
 
+  /// No description provided for @settingsCorruptedResetNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Local settings seem corrupted and have been reset.'**
+  String get settingsCorruptedResetNotice;
+
   /// No description provided for @debugLogs.
   ///
   /// In en, this message translates to:

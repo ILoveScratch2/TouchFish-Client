@@ -432,6 +432,7 @@
   "markdownCopyCode": "复制代码",
   "markdownCodeCopied": "代码已复制到剪贴板",
   "markdownSpoilerHidden": "已隐藏",
+  "settingsCorruptedResetNotice": "本地设置似乎损坏，已重置",
   
   "debugLogs": "调试日志",
   "debugLogsDescription": "查看应用运行日志",

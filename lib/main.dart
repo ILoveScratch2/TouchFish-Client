@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:media_kit/media_kit.dart';
@@ -17,6 +19,7 @@ void main() async {
   MediaKit.ensureInitialized();
   
   final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+  final startupRecovery = await _performStartupRecovery(isDesktop: isDesktop);
   await SettingsService.instance.init();
   
   if (isDesktop) {
@@ -72,13 +75,142 @@ void main() async {
     talker.error('AuthState.init error', e);
   });
   
-  runApp(TouchFishApp(isFirstLaunch: isFirstLaunch));
+  runApp(
+    TouchFishApp(
+      isFirstLaunch: isFirstLaunch,
+      didResetLocalSettings: startupRecovery.didResetSharedPreferences,
+    ),
+  );
+}
+
+Future<_StartupRecoveryResult> _performStartupRecovery({
+  required bool isDesktop,
+}) async {
+  final didResetSharedPreferences = isDesktop
+      ? await _repairSharedPreferencesFileIfCorrupted()
+      : false;
+
+  final prefs = await SharedPreferences.getInstance();
+  final didResetWindowPosition = isDesktop
+      ? await _resetWindowPositionIfFarOutsideScreen(prefs)
+      : false;
+
+  return _StartupRecoveryResult(
+    didResetSharedPreferences: didResetSharedPreferences,
+    didResetWindowPosition: didResetWindowPosition,
+  );
+}
+
+Future<bool> _repairSharedPreferencesFileIfCorrupted() async {
+  try {
+    final supportDirectory = await getApplicationSupportDirectory();
+    final preferencesFile = File(
+      '${supportDirectory.path}${Platform.pathSeparator}shared_preferences.json',
+    );
+
+    if (!await preferencesFile.exists()) {
+      return false;
+    }
+
+    final rawText = await preferencesFile.readAsString();
+    if (rawText.trim().isEmpty) {
+      return false;
+    }
+
+    final decoded = jsonDecode(rawText);
+    if (decoded is Map) {
+      return false;
+    }
+
+    await preferencesFile.writeAsString('{}', flush: true);
+    talker.warning('Shared preferences file had an invalid root JSON value and was reset.');
+    return true;
+  } on FormatException catch (error, stackTrace) {
+    try {
+      final supportDirectory = await getApplicationSupportDirectory();
+      final preferencesFile = File(
+        '${supportDirectory.path}${Platform.pathSeparator}shared_preferences.json',
+      );
+      await preferencesFile.writeAsString('{}', flush: true);
+    } catch (writeError, writeStackTrace) {
+      talker.error('Failed to rewrite corrupted shared preferences file.', writeError, writeStackTrace);
+      return false;
+    }
+
+    talker.error('Shared preferences JSON parse failed and the file was reset.', error, stackTrace);
+    return true;
+  } catch (error, stackTrace) {
+    talker.error('Failed while checking shared preferences file integrity.', error, stackTrace);
+    return false;
+  }
+}
+
+Future<bool> _resetWindowPositionIfFarOutsideScreen(
+  SharedPreferences prefs,
+) async {
+  final savedX = prefs.getDouble('window_x');
+  final savedY = prefs.getDouble('window_y');
+
+  if (savedX == null || savedY == null) {
+    return false;
+  }
+
+  final views = WidgetsBinding.instance.platformDispatcher.views;
+  if (views.isEmpty) {
+    return false;
+  }
+
+  final display = views.first.display;
+  final devicePixelRatio = display.devicePixelRatio == 0
+      ? 1.0
+      : display.devicePixelRatio;
+  final screenWidth = display.size.width / devicePixelRatio;
+  final screenHeight = display.size.height / devicePixelRatio;
+  final savedWidth = prefs.getDouble('window_width') ?? 1280;
+  final savedHeight = prefs.getDouble('window_height') ?? 800;
+
+  final allowedBounds = Rect.fromLTWH(
+    -screenWidth,
+    -screenHeight,
+    screenWidth * 3,
+    screenHeight * 3,
+  );
+  final windowBounds = Rect.fromLTWH(
+    savedX,
+    savedY,
+    savedWidth,
+    savedHeight,
+  );
+
+  if (windowBounds.overlaps(allowedBounds)) {
+    return false;
+  }
+
+  await prefs.remove('window_x');
+  await prefs.remove('window_y');
+  talker.warning('Saved window position was far outside the current screen bounds and was reset.');
+  return true;
+}
+
+class _StartupRecoveryResult {
+  final bool didResetSharedPreferences;
+  final bool didResetWindowPosition;
+
+  const _StartupRecoveryResult({
+    required this.didResetSharedPreferences,
+    required this.didResetWindowPosition,
+  });
 }
 
 class TouchFishApp extends StatefulWidget {
   final bool isFirstLaunch;
+  final bool didResetLocalSettings;
   
-  const TouchFishApp({super.key, required this.isFirstLaunch});
+  const TouchFishApp({
+    super.key,
+    required this.isFirstLaunch,
+    this.didResetLocalSettings = false,
+  });
 
   @override
   State<TouchFishApp> createState() => _TouchFishAppState();
@@ -87,6 +219,36 @@ class TouchFishApp extends StatefulWidget {
 class _TouchFishAppState extends State<TouchFishApp> {
   final _appState = AppState.instance;
   late final _router = AppRoutes.createRouter(isFirstLaunch: widget.isFirstLaunch);
+  bool _didShowStartupResetNotice = false;
+
+  void _showStartupResetNoticeIfNeeded(BuildContext context) {
+    if (_didShowStartupResetNotice || !widget.didResetLocalSettings) {
+      return;
+    }
+
+    _didShowStartupResetNotice = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final l10n = AppLocalizations.of(context);
+      if (l10n == null) return;
+
+      showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            content: Text(l10n.settingsCorruptedResetNotice),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(MaterialLocalizations.of(dialogContext).okButtonLabel),
+              ),
+            ],
+          );
+        },
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -149,6 +311,7 @@ class _TouchFishAppState extends State<TouchFishApp> {
           ),
           themeMode: _appState.themeMode,
           builder: (context, child) {
+            _showStartupResetNoticeIfNeeded(context);
             if (hasBackgroundImage && !kIsWeb) {
               return Container(
                 color: Theme.of(context).colorScheme.surface,
