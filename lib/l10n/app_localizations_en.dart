@@ -562,6 +562,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminApproveForumFailed => 'Failed to approve forum.';
 
   @override
+  String get adminRejectForumAction => 'Reject Forum';
+
+  @override
+  String get adminRejectForumConfirmTitle => 'Reject forum';
+
+  @override
+  String adminRejectForumConfirmMessage(String forumName) {
+    return 'Reject \"$forumName\" and remove it from the review queue?';
+  }
+
+  @override
+  String adminRejectForumSuccess(String forumName) {
+    return 'Rejected \"$forumName\".';
+  }
+
+  @override
+  String get adminRejectForumFailed => 'Failed to reject forum.';
+
+  @override
   String get account => 'Account';
 
   @override

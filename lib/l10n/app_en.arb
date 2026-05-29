@@ -238,6 +238,25 @@
     }
   },
   "adminApproveForumFailed": "Failed to approve forum.",
+  "adminRejectForumAction": "Reject Forum",
+  "adminRejectForumConfirmTitle": "Reject forum",
+  "adminRejectForumConfirmMessage": "Reject \"{forumName}\" and remove it from the review queue?",
+  "@adminRejectForumConfirmMessage": {
+    "placeholders": {
+      "forumName": {
+        "type": "String"
+      }
+    }
+  },
+  "adminRejectForumSuccess": "Rejected \"{forumName}\".",
+  "@adminRejectForumSuccess": {
+    "placeholders": {
+      "forumName": {
+        "type": "String"
+      }
+    }
+  },
+  "adminRejectForumFailed": "Failed to reject forum.",
   
   "account": "Account",
   "accountUnauthorized": "Not Logged In",

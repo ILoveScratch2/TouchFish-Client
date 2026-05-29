@@ -224,6 +224,25 @@
     }
   },
   "adminApproveForumFailed": "论坛审核通过失败。",
+  "adminRejectForumAction": "拒绝论坛",
+  "adminRejectForumConfirmTitle": "拒绝论坛审核",
+  "adminRejectForumConfirmMessage": "确认拒绝“{forumName}”的论坛创建申请吗？",
+  "@adminRejectForumConfirmMessage": {
+    "placeholders": {
+      "forumName": {
+        "type": "String"
+      }
+    }
+  },
+  "adminRejectForumSuccess": "已拒绝“{forumName}”的创建申请。",
+  "@adminRejectForumSuccess": {
+    "placeholders": {
+      "forumName": {
+        "type": "String"
+      }
+    }
+  },
+  "adminRejectForumFailed": "论坛审核拒绝失败。",
   
   "account": "账户",
   "accountUnauthorized": "未登录",

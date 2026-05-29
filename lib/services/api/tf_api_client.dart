@@ -9,7 +9,6 @@ import '../../models/forum_model.dart';
 import '../../widgets/server_selector.dart';
 import '../../utils/talker.dart';
 
-
 class TfServerConfig {
   final bool captcha;
   final bool emailActivate;
@@ -39,7 +38,6 @@ class TfServerConfig {
     );
   }
 }
-
 
 class TfCaptchaInfo {
   final String pic; // base64 encoded png
@@ -74,7 +72,8 @@ class TfApiClient {
       _cachedBaseUrl = 'http://${serverInfo.address}:$port';
       return _cachedBaseUrl!;
     }
-    _cachedBaseUrl = 'http://${AppConstants.defaultServerAddress}:${AppConstants.defaultApiPort}';
+    _cachedBaseUrl =
+        'http://${AppConstants.defaultServerAddress}:${AppConstants.defaultApiPort}';
     return _cachedBaseUrl!;
   }
 
@@ -113,8 +112,11 @@ class TfApiClient {
 
       final aesKey = TfCrypto.generateAesKey();
       final iv = TfCrypto.generateIv();
-      final encryptedContent =
-          TfCrypto.aesEncrypt(jsonEncode(fullBody), aesKey, iv);
+      final encryptedContent = TfCrypto.aesEncrypt(
+        jsonEncode(fullBody),
+        aesKey,
+        iv,
+      );
       final encryptedAesKey = TfCrypto.rsaEncrypt(aesKey, pubKey);
 
       final requestBody = jsonEncode({
@@ -133,12 +135,9 @@ class TfApiClient {
 
       if (response.statusCode != 200) return null;
 
-      final responseData =
-          jsonDecode(response.body) as Map<String, dynamic>;
-      final responseIv =
-          base64.decode(responseData['iv'] as String);
-      final responseContent =
-          base64.decode(responseData['content'] as String);
+      final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+      final responseIv = base64.decode(responseData['iv'] as String);
+      final responseContent = base64.decode(responseData['content'] as String);
 
       return TfCrypto.aesDecrypt(responseContent, aesKey, responseIv);
     } catch (e) {
@@ -159,7 +158,8 @@ class TfApiClient {
           .timeout(const Duration(seconds: 10));
       if (response.statusCode != 200) return null;
       return TfServerConfig.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>);
+        jsonDecode(response.body) as Map<String, dynamic>,
+      );
     } catch (e) {
       talker.error('fetchServerInfo failed', e);
       return null;
@@ -199,7 +199,9 @@ class TfApiClient {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       if (data.isEmpty) return null;
       return UserProfile.fromServerJson(
-          data, '$baseUrl/avatar/get_avatar/user/$uid');
+        data,
+        '$baseUrl/avatar/get_avatar/user/$uid',
+      );
     } catch (e) {
       talker.error('getUserByUid $uid failed', e);
       return null;
@@ -217,7 +219,9 @@ class TfApiClient {
       if (data.isEmpty) return null;
       final uid = data['uid'].toString();
       return UserProfile.fromServerJson(
-          data, '$baseUrl/avatar/get_avatar/user/$uid');
+        data,
+        '$baseUrl/avatar/get_avatar/user/$uid',
+      );
     } catch (e) {
       talker.error('getUserByUsername $username failed', e);
       return null;
@@ -225,8 +229,12 @@ class TfApiClient {
   }
 
   Future<bool> login(int uid, String password) async {
-    final result =
-        await secretPost('/auth/login', {}, uid: uid, password: password);
+    final result = await secretPost(
+      '/auth/login',
+      {},
+      uid: uid,
+      password: password,
+    );
     return _parseBool(result);
   }
 
@@ -237,10 +245,7 @@ class TfApiClient {
     String? captchaStamp,
     String? captchaCode,
   }) async {
-    final body = <String, dynamic>{
-      'username': username,
-      'password': password,
-    };
+    final body = <String, dynamic>{'username': username, 'password': password};
     if (email != null && email.isNotEmpty) body['email'] = email;
     if (captchaStamp != null) body['captcha_stamp'] = captchaStamp;
     if (captchaCode != null) body['captcha_code'] = captchaCode;
@@ -267,7 +272,10 @@ class TfApiClient {
   }
 
   Future<bool> changeIntroduction(
-      int uid, String password, String newIntro) async {
+    int uid,
+    String password,
+    String newIntro,
+  ) async {
     final result = await secretPost(
       '/auth/change_introduction',
       {'new_introduction': newIntro},
@@ -278,7 +286,10 @@ class TfApiClient {
   }
 
   Future<bool> changePassword(
-      int uid, String password, String newPassword) async {
+    int uid,
+    String password,
+    String newPassword,
+  ) async {
     final result = await secretPost(
       '/auth/change_pwd',
       {'new_pwd': newPassword},
@@ -299,7 +310,10 @@ class TfApiClient {
   }
 
   Future<bool> uploadUserAvatar(
-      int uid, String password, String picBase64) async {
+    int uid,
+    String password,
+    String picBase64,
+  ) async {
     final result = await secretPost(
       '/avatar/upload_user_avatar',
       {'pic': picBase64},
@@ -356,7 +370,9 @@ class TfApiClient {
         if (entry.key == 'queue_num') continue;
         final rawValue = entry.value;
         if (rawValue is Map<String, dynamic>) {
-          approvals.add(PendingForumApproval.fromQueueEntry(entry.key, rawValue));
+          approvals.add(
+            PendingForumApproval.fromQueueEntry(entry.key, rawValue),
+          );
           continue;
         }
         if (rawValue is Map) {
@@ -387,8 +403,10 @@ class TfApiClient {
       final data = jsonDecode(response.body);
       if (data is! List) return [];
       return data
-          .map((row) =>
-              ForumPost.fromServerRow(fid.toString(), row as List<dynamic>))
+          .map(
+            (row) =>
+                ForumPost.fromServerRow(fid.toString(), row as List<dynamic>),
+          )
           .toList();
     } catch (e) {
       talker.error('getPostList $fid failed', e);
@@ -397,7 +415,12 @@ class TfApiClient {
   }
 
   Future<bool> sendPost(
-      int uid, String password, int fid, String title, String content) async {
+    int uid,
+    String password,
+    int fid,
+    String title,
+    String content,
+  ) async {
     final result = await secretPost(
       '/forum/send_post',
       {'fid': fid, 'title': title, 'content': content},
@@ -407,8 +430,7 @@ class TfApiClient {
     return _parseBool(result);
   }
 
-  Future<bool> removePost(
-      int uid, String password, int fid, int pid) async {
+  Future<bool> removePost(int uid, String password, int fid, int pid) async {
     final result = await secretPost(
       '/forum/remove_post',
       {'fid': fid, 'pid': pid},
@@ -441,14 +463,16 @@ class TfApiClient {
       (data as Map<String, dynamic>).forEach((timestamp, value) {
         final items = value as List<dynamic>;
         final ms = (double.tryParse(timestamp) ?? 0) * 1000;
-        comments.add(ForumComment(
-          id: timestamp,
-          postId: pid.toString(),
-          authorUid: items[0].toString(),
-          content: items[1] as String,
-          createdAt: DateTime.fromMillisecondsSinceEpoch(ms.toInt()),
-          updatedAt: DateTime.fromMillisecondsSinceEpoch(ms.toInt()),
-        ));
+        comments.add(
+          ForumComment(
+            id: timestamp,
+            postId: pid.toString(),
+            authorUid: items[0].toString(),
+            content: items[1] as String,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(ms.toInt()),
+            updatedAt: DateTime.fromMillisecondsSinceEpoch(ms.toInt()),
+          ),
+        );
       });
       comments.sort((a, b) => a.createdAt.compareTo(b.createdAt));
       return comments;
@@ -459,7 +483,12 @@ class TfApiClient {
   }
 
   Future<bool> addComment(
-      int uid, String password, int fid, int pid, String comment) async {
+    int uid,
+    String password,
+    int fid,
+    int pid,
+    String comment,
+  ) async {
     final result = await secretPost(
       '/forum/comment',
       {'fid': fid, 'pid': pid, 'comment': comment},
@@ -470,7 +499,12 @@ class TfApiClient {
   }
 
   Future<bool> removeComment(
-      int uid, String password, int fid, int pid, String sendTime) async {
+    int uid,
+    String password,
+    int fid,
+    int pid,
+    String sendTime,
+  ) async {
     final result = await secretPost(
       '/forum/remove_comment',
       {'fid': fid, 'pid': pid, 'send_time': sendTime},
@@ -481,7 +515,11 @@ class TfApiClient {
   }
 
   Future<bool> createForum(
-      int uid, String password, String forumName, String introduction) async {
+    int uid,
+    String password,
+    String forumName,
+    String introduction,
+  ) async {
     final result = await secretPost(
       '/forum/create_forum',
       {'forum_name': forumName, 'introduction': introduction},
@@ -491,14 +529,30 @@ class TfApiClient {
     return _parseBool(result);
   }
 
-  Future<bool> approveForum(
-    int uid,
-    String password,
-    int queueId,
-  ) async {
+  Future<bool> approveForum(int uid, String password, int queueId) async {
     final result = await secretPost(
       '/forum/approve_forum',
       {'qid': queueId},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<bool> rejectForum(
+    int uid,
+    String password,
+    int queueId, {
+    String? reason,
+  }) async {
+    final normalizedReason = reason?.trim();
+    final result = await secretPost(
+      '/forum/reject_forum',
+      {
+        'qid': queueId,
+        if (normalizedReason != null && normalizedReason.isNotEmpty)
+          'reason': normalizedReason,
+      },
       uid: uid,
       password: password,
     );

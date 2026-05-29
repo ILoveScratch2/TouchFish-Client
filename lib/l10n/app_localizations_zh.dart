@@ -536,6 +536,25 @@ class AppLocalizationsZh extends AppLocalizations {
   String get adminApproveForumFailed => '论坛审核通过失败。';
 
   @override
+  String get adminRejectForumAction => '拒绝论坛';
+
+  @override
+  String get adminRejectForumConfirmTitle => '拒绝论坛审核';
+
+  @override
+  String adminRejectForumConfirmMessage(String forumName) {
+    return '确认拒绝“$forumName”的论坛创建申请吗？';
+  }
+
+  @override
+  String adminRejectForumSuccess(String forumName) {
+    return '已拒绝“$forumName”的创建申请。';
+  }
+
+  @override
+  String get adminRejectForumFailed => '论坛审核拒绝失败。';
+
+  @override
   String get account => '账户';
 
   @override

@@ -1130,6 +1130,36 @@ abstract class AppLocalizations {
   /// **'Failed to approve forum.'**
   String get adminApproveForumFailed;
 
+  /// No description provided for @adminRejectForumAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject Forum'**
+  String get adminRejectForumAction;
+
+  /// No description provided for @adminRejectForumConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject forum'**
+  String get adminRejectForumConfirmTitle;
+
+  /// No description provided for @adminRejectForumConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject \"{forumName}\" and remove it from the review queue?'**
+  String adminRejectForumConfirmMessage(String forumName);
+
+  /// No description provided for @adminRejectForumSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected \"{forumName}\".'**
+  String adminRejectForumSuccess(String forumName);
+
+  /// No description provided for @adminRejectForumFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to reject forum.'**
+  String get adminRejectForumFailed;
+
   /// No description provided for @account.
   ///
   /// In en, this message translates to:
