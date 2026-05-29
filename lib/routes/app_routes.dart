@@ -48,9 +48,14 @@ class AppRoutes {
   static const String licenses = '/licenses';
   static const String profileEdit = '/profile/edit';
 
-  static GoRouter createRouter({required bool isFirstLaunch}) {
+  static GoRouter createRouter({
+    required bool isFirstLaunch,
+    required bool hasSavedSession,
+  }) {
     final router = GoRouter(
-      initialLocation: isFirstLaunch ? welcome : login,
+      initialLocation: isFirstLaunch
+          ? welcome
+          : (hasSavedSession ? main : login),
       refreshListenable: AuthState.instance,
       routes: [
         ShellRoute(

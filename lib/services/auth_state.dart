@@ -4,6 +4,8 @@ import '../models/user_profile.dart';
 import '../utils/talker.dart';
 import 'api/tf_api_client.dart';
 
+enum SavedSessionRestoreStatus { idle, restoring, succeeded, failed }
+
 class AuthState extends ChangeNotifier {
   static AuthState? _instance;
   static AuthState get instance => _instance ??= AuthState._();
@@ -12,33 +14,87 @@ class AuthState extends ChangeNotifier {
   UserProfile? _currentUser;
   int? _uid;
   String? _password;
+  int? _rememberedUid;
+  String? _rememberedUsername;
+  String? _rememberedPassword;
+  SavedSessionRestoreStatus _savedSessionRestoreStatus =
+      SavedSessionRestoreStatus.idle;
 
   UserProfile? get currentUser => _currentUser;
   int? get uid => _uid;
   String? get password => _password;
+  String? get rememberedUsername => _rememberedUsername;
+  String? get rememberedPassword => _rememberedPassword;
+  bool get hasStoredCredentials =>
+      _rememberedUid != null && _rememberedPassword != null;
+  SavedSessionRestoreStatus get savedSessionRestoreStatus =>
+      _savedSessionRestoreStatus;
   bool get isLoggedIn => _currentUser != null && _uid != null;
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedUid = prefs.getInt('auth_uid');
-    final savedPassword = prefs.getString('auth_password');
+    _rememberedUid = prefs.getInt('auth_uid');
+    _rememberedUsername = prefs.getString('auth_username');
+    _rememberedPassword = prefs.getString('auth_password');
+    _savedSessionRestoreStatus = SavedSessionRestoreStatus.idle;
+  }
 
-    if (savedUid == null || savedPassword == null) return;
+  Future<bool> restoreSavedSession() async {
+    if (!hasStoredCredentials) return false;
+
+    _savedSessionRestoreStatus = SavedSessionRestoreStatus.restoring;
+    notifyListeners();
+
+    final savedUid = _rememberedUid!;
+    final savedPassword = _rememberedPassword!;
 
     try {
       final profile = await TfApiClient.instance.getUserByUid(savedUid);
+      if (profile != null && _rememberedUsername == null) {
+        _rememberedUsername = profile.username;
+      }
       final valid = await TfApiClient.instance.login(savedUid, savedPassword);
       if (valid && profile != null) {
         _uid = savedUid;
         _password = savedPassword;
         _currentUser = profile;
+        _rememberedUsername ??= profile.username;
+        _savedSessionRestoreStatus = SavedSessionRestoreStatus.succeeded;
+
+        final prefs = await SharedPreferences.getInstance();
+        await _persistCredentials(
+          prefs,
+          uid: savedUid,
+          username: _rememberedUsername ?? profile.username,
+          password: savedPassword,
+        );
+
         notifyListeners();
+        return true;
       } else {
-        await _clearStorage(prefs);
+        talker.warning(
+          'AuthState.restoreSavedSession: saved session was rejected by the server.',
+        );
       }
-    } catch (e) {
-      talker.warning('AuthState.init: auto-login failed (possibly offline)');
+    } catch (e, stackTrace) {
+      talker.error('AuthState.restoreSavedSession failed', e, stackTrace);
     }
+
+    _uid = null;
+    _password = null;
+    _currentUser = null;
+    _savedSessionRestoreStatus = SavedSessionRestoreStatus.failed;
+    notifyListeners();
+    return false;
+  }
+
+  void clearSavedSessionRestoreFailure() {
+    if (_savedSessionRestoreStatus != SavedSessionRestoreStatus.failed) {
+      return;
+    }
+
+    _savedSessionRestoreStatus = SavedSessionRestoreStatus.idle;
+    notifyListeners();
   }
 
   Future<String?> login(String username, String password) async {
@@ -60,10 +116,18 @@ class AuthState extends ChangeNotifier {
       _uid = uid;
       _password = password;
       _currentUser = profile;
+      _rememberedUid = uid;
+      _rememberedUsername = profile.username;
+      _rememberedPassword = password;
+      _savedSessionRestoreStatus = SavedSessionRestoreStatus.idle;
 
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('auth_uid', uid);
-      await prefs.setString('auth_password', password);
+      await _persistCredentials(
+        prefs,
+        uid: uid,
+        username: profile.username,
+        password: password,
+      );
 
       notifyListeners();
       return null;
@@ -77,6 +141,10 @@ class AuthState extends ChangeNotifier {
     _uid = null;
     _password = null;
     _currentUser = null;
+    _rememberedUid = null;
+    _rememberedUsername = null;
+    _rememberedPassword = null;
+    _savedSessionRestoreStatus = SavedSessionRestoreStatus.idle;
     final prefs = await SharedPreferences.getInstance();
     await _clearStorage(prefs);
     notifyListeners();
@@ -97,6 +165,18 @@ class AuthState extends ChangeNotifier {
 
   Future<void> _clearStorage(SharedPreferences prefs) async {
     await prefs.remove('auth_uid');
+    await prefs.remove('auth_username');
     await prefs.remove('auth_password');
+  }
+
+  Future<void> _persistCredentials(
+    SharedPreferences prefs, {
+    required int uid,
+    required String username,
+    required String password,
+  }) async {
+    await prefs.setInt('auth_uid', uid);
+    await prefs.setString('auth_username', username);
+    await prefs.setString('auth_password', password);
   }
 }

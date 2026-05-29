@@ -27,6 +27,11 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    _usernameController.text =
+        AuthState.instance.rememberedUsername ??
+        AuthState.instance.currentUser?.username ??
+        '';
+    _passwordController.text = AuthState.instance.rememberedPassword ?? '';
     _initConnectivity();
     _subscribeToConnectivityChanges();
   }

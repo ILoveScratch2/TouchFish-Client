@@ -356,6 +356,30 @@ abstract class AppLocalizations {
   /// **'Network error, please try again'**
   String get loginErrorNetwork;
 
+  /// No description provided for @savedSessionRestoreConnectingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting'**
+  String get savedSessionRestoreConnectingTitle;
+
+  /// No description provided for @savedSessionRestoreConnectingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring your saved session and verifying your login. Please wait.'**
+  String get savedSessionRestoreConnectingMessage;
+
+  /// No description provided for @savedSessionRestoreFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to use saved session'**
+  String get savedSessionRestoreFailedTitle;
+
+  /// No description provided for @savedSessionRestoreFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This session can\'t be used on the server. Check your network connection or login credentials.'**
+  String get savedSessionRestoreFailedMessage;
+
   /// No description provided for @registerErrorCaptchaRequired.
   ///
   /// In en, this message translates to:

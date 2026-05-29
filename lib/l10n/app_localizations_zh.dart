@@ -139,6 +139,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get loginErrorNetwork => '网络错误，请重试';
 
   @override
+  String get savedSessionRestoreConnectingTitle => '正在连接';
+
+  @override
+  String get savedSessionRestoreConnectingMessage => '正在恢复已保存的会话并验证登录状态，请稍候。';
+
+  @override
+  String get savedSessionRestoreFailedTitle => '无法使用已保存会话';
+
+  @override
+  String get savedSessionRestoreFailedMessage => '无法在服务器使用该会话，请检查网络连接或登录凭据';
+
+  @override
   String get registerErrorCaptchaRequired => '请输入验证码';
 
   @override

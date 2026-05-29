@@ -146,6 +146,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginErrorNetwork => 'Network error, please try again';
 
   @override
+  String get savedSessionRestoreConnectingTitle => 'Connecting';
+
+  @override
+  String get savedSessionRestoreConnectingMessage =>
+      'Restoring your saved session and verifying your login. Please wait.';
+
+  @override
+  String get savedSessionRestoreFailedTitle => 'Unable to use saved session';
+
+  @override
+  String get savedSessionRestoreFailedMessage =>
+      'This session can\'t be used on the server. Check your network connection or login credentials.';
+
+  @override
   String get registerErrorCaptchaRequired => 'Please enter the captcha';
 
   @override

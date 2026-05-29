@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -74,15 +75,15 @@ void main() async {
   }
 
   final isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
+  await AuthState.instance.init();
+  final hasSavedSession = AuthState.instance.hasStoredCredentials;
 
   talker.info('TouchFish Client started!');
-  AuthState.instance.init().catchError((e) {
-    talker.error('AuthState.init error', e);
-  });
 
   runApp(
     TouchFishApp(
       isFirstLaunch: isFirstLaunch,
+      hasSavedSession: hasSavedSession,
       didResetLocalSettings: startupRecovery.didResetSharedPreferences,
     ),
   );
@@ -220,11 +221,13 @@ class _StartupRecoveryResult {
 
 class TouchFishApp extends StatefulWidget {
   final bool isFirstLaunch;
+  final bool hasSavedSession;
   final bool didResetLocalSettings;
 
   const TouchFishApp({
     super.key,
     required this.isFirstLaunch,
+    required this.hasSavedSession,
     this.didResetLocalSettings = false,
   });
 
@@ -234,13 +237,38 @@ class TouchFishApp extends StatefulWidget {
 
 class _TouchFishAppState extends State<TouchFishApp> {
   final _appState = AppState.instance;
+  late final _appListenable = Listenable.merge([_appState, AuthState.instance]);
   late final _router = AppRoutes.createRouter(
     isFirstLaunch: widget.isFirstLaunch,
+    hasSavedSession: widget.hasSavedSession,
   );
   bool _didShowStartupResetNotice = false;
+  bool _didStartSavedSessionRestore = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _startSavedSessionRestoreIfNeeded();
+    });
+  }
+
+  void _startSavedSessionRestoreIfNeeded() {
+    if (!widget.hasSavedSession || _didStartSavedSessionRestore) {
+      return;
+    }
+
+    _didStartSavedSessionRestore = true;
+    unawaited(AuthState.instance.restoreSavedSession());
+  }
 
   void _showStartupResetNoticeIfNeeded(BuildContext context) {
-    if (_didShowStartupResetNotice || !widget.didResetLocalSettings) {
+    final restoreStatus = AuthState.instance.savedSessionRestoreStatus;
+    if (_didShowStartupResetNotice ||
+        !widget.didResetLocalSettings ||
+        restoreStatus == SavedSessionRestoreStatus.restoring ||
+        restoreStatus == SavedSessionRestoreStatus.failed) {
       return;
     }
 
@@ -259,10 +287,100 @@ class _TouchFishAppState extends State<TouchFishApp> {
     });
   }
 
+  Widget _buildSavedSessionRestoreOverlay(BuildContext context, Widget child) {
+    final status = AuthState.instance.savedSessionRestoreStatus;
+    if (!widget.hasSavedSession ||
+        (status != SavedSessionRestoreStatus.restoring &&
+            status != SavedSessionRestoreStatus.failed)) {
+      return child;
+    }
+
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      return child;
+    }
+
+    final dialog = status == SavedSessionRestoreStatus.restoring
+        ? _buildSavedSessionLoadingDialog(context, l10n)
+        : _buildSavedSessionFailureDialog(context, l10n);
+
+    return Stack(
+      children: [
+        child,
+        const ModalBarrier(dismissible: false, color: Colors.black54),
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: dialog,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSavedSessionLoadingDialog(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return buildTouchFishInfoDialog(
+      context,
+      title: l10n.savedSessionRestoreConnectingTitle,
+      icon: Icons.cloud_sync_rounded,
+      addDefaultActionWhenEmpty: false,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 3),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            l10n.savedSessionRestoreConnectingMessage,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSavedSessionFailureDialog(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return buildTouchFishErrorDialog(
+      context,
+      title: l10n.savedSessionRestoreFailedTitle,
+      message: l10n.savedSessionRestoreFailedMessage,
+      icon: Icons.cloud_off_rounded,
+      selectableMessage: false,
+      addDefaultActionWhenEmpty: false,
+      actionWidgets: [
+        TextButton(
+          onPressed: () {
+            AuthState.instance.clearSavedSessionRestoreFailure();
+            _router.go(AppRoutes.login);
+          },
+          child: Text(MaterialLocalizations.of(context).okButtonLabel),
+        ),
+        FilledButton(
+          onPressed: () {
+            unawaited(AuthState.instance.restoreSavedSession());
+          },
+          child: Text(l10n.retry),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: _appState,
+      listenable: _appListenable,
       builder: (context, _) {
         final isCustomTheme = _appState.themeColorKey == 'custom';
         final seedColor = _appState.themeColor;
@@ -304,7 +422,9 @@ class _TouchFishAppState extends State<TouchFishApp> {
                 ? Colors.transparent
                 : null,
             cardTheme: CardThemeData(
-              color: lightColorScheme.surfaceContainer.withOpacity(cardOpacity),
+              color: lightColorScheme.surfaceContainer.withValues(
+                alpha: cardOpacity,
+              ),
               elevation: cardOpacity < 1 ? 0 : null,
             ),
           ),
@@ -316,33 +436,39 @@ class _TouchFishAppState extends State<TouchFishApp> {
                 ? Colors.transparent
                 : null,
             cardTheme: CardThemeData(
-              color: darkColorScheme.surfaceContainer.withOpacity(cardOpacity),
+              color: darkColorScheme.surfaceContainer.withValues(
+                alpha: cardOpacity,
+              ),
               elevation: cardOpacity < 1 ? 0 : null,
             ),
           ),
           themeMode: _appState.themeMode,
           builder: (context, child) {
             _showStartupResetNoticeIfNeeded(context);
+            final content = child ?? const SizedBox.shrink();
             if (hasBackgroundImage && !kIsWeb) {
-              return Container(
-                color: Theme.of(context).colorScheme.surface,
-                child: Container(
-                  decoration: BoxDecoration(
-                    backgroundBlendMode: BlendMode.darken,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surface.withOpacity(0.85),
-                    image: DecorationImage(
-                      opacity: 0.2,
-                      image: FileImage(File(backgroundImagePath)),
-                      fit: BoxFit.cover,
+              return _buildSavedSessionRestoreOverlay(
+                context,
+                Container(
+                  color: Theme.of(context).colorScheme.surface,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      backgroundBlendMode: BlendMode.darken,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surface.withValues(alpha: 0.85),
+                      image: DecorationImage(
+                        opacity: 0.2,
+                        image: FileImage(File(backgroundImagePath)),
+                        fit: BoxFit.cover,
+                      ),
                     ),
+                    child: content,
                   ),
-                  child: child,
                 ),
               );
             }
-            return child ?? const SizedBox.shrink();
+            return _buildSavedSessionRestoreOverlay(context, content);
           },
         );
       },
@@ -353,6 +479,8 @@ class _TouchFishAppState extends State<TouchFishApp> {
     ColorScheme scheme,
     Map<String, int> customColors,
   ) {
+    final surfaceColor = customColors['surface'] ?? customColors['background'];
+
     return scheme.copyWith(
       primary: customColors['primary'] != null
           ? Color(customColors['primary']!)
@@ -363,11 +491,8 @@ class _TouchFishAppState extends State<TouchFishApp> {
       tertiary: customColors['tertiary'] != null
           ? Color(customColors['tertiary']!)
           : null,
-      surface: customColors['surface'] != null
-          ? Color(customColors['surface']!)
-          : null,
-      background: customColors['background'] != null
-          ? Color(customColors['background']!)
+        surface: surfaceColor != null
+          ? Color(surfaceColor)
           : null,
       error: customColors['error'] != null
           ? Color(customColors['error']!)
