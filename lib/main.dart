@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' show FlutterView;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -180,12 +181,13 @@ Future<bool> _resetWindowPositionIfFarOutsideScreen(
     return false;
   }
 
-  final display = views.first.display;
-  final devicePixelRatio = display.devicePixelRatio == 0
-      ? 1.0
-      : display.devicePixelRatio;
-  final screenWidth = display.size.width / devicePixelRatio;
-  final screenHeight = display.size.height / devicePixelRatio;
+  final screenBounds = _tryGetPrimaryDisplayLogicalSize(views.first);
+  if (screenBounds == null) {
+    return false;
+  }
+
+  final screenWidth = screenBounds.width;
+  final screenHeight = screenBounds.height;
   final savedWidth = prefs.getDouble('window_width') ?? 1280;
   final savedHeight = prefs.getDouble('window_height') ?? 800;
 
@@ -207,6 +209,24 @@ Future<bool> _resetWindowPositionIfFarOutsideScreen(
     'Saved window position was far outside the current screen bounds and was reset.',
   );
   return true;
+}
+
+Size? _tryGetPrimaryDisplayLogicalSize(FlutterView view) {
+  try {
+    final display = view.display;
+    final devicePixelRatio = display.devicePixelRatio == 0
+        ? 1.0
+        : display.devicePixelRatio;
+    return Size(
+      display.size.width / devicePixelRatio,
+      display.size.height / devicePixelRatio,
+    );
+  } on AssertionError {
+    talker.debug(
+      'Skipping saved window position recovery because display information is not ready yet.',
+    );
+    return null;
+  }
 }
 
 class _StartupRecoveryResult {
