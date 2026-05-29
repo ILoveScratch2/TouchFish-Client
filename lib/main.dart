@@ -13,21 +13,23 @@ import 'models/settings_service.dart';
 import 'routes/app_routes.dart';
 import 'services/auth_state.dart';
 import 'utils/talker.dart';
+import 'widgets/app_alert_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
-  
-  final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+
+  final isDesktop =
+      !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
   final startupRecovery = await _performStartupRecovery(isDesktop: isDesktop);
   await SettingsService.instance.init();
-  
+
   if (isDesktop) {
     await windowManager.ensureInitialized();
   }
-  
+
   final prefs = await SharedPreferences.getInstance();
-  
+
   if (isDesktop) {
     const defaultSize = Size(1280, 800);
     const minSize = Size(400, 700);
@@ -35,12 +37,15 @@ void main() async {
     final savedHeight = prefs.getDouble('window_height');
     final savedX = prefs.getDouble('window_x');
     final savedY = prefs.getDouble('window_y');
-    final windowOpacity = SettingsService.instance.getValue<double>('windowOpacity', 1.0);
-    
+    final windowOpacity = SettingsService.instance.getValue<double>(
+      'windowOpacity',
+      1.0,
+    );
+
     final initialSize = (savedWidth != null && savedHeight != null)
         ? Size(savedWidth, savedHeight)
         : defaultSize;
-    
+
     WindowOptions windowOptions = WindowOptions(
       size: initialSize,
       center: savedX == null || savedY == null,
@@ -48,7 +53,7 @@ void main() async {
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.hidden,
     );
-    
+
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       if (Platform.isLinux) {
         final env = Platform.environment;
@@ -60,21 +65,21 @@ void main() async {
       if (savedX != null && savedY != null) {
         await windowManager.setPosition(Offset(savedX, savedY));
       }
-      
+
       await windowManager.setMinimumSize(minSize);
       await windowManager.setOpacity(windowOpacity);
       await windowManager.show();
       await windowManager.focus();
     });
   }
-  
+
   final isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
-  
+
   talker.info('TouchFish Client started!');
   AuthState.instance.init().catchError((e) {
     talker.error('AuthState.init error', e);
   });
-  
+
   runApp(
     TouchFishApp(
       isFirstLaunch: isFirstLaunch,
@@ -123,7 +128,9 @@ Future<bool> _repairSharedPreferencesFileIfCorrupted() async {
     }
 
     await preferencesFile.writeAsString('{}', flush: true);
-    talker.warning('Shared preferences file had an invalid root JSON value and was reset.');
+    talker.warning(
+      'Shared preferences file had an invalid root JSON value and was reset.',
+    );
     return true;
   } on FormatException catch (error, stackTrace) {
     try {
@@ -133,14 +140,26 @@ Future<bool> _repairSharedPreferencesFileIfCorrupted() async {
       );
       await preferencesFile.writeAsString('{}', flush: true);
     } catch (writeError, writeStackTrace) {
-      talker.error('Failed to rewrite corrupted shared preferences file.', writeError, writeStackTrace);
+      talker.error(
+        'Failed to rewrite corrupted shared preferences file.',
+        writeError,
+        writeStackTrace,
+      );
       return false;
     }
 
-    talker.error('Shared preferences JSON parse failed and the file was reset.', error, stackTrace);
+    talker.error(
+      'Shared preferences JSON parse failed and the file was reset.',
+      error,
+      stackTrace,
+    );
     return true;
   } catch (error, stackTrace) {
-    talker.error('Failed while checking shared preferences file integrity.', error, stackTrace);
+    talker.error(
+      'Failed while checking shared preferences file integrity.',
+      error,
+      stackTrace,
+    );
     return false;
   }
 }
@@ -175,12 +194,7 @@ Future<bool> _resetWindowPositionIfFarOutsideScreen(
     screenWidth * 3,
     screenHeight * 3,
   );
-  final windowBounds = Rect.fromLTWH(
-    savedX,
-    savedY,
-    savedWidth,
-    savedHeight,
-  );
+  final windowBounds = Rect.fromLTWH(savedX, savedY, savedWidth, savedHeight);
 
   if (windowBounds.overlaps(allowedBounds)) {
     return false;
@@ -188,7 +202,9 @@ Future<bool> _resetWindowPositionIfFarOutsideScreen(
 
   await prefs.remove('window_x');
   await prefs.remove('window_y');
-  talker.warning('Saved window position was far outside the current screen bounds and was reset.');
+  talker.warning(
+    'Saved window position was far outside the current screen bounds and was reset.',
+  );
   return true;
 }
 
@@ -205,7 +221,7 @@ class _StartupRecoveryResult {
 class TouchFishApp extends StatefulWidget {
   final bool isFirstLaunch;
   final bool didResetLocalSettings;
-  
+
   const TouchFishApp({
     super.key,
     required this.isFirstLaunch,
@@ -218,7 +234,9 @@ class TouchFishApp extends StatefulWidget {
 
 class _TouchFishAppState extends State<TouchFishApp> {
   final _appState = AppState.instance;
-  late final _router = AppRoutes.createRouter(isFirstLaunch: widget.isFirstLaunch);
+  late final _router = AppRoutes.createRouter(
+    isFirstLaunch: widget.isFirstLaunch,
+  );
   bool _didShowStartupResetNotice = false;
 
   void _showStartupResetNoticeIfNeeded(BuildContext context) {
@@ -233,19 +251,10 @@ class _TouchFishAppState extends State<TouchFishApp> {
       final l10n = AppLocalizations.of(context);
       if (l10n == null) return;
 
-      showDialog<void>(
-        context: context,
-        builder: (dialogContext) {
-          return AlertDialog(
-            content: Text(l10n.settingsCorruptedResetNotice),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: Text(MaterialLocalizations.of(dialogContext).okButtonLabel),
-              ),
-            ],
-          );
-        },
+      showTouchFishInfoDialog<void>(
+        context,
+        message: l10n.settingsCorruptedResetNotice,
+        icon: Icons.settings_suggest_rounded,
       );
     });
   }
@@ -272,7 +281,8 @@ class _TouchFishAppState extends State<TouchFishApp> {
         }
         final cardOpacity = _appState.cardOpacity;
         final backgroundImagePath = _appState.backgroundImagePath;
-        final hasBackgroundImage = backgroundImagePath != null && backgroundImagePath.isNotEmpty;
+        final hasBackgroundImage =
+            backgroundImagePath != null && backgroundImagePath.isNotEmpty;
 
         return MaterialApp.router(
           routerConfig: _router,
@@ -284,16 +294,15 @@ class _TouchFishAppState extends State<TouchFishApp> {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: const [
-            Locale('en'),
-            Locale('zh'),
-          ],
+          supportedLocales: const [Locale('en'), Locale('zh')],
           locale: _appState.locale,
           theme: ThemeData(
             colorScheme: lightColorScheme,
             useMaterial3: true,
             fontFamily: _appState.fontFamily,
-            scaffoldBackgroundColor: hasBackgroundImage ? Colors.transparent : null,
+            scaffoldBackgroundColor: hasBackgroundImage
+                ? Colors.transparent
+                : null,
             cardTheme: CardThemeData(
               color: lightColorScheme.surfaceContainer.withOpacity(cardOpacity),
               elevation: cardOpacity < 1 ? 0 : null,
@@ -303,7 +312,9 @@ class _TouchFishAppState extends State<TouchFishApp> {
             colorScheme: darkColorScheme,
             useMaterial3: true,
             fontFamily: _appState.fontFamily,
-            scaffoldBackgroundColor: hasBackgroundImage ? Colors.transparent : null,
+            scaffoldBackgroundColor: hasBackgroundImage
+                ? Colors.transparent
+                : null,
             cardTheme: CardThemeData(
               color: darkColorScheme.surfaceContainer.withOpacity(cardOpacity),
               elevation: cardOpacity < 1 ? 0 : null,
@@ -318,7 +329,9 @@ class _TouchFishAppState extends State<TouchFishApp> {
                 child: Container(
                   decoration: BoxDecoration(
                     backgroundBlendMode: BlendMode.darken,
-                    color: Theme.of(context).colorScheme.surface.withOpacity(0.85),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surface.withOpacity(0.85),
                     image: DecorationImage(
                       opacity: 0.2,
                       image: FileImage(File(backgroundImagePath)),
@@ -336,14 +349,29 @@ class _TouchFishAppState extends State<TouchFishApp> {
     );
   }
 
-  ColorScheme _applyCustomColors(ColorScheme scheme, Map<String, int> customColors) {
+  ColorScheme _applyCustomColors(
+    ColorScheme scheme,
+    Map<String, int> customColors,
+  ) {
     return scheme.copyWith(
-      primary: customColors['primary'] != null ? Color(customColors['primary']!) : null,
-      secondary: customColors['secondary'] != null ? Color(customColors['secondary']!) : null,
-      tertiary: customColors['tertiary'] != null ? Color(customColors['tertiary']!) : null,
-      surface: customColors['surface'] != null ? Color(customColors['surface']!) : null,
-      background: customColors['background'] != null ? Color(customColors['background']!) : null,
-      error: customColors['error'] != null ? Color(customColors['error']!) : null,
+      primary: customColors['primary'] != null
+          ? Color(customColors['primary']!)
+          : null,
+      secondary: customColors['secondary'] != null
+          ? Color(customColors['secondary']!)
+          : null,
+      tertiary: customColors['tertiary'] != null
+          ? Color(customColors['tertiary']!)
+          : null,
+      surface: customColors['surface'] != null
+          ? Color(customColors['surface']!)
+          : null,
+      background: customColors['background'] != null
+          ? Color(customColors['background']!)
+          : null,
+      error: customColors['error'] != null
+          ? Color(customColors['error']!)
+          : null,
     );
   }
 }

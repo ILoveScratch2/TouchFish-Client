@@ -13,6 +13,7 @@ import '../models/settings_model.dart';
 import '../models/settings_service.dart';
 import '../services/font_loader_service.dart';
 import '../utils/talker.dart';
+import '../widgets/app_alert_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -21,7 +22,8 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStateMixin {
+class _SettingsScreenState extends State<SettingsScreen>
+    with TickerProviderStateMixin {
   static const String _customFontSentinel = '__custom__';
 
   final _settingsService = SettingsService.instance;
@@ -33,15 +35,17 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
   void initState() {
     super.initState();
     _settingsService.init();
-    _customFontController.text =
-        _settingsService.getValue<String>('customFontName', '');
-    
+    _customFontController.text = _settingsService.getValue<String>(
+      'customFontName',
+      '',
+    );
+
     _categoryAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
   }
-  
+
   @override
   void dispose() {
     _customFontController.dispose();
@@ -154,8 +158,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildCategoryList(BuildContext context,
-      {required bool isWideLayout}) {
+  Widget _buildCategoryList(
+    BuildContext context, {
+    required bool isWideLayout,
+  }) {
     final l10n = AppLocalizations.of(context)!;
 
     return ListView(
@@ -180,8 +186,9 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
 
   Widget _buildSettingsContent(BuildContext context, SettingCategory category) {
     final l10n = AppLocalizations.of(context)!;
-    final categoryData = SettingsData.categories
-        .firstWhere((c) => c.category == category);
+    final categoryData = SettingsData.categories.firstWhere(
+      (c) => c.category == category,
+    );
     final isWideScreen = MediaQuery.of(context).size.width >= 600;
 
     return Scaffold(
@@ -240,7 +247,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
           return ListenableBuilder(
             listenable: _settingsService,
             builder: (context, _) {
-              final themeColor = _settingsService.getValue<String>('themeColor', 'blue');
+              final themeColor = _settingsService.getValue<String>(
+                'themeColor',
+                'blue',
+              );
               if (themeColor != 'custom') {
                 return const SizedBox.shrink();
               }
@@ -253,7 +263,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
   }
 
   Widget _buildCustomDropdownSetting(
-      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingItem item,
+  ) {
     return ListenableBuilder(
       listenable: _settingsService,
       builder: (context, _) {
@@ -263,15 +276,18 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
         );
 
         final selectedLabel = _getSettingTitle(
-          l10n, 
-          item.options!.firstWhere((o) => o.value == value).labelKey
+          l10n,
+          item.options!.firstWhere((o) => o.value == value).labelKey,
         );
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
           child: Card(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 12.0,
+              ),
               child: Row(
                 children: [
                   if (item.icon != null) ...[
@@ -303,17 +319,24 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                     child: CustomDropdown<String>(
                       hintText: '',
                       initialItem: selectedLabel,
-                      items: item.options!.map((o) => _getSettingTitle(l10n, o.labelKey)).toList(),
+                      items: item.options!
+                          .map((o) => _getSettingTitle(l10n, o.labelKey))
+                          .toList(),
                       decoration: CustomDropdownDecoration(
                         closedBorderRadius: BorderRadius.circular(8),
                         expandedBorderRadius: BorderRadius.circular(8),
-                        closedFillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        expandedFillColor: Theme.of(context).colorScheme.surface,
+                        closedFillColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                        expandedFillColor: Theme.of(
+                          context,
+                        ).colorScheme.surface,
                       ),
                       onChanged: (newValue) {
                         if (newValue != null) {
                           final option = item.options!.firstWhere(
-                            (o) => _getSettingTitle(l10n, o.labelKey) == newValue,
+                            (o) =>
+                                _getSettingTitle(l10n, o.labelKey) == newValue,
                           );
                           _settingsService.setValue(item.key, option.value);
                         }
@@ -330,7 +353,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
   }
 
   Widget _buildFontDropdownSetting(
-      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingItem item,
+  ) {
     return FutureBuilder<List<String>>(
       future: FontLoaderService.instance.getSystemFonts(),
       builder: (context, snapshot) {
@@ -339,7 +365,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
             padding: const EdgeInsets.only(bottom: 8.0),
             child: Card(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 12.0,
+                ),
                 child: Row(
                   children: [
                     if (item.icon != null) ...[
@@ -385,7 +414,7 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
         }
 
         final fonts = snapshot.data!;
-        
+
         return ListenableBuilder(
           listenable: _settingsService,
           builder: (context, _) {
@@ -406,8 +435,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
             }
 
             final isCustom = value == _customFontSentinel;
-            final customFontName =
-                _settingsService.getValue<String>('customFontName', '');
+            final customFontName = _settingsService.getValue<String>(
+              'customFontName',
+              '',
+            );
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
@@ -417,7 +448,9 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0, vertical: 12.0),
+                        horizontal: 16.0,
+                        vertical: 12.0,
+                      ),
                       child: Row(
                         children: [
                           if (item.icon != null) ...[
@@ -430,19 +463,21 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                               children: [
                                 Text(
                                   _getSettingTitle(l10n, item.titleKey),
-                                  style:
-                                      Theme.of(context).textTheme.titleMedium,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium,
                                 ),
                                 if (item.descriptionKey != null)
                                   Padding(
-                                    padding:
-                                        const EdgeInsets.only(top: 4.0),
+                                    padding: const EdgeInsets.only(top: 4.0),
                                     child: Text(
                                       _getSettingTitle(
-                                          l10n, item.descriptionKey!),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall,
+                                        l10n,
+                                        item.descriptionKey!,
+                                      ),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
                                     ),
                                   ),
                               ],
@@ -458,85 +493,90 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                               decoration: CustomDropdownDecoration(
                                 closedBorderRadius: BorderRadius.circular(8),
                                 expandedBorderRadius: BorderRadius.circular(8),
-                                closedFillColor: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest,
-                                expandedFillColor: Theme.of(context)
-                                    .colorScheme
-                                    .surface,
+                                closedFillColor: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
+                                expandedFillColor: Theme.of(
+                                  context,
+                                ).colorScheme.surface,
                                 listItemStyle: const TextStyle(
                                   fontFamily: null, // Will be set per item
                                 ),
                               ),
                               listItemBuilder:
                                   (context, item, isSelected, onItemSelect) {
-                                final displayName =
-                                    _getFontDisplayName(l10n, item);
-                                return GestureDetector(
-                                  onTap: onItemSelect,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? Theme.of(context)
-                                              .colorScheme
-                                              .primaryContainer
-                                          : null,
-                                    ),
-                                    child: Text(
-                                      displayName,
-                                      style: TextStyle(
-                                        fontFamily: (item == 'System Default' ||
-                                                item == _customFontSentinel)
-                                            ? null
-                                            : item,
-                                        color: isSelected
-                                            ? Theme.of(context)
-                                                .colorScheme
-                                                .onPrimaryContainer
-                                            : Theme.of(context)
-                                                .colorScheme
-                                                .onSurface,
+                                    final displayName = _getFontDisplayName(
+                                      l10n,
+                                      item,
+                                    );
+                                    return GestureDetector(
+                                      onTap: onItemSelect,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 12,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? Theme.of(
+                                                  context,
+                                                ).colorScheme.primaryContainer
+                                              : null,
+                                        ),
+                                        child: Text(
+                                          displayName,
+                                          style: TextStyle(
+                                            fontFamily:
+                                                (item == 'System Default' ||
+                                                    item == _customFontSentinel)
+                                                ? null
+                                                : item,
+                                            color: isSelected
+                                                ? Theme.of(context)
+                                                      .colorScheme
+                                                      .onPrimaryContainer
+                                                : Theme.of(
+                                                    context,
+                                                  ).colorScheme.onSurface,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                );
-                              },
-                              headerBuilder:
-                                  (context, selectedItem, enabled) {
+                                    );
+                                  },
+                              headerBuilder: (context, selectedItem, enabled) {
                                 final displayName = _getFontDisplayName(
-                                    l10n, selectedItem);
+                                  l10n,
+                                  selectedItem,
+                                );
                                 return Text(
                                   displayName,
                                   style: TextStyle(
-                                    fontFamily:
-                                        selectedItem == 'System Default'
-                                            ? null
-                                            : (selectedItem ==
-                                                        _customFontSentinel &&
-                                                    customFontName
-                                                        .isNotEmpty)
-                                                ? customFontName
-                                                : selectedItem,
+                                    fontFamily: selectedItem == 'System Default'
+                                        ? null
+                                        : (selectedItem ==
+                                                  _customFontSentinel &&
+                                              customFontName.isNotEmpty)
+                                        ? customFontName
+                                        : selectedItem,
                                   ),
                                 );
                               },
                               onChanged: (newValue) async {
                                 if (newValue != null) {
                                   if (newValue == _customFontSentinel) {
-                                    final name = _settingsService.getValue<
-                                        String>('customFontName', '');
+                                    final name = _settingsService
+                                        .getValue<String>('customFontName', '');
                                     if (name.isNotEmpty) {
-                                      await FontLoaderService.instance
-                                          .loadFont(name);
+                                      await FontLoaderService.instance.loadFont(
+                                        name,
+                                      );
                                     }
                                   } else {
-                                    await FontLoaderService.instance
-                                        .loadFont(newValue);
+                                    await FontLoaderService.instance.loadFont(
+                                      newValue,
+                                    );
                                   }
-                                  _settingsService.setValue(
-                                      item.key, newValue);
+                                  _settingsService.setValue(item.key, newValue);
                                 }
                               },
                             ),
@@ -550,20 +590,20 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0, vertical: 12.0),
+                          horizontal: 16.0,
+                          vertical: 12.0,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               l10n.settingsCustomFontTitle,
-                              style:
-                                  Theme.of(context).textTheme.titleMedium,
+                              style: Theme.of(context).textTheme.titleMedium,
                             ),
                             const SizedBox(height: 8),
                             Text(
                               l10n.settingsCustomFontDesc,
-                              style:
-                                  Theme.of(context).textTheme.bodySmall,
+                              style: Theme.of(context).textTheme.bodySmall,
                             ),
                             const SizedBox(height: 8),
                             TextField(
@@ -575,7 +615,9 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                               ),
                               onChanged: (value) {
                                 _settingsService.setValue(
-                                    'customFontName', value);
+                                  'customFontName',
+                                  value,
+                                );
                               },
                             ),
                           ],
@@ -593,7 +635,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
   }
 
   Widget _buildToggleSwitchSetting(
-      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingItem item,
+  ) {
     return ListenableBuilder(
       listenable: _settingsService,
       builder: (context, _) {
@@ -606,7 +651,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
           padding: const EdgeInsets.only(bottom: 8.0),
           child: Card(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 12.0,
+              ),
               child: Row(
                 children: [
                   if (item.icon != null) ...[
@@ -642,7 +690,9 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                     style: ToggleStyle(
                       borderColor: Colors.transparent,
                       borderRadius: BorderRadius.circular(10.0),
-                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       indicatorColor: Theme.of(context).colorScheme.primary,
                     ),
                     customIconBuilder: (context, local, global) {
@@ -674,7 +724,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
   }
 
   Widget _buildSwitchSetting(
-      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingItem item,
+  ) {
     return ListenableBuilder(
       listenable: _settingsService,
       builder: (context, _) {
@@ -704,7 +757,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
   }
 
   Widget _buildDropdownSetting(
-      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingItem item,
+  ) {
     return ListenableBuilder(
       listenable: _settingsService,
       builder: (context, _) {
@@ -779,9 +835,12 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
       },
     );
   }
-  
+
   Widget _buildSubSwitchSetting(
-      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingItem item,
+  ) {
     return ListenableBuilder(
       listenable: _settingsService,
       builder: (context, _) {
@@ -806,7 +865,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
   }
 
   Widget _buildRadioSetting(
-      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingItem item,
+  ) {
     return ListenableBuilder(
       listenable: _settingsService,
       builder: (context, _) {
@@ -838,14 +900,21 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                               children: [
                                 Text(
                                   _getSettingTitle(l10n, item.titleKey),
-                                  style: Theme.of(context).textTheme.titleMedium,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium,
                                 ),
                                 if (item.descriptionKey != null)
                                   Padding(
                                     padding: const EdgeInsets.only(top: 4.0),
                                     child: Text(
-                                      _getSettingTitle(l10n, item.descriptionKey!),
-                                      style: Theme.of(context).textTheme.bodySmall,
+                                      _getSettingTitle(
+                                        l10n,
+                                        item.descriptionKey!,
+                                      ),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
                                     ),
                                   ),
                               ],
@@ -880,7 +949,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
   }
 
   Widget _buildNavigationSetting(
-      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingItem item,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Card(
@@ -1068,9 +1140,13 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
   }
 
   Widget _buildSliderSetting(
-      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingItem item,
+  ) {
     final isDesktopOnly = item.key == 'windowOpacity';
-    final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+    final isDesktop =
+        !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
     if (isDesktopOnly && !isDesktop) {
       return const SizedBox.shrink();
     }
@@ -1132,7 +1208,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                     onChanged: (newValue) async {
                       await _settingsService.setValue(item.key, newValue);
                       if (item.key == 'windowOpacity' && !kIsWeb) {
-                        final isDesktop = Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+                        final isDesktop =
+                            Platform.isWindows ||
+                            Platform.isMacOS ||
+                            Platform.isLinux;
                         if (isDesktop) {
                           await windowManager.setOpacity(newValue);
                         }
@@ -1149,7 +1228,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
   }
 
   Widget _buildBackgroundImageSetting(
-      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingItem item,
+  ) {
     if (kIsWeb) {
       return const SizedBox.shrink();
     }
@@ -1174,12 +1256,21 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
               trailing: const Icon(Icons.chevron_right),
               onTap: () async {
                 final picker = ImagePicker();
-                final image = await picker.pickImage(source: ImageSource.gallery);
+                final image = await picker.pickImage(
+                  source: ImageSource.gallery,
+                );
                 if (image != null) {
-                  await _settingsService.setValue('backgroundImagePath', image.path);
+                  await _settingsService.setValue(
+                    'backgroundImagePath',
+                    image.path,
+                  );
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.settingsBackgroundImageSelectSuccess)),
+                      SnackBar(
+                        content: Text(
+                          l10n.settingsBackgroundImageSelectSuccess,
+                        ),
+                      ),
                     );
                   }
                 }
@@ -1188,9 +1279,12 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
             ListenableBuilder(
               listenable: _settingsService,
               builder: (context, _) {
-                final imagePath = _settingsService.getValue<String>('backgroundImagePath', '');
+                final imagePath = _settingsService.getValue<String>(
+                  'backgroundImagePath',
+                  '',
+                );
                 if (imagePath.isEmpty) return const SizedBox.shrink();
-                
+
                 return Column(
                   children: [
                     ListTile(
@@ -1201,7 +1295,11 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                         await _settingsService.remove('backgroundImagePath');
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(l10n.settingsBackgroundImageClearSuccess)),
+                            SnackBar(
+                              content: Text(
+                                l10n.settingsBackgroundImageClearSuccess,
+                              ),
+                            ),
                           );
                         }
                       },
@@ -1225,20 +1323,23 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
     );
   }
 
-  Future<void> _generateThemeFromImage(BuildContext context, String imagePath) async {
+  Future<void> _generateThemeFromImage(
+    BuildContext context,
+    String imagePath,
+  ) async {
     try {
       final file = File(imagePath);
       final bytes = await file.readAsBytes();
       final image = img.decodeImage(bytes);
-      
+
       if (image == null) {
         throw Exception('Failed to decode image');
       }
-      
+
       // Extract dominant colors using a simple algorithm
       // Resize image for faster processing
       final resized = img.copyResize(image, width: 100);
-      
+
       // Count color frequencies
       final colorMap = <int, int>{};
       for (int y = 0; y < resized.height; y++) {
@@ -1247,29 +1348,31 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
           final r = pixel.r.toInt();
           final g = pixel.g.toInt();
           final b = pixel.b.toInt();
-          
+
           // Quantize colors to reduce variations
           final quantizedR = (r ~/ 32) * 32;
           final quantizedG = (g ~/ 32) * 32;
           final quantizedB = (b ~/ 32) * 32;
-          
-          final colorValue = (0xFF << 24) | (quantizedR << 16) | (quantizedG << 8) | quantizedB;
+
+          final colorValue =
+              (0xFF << 24) |
+              (quantizedR << 16) |
+              (quantizedG << 8) |
+              quantizedB;
           colorMap[colorValue] = (colorMap[colorValue] ?? 0) + 1;
         }
       }
-      
+
       // Sort by frequency and get most common color
       final sortedColors = colorMap.entries.toList()
         ..sort((a, b) => b.value.compareTo(a.value));
-      
+
       if (sortedColors.isNotEmpty) {
         final dominantColor = sortedColors.first.key;
-        
+
         // Generate custom color scheme
-        final customColors = <String, int>{
-          'seedColor': dominantColor,
-        };
-        
+        final customColors = <String, int>{'seedColor': dominantColor};
+
         // Try to find vibrant and muted colors from top colors
         if (sortedColors.length > 1) {
           customColors['primary'] = sortedColors[1].key;
@@ -1277,14 +1380,20 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
         if (sortedColors.length > 2) {
           customColors['secondary'] = sortedColors[2].key;
         }
-        
+
         await _settingsService.setJsonValue('customColors', customColors);
         // Switch to custom theme to apply the generated colors
         await _settingsService.setValue('themeColor', 'custom');
-        
+
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context)!.settingsBackgroundImageGenColorSuccess)),
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(
+                  context,
+                )!.settingsBackgroundImageGenColorSuccess,
+              ),
+            ),
           );
         }
       }
@@ -1293,21 +1402,26 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
       if (context.mounted) {
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.settingsBackgroundImageGenColorError(e.toString()))),
+          SnackBar(
+            content: Text(
+              l10n.settingsBackgroundImageGenColorError(e.toString()),
+            ),
+          ),
         );
       }
     }
   }
 
   Widget _buildCustomThemeSetting(
-      BuildContext context, AppLocalizations l10n, SettingItem item) {
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingItem item,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Card(
         child: Theme(
-          data: Theme.of(context).copyWith(
-            dividerColor: Colors.transparent,
-          ),
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
             leading: item.icon != null ? Icon(item.icon) : null,
             title: Text(_getSettingTitle(l10n, item.titleKey)),
@@ -1356,24 +1470,24 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                 title: Text(l10n.settingsCustomThemeReset),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () async {
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text(l10n.settingsCustomThemeReset),
-                      content: Text(l10n.settingsCustomThemeResetConfirm),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(false),
-                          child: Text(l10n.cancel),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(true),
-                          child: Text(l10n.confirm),
-                        ),
-                      ],
-                    ),
+                  final confirmed = await showTouchFishInfoDialog<bool>(
+                    context,
+                    title: l10n.settingsCustomThemeReset,
+                    message: l10n.settingsCustomThemeResetConfirm,
+                    icon: Icons.refresh_rounded,
+                    actions: [
+                      TouchFishDialogAction<bool>(
+                        label: l10n.cancel,
+                        result: false,
+                      ),
+                      TouchFishDialogAction<bool>(
+                        label: l10n.confirm,
+                        result: true,
+                        isPrimary: true,
+                      ),
+                    ],
                   );
-                  
+
                   if (confirmed == true) {
                     await _settingsService.remove('customColors');
                     if (context.mounted) {
@@ -1391,12 +1505,17 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildColorPickerTile(BuildContext context, String title, String colorKey) {
+  Widget _buildColorPickerTile(
+    BuildContext context,
+    String title,
+    String colorKey,
+  ) {
     return ListenableBuilder(
       listenable: _settingsService,
       builder: (context, _) {
         final l10n = AppLocalizations.of(context)!;
-        final customColors = _settingsService.getJsonValue('customColors') ?? {};
+        final customColors =
+            _settingsService.getJsonValue('customColors') ?? {};
         final colorValue = customColors[colorKey] as int?;
         final color = colorValue != null ? Color(colorValue) : null;
 
@@ -1404,8 +1523,9 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
           title: Text(title),
           trailing: GestureDetector(
             onTap: () async {
-              Color selectedColor = color ?? Theme.of(context).colorScheme.primary;
-              
+              Color selectedColor =
+                  color ?? Theme.of(context).colorScheme.primary;
+
               final result = await showDialog<Color>(
                 context: context,
                 builder: (context) {
@@ -1444,8 +1564,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
               if (result == null && color != null) {
                 final newColors = Map<String, dynamic>.from(customColors);
                 newColors.remove(colorKey);
-                await _settingsService.setJsonValue('customColors', 
-                  newColors.isEmpty ? null : newColors);
+                await _settingsService.setJsonValue(
+                  'customColors',
+                  newColors.isEmpty ? null : newColors,
+                );
               } else if (result != null) {
                 final newColors = Map<String, dynamic>.from(customColors);
                 newColors[colorKey] = result.value;

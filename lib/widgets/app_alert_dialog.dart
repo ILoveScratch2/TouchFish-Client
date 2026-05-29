@@ -21,7 +21,7 @@ enum _TouchFishAlertTone { info, error }
 
 Future<T?> showTouchFishInfoDialog<T>(
   BuildContext context, {
-  required String title,
+  String? title,
   required String message,
   List<TouchFishDialogAction<T>>? actions,
   IconData? icon,
@@ -40,11 +40,12 @@ Future<T?> showTouchFishInfoDialog<T>(
 
 Future<T?> showTouchFishErrorDialog<T>(
   BuildContext context, {
-  required String title,
+  String? title,
   required String message,
   List<TouchFishDialogAction<T>>? actions,
   IconData? icon,
   bool barrierDismissible = true,
+  bool selectableMessage = true,
 }) {
   return _showTouchFishAlertDialog(
     context,
@@ -54,17 +55,19 @@ Future<T?> showTouchFishErrorDialog<T>(
     actions: actions,
     icon: icon,
     barrierDismissible: barrierDismissible,
+    selectableMessage: selectableMessage,
   );
 }
 
 Future<T?> _showTouchFishAlertDialog<T>(
   BuildContext context, {
   required _TouchFishAlertTone tone,
-  required String title,
+  String? title,
   required String message,
   List<TouchFishDialogAction<T>>? actions,
   IconData? icon,
   required bool barrierDismissible,
+  bool selectableMessage = false,
 }) {
   return showDialog<T>(
     context: context,
@@ -103,11 +106,11 @@ Future<T?> _showTouchFishAlertDialog<T>(
                   color: accentColor,
                 ),
                 const SizedBox(height: 16),
-                Text(title, style: theme.textTheme.titleLarge),
-                const SizedBox(height: 8),
-                tone == _TouchFishAlertTone.error
-                    ? SelectableText(message)
-                    : Text(message),
+                if (title != null && title.isNotEmpty) ...[
+                  Text(title, style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 8),
+                ],
+                selectableMessage ? SelectableText(message) : Text(message),
                 const SizedBox(height: 8),
               ],
             ),
@@ -119,6 +122,12 @@ Future<T?> _showTouchFishAlertDialog<T>(
                       onPressed: () {
                         Navigator.of(dialogContext).pop(action.result);
                       },
+                      style: action.isDestructive
+                          ? FilledButton.styleFrom(
+                              backgroundColor: theme.colorScheme.error,
+                              foregroundColor: theme.colorScheme.onError,
+                            )
+                          : null,
                       child: Text(action.label),
                     )
                   : TextButton(

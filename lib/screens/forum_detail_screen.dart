@@ -10,6 +10,7 @@ import '../services/api/tf_api_client.dart';
 import 'forum_members_screen.dart';
 import 'forum_post_compose_screen.dart';
 import '../utils/talker.dart';
+import '../widgets/app_alert_dialog.dart';
 
 class ForumDetailScreen extends StatefulWidget {
   final String forumId;
@@ -34,7 +35,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() { _isLoading = true; _error = null; });
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       final forums = await TfApiClient.instance.getForumList();
       final fid = int.tryParse(widget.forumId);
@@ -51,7 +55,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       talker.error('ForumDetailScreen: _loadData failed', e);
-      if (mounted) setState(() { _isLoading = false; _error = e.toString(); });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = e.toString();
+        });
+      }
     }
   }
 
@@ -73,11 +82,16 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       return Scaffold(
         appBar: AppBar(),
         body: Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(_forum == null ? l10n.forumNotFound : l10n.forumPostLoadFailed),
-            const SizedBox(height: 8),
-            TextButton(onPressed: _refresh, child: Text(l10n.retry)),
-          ]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _forum == null ? l10n.forumNotFound : l10n.forumPostLoadFailed,
+              ),
+              const SizedBox(height: 8),
+              TextButton(onPressed: _refresh, child: Text(l10n.retry)),
+            ],
+          ),
         ),
       );
     }
@@ -98,7 +112,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     );
   }
 
-  Widget _buildWideLayout(BuildContext context, Forum forum, AppLocalizations l10n, ColorScheme colorScheme) {
+  Widget _buildWideLayout(
+    BuildContext context,
+    Forum forum,
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
     return Column(
       children: [
         _buildWideAppBar(context, forum, l10n, colorScheme),
@@ -142,7 +161,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     );
   }
 
-  Widget _buildWideAppBar(BuildContext context, Forum forum, AppLocalizations l10n, ColorScheme colorScheme) {
+  Widget _buildWideAppBar(
+    BuildContext context,
+    Forum forum,
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
     return AppBar(
       leading: BackButton(onPressed: () => context.pop()),
       title: Text(
@@ -176,7 +200,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     );
   }
 
-  Widget _buildNarrowLayout(BuildContext context, Forum forum, AppLocalizations l10n, ColorScheme colorScheme) {
+  Widget _buildNarrowLayout(
+    BuildContext context,
+    Forum forum,
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
     return CustomScrollView(
       slivers: [
         SliverAppBar(
@@ -188,9 +217,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
               forum.name,
               style: TextStyle(color: colorScheme.onPrimaryContainer),
             ),
-            background: Container(
-              color: colorScheme.surfaceContainerHighest,
-            ),
+            background: Container(color: colorScheme.surfaceContainerHighest),
           ),
           actions: [
             IconButton(
@@ -206,23 +233,21 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           ],
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 4)),
-        SliverToBoxAdapter(
-          child: _buildDescriptionCard(context, forum, l10n),
-        ),
+        SliverToBoxAdapter(child: _buildDescriptionCard(context, forum, l10n)),
         if (_identity == null && forum.isCommunity)
-          SliverToBoxAdapter(
-            child: _buildJoinCard(context, l10n),
-          ),
+          SliverToBoxAdapter(child: _buildJoinCard(context, l10n)),
         if (_pinnedPosts.isNotEmpty)
-          SliverToBoxAdapter(
-            child: _buildPinnedPostsCard(context, l10n),
-          ),
+          SliverToBoxAdapter(child: _buildPinnedPostsCard(context, l10n)),
         _buildPostListSliver(context, l10n),
       ],
     );
   }
 
-  Widget _buildDescriptionCard(BuildContext context, Forum forum, AppLocalizations l10n) {
+  Widget _buildDescriptionCard(
+    BuildContext context,
+    Forum forum,
+    AppLocalizations l10n,
+  ) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Theme(
@@ -240,7 +265,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 16, top: 8),
+              padding: const EdgeInsets.only(
+                left: 20,
+                right: 20,
+                bottom: 16,
+                top: 8,
+              ),
               child: Text(
                 forum.description,
                 style: const TextStyle(fontSize: 16),
@@ -259,9 +289,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         padding: const EdgeInsets.all(16),
         child: FilledButton.tonalIcon(
           onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.forumJoinSuccess)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(l10n.forumJoinSuccess)));
             _refresh();
           },
           icon: const Icon(Icons.add),
@@ -297,7 +327,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                     child: SingleChildScrollView(
                       child: _PostCard(
                         post: _pinnedPosts[index],
-                        onTap: () => _openPostDetail(context, _pinnedPosts[index]),
+                        onTap: () =>
+                            _openPostDetail(context, _pinnedPosts[index]),
                       ),
                     ),
                   );
@@ -328,18 +359,15 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
 
     return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: _PostCard(
-              post: _posts[index],
-              onTap: () => _openPostDetail(context, _posts[index]),
-            ),
-          );
-        },
-        childCount: _posts.length,
-      ),
+      delegate: SliverChildBuilderDelegate((context, index) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: _PostCard(
+            post: _posts[index],
+            onTap: () => _openPostDetail(context, _posts[index]),
+          ),
+        );
+      }, childCount: _posts.length),
     );
   }
 
@@ -359,10 +387,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   }
 
   void _openComposePost(BuildContext context) {
-    ForumPostComposeSheet.show(
-      context,
-      forumId: widget.forumId,
-    );
+    ForumPostComposeSheet.show(context, forumId: widget.forumId);
   }
 }
 
@@ -389,15 +414,18 @@ class _ForumActionMenu extends StatelessWidget {
           PopupMenuItem(
             child: Row(
               children: [
-                Icon(Icons.edit, color: Theme.of(context).colorScheme.onSecondaryContainer),
+                Icon(
+                  Icons.edit,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
                 const SizedBox(width: 12),
                 Text(l10n.forumEdit),
               ],
             ),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.forumEdit)),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(l10n.forumEdit)));
             },
           ),
         if (isAdmin)
@@ -406,40 +434,46 @@ class _ForumActionMenu extends StatelessWidget {
               children: [
                 const Icon(Icons.delete, color: Colors.red),
                 const SizedBox(width: 12),
-                Text(l10n.forumDelete, style: const TextStyle(color: Colors.red)),
+                Text(
+                  l10n.forumDelete,
+                  style: const TextStyle(color: Colors.red),
+                ),
               ],
             ),
             onTap: () {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: Text(l10n.forumDelete),
-                  content: Text(l10n.forumDeleteHint),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text(l10n.cancel),
-                    ),
-                    FilledButton(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        context.pop();
-                      },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.error,
-                      ),
-                      child: Text(l10n.forumDelete),
-                    ),
-                  ],
-                ),
-              );
+              showTouchFishErrorDialog<bool>(
+                context,
+                title: l10n.forumDelete,
+                message: l10n.forumDeleteHint,
+                icon: Icons.delete_outline_rounded,
+                selectableMessage: false,
+                actions: [
+                  TouchFishDialogAction<bool>(
+                    label: l10n.cancel,
+                    result: false,
+                  ),
+                  TouchFishDialogAction<bool>(
+                    label: l10n.forumDelete,
+                    result: true,
+                    isPrimary: true,
+                    isDestructive: true,
+                  ),
+                ],
+              ).then((confirmed) {
+                if (confirmed == true && context.mounted) {
+                  context.pop();
+                }
+              });
             },
           )
         else if (identity != null)
           PopupMenuItem(
             child: Row(
               children: [
-                Icon(Icons.exit_to_app, color: Theme.of(context).colorScheme.error),
+                Icon(
+                  Icons.exit_to_app,
+                  color: Theme.of(context).colorScheme.error,
+                ),
                 const SizedBox(width: 12),
                 Text(
                   l10n.forumLeave,
@@ -448,29 +482,29 @@ class _ForumActionMenu extends StatelessWidget {
               ],
             ),
             onTap: () {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: Text(l10n.forumLeave),
-                  content: Text(l10n.forumLeaveHint),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text(l10n.cancel),
-                    ),
-                    FilledButton(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        context.pop();
-                      },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.error,
-                      ),
-                      child: Text(l10n.forumLeave),
-                    ),
-                  ],
-                ),
-              );
+              showTouchFishErrorDialog<bool>(
+                context,
+                title: l10n.forumLeave,
+                message: l10n.forumLeaveHint,
+                icon: Icons.exit_to_app_rounded,
+                selectableMessage: false,
+                actions: [
+                  TouchFishDialogAction<bool>(
+                    label: l10n.cancel,
+                    result: false,
+                  ),
+                  TouchFishDialogAction<bool>(
+                    label: l10n.forumLeave,
+                    result: true,
+                    isPrimary: true,
+                    isDestructive: true,
+                  ),
+                ],
+              ).then((confirmed) {
+                if (confirmed == true && context.mounted) {
+                  context.pop();
+                }
+              });
             },
           ),
       ],
@@ -487,7 +521,10 @@ class _PostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final author = UserProfileDemoData.getDemoProfile(post.authorUid);
-    final enableMarkdown = SettingsService.instance.getValue<bool>('enableMarkdownRendering', true);
+    final enableMarkdown = SettingsService.instance.getValue<bool>(
+      'enableMarkdownRendering',
+      true,
+    );
 
     return Card(
       margin: EdgeInsets.zero,
@@ -518,9 +555,12 @@ class _PostCard extends StatelessWidget {
                         ),
                         Text(
                           _formatDate(post.createdAt),
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
                       ],
                     ),

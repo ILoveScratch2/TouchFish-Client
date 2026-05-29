@@ -3,16 +3,14 @@ import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../models/chat_model.dart';
+import '../widgets/app_alert_dialog.dart';
 import '../widgets/sheet_scaffold.dart';
 import 'chat_search_messages_screen.dart';
 
 class ChatRoomSettingsScreen extends StatefulWidget {
   final ChatRoom chatRoom;
 
-  const ChatRoomSettingsScreen({
-    super.key,
-    required this.chatRoom,
-  });
+  const ChatRoomSettingsScreen({super.key, required this.chatRoom});
 
   @override
   State<ChatRoomSettingsScreen> createState() => _ChatRoomSettingsScreenState();
@@ -51,13 +49,11 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
               onPressed: () => context.pop(),
             ),
             flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                color: colorScheme.surfaceContainerHighest,
-              ),
+              background: Container(color: colorScheme.surfaceContainerHighest),
               title: Text(
                 _chatName,
-              // Pin/Unpin Switch
-                  ),
+                // Pin/Unpin Switch
+              ),
             ),
             actions: [
               IconButton(
@@ -85,14 +81,14 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Text(
-                      _chatDescription.isEmpty 
-                        ? l10n.chatRoomNoDescription 
-                        : _chatDescription,
+                      _chatDescription.isEmpty
+                          ? l10n.chatRoomNoDescription
+                          : _chatDescription,
                       style: TextStyle(
                         fontSize: 16,
-                        color: _chatDescription.isEmpty 
-                          ? colorScheme.onSurfaceVariant 
-                          : colorScheme.onSurface,
+                        color: _chatDescription.isEmpty
+                            ? colorScheme.onSurfaceVariant
+                            : colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -153,9 +149,8 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ChatSearchMessagesScreen(
-                        roomId: widget.chatRoom.id,
-                      ),
+                      builder: (context) =>
+                          ChatSearchMessagesScreen(roomId: widget.chatRoom.id),
                     ),
                   );
                 },
@@ -165,10 +160,7 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
               // Leave Chat
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                leading: Icon(
-                  Symbols.exit_to_app,
-                  color: colorScheme.error,
-                ),
+                leading: Icon(Symbols.exit_to_app, color: colorScheme.error),
                 title: Text(
                   l10n.chatLeaveRoom,
                   style: TextStyle(color: colorScheme.error),
@@ -201,7 +193,7 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
 
   void _showNotifyLevelBottomSheet() {
     final l10n = AppLocalizations.of(context)!;
-    
+
     showModalBottomSheet(
       context: context,
       builder: (context) => Container(
@@ -211,9 +203,9 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
           children: [
             Text(
               l10n.chatNotifyLevel,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ListTile(
@@ -261,7 +253,7 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
 
   void _showMembersBottomSheet() {
     final l10n = AppLocalizations.of(context)!;
-    
+
     // Demo data
     final demoMembers = [
       {'id': '1', 'name': 'XSFX'},
@@ -284,9 +276,9 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
             children: [
               Text(
                 l10n.chatRoomMembers,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               Expanded(
@@ -297,10 +289,14 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                     final member = demoMembers[index];
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
                         child: Icon(
                           Icons.person,
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
                         ),
                       ),
                       title: Text(member['name']!),
@@ -395,57 +391,32 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
 
   void _showLeaveConfirmDialog() {
     final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        titlePadding: EdgeInsets.zero,
-        contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              Symbols.help_rounded,
-              size: 48,
-              fill: 1,
-              color: colorScheme.primary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.chatLeaveRoom,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(l10n.chatLeaveRoomConfirm),
-            const SizedBox(height: 8),
-          ],
+    final router = GoRouter.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    showTouchFishInfoDialog<bool>(
+      context,
+      title: l10n.chatLeaveRoom,
+      message: l10n.chatLeaveRoomConfirm,
+      icon: Symbols.help_rounded,
+      actions: [
+        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
+        TouchFishDialogAction<bool>(
+          label: l10n.leave,
+          result: true,
+          isDestructive: true,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
+      ],
+    ).then((confirmed) {
+      if (confirmed == true && mounted) {
+        router.pop();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(l10n.chatRoomLeft),
+            duration: const Duration(seconds: 2),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.pop();
-              // 没有退出逻辑
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(l10n.chatRoomLeft),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: colorScheme.error,
-            ),
-            child: Text(l10n.leave),
-          ),
-        ],
-      ),
-    );
+        );
+      }
+    });
   }
 }

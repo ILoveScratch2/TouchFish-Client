@@ -10,6 +10,7 @@ import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
 import '../utils/talker.dart';
+import '../widgets/app_alert_dialog.dart';
 import 'debug/debug_options_screen.dart';
 
 class AccountScreen extends StatefulWidget {
@@ -38,22 +39,21 @@ class _AccountScreenState extends State<AccountScreen> {
 
   void _logout() async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.accountLogout),
-        content: Text(l10n.accountLogoutConfirm),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.accountLogout),
-          ),
-        ],
-      ),
+    final confirmed = await showTouchFishErrorDialog<bool>(
+      context,
+      title: l10n.accountLogout,
+      message: l10n.accountLogoutConfirm,
+      icon: Icons.logout_rounded,
+      selectableMessage: false,
+      actions: [
+        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
+        TouchFishDialogAction<bool>(
+          label: l10n.accountLogout,
+          result: true,
+          isPrimary: true,
+          isDestructive: true,
+        ),
+      ],
     );
 
     if (confirmed == true && mounted) {
@@ -67,21 +67,28 @@ class _AccountScreenState extends State<AccountScreen> {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
-    TfApiClient.instance.changeSign(uid, password, newSignature).then((success) {
-      if (!mounted) return;
-      if (success) {
-        AuthState.instance.refreshProfile().then((_) {
+    TfApiClient.instance
+        .changeSign(uid, password, newSignature)
+        .then((success) {
           if (!mounted) return;
-          setState(() => _currentUser = AuthState.instance.currentUser);
+          if (success) {
+            AuthState.instance.refreshProfile().then((_) {
+              if (!mounted) return;
+              setState(() => _currentUser = AuthState.instance.currentUser);
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)!.accountUpdateSignature,
+                ),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        })
+        .catchError((e) {
+          talker.error('_updateSignature failed', e);
         });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(AppLocalizations.of(context)!.accountUpdateSignature),
-          behavior: SnackBarBehavior.floating,
-        ));
-      }
-    }).catchError((e) {
-      talker.error('_updateSignature failed', e);
-    });
   }
 
   @override
@@ -96,10 +103,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
         return Scaffold(
           backgroundColor: Theme.of(context).colorScheme.surface,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            toolbarHeight: 0,
-          ),
+          appBar: AppBar(backgroundColor: Colors.transparent, toolbarHeight: 0),
           body: SingleChildScrollView(
             child: Padding(
               padding: EdgeInsets.only(
@@ -132,11 +136,9 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Widget _buildUnauthorizedScreen(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.account),
-      ),
+      appBar: AppBar(title: Text(l10n.account)),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 360),
@@ -220,7 +222,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Widget _buildProfileCard(BuildContext context) {
     final user = _currentUser!;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Card(
@@ -320,7 +322,9 @@ class _AccountScreenState extends State<AccountScreen> {
                         Text(
                           user.personalSign?.isNotEmpty == true
                               ? user.personalSign!
-                              : AppLocalizations.of(context)!.accountDescriptionNone,
+                              : AppLocalizations.of(
+                                  context,
+                                )!.accountDescriptionNone,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -352,11 +356,9 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Widget _buildActionButtons(BuildContext context, bool isWide) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxWidth: MediaQuery.of(context).size.width,
-      ),
+      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width),
       child: LayoutBuilder(
         builder: (context, constraints) {
           const minWidth = 160.0;
@@ -364,14 +366,17 @@ class _AccountScreenState extends State<AccountScreen> {
           const padding = 24.0;
           final totalMin = 3 * minWidth + 2 * spacing;
           final availableWidth = constraints.maxWidth - padding;
-          
+
           final children = [
             Card(
               margin: EdgeInsets.zero,
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: Row(
                     spacing: 8,
                     children: [
@@ -397,7 +402,10 @@ class _AccountScreenState extends State<AccountScreen> {
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: Row(
                     spacing: 8,
                     children: [
@@ -425,7 +433,10 @@ class _AccountScreenState extends State<AccountScreen> {
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: Row(
                     spacing: 8,
                     children: [
@@ -455,7 +466,7 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
             ),
           ];
-          
+
           if (availableWidth > totalMin) {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -463,7 +474,9 @@ class _AccountScreenState extends State<AccountScreen> {
                 height: 48,
                 child: Row(
                   spacing: 8,
-                  children: children.map((child) => Expanded(child: child)).toList(),
+                  children: children
+                      .map((child) => Expanded(child: child))
+                      .toList(),
                 ),
               ),
             );
@@ -491,7 +504,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Widget _buildMenuItems(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     final menuItems = [
       {
         'icon': Symbols.notifications,
@@ -507,7 +520,7 @@ class _AccountScreenState extends State<AccountScreen> {
         },
       },
     ];
-    
+
     return Column(
       children: menuItems.map((item) {
         return ListTile(
@@ -524,7 +537,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Widget _buildAdditionalOptions(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     return Column(
       children: [
         const SizedBox(height: 8),
@@ -556,7 +569,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Widget _buildLogoutButton(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     return ListTile(
       leading: const Icon(Symbols.logout),
       trailing: const Icon(Symbols.chevron_right),

@@ -3,6 +3,7 @@ import '../l10n/app_localizations.dart';
 import '../models/forum_model.dart';
 import '../models/user_profile.dart';
 import '../widgets/account/profile_picture.dart';
+import '../widgets/app_alert_dialog.dart';
 
 class ForumMemberListSheet extends StatelessWidget {
   final String forumId;
@@ -33,8 +34,16 @@ class ForumMemberListSheet extends StatelessWidget {
               itemCount: members.length,
               itemBuilder: (context, index) {
                 final member = members[index];
-                final account = UserProfileDemoData.getDemoProfile(member.accountUid);
-                return _buildMemberTile(context, l10n, member, account, isModerator);
+                final account = UserProfileDemoData.getDemoProfile(
+                  member.accountUid,
+                );
+                return _buildMemberTile(
+                  context,
+                  l10n,
+                  member,
+                  account,
+                  isModerator,
+                );
               },
             ),
           ),
@@ -59,16 +68,13 @@ class ForumMemberListSheet extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.person_add),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.forumInviteMember)),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(l10n.forumInviteMember)));
             },
             style: IconButton.styleFrom(minimumSize: const Size(36, 36)),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {},
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: () {}),
           IconButton(
             icon: const Icon(Icons.close),
             onPressed: () => Navigator.pop(context),
@@ -113,7 +119,10 @@ class ForumMemberListSheet extends StatelessWidget {
           Text(_getRoleLabel(l10n, member.role)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: const Text('·', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              '·',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
           Expanded(child: Text('@${account.username}')),
         ],
@@ -131,22 +140,20 @@ class ForumMemberListSheet extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.delete),
                   onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: Text(l10n.forumRemoveMember),
-                        content: Text(l10n.forumRemoveMemberHint),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: Text(l10n.cancel),
-                          ),
-                          FilledButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: Text(l10n.forumRemoveMember),
-                          ),
-                        ],
-                      ),
+                    showTouchFishErrorDialog<void>(
+                      context,
+                      title: l10n.forumRemoveMember,
+                      message: l10n.forumRemoveMemberHint,
+                      icon: Icons.person_remove_alt_1_rounded,
+                      selectableMessage: false,
+                      actions: [
+                        TouchFishDialogAction<void>(label: l10n.cancel),
+                        TouchFishDialogAction<void>(
+                          label: l10n.forumRemoveMember,
+                          isPrimary: true,
+                          isDestructive: true,
+                        ),
+                      ],
                     );
                   },
                 ),
@@ -165,10 +172,8 @@ class ForumMemberListSheet extends StatelessWidget {
     showModalBottomSheet(
       isScrollControlled: true,
       context: context,
-      builder: (context) => _ForumMemberRoleSheet(
-        member: member,
-        account: account,
-      ),
+      builder: (context) =>
+          _ForumMemberRoleSheet(member: member, account: account),
     );
   }
 
@@ -183,10 +188,7 @@ class _ForumMemberRoleSheet extends StatefulWidget {
   final ForumMember member;
   final UserProfile account;
 
-  const _ForumMemberRoleSheet({
-    required this.member,
-    required this.account,
-  });
+  const _ForumMemberRoleSheet({required this.member, required this.account});
 
   @override
   State<_ForumMemberRoleSheet> createState() => _ForumMemberRoleSheetState();
@@ -198,7 +200,9 @@ class _ForumMemberRoleSheetState extends State<_ForumMemberRoleSheet> {
   @override
   void initState() {
     super.initState();
-    _roleController = TextEditingController(text: widget.member.role.toString());
+    _roleController = TextEditingController(
+      text: widget.member.role.toString(),
+    );
   }
 
   @override
@@ -221,22 +225,30 @@ class _ForumMemberRoleSheetState extends State<_ForumMemberRoleSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 16, left: 20, right: 16, bottom: 12),
+              padding: const EdgeInsets.only(
+                top: 16,
+                left: 20,
+                right: 16,
+                bottom: 12,
+              ),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       l10n.forumMemberRoleEdit(widget.account.username),
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.5,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.5,
+                          ),
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
-                    style: IconButton.styleFrom(minimumSize: const Size(36, 36)),
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(36, 36),
+                    ),
                   ),
                 ],
               ),
@@ -255,24 +267,26 @@ class _ForumMemberRoleSheetState extends State<_ForumMemberRoleSheet> {
                       final int? value = int.tryParse(textEditingValue.text);
                       if (value == null) return const [100, 50, 0];
                       return [100, 50, 0].where(
-                        (option) => option.toString().contains(textEditingValue.text),
+                        (option) =>
+                            option.toString().contains(textEditingValue.text),
                       );
                     },
                     onSelected: (int selection) {
                       _roleController.text = selection.toString();
                     },
-                    fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                      return TextField(
-                        controller: controller,
-                        focusNode: focusNode,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: l10n.forumMemberRole,
-                          helperText: l10n.forumMemberRoleHint,
-                        ),
-                        onTapOutside: (event) => focusNode.unfocus(),
-                      );
-                    },
+                    fieldViewBuilder:
+                        (context, controller, focusNode, onFieldSubmitted) {
+                          return TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: l10n.forumMemberRole,
+                              helperText: l10n.forumMemberRoleHint,
+                            ),
+                            onTapOutside: (event) => focusNode.unfocus(),
+                          );
+                        },
                   ),
                   const SizedBox(height: 16),
                   FilledButton.icon(

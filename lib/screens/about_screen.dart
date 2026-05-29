@@ -8,9 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
 import '../l10n/app_localizations.dart';
 import '../constants/app_constants.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'debug/debug_options_screen.dart';
 import '../utils/talker.dart';
+import '../widgets/app_alert_dialog.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -19,7 +19,8 @@ class AboutScreen extends StatefulWidget {
   State<AboutScreen> createState() => _AboutScreenState();
 }
 
-class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin {
+class _AboutScreenState extends State<AboutScreen>
+    with TickerProviderStateMixin {
   PackageInfo _packageInfo = PackageInfo(
     appName: AppConstants.appName,
     packageName: AppConstants.packageName,
@@ -67,7 +68,7 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
   void _onLogoTap() {
     final l10n = AppLocalizations.of(context)!;
     _rotationController.forward(from: 0);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -102,22 +103,22 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
 
   Future<void> _resetEasterEggProgress() async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.aboutEasterEggResetConfirmTitle),
-        content: Text(l10n.aboutEasterEggResetConfirmMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.aboutEasterEggResetCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.aboutEasterEggResetConfirm),
-          ),
-        ],
-      ),
+    final confirmed = await showTouchFishInfoDialog<bool>(
+      context,
+      title: l10n.aboutEasterEggResetConfirmTitle,
+      message: l10n.aboutEasterEggResetConfirmMessage,
+      icon: Symbols.refresh,
+      actions: [
+        TouchFishDialogAction<bool>(
+          label: l10n.aboutEasterEggResetCancel,
+          result: false,
+        ),
+        TouchFishDialogAction<bool>(
+          label: l10n.aboutEasterEggResetConfirm,
+          result: true,
+          isPrimary: true,
+        ),
+      ],
     );
 
     if (confirmed == true && mounted) {
@@ -155,45 +156,79 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
 
   int _getRequiredTapsForLevel(int level) {
     switch (level) {
-      case 0: return 0;
-      case 1: return 1;
-      case 2: return 5;
-      case 3: return 15;
-      case 4: return 30;
-      case 5: return 60;
-      case 6: return 100;
-      case 7: return 180;
-      case 8: return 280;
-      case 9: return 390;
-      case 10: return 600;
-      case 11: return 700;
-      case 12: return 860;
-      case 13: return 1000;
-      case 14: return 1100;
-      case 15: return 1450;
-      default: return 1450;
+      case 0:
+        return 0;
+      case 1:
+        return 1;
+      case 2:
+        return 5;
+      case 3:
+        return 15;
+      case 4:
+        return 30;
+      case 5:
+        return 60;
+      case 6:
+        return 100;
+      case 7:
+        return 180;
+      case 8:
+        return 280;
+      case 9:
+        return 390;
+      case 10:
+        return 600;
+      case 11:
+        return 700;
+      case 12:
+        return 860;
+      case 13:
+        return 1000;
+      case 14:
+        return 1100;
+      case 15:
+        return 1450;
+      default:
+        return 1450;
     }
   }
 
   String _getLevelName(AppLocalizations l10n, int level) {
     switch (level) {
-      case 0: return l10n.aboutEasterEggLevelName0;
-      case 1: return l10n.aboutEasterEggLevelName1;
-      case 2: return l10n.aboutEasterEggLevelName2;
-      case 3: return l10n.aboutEasterEggLevelName3;
-      case 4: return l10n.aboutEasterEggLevelName4;
-      case 5: return l10n.aboutEasterEggLevelName5;
-      case 6: return l10n.aboutEasterEggLevelName6;
-      case 7: return l10n.aboutEasterEggLevelName7;
-      case 8: return l10n.aboutEasterEggLevelName8;
-      case 9: return l10n.aboutEasterEggLevelName9;
-      case 10: return l10n.aboutEasterEggLevelName10;
-      case 11: return l10n.aboutEasterEggLevelName11;
-      case 12: return l10n.aboutEasterEggLevelName12;
-      case 13: return l10n.aboutEasterEggLevelName13;
-      case 14: return l10n.aboutEasterEggLevelName14;
-      case 15: return l10n.aboutEasterEggLevelName15;
-      default: return l10n.aboutEasterEggLevelName0;
+      case 0:
+        return l10n.aboutEasterEggLevelName0;
+      case 1:
+        return l10n.aboutEasterEggLevelName1;
+      case 2:
+        return l10n.aboutEasterEggLevelName2;
+      case 3:
+        return l10n.aboutEasterEggLevelName3;
+      case 4:
+        return l10n.aboutEasterEggLevelName4;
+      case 5:
+        return l10n.aboutEasterEggLevelName5;
+      case 6:
+        return l10n.aboutEasterEggLevelName6;
+      case 7:
+        return l10n.aboutEasterEggLevelName7;
+      case 8:
+        return l10n.aboutEasterEggLevelName8;
+      case 9:
+        return l10n.aboutEasterEggLevelName9;
+      case 10:
+        return l10n.aboutEasterEggLevelName10;
+      case 11:
+        return l10n.aboutEasterEggLevelName11;
+      case 12:
+        return l10n.aboutEasterEggLevelName12;
+      case 13:
+        return l10n.aboutEasterEggLevelName13;
+      case 14:
+        return l10n.aboutEasterEggLevelName14;
+      case 15:
+        return l10n.aboutEasterEggLevelName15;
+      default:
+        return l10n.aboutEasterEggLevelName0;
     }
   }
 
@@ -201,49 +236,88 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
     final l10n = AppLocalizations.of(context)!;
     _shakeController.forward(from: 0);
     ScaffoldMessenger.of(context).clearSnackBars();
-    
+
     setState(() {
       _easterEggTapCount++;
       _currentLevel = _calculateLevel(_easterEggTapCount);
     });
-    
+
     _saveEasterEggProgress();
-    
+
     final messageIndex = _random.nextInt(20);
     String message;
     switch (messageIndex) {
-      case 0: message = l10n.aboutEasterEggMessage0; break;
-      case 1: message = l10n.aboutEasterEggMessage1; break;
-      case 2: message = l10n.aboutEasterEggMessage2; break;
-      case 3: message = l10n.aboutEasterEggMessage3; break;
-      case 4: message = l10n.aboutEasterEggMessage4; break;
-      case 5: message = l10n.aboutEasterEggMessage5; break;
-      case 6: message = l10n.aboutEasterEggMessage6; break;
-      case 7: message = l10n.aboutEasterEggMessage7; break;
-      case 8: message = l10n.aboutEasterEggMessage8; break;
-      case 9: message = l10n.aboutEasterEggMessage9; break;
-      case 10: message = l10n.aboutEasterEggMessage10; break;
-      case 11: message = l10n.aboutEasterEggMessage11; break;
-      case 12: message = l10n.aboutEasterEggMessage12; break;
-      case 13: message = l10n.aboutEasterEggMessage13; break;
-      case 14: message = l10n.aboutEasterEggMessage14; break;
-      case 15: message = l10n.aboutEasterEggMessage15; break;
-      case 16: message = l10n.aboutEasterEggMessage16; break;
-      case 17: message = l10n.aboutEasterEggMessage17; break;
-      case 18: message = l10n.aboutEasterEggMessage18; break;
-      case 19: message = l10n.aboutEasterEggMessage19; break;
-      default: message = l10n.aboutEasterEggMessage0;
+      case 0:
+        message = l10n.aboutEasterEggMessage0;
+        break;
+      case 1:
+        message = l10n.aboutEasterEggMessage1;
+        break;
+      case 2:
+        message = l10n.aboutEasterEggMessage2;
+        break;
+      case 3:
+        message = l10n.aboutEasterEggMessage3;
+        break;
+      case 4:
+        message = l10n.aboutEasterEggMessage4;
+        break;
+      case 5:
+        message = l10n.aboutEasterEggMessage5;
+        break;
+      case 6:
+        message = l10n.aboutEasterEggMessage6;
+        break;
+      case 7:
+        message = l10n.aboutEasterEggMessage7;
+        break;
+      case 8:
+        message = l10n.aboutEasterEggMessage8;
+        break;
+      case 9:
+        message = l10n.aboutEasterEggMessage9;
+        break;
+      case 10:
+        message = l10n.aboutEasterEggMessage10;
+        break;
+      case 11:
+        message = l10n.aboutEasterEggMessage11;
+        break;
+      case 12:
+        message = l10n.aboutEasterEggMessage12;
+        break;
+      case 13:
+        message = l10n.aboutEasterEggMessage13;
+        break;
+      case 14:
+        message = l10n.aboutEasterEggMessage14;
+        break;
+      case 15:
+        message = l10n.aboutEasterEggMessage15;
+        break;
+      case 16:
+        message = l10n.aboutEasterEggMessage16;
+        break;
+      case 17:
+        message = l10n.aboutEasterEggMessage17;
+        break;
+      case 18:
+        message = l10n.aboutEasterEggMessage18;
+        break;
+      case 19:
+        message = l10n.aboutEasterEggMessage19;
+        break;
+      default:
+        message = l10n.aboutEasterEggMessage0;
     }
-    
+
     final levelName = _getLevelName(l10n, _currentLevel);
-    final displayMessage = '${l10n.aboutEasterEggLevel} $_currentLevel （$levelName）\n$message';
-    
+    final displayMessage =
+        '${l10n.aboutEasterEggLevel} $_currentLevel （$levelName）\n$message';
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          displayMessage,
-          style: const TextStyle(fontSize: 13),
-        ),
+        content: Text(displayMessage, style: const TextStyle(fontSize: 13)),
         duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.only(
@@ -290,17 +364,14 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
   void _copyToClipboard(String text, String message) {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-      ),
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
   }
 
   Future<void> _showLicenseDialog(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
     String licenseText = '';
-    
+
     try {
       licenseText = await rootBundle.loadString('LICENSE');
     } catch (e) {
@@ -340,7 +411,7 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
                 ),
               ),
               const Divider(height: 1),
-              
+
               // Description
               Container(
                 padding: const EdgeInsets.all(16.0),
@@ -356,21 +427,25 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
                       child: Text(
                         l10n.aboutLicenseDescription,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              
+
               // License text
               Expanded(
                 child: Container(
                   margin: const EdgeInsets.all(16.0),
                   padding: const EdgeInsets.all(12.0),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -380,15 +455,16 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
                         children: [
                           Text(
                             l10n.aboutLicenseFullText,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const Spacer(),
                           IconButton(
                             icon: const Icon(Symbols.content_copy, size: 20),
                             onPressed: () {
-                              Clipboard.setData(ClipboardData(text: licenseText));
+                              Clipboard.setData(
+                                ClipboardData(text: licenseText),
+                              );
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(l10n.aboutCopiedToClipboard),
@@ -405,10 +481,11 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
                         child: SingleChildScrollView(
                           child: SelectableText(
                             licenseText,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontFamily: 'monospace',
-                              fontSize: 11,
-                            ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  fontFamily: 'monospace',
+                                  fontSize: 11,
+                                ),
                           ),
                         ),
                       ),
@@ -416,7 +493,7 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
                   ),
                 ),
               ),
-              
+
               // Actions
               Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -472,7 +549,7 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
                 ),
               ),
               const Divider(height: 1),
-              
+
               // Font selection list
               Expanded(
                 child: ListView(
@@ -520,9 +597,9 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
               Expanded(
                 child: Text(
                   fontName,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontFamily: fontName,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(fontFamily: fontName),
                 ),
               ),
               const Icon(Symbols.chevron_right),
@@ -540,7 +617,7 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
   ) async {
     final l10n = AppLocalizations.of(context)!;
     String licenseText = '';
-    
+
     try {
       licenseText = await rootBundle.loadString(licensePath);
     } catch (e) {
@@ -587,7 +664,7 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
                 ),
               ),
               const Divider(height: 1),
-              
+
               // Description
               Container(
                 padding: const EdgeInsets.all(16.0),
@@ -603,21 +680,25 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
                       child: Text(
                         l10n.aboutFontLicenseDescription,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              
+
               // License text
               Expanded(
                 child: Container(
                   margin: const EdgeInsets.all(16.0),
                   padding: const EdgeInsets.all(12.0),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -627,15 +708,16 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
                         children: [
                           Text(
                             l10n.aboutFontLicenseFullText,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const Spacer(),
                           IconButton(
                             icon: const Icon(Symbols.content_copy, size: 20),
                             onPressed: () {
-                              Clipboard.setData(ClipboardData(text: licenseText));
+                              Clipboard.setData(
+                                ClipboardData(text: licenseText),
+                              );
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(l10n.aboutCopiedToClipboard),
@@ -652,10 +734,11 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
                         child: SingleChildScrollView(
                           child: SelectableText(
                             licenseText,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontFamily: 'monospace',
-                              fontSize: 11,
-                            ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  fontFamily: 'monospace',
+                                  fontSize: 11,
+                                ),
                           ),
                         ),
                       ),
@@ -663,7 +746,7 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
                   ),
                 ),
               ),
-              
+
               // Actions
               Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -700,224 +783,224 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
-              ? Center(child: Text(_errorMessage!))
-              : Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 540),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+          ? Center(child: Text(_errorMessage!))
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 540),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 24),
+                      // App Icon and Name
+                      GestureDetector(
+                        onTap: _onLogoTap,
+                        child: AnimatedBuilder(
+                          animation: _rotationAnimation,
+                          builder: (context, child) {
+                            return Transform.rotate(
+                              angle: _rotationAnimation.value * 2 * 3.14159,
+                              child: child,
+                            );
+                          },
+                          child: CircleAvatar(
+                            radius: 50,
+                            backgroundColor: theme.colorScheme.primary
+                                .withOpacity(0.1),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(50),
+                              child: Image.asset(
+                                'assets/logo.png',
+                                width: 80,
+                                height: 80,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      GestureDetector(
+                        onTap: _onAppNameTap,
+                        child: AnimatedBuilder(
+                          animation: _shakeAnimation,
+                          builder: (context, child) {
+                            final shake =
+                                sin(_shakeAnimation.value * pi * 4) *
+                                10 *
+                                (1 - _shakeAnimation.value);
+                            return Transform.translate(
+                              offset: Offset(shake, 0),
+                              child: child,
+                            );
+                          },
+                          child: Text(
+                            _packageInfo.appName,
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Text(
+                        l10n.aboutVersionInfo(
+                          _packageInfo.version,
+                          _packageInfo.buildNumber,
+                        ),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.textTheme.bodySmall?.color,
+                        ),
+                      ),
+
+                      // Easter egg progress bar
+                      if (_easterEggTapCount > 0) ...[
+                        const SizedBox(height: 16),
+                        _buildEasterEggProgress(context, l10n),
+                      ],
+
+                      const SizedBox(height: 32),
+
+                      // App Info Card
+                      _buildSection(
+                        context,
+                        title: l10n.aboutAppInfoSection,
                         children: [
-                          const SizedBox(height: 24),
-                          // App Icon and Name
-                          GestureDetector(
-                            onTap: _onLogoTap,
-                            child: AnimatedBuilder(
-                              animation: _rotationAnimation,
-                              builder: (context, child) {
-                                return Transform.rotate(
-                                  angle: _rotationAnimation.value * 2 * 3.14159,
-                                  child: child,
-                                );
-                              },
-                              child: CircleAvatar(
-                                radius: 50,
-                                backgroundColor:
-                                    theme.colorScheme.primary.withOpacity(0.1),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(50),
-                                  child: Image.asset(
-                                    'assets/logo.png',
-                                    width: 80,
-                                    height: 80,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          GestureDetector(
-                            onTap: _onAppNameTap,
-                            child: AnimatedBuilder(
-                              animation: _shakeAnimation,
-                              builder: (context, child) {
-                                final shake = sin(_shakeAnimation.value * pi * 4) * 10 * (1 - _shakeAnimation.value);
-                                return Transform.translate(
-                                  offset: Offset(shake, 0),
-                                  child: child,
-                                );
-                              },
-                              child: Text(
-                                _packageInfo.appName,
-                                style: theme.textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Text(
-                            l10n.aboutVersionInfo(
-                              _packageInfo.version,
-                              _packageInfo.buildNumber,
-                            ),
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.textTheme.bodySmall?.color,
-                            ),
-                          ),
-                          
-                          // Easter egg progress bar
-                          if (_easterEggTapCount > 0) ...[
-                            const SizedBox(height: 16),
-                            _buildEasterEggProgress(context, l10n),
-                          ],
-                          
-                          const SizedBox(height: 32),
-
-                          // App Info Card
-                          _buildSection(
+                          _buildInfoItem(
                             context,
-                            title: l10n.aboutAppInfoSection,
-                            children: [
-                              _buildInfoItem(
-                                context,
-                                icon: Symbols.info,
-                                label: l10n.aboutPackageName,
-                                value: _packageInfo.packageName,
-                              ),
-                              _buildInfoItem(
-                                context,
-                                icon: Symbols.update,
-                                label: l10n.aboutVersion,
-                                value: _packageInfo.version,
-                              ),
-                              _buildInfoItem(
-                                context,
-                                icon: Symbols.build,
-                                label: l10n.aboutBuildNumber,
-                                value: _packageInfo.buildNumber,
-                              ),
-                            ],
+                            icon: Symbols.info,
+                            label: l10n.aboutPackageName,
+                            value: _packageInfo.packageName,
                           ),
-
-                          const SizedBox(height: 16),
-
-                          // Links Card
-                          _buildSection(
+                          _buildInfoItem(
                             context,
-                            title: l10n.aboutLinksSection,
-                            children: [
-                              _buildListTile(
-                                context,
-                                icon: Symbols.description,
-                                title: l10n.aboutDocumentation,
-                                onTap: () => _launchURL(
-                                  AppConstants.documentationUrl,
-                                ),
-                              ),
-                              _buildListTile(
-                                context,
-                                icon: Symbols.dns,
-                                title: l10n.aboutServerRepository,
-                                onTap: () => _launchURL(
-                                  AppConstants.githubServerRepoUrl,
-                                ),
-                              ),
-                              _buildListTile(
-                                context,
-                                icon: Symbols.font_download,
-                                title: l10n.aboutFontLicense,
-                                onTap: () => _showFontLicenseDialog(context),
-                              ),
-                              _buildListTile(
-                                context,
-                                icon: Symbols.code,
-                                title: l10n.aboutOpenSourceLicenses,
-                                onTap: () {
-                                  context.push('/licenses');
-                                },
-                              ),
-                            ],
+                            icon: Symbols.update,
+                            label: l10n.aboutVersion,
+                            value: _packageInfo.version,
                           ),
-
-                          const SizedBox(height: 16),
-
-                          // Developer Info
-                          _buildSection(
+                          _buildInfoItem(
                             context,
-                            title: l10n.aboutDeveloperSection,
-                            children: [
-                              _buildListTile(
-                                context,
-                                icon: Symbols.email,
-                                title: l10n.aboutContactUs,
-                                subtitle: AppConstants.contactEmail,
-                                onTap: () => _launchURL(
-                                  AppConstants.contactMailto,
-                                ),
-                              ),
-                              _buildListTile(
-                                context,
-                                icon: Symbols.code_blocks,
-                                title: l10n.aboutSourceCode,
-                                subtitle: 'GitHub Repository',
-                                onTap: () => _launchURL(
-                                  AppConstants.githubRepoUrl,
-                                ),
-                              ),
-                              _buildListTile(
-                                context,
-                                icon: Symbols.copyright,
-                                title: l10n.aboutLicense,
-                                subtitle: l10n.aboutLicenseContent,
-                                onTap: () => _showLicenseDialog(context),
-                              ),
-                              _buildListTile(
-                                context,
-                                icon: Symbols.terminal,
-                                title: l10n.accountDebugOptions,
-                                onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) => const DebugOptionsScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
+                            icon: Symbols.build,
+                            label: l10n.aboutBuildNumber,
+                            value: _packageInfo.buildNumber,
                           ),
-
-                          const SizedBox(height: 32),
-
-                          // Copyright
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              children: [
-                                Text(
-                                  l10n.aboutCopyright(
-                                    DateTime.now().year.toString(),
-                                  ),
-                                  style: theme.textTheme.bodySmall,
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  l10n.aboutMadeWith,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    fontSize: 10,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
                         ],
                       ),
-                    ),
+
+                      const SizedBox(height: 16),
+
+                      // Links Card
+                      _buildSection(
+                        context,
+                        title: l10n.aboutLinksSection,
+                        children: [
+                          _buildListTile(
+                            context,
+                            icon: Symbols.description,
+                            title: l10n.aboutDocumentation,
+                            onTap: () =>
+                                _launchURL(AppConstants.documentationUrl),
+                          ),
+                          _buildListTile(
+                            context,
+                            icon: Symbols.dns,
+                            title: l10n.aboutServerRepository,
+                            onTap: () =>
+                                _launchURL(AppConstants.githubServerRepoUrl),
+                          ),
+                          _buildListTile(
+                            context,
+                            icon: Symbols.font_download,
+                            title: l10n.aboutFontLicense,
+                            onTap: () => _showFontLicenseDialog(context),
+                          ),
+                          _buildListTile(
+                            context,
+                            icon: Symbols.code,
+                            title: l10n.aboutOpenSourceLicenses,
+                            onTap: () {
+                              context.push('/licenses');
+                            },
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Developer Info
+                      _buildSection(
+                        context,
+                        title: l10n.aboutDeveloperSection,
+                        children: [
+                          _buildListTile(
+                            context,
+                            icon: Symbols.email,
+                            title: l10n.aboutContactUs,
+                            subtitle: AppConstants.contactEmail,
+                            onTap: () => _launchURL(AppConstants.contactMailto),
+                          ),
+                          _buildListTile(
+                            context,
+                            icon: Symbols.code_blocks,
+                            title: l10n.aboutSourceCode,
+                            subtitle: 'GitHub Repository',
+                            onTap: () => _launchURL(AppConstants.githubRepoUrl),
+                          ),
+                          _buildListTile(
+                            context,
+                            icon: Symbols.copyright,
+                            title: l10n.aboutLicense,
+                            subtitle: l10n.aboutLicenseContent,
+                            onTap: () => _showLicenseDialog(context),
+                          ),
+                          _buildListTile(
+                            context,
+                            icon: Symbols.terminal,
+                            title: l10n.accountDebugOptions,
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const DebugOptionsScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Copyright
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            Text(
+                              l10n.aboutCopyright(
+                                DateTime.now().year.toString(),
+                              ),
+                              style: theme.textTheme.bodySmall,
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              l10n.aboutMadeWith,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontSize: 10,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      SizedBox(
+                        height: MediaQuery.of(context).padding.bottom + 16,
+                      ),
+                    ],
                   ),
                 ),
+              ),
+            ),
     );
   }
 
@@ -935,10 +1018,9 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
               title,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
           const Divider(height: 1),
@@ -1054,9 +1136,11 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
     final currentLevelTaps = _getRequiredTapsForLevel(_currentLevel);
     final nextLevelTaps = _getRequiredTapsForLevel(nextLevel);
     final remaining = nextLevelTaps - _easterEggTapCount;
-    final progress = (_easterEggTapCount - currentLevelTaps) / (nextLevelTaps - currentLevelTaps);
+    final progress =
+        (_easterEggTapCount - currentLevelTaps) /
+        (nextLevelTaps - currentLevelTaps);
     final currentLevelName = _getLevelName(l10n, _currentLevel);
-    
+
     return Container(
       constraints: const BoxConstraints(maxWidth: 300),
       child: Column(
@@ -1100,10 +1184,7 @@ class _AboutScreenState extends State<AboutScreen> with TickerProviderStateMixin
                 tooltip: l10n.aboutEasterEggReset,
                 iconSize: 18,
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 32,
-                  minHeight: 32,
-                ),
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 style: IconButton.styleFrom(
                   backgroundColor: theme.colorScheme.errorContainer,
                   foregroundColor: theme.colorScheme.onErrorContainer,
