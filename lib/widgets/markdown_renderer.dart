@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:flutter_highlight/flutter_highlight.dart';
-import 'package:flutter_highlight/themes/github.dart';
-import 'package:flutter_highlight/themes/monokai-sublime.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_highlight/themes/a11y-dark.dart';
+import 'package:flutter_highlight/themes/a11y-light.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
-import 'package:markdown/markdown.dart' as md;
+import 'package:go_router/go_router.dart';
+import 'package:markdown/markdown.dart' as markdown;
+import 'package:markdown_widget/markdown_widget.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
 import 'account/profile_picture.dart';
-import '../utils/talker.dart';
 
-/// Markdown Renderer
-class MarkdownRenderer extends StatelessWidget {
+class MarkdownRenderer extends HookWidget {
   final String data;
   final bool selectable;
   final bool fitContent;
@@ -28,460 +27,649 @@ class MarkdownRenderer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = theme.brightness == Brightness.dark;
+    final config = isDark
+        ? MarkdownConfig.darkConfig
+        : MarkdownConfig.defaultConfig;
+    final spoilerRevealed = useState(false);
+    final codeBlockDecoration = BoxDecoration(
+      color: isDark
+          ? theme.colorScheme.surfaceBright
+          : theme.colorScheme.surfaceDim,
+      borderRadius: const BorderRadius.all(Radius.circular(8)),
+      border: Border.all(color: theme.colorScheme.outlineVariant),
+    );
 
-    return MarkdownBody(
+    final mentionGenerator = MentionChipGenerator(
+      backgroundColor: theme.colorScheme.primary,
+      foregroundColor: theme.colorScheme.onPrimary,
+      onTap: (profile) => context.push('/user/${profile.uid}'),
+    );
+
+    final highlightGenerator = HighlightGenerator(
+      highlightColor: theme.colorScheme.primaryContainer,
+    );
+
+    final spoilerGenerator = SpoilerGenerator(
+      backgroundColor: theme.colorScheme.tertiary,
+      foregroundColor: theme.colorScheme.onTertiary,
+      outlineColor: theme.colorScheme.outline,
+      revealed: spoilerRevealed.value,
+      hiddenLabel: l10n.markdownSpoilerHidden,
+      onToggle: () => spoilerRevealed.value = !spoilerRevealed.value,
+    );
+
+    final markdown = MarkdownBlock(
       data: data,
       selectable: selectable,
-      fitContent: fitContent,
-      styleSheet: MarkdownStyleSheet(
-        blockSpacing: 12.0,
-        // 段落样式
-        p: Theme.of(context).textTheme.bodyMedium,
-        // 标题样式
-        h1: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-        h2: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-        h3: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-        h4: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-        h5: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-        h6: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-        // 表格样式
-        tableBorder: TableBorder.all(
-          color: colorScheme.outlineVariant,
-          width: 1,
-        ),
-        tableHead: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: colorScheme.onSurface,
-        ),
-        tableBody: TextStyle(
-          color: colorScheme.onSurface,
-        ),
-        tableCellsPadding: const EdgeInsets.all(8),
-        // 水平线样式
-        horizontalRuleDecoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(
-              color: colorScheme.outlineVariant,
-              width: 1,
-            ),
-          ),
-        ),
-        // 行内代码样式
-        code: TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 14,
-          backgroundColor: isDark 
-              ? colorScheme.surfaceContainerHighest
-              : colorScheme.surfaceContainerHighest.withOpacity(0.8),
-          color: colorScheme.onSurface,
-        ),
-        // 代码块样式
-        codeblockDecoration: const BoxDecoration(
-          color: Colors.transparent,
-        ),
-        codeblockPadding: EdgeInsets.zero,
-        // 引用样式
-        blockquotePadding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
-        blockquoteDecoration: BoxDecoration(
-          border: Border(
-            left: BorderSide(
-              color: colorScheme.primary,
-              width: 4,
-            ),
-          ),
-          color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-        ),
-        // 列表样式
-        listBullet: TextStyle(
-          color: colorScheme.onSurface,
-          fontWeight: FontWeight.bold,
-        ),
-        // 链接样式
-        a: TextStyle(
-          color: colorScheme.primary,
-          decoration: TextDecoration.underline,
-        ),
-      ),
-      builders: {
-        // 自定义代码块
-        'code': CustomCodeBuilder(),
-        // LaTeX 支持
-        'latex': LatexBuilder(),
-        // @mention 支持
-        'mention': MentionChipBuilder(),
-      },
-      // 自定义图片
-      imageBuilder: (uri, title, alt) {
-        return _ImageWidget(
-          uri: uri,
-          title: title,
-          alt: alt,
-        );
-      },
-      // 点击链接回调
-      onTapLink: (text, href, title) async {
-        if (href != null) {
-          final uri = Uri.parse(href);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          }
-        }
-      },
-      // 支持 LaTeX 语法扩展
-      extensionSet: md.ExtensionSet(
-        md.ExtensionSet.gitHubFlavored.blockSyntaxes,
-        [
-          MentionInlineSyntax(),
-          md.EmojiSyntax(),
-          ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
-          LatexSyntax(),
-        ],
-      ),
-    );
-  }
-}
-
-/// 自定义代码块
-class CustomCodeBuilder extends MarkdownElementBuilder {
-  @override
-  Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
-    if (element.tag != 'code') {
-      return null;
-    }
-    
-    final String code = element.textContent;
-    final bool hasLanguageClass = element.attributes['class']?.startsWith('language-') ?? false;
-    final bool isMultiLine = code.contains('\n');
-    if (!hasLanguageClass && !isMultiLine) {
-      return null;
-    }
-    final String language = element.attributes['class']?.replaceFirst('language-', '') ?? '';
-
-    return _CodeBlockWidget(
-      code: code,
-      language: language,
-    );
-  }
-}
-
-/// 代码块组件
-class _CodeBlockWidget extends StatelessWidget {
-  final String code;
-  final String language;
-
-  const _CodeBlockWidget({
-    required this.code,
-    required this.language,
-  });
-
-  static Map<String, TextStyle> _buildCodeTheme(bool isDark) {
-    final backgroundColor = isDark ? const Color(0xFF0D1117) : const Color(0xFFF6F8FA);
-    final baseTheme = isDark ? monokaiSublimeTheme : githubTheme;
-    return Map.from(baseTheme).map((key, value) {
-      return MapEntry(
-        key,
-        value.copyWith(backgroundColor: backgroundColor),
-      );
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final l10n = AppLocalizations.of(context)!;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0D1117) : const Color(0xFFF6F8FA),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: colorScheme.outlineVariant,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 代码块头部
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: isDark 
-                  ? Colors.black.withOpacity(0.3)
-                  : Colors.grey.shade200,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(7),
-                topRight: Radius.circular(7),
-              ),
-            ),
-            child: Row(
-              children: [
-                if (language.isNotEmpty)
-                  Text(
-                    language,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+      config: config.copy(
+        configs: [
+          isDark
+              ? PreConfig.darkConfig.copy(
+                  textStyle: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 14,
                   ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.copy, size: 16),
-                  tooltip: l10n.markdownCopyCode,
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: code));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(l10n.markdownCodeCopied),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                  padding: const EdgeInsets.all(4),
+                  styleNotMatched: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 14,
+                  ),
+                  decoration: codeBlockDecoration,
+                )
+              : PreConfig(
+                  theme: a11yLightTheme,
+                  textStyle: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 14,
+                  ),
+                  styleNotMatched: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 14,
+                  ),
+                  decoration: codeBlockDecoration,
                 ),
-              ],
+          PConfig(
+            textStyle: theme.textTheme.bodyMedium ?? const TextStyle(fontSize: 14),
+          ),
+          Heading1Config(
+            style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ) ??
+                const TextStyle(
+                  fontSize: 32,
+                  height: 40 / 32,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          Heading2Config(
+            style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ) ??
+                const TextStyle(
+                  fontSize: 24,
+                  height: 30 / 24,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          Heading3Config(
+            style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ) ??
+                const TextStyle(
+                  fontSize: 20,
+                  height: 25 / 20,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          PreConfig(
+            theme: isDark ? a11yDarkTheme : a11yLightTheme,
+            textStyle: const TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 14,
+            ),
+            styleNotMatched: const TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 14,
+            ),
+            decoration: codeBlockDecoration,
+          ),
+          TableConfig(
+            wrapper: (child) => SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: child,
             ),
           ),
-          // 代码内容
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(12),
-            child: HighlightView(
-              code,
-              language: language.isEmpty ? 'plaintext' : language,
-              theme: _buildCodeTheme(isDark),
-              padding: EdgeInsets.zero,
-              textStyle: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 14,
-              ),
+          LinkConfig(
+            style: TextStyle(
+              color: theme.colorScheme.primary,
+              decoration: TextDecoration.underline,
             ),
+            onTap: (href) => _openLink(context, href),
+          ),
+          ImgConfig(
+            builder: (url, attributes) {
+              final uri = Uri.tryParse(url);
+              if (uri == null) {
+                return const SizedBox.shrink();
+              }
+              return _MarkdownRemoteImage(uri: uri);
+            },
           ),
         ],
       ),
+      generator: MarkdownRenderer.buildGenerator(
+        isDark: isDark,
+        generators: [
+          mentionGenerator,
+          highlightGenerator,
+          spoilerGenerator,
+        ],
+      ),
     );
+
+    if (fitContent) {
+      return markdown;
+    }
+
+    return SizedBox(width: double.infinity, child: markdown);
+  }
+
+  static MarkdownGenerator buildGenerator({
+    required bool isDark,
+    List<dynamic> generators = const [],
+  }) {
+    return MarkdownGenerator(
+      generators: [
+        latexGenerator,
+        ...generators,
+        SpanNodeGeneratorWithTag(
+          tag: MarkdownTag.hr.name,
+          generator: (element, config, visitor) => DividerNode(),
+        ),
+      ],
+      inlineSyntaxList: [
+        _MentionInlineSyntax(),
+        _HighlightInlineSyntax(),
+        _SpoilerInlineSyntax(),
+        LatexSyntax(isDark),
+      ],
+      linesMargin: const EdgeInsets.symmetric(vertical: 4),
+    );
+  }
+
+  static Future<void> _openLink(BuildContext context, String href) async {
+    final uri = Uri.tryParse(href);
+    if (uri == null) {
+      return;
+    }
+
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }
 
-// @mention
-class MentionInlineSyntax extends md.InlineSyntax {
-  MentionInlineSyntax() : super(r'@([A-Za-z0-9_]+)(?=\s|$)');
+class _MentionInlineSyntax extends markdown.InlineSyntax {
+  _MentionInlineSyntax()
+      : super(r'(^|[^A-Za-z0-9._%+\-/\[])(@[-A-Za-z0-9_]+)(?=\s|$)');
 
   @override
-  bool onMatch(md.InlineParser parser, Match match) {
-    final username = match[1]!;
-    if (UserProfileDemoData.findByUsername(username) == null) {
-      parser.addNode(md.Text('@$username'));
+  bool onMatch(markdown.InlineParser parser, Match match) {
+    final prefix = match[1] ?? '';
+    final alias = match[2]!;
+    final username = alias.substring(1);
+    final profile = UserProfileDemoData.findByUsername(username);
+
+    if (prefix.isNotEmpty) {
+      parser.addNode(markdown.Text(prefix));
+    }
+
+    if (profile == null) {
+      parser.addNode(markdown.Text(alias));
       return true;
     }
-    final element = md.Element.text('mention', '@$username');
-    element.attributes['username'] = username;
+
+    final element = markdown.Element('mention-chip', [markdown.Text(alias)])
+      ..attributes['alias'] = alias
+      ..attributes['username'] = username
+      ..attributes['uid'] = profile.uid;
+    parser.addNode(element);
+
+    return true;
+  }
+}
+
+class _HighlightInlineSyntax extends markdown.InlineSyntax {
+  _HighlightInlineSyntax() : super(r'==([^=]+)==');
+
+  @override
+  bool onMatch(markdown.InlineParser parser, Match match) {
+    final text = match[1]!;
+    final element = markdown.Element('highlight', [markdown.Text(text)]);
     parser.addNode(element);
     return true;
   }
 }
 
-class MentionChipBuilder extends MarkdownElementBuilder {
+class _SpoilerInlineSyntax extends markdown.InlineSyntax {
+  _SpoilerInlineSyntax() : super(r'=!([^!]+)!=');
+
   @override
-  Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
-    final username = element.attributes['username'] ??
-        element.textContent.replaceFirst('@', '');
-    final profile = UserProfileDemoData.findByUsername(username);
-    return _MentionChipWidget(username: username, profile: profile);
+  bool onMatch(markdown.InlineParser parser, Match match) {
+    final text = match[1]!;
+    final element = markdown.Element('spoiler', [markdown.Text(text)]);
+    parser.addNode(element);
+    return true;
   }
 }
 
-class _MentionChipWidget extends StatelessWidget {
-  final String username;
-  final UserProfile? profile;
+class MentionChipGenerator extends SpanNodeGeneratorWithTag {
+  MentionChipGenerator({
+    required Color backgroundColor,
+    required Color foregroundColor,
+    required void Function(UserProfile profile) onTap,
+  }) : super(
+         tag: 'mention-chip',
+         generator: (element, config, visitor) {
+           return MentionChipSpanNode(
+             attributes: element.attributes,
+             backgroundColor: backgroundColor,
+             foregroundColor: foregroundColor,
+             onTap: onTap,
+           );
+         },
+       );
+}
 
-  const _MentionChipWidget({required this.username, this.profile});
+class MentionChipSpanNode extends SpanNode {
+  final Map<String, String> attributes;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final void Function(UserProfile profile) onTap;
+
+  MentionChipSpanNode({
+    required this.attributes,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.onTap,
+  });
+
+  @override
+  InlineSpan build() {
+    final username = attributes['username'] ?? '';
+    final profile = UserProfileDemoData.findByUsername(username);
+    if (profile == null) {
+      return TextSpan(text: attributes['alias'] ?? '@$username');
+    }
+
+    return WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: _MentionChipContent(
+        profile: profile,
+        backgroundColor: backgroundColor,
+        foregroundColor: foregroundColor,
+        onTap: () => onTap(profile),
+      ),
+    );
+  }
+}
+
+class _MentionChipContent extends StatelessWidget {
+  final UserProfile profile;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final VoidCallback onTap;
+
+  const _MentionChipContent({
+    required this.profile,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final avatarUrl = profile?.avatar;
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 1),
-      padding: const EdgeInsets.fromLTRB(4, 2, 6, 2),
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildAvatar(avatarUrl, colorScheme),
-          const SizedBox(width: 4),
-          Text(
-            '@$username',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: colorScheme.onPrimaryContainer,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(32),
+      child: Container(
+        padding: const EdgeInsets.only(left: 5, right: 7, top: 2.5, bottom: 2.5),
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        decoration: BoxDecoration(
+          color: backgroundColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(32),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: backgroundColor.withValues(alpha: 0.5),
+                borderRadius: const BorderRadius.all(Radius.circular(32)),
+              ),
+              child: ProfilePictureWidget(
+                avatarUrl: profile.avatar,
+                radius: 9,
+                fallbackText: profile.username,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 6),
+            Text(
+              '@${profile.username}',
+              style: TextStyle(
+                color: backgroundColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
-    );
-  }
-
-  Widget _buildAvatar(String? avatarUrl, ColorScheme colorScheme) {
-    return ProfilePictureWidget(
-      avatarUrl: avatarUrl,
-      radius: 8,
     );
   }
 }
 
-/// LaTeX 语法解析器
-class LatexSyntax extends md.InlineSyntax {
-  LatexSyntax() : super(r'\$\$(.+?)\$\$|\$(.+?)\$');
+class HighlightGenerator extends SpanNodeGeneratorWithTag {
+  HighlightGenerator({required Color highlightColor})
+      : super(
+         tag: 'highlight',
+         generator: (element, config, visitor) {
+           return HighlightSpanNode(
+             text: element.textContent,
+             highlightColor: highlightColor,
+           );
+         },
+       );
+}
+
+class HighlightSpanNode extends SpanNode {
+  final String text;
+  final Color highlightColor;
+
+  HighlightSpanNode({required this.text, required this.highlightColor});
 
   @override
-  bool onMatch(md.InlineParser parser, Match match) {
-    final latex = match[1] ?? match[2];
-    if (latex == null) return false;
+  InlineSpan build() {
+    return TextSpan(
+      text: text,
+      style: TextStyle(backgroundColor: highlightColor),
+    );
+  }
+}
 
-    final element = md.Element.text('latex', latex);
-    element.attributes['display'] = match[1] != null ? 'block' : 'inline';
+class SpoilerGenerator extends SpanNodeGeneratorWithTag {
+  SpoilerGenerator({
+    required Color backgroundColor,
+    required Color foregroundColor,
+    required Color outlineColor,
+    required bool revealed,
+    required String hiddenLabel,
+    required VoidCallback onToggle,
+  }) : super(
+         tag: 'spoiler',
+         generator: (element, config, visitor) {
+           return SpoilerSpanNode(
+             text: element.textContent,
+             backgroundColor: backgroundColor,
+             foregroundColor: foregroundColor,
+             outlineColor: outlineColor,
+             revealed: revealed,
+              hiddenLabel: hiddenLabel,
+             onToggle: onToggle,
+           );
+         },
+       );
+}
+
+class SpoilerSpanNode extends SpanNode {
+  final String text;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final Color outlineColor;
+  final bool revealed;
+  final String hiddenLabel;
+  final VoidCallback onToggle;
+
+  SpoilerSpanNode({
+    required this.text,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.outlineColor,
+    required this.revealed,
+    required this.hiddenLabel,
+    required this.onToggle,
+  });
+
+  @override
+  InlineSpan build() {
+    return WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: InkWell(
+        onTap: onToggle,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          decoration: BoxDecoration(
+            color: revealed ? Colors.transparent : backgroundColor,
+            border: revealed ? Border.all(color: outlineColor, width: 1) : null,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: revealed
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.visibility, size: 18),
+                    const SizedBox(width: 6),
+                    Flexible(child: Text(text)),
+                  ],
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.visibility_off,
+                      color: foregroundColor,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      hiddenLabel,
+                      style: TextStyle(color: foregroundColor),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+final SpanNodeGeneratorWithTag latexGenerator = SpanNodeGeneratorWithTag(
+  tag: _latexTag,
+  generator: (element, config, visitor) {
+    return LatexNode(element.attributes, element.textContent, config);
+  },
+);
+
+const String _latexTag = 'latex';
+
+class LatexSyntax extends markdown.InlineSyntax {
+  final bool isDark;
+
+  LatexSyntax(this.isDark) : super(r'(\$\$[\s\S]+\$\$)|(\$.+?\$)');
+
+  @override
+  bool onMatch(markdown.InlineParser parser, Match match) {
+    final matchValue = match.input.substring(match.start, match.end);
+    String content = '';
+    var isInline = true;
+    const blockSyntax = r'$$';
+    const inlineSyntax = r'$';
+
+    if (matchValue.startsWith(blockSyntax) &&
+        matchValue.endsWith(blockSyntax) &&
+        matchValue != blockSyntax) {
+      content = matchValue.substring(2, matchValue.length - 2);
+      isInline = false;
+    } else if (matchValue.startsWith(inlineSyntax) &&
+        matchValue.endsWith(inlineSyntax) &&
+        matchValue != inlineSyntax) {
+      content = matchValue.substring(1, matchValue.length - 1);
+    }
+
+    final element = markdown.Element.text(_latexTag, matchValue)
+      ..attributes['content'] = content
+      ..attributes['isInline'] = '$isInline'
+      ..attributes['isDark'] = isDark.toString();
     parser.addNode(element);
-
     return true;
   }
 }
 
-/// LaTeX
-class LatexBuilder extends MarkdownElementBuilder {
+class LatexNode extends SpanNode {
+  final Map<String, String> attributes;
+  final String textContent;
+  final MarkdownConfig config;
+
+  LatexNode(this.attributes, this.textContent, this.config);
+
   @override
-  Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
-    final latex = element.textContent;
-    final isBlock = element.attributes['display'] == 'block';
+  InlineSpan build() {
+    final content = attributes['content'] ?? '';
+    final isInline = attributes['isInline'] == 'true';
+    final isDark = attributes['isDark'] == 'true';
+    final style = parentStyle ?? config.p.textStyle;
 
-    try {
-      final widget = Math.tex(
-        latex,
-        textStyle: preferredStyle,
-        mathStyle: isBlock ? MathStyle.display : MathStyle.text,
-      );
-
-      if (isBlock) {
-        return Center(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: widget,
-            ),
-          ),
-        );
-      }
-
-      return widget;
-    } catch (e) {
-      talker.error('LaTeX parse failed: $latex', e);
-      // LaTeX 解析失败就显示原始文本
-      return Text(
-        isBlock ? '\$\$$latex\$\$' : '\$$latex\$',
-        style: TextStyle(
-          fontFamily: 'monospace',
-          color: Colors.red,
-        ),
-      );
+    if (content.isEmpty) {
+      return TextSpan(style: style, text: textContent);
     }
+
+    final latex = Math.tex(
+      content,
+      mathStyle: MathStyle.text,
+      textStyle: style.copyWith(color: isDark ? Colors.white : Colors.black),
+      textScaleFactor: 1,
+      onErrorFallback: (error) {
+        return Text(textContent, style: style.copyWith(color: Colors.red));
+      },
+    );
+
+    return WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: isInline
+          ? latex
+          : SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: latex),
+            ),
+    );
   }
 }
 
-/// 图片
-class _ImageWidget extends StatelessWidget {
-  final Uri uri;
-  final String? title;
-  final String? alt;
+class DividerNode extends SpanNode {
+  @override
+  InlineSpan build() {
+    return const WidgetSpan(child: Divider());
+  }
+}
 
-  const _ImageWidget({
-    required this.uri,
-    this.title,
-    this.alt,
+class Heading1Config extends HeadingConfig {
+  @override
+  final TextStyle style;
+
+  const Heading1Config({
+    this.style = const TextStyle(
+      fontSize: 32,
+      height: 40 / 32,
+      fontWeight: FontWeight.bold,
+    ),
   });
+
+  @override
+  String get tag => MarkdownTag.h1.name;
+}
+
+class Heading2Config extends HeadingConfig {
+  @override
+  final TextStyle style;
+
+  const Heading2Config({
+    this.style = const TextStyle(
+      fontSize: 24,
+      height: 30 / 24,
+      fontWeight: FontWeight.bold,
+    ),
+  });
+
+  @override
+  String get tag => MarkdownTag.h2.name;
+}
+
+class Heading3Config extends HeadingConfig {
+  @override
+  final TextStyle style;
+
+  const Heading3Config({
+    this.style = const TextStyle(
+      fontSize: 20,
+      height: 25 / 20,
+      fontWeight: FontWeight.bold,
+    ),
+  });
+
+  @override
+  String get tag => MarkdownTag.h3.name;
+}
+
+class _MarkdownRemoteImage extends StatelessWidget {
+  final Uri uri;
+
+  const _MarkdownRemoteImage({required this.uri});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // 点击图片预览
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => _ImagePreviewScreen(
-              uri: uri,
-              title: title ?? alt,
-            ),
+            builder: (context) => _ImagePreviewScreen(uri: uri),
           ),
         );
       },
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        constraints: const BoxConstraints(
-          maxWidth: double.infinity,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 360),
           child: Image.network(
             uri.toString(),
             fit: BoxFit.contain,
-            width: double.infinity,
             loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
+              if (loadingProgress == null) {
+                return child;
+              }
 
               return Container(
-                height: 200,
+                constraints: const BoxConstraints(minHeight: 120),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 alignment: Alignment.center,
                 child: CircularProgressIndicator(
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
-                      : null,
+                  value: loadingProgress.expectedTotalBytes == null
+                      ? null
+                      : loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!,
                 ),
               );
             },
             errorBuilder: (context, error, stackTrace) {
               return Container(
-                height: 200,
-                alignment: Alignment.center,
+                constraints: const BoxConstraints(minHeight: 120),
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.broken_image,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      alt ?? 'Failed to load image',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.broken_image_outlined,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               );
             },
@@ -492,15 +680,10 @@ class _ImageWidget extends StatelessWidget {
   }
 }
 
-/// 图片预览界面
 class _ImagePreviewScreen extends StatelessWidget {
   final Uri uri;
-  final String? title;
 
-  const _ImagePreviewScreen({
-    required this.uri,
-    this.title,
-  });
+  const _ImagePreviewScreen({required this.uri});
 
   @override
   Widget build(BuildContext context) {
@@ -509,33 +692,12 @@ class _ImagePreviewScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: title != null ? Text(title!) : null,
       ),
       body: PhotoView(
         imageProvider: NetworkImage(uri.toString()),
         minScale: PhotoViewComputedScale.contained,
         maxScale: PhotoViewComputedScale.covered * 2,
-        backgroundDecoration: const BoxDecoration(
-          color: Colors.black,
-        ),
-        loadingBuilder: (context, event) {
-          return Center(
-            child: CircularProgressIndicator(
-              value: event == null
-                  ? null
-                  : event.cumulativeBytesLoaded / (event.expectedTotalBytes ?? 1),
-            ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return const Center(
-            child: Icon(
-              Icons.broken_image,
-              size: 48,
-              color: Colors.white,
-            ),
-          );
-        },
+        backgroundDecoration: const BoxDecoration(color: Colors.black),
       ),
     );
   }

@@ -1233,6 +1233,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get markdownCodeCopied => 'Code copied to clipboard';
 
   @override
+  String get markdownSpoilerHidden => 'Hidden';
+
+  @override
   String get debugLogs => 'Debug Logs';
 
   @override

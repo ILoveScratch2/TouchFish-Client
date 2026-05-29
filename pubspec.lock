@@ -347,14 +347,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_markdown:
-    dependency: "direct main"
-    description:
-      name: flutter_markdown
-      sha256: "08fb8315236099ff8e90cb87bb2b935e0a724a3af1623000a9cec930468e0f27"
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.7.7+1"
   flutter_math_fork:
     dependency: "direct main"
     description:
@@ -622,13 +614,21 @@ packages:
     source: hosted
     version: "1.3.0"
   markdown:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: markdown
-      sha256: "935e23e1ff3bc02d390bad4d4be001208ee92cc217cb5b5a6c19bc14aaa318c1"
+      sha256: ee85086ad7698b42522c6ad42fe195f1b9898e4d974a1af4576c1a3a176cada9
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "7.3.0"
+    version: "7.3.1"
+  markdown_widget:
+    dependency: "direct main"
+    description:
+      name: markdown_widget
+      sha256: b52c13d3ee4d0e60c812e15b0593f142a3b8a2003cde1babb271d001a1dbdc1c
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "2.3.2+8"
   matcher:
     dependency: transitive
     description:
@@ -989,6 +989,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.2.0"
+  scroll_to_index:
+    dependency: transitive
+    description:
+      name: scroll_to_index
+      sha256: b707546e7500d9f070d63e5acf74fd437ec7eeeb68d3412ef7b0afada0b4f176
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "3.0.1"
   share_plus:
     dependency: transitive
     description:
@@ -1386,6 +1394,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.2.0"
+  visibility_detector:
+    dependency: transitive
+    description:
+      name: visibility_detector
+      sha256: dd5cc11e13494f432d15939c3aa8ae76844c42b723398643ce9addb88a5ed420
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.4.0+2"
   vm_service:
     dependency: transitive
     description:

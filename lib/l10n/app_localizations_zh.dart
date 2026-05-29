@@ -1189,6 +1189,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get markdownCodeCopied => '代码已复制到剪贴板';
 
   @override
+  String get markdownSpoilerHidden => '已隐藏';
+
+  @override
   String get debugLogs => '调试日志';
 
   @override

@@ -2420,6 +2420,12 @@ abstract class AppLocalizations {
   /// **'Code copied to clipboard'**
   String get markdownCodeCopied;
 
+  /// No description provided for @markdownSpoilerHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden'**
+  String get markdownSpoilerHidden;
+
   /// No description provided for @debugLogs.
   ///
   /// In en, this message translates to:

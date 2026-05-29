@@ -460,6 +460,7 @@
   
   "markdownCopyCode": "Copy code",
   "markdownCodeCopied": "Code copied to clipboard",
+  "markdownSpoilerHidden": "Hidden",
   
   "debugLogs": "Debug Logs",
   "debugLogsDescription": "View application logs",
