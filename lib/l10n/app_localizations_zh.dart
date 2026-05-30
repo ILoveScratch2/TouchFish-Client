@@ -777,6 +777,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get networkStatusCheckingConnection => '正在检查网络连接...';
 
   @override
+  String get connectionBannerConnecting => '正在连接';
+
+  @override
+  String get connectionBannerDisconnected => '已断开';
+
+  @override
+  String get connectionBannerConnected => '已连接';
+
+  @override
+  String get connectionBannerTapToRetry => '点击重试';
+
+  @override
   String get messageActions => '消息操作';
 
   @override

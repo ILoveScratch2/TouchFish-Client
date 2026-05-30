@@ -1604,6 +1604,30 @@ abstract class AppLocalizations {
   /// **'Checking network connection...'**
   String get networkStatusCheckingConnection;
 
+  /// No description provided for @connectionBannerConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting'**
+  String get connectionBannerConnecting;
+
+  /// No description provided for @connectionBannerDisconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnected'**
+  String get connectionBannerDisconnected;
+
+  /// No description provided for @connectionBannerConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get connectionBannerConnected;
+
+  /// No description provided for @connectionBannerTapToRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to retry'**
+  String get connectionBannerTapToRetry;
+
   /// No description provided for @messageActions.
   ///
   /// In en, this message translates to:

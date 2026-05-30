@@ -338,6 +338,10 @@
   "networkStatusDisconnected": "Disconnected from Internet",
   "networkStatusDisconnectedDesc": "You are disconnected from the internet and can only connect to local network servers",
   "networkStatusCheckingConnection": "Checking network connection...",
+  "connectionBannerConnecting": "Connecting",
+  "connectionBannerDisconnected": "Disconnected",
+  "connectionBannerConnected": "Connected",
+  "connectionBannerTapToRetry": "Tap to retry",
   
   "messageActions": "Message Actions",
   "messageActionReply": "Reply",

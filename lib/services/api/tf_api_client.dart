@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+
 import 'package:http/http.dart' as http;
 import 'package:pointycastle/export.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +9,7 @@ import 'tf_crypto.dart';
 import '../../constants/app_constants.dart';
 import '../../models/user_profile.dart';
 import '../../models/forum_model.dart';
+import '../server_connection_status_service.dart';
 import '../../widgets/server_selector.dart';
 import '../../utils/talker.dart';
 
@@ -48,6 +52,10 @@ class TfCaptchaInfo {
 
 /// TFV5 API CLIENT
 class TfApiClient {
+  static const _defaultTimeout = Duration(seconds: 10);
+  static const _secretPostTimeout = Duration(seconds: 15);
+  static const _probeTimeout = Duration(seconds: 5);
+
   static TfApiClient? _instance;
   static TfApiClient get instance => _instance ??= TfApiClient._();
   TfApiClient._();
@@ -56,6 +64,72 @@ class TfApiClient {
 
   RSAPublicKey? _cachedPubKey;
   String? _cachedBaseUrl;
+
+  void _handleConnectivityFailure() {
+    final statusService = ServerConnectionStatusService.instance;
+    if (statusService.isProbing) {
+      return;
+    }
+
+    statusService.reportConnectionLost(retryHandler: _probeServerConnection);
+  }
+
+  Future<http.Response> _getRequest(
+    String url, {
+    Duration timeout = _defaultTimeout,
+  }) async {
+    try {
+      final response = await _http.get(Uri.parse(url)).timeout(timeout);
+      ServerConnectionStatusService.instance.reportReachable();
+      return response;
+    } on TimeoutException {
+      _handleConnectivityFailure();
+      rethrow;
+    } on SocketException {
+      _handleConnectivityFailure();
+      rethrow;
+    } on http.ClientException {
+      _handleConnectivityFailure();
+      rethrow;
+    }
+  }
+
+  Future<http.Response> _postRequest(
+    String url, {
+    Map<String, String>? headers,
+    Object? body,
+    Duration timeout = _defaultTimeout,
+  }) async {
+    try {
+      final response = await _http
+          .post(Uri.parse(url), headers: headers, body: body)
+          .timeout(timeout);
+      ServerConnectionStatusService.instance.reportReachable();
+      return response;
+    } on TimeoutException {
+      _handleConnectivityFailure();
+      rethrow;
+    } on SocketException {
+      _handleConnectivityFailure();
+      rethrow;
+    } on http.ClientException {
+      _handleConnectivityFailure();
+      rethrow;
+    }
+  }
+
+  Future<bool> _probeServerConnection() async {
+    try {
+      final baseUrl = await getBaseUrl();
+      final response = await _getRequest(
+        '$baseUrl/info',
+        timeout: _probeTimeout,
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
 
   Future<String> getBaseUrl() async {
     if (_cachedBaseUrl != null) return _cachedBaseUrl!;
@@ -86,9 +160,7 @@ class TfApiClient {
     if (_cachedPubKey != null && _cachedBaseUrl == baseUrl) {
       return _cachedPubKey!;
     }
-    final response = await _http
-        .get(Uri.parse('$baseUrl/get_rsa_pub'))
-        .timeout(const Duration(seconds: 10));
+    final response = await _getRequest('$baseUrl/get_rsa_pub');
     final pem = response.body;
     final pubKey = TfCrypto.parseRsaPublicKey(pem);
     _cachedPubKey = pubKey;
@@ -125,13 +197,12 @@ class TfApiClient {
         'content': base64.encode(encryptedContent),
       });
 
-      final response = await _http
-          .post(
-            Uri.parse('$baseUrl$path'),
-            headers: {'Content-Type': 'application/json'},
-            body: requestBody,
-          )
-          .timeout(const Duration(seconds: 15));
+      final response = await _postRequest(
+        '$baseUrl$path',
+        headers: {'Content-Type': 'application/json'},
+        body: requestBody,
+        timeout: _secretPostTimeout,
+      );
 
       if (response.statusCode != 200) return null;
 
@@ -153,9 +224,7 @@ class TfApiClient {
   Future<TfServerConfig?> fetchServerInfo() async {
     try {
       final baseUrl = await getBaseUrl();
-      final response = await _http
-          .get(Uri.parse('$baseUrl/info'))
-          .timeout(const Duration(seconds: 10));
+      final response = await _getRequest('$baseUrl/info');
       if (response.statusCode != 200) return null;
       return TfServerConfig.fromJson(
         jsonDecode(response.body) as Map<String, dynamic>,
@@ -171,9 +240,7 @@ class TfApiClient {
   Future<TfCaptchaInfo?> getCaptcha() async {
     try {
       final baseUrl = await getBaseUrl();
-      final response = await _http
-          .get(Uri.parse('$baseUrl/auth/captcha'))
-          .timeout(const Duration(seconds: 10));
+      final response = await _getRequest('$baseUrl/auth/captcha');
       if (response.statusCode != 200) return null;
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       if (data.isEmpty) return null;
@@ -192,9 +259,7 @@ class TfApiClient {
   Future<UserProfile?> getUserByUid(int uid) async {
     try {
       final baseUrl = await getBaseUrl();
-      final response = await _http
-          .get(Uri.parse('$baseUrl/auth/uid/$uid'))
-          .timeout(const Duration(seconds: 10));
+      final response = await _getRequest('$baseUrl/auth/uid/$uid');
       if (response.statusCode != 200) return null;
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       if (data.isEmpty) return null;
@@ -211,9 +276,7 @@ class TfApiClient {
   Future<UserProfile?> getUserByUsername(String username) async {
     try {
       final baseUrl = await getBaseUrl();
-      final response = await _http
-          .get(Uri.parse('$baseUrl/auth/username/$username'))
-          .timeout(const Duration(seconds: 10));
+      final response = await _getRequest('$baseUrl/auth/username/$username');
       if (response.statusCode != 200) return null;
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       if (data.isEmpty) return null;
@@ -328,9 +391,7 @@ class TfApiClient {
   Future<List<Forum>> getForumList() async {
     try {
       final baseUrl = await getBaseUrl();
-      final response = await _http
-          .get(Uri.parse('$baseUrl/forum/get_forum_list'))
-          .timeout(const Duration(seconds: 10));
+      final response = await _getRequest('$baseUrl/forum/get_forum_list');
       if (response.statusCode != 200) return [];
       final data = jsonDecode(response.body);
       if (data is! List) return [];
@@ -396,9 +457,7 @@ class TfApiClient {
   Future<List<ForumPost>> getPostList(int fid) async {
     try {
       final baseUrl = await getBaseUrl();
-      final response = await _http
-          .get(Uri.parse('$baseUrl/forum/get_post_list/$fid'))
-          .timeout(const Duration(seconds: 10));
+      final response = await _getRequest('$baseUrl/forum/get_post_list/$fid');
       if (response.statusCode != 200) return [];
       final data = jsonDecode(response.body);
       if (data is! List) return [];
@@ -453,9 +512,9 @@ class TfApiClient {
   Future<List<ForumComment>> getAllComments(int fid, int pid) async {
     try {
       final baseUrl = await getBaseUrl();
-      final response = await _http
-          .get(Uri.parse('$baseUrl/forum/get_all_comments/$fid/$pid'))
-          .timeout(const Duration(seconds: 10));
+      final response = await _getRequest(
+        '$baseUrl/forum/get_all_comments/$fid/$pid',
+      );
       if (response.statusCode != 200) return [];
       final data = jsonDecode(response.body);
       if (data is! Map) return [];

@@ -14,8 +14,11 @@ import 'models/app_state.dart';
 import 'models/settings_service.dart';
 import 'routes/app_routes.dart';
 import 'services/auth_state.dart';
+import 'services/server_connection_status_service.dart';
 import 'utils/talker.dart';
 import 'widgets/app_alert_dialog.dart';
+import 'widgets/custom_title_bar.dart';
+import 'widgets/server_connection_banner.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -397,6 +400,75 @@ class _TouchFishAppState extends State<TouchFishApp> {
     );
   }
 
+  Widget _buildServerConnectionOverlay(BuildContext context, Widget child) {
+    final hasDesktopWindowFrame =
+        !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+
+    return ListenableBuilder(
+      listenable: ServerConnectionStatusService.instance,
+      builder: (context, _) {
+        final service = ServerConnectionStatusService.instance;
+
+        return Stack(
+          children: [
+            child,
+            SafeArea(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    (hasDesktopWindowFrame ? CustomTitleBar.height : 0) + 12,
+                    16,
+                    12,
+                  ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) {
+                      final curved = CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                        reverseCurve: Curves.easeInCubic,
+                      );
+                      return FadeTransition(
+                        opacity: curved,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, -0.2),
+                            end: Offset.zero,
+                          ).animate(curved),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: service.isVisible
+                        ? ServerConnectionBanner(
+                            key: ValueKey(service.phase),
+                            phase: service.phase,
+                            onTap:
+                                service.phase ==
+                                    ServerConnectionBannerPhase.disconnected
+                                ? () {
+                                    unawaited(
+                                      ServerConnectionStatusService.instance
+                                          .retryConnection(),
+                                    );
+                                  }
+                                : null,
+                          )
+                        : const SizedBox.shrink(key: ValueKey('hidden')),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -465,7 +537,10 @@ class _TouchFishAppState extends State<TouchFishApp> {
           themeMode: _appState.themeMode,
           builder: (context, child) {
             _showStartupResetNoticeIfNeeded(context);
-            final content = child ?? const SizedBox.shrink();
+            final content = _buildServerConnectionOverlay(
+              context,
+              child ?? const SizedBox.shrink(),
+            );
             if (hasBackgroundImage && !kIsWeb) {
               return _buildSavedSessionRestoreOverlay(
                 context,

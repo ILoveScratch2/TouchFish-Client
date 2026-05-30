@@ -810,6 +810,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Checking network connection...';
 
   @override
+  String get connectionBannerConnecting => 'Connecting';
+
+  @override
+  String get connectionBannerDisconnected => 'Disconnected';
+
+  @override
+  String get connectionBannerConnected => 'Connected';
+
+  @override
+  String get connectionBannerTapToRetry => 'Tap to retry';
+
+  @override
   String get messageActions => 'Message Actions';
 
   @override

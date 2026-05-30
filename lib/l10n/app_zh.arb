@@ -324,6 +324,10 @@
   "networkStatusDisconnected": "已断开互联网连接",
   "networkStatusDisconnectedDesc": "您已断开互联网连接，仅能连接内网服务器",
   "networkStatusCheckingConnection": "正在检查网络连接...",
+  "connectionBannerConnecting": "正在连接",
+  "connectionBannerDisconnected": "已断开",
+  "connectionBannerConnected": "已连接",
+  "connectionBannerTapToRetry": "点击重试",
   
   "messageActions": "消息操作",
   "messageActionReply": "回复",

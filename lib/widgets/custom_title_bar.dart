@@ -6,6 +6,8 @@ import '../constants/app_constants.dart';
 
 /// Custom Title Bar by ILoveScratch2
 class CustomTitleBar extends StatefulWidget {
+  static const double height = 40;
+
   final String title;
   final bool showTitle;
   
@@ -65,11 +67,13 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
     return Material(
       color: Theme.of(context).colorScheme.surface,
       child: Container(
-        height: 40,
+        height: CustomTitleBar.height,
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.outlineVariant.withValues(alpha: 0.5),
               width: 1,
             ),
           ),
@@ -77,7 +81,7 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            const SizedBox(height: 40),
+            const SizedBox(height: CustomTitleBar.height),
             if (widget.showTitle)
               Text(
                 widget.title,
@@ -99,11 +103,13 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
     return Material(
       color: Theme.of(context).colorScheme.surface,
       child: Container(
-        height: 40,
+        height: CustomTitleBar.height,
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.outlineVariant.withValues(alpha: 0.5),
               width: 1,
             ),
           ),
@@ -183,11 +189,11 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
       child: InkWell(
         onTap: onPressed,
         hoverColor: isClose 
-            ? Colors.red.withOpacity(0.9)
-            : Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+          ? Colors.red.withValues(alpha: 0.9)
+          : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
         child: SizedBox(
           width: 46,
-          height: 40,
+          height: CustomTitleBar.height,
           child: Icon(
             icon,
             size: 18,
