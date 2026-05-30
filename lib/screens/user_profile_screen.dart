@@ -426,10 +426,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   String _formatTimestamp(String timestamp) {
     try {
+      final seconds = double.parse(timestamp);
       final date = DateTime.fromMillisecondsSinceEpoch(
-        int.parse(timestamp) * 1000,
+        (seconds * 1000).round(),
       );
-      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+          '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
     } catch (e) {
       talker.error('Failed to parse timestamp: $timestamp', e);
       return timestamp;

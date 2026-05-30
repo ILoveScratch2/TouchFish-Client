@@ -20,77 +20,80 @@ import 'widgets/app_alert_dialog.dart';
 import 'widgets/custom_title_bar.dart';
 import 'widgets/server_connection_banner.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  MediaKit.ensureInitialized();
+Future<void> main() async {
+  await runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    registerTalkerErrorHandlers();
+    MediaKit.ensureInitialized();
 
-  final isDesktop =
-      !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
-  final startupRecovery = await _performStartupRecovery(isDesktop: isDesktop);
-  await SettingsService.instance.init();
+    final isDesktop =
+        !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+    final startupRecovery = await _performStartupRecovery(isDesktop: isDesktop);
+    await SettingsService.instance.init();
 
-  if (isDesktop) {
-    await windowManager.ensureInitialized();
-  }
+    if (isDesktop) {
+      await windowManager.ensureInitialized();
+    }
 
-  final prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
 
-  if (isDesktop) {
-    const defaultSize = Size(1280, 800);
-    const minSize = Size(400, 700);
-    final savedWidth = prefs.getDouble('window_width');
-    final savedHeight = prefs.getDouble('window_height');
-    final savedX = prefs.getDouble('window_x');
-    final savedY = prefs.getDouble('window_y');
-    final windowOpacity = SettingsService.instance.getValue<double>(
-      'windowOpacity',
-      1.0,
-    );
+    if (isDesktop) {
+      const defaultSize = Size(1280, 800);
+      const minSize = Size(400, 700);
+      final savedWidth = prefs.getDouble('window_width');
+      final savedHeight = prefs.getDouble('window_height');
+      final savedX = prefs.getDouble('window_x');
+      final savedY = prefs.getDouble('window_y');
+      final windowOpacity = SettingsService.instance.getValue<double>(
+        'windowOpacity',
+        1.0,
+      );
 
-    final initialSize = (savedWidth != null && savedHeight != null)
-        ? Size(savedWidth, savedHeight)
-        : defaultSize;
+      final initialSize = (savedWidth != null && savedHeight != null)
+          ? Size(savedWidth, savedHeight)
+          : defaultSize;
 
-    WindowOptions windowOptions = WindowOptions(
-      size: initialSize,
-      center: savedX == null || savedY == null,
-      backgroundColor: Colors.transparent,
-      skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.hidden,
-    );
+      WindowOptions windowOptions = WindowOptions(
+        size: initialSize,
+        center: savedX == null || savedY == null,
+        backgroundColor: Colors.transparent,
+        skipTaskbar: false,
+        titleBarStyle: TitleBarStyle.hidden,
+      );
 
-    windowManager.waitUntilReadyToShow(windowOptions, () async {
-      if (Platform.isLinux) {
-        final env = Platform.environment;
-        final isWayland = env.containsKey('WAYLAND_DISPLAY');
-        if (isWayland) {
-          await windowManager.setAsFrameless();
+      windowManager.waitUntilReadyToShow(windowOptions, () async {
+        if (Platform.isLinux) {
+          final env = Platform.environment;
+          final isWayland = env.containsKey('WAYLAND_DISPLAY');
+          if (isWayland) {
+            await windowManager.setAsFrameless();
+          }
         }
-      }
-      if (savedX != null && savedY != null) {
-        await windowManager.setPosition(Offset(savedX, savedY));
-      }
+        if (savedX != null && savedY != null) {
+          await windowManager.setPosition(Offset(savedX, savedY));
+        }
 
-      await windowManager.setMinimumSize(minSize);
-      await windowManager.setOpacity(windowOpacity);
-      await windowManager.show();
-      await windowManager.focus();
-    });
-  }
+        await windowManager.setMinimumSize(minSize);
+        await windowManager.setOpacity(windowOpacity);
+        await windowManager.show();
+        await windowManager.focus();
+      });
+    }
 
-  final isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
-  await AuthState.instance.init();
-  final hasSavedSession = AuthState.instance.hasStoredCredentials;
+    final isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
+    await AuthState.instance.init();
+    final hasSavedSession = AuthState.instance.hasStoredCredentials;
 
-  talker.info('TouchFish Client started!');
+    talker.info('TouchFish Client started!');
 
-  runApp(
-    TouchFishApp(
-      isFirstLaunch: isFirstLaunch,
-      hasSavedSession: hasSavedSession,
-      didResetLocalSettings: startupRecovery.didResetSharedPreferences,
-    ),
-  );
+    runApp(
+      TouchFishApp(
+        isFirstLaunch: isFirstLaunch,
+        hasSavedSession: hasSavedSession,
+        didResetLocalSettings: startupRecovery.didResetSharedPreferences,
+      ),
+    );
+  }, logUnhandledAsyncError);
 }
 
 Future<_StartupRecoveryResult> _performStartupRecovery({
