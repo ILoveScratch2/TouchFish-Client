@@ -79,6 +79,7 @@ class SettingsData {
             SettingOption(value: 'system', labelKey: 'settingsLanguageSystem'),
             SettingOption(value: 'zh', labelKey: 'settingsLanguageZh'),
             SettingOption(value: 'en', labelKey: 'settingsLanguageEn'),
+            SettingOption(value: 'och', labelKey: 'settingsLanguageCc'),
           ],
         ),
         SettingItem(

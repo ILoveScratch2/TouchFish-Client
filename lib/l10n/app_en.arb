@@ -87,6 +87,7 @@
   "settingsLanguageSystem": "System Default",
   "settingsLanguageZh": "简体中文",
   "settingsLanguageEn": "English",
+  "settingsLanguageCc": "文言（華夏）",
   
   "settingsThemeTitle": "Theme",
   "settingsThemeDesc": "Appearance theme of the application",

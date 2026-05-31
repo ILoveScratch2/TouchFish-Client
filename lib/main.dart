@@ -507,7 +507,7 @@ class _TouchFishAppState extends State<TouchFishApp> {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: const [Locale('en'), Locale('zh')],
+          supportedLocales: const [Locale('en'), Locale('zh'), Locale('och')],
           locale: _appState.locale,
           theme: ThemeData(
             colorScheme: lightColorScheme,
