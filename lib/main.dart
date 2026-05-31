@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show FlutterView;
+import 'package:flutter/cupertino.dart' show CupertinoLocalizations;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -243,6 +244,41 @@ class _StartupRecoveryResult {
     required this.didResetSharedPreferences,
     required this.didResetWindowPosition,
   });
+}
+
+/// Provides Material localizations for the [och] language code by proxying
+/// to Simplified Chinese, since [GlobalMaterialLocalizations] does not support
+/// ISO 639-3 codes like [och].
+class _OchMaterialLocalizationsDelegate
+    extends LocalizationsDelegate<MaterialLocalizations> {
+  const _OchMaterialLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => locale.languageCode == 'och';
+
+  @override
+  Future<MaterialLocalizations> load(Locale locale) =>
+      GlobalMaterialLocalizations.delegate.load(const Locale('zh'));
+
+  @override
+  bool shouldReload(_OchMaterialLocalizationsDelegate old) => false;
+}
+
+/// Provides Cupertino localizations for the [och] language code by proxying
+/// to Simplified Chinese, for the same reason as [_OchMaterialLocalizationsDelegate].
+class _OchCupertinoLocalizationsDelegate
+    extends LocalizationsDelegate<CupertinoLocalizations> {
+  const _OchCupertinoLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => locale.languageCode == 'och';
+
+  @override
+  Future<CupertinoLocalizations> load(Locale locale) =>
+      GlobalCupertinoLocalizations.delegate.load(const Locale('zh'));
+
+  @override
+  bool shouldReload(_OchCupertinoLocalizationsDelegate old) => false;
 }
 
 class TouchFishApp extends StatefulWidget {
@@ -499,10 +535,12 @@ class _TouchFishAppState extends State<TouchFishApp> {
 
         return MaterialApp.router(
           routerConfig: _router,
-          onGenerateTitle: (context) => AppLocalizations.of(context)!.appName,
+          onGenerateTitle: (context) => AppLocalizations.of(context)?.appName ?? '',
           debugShowCheckedModeBanner: false,
           localizationsDelegates: const [
             AppLocalizations.delegate,
+            _OchMaterialLocalizationsDelegate(),
+            _OchCupertinoLocalizationsDelegate(),
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,

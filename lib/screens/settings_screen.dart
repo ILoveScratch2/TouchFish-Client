@@ -1006,6 +1006,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsLanguageZh;
       case 'settingsLanguageEn':
         return l10n.settingsLanguageEn;
+      case 'settingsLanguageCc':
+        return l10n.settingsLanguageCc;
       case 'settingsThemeTitle':
         return l10n.settingsThemeTitle;
       case 'settingsThemeDesc':
