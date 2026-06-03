@@ -76,6 +76,89 @@ class _AdminScreenState extends State<AdminScreen> {
     await _refreshPendingForumCount();
   }
 
+  Future<void> _openServerSettings() async {
+    await context.push(AppRoutes.adminServerSettings);
+    if (!mounted) return;
+    await _refreshPendingForumCount();
+  }
+
+  Future<void> _openDefaultAssets() async {
+    await context.push(AppRoutes.adminDefaultAssets);
+    if (!mounted) return;
+    await _refreshPendingForumCount();
+  }
+
+  Widget _buildAdminActionCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String description,
+    required VoidCallback onTap,
+    Widget? trailing,
+  }) {
+    final titleRowChildren = <Widget?>[
+      Expanded(
+        child: Text(
+          title,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        ),
+      ),
+      trailing,
+    ];
+
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Icon(
+                  icon,
+                  size: 28,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(children: titleRowChildren.whereType<Widget>().toList()),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -126,85 +209,31 @@ class _AdminScreenState extends State<AdminScreen> {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
-                Card(
-                  margin: EdgeInsets.zero,
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: _openPendingForums,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 18,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: Icon(
-                              Icons.pending_actions_outlined,
-                              size: 28,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onPrimaryContainer,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        l10n.adminPendingForums,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                      ),
-                                    ),
-                                    if (_pendingForumCount != null)
-                                      _PendingForumCountBadge(
-                                        count: _pendingForumCount!,
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  l10n.adminPendingForumsDescription,
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                _buildAdminActionCard(
+                  context,
+                  icon: Icons.pending_actions_outlined,
+                  title: l10n.adminPendingForums,
+                  description: l10n.adminPendingForumsDescription,
+                  onTap: _openPendingForums,
+                  trailing: _pendingForumCount != null
+                      ? _PendingForumCountBadge(count: _pendingForumCount!)
+                      : null,
                 ),
+                _buildAdminActionCard(
+                  context,
+                  icon: Icons.image_outlined,
+                  title: l10n.adminDefaultAssets,
+                  description: l10n.adminDefaultAssetsDescription,
+                  onTap: _openDefaultAssets,
+                ),
+                if (currentUser?.isRoot == true)
+                  _buildAdminActionCard(
+                    context,
+                    icon: Icons.tune_rounded,
+                    title: l10n.adminServerSettings,
+                    description: l10n.adminServerSettingsDescription,
+                    onTap: _openServerSettings,
+                  ),
               ],
             ),
           ),

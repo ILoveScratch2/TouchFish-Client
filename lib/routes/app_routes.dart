@@ -17,10 +17,12 @@ import '../screens/forum_post_detail_screen.dart';
 import '../screens/admin_screen.dart';
 import '../screens/account_screen.dart';
 import '../screens/pending_forums_screen.dart';
+import '../screens/default_assets_screen.dart';
 import '../screens/user_profile_screen.dart';
 import '../screens/about_screen.dart';
 import '../screens/licenses_screen.dart';
 import '../screens/profile_edit_screen.dart';
+import '../screens/server_settings_screen.dart';
 import '../services/auth_state.dart';
 import '../widgets/window_frame.dart';
 import '../utils/talker.dart';
@@ -38,6 +40,8 @@ class AppRoutes {
   static const String account = '/account';
   static const String admin = '/admin';
   static const String adminPendingForums = '/admin/pending-forums';
+  static const String adminDefaultAssets = '/admin/default-assets';
+  static const String adminServerSettings = '/admin/server-settings';
   static const String settings = '/settings';
   static const String register = '/register';
   static const String registerStep2 = '/register/step2';
@@ -251,6 +255,28 @@ class AppRoutes {
                   },
                   pageBuilder: (context, state) => const NoTransitionPage(
                     child: PendingForumsScreen(),
+                  ),
+                ),
+                GoRoute(
+                  path: adminDefaultAssets,
+                  redirect: (context, state) {
+                    return AuthState.instance.currentUser?.hasAdminAccess == true
+                        ? null
+                        : AppRoutes.account;
+                  },
+                  pageBuilder: (context, state) => const NoTransitionPage(
+                    child: DefaultAssetsScreen(),
+                  ),
+                ),
+                GoRoute(
+                  path: adminServerSettings,
+                  redirect: (context, state) {
+                    return AuthState.instance.currentUser?.isRoot == true
+                        ? null
+                        : AppRoutes.admin;
+                  },
+                  pageBuilder: (context, state) => const NoTransitionPage(
+                    child: ServerSettingsScreen(),
                   ),
                 ),
               ],

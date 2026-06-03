@@ -482,7 +482,7 @@ class _TouchFishAppState extends State<TouchFishApp> {
                         ),
                       );
                     },
-                    child: service.isVisible
+                    child: service.isVisible && AuthState.instance.isLoggedIn
                         ? ServerConnectionBanner(
                             key: ValueKey(service.phase),
                             phase: service.phase,

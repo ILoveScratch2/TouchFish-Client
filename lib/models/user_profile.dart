@@ -59,10 +59,16 @@ class UserProfile {
     };
   }
 
+  String get normalizedStat {
+    final normalized = stat.trim().toLowerCase();
+    return normalized.isEmpty ? 'user' : normalized;
+  }
+
   bool get hasAdminAccess {
-    final normalizedStat = stat.trim().toLowerCase();
     return normalizedStat == 'admin' || normalizedStat == 'root';
   }
+
+  bool get isRoot => normalizedStat == 'root';
 }
 
 // Demo 数据

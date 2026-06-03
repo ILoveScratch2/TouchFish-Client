@@ -534,6 +534,133 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminAccessDenied => 'You do not have administrator access.';
 
   @override
+  String get adminRootOnly =>
+      'Only the root account can manage server settings.';
+
+  @override
+  String get adminDefaultAssets => 'Default Images';
+
+  @override
+  String get adminDefaultAssetsDescription =>
+      'Upload the logo and default avatars used by the server.';
+
+  @override
+  String get adminDefaultAssetsLoadFailed => 'Failed to load default images';
+
+  @override
+  String get adminDefaultAssetChangeAction => 'Upload PNG';
+
+  @override
+  String get adminDefaultAssetPngHint =>
+      'Only PNG files are accepted by the server.';
+
+  @override
+  String get adminDefaultAssetPreviewUnavailable => 'Preview unavailable';
+
+  @override
+  String get adminDefaultAssetLogo => 'Server Logo';
+
+  @override
+  String get adminDefaultAssetLogoDescription =>
+      'Shown in the app header and server branding surfaces.';
+
+  @override
+  String get adminDefaultAssetForum => 'Default Forum Image';
+
+  @override
+  String get adminDefaultAssetForumDescription =>
+      'Used when a forum has no custom image.';
+
+  @override
+  String get adminDefaultAssetUser => 'Default User Avatar';
+
+  @override
+  String get adminDefaultAssetUserDescription =>
+      'Used when a user has not uploaded an avatar.';
+
+  @override
+  String get adminDefaultAssetGroup => 'Default Group Avatar';
+
+  @override
+  String get adminDefaultAssetGroupDescription =>
+      'Used when a group has no custom avatar.';
+
+  @override
+  String adminDefaultAssetUploadSuccess(String assetName) {
+    return 'Updated $assetName.';
+  }
+
+  @override
+  String adminDefaultAssetUploadFailed(String assetName) {
+    return 'Failed to update $assetName.';
+  }
+
+  @override
+  String get adminServerSettings => 'Server Settings';
+
+  @override
+  String get adminServerSettingsDescription =>
+      'Update the server name, registration captcha, and key limits.';
+
+  @override
+  String get adminServerSettingsLoadFailed => 'Failed to load server settings';
+
+  @override
+  String get adminServerSettingsSaveSuccess => 'Server settings updated';
+
+  @override
+  String get adminServerSettingsSaveFailed =>
+      'Failed to update server settings';
+
+  @override
+  String get adminServerSettingsInvalidInput =>
+      'Please check the server settings form and try again.';
+
+  @override
+  String get adminServerSettingsCaptchaDescription =>
+      'Require a captcha image during registration.';
+
+  @override
+  String get adminServerReadOnlyDescription =>
+      'These values are returned by the server and cannot be edited here.';
+
+  @override
+  String get adminServerFieldServerName => 'Server Name';
+
+  @override
+  String get adminServerFieldCaptcha => 'Registration Captcha';
+
+  @override
+  String get adminServerFieldFileLastTime => 'File Retention Time (hours)';
+
+  @override
+  String get adminServerFileLastTimeDescription => 'Must be 0 or greater.';
+
+  @override
+  String get adminServerFieldGroupsLimit => 'Group Limit';
+
+  @override
+  String get adminServerFieldSingleGroupMaxPeople => 'Single Group Max Members';
+
+  @override
+  String get adminServerFieldMaxFileSize => 'Max File Size';
+
+  @override
+  String get adminServerFieldApiPort => 'API Port';
+
+  @override
+  String get adminServerFieldTcpPort => 'TCP Port';
+
+  @override
+  String get adminServerFieldEmailActivation => 'Email Activation';
+
+  @override
+  String get adminServerFieldVerifyEmail => 'Verification Email';
+
+  @override
+  String get adminServerUnlimitedHint => 'Use -1 for unlimited.';
+
+  @override
   String get adminPendingForums => 'Pending Forums';
 
   @override
@@ -1382,6 +1509,137 @@ class AppLocalizationsEn extends AppLocalizations {
   String debugDialogSelectedAction(String action) {
     return 'Selected action: $action';
   }
+
+  @override
+  String get debugMarkdownTester => 'Markdown Test';
+
+  @override
+  String get debugMarkdownTesterDescription =>
+      'Type Markdown and preview the rendered result';
+
+  @override
+  String get debugMarkdownTesterEditorTitle => 'Markdown Input';
+
+  @override
+  String get debugMarkdownTesterHint => 'Enter Markdown here';
+
+  @override
+  String get debugMarkdownTesterPreviewTitle => 'Rendered Preview';
+
+  @override
+  String get debugMarkdownTesterPreviewDescription =>
+      'The preview updates as you edit the Markdown source.';
+
+  @override
+  String get debugMarkdownTesterEmptyPreview =>
+      'Rendered content will appear here.';
+
+  @override
+  String get debugApiTester => 'API Test';
+
+  @override
+  String get debugApiTesterDescription =>
+      'Send API requests to the server and inspect the responses';
+
+  @override
+  String get debugApiTesterEndpoint => 'Endpoint';
+
+  @override
+  String get debugApiTesterEndpointHint => 'Example: /auth/login';
+
+  @override
+  String get debugApiTesterMethod => 'Request Method';
+
+  @override
+  String get debugApiTesterMethodGet => 'GET';
+
+  @override
+  String get debugApiTesterMethodPost => 'POST';
+
+  @override
+  String get debugApiTesterUseCredentials =>
+      'Include current login credentials';
+
+  @override
+  String get debugApiTesterUseCredentialsDescription =>
+      'Append the current uid and password to the submitted parameters.';
+
+  @override
+  String get debugApiTesterNoCredentials =>
+      'Current login credentials are unavailable.';
+
+  @override
+  String get debugApiTesterEncryptRequest => 'Encrypt request body';
+
+  @override
+  String get debugApiTesterEncryptRequestDescription =>
+      'When enabled, POST requests use the TouchFish encrypted payload format.';
+
+  @override
+  String get debugApiTesterEncryptRequestUnavailableForGet =>
+      'GET requests are sent without encryption.';
+
+  @override
+  String get debugApiTesterQueryParameters => 'Query Parameters';
+
+  @override
+  String get debugApiTesterQueryParametersHint =>
+      'Enter a JSON object used as GET query parameters';
+
+  @override
+  String get debugApiTesterRequestBody => 'Request Body';
+
+  @override
+  String get debugApiTesterRequestBodyHint =>
+      'Enter a JSON object used as the POST request body';
+
+  @override
+  String get debugApiTesterSendRequest => 'Send Request';
+
+  @override
+  String get debugApiTesterResultTitle => 'Result';
+
+  @override
+  String get debugApiTesterResultDescription =>
+      'Inspect the submitted parameters and the server response.';
+
+  @override
+  String get debugApiTesterAwaitingResult =>
+      'Send a request to view the submitted parameters and response.';
+
+  @override
+  String get debugApiTesterStatus => 'Status';
+
+  @override
+  String get debugApiTesterStatusUnavailable => 'Unavailable';
+
+  @override
+  String get debugApiTesterRequestUrl => 'Request URL';
+
+  @override
+  String get debugApiTesterRequestPayload => 'Request Payload';
+
+  @override
+  String get debugApiTesterEncodedBody => 'Encoded Request Body';
+
+  @override
+  String get debugApiTesterDecryptedResponse => 'Decrypted Response';
+
+  @override
+  String get debugApiTesterRawResponse => 'Raw Response';
+
+  @override
+  String get debugApiTesterError => 'Error';
+
+  @override
+  String get debugApiTesterInvalidEndpoint => 'Please enter an endpoint.';
+
+  @override
+  String get debugApiTesterInvalidBody => 'Request body must be a JSON object.';
+
+  @override
+  String get debugApiTesterCredentialsUnavailable =>
+      'No current login credentials were found.';
 
   @override
   String get forumTitle => 'Forum';

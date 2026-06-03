@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:pointycastle/export.dart';
@@ -19,6 +20,13 @@ class TfServerConfig {
   final int portApi;
   final int portTcp;
   final String serverName;
+  final int? fileLastTime;
+  final int? groupsLimit;
+  final int? singleGroupMaxPeople;
+  final int? maxFileSize;
+  final String? verifyEmail;
+  final Map<String, dynamic>? rateLimits;
+  final Map<String, String> defaultAssetUrls;
 
   const TfServerConfig({
     required this.captcha,
@@ -26,19 +34,57 @@ class TfServerConfig {
     required this.portApi,
     required this.portTcp,
     required this.serverName,
+    this.fileLastTime,
+    this.groupsLimit,
+    this.singleGroupMaxPeople,
+    this.maxFileSize,
+    this.verifyEmail,
+    this.rateLimits,
+    this.defaultAssetUrls = const {},
   });
 
+  static int _parseIntValue(dynamic value, int fallback) {
+    if (value is int) {
+      return value;
+    }
+    return int.tryParse(value.toString()) ?? fallback;
+  }
+
+  static int? _parseOptionalIntValue(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is int) {
+      return value;
+    }
+    return int.tryParse(value.toString());
+  }
+
   factory TfServerConfig.fromJson(Map<String, dynamic> json) {
+    final defaultAssetUrlsRaw = json['default_asset_urls'];
+    final defaultAssetUrls = defaultAssetUrlsRaw is Map
+        ? defaultAssetUrlsRaw.map(
+            (key, value) => MapEntry(key.toString(), value.toString()),
+          )
+        : const <String, String>{};
+
     return TfServerConfig(
       captcha: json['captcha'] as bool? ?? false,
       emailActivate: json['email_activate'] as bool? ?? false,
-      portApi: json['port_api'] is int
-          ? json['port_api'] as int
-          : int.tryParse(json['port_api'].toString()) ?? 7001,
-      portTcp: json['port_tcp'] is int
-          ? json['port_tcp'] as int
-          : int.tryParse(json['port_tcp'].toString()) ?? 1145,
+      portApi: _parseIntValue(json['port_api'], 7001),
+      portTcp: _parseIntValue(json['port_tcp'], 1145),
       serverName: json['server_name'] as String? ?? 'TouchFish',
+      fileLastTime: _parseOptionalIntValue(json['file_last_time']),
+      groupsLimit: _parseOptionalIntValue(json['groups_limit']),
+      singleGroupMaxPeople: _parseOptionalIntValue(
+        json['single_group_max_people'],
+      ),
+      maxFileSize: _parseOptionalIntValue(json['max_file_size']),
+      verifyEmail: json['verify_email'] as String?,
+      rateLimits: json['rate_limits'] is Map
+          ? Map<String, dynamic>.from(json['rate_limits'] as Map)
+          : null,
+      defaultAssetUrls: defaultAssetUrls,
     );
   }
 }
@@ -48,6 +94,42 @@ class TfCaptchaInfo {
   final String stamp; // captcha identifier token
 
   const TfCaptchaInfo({required this.pic, required this.stamp});
+}
+
+enum TfDebugRequestMethod { get, post }
+
+class TfDebugRequestResult {
+  final TfDebugRequestMethod method;
+  final bool requestEncrypted;
+  final String requestUrl;
+  final String requestPayload;
+  final int? statusCode;
+  final String? rawResponseBody;
+  final String? decodedResponseBody;
+  final String? errorMessage;
+
+  const TfDebugRequestResult({
+    required this.method,
+    required this.requestEncrypted,
+    required this.requestUrl,
+    required this.requestPayload,
+    this.statusCode,
+    this.rawResponseBody,
+    this.decodedResponseBody,
+    this.errorMessage,
+  });
+}
+
+class _PreparedSecretPostRequest {
+  final String requestUrl;
+  final String requestBody;
+  final Uint8List aesKey;
+
+  const _PreparedSecretPostRequest({
+    required this.requestUrl,
+    required this.requestBody,
+    required this.aesKey,
+  });
 }
 
 /// TFV5 API CLIENT
@@ -168,6 +250,95 @@ class TfApiClient {
     return pubKey;
   }
 
+  String _normalizeApiPath(String path) {
+    final trimmed = path.trim();
+    if (trimmed.isEmpty) {
+      return '/';
+    }
+    return trimmed.startsWith('/') ? trimmed : '/$trimmed';
+  }
+
+  Map<String, dynamic> _buildRequestBody(
+    Map<String, dynamic> body, {
+    int? uid,
+    String? password,
+  }) {
+    final fullBody = Map<String, dynamic>.from(body);
+    if (uid != null) fullBody['uid'] = uid;
+    if (password != null) fullBody['password'] = password;
+    return fullBody;
+  }
+
+  String _stringifyQueryValue(dynamic value) {
+    if (value == null) {
+      return '';
+    }
+    if (value is String || value is num || value is bool) {
+      return value.toString();
+    }
+    return jsonEncode(value);
+  }
+
+  Uri _buildRequestUri(
+    String baseUrl,
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) {
+    final normalizedPath = _normalizeApiPath(path);
+    final uri = Uri.parse('$baseUrl$normalizedPath');
+    if (queryParameters == null || queryParameters.isEmpty) {
+      return uri;
+    }
+
+    final mergedQueryParameters = Map<String, String>.from(uri.queryParameters);
+    for (final entry in queryParameters.entries) {
+      mergedQueryParameters[entry.key] = _stringifyQueryValue(entry.value);
+    }
+
+    return uri.replace(queryParameters: mergedQueryParameters);
+  }
+
+  Future<_PreparedSecretPostRequest> _prepareSecretPostRequest(
+    String path,
+    Map<String, dynamic> body, {
+    int? uid,
+    String? password,
+  }) async {
+    final baseUrl = await getBaseUrl();
+    final requestUrl = _buildRequestUri(baseUrl, path).toString();
+    final pubKey = await _getRsaPublicKey(baseUrl);
+
+    final fullBody = _buildRequestBody(body, uid: uid, password: password);
+
+    final aesKey = TfCrypto.generateAesKey();
+    final iv = TfCrypto.generateIv();
+    final encryptedContent = TfCrypto.aesEncrypt(
+      jsonEncode(fullBody),
+      aesKey,
+      iv,
+    );
+    final encryptedAesKey = TfCrypto.rsaEncrypt(aesKey, pubKey);
+
+    final requestBody = jsonEncode({
+      'iv': base64.encode(iv),
+      'key': base64.encode(encryptedAesKey),
+      'content': base64.encode(encryptedContent),
+    });
+
+    return _PreparedSecretPostRequest(
+      requestUrl: requestUrl,
+      requestBody: requestBody,
+      aesKey: aesKey,
+    );
+  }
+
+  String _decryptSecretResponse(String responseBody, Uint8List aesKey) {
+    final responseData = jsonDecode(responseBody) as Map<String, dynamic>;
+    final responseIv = base64.decode(responseData['iv'] as String);
+    final responseContent = base64.decode(responseData['content'] as String);
+    return TfCrypto.aesDecrypt(responseContent, aesKey, responseIv);
+  }
+
   Future<String?> secretPost(
     String path,
     Map<String, dynamic> body, {
@@ -175,49 +346,149 @@ class TfApiClient {
     String? password,
   }) async {
     try {
-      final baseUrl = await getBaseUrl();
-      final pubKey = await _getRsaPublicKey(baseUrl);
-
-      final fullBody = Map<String, dynamic>.from(body);
-      if (uid != null) fullBody['uid'] = uid;
-      if (password != null) fullBody['password'] = password;
-
-      final aesKey = TfCrypto.generateAesKey();
-      final iv = TfCrypto.generateIv();
-      final encryptedContent = TfCrypto.aesEncrypt(
-        jsonEncode(fullBody),
-        aesKey,
-        iv,
+      final preparedRequest = await _prepareSecretPostRequest(
+        path,
+        body,
+        uid: uid,
+        password: password,
       );
-      final encryptedAesKey = TfCrypto.rsaEncrypt(aesKey, pubKey);
-
-      final requestBody = jsonEncode({
-        'iv': base64.encode(iv),
-        'key': base64.encode(encryptedAesKey),
-        'content': base64.encode(encryptedContent),
-      });
 
       final response = await _postRequest(
-        '$baseUrl$path',
+        preparedRequest.requestUrl,
         headers: {'Content-Type': 'application/json'},
-        body: requestBody,
+        body: preparedRequest.requestBody,
         timeout: _secretPostTimeout,
       );
 
       if (response.statusCode != 200) return null;
 
-      final responseData = jsonDecode(response.body) as Map<String, dynamic>;
-      final responseIv = base64.decode(responseData['iv'] as String);
-      final responseContent = base64.decode(responseData['content'] as String);
-
-      return TfCrypto.aesDecrypt(responseContent, aesKey, responseIv);
+      return _decryptSecretResponse(response.body, preparedRequest.aesKey);
     } catch (e) {
       talker.error('secretPost $path failed', e);
       return null;
     }
   }
 
+  Future<TfDebugRequestResult> debugRequest(
+    TfDebugRequestMethod method,
+    String path,
+    Map<String, dynamic> body, {
+    bool encryptRequest = true,
+    int? uid,
+    String? password,
+  }) async {
+    try {
+      final baseUrl = await getBaseUrl();
+      final fullBody = _buildRequestBody(body, uid: uid, password: password);
+
+      switch (method) {
+        case TfDebugRequestMethod.get:
+          final requestUrl = _buildRequestUri(
+            baseUrl,
+            path,
+            queryParameters: fullBody,
+          ).toString();
+          final response = await _getRequest(
+            requestUrl,
+            timeout: _secretPostTimeout,
+          );
+          return TfDebugRequestResult(
+            method: method,
+            requestEncrypted: false,
+            requestUrl: requestUrl,
+            requestPayload: fullBody.isEmpty ? '' : jsonEncode(fullBody),
+            statusCode: response.statusCode,
+            rawResponseBody: response.body,
+          );
+        case TfDebugRequestMethod.post:
+          if (!encryptRequest) {
+            final requestUrl = _buildRequestUri(baseUrl, path).toString();
+            final requestPayload = jsonEncode(fullBody);
+            final response = await _postRequest(
+              requestUrl,
+              headers: {'Content-Type': 'application/json'},
+              body: requestPayload,
+              timeout: _secretPostTimeout,
+            );
+
+            return TfDebugRequestResult(
+              method: method,
+              requestEncrypted: false,
+              requestUrl: requestUrl,
+              requestPayload: requestPayload,
+              statusCode: response.statusCode,
+              rawResponseBody: response.body,
+            );
+          }
+
+          final preparedRequest = await _prepareSecretPostRequest(
+            path,
+            body,
+            uid: uid,
+            password: password,
+          );
+          final response = await _postRequest(
+            preparedRequest.requestUrl,
+            headers: {'Content-Type': 'application/json'},
+            body: preparedRequest.requestBody,
+            timeout: _secretPostTimeout,
+          );
+
+          String? decodedResponseBody;
+          String? errorMessage;
+          if (response.statusCode == 200) {
+            try {
+              decodedResponseBody = _decryptSecretResponse(
+                response.body,
+                preparedRequest.aesKey,
+              );
+            } catch (e) {
+              errorMessage = 'Failed to decrypt response: $e';
+            }
+          }
+
+          return TfDebugRequestResult(
+            method: method,
+            requestEncrypted: true,
+            requestUrl: preparedRequest.requestUrl,
+            requestPayload: preparedRequest.requestBody,
+            statusCode: response.statusCode,
+            rawResponseBody: response.body,
+            decodedResponseBody: decodedResponseBody,
+            errorMessage: errorMessage,
+          );
+      }
+    } catch (e, stackTrace) {
+      talker.error('debugRequest $path failed', e, stackTrace);
+      return TfDebugRequestResult(
+        method: method,
+        requestEncrypted:
+            method == TfDebugRequestMethod.post && encryptRequest,
+        requestUrl: '',
+        requestPayload: '',
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
   bool _parseBool(String? result) => result?.endsWith('True') ?? false;
+
+  Map<String, dynamic>? _parseJsonMap(String? result) {
+    if (result == null) {
+      return null;
+    }
+
+    final trimmed = result.trim();
+    if (!trimmed.startsWith('{')) {
+      return null;
+    }
+
+    final decoded = jsonDecode(trimmed);
+    if (decoded is! Map<String, dynamic>) {
+      return null;
+    }
+    return decoded;
+  }
 
   // server info
 
@@ -233,6 +504,54 @@ class TfApiClient {
       talker.error('fetchServerInfo failed', e);
       return null;
     }
+  }
+
+  Future<TfServerConfig?> queryServerSettings(int uid, String password) async {
+    final result = await secretPost(
+      '/auth/server_settings/query',
+      const {},
+      uid: uid,
+      password: password,
+    );
+
+    final data = _parseJsonMap(result);
+    if (data == null) {
+      return null;
+    }
+
+    return TfServerConfig.fromJson(data);
+  }
+
+  Future<TfServerConfig?> updateServerSettings(
+    int uid,
+    String password, {
+    required String serverName,
+    required bool captcha,
+    required int fileLastTime,
+    required int groupsLimit,
+    required int singleGroupMaxPeople,
+    required int maxFileSize,
+  }) async {
+    final result = await secretPost(
+      '/auth/server_settings/update',
+      {
+        'server_name': serverName,
+        'captcha': captcha,
+        'file_last_time': fileLastTime,
+        'groups_limit': groupsLimit,
+        'single_group_max_people': singleGroupMaxPeople,
+        'max_file_size': maxFileSize,
+      },
+      uid: uid,
+      password: password,
+    );
+
+    final data = _parseJsonMap(result);
+    if (data == null) {
+      return null;
+    }
+
+    return TfServerConfig.fromJson(data);
   }
 
   // captcha
@@ -380,6 +699,21 @@ class TfApiClient {
     final result = await secretPost(
       '/avatar/upload_user_avatar',
       {'pic': picBase64},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<bool> uploadDefaultAvatar(
+    int uid,
+    String password,
+    String assetType,
+    String picBase64,
+  ) async {
+    final result = await secretPost(
+      '/avatar/upload_default_avatar',
+      {'type': assetType, 'pic': picBase64},
       uid: uid,
       password: password,
     );

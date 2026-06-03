@@ -27,13 +27,22 @@ class _AccountScreenState extends State<AccountScreen> {
   @override
   void initState() {
     super.initState();
-    // login launch!
     _loadUser();
+    _silentRefresh();
   }
 
   void _loadUser() {
     setState(() {
       _currentUser = AuthState.instance.currentUser;
+    });
+  }
+
+  void _silentRefresh() {
+    AuthState.instance.refreshProfile().then((_) {
+      if (!mounted) return;
+      setState(() {
+        _currentUser = AuthState.instance.currentUser;
+      });
     });
   }
 
@@ -295,30 +304,27 @@ class _AccountScreenState extends State<AccountScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          spacing: 4,
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                        AccountNameWidget(
+                          account: user,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            Flexible(
-                              child: AccountNameWidget(
-                                account: user,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                            Text(
+                              '@${user.username}',
+                              style: const TextStyle(fontSize: 11),
                             ),
-                            Flexible(
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 2.5),
-                                child: Text(
-                                  '@${user.username}',
-                                  style: const TextStyle(fontSize: 11),
-                                ),
-                              ),
-                            ),
+                            _buildRoleBadge(context, user),
                           ],
                         ),
+                        const SizedBox(height: 8),
                         Text(
                           user.personalSign?.isNotEmpty == true
                               ? user.personalSign!
@@ -337,6 +343,60 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRoleBadge(BuildContext context, UserProfile user) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final stat = user.normalizedStat;
+
+    late final Color backgroundColor;
+    late final Color foregroundColor;
+    late final IconData icon;
+
+    switch (stat) {
+      case 'root':
+        backgroundColor = colorScheme.errorContainer;
+        foregroundColor = colorScheme.onErrorContainer;
+        icon = Icons.shield_rounded;
+        break;
+      case 'admin':
+        backgroundColor = colorScheme.primaryContainer;
+        foregroundColor = colorScheme.onPrimaryContainer;
+        icon = Icons.admin_panel_settings_rounded;
+        break;
+      case 'banned':
+        backgroundColor = colorScheme.surfaceContainerHighest;
+        foregroundColor = colorScheme.onSurfaceVariant;
+        icon = Icons.block_rounded;
+        break;
+      default:
+        backgroundColor = colorScheme.secondaryContainer;
+        foregroundColor = colorScheme.onSecondaryContainer;
+        icon = Icons.person_rounded;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: foregroundColor),
+          const SizedBox(width: 4),
+          Text(
+            stat,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: foregroundColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -364,10 +424,9 @@ class _AccountScreenState extends State<AccountScreen> {
           const minWidth = 160.0;
           const spacing = 8.0;
           const padding = 24.0;
-          final totalMin = 3 * minWidth + 2 * spacing;
           final availableWidth = constraints.maxWidth - padding;
 
-          final children = [
+          final children = <Widget>[
             Card(
               margin: EdgeInsets.zero,
               child: InkWell(
@@ -428,44 +487,45 @@ class _AccountScreenState extends State<AccountScreen> {
                 },
               ),
             ),
-            Card(
-              margin: EdgeInsets.zero,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    spacing: 8,
-                    children: [
-                      const Icon(Symbols.manage_accounts, size: 20),
-                      Flexible(
-                        child: Text(
-                          l10n.accountSettings,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                onTap: () {
-                  // 也没有账户设置界面
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(l10n.accountSettings),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-              ),
-            ),
           ];
+
+          if (_currentUser?.hasAdminAccess == true) {
+            children.add(
+              Card(
+                margin: EdgeInsets.zero,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      spacing: 8,
+                      children: [
+                        const Icon(Icons.admin_panel_settings_outlined, size: 20),
+                        Flexible(
+                          child: Text(
+                            l10n.navAdmin,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  onTap: () => context.push(AppRoutes.admin),
+                ),
+              ),
+            );
+          }
+
+          final totalMin =
+              children.length * minWidth +
+              (children.length > 1 ? (children.length - 1) * spacing : 0);
 
           if (availableWidth > totalMin) {
             return Padding(

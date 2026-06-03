@@ -507,6 +507,121 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminAccessDenied => '君今無管理之權。';
 
   @override
+  String get adminRootOnly => '惟 root 之賬戶可治服器之配置。';
+
+  @override
+  String get adminDefaultAssets => '默認圖像';
+
+  @override
+  String get adminDefaultAssetsDescription => '上傳服器所用之 logo 與默認頭像圖。';
+
+  @override
+  String get adminDefaultAssetsLoadFailed => '載默認圖像敗';
+
+  @override
+  String get adminDefaultAssetChangeAction => '上傳 PNG';
+
+  @override
+  String get adminDefaultAssetPngHint => '服器惟受 PNG 之文件。';
+
+  @override
+  String get adminDefaultAssetPreviewUnavailable => '預覽不可用';
+
+  @override
+  String get adminDefaultAssetLogo => '服器 Logo';
+
+  @override
+  String get adminDefaultAssetLogoDescription => '用於應用之標題區與服器品牌之展示。';
+
+  @override
+  String get adminDefaultAssetForum => '默認論壇圖';
+
+  @override
+  String get adminDefaultAssetForumDescription => '論壇無自定圖時用之。';
+
+  @override
+  String get adminDefaultAssetUser => '默認用戶頭像';
+
+  @override
+  String get adminDefaultAssetUserDescription => '用戶未上傳頭像時用之。';
+
+  @override
+  String get adminDefaultAssetGroup => '默認群組頭像';
+
+  @override
+  String get adminDefaultAssetGroupDescription => '群組無自定頭像時用之。';
+
+  @override
+  String adminDefaultAssetUploadSuccess(String assetName) {
+    return '已更新 $assetName。';
+  }
+
+  @override
+  String adminDefaultAssetUploadFailed(String assetName) {
+    return '更新 $assetName 敗。';
+  }
+
+  @override
+  String get adminServerSettings => '服器設置';
+
+  @override
+  String get adminServerSettingsDescription => '更服器之名、註冊驗圖，及諸限額之要者。';
+
+  @override
+  String get adminServerSettingsLoadFailed => '載服器設置敗';
+
+  @override
+  String get adminServerSettingsSaveSuccess => '服器設置已更';
+
+  @override
+  String get adminServerSettingsSaveFailed => '更新服器設置敗';
+
+  @override
+  String get adminServerSettingsInvalidInput => '請檢服器設置之表而後重試。';
+
+  @override
+  String get adminServerSettingsCaptchaDescription => '註冊時須輸圖形之驗證碼。';
+
+  @override
+  String get adminServerReadOnlyDescription => '此諸值皆服器所返，今頁但可觀之。';
+
+  @override
+  String get adminServerFieldServerName => '服器名';
+
+  @override
+  String get adminServerFieldCaptcha => '註冊驗圖';
+
+  @override
+  String get adminServerFieldFileLastTime => '文件留存之時（小時）';
+
+  @override
+  String get adminServerFileLastTimeDescription => '其值須大於等於零。';
+
+  @override
+  String get adminServerFieldGroupsLimit => '群數之限';
+
+  @override
+  String get adminServerFieldSingleGroupMaxPeople => '單群至多人數';
+
+  @override
+  String get adminServerFieldMaxFileSize => '文件至大之量';
+
+  @override
+  String get adminServerFieldApiPort => 'API 端口';
+
+  @override
+  String get adminServerFieldTcpPort => 'TCP 端口';
+
+  @override
+  String get adminServerFieldEmailActivation => '郵箱啟用';
+
+  @override
+  String get adminServerFieldVerifyEmail => '驗證郵箱';
+
+  @override
+  String get adminServerUnlimitedHint => '輸 -1 以示無限。';
+
+  @override
   String get adminPendingForums => '待審論壇';
 
   @override
@@ -1330,6 +1445,125 @@ class AppLocalizationsOch extends AppLocalizations {
   String debugDialogSelectedAction(String action) {
     return '已擇操：$action';
   }
+
+  @override
+  String get debugMarkdownTester => 'Markdown 試';
+
+  @override
+  String get debugMarkdownTesterDescription => '輸 Markdown 而即觀其所渲之果';
+
+  @override
+  String get debugMarkdownTesterEditorTitle => 'Markdown 之輸';
+
+  @override
+  String get debugMarkdownTesterHint => '於此輸 Markdown';
+
+  @override
+  String get debugMarkdownTesterPreviewTitle => '渲染之觀';
+
+  @override
+  String get debugMarkdownTesterPreviewDescription => '所觀將隨 Markdown 之文而即更。';
+
+  @override
+  String get debugMarkdownTesterEmptyPreview => '渲染之果將見於此。';
+
+  @override
+  String get debugApiTester => 'API 試';
+
+  @override
+  String get debugApiTesterDescription => '手動發 API 請求以測試與服器之互動';
+
+  @override
+  String get debugApiTesterEndpoint => '端點';
+
+  @override
+  String get debugApiTesterEndpointHint => '如：/auth/login';
+
+  @override
+  String get debugApiTesterMethod => '請求之法';
+
+  @override
+  String get debugApiTesterMethodGet => 'GET';
+
+  @override
+  String get debugApiTesterMethodPost => 'POST';
+
+  @override
+  String get debugApiTesterUseCredentials => '附今所登之據';
+
+  @override
+  String get debugApiTesterUseCredentialsDescription =>
+      '自加今之 uid 與 password 於今次所提交之參。';
+
+  @override
+  String get debugApiTesterNoCredentials => '今無可用之登據。';
+
+  @override
+  String get debugApiTesterEncryptRequest => '密請求之體';
+
+  @override
+  String get debugApiTesterEncryptRequestDescription =>
+      '啟之，POST 請求將以 TouchFish 之密荷格式發之。';
+
+  @override
+  String get debugApiTesterEncryptRequestUnavailableForGet => 'GET 請求不行加密。';
+
+  @override
+  String get debugApiTesterQueryParameters => '詢參';
+
+  @override
+  String get debugApiTesterQueryParametersHint => '請輸作 GET 詢參之 JSON 之象';
+
+  @override
+  String get debugApiTesterRequestBody => '請求之體';
+
+  @override
+  String get debugApiTesterRequestBodyHint => '請輸作 POST 請求體之 JSON 之象';
+
+  @override
+  String get debugApiTesterSendRequest => '發請求';
+
+  @override
+  String get debugApiTesterResultTitle => '返回之果';
+
+  @override
+  String get debugApiTesterResultDescription => '觀今次所提交之參與服器之返。';
+
+  @override
+  String get debugApiTesterAwaitingResult => '發請求後，此將示所提交之參與返回之值。';
+
+  @override
+  String get debugApiTesterStatus => '狀';
+
+  @override
+  String get debugApiTesterStatusUnavailable => '不可用';
+
+  @override
+  String get debugApiTesterRequestUrl => '請求之址';
+
+  @override
+  String get debugApiTesterRequestPayload => '請求之荷';
+
+  @override
+  String get debugApiTesterEncodedBody => '已編碼之請求體';
+
+  @override
+  String get debugApiTesterDecryptedResponse => '解後之返值';
+
+  @override
+  String get debugApiTesterRawResponse => '原返值';
+
+  @override
+  String get debugApiTesterError => '誤訊';
+
+  @override
+  String get debugApiTesterInvalidEndpoint => '請輸端點。';
+
+  @override
+  String get debugApiTesterInvalidBody => '請求之體須為 JSON 之象。';
+
+  @override
+  String get debugApiTesterCredentialsUnavailable => '未得今之登據。';
 
   @override
   String get forumTitle => '論壇';

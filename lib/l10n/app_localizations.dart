@@ -1090,6 +1090,228 @@ abstract class AppLocalizations {
   /// **'You do not have administrator access.'**
   String get adminAccessDenied;
 
+  /// No description provided for @adminRootOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the root account can manage server settings.'**
+  String get adminRootOnly;
+
+  /// No description provided for @adminDefaultAssets.
+  ///
+  /// In en, this message translates to:
+  /// **'Default Images'**
+  String get adminDefaultAssets;
+
+  /// No description provided for @adminDefaultAssetsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload the logo and default avatars used by the server.'**
+  String get adminDefaultAssetsDescription;
+
+  /// No description provided for @adminDefaultAssetsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load default images'**
+  String get adminDefaultAssetsLoadFailed;
+
+  /// No description provided for @adminDefaultAssetChangeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload PNG'**
+  String get adminDefaultAssetChangeAction;
+
+  /// No description provided for @adminDefaultAssetPngHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only PNG files are accepted by the server.'**
+  String get adminDefaultAssetPngHint;
+
+  /// No description provided for @adminDefaultAssetPreviewUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview unavailable'**
+  String get adminDefaultAssetPreviewUnavailable;
+
+  /// No description provided for @adminDefaultAssetLogo.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Logo'**
+  String get adminDefaultAssetLogo;
+
+  /// No description provided for @adminDefaultAssetLogoDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown in the app header and server branding surfaces.'**
+  String get adminDefaultAssetLogoDescription;
+
+  /// No description provided for @adminDefaultAssetForum.
+  ///
+  /// In en, this message translates to:
+  /// **'Default Forum Image'**
+  String get adminDefaultAssetForum;
+
+  /// No description provided for @adminDefaultAssetForumDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Used when a forum has no custom image.'**
+  String get adminDefaultAssetForumDescription;
+
+  /// No description provided for @adminDefaultAssetUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Default User Avatar'**
+  String get adminDefaultAssetUser;
+
+  /// No description provided for @adminDefaultAssetUserDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Used when a user has not uploaded an avatar.'**
+  String get adminDefaultAssetUserDescription;
+
+  /// No description provided for @adminDefaultAssetGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Default Group Avatar'**
+  String get adminDefaultAssetGroup;
+
+  /// No description provided for @adminDefaultAssetGroupDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Used when a group has no custom avatar.'**
+  String get adminDefaultAssetGroupDescription;
+
+  /// No description provided for @adminDefaultAssetUploadSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {assetName}.'**
+  String adminDefaultAssetUploadSuccess(String assetName);
+
+  /// No description provided for @adminDefaultAssetUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update {assetName}.'**
+  String adminDefaultAssetUploadFailed(String assetName);
+
+  /// No description provided for @adminServerSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Settings'**
+  String get adminServerSettings;
+
+  /// No description provided for @adminServerSettingsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the server name, registration captcha, and key limits.'**
+  String get adminServerSettingsDescription;
+
+  /// No description provided for @adminServerSettingsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load server settings'**
+  String get adminServerSettingsLoadFailed;
+
+  /// No description provided for @adminServerSettingsSaveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Server settings updated'**
+  String get adminServerSettingsSaveSuccess;
+
+  /// No description provided for @adminServerSettingsSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update server settings'**
+  String get adminServerSettingsSaveFailed;
+
+  /// No description provided for @adminServerSettingsInvalidInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Please check the server settings form and try again.'**
+  String get adminServerSettingsInvalidInput;
+
+  /// No description provided for @adminServerSettingsCaptchaDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Require a captcha image during registration.'**
+  String get adminServerSettingsCaptchaDescription;
+
+  /// No description provided for @adminServerReadOnlyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'These values are returned by the server and cannot be edited here.'**
+  String get adminServerReadOnlyDescription;
+
+  /// No description provided for @adminServerFieldServerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Name'**
+  String get adminServerFieldServerName;
+
+  /// No description provided for @adminServerFieldCaptcha.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration Captcha'**
+  String get adminServerFieldCaptcha;
+
+  /// No description provided for @adminServerFieldFileLastTime.
+  ///
+  /// In en, this message translates to:
+  /// **'File Retention Time (hours)'**
+  String get adminServerFieldFileLastTime;
+
+  /// No description provided for @adminServerFileLastTimeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be 0 or greater.'**
+  String get adminServerFileLastTimeDescription;
+
+  /// No description provided for @adminServerFieldGroupsLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Limit'**
+  String get adminServerFieldGroupsLimit;
+
+  /// No description provided for @adminServerFieldSingleGroupMaxPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'Single Group Max Members'**
+  String get adminServerFieldSingleGroupMaxPeople;
+
+  /// No description provided for @adminServerFieldMaxFileSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Max File Size'**
+  String get adminServerFieldMaxFileSize;
+
+  /// No description provided for @adminServerFieldApiPort.
+  ///
+  /// In en, this message translates to:
+  /// **'API Port'**
+  String get adminServerFieldApiPort;
+
+  /// No description provided for @adminServerFieldTcpPort.
+  ///
+  /// In en, this message translates to:
+  /// **'TCP Port'**
+  String get adminServerFieldTcpPort;
+
+  /// No description provided for @adminServerFieldEmailActivation.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Activation'**
+  String get adminServerFieldEmailActivation;
+
+  /// No description provided for @adminServerFieldVerifyEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification Email'**
+  String get adminServerFieldVerifyEmail;
+
+  /// No description provided for @adminServerUnlimitedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use -1 for unlimited.'**
+  String get adminServerUnlimitedHint;
+
   /// No description provided for @adminPendingForums.
   ///
   /// In en, this message translates to:
@@ -2679,6 +2901,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Selected action: {action}'**
   String debugDialogSelectedAction(String action);
+
+  /// No description provided for @debugMarkdownTester.
+  ///
+  /// In en, this message translates to:
+  /// **'Markdown Test'**
+  String get debugMarkdownTester;
+
+  /// No description provided for @debugMarkdownTesterDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Type Markdown and preview the rendered result'**
+  String get debugMarkdownTesterDescription;
+
+  /// No description provided for @debugMarkdownTesterEditorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Markdown Input'**
+  String get debugMarkdownTesterEditorTitle;
+
+  /// No description provided for @debugMarkdownTesterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Markdown here'**
+  String get debugMarkdownTesterHint;
+
+  /// No description provided for @debugMarkdownTesterPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rendered Preview'**
+  String get debugMarkdownTesterPreviewTitle;
+
+  /// No description provided for @debugMarkdownTesterPreviewDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The preview updates as you edit the Markdown source.'**
+  String get debugMarkdownTesterPreviewDescription;
+
+  /// No description provided for @debugMarkdownTesterEmptyPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Rendered content will appear here.'**
+  String get debugMarkdownTesterEmptyPreview;
+
+  /// No description provided for @debugApiTester.
+  ///
+  /// In en, this message translates to:
+  /// **'API Test'**
+  String get debugApiTester;
+
+  /// No description provided for @debugApiTesterDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Send API requests to the server and inspect the responses'**
+  String get debugApiTesterDescription;
+
+  /// No description provided for @debugApiTesterEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoint'**
+  String get debugApiTesterEndpoint;
+
+  /// No description provided for @debugApiTesterEndpointHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Example: /auth/login'**
+  String get debugApiTesterEndpointHint;
+
+  /// No description provided for @debugApiTesterMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Method'**
+  String get debugApiTesterMethod;
+
+  /// No description provided for @debugApiTesterMethodGet.
+  ///
+  /// In en, this message translates to:
+  /// **'GET'**
+  String get debugApiTesterMethodGet;
+
+  /// No description provided for @debugApiTesterMethodPost.
+  ///
+  /// In en, this message translates to:
+  /// **'POST'**
+  String get debugApiTesterMethodPost;
+
+  /// No description provided for @debugApiTesterUseCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Include current login credentials'**
+  String get debugApiTesterUseCredentials;
+
+  /// No description provided for @debugApiTesterUseCredentialsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Append the current uid and password to the submitted parameters.'**
+  String get debugApiTesterUseCredentialsDescription;
+
+  /// No description provided for @debugApiTesterNoCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Current login credentials are unavailable.'**
+  String get debugApiTesterNoCredentials;
+
+  /// No description provided for @debugApiTesterEncryptRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypt request body'**
+  String get debugApiTesterEncryptRequest;
+
+  /// No description provided for @debugApiTesterEncryptRequestDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, POST requests use the TouchFish encrypted payload format.'**
+  String get debugApiTesterEncryptRequestDescription;
+
+  /// No description provided for @debugApiTesterEncryptRequestUnavailableForGet.
+  ///
+  /// In en, this message translates to:
+  /// **'GET requests are sent without encryption.'**
+  String get debugApiTesterEncryptRequestUnavailableForGet;
+
+  /// No description provided for @debugApiTesterQueryParameters.
+  ///
+  /// In en, this message translates to:
+  /// **'Query Parameters'**
+  String get debugApiTesterQueryParameters;
+
+  /// No description provided for @debugApiTesterQueryParametersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a JSON object used as GET query parameters'**
+  String get debugApiTesterQueryParametersHint;
+
+  /// No description provided for @debugApiTesterRequestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Body'**
+  String get debugApiTesterRequestBody;
+
+  /// No description provided for @debugApiTesterRequestBodyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a JSON object used as the POST request body'**
+  String get debugApiTesterRequestBodyHint;
+
+  /// No description provided for @debugApiTesterSendRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Request'**
+  String get debugApiTesterSendRequest;
+
+  /// No description provided for @debugApiTesterResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Result'**
+  String get debugApiTesterResultTitle;
+
+  /// No description provided for @debugApiTesterResultDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect the submitted parameters and the server response.'**
+  String get debugApiTesterResultDescription;
+
+  /// No description provided for @debugApiTesterAwaitingResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a request to view the submitted parameters and response.'**
+  String get debugApiTesterAwaitingResult;
+
+  /// No description provided for @debugApiTesterStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get debugApiTesterStatus;
+
+  /// No description provided for @debugApiTesterStatusUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get debugApiTesterStatusUnavailable;
+
+  /// No description provided for @debugApiTesterRequestUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Request URL'**
+  String get debugApiTesterRequestUrl;
+
+  /// No description provided for @debugApiTesterRequestPayload.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Payload'**
+  String get debugApiTesterRequestPayload;
+
+  /// No description provided for @debugApiTesterEncodedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Encoded Request Body'**
+  String get debugApiTesterEncodedBody;
+
+  /// No description provided for @debugApiTesterDecryptedResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrypted Response'**
+  String get debugApiTesterDecryptedResponse;
+
+  /// No description provided for @debugApiTesterRawResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw Response'**
+  String get debugApiTesterRawResponse;
+
+  /// No description provided for @debugApiTesterError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get debugApiTesterError;
+
+  /// No description provided for @debugApiTesterInvalidEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter an endpoint.'**
+  String get debugApiTesterInvalidEndpoint;
+
+  /// No description provided for @debugApiTesterInvalidBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Request body must be a JSON object.'**
+  String get debugApiTesterInvalidBody;
+
+  /// No description provided for @debugApiTesterCredentialsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No current login credentials were found.'**
+  String get debugApiTesterCredentialsUnavailable;
 
   /// No description provided for @forumTitle.
   ///

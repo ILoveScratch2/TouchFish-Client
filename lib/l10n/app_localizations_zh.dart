@@ -507,6 +507,121 @@ class AppLocalizationsZh extends AppLocalizations {
   String get adminAccessDenied => '您当前没有管理员权限。';
 
   @override
+  String get adminRootOnly => '只有 root 账户可以管理服务器配置。';
+
+  @override
+  String get adminDefaultAssets => '默认图片';
+
+  @override
+  String get adminDefaultAssetsDescription => '上传服务器使用的 logo 和默认头像图片。';
+
+  @override
+  String get adminDefaultAssetsLoadFailed => '加载默认图片失败';
+
+  @override
+  String get adminDefaultAssetChangeAction => '上传 PNG';
+
+  @override
+  String get adminDefaultAssetPngHint => '服务端只接受 PNG 文件。';
+
+  @override
+  String get adminDefaultAssetPreviewUnavailable => '预览不可用';
+
+  @override
+  String get adminDefaultAssetLogo => '服务器 Logo';
+
+  @override
+  String get adminDefaultAssetLogoDescription => '用于应用标题区域和服务器品牌展示。';
+
+  @override
+  String get adminDefaultAssetForum => '默认论坛图片';
+
+  @override
+  String get adminDefaultAssetForumDescription => '论坛没有自定义图片时使用。';
+
+  @override
+  String get adminDefaultAssetUser => '默认用户头像';
+
+  @override
+  String get adminDefaultAssetUserDescription => '用户未上传头像时使用。';
+
+  @override
+  String get adminDefaultAssetGroup => '默认群组头像';
+
+  @override
+  String get adminDefaultAssetGroupDescription => '群组没有自定义头像时使用。';
+
+  @override
+  String adminDefaultAssetUploadSuccess(String assetName) {
+    return '已更新 $assetName。';
+  }
+
+  @override
+  String adminDefaultAssetUploadFailed(String assetName) {
+    return '更新 $assetName 失败。';
+  }
+
+  @override
+  String get adminServerSettings => '服务器设置';
+
+  @override
+  String get adminServerSettingsDescription => '更新服务器名称、注册验证码以及关键限制项。';
+
+  @override
+  String get adminServerSettingsLoadFailed => '加载服务器设置失败';
+
+  @override
+  String get adminServerSettingsSaveSuccess => '服务器设置已更新';
+
+  @override
+  String get adminServerSettingsSaveFailed => '更新服务器设置失败';
+
+  @override
+  String get adminServerSettingsInvalidInput => '请检查服务器设置表单后重试。';
+
+  @override
+  String get adminServerSettingsCaptchaDescription => '注册时要求输入图片验证码。';
+
+  @override
+  String get adminServerReadOnlyDescription => '这些值由服务端返回，当前页面仅供查看。';
+
+  @override
+  String get adminServerFieldServerName => '服务器名称';
+
+  @override
+  String get adminServerFieldCaptcha => '注册验证码';
+
+  @override
+  String get adminServerFieldFileLastTime => '文件保留时长（小时）';
+
+  @override
+  String get adminServerFileLastTimeDescription => '必须大于或等于 0。';
+
+  @override
+  String get adminServerFieldGroupsLimit => '群组数量限制';
+
+  @override
+  String get adminServerFieldSingleGroupMaxPeople => '单群最大人数';
+
+  @override
+  String get adminServerFieldMaxFileSize => '最大文件大小';
+
+  @override
+  String get adminServerFieldApiPort => 'API 端口';
+
+  @override
+  String get adminServerFieldTcpPort => 'TCP 端口';
+
+  @override
+  String get adminServerFieldEmailActivation => '邮箱激活';
+
+  @override
+  String get adminServerFieldVerifyEmail => '验证邮箱';
+
+  @override
+  String get adminServerUnlimitedHint => '输入 -1 表示不限制。';
+
+  @override
   String get adminPendingForums => '待审论坛';
 
   @override
@@ -1330,6 +1445,126 @@ class AppLocalizationsZh extends AppLocalizations {
   String debugDialogSelectedAction(String action) {
     return '已选择操作：$action';
   }
+
+  @override
+  String get debugMarkdownTester => 'Markdown 测试';
+
+  @override
+  String get debugMarkdownTesterDescription => '输入 Markdown 并实时预览渲染结果';
+
+  @override
+  String get debugMarkdownTesterEditorTitle => 'Markdown 输入';
+
+  @override
+  String get debugMarkdownTesterHint => '在这里输入 Markdown';
+
+  @override
+  String get debugMarkdownTesterPreviewTitle => '渲染预览';
+
+  @override
+  String get debugMarkdownTesterPreviewDescription =>
+      '预览会随着 Markdown 内容变更实时更新。';
+
+  @override
+  String get debugMarkdownTesterEmptyPreview => '渲染结果会显示在这里。';
+
+  @override
+  String get debugApiTester => 'API 测试';
+
+  @override
+  String get debugApiTesterDescription => '直接向服务器发送 API 请求，查看请求和响应的详细信息。';
+
+  @override
+  String get debugApiTesterEndpoint => '端点';
+
+  @override
+  String get debugApiTesterEndpointHint => '例如：/auth/login';
+
+  @override
+  String get debugApiTesterMethod => '请求方法';
+
+  @override
+  String get debugApiTesterMethodGet => 'GET';
+
+  @override
+  String get debugApiTesterMethodPost => 'POST';
+
+  @override
+  String get debugApiTesterUseCredentials => '附带当前登录凭据';
+
+  @override
+  String get debugApiTesterUseCredentialsDescription =>
+      '会把当前 uid 和 password 追加到本次提交的参数中。';
+
+  @override
+  String get debugApiTesterNoCredentials => '当前没有可用的登录凭据。';
+
+  @override
+  String get debugApiTesterEncryptRequest => '加密请求体';
+
+  @override
+  String get debugApiTesterEncryptRequestDescription =>
+      '开启后，POST 请求会使用 TouchFish 的加密载荷格式发送。';
+
+  @override
+  String get debugApiTesterEncryptRequestUnavailableForGet => 'GET 请求不会启用加密。';
+
+  @override
+  String get debugApiTesterQueryParameters => '查询参数';
+
+  @override
+  String get debugApiTesterQueryParametersHint => '请输入作为 GET 查询参数的 JSON 对象';
+
+  @override
+  String get debugApiTesterRequestBody => '请求体';
+
+  @override
+  String get debugApiTesterRequestBodyHint => '请输入作为 POST 请求体的 JSON 对象';
+
+  @override
+  String get debugApiTesterSendRequest => '发送请求';
+
+  @override
+  String get debugApiTesterResultTitle => '返回结果';
+
+  @override
+  String get debugApiTesterResultDescription => '查看本次提交的参数以及服务器返回。';
+
+  @override
+  String get debugApiTesterAwaitingResult => '发送请求后，这里会显示提交参数和返回值。';
+
+  @override
+  String get debugApiTesterStatus => '状态';
+
+  @override
+  String get debugApiTesterStatusUnavailable => '不可用';
+
+  @override
+  String get debugApiTesterRequestUrl => '请求地址';
+
+  @override
+  String get debugApiTesterRequestPayload => '请求载荷';
+
+  @override
+  String get debugApiTesterEncodedBody => '编码后的请求体';
+
+  @override
+  String get debugApiTesterDecryptedResponse => '解密后的返回值';
+
+  @override
+  String get debugApiTesterRawResponse => '原始返回值';
+
+  @override
+  String get debugApiTesterError => '错误信息';
+
+  @override
+  String get debugApiTesterInvalidEndpoint => '请输入端点。';
+
+  @override
+  String get debugApiTesterInvalidBody => '请求体必须是 JSON 对象。';
+
+  @override
+  String get debugApiTesterCredentialsUnavailable => '未找到当前登录凭据。';
 
   @override
   String get forumTitle => '论坛';

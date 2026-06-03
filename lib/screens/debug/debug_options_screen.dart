@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
+
 import '../../l10n/app_localizations.dart';
 import '../../widgets/app_alert_dialog.dart';
+import './api_test_screen.dart';
+import './markdown_test_screen.dart';
 import './talker_log_screen.dart';
 
 class DebugOptionsScreen extends StatelessWidget {
@@ -87,6 +90,34 @@ class DebugOptionsScreen extends StatelessWidget {
                 MaterialPageRoute(
                   builder: (context) => const TalkerLogScreen(),
                 ),
+              );
+            },
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(Icons.text_snippet_outlined, color: colorScheme.primary),
+            trailing: const Icon(Symbols.chevron_right),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+            title: Text(l10n.debugMarkdownTester),
+            subtitle: Text(l10n.debugMarkdownTesterDescription),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const MarkdownTestScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(Icons.api_rounded, color: colorScheme.primary),
+            trailing: const Icon(Symbols.chevron_right),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+            title: Text(l10n.debugApiTester),
+            subtitle: Text(l10n.debugApiTesterDescription),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const ApiTestScreen()),
               );
             },
           ),
