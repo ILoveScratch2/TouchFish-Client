@@ -693,5 +693,14 @@
   "forumMdList": "列表",
   "forumMdQuote": "引用",
   "forumMdCode": "代码",
-  "forumMdLink": "链接"
+  "forumMdLink": "链接",
+  "forumCreateTitle": "创建论坛",
+  "forumCreateTitleHint": "论坛名称",
+  "forumCreateDescriptionHint": "简介（可选）",
+  "forumCreateSuccess": "论坛已提交审核",
+  "forumCreateFailed": "创建论坛失败",
+  "forumPinPost": "置顶帖子",
+  "forumUnpinPost": "取消置顶",
+  "forumDeleteSuccess": "论坛已删除",
+  "forumDeleteFailed": "删除论坛失败"
 }

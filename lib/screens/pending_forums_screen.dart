@@ -279,11 +279,24 @@ class _PendingForumsScreenState extends State<PendingForumsScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   spacing: 12,
                                   children: [
-                                    Text(
-                                      forum.forumName,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.titleLarge,
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            forum.forumName,
+                                            style: Theme.of(context).textTheme.titleLarge,
+                                          ),
+                                        ),
+                                        if (forum.type == 'edit')
+                                          Chip(
+                                            label: Text('EDIT',
+                                                style: TextStyle(fontSize: 10,
+                                                    color: Theme.of(context).colorScheme.onTertiaryContainer)),
+                                            backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
+                                            visualDensity: VisualDensity.compact,
+                                            padding: EdgeInsets.zero,
+                                          ),
+                                      ],
                                     ),
                                     Text(
                                       l10n.adminPendingForumQueueId(

@@ -13,6 +13,12 @@ import '../utils/talker.dart';
 
 const double _kPostDetailMaxWidth = 680;
 
+class _CommentData {
+  final ForumComment comment;
+  UserProfile? author;
+  _CommentData(this.comment);
+}
+
 class ForumPostDetailScreen extends StatefulWidget {
   final String forumId;
   final String postId;
@@ -29,7 +35,8 @@ class ForumPostDetailScreen extends StatefulWidget {
 
 class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   ForumPost? _post;
-  List<ForumComment> _comments = [];
+  UserProfile? _postAuthor;
+  List<_CommentData> _commentDataList = [];
   bool _isLoading = true;
   bool _isSendingComment = false;
   final _commentController = TextEditingController();
@@ -54,8 +61,26 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
         _post = null;
       }
 
+      if (_post != null) {
+        final authorUid = int.tryParse(_post!.authorUid);
+        if (authorUid != null) {
+          _postAuthor = await TfApiClient.instance.getUserByUid(authorUid);
+        }
+      }
+
       final comments = await TfApiClient.instance.getAllComments(fid, pid);
-      if (mounted) setState(() { _comments = comments; _isLoading = false; });
+      _commentDataList = comments.map((c) => _CommentData(c)).toList();
+
+      // Fetch comment authors in parallel
+      final authorFutures = _commentDataList.map((cd) async {
+        final uid = int.tryParse(cd.comment.authorUid);
+        if (uid != null) {
+          cd.author = await TfApiClient.instance.getUserByUid(uid);
+        }
+      });
+      await Future.wait(authorFutures);
+
+      if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       talker.error('ForumPostDetail: _loadData failed', e);
       if (mounted) setState(() => _isLoading = false);
@@ -87,7 +112,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       );
     }
     final post = _post!;
-    final author = UserProfileDemoData.getDemoProfile(post.authorUid);
+    final author = _postAuthor;
     final enableMarkdown =
         SettingsService.instance.getValue<bool>('enableMarkdownRendering', true);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
@@ -130,7 +155,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
                       child: Row(
                         children: [
                           Text(
-                            l10n.forumComments(_comments.length),
+                            l10n.forumComments(_commentDataList.length),
                             style:
                                 Theme.of(context).textTheme.titleSmall?.copyWith(
                                       fontWeight: FontWeight.w600,
@@ -144,7 +169,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
                   ),
                 ),
               ),
-              if (_comments.isEmpty)
+              if (_commentDataList.isEmpty)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(32),
@@ -180,16 +205,16 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      final comment = _comments[index];
+                      final cd = _commentDataList[index];
                       return Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: _kPostDetailMaxWidth),
                           child: _buildCommentCard(
-                              context, comment, enableMarkdown),
+                              context, cd, enableMarkdown),
                         ),
                       );
                     },
-                    childCount: _comments.length,
+                    childCount: _commentDataList.length,
                   ),
                 ),
               SliverToBoxAdapter(
@@ -216,10 +241,11 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   Widget _buildPostBody(
     BuildContext context,
     ForumPost post,
-    UserProfile author,
+    UserProfile? author,
     bool enableMarkdown,
     AppLocalizations l10n,
   ) {
+    final displayName = author?.username ?? 'UID:${post.authorUid}';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -229,9 +255,9 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
           child: Row(
             children: [
               ProfilePictureWidget(
-                avatarUrl: author.avatar,
+                avatarUrl: author?.avatar,
                 radius: 20,
-                fallbackText: author.username,
+                fallbackText: displayName,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -239,7 +265,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      author.username,
+                      displayName,
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     Text(
@@ -299,7 +325,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
               );
             },
             icon: const Icon(Icons.comment_outlined, size: 18),
-            label: Text(l10n.forumComments(_comments.length)),
+            label: Text(l10n.forumComments(_commentDataList.length)),
           ),
           const SizedBox(width: 8),
           FilledButton.tonalIcon(
@@ -313,11 +339,12 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   }
   Widget _buildCommentCard(
     BuildContext context,
-    ForumComment comment,
+    _CommentData cd,
     bool enableMarkdown,
   ) {
-    final commentAuthor =
-        UserProfileDemoData.getDemoProfile(comment.authorUid);
+    final comment = cd.comment;
+    final commentAuthor = cd.author;
+    final displayName = commentAuthor?.username ?? 'UID:${comment.authorUid}';
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Padding(
@@ -328,9 +355,9 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
             GestureDetector(
               onTap: () => context.push('/user/${comment.authorUid}'),
               child: ProfilePictureWidget(
-                avatarUrl: commentAuthor.avatar,
+                avatarUrl: commentAuthor?.avatar,
                 radius: 16,
-                fallbackText: commentAuthor.username,
+                fallbackText: displayName,
               ),
             ),
             const SizedBox(width: 10),
@@ -341,7 +368,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
                   Row(
                     children: [
                       Text(
-                        commentAuthor.username,
+                        displayName,
                         style:
                             Theme.of(context).textTheme.labelLarge?.copyWith(
                                   fontWeight: FontWeight.w600,
@@ -377,7 +404,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   }
   Widget _buildQuickReplyBar(BuildContext context, AppLocalizations l10n) {
     final colorScheme = Theme.of(context).colorScheme;
-    final currentUser = UserProfileDemoData.getDemoProfile('1');
+    final currentUser = AuthState.instance.currentUser;
 
     return Material(
       elevation: 2,
@@ -391,9 +418,9 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
             Padding(
               padding: const EdgeInsets.only(left: 4),
               child: ProfilePictureWidget(
-                avatarUrl: currentUser.avatar,
+                avatarUrl: currentUser?.avatar,
                 radius: 16,
-                fallbackText: currentUser.username,
+                fallbackText: currentUser?.username ?? '?',
               ),
             ),
             const SizedBox(width: 4),
@@ -423,8 +450,11 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
               tooltip: l10n.forumExpandEditor,
             ),
             IconButton(
-              onPressed: _submitComment,
-              icon: Icon(Icons.send, size: 20, color: colorScheme.primary),
+              onPressed: _isSendingComment ? null : _submitComment,
+              icon: _isSendingComment
+                  ? const SizedBox(width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : Icon(Icons.send, size: 20, color: colorScheme.primary),
               visualDensity: VisualDensity.compact,
               tooltip: l10n.forumCommentSend,
             ),

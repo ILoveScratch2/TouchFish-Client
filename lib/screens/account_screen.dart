@@ -9,7 +9,6 @@ import '../widgets/account/signature_editor.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
-import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
 import 'debug/debug_options_screen.dart';
 
@@ -46,6 +45,29 @@ class _AccountScreenState extends State<AccountScreen> {
     });
   }
 
+  Future<void> _updateSignature(String newSign) async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+
+    final ok = await TfApiClient.instance.changeSign(uid, password, newSign);
+    if (!mounted) return;
+    if (ok) {
+      await AuthState.instance.refreshProfile();
+      setState(() {
+        _currentUser = AuthState.instance.currentUser;
+      });
+    } else {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.profileEditSaveFailed),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   void _logout() async {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showTouchFishErrorDialog<bool>(
@@ -72,74 +94,38 @@ class _AccountScreenState extends State<AccountScreen> {
     }
   }
 
-  void _updateSignature(String newSignature) {
-    final uid = AuthState.instance.uid;
-    final password = AuthState.instance.password;
-    if (uid == null || password == null) return;
-    TfApiClient.instance
-        .changeSign(uid, password, newSignature)
-        .then((success) {
-          if (!mounted) return;
-          if (success) {
-            AuthState.instance.refreshProfile().then((_) {
-              if (!mounted) return;
-              setState(() => _currentUser = AuthState.instance.currentUser);
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(context)!.accountUpdateSignature,
-                ),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
-        })
-        .catchError((e) {
-          talker.error('_updateSignature failed', e);
-        });
-  }
-
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth >= 600;
+    if (_currentUser == null) {
+      return _buildUnauthorizedScreen(context);
+    }
 
-        if (_currentUser == null) {
-          return _buildUnauthorizedScreen(context);
-        }
-
-        return Scaffold(
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          appBar: AppBar(backgroundColor: Colors.transparent, toolbarHeight: 0),
-          body: SingleChildScrollView(
-            child: Padding(
-              padding: EdgeInsets.only(
-                top: 8,
-                bottom: MediaQuery.of(context).padding.bottom,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 600),
-                  child: Column(
-                    spacing: 4,
-                    children: [
-                      _buildProfileCard(context),
-                      _buildSignatureCard(context),
-                      _buildActionButtons(context, isWide),
-                      _buildMenuItems(context),
-                      const Divider(height: 1),
-                      _buildAdditionalOptions(context),
-                      _buildLogoutButton(context),
-                    ],
-                  ),
-                ),
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      appBar: AppBar(backgroundColor: Colors.transparent, toolbarHeight: 0),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.only(
+            top: 8,
+            bottom: MediaQuery.of(context).padding.bottom,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: Column(
+                spacing: 4,
+                children: [
+                  _buildProfileCard(context),
+                  _buildMenuItems(context),
+                  const Divider(height: 1),
+                  _buildAdditionalOptions(context),
+                  _buildLogoutButton(context),
+                ],
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -325,14 +311,10 @@ class _AccountScreenState extends State<AccountScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          user.personalSign?.isNotEmpty == true
-                              ? user.personalSign!
-                              : AppLocalizations.of(
-                                  context,
-                                )!.accountDescriptionNone,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        SignatureEditorWidget(
+                          currentSignature: user.personalSign,
+                          onUpdate: (newSign) =>
+                              _updateSignature(newSign),
                         ),
                         const SizedBox(height: 12),
                       ],
@@ -401,176 +383,46 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
-  Widget _buildSignatureCard(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Card(
-        margin: EdgeInsets.zero,
-        child: SignatureEditorWidget(
-          currentSignature: _currentUser?.personalSign,
-          onUpdate: _updateSignature,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(BuildContext context, bool isWide) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          const minWidth = 160.0;
-          const spacing = 8.0;
-          const padding = 24.0;
-          final availableWidth = constraints.maxWidth - padding;
-
-          final children = <Widget>[
-            Card(
-              margin: EdgeInsets.zero,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    spacing: 8,
-                    children: [
-                      const Icon(Symbols.settings, size: 20),
-                      Flexible(
-                        child: Text(
-                          l10n.accountAppSettings,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                onTap: () => context.push(AppRoutes.settings),
-              ),
-            ),
-            Card(
-              margin: EdgeInsets.zero,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    spacing: 8,
-                    children: [
-                      const Icon(Symbols.person_edit, size: 20),
-                      Flexible(
-                        child: Text(
-                          l10n.accountUpdateYourProfile,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                onTap: () {
-                  context.push(AppRoutes.profileEdit);
-                },
-              ),
-            ),
-          ];
-
-          if (_currentUser?.hasAdminAccess == true) {
-            children.add(
-              Card(
-                margin: EdgeInsets.zero,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    child: Row(
-                      spacing: 8,
-                      children: [
-                        const Icon(Icons.admin_panel_settings_outlined, size: 20),
-                        Flexible(
-                          child: Text(
-                            l10n.navAdmin,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  onTap: () => context.push(AppRoutes.admin),
-                ),
-              ),
-            );
-          }
-
-          final totalMin =
-              children.length * minWidth +
-              (children.length > 1 ? (children.length - 1) * spacing : 0);
-
-          if (availableWidth > totalMin) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: SizedBox(
-                height: 48,
-                child: Row(
-                  spacing: 8,
-                  children: children
-                      .map((child) => Expanded(child: child))
-                      .toList(),
-                ),
-              ),
-            );
-          } else {
-            return SizedBox(
-              height: 48,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Row(
-                    spacing: 8,
-                    children: children
-                        .map((child) => SizedBox(width: minWidth, child: child))
-                        .toList(),
-                  ),
-                ),
-              ),
-            );
-          }
-        },
-      ),
-    );
-  }
-
   Widget _buildMenuItems(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    final menuItems = [
-      {
-        'icon': Symbols.notifications,
-        'title': l10n.accountNotifications,
-        'onTap': () {
-          // 通知？也没有的
+    final menuItems = <Widget>[
+      ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+        trailing: const Icon(Symbols.chevron_right),
+        dense: true,
+        leading: const Icon(Symbols.person_edit, size: 24),
+        title: Text(l10n.accountUpdateYourProfile),
+        onTap: () => context.push(AppRoutes.profileEdit),
+      ),
+      ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+        trailing: const Icon(Symbols.chevron_right),
+        dense: true,
+        leading: const Icon(Symbols.settings, size: 24),
+        title: Text(l10n.accountAppSettings),
+        onTap: () => context.push(AppRoutes.settings),
+      ),
+      if (_currentUser?.hasAdminAccess == true)
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+          trailing: const Icon(Symbols.chevron_right),
+          dense: true,
+          leading: const Icon(Icons.admin_panel_settings_outlined, size: 24),
+          title: Text(l10n.navAdmin),
+          onTap: () => context.push(AppRoutes.admin),
+        ),
+      const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: Divider(height: 1),
+      ),
+      ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+        trailing: const Icon(Symbols.chevron_right),
+        dense: true,
+        leading: const Icon(Symbols.notifications, size: 24),
+        title: Text(l10n.accountNotifications),
+        onTap: () {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(l10n.accountNotifications),
@@ -578,21 +430,10 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           );
         },
-      },
+      ),
     ];
 
-    return Column(
-      children: menuItems.map((item) {
-        return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-          trailing: const Icon(Symbols.chevron_right),
-          dense: true,
-          leading: Icon(item['icon'] as IconData, size: 24),
-          title: Text(item['title'] as String),
-          onTap: item['onTap'] as VoidCallback,
-        );
-      }).toList(),
-    );
+    return Column(children: menuItems);
   }
 
   Widget _buildAdditionalOptions(BuildContext context) {

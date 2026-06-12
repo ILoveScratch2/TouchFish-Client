@@ -692,5 +692,14 @@
   "forumMdList": "列",
   "forumMdQuote": "引",
   "forumMdCode": "代碼",
-  "forumMdLink": "鏈接"
+  "forumMdLink": "鏈接",
+  "forumCreateTitle": "建論壇",
+  "forumCreateTitleHint": "論壇之名",
+  "forumCreateDescriptionHint": "述（非必填）",
+  "forumCreateSuccess": "論壇已呈，待審",
+  "forumCreateFailed": "建論壇未成",
+  "forumPinPost": "置頂",
+  "forumUnpinPost": "去置頂",
+  "forumDeleteSuccess": "論壇已毀",
+  "forumDeleteFailed": "毀論壇未成"
 }

@@ -35,7 +35,7 @@ class Forum {
   }
 
   factory Forum.fromServerRow(List<dynamic> row) {
-    final ms = ((row[3] as num).toDouble() * 1000).toInt();
+    final ms = ((double.tryParse(row[3].toString()) ?? 0) * 1000).toInt();
     return Forum(
       id: row[0].toString(),
       name: row[1] as String,
@@ -67,12 +67,16 @@ class PendingForumApproval {
   final String creatorUid;
   final String forumName;
   final String introduction;
+  final String type; // "create" "edit"
+  final int? originalFid;
 
   const PendingForumApproval({
     required this.queueId,
     required this.creatorUid,
     required this.forumName,
     required this.introduction,
+    this.type = 'create',
+    this.originalFid,
   });
 
   factory PendingForumApproval.fromQueueEntry(
@@ -84,6 +88,8 @@ class PendingForumApproval {
       creatorUid: json['creater'].toString(),
       forumName: json['forumname'] as String? ?? '',
       introduction: json['introduction'] as String? ?? '',
+      type: json['type'] as String? ?? 'create',
+      originalFid: json['fid'] is int ? json['fid'] as int : null,
     );
   }
 }
@@ -115,6 +121,20 @@ class ForumMember {
           : null,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+    );
+  }
+
+  /// [row] = [fid, uid, role, join_time]
+  factory ForumMember.fromServerRow(List<dynamic> row) {
+    final ms = ((double.tryParse(row[3].toString()) ?? 0) * 1000).toInt();
+    final joinTime = DateTime.fromMillisecondsSinceEpoch(ms);
+    return ForumMember(
+      forumId: row[0].toString(),
+      accountUid: row[1].toString(),
+      role: (row[2] as num).toInt(),
+      joinedAt: joinTime,
+      createdAt: joinTime,
+      updatedAt: joinTime,
     );
   }
 
@@ -165,7 +185,7 @@ class ForumPost {
   }
 
   factory ForumPost.fromServerRow(String forumId, List<dynamic> row) {
-    final ms = ((row[4] as num).toDouble() * 1000).toInt();
+    final ms = ((double.tryParse(row[4].toString()) ?? 0) * 1000).toInt();
     return ForumPost(
       id: row[0].toString(),
       forumId: forumId,

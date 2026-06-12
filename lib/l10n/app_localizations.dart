@@ -3483,6 +3483,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Link'**
   String get forumMdLink;
+
+  /// No description provided for @forumCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Forum'**
+  String get forumCreateTitle;
+
+  /// No description provided for @forumCreateTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Forum name'**
+  String get forumCreateTitleHint;
+
+  /// No description provided for @forumCreateDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get forumCreateDescriptionHint;
+
+  /// No description provided for @forumCreateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Forum submitted for review'**
+  String get forumCreateSuccess;
+
+  /// No description provided for @forumCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create forum'**
+  String get forumCreateFailed;
+
+  /// No description provided for @forumPinPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin Post'**
+  String get forumPinPost;
+
+  /// No description provided for @forumUnpinPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin Post'**
+  String get forumUnpinPost;
+
+  /// No description provided for @forumDeleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Forum deleted successfully'**
+  String get forumDeleteSuccess;
+
+  /// No description provided for @forumDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete forum'**
+  String get forumDeleteFailed;
 }
 
 class _AppLocalizationsDelegate

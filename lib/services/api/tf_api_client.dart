@@ -794,13 +794,30 @@ class TfApiClient {
       final response = await _getRequest('$baseUrl/forum/get_post_list/$fid');
       if (response.statusCode != 200) return [];
       final data = jsonDecode(response.body);
-      if (data is! List) return [];
-      return data
-          .map(
-            (row) =>
-                ForumPost.fromServerRow(fid.toString(), row as List<dynamic>),
-          )
-          .toList();
+      if (data is List) {
+        // Legacy format: plain list of rows
+        return data
+            .map(
+              (row) =>
+                  ForumPost.fromServerRow(fid.toString(), row as List<dynamic>),
+            )
+            .toList();
+      }
+      if (data is Map) {
+        final posts = data['posts'] as List? ?? [];
+        final pinnedPid = data['pinned_pid'];
+        return posts.map((row) {
+          final post = ForumPost.fromServerRow(
+            fid.toString(),
+            row as List<dynamic>,
+          );
+          if (pinnedPid != null && post.id == pinnedPid.toString()) {
+            return post.copyWith(isPinned: true);
+          }
+          return post;
+        }).toList();
+      }
+      return [];
     } catch (e) {
       talker.error('getPostList $fid failed', e);
       return [];
@@ -905,6 +922,151 @@ class TfApiClient {
       password: password,
     );
     return _parseBool(result);
+  }
+
+  Future<bool> pinPost(int uid, String password, int fid, int pid) async {
+    final result = await secretPost(
+      '/forum/pin_post',
+      {'fid': fid, 'pid': pid},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<bool> unpinPost(int uid, String password, int fid) async {
+    final result = await secretPost(
+      '/forum/unpin_post',
+      {'fid': fid},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  // --- forum members ---
+
+  // Helper to detect boolean responses from server (ends with True/False)
+  bool _isBoolResponse(String? result) {
+    if (result == null) return false;
+    return result.endsWith('True') || result.endsWith('False');
+  }
+
+  Future<List<ForumMember>> getMembers(int uid, String password, int fid) async {
+    final result = await secretPost(
+      '/forum/members',
+      {'fid': fid},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return [];
+    if (_isBoolResponse(result)) return []; // access denied or boolean response
+    try {
+      final list = jsonDecode(result) as List;
+      return list
+          .map((row) => ForumMember.fromServerRow(row as List<dynamic>))
+          .toList();
+    } catch (e) {
+      talker.error('getMembers parse failed', e);
+      return [];
+    }
+  }
+
+  Future<bool> addMember(
+    int uid, String password, int fid, int targetUid, int role,
+  ) async {
+    final result = await secretPost(
+      '/forum/add_member',
+      {'fid': fid, 'target_uid': targetUid, 'role': role},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<bool> removeMember(
+    int uid, String password, int fid, int targetUid,
+  ) async {
+    final result = await secretPost(
+      '/forum/remove_member',
+      {'fid': fid, 'target_uid': targetUid},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<bool> changeMemberRole(
+    int uid, String password, int fid, int targetUid, int newRole,
+  ) async {
+    final result = await secretPost(
+      '/forum/change_member_role',
+      {'fid': fid, 'target_uid': targetUid, 'new_role': newRole},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<bool> editForum(
+    int uid, String password, int fid, {
+    String? forumName,
+    String? introduction,
+  }) async {
+    final body = <String, dynamic>{'fid': fid};
+    if (forumName != null) body['forum_name'] = forumName;
+    if (introduction != null) body['introduction'] = introduction;
+    final result = await secretPost(
+      '/forum/edit_forum',
+      body,
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  // --- self join / leave ---
+
+  Future<bool> joinForum(int uid, String password, int fid) async {
+    final result = await secretPost(
+      '/forum/join',
+      {'fid': fid},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<bool> leaveForumApi(int uid, String password, int fid) async {
+    final result = await secretPost(
+      '/forum/leave',
+      {'fid': fid},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  /// Returns list of [fid, role] pairs.
+  Future<List<Map<String, int>>> getMyMemberships(int uid, String password) async {
+    final result = await secretPost(
+      '/forum/my_memberships',
+      {},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return [];
+    if (_isBoolResponse(result)) return [];
+    try {
+      final list = jsonDecode(result) as List;
+      return list.map((row) {
+        final r = row as List<dynamic>;
+        return {'fid': (r[0] as num).toInt(), 'role': (r[1] as num).toInt()};
+      }).toList();
+    } catch (e) {
+      talker.error('getMyMemberships parse failed', e);
+      return [];
+    }
   }
 
   Future<bool> createForum(

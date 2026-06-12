@@ -722,5 +722,14 @@
   "forumMdList": "List",
   "forumMdQuote": "Quote",
   "forumMdCode": "Code",
-  "forumMdLink": "Link"
+  "forumMdLink": "Link",
+  "forumCreateTitle": "Create Forum",
+  "forumCreateTitleHint": "Forum name",
+  "forumCreateDescriptionHint": "Description (optional)",
+  "forumCreateSuccess": "Forum submitted for review",
+  "forumCreateFailed": "Failed to create forum",
+  "forumPinPost": "Pin Post",
+  "forumUnpinPost": "Unpin Post",
+  "forumDeleteSuccess": "Forum deleted successfully",
+  "forumDeleteFailed": "Failed to delete forum"
 }

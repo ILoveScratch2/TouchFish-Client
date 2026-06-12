@@ -1824,4 +1824,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forumMdLink => 'Link';
+
+  @override
+  String get forumCreateTitle => 'Create Forum';
+
+  @override
+  String get forumCreateTitleHint => 'Forum name';
+
+  @override
+  String get forumCreateDescriptionHint => 'Description (optional)';
+
+  @override
+  String get forumCreateSuccess => 'Forum submitted for review';
+
+  @override
+  String get forumCreateFailed => 'Failed to create forum';
+
+  @override
+  String get forumPinPost => 'Pin Post';
+
+  @override
+  String get forumUnpinPost => 'Unpin Post';
+
+  @override
+  String get forumDeleteSuccess => 'Forum deleted successfully';
+
+  @override
+  String get forumDeleteFailed => 'Failed to delete forum';
 }

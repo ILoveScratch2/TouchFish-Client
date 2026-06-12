@@ -1746,4 +1746,31 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get forumMdLink => '鏈接';
+
+  @override
+  String get forumCreateTitle => '建論壇';
+
+  @override
+  String get forumCreateTitleHint => '論壇之名';
+
+  @override
+  String get forumCreateDescriptionHint => '述（非必填）';
+
+  @override
+  String get forumCreateSuccess => '論壇已呈，待審';
+
+  @override
+  String get forumCreateFailed => '建論壇未成';
+
+  @override
+  String get forumPinPost => '置頂';
+
+  @override
+  String get forumUnpinPost => '去置頂';
+
+  @override
+  String get forumDeleteSuccess => '論壇已毀';
+
+  @override
+  String get forumDeleteFailed => '毀論壇未成';
 }

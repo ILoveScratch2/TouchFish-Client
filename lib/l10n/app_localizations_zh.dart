@@ -1747,4 +1747,31 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get forumMdLink => '链接';
+
+  @override
+  String get forumCreateTitle => '创建论坛';
+
+  @override
+  String get forumCreateTitleHint => '论坛名称';
+
+  @override
+  String get forumCreateDescriptionHint => '简介（可选）';
+
+  @override
+  String get forumCreateSuccess => '论坛已提交审核';
+
+  @override
+  String get forumCreateFailed => '创建论坛失败';
+
+  @override
+  String get forumPinPost => '置顶帖子';
+
+  @override
+  String get forumUnpinPost => '取消置顶';
+
+  @override
+  String get forumDeleteSuccess => '论坛已删除';
+
+  @override
+  String get forumDeleteFailed => '删除论坛失败';
 }
