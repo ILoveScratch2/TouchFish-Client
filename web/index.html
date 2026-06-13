@@ -31,8 +31,71 @@
 
   <title>TouchFish Client</title>
   <link rel="manifest" href="manifest.json">
+
+  <meta
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    name="viewport"
+  />
+
+  <style id="splash-screen-style">
+    html {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100%;
+      background-color: #ffffff;
+      background-size: 100% 100%;
+    }
+
+    .center {
+      margin: 0;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      -ms-transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #121212;
+      }
+    }
+
+    #splash {
+      transition: opacity 0.4s ease-out;
+    }
+
+    #splash.fade-out {
+      opacity: 0;
+    }
+  </style>
+
+  <script id="splash-screen-script">
+    function removeSplashFromWeb() {
+      var splash = document.getElementById("splash");
+      if (splash) {
+        splash.classList.add("fade-out");
+        setTimeout(function () {
+          splash.remove();
+        }, 400);
+      }
+      document.body.style.background = "transparent";
+    }
+  </script>
 </head>
 <body>
+  <picture id="splash">
+    <img
+      class="center"
+      aria-hidden="true"
+      src="splash/img/light-1x.png"
+      alt="TouchFish"
+    />
+  </picture>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

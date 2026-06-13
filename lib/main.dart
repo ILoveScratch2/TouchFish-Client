@@ -20,6 +20,8 @@ import 'utils/talker.dart';
 import 'widgets/app_alert_dialog.dart';
 import 'widgets/custom_title_bar.dart';
 import 'widgets/server_connection_banner.dart';
+import 'utils/web_splash_stub.dart'
+    if (dart.library.js) 'utils/web_splash_web.dart';
 
 Future<void> main() async {
   await runZonedGuarded(() async {
@@ -94,6 +96,12 @@ Future<void> main() async {
         didResetLocalSettings: startupRecovery.didResetSharedPreferences,
       ),
     );
+
+    if (kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        removeWebSplash();
+      });
+    }
   }, logUnhandledAsyncError);
 }
 
