@@ -216,9 +216,23 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   ) {
     return AppBar(
       leading: BackButton(onPressed: () => context.pop()),
-      title: Text(
-        forum.name,
-        style: TextStyle(color: colorScheme.onPrimaryContainer),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ProfilePictureWidget(
+            avatarUrl: forum.avatarUrl,
+            radius: 16,
+            fallbackIcon: Icons.forum,
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              forum.name,
+              style: TextStyle(color: colorScheme.onPrimaryContainer),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
       flexibleSpace: Container(
         decoration: BoxDecoration(
@@ -264,9 +278,23 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           pinned: true,
           leading: BackButton(onPressed: () => context.pop()),
           flexibleSpace: FlexibleSpaceBar(
-            title: Text(
-              forum.name,
-              style: TextStyle(color: colorScheme.onPrimaryContainer),
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ProfilePictureWidget(
+                  avatarUrl: forum.avatarUrl,
+                  radius: 14,
+                  fallbackIcon: Icons.forum,
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    forum.name,
+                    style: TextStyle(color: colorScheme.onPrimaryContainer),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
             background: Container(color: colorScheme.surfaceContainerHighest),
           ),

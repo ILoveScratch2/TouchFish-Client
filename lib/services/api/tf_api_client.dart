@@ -705,6 +705,21 @@ class TfApiClient {
     return _parseBool(result);
   }
 
+  Future<bool> uploadForumAvatar(
+    int uid,
+    String password,
+    int fid,
+    String picBase64,
+  ) async {
+    final result = await secretPost(
+      '/avatar/upload_forum_avatar',
+      {'fid': fid, 'pic': picBase64},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
   Future<bool> uploadDefaultAvatar(
     int uid,
     String password,
@@ -730,7 +745,7 @@ class TfApiClient {
       final data = jsonDecode(response.body);
       if (data is! List) return [];
       return data
-          .map((row) => Forum.fromServerRow(row as List<dynamic>))
+          .map((row) => Forum.fromServerRow(row as List<dynamic>, baseUrl: baseUrl))
           .toList();
     } catch (e) {
       talker.error('getForumList failed', e);

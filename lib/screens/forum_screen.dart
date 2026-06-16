@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../models/forum_model.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../widgets/account/profile_picture.dart';
 import '../utils/talker.dart';
 
 class ForumScreen extends StatefulWidget {
@@ -269,9 +270,10 @@ class _ForumListTile extends StatelessWidget {
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
-          leading: Icon(
-            Icons.forum,
-            color: Theme.of(context).colorScheme.primary,
+          leading: ProfilePictureWidget(
+            avatarUrl: forum.avatarUrl,
+            radius: 20,
+            fallbackIcon: Icons.forum,
           ),
           title: Text(forum.name),
           subtitle: Text(

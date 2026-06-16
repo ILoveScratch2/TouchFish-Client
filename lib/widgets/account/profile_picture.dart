@@ -4,12 +4,14 @@ class ProfilePictureWidget extends StatelessWidget {
   final String? avatarUrl;
   final double radius;
   final String? fallbackText;
+  final IconData? fallbackIcon;
 
   const ProfilePictureWidget({
     super.key,
     this.avatarUrl,
     this.radius = 24,
     this.fallbackText,
+    this.fallbackIcon,
   });
 
   @override
@@ -26,7 +28,7 @@ class ProfilePictureWidget extends StatelessWidget {
       radius: radius,
       backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       child: Icon(
-        Icons.person,
+        fallbackIcon ?? Icons.person,
         size: radius,
         color: Theme.of(context).colorScheme.onPrimaryContainer,
       ),

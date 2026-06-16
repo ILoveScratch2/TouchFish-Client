@@ -9,6 +9,7 @@ class Forum {
   final String createdByUid;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? avatarUrl;
 
   Forum({
     required this.id,
@@ -19,6 +20,7 @@ class Forum {
     required this.createdByUid,
     required this.createdAt,
     required this.updatedAt,
+    this.avatarUrl,
   });
 
   factory Forum.fromJson(Map<String, dynamic> json) {
@@ -31,13 +33,15 @@ class Forum {
       createdByUid: json['created_by_uid'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+      avatarUrl: json['avatar_url'] as String?,
     );
   }
 
-  factory Forum.fromServerRow(List<dynamic> row) {
+  factory Forum.fromServerRow(List<dynamic> row, {String? baseUrl}) {
     final ms = ((double.tryParse(row[3].toString()) ?? 0) * 1000).toInt();
+    final fid = row[0].toString();
     return Forum(
-      id: row[0].toString(),
+      id: fid,
       name: row[1] as String,
       description: (row[4] as String?) ?? '',
       isPublic: true,
@@ -45,6 +49,7 @@ class Forum {
       createdByUid: row[2].toString(),
       createdAt: DateTime.fromMillisecondsSinceEpoch(ms),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(ms),
+      avatarUrl: baseUrl != null ? '$baseUrl/avatar/get_avatar/forum/$fid' : null,
     );
   }
 
@@ -58,6 +63,7 @@ class Forum {
       'created_by_uid': createdByUid,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      if (avatarUrl != null) 'avatar_url': avatarUrl,
     };
   }
 }
