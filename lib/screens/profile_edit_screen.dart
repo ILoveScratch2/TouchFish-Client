@@ -158,6 +158,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           final ok = await TfApiClient.instance.uploadUserAvatar(uid, password, b64);
           if (ok) {
             AuthState.instance.bumpAvatarVersion();
+            imageCache.clear();
           } else {
             allOk = false;
           }
