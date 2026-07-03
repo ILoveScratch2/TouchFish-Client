@@ -6,7 +6,10 @@ class UserProfile {
   final String createTime; // 时间戳字符串
   final String? personalSign; // 个性签名
   final String? introduction; // 介绍
-  final String? avatar;
+  final String? _avatarBase;
+  final int avatarVersion;
+
+  String? get avatar => _avatarBase != null ? '$_avatarBase?v=$avatarVersion' : null;
 
   UserProfile({
     required this.uid,
@@ -16,8 +19,9 @@ class UserProfile {
     required this.createTime,
     this.personalSign,
     this.introduction,
-    this.avatar,
-  });
+    String? avatar,
+    this.avatarVersion = 0,
+  }) : _avatarBase = avatar;
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
@@ -33,7 +37,8 @@ class UserProfile {
   }
 
   factory UserProfile.fromServerJson(
-      Map<String, dynamic> json, String avatarUrl) {
+      Map<String, dynamic> json, String avatarUrl,
+      {int avatarVersion = 0}) {
     return UserProfile(
       uid: json['uid'].toString(),
       username: json['username'] as String,
@@ -43,6 +48,7 @@ class UserProfile {
       personalSign: json['personal_sign'] as String?,
       introduction: json['introduction'] as String?,
       avatar: avatarUrl,
+      avatarVersion: avatarVersion,
     );
   }
 
@@ -55,7 +61,7 @@ class UserProfile {
       'create_time': createTime,
       if (personalSign != null) 'personal_sign': personalSign,
       if (introduction != null) 'introduction': introduction,
-      if (avatar != null) 'avatar': avatar,
+      if (_avatarBase != null) 'avatar': _avatarBase,
     };
   }
 

@@ -225,11 +225,14 @@ class TfApiClient {
       final port = serverInfo.apiPort.isNotEmpty
           ? serverInfo.apiPort
           : AppConstants.defaultApiPort.toString();
-      _cachedBaseUrl = 'http://${serverInfo.address}:$port';
+      final scheme = serverInfo.useHttps ? 'https' : 'http';
+      _cachedBaseUrl = '$scheme://${serverInfo.address}:$port';
       return _cachedBaseUrl!;
     }
+    final defaultScheme =
+        AppConstants.defaultUseHttps ? 'https' : 'http';
     _cachedBaseUrl =
-        'http://${AppConstants.defaultServerAddress}:${AppConstants.defaultApiPort}';
+        '$defaultScheme://${AppConstants.defaultServerAddress}:${AppConstants.defaultApiPort}';
     return _cachedBaseUrl!;
   }
 
@@ -575,7 +578,7 @@ class TfApiClient {
 
   // user
 
-  Future<UserProfile?> getUserByUid(int uid) async {
+  Future<UserProfile?> getUserByUid(int uid, {int avatarVersion = 0}) async {
     try {
       final baseUrl = await getBaseUrl();
       final response = await _getRequest('$baseUrl/auth/uid/$uid');
@@ -585,6 +588,7 @@ class TfApiClient {
       return UserProfile.fromServerJson(
         data,
         '$baseUrl/avatar/get_avatar/user/$uid',
+        avatarVersion: avatarVersion,
       );
     } catch (e) {
       talker.error('getUserByUid $uid failed', e);
@@ -592,7 +596,7 @@ class TfApiClient {
     }
   }
 
-  Future<UserProfile?> getUserByUsername(String username) async {
+  Future<UserProfile?> getUserByUsername(String username, {int avatarVersion = 0}) async {
     try {
       final baseUrl = await getBaseUrl();
       final response = await _getRequest('$baseUrl/auth/username/$username');
@@ -603,6 +607,7 @@ class TfApiClient {
       return UserProfile.fromServerJson(
         data,
         '$baseUrl/avatar/get_avatar/user/$uid',
+        avatarVersion: avatarVersion,
       );
     } catch (e) {
       talker.error('getUserByUsername $username failed', e);

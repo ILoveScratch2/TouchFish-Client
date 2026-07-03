@@ -151,12 +151,16 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
       // 上传头像
       if (_selectedAvatar != null) {
-        final bytes = _selectedAvatar!.bytes ?? 
+        final bytes = _selectedAvatar!.bytes ??
             ((_selectedAvatar!.path != null) ? await File(_selectedAvatar!.path!).readAsBytes() : null);
         if (bytes != null) {
           final b64 = base64.encode(bytes);
           final ok = await TfApiClient.instance.uploadUserAvatar(uid, password, b64);
-          if (!ok) allOk = false;
+          if (ok) {
+            AuthState.instance.bumpAvatarVersion();
+          } else {
+            allOk = false;
+          }
         }
       }
 

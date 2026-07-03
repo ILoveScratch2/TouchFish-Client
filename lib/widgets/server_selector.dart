@@ -10,12 +10,14 @@ class ServerInfo {
   final String address;
   final String apiPort;
   final String tcpPort;
+  final bool useHttps;
 
   ServerInfo({
     required this.displayName,
     required this.address,
     required this.apiPort,
     required this.tcpPort,
+    this.useHttps = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -23,6 +25,7 @@ class ServerInfo {
     'address': address,
     'apiPort': apiPort,
     'tcpPort': tcpPort,
+    'useHttps': useHttps,
   };
 
   factory ServerInfo.fromJson(Map<String, dynamic> json) => ServerInfo(
@@ -30,6 +33,7 @@ class ServerInfo {
     address: json['address'] ?? '',
     apiPort: json['apiPort'] ?? '',
     tcpPort: json['tcpPort'] ?? '',
+    useHttps: json['useHttps'] as bool? ?? false,
   );
 }
 
@@ -47,6 +51,7 @@ class _ServerSelectorState extends State<ServerSelector> {
       address: AppConstants.defaultServerAddress,
       apiPort: AppConstants.defaultApiPort.toString(),
       tcpPort: AppConstants.defaultTcpPort.toString(),
+      useHttps: AppConstants.defaultUseHttps,
     )
   ];
   int _selectedIndex = 0;
@@ -235,20 +240,14 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
     final tcpPortController = TextEditingController();
     final l10n = AppLocalizations.of(context)!;
     
-    String? addressError;
+    bool useHttps = false;
     String? apiPortError;
     String? tcpPortError;
-    
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
-          bool validateAddress(String address) {
-            if (address.isEmpty) return true;
-            final regex = RegExp(r'.+\..{2,}');
-            return regex.hasMatch(address);
-          }
-          
           bool validatePort(String port) {
             if (port.isEmpty) return true;
             final portNum = int.tryParse(port);
@@ -262,11 +261,9 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
           
           void validate() {
             setDialogState(() {
-              final address = addressController.text.trim();
               final apiPort = apiPortController.text.trim();
               final tcpPort = tcpPortController.text.trim();
-              
-              addressError = validateAddress(address) ? null : l10n.serverErrorInvalidAddress;
+
               if (!validatePort(apiPort)) {
                 apiPortError = l10n.serverErrorInvalidPort;
               } else if (checkDuplicatePorts(apiPort, tcpPort)) {
@@ -310,9 +307,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                         labelText: l10n.serverAddress,
                         hintText: l10n.serverAddressHint,
                         border: const OutlineInputBorder(),
-                        errorText: addressError,
                       ),
-                      onChanged: (_) => validate(),
                     ),
                   ),
                   SizedBox(
@@ -343,6 +338,19 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                       onChanged: (_) => validate(),
                     ),
                   ),
+                  SwitchListTile(
+                    title: Text(l10n.serverUseHttps),
+                    subtitle: Text(
+                      useHttps
+                          ? l10n.serverUseHttpsOn
+                          : l10n.serverUseHttpsOff,
+                    ),
+                    value: useHttps,
+                    onChanged: (value) {
+                      setDialogState(() => useHttps = value);
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ],
               ),
             ),
@@ -357,10 +365,6 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                   final address = addressController.text.trim();
                   final apiPort = apiPortController.text.trim();
                   final tcpPort = tcpPortController.text.trim();
-                  if (!validateAddress(address)) {
-                    setDialogState(() => addressError = l10n.serverErrorInvalidAddress);
-                    return;
-                  }
                   if (!validatePort(apiPort)) {
                     setDialogState(() => apiPortError = l10n.serverErrorInvalidPort);
                     return;
@@ -384,6 +388,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                       address: address,
                       apiPort: apiPort,
                       tcpPort: tcpPort,
+                      useHttps: useHttps,
                     );
                     setState(() {
                       _servers.add(server);

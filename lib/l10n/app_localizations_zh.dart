@@ -483,6 +483,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serverErrorDuplicatePort => '端口不能重复';
 
   @override
+  String get serverUseHttps => 'HTTPS';
+
+  @override
+  String get serverUseHttpsOn => '使用加密连接';
+
+  @override
+  String get serverUseHttpsOff => '使用非加密连接';
+
+  @override
   String get navChat => '聊天';
 
   @override

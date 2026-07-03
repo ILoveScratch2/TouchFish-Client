@@ -483,6 +483,15 @@ class AppLocalizationsOch extends AppLocalizations {
   String get serverErrorDuplicatePort => '端口不可複';
 
   @override
+  String get serverUseHttps => 'HTTPS';
+
+  @override
+  String get serverUseHttpsOn => '以加密連接';
+
+  @override
+  String get serverUseHttpsOff => '以明文連接';
+
+  @override
   String get navChat => '聊天';
 
   @override

@@ -193,7 +193,10 @@
   "serverErrorInvalidAddress": "Invalid address",
   "serverErrorInvalidPort": "Port must be an integer between 0 and 65535",
   "serverErrorDuplicatePort": "Ports cannot be the same",
-  
+  "serverUseHttps": "HTTPS",
+  "serverUseHttpsOn": "Use encrypted connection",
+  "serverUseHttpsOff": "Use unencrypted connection",
+
   "navChat": "Chat",
   "navAnnouncement": "Announce",
   "navForum": "Forum",

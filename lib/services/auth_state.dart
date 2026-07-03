@@ -19,6 +19,7 @@ class AuthState extends ChangeNotifier {
   String? _rememberedPassword;
   SavedSessionRestoreStatus _savedSessionRestoreStatus =
       SavedSessionRestoreStatus.idle;
+  int _avatarVersion = 0;
 
   UserProfile? get currentUser => _currentUser;
   int? get uid => _uid;
@@ -49,7 +50,7 @@ class AuthState extends ChangeNotifier {
     final savedPassword = _rememberedPassword!;
 
     try {
-      final profile = await TfApiClient.instance.getUserByUid(savedUid);
+      final profile = await TfApiClient.instance.getUserByUid(savedUid, avatarVersion: _avatarVersion);
       if (profile != null && _rememberedUsername == null) {
         _rememberedUsername = profile.username;
       }
@@ -153,7 +154,7 @@ class AuthState extends ChangeNotifier {
   Future<void> refreshProfile() async {
     if (_uid == null) return;
     try {
-      final profile = await TfApiClient.instance.getUserByUid(_uid!);
+      final profile = await TfApiClient.instance.getUserByUid(_uid!, avatarVersion: _avatarVersion);
       if (profile != null) {
         _currentUser = profile;
         notifyListeners();
@@ -161,6 +162,10 @@ class AuthState extends ChangeNotifier {
     } catch (e) {
       talker.error('AuthState.refreshProfile failed', e);
     }
+  }
+
+  void bumpAvatarVersion() {
+    _avatarVersion++;
   }
 
   Future<void> _clearStorage(SharedPreferences prefs) async {

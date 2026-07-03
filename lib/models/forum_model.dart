@@ -191,13 +191,13 @@ class ForumPost {
   }
 
   factory ForumPost.fromServerRow(String forumId, List<dynamic> row) {
-    final ms = ((double.tryParse(row[4].toString()) ?? 0) * 1000).toInt();
+    final ms = ((double.tryParse(row[5].toString()) ?? 0) * 1000).toInt();
     return ForumPost(
-      id: row[0].toString(),
+      id: row[1].toString(),
       forumId: forumId,
-      authorUid: row[2].toString(),
-      title: (row[1] as String?) ?? '',
-      content: (row[3] as String?) ?? '',
+      authorUid: row[3].toString(),
+      title: (row[2] as String?) ?? '',
+      content: (row[4] as String?) ?? '',
       isPinned: false,
       createdAt: DateTime.fromMillisecondsSinceEpoch(ms),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(ms),

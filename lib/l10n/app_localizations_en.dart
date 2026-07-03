@@ -510,6 +510,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serverErrorDuplicatePort => 'Ports cannot be the same';
 
   @override
+  String get serverUseHttps => 'HTTPS';
+
+  @override
+  String get serverUseHttpsOn => 'Use encrypted connection';
+
+  @override
+  String get serverUseHttpsOff => 'Use unencrypted connection';
+
+  @override
   String get navChat => 'Chat';
 
   @override

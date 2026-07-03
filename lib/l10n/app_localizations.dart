@@ -1042,6 +1042,24 @@ abstract class AppLocalizations {
   /// **'Ports cannot be the same'**
   String get serverErrorDuplicatePort;
 
+  /// No description provided for @serverUseHttps.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTPS'**
+  String get serverUseHttps;
+
+  /// No description provided for @serverUseHttpsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Use encrypted connection'**
+  String get serverUseHttpsOn;
+
+  /// No description provided for @serverUseHttpsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Use unencrypted connection'**
+  String get serverUseHttpsOff;
+
   /// No description provided for @navChat.
   ///
   /// In en, this message translates to:

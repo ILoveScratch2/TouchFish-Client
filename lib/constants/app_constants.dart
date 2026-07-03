@@ -25,4 +25,5 @@ class AppConstants {
   static const String defaultServerAddress = 'touchfish.xin';
   static const int defaultApiPort = 8080;
   static const int defaultTcpPort = 9090;
+  static const bool defaultUseHttps = false;
 }
