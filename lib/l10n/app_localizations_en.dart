@@ -1860,4 +1860,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forumDeleteFailed => 'Failed to delete forum';
+
+  @override
+  String get announcementTitle => 'Announcements';
+
+  @override
+  String get announcementNoAnnouncements => 'No announcements yet';
+
+  @override
+  String get announcementCreate => 'New Announcement';
+
+  @override
+  String get announcementCreateHint => 'Write announcement content...';
+
+  @override
+  String get announcementCreateEmpty => 'Content cannot be empty';
+
+  @override
+  String get announcementCreateSuccess => 'Announcement created';
+
+  @override
+  String get announcementCreateFailed => 'Failed to create announcement';
+
+  @override
+  String get announcementDeleteConfirm => 'Delete this announcement?';
+
+  @override
+  String get announcementDeleteSuccess => 'Announcement deleted';
+
+  @override
+  String get announcementDeleteFailed => 'Failed to delete announcement';
+
+  @override
+  String get adminAnnouncements => 'Announcements';
+
+  @override
+  String get adminAnnouncementsDescription =>
+      'Create and manage system announcements';
 }

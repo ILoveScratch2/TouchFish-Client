@@ -1783,4 +1783,40 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get forumDeleteFailed => '删除论坛失败';
+
+  @override
+  String get announcementTitle => '公告';
+
+  @override
+  String get announcementNoAnnouncements => '暂无公告';
+
+  @override
+  String get announcementCreate => '新建公告';
+
+  @override
+  String get announcementCreateHint => '输入公告内容...';
+
+  @override
+  String get announcementCreateEmpty => '内容不能为空';
+
+  @override
+  String get announcementCreateSuccess => '公告已发布';
+
+  @override
+  String get announcementCreateFailed => '发布公告失败';
+
+  @override
+  String get announcementDeleteConfirm => '确认删除此公告？';
+
+  @override
+  String get announcementDeleteSuccess => '公告已删除';
+
+  @override
+  String get announcementDeleteFailed => '删除公告失败';
+
+  @override
+  String get adminAnnouncements => '公告管理';
+
+  @override
+  String get adminAnnouncementsDescription => '创建和管理系统公告';
 }

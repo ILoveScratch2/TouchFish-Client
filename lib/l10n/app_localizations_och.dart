@@ -1782,4 +1782,40 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get forumDeleteFailed => '毀論壇未成';
+
+  @override
+  String get announcementTitle => '公告';
+
+  @override
+  String get announcementNoAnnouncements => '暫無公告';
+
+  @override
+  String get announcementCreate => '發公告';
+
+  @override
+  String get announcementCreateHint => '書公告之內容…';
+
+  @override
+  String get announcementCreateEmpty => '內容不可空';
+
+  @override
+  String get announcementCreateSuccess => '公告已發';
+
+  @override
+  String get announcementCreateFailed => '發公告未成';
+
+  @override
+  String get announcementDeleteConfirm => '確欲刪除此公告乎？';
+
+  @override
+  String get announcementDeleteSuccess => '公告已刪';
+
+  @override
+  String get announcementDeleteFailed => '刪公告未成';
+
+  @override
+  String get adminAnnouncements => '公告之治';
+
+  @override
+  String get adminAnnouncementsDescription => '建而治系統之公告';
 }

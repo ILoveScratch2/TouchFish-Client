@@ -3555,6 +3555,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to delete forum'**
   String get forumDeleteFailed;
+
+  /// No description provided for @announcementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements'**
+  String get announcementTitle;
+
+  /// No description provided for @announcementNoAnnouncements.
+  ///
+  /// In en, this message translates to:
+  /// **'No announcements yet'**
+  String get announcementNoAnnouncements;
+
+  /// No description provided for @announcementCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'New Announcement'**
+  String get announcementCreate;
+
+  /// No description provided for @announcementCreateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write announcement content...'**
+  String get announcementCreateHint;
+
+  /// No description provided for @announcementCreateEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Content cannot be empty'**
+  String get announcementCreateEmpty;
+
+  /// No description provided for @announcementCreateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcement created'**
+  String get announcementCreateSuccess;
+
+  /// No description provided for @announcementCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create announcement'**
+  String get announcementCreateFailed;
+
+  /// No description provided for @announcementDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this announcement?'**
+  String get announcementDeleteConfirm;
+
+  /// No description provided for @announcementDeleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcement deleted'**
+  String get announcementDeleteSuccess;
+
+  /// No description provided for @announcementDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete announcement'**
+  String get announcementDeleteFailed;
+
+  /// No description provided for @adminAnnouncements.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements'**
+  String get adminAnnouncements;
+
+  /// No description provided for @adminAnnouncementsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Create and manage system announcements'**
+  String get adminAnnouncementsDescription;
 }
 
 class _AppLocalizationsDelegate

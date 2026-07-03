@@ -10,6 +10,7 @@ import 'tf_crypto.dart';
 import '../../constants/app_constants.dart';
 import '../../models/user_profile.dart';
 import '../../models/forum_model.dart';
+import '../../models/announcement_model.dart';
 import '../server_connection_status_service.dart';
 import '../../widgets/server_selector.dart';
 import '../../utils/talker.dart';
@@ -1128,6 +1129,48 @@ class TfApiClient {
         if (normalizedReason != null && normalizedReason.isNotEmpty)
           'reason': normalizedReason,
       },
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  // announcement
+
+  Future<List<Announcement>> getAnnouncements() async {
+    try {
+      final baseUrl = await getBaseUrl();
+      final response = await _getRequest('$baseUrl/announcement/query_all');
+      if (response.statusCode != 200) return [];
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final list = data.entries
+          .map((e) => Announcement.fromJson(
+                e.key,
+                e.value as Map<String, dynamic>,
+              ))
+          .toList();
+      list.sort((a, b) => b.timeStamp.compareTo(a.timeStamp));
+      return list;
+    } catch (e) {
+      talker.error('getAnnouncements failed', e);
+      return [];
+    }
+  }
+
+  Future<bool> createAnnouncement(int uid, String password, String content) async {
+    final result = await secretPost(
+      '/announcement/upload_announcement',
+      {'content': content},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<bool> deleteAnnouncement(int uid, String password, String timeStamp) async {
+    final result = await secretPost(
+      '/announcement/delete_announcement',
+      {'time_stamp': timeStamp},
       uid: uid,
       password: password,
     );

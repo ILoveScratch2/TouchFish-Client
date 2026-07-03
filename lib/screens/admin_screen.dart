@@ -226,6 +226,13 @@ class _AdminScreenState extends State<AdminScreen> {
                   description: l10n.adminDefaultAssetsDescription,
                   onTap: _openDefaultAssets,
                 ),
+                _buildAdminActionCard(
+                  context,
+                  icon: Icons.campaign_outlined,
+                  title: l10n.adminAnnouncements,
+                  description: l10n.adminAnnouncementsDescription,
+                  onTap: () => context.go(AppRoutes.announcement),
+                ),
                 if (currentUser?.isRoot == true)
                   _buildAdminActionCard(
                     context,

@@ -734,5 +734,17 @@
   "forumPinPost": "Pin Post",
   "forumUnpinPost": "Unpin Post",
   "forumDeleteSuccess": "Forum deleted successfully",
-  "forumDeleteFailed": "Failed to delete forum"
+  "forumDeleteFailed": "Failed to delete forum",
+  "announcementTitle": "Announcements",
+  "announcementNoAnnouncements": "No announcements yet",
+  "announcementCreate": "New Announcement",
+  "announcementCreateHint": "Write announcement content...",
+  "announcementCreateEmpty": "Content cannot be empty",
+  "announcementCreateSuccess": "Announcement created",
+  "announcementCreateFailed": "Failed to create announcement",
+  "announcementDeleteConfirm": "Delete this announcement?",
+  "announcementDeleteSuccess": "Announcement deleted",
+  "announcementDeleteFailed": "Failed to delete announcement",
+  "adminAnnouncements": "Announcements",
+  "adminAnnouncementsDescription": "Create and manage system announcements"
 }

@@ -704,5 +704,17 @@
   "forumPinPost": "置頂",
   "forumUnpinPost": "去置頂",
   "forumDeleteSuccess": "論壇已毀",
-  "forumDeleteFailed": "毀論壇未成"
+  "forumDeleteFailed": "毀論壇未成",
+  "announcementTitle": "公告",
+  "announcementNoAnnouncements": "暫無公告",
+  "announcementCreate": "發公告",
+  "announcementCreateHint": "書公告之內容…",
+  "announcementCreateEmpty": "內容不可空",
+  "announcementCreateSuccess": "公告已發",
+  "announcementCreateFailed": "發公告未成",
+  "announcementDeleteConfirm": "確欲刪除此公告乎？",
+  "announcementDeleteSuccess": "公告已刪",
+  "announcementDeleteFailed": "刪公告未成",
+  "adminAnnouncements": "公告之治",
+  "adminAnnouncementsDescription": "建而治系統之公告"
 }
