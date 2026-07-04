@@ -12,18 +12,21 @@ class ForumPostComposeSheet extends StatefulWidget {
   final String forumId;
   final String? initialContent;
   final bool isReply;
+  final String? postId;
 
   const ForumPostComposeSheet({
     super.key,
     required this.forumId,
     this.initialContent,
     this.isReply = false,
+    this.postId,
   });
   static Future<bool?> show(
     BuildContext context, {
     required String forumId,
     String? initialContent,
     bool isReply = false,
+    String? postId,
   }) {
     return showDialog<bool>(
       context: context,
@@ -34,6 +37,7 @@ class ForumPostComposeSheet extends StatefulWidget {
         forumId: forumId,
         initialContent: initialContent,
         isReply: isReply,
+        postId: postId,
       ),
     );
   }
@@ -330,11 +334,24 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
 
     setState(() => _isSubmitting = true);
     try {
-      final success = await TfApiClient.instance.sendPost(
-        uid, password, fid,
-        _titleController.text.trim(),
-        _contentController.text.trim(),
-      );
+      final bool success;
+      if (widget.isReply) {
+        final pid = int.tryParse(widget.postId ?? '');
+        if (pid == null) {
+          Navigator.pop(context, false);
+          return;
+        }
+        success = await TfApiClient.instance.addComment(
+          uid, password, fid, pid,
+          _contentController.text.trim(),
+        );
+      } else {
+        success = await TfApiClient.instance.sendPost(
+          uid, password, fid,
+          _titleController.text.trim(),
+          _contentController.text.trim(),
+        );
+      }
       if (!mounted) return;
       setState(() => _isSubmitting = false);
       if (success) {

@@ -470,9 +470,11 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       forumId: widget.forumId,
       initialContent: _commentController.text,
       isReply: true,
+      postId: widget.postId,
     );
     if (result == true) {
       _commentController.clear();
+      await _loadData();
     }
   }
 
