@@ -178,12 +178,16 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isNarrow = MediaQuery.of(context).size.width < 600;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.announcementTitle)),
       floatingActionButton: _isAdmin
-          ? FloatingActionButton(
-              onPressed: _showCreateDialog,
-              child: const Icon(Icons.add),
+          ? Padding(
+              padding: EdgeInsets.only(bottom: isNarrow ? 80.0 : 0.0),
+              child: FloatingActionButton(
+                onPressed: _showCreateDialog,
+                child: const Icon(Icons.add),
+              ),
             )
           : null,
       body: _buildBody(l10n),
