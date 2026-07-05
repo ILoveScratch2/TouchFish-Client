@@ -167,20 +167,25 @@ jobs:
       
 
       - name: Build Android APK
-        run: flutter build apk --release
+        run: flutter build apk --release --split-per-abi
       
       - name: Build Android App Bundle
         run: flutter build appbundle --release
       
       - name: Rename builds
         run: |
-          mv build/app/outputs/flutter-apk/app-release.apk touchfish-android.apk
+          mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk touchfish-android-armeabi-v7a.apk
+          mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk touchfish-android-arm64-v8a.apk
+          mv build/app/outputs/flutter-apk/app-x86_64-release.apk touchfish-android-x86_64.apk
           mv build/app/outputs/bundle/release/app-release.aab touchfish-android.aab
       - name: Upload Android APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: touchfish-android.apk
+          path: |
+            touchfish-android-armeabi-v7a.apk
+            touchfish-android-arm64-v8a.apk
+            touchfish-android-x86_64.apk
 
       - name: Upload Android AAB artifact
         uses: actions/upload-artifact@v4
@@ -291,8 +296,12 @@ jobs:
             
             ### Installation / 安装
             Please refer to the README for installation instructions.
+            
+            Please remind that `armeabi-v7a` APKs are for old 32-bit devices and `x86_64` APKs are for testing purposes on `x86` Android devices only, and the recommended APK is `arm64-v8a`.
 
             请参考 README 获取安装说明。
+
+            请注意，`armeabi-v7a` APK 适用于旧的 32 位设备，`x86_64` APK 仅用于测试目的的 `x86` Android 设备，推荐使用 `arm64-v8a` APK。
           draft: false
           prerelease: false
       
