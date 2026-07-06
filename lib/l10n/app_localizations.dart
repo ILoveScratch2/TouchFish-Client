@@ -1678,6 +1678,48 @@ abstract class AppLocalizations {
   /// **'No invites'**
   String get chatNoInvites;
 
+  /// No description provided for @chatInviteAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get chatInviteAccept;
+
+  /// No description provided for @chatInviteReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get chatInviteReject;
+
+  /// No description provided for @notificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationTitle;
+
+  /// No description provided for @notificationEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications'**
+  String get notificationEmpty;
+
+  /// No description provided for @notificationClearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All'**
+  String get notificationClearAll;
+
+  /// No description provided for @notificationTabAnnouncements.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements'**
+  String get notificationTabAnnouncements;
+
+  /// No description provided for @notificationTabNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationTabNotifications;
+
   /// No description provided for @chatPinned.
   ///
   /// In en, this message translates to:

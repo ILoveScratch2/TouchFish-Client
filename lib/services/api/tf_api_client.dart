@@ -11,6 +11,7 @@ import '../../constants/app_constants.dart';
 import '../../models/user_profile.dart';
 import '../../models/forum_model.dart';
 import '../../models/announcement_model.dart';
+import '../../models/notification_model.dart';
 import '../server_connection_status_service.dart';
 import '../../widgets/server_selector.dart';
 import '../../utils/talker.dart';
@@ -1171,6 +1172,109 @@ class TfApiClient {
     final result = await secretPost(
       '/announcement/delete_announcement',
       {'time_stamp': timeStamp},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  // notification
+
+  Future<List<NotificationInfo>> queryAllNotifications(
+    int uid,
+    String password,
+  ) async {
+    final result = await secretPost(
+      '/notification/query_all',
+      {},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return [];
+    try {
+      final list = jsonDecode(result) as List<dynamic>;
+      return list
+          .map((e) => NotificationInfo.fromServerJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      talker.error('queryAllNotifications parse failed', e);
+      return [];
+    }
+  }
+
+  Future<List<NotificationInfo>> queryNotificationsAfter(
+    int uid,
+    String password,
+    double timeStamp,
+  ) async {
+    final result = await secretPost(
+      '/notification/query_after',
+      {'time_stamp': timeStamp},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return [];
+    try {
+      final list = jsonDecode(result) as List<dynamic>;
+      return list
+          .map((e) => NotificationInfo.fromServerJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      talker.error('queryNotificationsAfter parse failed', e);
+      return [];
+    }
+  }
+
+  Future<bool> deleteNotificationsBefore(
+    int uid,
+    String password,
+    double timeStamp,
+  ) async {
+    final result = await secretPost(
+      '/notification/delete_before',
+      {'time_stamp': timeStamp},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<bool> deleteAllNotifications(int uid, String password) async {
+    final result = await secretPost(
+      '/notification/delete_all',
+      {},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  // friend
+
+  Future<bool> addFriend(
+    int uid,
+    String password,
+    int targetUid,
+    String reqWord,
+  ) async {
+    final result = await secretPost(
+      '/friend/add_friend',
+      {'added': targetUid, 'req_word': reqWord},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<bool> dealFriendShip(
+    int uid,
+    String password,
+    int dealtUid,
+    String stat,
+  ) async {
+    final result = await secretPost(
+      '/friend/deal_ship',
+      {'dealt': dealtUid, 'stat': stat},
       uid: uid,
       password: password,
     );

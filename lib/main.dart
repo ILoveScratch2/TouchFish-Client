@@ -15,6 +15,7 @@ import 'models/app_state.dart';
 import 'models/settings_service.dart';
 import 'routes/app_routes.dart';
 import 'services/auth_state.dart';
+import 'services/notification_service.dart';
 import 'services/server_connection_status_service.dart';
 import 'utils/talker.dart';
 import 'widgets/app_alert_dialog.dart';
@@ -318,10 +319,33 @@ class _TouchFishAppState extends State<TouchFishApp> {
   @override
   void initState() {
     super.initState();
+    AuthState.instance.addListener(_onAuthStateChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _startSavedSessionRestoreIfNeeded();
+      _startNotificationPollingIfLoggedIn();
     });
+  }
+
+  void _startNotificationPollingIfLoggedIn() {
+    if (AuthState.instance.isLoggedIn) {
+      NotificationService.instance.startPolling();
+    }
+  }
+
+  @override
+  void dispose() {
+    AuthState.instance.removeListener(_onAuthStateChanged);
+    NotificationService.instance.stopPolling();
+    super.dispose();
+  }
+
+  void _onAuthStateChanged() {
+    if (AuthState.instance.isLoggedIn) {
+      NotificationService.instance.startPolling();
+    } else {
+      NotificationService.instance.stopPolling();
+    }
   }
 
   void _startSavedSessionRestoreIfNeeded() {

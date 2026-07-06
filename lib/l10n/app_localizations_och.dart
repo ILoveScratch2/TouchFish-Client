@@ -817,6 +817,27 @@ class AppLocalizationsOch extends AppLocalizations {
   String get chatNoInvites => '無邀請';
 
   @override
+  String get chatInviteAccept => '接受';
+
+  @override
+  String get chatInviteReject => '拒絕';
+
+  @override
+  String get notificationTitle => '通知';
+
+  @override
+  String get notificationEmpty => '暫無通知';
+
+  @override
+  String get notificationClearAll => '清除全部';
+
+  @override
+  String get notificationTabAnnouncements => '公告';
+
+  @override
+  String get notificationTabNotifications => '通知';
+
+  @override
   String get chatPinned => '置頂會話';
 
   @override

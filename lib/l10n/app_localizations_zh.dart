@@ -817,6 +817,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatNoInvites => '没有邀请';
 
   @override
+  String get chatInviteAccept => '接受';
+
+  @override
+  String get chatInviteReject => '拒绝';
+
+  @override
+  String get notificationTitle => '通知';
+
+  @override
+  String get notificationEmpty => '暂无通知';
+
+  @override
+  String get notificationClearAll => '清除全部';
+
+  @override
+  String get notificationTabAnnouncements => '公告';
+
+  @override
+  String get notificationTabNotifications => '通知';
+
+  @override
   String get chatPinned => '置顶会话';
 
   @override

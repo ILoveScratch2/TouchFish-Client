@@ -858,6 +858,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatNoInvites => 'No invites';
 
   @override
+  String get chatInviteAccept => 'Accept';
+
+  @override
+  String get chatInviteReject => 'Reject';
+
+  @override
+  String get notificationTitle => 'Notifications';
+
+  @override
+  String get notificationEmpty => 'No notifications';
+
+  @override
+  String get notificationClearAll => 'Clear All';
+
+  @override
+  String get notificationTabAnnouncements => 'Announcements';
+
+  @override
+  String get notificationTabNotifications => 'Notifications';
+
+  @override
   String get chatPinned => 'Pinned';
 
   @override

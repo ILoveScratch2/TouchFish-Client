@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../models/app_state.dart';
 import '../services/auth_state.dart';
+import '../services/notification_service.dart';
 
 class MainScreen extends StatefulWidget {
   final Widget child;
@@ -16,6 +17,27 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  final _notificationService = NotificationService.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationService.addListener(_onNotificationsChanged);
+  }
+
+  @override
+  void dispose() {
+    _notificationService.removeListener(_onNotificationsChanged);
+    super.dispose();
+  }
+
+  void _onNotificationsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  int get _announcementBadgeCount =>
+      _notificationService.announcementUnreadCount;
+
   int _getCurrentIndex(
     BuildContext context,
     List<_NavDestinationConfig> destinations,
@@ -154,12 +176,55 @@ class _MainScreenState extends State<MainScreen> {
       destinations: [
         for (final destination in destinations)
           NavigationRailDestination(
-            icon: Icon(destination.icon),
-            selectedIcon: Icon(destination.selectedIcon),
+            icon: _buildNavIcon(context, destination, selectedIndex),
+            selectedIcon: _buildNavIcon(
+              context,
+              destination,
+              selectedIndex,
+              forceSelected: true,
+            ),
             label: Text(destination.label),
           ),
       ],
     );
+  }
+
+  Widget _buildNavIcon(
+    BuildContext context,
+    _NavDestinationConfig destination,
+    int selectedIndex, {
+    bool forceSelected = false,
+  }) {
+    final isSelected = forceSelected;
+    final icon = Icon(isSelected ? destination.selectedIcon : destination.icon);
+    if (destination.route == AppRoutes.announcement &&
+        _announcementBadgeCount > 0) {
+      return Badge(
+        label: Text(
+          _announcementBadgeCount > 99
+              ? '99+'
+              : '$_announcementBadgeCount',
+          style: const TextStyle(fontSize: 10),
+        ),
+        child: icon,
+      );
+    }
+    return icon;
+  }
+
+  Widget _buildBadgedIcon(IconData iconData, _NavDestinationConfig destination) {
+    final icon = Icon(iconData);
+    if (destination.route == AppRoutes.announcement &&
+        _announcementBadgeCount > 0) {
+      return Badge(
+        label: Text(
+          _announcementBadgeCount > 99 ? '99+' : '$_announcementBadgeCount',
+          style: const TextStyle(fontSize: 10),
+        ),
+        child: icon,
+      );
+    }
+    return icon;
   }
 
   Widget _buildBottomNav(
@@ -185,8 +250,8 @@ class _MainScreenState extends State<MainScreen> {
             destinations: [
               for (final destination in destinations)
                 NavigationDestination(
-                  icon: Icon(destination.icon),
-                  selectedIcon: Icon(destination.selectedIcon),
+                  icon: _buildBadgedIcon(destination.icon, destination),
+                  selectedIcon: _buildBadgedIcon(destination.selectedIcon, destination),
                   label: destination.label,
                 ),
             ],
