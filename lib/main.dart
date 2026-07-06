@@ -54,7 +54,10 @@ Future<void> main() async {
       );
 
       final initialSize = (savedWidth != null && savedHeight != null)
-          ? Size(savedWidth, savedHeight)
+          ? Size(
+              savedWidth < minSize.width ? defaultSize.width : savedWidth,
+              savedHeight < minSize.height ? defaultSize.height : savedHeight,
+            )
           : defaultSize;
 
       WindowOptions windowOptions = WindowOptions(

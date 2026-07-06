@@ -66,6 +66,10 @@ class _WindowFrameState extends State<WindowFrame>
 
   Future<void> _saveWindowSize() async {
     try {
+      final isMinimized = await windowManager.isMinimized();
+      if (isMinimized) return;
+      final isMaximized = await windowManager.isMaximized();
+      if (isMaximized) return;
       final bounds = await windowManager.getBounds();
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble('window_width', bounds.width);
