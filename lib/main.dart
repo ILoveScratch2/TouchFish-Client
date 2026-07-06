@@ -15,6 +15,7 @@ import 'models/app_state.dart';
 import 'models/settings_service.dart';
 import 'routes/app_routes.dart';
 import 'services/auth_state.dart';
+import 'services/forum_pending_service.dart';
 import 'services/notification_service.dart';
 import 'services/server_connection_status_service.dart';
 import 'utils/talker.dart';
@@ -333,6 +334,7 @@ class _TouchFishAppState extends State<TouchFishApp> {
   void _startNotificationPollingIfLoggedIn() {
     if (AuthState.instance.isLoggedIn) {
       NotificationService.instance.startPolling();
+      ForumPendingService.instance.startPolling();
     }
   }
 
@@ -340,14 +342,17 @@ class _TouchFishAppState extends State<TouchFishApp> {
   void dispose() {
     AuthState.instance.removeListener(_onAuthStateChanged);
     NotificationService.instance.stopPolling();
+    ForumPendingService.instance.stopPolling();
     super.dispose();
   }
 
   void _onAuthStateChanged() {
     if (AuthState.instance.isLoggedIn) {
       NotificationService.instance.startPolling();
+      ForumPendingService.instance.startPolling();
     } else {
       NotificationService.instance.stopPolling();
+      ForumPendingService.instance.stopPolling();
     }
   }
 

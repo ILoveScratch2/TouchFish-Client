@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/app_localizations.dart';
-import '../services/api/tf_api_client.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
-import '../utils/talker.dart';
+import '../services/forum_pending_service.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -15,58 +14,39 @@ class AdminScreen extends StatefulWidget {
 }
 
 class _AdminScreenState extends State<AdminScreen> {
-  int? _pendingForumCount;
-  bool _isRefreshing = false;
+  final _forumPendingService = ForumPendingService.instance;
 
   @override
   void initState() {
     super.initState();
-    _refreshPendingForumCount();
+    _forumPendingService.addListener(_onPendingChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _forumPendingService.refresh();
+    });
   }
 
+  @override
+  void dispose() {
+    _forumPendingService.removeListener(_onPendingChanged);
+    super.dispose();
+  }
+
+  void _onPendingChanged() {
+    if (mounted) setState(() {});
+  }
+
+  int get _pendingForumCount => _forumPendingService.pendingCount;
+
   Future<void> _refreshPendingForumCount({bool showError = false}) async {
-    final uid = AuthState.instance.uid;
-    final password = AuthState.instance.password;
-
-    if (uid == null || password == null) {
-      if (!mounted) return;
-      setState(() {
-        _pendingForumCount = null;
-        _isRefreshing = false;
-      });
-      return;
-    }
-
-    setState(() => _isRefreshing = true);
-
-    try {
-      final forums = await TfApiClient.instance.getApprovingForumList(
-        uid,
-        password,
+    await _forumPendingService.refresh();
+    if (showError && mounted && _forumPendingService.error != null) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.adminPendingForumsLoadFailed),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
-      if (!mounted) return;
-      setState(() {
-        _pendingForumCount = forums.length;
-      });
-    } catch (e) {
-      talker.error('AdminScreen: getApprovingForumList failed', e);
-      if (!mounted) return;
-      setState(() {
-        _pendingForumCount = null;
-      });
-      if (showError) {
-        final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.adminPendingForumsLoadFailed),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isRefreshing = false);
-      }
     }
   }
 
@@ -86,6 +66,10 @@ class _AdminScreenState extends State<AdminScreen> {
     await context.push(AppRoutes.adminDefaultAssets);
     if (!mounted) return;
     await _refreshPendingForumCount();
+  }
+
+  Future<void> _openAccountManagement() async {
+    await context.push(AppRoutes.adminAccountManagement);
   }
 
   Widget _buildAdminActionCard(
@@ -176,11 +160,11 @@ class _AdminScreenState extends State<AdminScreen> {
         title: Text(l10n.navAdmin),
         actions: [
           IconButton(
-            onPressed: _isRefreshing
+            onPressed: _forumPendingService.isLoading
                 ? null
                 : () => _refreshPendingForumCount(showError: true),
             tooltip: l10n.retry,
-            icon: _isRefreshing
+            icon: _forumPendingService.isLoading
                 ? const SizedBox(
                     width: 20,
                     height: 20,
@@ -215,9 +199,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   title: l10n.adminPendingForums,
                   description: l10n.adminPendingForumsDescription,
                   onTap: _openPendingForums,
-                  trailing: _pendingForumCount != null
-                      ? _PendingForumCountBadge(count: _pendingForumCount!)
-                      : null,
+                  trailing: _PendingForumCountBadge(count: _pendingForumCount),
                 ),
                 _buildAdminActionCard(
                   context,
@@ -232,6 +214,13 @@ class _AdminScreenState extends State<AdminScreen> {
                   title: l10n.adminAnnouncements,
                   description: l10n.adminAnnouncementsDescription,
                   onTap: () => context.go(AppRoutes.announcement),
+                ),
+                _buildAdminActionCard(
+                  context,
+                  icon: Icons.people_outline,
+                  title: l10n.adminAccountManagement,
+                  description: l10n.adminAccountManagementDescription,
+                  onTap: _openAccountManagement,
                 ),
                 if (currentUser?.isRoot == true)
                   _buildAdminActionCard(

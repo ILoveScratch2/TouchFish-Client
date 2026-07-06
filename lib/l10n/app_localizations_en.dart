@@ -1918,4 +1918,113 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get adminAnnouncementsDescription =>
       'Create and manage system announcements';
+
+  @override
+  String get adminAccountManagement => 'Account Management';
+
+  @override
+  String get adminAccountManagementDescription =>
+      'View and manage user accounts';
+
+  @override
+  String get adminAccountLoadFailed => 'Failed to load users';
+
+  @override
+  String get adminAccountEmpty => 'No users found';
+
+  @override
+  String adminAccountCreated(String date) {
+    return 'Created: $date';
+  }
+
+  @override
+  String get adminAccountChangeRole => 'Change Role';
+
+  @override
+  String adminAccountChangeRoleTitle(String name) {
+    return 'Change role of $name';
+  }
+
+  @override
+  String get adminAccountCurrentRole => 'Current role';
+
+  @override
+  String get adminAccountRoleRoot => 'Root';
+
+  @override
+  String get adminAccountRoleAdmin => 'Admin';
+
+  @override
+  String get adminAccountRoleUser => 'User';
+
+  @override
+  String get adminAccountRoleBanned => 'Banned';
+
+  @override
+  String get adminAccountRoleChangeFailed => 'Failed to change role';
+
+  @override
+  String adminAccountRoleChangeSuccess(String name, String role) {
+    return '$name: role changed to $role';
+  }
+
+  @override
+  String get adminAccountBanTitle => 'Ban User';
+
+  @override
+  String get adminAccountBanAction => 'Ban';
+
+  @override
+  String adminAccountBanConfirm(String name) {
+    return 'Ban $name? They will be unable to log in.';
+  }
+
+  @override
+  String adminAccountBanSuccess(String name) {
+    return '$name has been banned';
+  }
+
+  @override
+  String get adminAccountBanFailed => 'Failed to ban user';
+
+  @override
+  String get adminAccountUnbanTitle => 'Unban User';
+
+  @override
+  String get adminAccountUnbanAction => 'Unban';
+
+  @override
+  String adminAccountUnbanConfirm(String name) {
+    return 'Unban $name?';
+  }
+
+  @override
+  String adminAccountUnbanSuccess(String name) {
+    return '$name has been unbanned';
+  }
+
+  @override
+  String get adminAccountUnbanFailed => 'Failed to unban user';
+
+  @override
+  String get adminAccountDeleteTitle => 'Delete User';
+
+  @override
+  String get adminAccountDeleteAction => 'Delete';
+
+  @override
+  String adminAccountDeleteConfirm(String name) {
+    return 'Permanently delete $name? This action cannot be undone.';
+  }
+
+  @override
+  String adminAccountDeleteSuccess(String name) {
+    return '$name has been deleted';
+  }
+
+  @override
+  String get adminAccountDeleteFailed => 'Failed to delete user';
+
+  @override
+  String get adminAccountTotalUsers => 'users';
 }

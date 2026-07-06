@@ -1839,4 +1839,112 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get adminAnnouncementsDescription => '建而治系統之公告';
+
+  @override
+  String get adminAccountManagement => '賬戶管理';
+
+  @override
+  String get adminAccountManagementDescription => '查察並管理用戶賬戶';
+
+  @override
+  String get adminAccountLoadFailed => '加載用戶列表失敗';
+
+  @override
+  String get adminAccountEmpty => '暫無用戶';
+
+  @override
+  String adminAccountCreated(String date) {
+    return '創建時間：$date';
+  }
+
+  @override
+  String get adminAccountChangeRole => '更改角色';
+
+  @override
+  String adminAccountChangeRoleTitle(String name) {
+    return '更改 $name 之角色';
+  }
+
+  @override
+  String get adminAccountCurrentRole => '當前角色';
+
+  @override
+  String get adminAccountRoleRoot => 'Root';
+
+  @override
+  String get adminAccountRoleAdmin => '管理員';
+
+  @override
+  String get adminAccountRoleUser => '用戶';
+
+  @override
+  String get adminAccountRoleBanned => '已封禁';
+
+  @override
+  String get adminAccountRoleChangeFailed => '更改角色失敗';
+
+  @override
+  String adminAccountRoleChangeSuccess(String name, String role) {
+    return '$name 之角色已改爲 $role';
+  }
+
+  @override
+  String get adminAccountBanTitle => '封禁用戶';
+
+  @override
+  String get adminAccountBanAction => '封禁';
+
+  @override
+  String adminAccountBanConfirm(String name) {
+    return '確認封禁 $name？該用戶將無法登錄。';
+  }
+
+  @override
+  String adminAccountBanSuccess(String name) {
+    return '$name 已被封禁';
+  }
+
+  @override
+  String get adminAccountBanFailed => '封禁用戶失敗';
+
+  @override
+  String get adminAccountUnbanTitle => '解封用戶';
+
+  @override
+  String get adminAccountUnbanAction => '解封';
+
+  @override
+  String adminAccountUnbanConfirm(String name) {
+    return '確認解封 $name？';
+  }
+
+  @override
+  String adminAccountUnbanSuccess(String name) {
+    return '$name 已解封';
+  }
+
+  @override
+  String get adminAccountUnbanFailed => '解封用戶失敗';
+
+  @override
+  String get adminAccountDeleteTitle => '刪除用戶';
+
+  @override
+  String get adminAccountDeleteAction => '刪除';
+
+  @override
+  String adminAccountDeleteConfirm(String name) {
+    return '永久刪除 $name？此操作不可撤銷。';
+  }
+
+  @override
+  String adminAccountDeleteSuccess(String name) {
+    return '$name 已被刪除';
+  }
+
+  @override
+  String get adminAccountDeleteFailed => '刪除用戶失敗';
+
+  @override
+  String get adminAccountTotalUsers => '位用戶';
 }

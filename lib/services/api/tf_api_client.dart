@@ -122,6 +122,39 @@ class TfDebugRequestResult {
   });
 }
 
+class UserManagePagination {
+  final int page;
+  final int pageSize;
+  final int total;
+  final int totalPages;
+  final bool hasMore;
+
+  const UserManagePagination({
+    required this.page,
+    required this.pageSize,
+    required this.total,
+    required this.totalPages,
+    required this.hasMore,
+  });
+
+  factory UserManagePagination.fromJson(Map<String, dynamic> json) {
+    return UserManagePagination(
+      page: (json['page'] as num).toInt(),
+      pageSize: (json['page_size'] as num).toInt(),
+      total: (json['total'] as num).toInt(),
+      totalPages: (json['total_pages'] as num).toInt(),
+      hasMore: json['has_more'] as bool,
+    );
+  }
+}
+
+class UserManageResult {
+  final List<UserProfile> users;
+  final UserManagePagination pagination;
+
+  const UserManageResult({required this.users, required this.pagination});
+}
+
 class _PreparedSecretPostRequest {
   final String requestUrl;
   final String requestBody;
@@ -1275,6 +1308,94 @@ class TfApiClient {
     final result = await secretPost(
       '/friend/deal_ship',
       {'dealt': dealtUid, 'stat': stat},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  // --- account management (admin) ---
+
+  Future<UserManageResult?> manageListUsers(
+    int uid,
+    String password, {
+    int page = 1,
+    int pageSize = 50,
+  }) async {
+    final baseUrl = await getBaseUrl();
+    final result = await secretPost(
+      '/auth/manage/list',
+      {'page': page, 'page_size': pageSize},
+      uid: uid,
+      password: password,
+    );
+
+    if (result == null) return null;
+
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map<String, dynamic>) return null;
+
+      final usersRaw = data['users'] as List<dynamic>?;
+      if (usersRaw == null) return null;
+
+      final users = usersRaw.map((u) {
+        final userJson = u as Map<String, dynamic>;
+        final userUid = userJson['uid'].toString();
+        return UserProfile.fromServerJson(
+          userJson,
+          '$baseUrl/avatar/get_avatar/user/$userUid',
+        );
+      }).toList();
+
+      final pagination = UserManagePagination.fromJson(
+        data['pagination'] as Map<String, dynamic>,
+      );
+
+      return UserManageResult(users: users, pagination: pagination);
+    } catch (e) {
+      talker.error('manageListUsers parse failed', e);
+      return null;
+    }
+  }
+
+  Future<bool> manageChangeAuth(
+    int uid,
+    String password,
+    int targetUid,
+    String newAuth,
+  ) async {
+    final result = await secretPost(
+      '/auth/change_auth',
+      {'change_uid': targetUid, 'new_auth': newAuth},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<bool> manageBanUser(
+    int uid,
+    String password,
+    int targetUid,
+  ) async {
+    final result = await secretPost(
+      '/auth/manage/ban',
+      {'change_uid': targetUid},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<bool> manageDeleteUser(
+    int uid,
+    String password,
+    int targetUid,
+  ) async {
+    final result = await secretPost(
+      '/auth/manage/delete',
+      {'change_uid': targetUid},
       uid: uid,
       password: password,
     );

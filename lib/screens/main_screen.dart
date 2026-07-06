@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../models/app_state.dart';
 import '../services/auth_state.dart';
+import '../services/forum_pending_service.dart';
 import '../services/notification_service.dart';
 
 class MainScreen extends StatefulWidget {
@@ -18,16 +19,19 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   final _notificationService = NotificationService.instance;
+  final _forumPendingService = ForumPendingService.instance;
 
   @override
   void initState() {
     super.initState();
     _notificationService.addListener(_onNotificationsChanged);
+    _forumPendingService.addListener(_onNotificationsChanged);
   }
 
   @override
   void dispose() {
     _notificationService.removeListener(_onNotificationsChanged);
+    _forumPendingService.removeListener(_onNotificationsChanged);
     super.dispose();
   }
 
@@ -37,6 +41,8 @@ class _MainScreenState extends State<MainScreen> {
 
   int get _announcementBadgeCount =>
       _notificationService.announcementUnreadCount;
+
+  int get _adminBadgeCount => _forumPendingService.pendingCount;
 
   int _getCurrentIndex(
     BuildContext context,
@@ -197,13 +203,11 @@ class _MainScreenState extends State<MainScreen> {
   }) {
     final isSelected = forceSelected;
     final icon = Icon(isSelected ? destination.selectedIcon : destination.icon);
-    if (destination.route == AppRoutes.announcement &&
-        _announcementBadgeCount > 0) {
+    final badgeCount = _badgeCountFor(destination.route);
+    if (badgeCount > 0) {
       return Badge(
         label: Text(
-          _announcementBadgeCount > 99
-              ? '99+'
-              : '$_announcementBadgeCount',
+          badgeCount > 99 ? '99+' : '$badgeCount',
           style: const TextStyle(fontSize: 10),
         ),
         child: icon,
@@ -212,13 +216,19 @@ class _MainScreenState extends State<MainScreen> {
     return icon;
   }
 
+  int _badgeCountFor(String route) {
+    if (route == AppRoutes.announcement) return _announcementBadgeCount;
+    if (route == AppRoutes.admin) return _adminBadgeCount;
+    return 0;
+  }
+
   Widget _buildBadgedIcon(IconData iconData, _NavDestinationConfig destination) {
     final icon = Icon(iconData);
-    if (destination.route == AppRoutes.announcement &&
-        _announcementBadgeCount > 0) {
+    final badgeCount = _badgeCountFor(destination.route);
+    if (badgeCount > 0) {
       return Badge(
         label: Text(
-          _announcementBadgeCount > 99 ? '99+' : '$_announcementBadgeCount',
+          badgeCount > 99 ? '99+' : '$badgeCount',
           style: const TextStyle(fontSize: 10),
         ),
         child: icon,

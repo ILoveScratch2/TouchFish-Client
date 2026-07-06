@@ -753,5 +753,81 @@
   "announcementDeleteSuccess": "Announcement deleted",
   "announcementDeleteFailed": "Failed to delete announcement",
   "adminAnnouncements": "Announcements",
-  "adminAnnouncementsDescription": "Create and manage system announcements"
+  "adminAnnouncementsDescription": "Create and manage system announcements",
+  "adminAccountManagement": "Account Management",
+  "adminAccountManagementDescription": "View and manage user accounts",
+  "adminAccountLoadFailed": "Failed to load users",
+  "adminAccountEmpty": "No users found",
+  "adminAccountCreated": "Created: {date}",
+  "@adminAccountCreated": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "adminAccountChangeRole": "Change Role",
+  "adminAccountChangeRoleTitle": "Change role of {name}",
+  "@adminAccountChangeRoleTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "adminAccountCurrentRole": "Current role",
+  "adminAccountRoleRoot": "Root",
+  "adminAccountRoleAdmin": "Admin",
+  "adminAccountRoleUser": "User",
+  "adminAccountRoleBanned": "Banned",
+  "adminAccountRoleChangeFailed": "Failed to change role",
+  "adminAccountRoleChangeSuccess": "{name}: role changed to {role}",
+  "@adminAccountRoleChangeSuccess": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "role": {"type": "String"}
+    }
+  },
+  "adminAccountBanTitle": "Ban User",
+  "adminAccountBanAction": "Ban",
+  "adminAccountBanConfirm": "Ban {name}? They will be unable to log in.",
+  "@adminAccountBanConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "adminAccountBanSuccess": "{name} has been banned",
+  "@adminAccountBanSuccess": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "adminAccountBanFailed": "Failed to ban user",
+  "adminAccountUnbanTitle": "Unban User",
+  "adminAccountUnbanAction": "Unban",
+  "adminAccountUnbanConfirm": "Unban {name}?",
+  "@adminAccountUnbanConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "adminAccountUnbanSuccess": "{name} has been unbanned",
+  "@adminAccountUnbanSuccess": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "adminAccountUnbanFailed": "Failed to unban user",
+  "adminAccountDeleteTitle": "Delete User",
+  "adminAccountDeleteAction": "Delete",
+  "adminAccountDeleteConfirm": "Permanently delete {name}? This action cannot be undone.",
+  "@adminAccountDeleteConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "adminAccountDeleteSuccess": "{name} has been deleted",
+  "@adminAccountDeleteSuccess": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "adminAccountDeleteFailed": "Failed to delete user",
+  "adminAccountTotalUsers": "users"
 }

@@ -724,5 +724,81 @@
   "announcementDeleteSuccess": "公告已删除",
   "announcementDeleteFailed": "删除公告失败",
   "adminAnnouncements": "公告管理",
-  "adminAnnouncementsDescription": "创建和管理系统公告"
+  "adminAnnouncementsDescription": "创建和管理系统公告",
+  "adminAccountManagement": "账户管理",
+  "adminAccountManagementDescription": "查看和管理用户账户",
+  "adminAccountLoadFailed": "加载用户列表失败",
+  "adminAccountEmpty": "暂无用户",
+  "adminAccountCreated": "创建时间：{date}",
+  "@adminAccountCreated": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "adminAccountChangeRole": "更改角色",
+  "adminAccountChangeRoleTitle": "更改 {name} 的角色",
+  "@adminAccountChangeRoleTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "adminAccountCurrentRole": "当前角色",
+  "adminAccountRoleRoot": "Root",
+  "adminAccountRoleAdmin": "管理员",
+  "adminAccountRoleUser": "用户",
+  "adminAccountRoleBanned": "已封禁",
+  "adminAccountRoleChangeFailed": "更改角色失败",
+  "adminAccountRoleChangeSuccess": "{name} 的角色已更改为 {role}",
+  "@adminAccountRoleChangeSuccess": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "role": {"type": "String"}
+    }
+  },
+  "adminAccountBanTitle": "封禁用户",
+  "adminAccountBanAction": "封禁",
+  "adminAccountBanConfirm": "确认封禁 {name}？该用户将无法登录。",
+  "@adminAccountBanConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "adminAccountBanSuccess": "{name} 已被封禁",
+  "@adminAccountBanSuccess": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "adminAccountBanFailed": "封禁用户失败",
+  "adminAccountUnbanTitle": "解封用户",
+  "adminAccountUnbanAction": "解封",
+  "adminAccountUnbanConfirm": "确认解封 {name}？",
+  "@adminAccountUnbanConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "adminAccountUnbanSuccess": "{name} 已解封",
+  "@adminAccountUnbanSuccess": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "adminAccountUnbanFailed": "解封用户失败",
+  "adminAccountDeleteTitle": "删除用户",
+  "adminAccountDeleteAction": "删除",
+  "adminAccountDeleteConfirm": "永久删除 {name}？此操作不可撤销。",
+  "@adminAccountDeleteConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "adminAccountDeleteSuccess": "{name} 已被删除",
+  "@adminAccountDeleteSuccess": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "adminAccountDeleteFailed": "删除用户失败",
+  "adminAccountTotalUsers": "位用户"
 }

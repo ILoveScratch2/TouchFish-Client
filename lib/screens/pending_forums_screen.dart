@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../models/forum_model.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/forum_pending_service.dart';
 import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
 
@@ -110,6 +111,7 @@ class _PendingForumsScreenState extends State<PendingForumsScreen> {
           ),
         );
         await _loadPendingForums();
+        ForumPendingService.instance.refresh();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -178,6 +180,7 @@ class _PendingForumsScreenState extends State<PendingForumsScreen> {
           ),
         );
         await _loadPendingForums();
+        ForumPendingService.instance.refresh();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

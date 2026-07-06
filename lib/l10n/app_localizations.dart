@@ -3669,6 +3669,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create and manage system announcements'**
   String get adminAnnouncementsDescription;
+
+  /// No description provided for @adminAccountManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Management'**
+  String get adminAccountManagement;
+
+  /// No description provided for @adminAccountManagementDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'View and manage user accounts'**
+  String get adminAccountManagementDescription;
+
+  /// No description provided for @adminAccountLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load users'**
+  String get adminAccountLoadFailed;
+
+  /// No description provided for @adminAccountEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No users found'**
+  String get adminAccountEmpty;
+
+  /// No description provided for @adminAccountCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Created: {date}'**
+  String adminAccountCreated(String date);
+
+  /// No description provided for @adminAccountChangeRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Role'**
+  String get adminAccountChangeRole;
+
+  /// No description provided for @adminAccountChangeRoleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change role of {name}'**
+  String adminAccountChangeRoleTitle(String name);
+
+  /// No description provided for @adminAccountCurrentRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Current role'**
+  String get adminAccountCurrentRole;
+
+  /// No description provided for @adminAccountRoleRoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Root'**
+  String get adminAccountRoleRoot;
+
+  /// No description provided for @adminAccountRoleAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get adminAccountRoleAdmin;
+
+  /// No description provided for @adminAccountRoleUser.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get adminAccountRoleUser;
+
+  /// No description provided for @adminAccountRoleBanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Banned'**
+  String get adminAccountRoleBanned;
+
+  /// No description provided for @adminAccountRoleChangeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to change role'**
+  String get adminAccountRoleChangeFailed;
+
+  /// No description provided for @adminAccountRoleChangeSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: role changed to {role}'**
+  String adminAccountRoleChangeSuccess(String name, String role);
+
+  /// No description provided for @adminAccountBanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ban User'**
+  String get adminAccountBanTitle;
+
+  /// No description provided for @adminAccountBanAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Ban'**
+  String get adminAccountBanAction;
+
+  /// No description provided for @adminAccountBanConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Ban {name}? They will be unable to log in.'**
+  String adminAccountBanConfirm(String name);
+
+  /// No description provided for @adminAccountBanSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} has been banned'**
+  String adminAccountBanSuccess(String name);
+
+  /// No description provided for @adminAccountBanFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to ban user'**
+  String get adminAccountBanFailed;
+
+  /// No description provided for @adminAccountUnbanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unban User'**
+  String get adminAccountUnbanTitle;
+
+  /// No description provided for @adminAccountUnbanAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Unban'**
+  String get adminAccountUnbanAction;
+
+  /// No description provided for @adminAccountUnbanConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Unban {name}?'**
+  String adminAccountUnbanConfirm(String name);
+
+  /// No description provided for @adminAccountUnbanSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} has been unbanned'**
+  String adminAccountUnbanSuccess(String name);
+
+  /// No description provided for @adminAccountUnbanFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to unban user'**
+  String get adminAccountUnbanFailed;
+
+  /// No description provided for @adminAccountDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete User'**
+  String get adminAccountDeleteTitle;
+
+  /// No description provided for @adminAccountDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get adminAccountDeleteAction;
+
+  /// No description provided for @adminAccountDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete {name}? This action cannot be undone.'**
+  String adminAccountDeleteConfirm(String name);
+
+  /// No description provided for @adminAccountDeleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} has been deleted'**
+  String adminAccountDeleteSuccess(String name);
+
+  /// No description provided for @adminAccountDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete user'**
+  String get adminAccountDeleteFailed;
+
+  /// No description provided for @adminAccountTotalUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'users'**
+  String get adminAccountTotalUsers;
 }
 
 class _AppLocalizationsDelegate
