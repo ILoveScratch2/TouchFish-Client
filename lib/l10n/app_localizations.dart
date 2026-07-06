@@ -1300,6 +1300,18 @@ abstract class AppLocalizations {
   /// **'Max File Size'**
   String get adminServerFieldMaxFileSize;
 
+  /// No description provided for @adminServerFieldMaxMessageLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Message Length'**
+  String get adminServerFieldMaxMessageLength;
+
+  /// No description provided for @adminServerFieldMaxMessageLengthDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum characters per message (minimum 1).'**
+  String get adminServerFieldMaxMessageLengthDescription;
+
   /// No description provided for @adminServerFieldApiPort.
   ///
   /// In en, this message translates to:
@@ -3849,6 +3861,306 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'users'**
   String get adminAccountTotalUsers;
+
+  /// No description provided for @storageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage Management'**
+  String get storageTitle;
+
+  /// No description provided for @storageUploadFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload File'**
+  String get storageUploadFile;
+
+  /// No description provided for @storageRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get storageRefresh;
+
+  /// No description provided for @storageNotLoggedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Not logged in'**
+  String get storageNotLoggedIn;
+
+  /// No description provided for @storageNoFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'No files uploaded'**
+  String get storageNoFiles;
+
+  /// No description provided for @storageDeleteFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete File'**
+  String get storageDeleteFile;
+
+  /// No description provided for @storageDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{fileName}\"? This action cannot be undone.'**
+  String storageDeleteConfirm(String fileName);
+
+  /// No description provided for @storageDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted: {fileName}'**
+  String storageDeleted(String fileName);
+
+  /// No description provided for @storageDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete failed'**
+  String get storageDeleteFailed;
+
+  /// No description provided for @storageUploaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded: {fileName}'**
+  String storageUploaded(String fileName);
+
+  /// No description provided for @storageUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed'**
+  String get storageUploadFailed;
+
+  /// No description provided for @storageUploadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload error'**
+  String get storageUploadError;
+
+  /// No description provided for @storageCouldNotReadFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read file'**
+  String get storageCouldNotReadFile;
+
+  /// No description provided for @storageFileTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'File too large, max {size} MB'**
+  String storageFileTooLarge(int size);
+
+  /// No description provided for @storageUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Used'**
+  String get storageUsed;
+
+  /// No description provided for @storageUnlimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited'**
+  String get storageUnlimited;
+
+  /// No description provided for @storageRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get storageRetry;
+
+  /// No description provided for @adminFileManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'File Management'**
+  String get adminFileManagement;
+
+  /// No description provided for @adminFileManagementDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'View all uploaded files, filter by user, and force delete files.'**
+  String get adminFileManagementDescription;
+
+  /// No description provided for @adminFileFilterUid.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by User ID...'**
+  String get adminFileFilterUid;
+
+  /// No description provided for @adminFileFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get adminFileFilter;
+
+  /// No description provided for @adminFileFilterClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get adminFileFilterClear;
+
+  /// No description provided for @adminFileForceDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Force Delete'**
+  String get adminFileForceDelete;
+
+  /// No description provided for @adminFileForceDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Force Delete File'**
+  String get adminFileForceDeleteTitle;
+
+  /// No description provided for @adminFileForceDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete \"{fileName}\" (owner: {owner})?\n\nThis removes the file from disk and database regardless of references.'**
+  String adminFileForceDeleteConfirm(String fileName, String owner);
+
+  /// No description provided for @adminFileForceDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Force deleted: {fileName}'**
+  String adminFileForceDeleted(String fileName);
+
+  /// No description provided for @adminFileForceDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Force delete failed'**
+  String get adminFileForceDeleteFailed;
+
+  /// No description provided for @adminFileNoFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'No files on server'**
+  String get adminFileNoFiles;
+
+  /// No description provided for @adminFileNoFilesForUid.
+  ///
+  /// In en, this message translates to:
+  /// **'No files found for UID {uid}'**
+  String adminFileNoFilesForUid(String uid);
+
+  /// No description provided for @adminFileSummaryFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get adminFileSummaryFiles;
+
+  /// No description provided for @adminFileSummaryUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Users'**
+  String get adminFileSummaryUsers;
+
+  /// No description provided for @adminFileSummaryTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get adminFileSummaryTotal;
+
+  /// No description provided for @chatFunctionTabFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get chatFunctionTabFiles;
+
+  /// No description provided for @chatFunctionTabEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'Emoji'**
+  String get chatFunctionTabEmoji;
+
+  /// No description provided for @chatFunctionTabSpecial.
+  ///
+  /// In en, this message translates to:
+  /// **'Special'**
+  String get chatFunctionTabSpecial;
+
+  /// No description provided for @chatFunctionTabFilesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select files to send'**
+  String get chatFunctionTabFilesHint;
+
+  /// No description provided for @chatFunctionTabEmojiHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Emoji picker coming soon'**
+  String get chatFunctionTabEmojiHint;
+
+  /// No description provided for @chatFunctionTabSpecialHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Special messages coming soon'**
+  String get chatFunctionTabSpecialHint;
+
+  /// No description provided for @chatFunctionPickFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick File'**
+  String get chatFunctionPickFile;
+
+  /// No description provided for @chatSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Send failed'**
+  String get chatSendFailed;
+
+  /// No description provided for @chatCreateGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Group'**
+  String get chatCreateGroup;
+
+  /// No description provided for @chatAddFriend.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Friend'**
+  String get chatAddFriend;
+
+  /// No description provided for @chatAddFriendHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter username or UID'**
+  String get chatAddFriendHint;
+
+  /// No description provided for @chatLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get chatLoading;
+
+  /// No description provided for @chatInputNotConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected to chat server'**
+  String get chatInputNotConnected;
+
+  /// No description provided for @chatInviteAcceptFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to accept friend request'**
+  String get chatInviteAcceptFailed;
+
+  /// No description provided for @chatInviteRejectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to reject friend request'**
+  String get chatInviteRejectFailed;
+
+  /// No description provided for @userProfileFriendRequestHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Say hello...'**
+  String get userProfileFriendRequestHint;
+
+  /// No description provided for @userProfileFriendRequestSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend request sent to {username}'**
+  String userProfileFriendRequestSent(String username);
+
+  /// No description provided for @userProfileFriendRequestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send friend request'**
+  String get userProfileFriendRequestFailed;
 }
 
 class _AppLocalizationsDelegate

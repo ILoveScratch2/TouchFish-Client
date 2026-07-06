@@ -70,6 +70,7 @@ dependencies:
   system_fonts: ^1.0.1
   http: ^1.2.2
   pointycastle: ^3.9.1
+  web_socket_channel: ^3.0.2
 
 dev_dependencies:
   flutter_test:

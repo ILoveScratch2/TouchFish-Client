@@ -27,16 +27,15 @@ class ContactListWidget extends StatelessWidget {
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: colorScheme.primaryContainer,
-        child: contact.avatar != null
-            ? null
-            : Icon(
-                Icons.person,
-                color: colorScheme.onPrimaryContainer,
-              ),
+        backgroundImage: contact.avatar != null ? NetworkImage(contact.avatar!) : null,
+        child: contact.avatar == null
+            ? Icon(Icons.person, color: colorScheme.onPrimaryContainer)
+            : null,
       ),
       title: Text(contact.name),
       onTap: () {
-        context.push('/user/${contact.id}');
+        final userId = contact.id.startsWith('U') ? contact.id.substring(1) : contact.id;
+        context.push('/user/$userId');
       },
     );
   }

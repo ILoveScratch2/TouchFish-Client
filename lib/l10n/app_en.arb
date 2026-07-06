@@ -252,6 +252,8 @@
   "adminServerFieldGroupsLimit": "Group Limit",
   "adminServerFieldSingleGroupMaxPeople": "Single Group Max Members",
   "adminServerFieldMaxFileSize": "Max File Size",
+  "adminServerFieldMaxMessageLength": "Max Message Length",
+  "adminServerFieldMaxMessageLengthDescription": "Maximum characters per message (minimum 1).",
   "adminServerFieldApiPort": "API Port",
   "adminServerFieldTcpPort": "TCP Port",
   "adminServerFieldEmailActivation": "Email Activation",
@@ -829,5 +831,96 @@
     }
   },
   "adminAccountDeleteFailed": "Failed to delete user",
-  "adminAccountTotalUsers": "users"
+  "adminAccountTotalUsers": "users",
+  "storageTitle": "Storage Management",
+  "storageUploadFile": "Upload File",
+  "storageRefresh": "Refresh",
+  "storageNotLoggedIn": "Not logged in",
+  "storageNoFiles": "No files uploaded",
+  "storageDeleteFile": "Delete File",
+  "storageDeleteConfirm": "Delete \"{fileName}\"? This action cannot be undone.",
+  "@storageDeleteConfirm": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "storageDeleted": "Deleted: {fileName}",
+  "@storageDeleted": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "storageDeleteFailed": "Delete failed",
+  "storageUploaded": "Uploaded: {fileName}",
+  "@storageUploaded": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "storageUploadFailed": "Upload failed",
+  "storageUploadError": "Upload error",
+  "storageCouldNotReadFile": "Could not read file",
+  "storageFileTooLarge": "File too large, max {size} MB",
+  "@storageFileTooLarge": {
+    "placeholders": {
+      "size": {"type": "int"}
+    }
+  },
+  "storageUsed": "Used",
+  "storageUnlimited": "Unlimited",
+  "storageRetry": "Retry",
+  "adminFileManagement": "File Management",
+  "adminFileManagementDescription": "View all uploaded files, filter by user, and force delete files.",
+  "adminFileFilterUid": "Filter by User ID...",
+  "adminFileFilter": "Filter",
+  "adminFileFilterClear": "Clear",
+  "adminFileForceDelete": "Force Delete",
+  "adminFileForceDeleteTitle": "Force Delete File",
+  "adminFileForceDeleteConfirm": "Permanently delete \"{fileName}\" (owner: {owner})?\n\nThis removes the file from disk and database regardless of references.",
+  "@adminFileForceDeleteConfirm": {
+    "placeholders": {
+      "fileName": {"type": "String"},
+      "owner": {"type": "String"}
+    }
+  },
+  "adminFileForceDeleted": "Force deleted: {fileName}",
+  "@adminFileForceDeleted": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "adminFileForceDeleteFailed": "Force delete failed",
+  "adminFileNoFiles": "No files on server",
+  "adminFileNoFilesForUid": "No files found for UID {uid}",
+  "@adminFileNoFilesForUid": {
+    "placeholders": {
+      "uid": {"type": "String"}
+    }
+  },
+  "adminFileSummaryFiles": "Files",
+  "adminFileSummaryUsers": "Users",
+  "adminFileSummaryTotal": "Total",
+  "chatFunctionTabFiles": "Files",
+  "chatFunctionTabEmoji": "Emoji",
+  "chatFunctionTabSpecial": "Special",
+  "chatFunctionTabFilesHint": "Select files to send",
+  "chatFunctionTabEmojiHint": "Emoji picker coming soon",
+  "chatFunctionTabSpecialHint": "Special messages coming soon",
+  "chatFunctionPickFile": "Pick File",
+  "chatSendFailed": "Send failed",
+  "chatCreateGroup": "Create Group",
+  "chatAddFriend": "Add Friend",
+  "chatAddFriendHint": "Enter username or UID",
+  "chatLoading": "Loading...",
+  "chatInputNotConnected": "Not connected to chat server",
+  "chatInviteAcceptFailed": "Failed to accept friend request",
+  "chatInviteRejectFailed": "Failed to reject friend request",
+  "userProfileFriendRequestHint": "Say hello...",
+  "userProfileFriendRequestSent": "Friend request sent to {username}",
+  "@userProfileFriendRequestSent": {
+    "placeholders": {
+      "username": {"type": "String"}
+    }
+  },
+  "userProfileFriendRequestFailed": "Failed to send friend request"
 }

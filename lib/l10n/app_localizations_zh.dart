@@ -616,6 +616,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get adminServerFieldMaxFileSize => '最大文件大小';
 
   @override
+  String get adminServerFieldMaxMessageLength => '最大消息长度';
+
+  @override
+  String get adminServerFieldMaxMessageLengthDescription =>
+      '每条消息的最大字符数（最小值为 1）。';
+
+  @override
   String get adminServerFieldApiPort => 'API 端口';
 
   @override
@@ -1948,4 +1955,170 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get adminAccountTotalUsers => '位用户';
+
+  @override
+  String get storageTitle => '存储管理';
+
+  @override
+  String get storageUploadFile => '上传文件';
+
+  @override
+  String get storageRefresh => '刷新';
+
+  @override
+  String get storageNotLoggedIn => '未登录';
+
+  @override
+  String get storageNoFiles => '暂无文件';
+
+  @override
+  String get storageDeleteFile => '删除文件';
+
+  @override
+  String storageDeleteConfirm(String fileName) {
+    return '确定删除 \"$fileName\"？此操作不可撤销。';
+  }
+
+  @override
+  String storageDeleted(String fileName) {
+    return '已删除：$fileName';
+  }
+
+  @override
+  String get storageDeleteFailed => '删除失败';
+
+  @override
+  String storageUploaded(String fileName) {
+    return '已上传：$fileName';
+  }
+
+  @override
+  String get storageUploadFailed => '上传失败';
+
+  @override
+  String get storageUploadError => '上传错误';
+
+  @override
+  String get storageCouldNotReadFile => '无法读取文件';
+
+  @override
+  String storageFileTooLarge(int size) {
+    return '文件过大，最大支持 $size MB';
+  }
+
+  @override
+  String get storageUsed => '已用';
+
+  @override
+  String get storageUnlimited => '无限制';
+
+  @override
+  String get storageRetry => '重试';
+
+  @override
+  String get adminFileManagement => '文件管理';
+
+  @override
+  String get adminFileManagementDescription => '查看所有上传文件，按用户筛选，强制删除文件。';
+
+  @override
+  String get adminFileFilterUid => '按用户ID筛选...';
+
+  @override
+  String get adminFileFilter => '筛选';
+
+  @override
+  String get adminFileFilterClear => '清除';
+
+  @override
+  String get adminFileForceDelete => '强制删除';
+
+  @override
+  String get adminFileForceDeleteTitle => '强制删除文件';
+
+  @override
+  String adminFileForceDeleteConfirm(String fileName, String owner) {
+    return '永久删除 \"$fileName\"（所有者：$owner）？\n\n此操作将从磁盘和数据库中移除该文件，忽略所有引用。';
+  }
+
+  @override
+  String adminFileForceDeleted(String fileName) {
+    return '已强制删除：$fileName';
+  }
+
+  @override
+  String get adminFileForceDeleteFailed => '强制删除失败';
+
+  @override
+  String get adminFileNoFiles => '服务器上暂无文件';
+
+  @override
+  String adminFileNoFilesForUid(String uid) {
+    return '未找到 UID $uid 的文件';
+  }
+
+  @override
+  String get adminFileSummaryFiles => '文件';
+
+  @override
+  String get adminFileSummaryUsers => '用户';
+
+  @override
+  String get adminFileSummaryTotal => '总计';
+
+  @override
+  String get chatFunctionTabFiles => '文件';
+
+  @override
+  String get chatFunctionTabEmoji => '表情';
+
+  @override
+  String get chatFunctionTabSpecial => '特别消息';
+
+  @override
+  String get chatFunctionTabFilesHint => '选择要发送的文件';
+
+  @override
+  String get chatFunctionTabEmojiHint => '表情选择器即将推出';
+
+  @override
+  String get chatFunctionTabSpecialHint => '特别消息即将推出';
+
+  @override
+  String get chatFunctionPickFile => '选择文件';
+
+  @override
+  String get chatSendFailed => '发送失败';
+
+  @override
+  String get chatCreateGroup => '创建群组';
+
+  @override
+  String get chatAddFriend => '添加好友';
+
+  @override
+  String get chatAddFriendHint => '输入用户名或 UID';
+
+  @override
+  String get chatLoading => '加载中...';
+
+  @override
+  String get chatInputNotConnected => '未连接到聊天服务器';
+
+  @override
+  String get chatInviteAcceptFailed => '接受好友请求失败';
+
+  @override
+  String get chatInviteRejectFailed => '拒绝好友请求失败';
+
+  @override
+  String get userProfileFriendRequestHint => '打个招呼...';
+
+  @override
+  String userProfileFriendRequestSent(String username) {
+    return '已向 $username 发送好友请求';
+  }
+
+  @override
+  String get userProfileFriendRequestFailed => '发送好友请求失败';
 }

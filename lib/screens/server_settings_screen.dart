@@ -21,6 +21,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   final _groupsLimitController = TextEditingController();
   final _singleGroupMaxPeopleController = TextEditingController();
   final _maxFileSizeController = TextEditingController();
+  final _maxMessageLengthController = TextEditingController();
 
   TfServerConfig? _settings;
   bool _captcha = false;
@@ -40,6 +41,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     _groupsLimitController.dispose();
     _singleGroupMaxPeopleController.dispose();
     _maxFileSizeController.dispose();
+    _maxMessageLengthController.dispose();
     super.dispose();
   }
 
@@ -56,6 +58,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     _singleGroupMaxPeopleController.text =
         (settings.singleGroupMaxPeople ?? -1).toString();
     _maxFileSizeController.text = (settings.maxFileSize ?? -1).toString();
+    _maxMessageLengthController.text = (settings.maxMessageLength ?? 10000).toString();
     _captcha = settings.captcha;
   }
 
@@ -175,12 +178,17 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       minimum: 0,
       allowUnlimited: true,
     );
+    final maxMessageLength = _parseIntegerField(
+      _maxMessageLengthController.text,
+      minimum: 1,
+    );
 
     if (serverName.isEmpty ||
         fileLastTime == null ||
         groupsLimit == null ||
         singleGroupMaxPeople == null ||
-        maxFileSize == null) {
+        maxFileSize == null ||
+        maxMessageLength == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.adminServerSettingsInvalidInput),
@@ -202,6 +210,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         groupsLimit: groupsLimit,
         singleGroupMaxPeople: singleGroupMaxPeople,
         maxFileSize: maxFileSize,
+        maxMessageLength: maxMessageLength,
       );
 
       if (!mounted) {
@@ -329,6 +338,16 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                 labelText: l10n.adminServerFieldMaxFileSize,
                 helperText: l10n.adminServerUnlimitedHint,
                 prefixIcon: const Icon(Icons.folder_open_outlined),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _maxMessageLengthController,
+              keyboardType: const TextInputType.numberWithOptions(signed: true),
+              decoration: InputDecoration(
+                labelText: l10n.adminServerFieldMaxMessageLength,
+                helperText: l10n.adminServerFieldMaxMessageLengthDescription,
+                prefixIcon: const Icon(Icons.message_outlined),
               ),
             ),
           ],

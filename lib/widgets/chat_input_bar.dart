@@ -27,8 +27,21 @@ class ChatInputBar extends StatefulWidget {
   State<ChatInputBar> createState() => _ChatInputBarState();
 }
 
-class _ChatInputBarState extends State<ChatInputBar> {
+class _ChatInputBarState extends State<ChatInputBar> with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -162,7 +175,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
               curve: Curves.easeInOut,
               child: _isExpanded
                   ? Container(
-                      height: 180,
+                      height: 200,
                       margin: const EdgeInsets.only(top: 8, bottom: 3),
                       decoration: BoxDecoration(
                         border: Border.all(
@@ -173,19 +186,141 @@ class _ChatInputBarState extends State<ChatInputBar> {
                           Radius.circular(24),
                         ),
                       ),
-                      child: Center(
-                        child: Text(
-                          l10n.chatInputFeatureArea,
-                          style: TextStyle(
-                            color: colorScheme.onSurfaceVariant,
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: TabBar(
+                              controller: _tabController,
+                              tabs: [
+                                Tab(text: l10n.chatFunctionTabFiles),
+                                Tab(text: l10n.chatFunctionTabEmoji),
+                                Tab(text: l10n.chatFunctionTabSpecial),
+                              ],
+                              labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                              unselectedLabelStyle: const TextStyle(fontSize: 13),
+                              indicatorSize: TabBarIndicatorSize.label,
+                              labelColor: colorScheme.primary,
+                              unselectedLabelColor: colorScheme.onSurfaceVariant,
+                              indicatorPadding: const EdgeInsets.symmetric(horizontal: 12),
+                              dividerColor: Colors.transparent,
+                              tabAlignment: TabAlignment.center,
+                              splashFactory: NoSplash.splashFactory,
+                            ),
                           ),
-                        ),
+                          const Divider(height: 1),
+                          Expanded(
+                            child: TabBarView(
+                              controller: _tabController,
+                              children: [
+                                _buildFilesTab(colorScheme, l10n),
+                                _buildEmojiTab(colorScheme, l10n),
+                                _buildSpecialMessagesTab(colorScheme, l10n),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   : const SizedBox.shrink(),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildFilesTab(ColorScheme colorScheme, AppLocalizations l10n) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.folder_open, size: 40, color: colorScheme.onSurfaceVariant.withOpacity(0.4)),
+          const SizedBox(height: 8),
+          Text(
+            l10n.chatFunctionTabFilesHint,
+            style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+          ),
+          const SizedBox(height: 12),
+          PopupMenuButton<String>(
+            onSelected: (value) async {
+              await _handleAttachment(value);
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'image',
+                child: Row(children: [
+                  const Icon(Icons.image),
+                  const SizedBox(width: 12),
+                  Text(l10n.mediaPickImage),
+                ]),
+              ),
+              PopupMenuItem(
+                value: 'video',
+                child: Row(children: [
+                  const Icon(Icons.videocam),
+                  const SizedBox(width: 12),
+                  Text(l10n.mediaPickVideo),
+                ]),
+              ),
+              PopupMenuItem(
+                value: 'audio',
+                child: Row(children: [
+                  const Icon(Icons.audiotrack),
+                  const SizedBox(width: 12),
+                  Text(l10n.mediaPickAudio),
+                ]),
+              ),
+              PopupMenuItem(
+                value: 'file',
+                child: Row(children: [
+                  const Icon(Icons.file_upload),
+                  const SizedBox(width: 12),
+                  Text(l10n.chatInputUploadFile),
+                ]),
+              ),
+            ],
+            child: ElevatedButton.icon(
+              onPressed: null,
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(l10n.chatFunctionPickFile),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmojiTab(ColorScheme colorScheme, AppLocalizations l10n) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.emoji_emotions_outlined, size: 40,
+              color: colorScheme.onSurfaceVariant.withOpacity(0.4)),
+          const SizedBox(height: 8),
+          Text(
+            l10n.chatFunctionTabEmojiHint,
+            style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSpecialMessagesTab(ColorScheme colorScheme, AppLocalizations l10n) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.star_outline, size: 40,
+              color: colorScheme.onSurfaceVariant.withOpacity(0.4)),
+          const SizedBox(height: 8),
+          Text(
+            l10n.chatFunctionTabSpecialHint,
+            style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+          ),
+        ],
       ),
     );
   }

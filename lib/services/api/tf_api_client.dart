@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:pointycastle/export.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'tf_crypto.dart';
+import '../../models/message_model.dart';
 import '../../constants/app_constants.dart';
 import '../../models/user_profile.dart';
 import '../../models/forum_model.dart';
@@ -15,6 +16,50 @@ import '../../models/notification_model.dart';
 import '../server_connection_status_service.dart';
 import '../../widgets/server_selector.dart';
 import '../../utils/talker.dart';
+
+class TfChatListItem {
+  final String roomId;
+  final String roomType;
+  final int partnerUid;
+  final String username;
+  final String? avatar;
+  final String? lastContent;
+  final String? lastContentType;
+  final double? lastTime;
+  final int? lastSenderUid;
+  final int? lastMid;
+  final bool isFriend;
+
+  const TfChatListItem({
+    required this.roomId,
+    required this.roomType,
+    required this.partnerUid,
+    required this.username,
+    this.avatar,
+    this.lastContent,
+    this.lastContentType,
+    this.lastTime,
+    this.lastSenderUid,
+    this.lastMid,
+    required this.isFriend,
+  });
+
+  factory TfChatListItem.fromJson(Map<String, dynamic> json) {
+    return TfChatListItem(
+      roomId: json['room_id'] as String? ?? '',
+      roomType: json['room_type'] as String? ?? 'direct',
+      partnerUid: (json['partner_uid'] as num?)?.toInt() ?? 0,
+      username: json['username'] as String? ?? '',
+      avatar: json['avatar'] as String?,
+      lastContent: json['last_content'] as String?,
+      lastContentType: json['last_content_type'] as String?,
+      lastTime: (json['last_time'] as num?)?.toDouble(),
+      lastSenderUid: (json['last_sender_uid'] as num?)?.toInt(),
+      lastMid: (json['last_mid'] as num?)?.toInt(),
+      isFriend: json['is_friend'] as bool? ?? false,
+    );
+  }
+}
 
 class TfServerConfig {
   final bool captcha;
@@ -26,6 +71,7 @@ class TfServerConfig {
   final int? groupsLimit;
   final int? singleGroupMaxPeople;
   final int? maxFileSize;
+  final int? maxMessageLength;
   final String? verifyEmail;
   final Map<String, dynamic>? rateLimits;
   final Map<String, String> defaultAssetUrls;
@@ -40,6 +86,7 @@ class TfServerConfig {
     this.groupsLimit,
     this.singleGroupMaxPeople,
     this.maxFileSize,
+    this.maxMessageLength,
     this.verifyEmail,
     this.rateLimits,
     this.defaultAssetUrls = const {},
@@ -82,6 +129,7 @@ class TfServerConfig {
         json['single_group_max_people'],
       ),
       maxFileSize: _parseOptionalIntValue(json['max_file_size']),
+      maxMessageLength: _parseOptionalIntValue(json['max_message_length']),
       verifyEmail: json['verify_email'] as String?,
       rateLimits: json['rate_limits'] is Map
           ? Map<String, dynamic>.from(json['rate_limits'] as Map)
@@ -181,6 +229,7 @@ class TfApiClient {
 
   RSAPublicKey? _cachedPubKey;
   String? _cachedBaseUrl;
+  TfServerConfig? _cachedServerConfig;
 
   void _handleConnectivityFailure() {
     final statusService = ServerConnectionStatusService.instance;
@@ -274,6 +323,19 @@ class TfApiClient {
   void invalidateCache() {
     _cachedPubKey = null;
     _cachedBaseUrl = null;
+    _cachedServerConfig = null;
+  }
+
+  Future<int?> getMaxFileSize() async {
+    _cachedServerConfig ??= await fetchServerInfo();
+    final limit = _cachedServerConfig?.maxFileSize;
+    if (limit == null || limit == -1) return null;
+    return limit;
+  }
+
+  Future<RSAPublicKey> getRsaPublicKey() async {
+    final baseUrl = await getBaseUrl();
+    return _getRsaPublicKey(baseUrl);
   }
 
   Future<RSAPublicKey> _getRsaPublicKey(String baseUrl) async {
@@ -535,9 +597,11 @@ class TfApiClient {
       final baseUrl = await getBaseUrl();
       final response = await _getRequest('$baseUrl/info');
       if (response.statusCode != 200) return null;
-      return TfServerConfig.fromJson(
+      final config = TfServerConfig.fromJson(
         jsonDecode(response.body) as Map<String, dynamic>,
       );
+      _cachedServerConfig = config;
+      return config;
     } catch (e) {
       talker.error('fetchServerInfo failed', e);
       return null;
@@ -569,6 +633,7 @@ class TfApiClient {
     required int groupsLimit,
     required int singleGroupMaxPeople,
     required int maxFileSize,
+    required int maxMessageLength,
   }) async {
     final result = await secretPost(
       '/auth/server_settings/update',
@@ -579,6 +644,7 @@ class TfApiClient {
         'groups_limit': groupsLimit,
         'single_group_max_people': singleGroupMaxPeople,
         'max_file_size': maxFileSize,
+        'max_message_length': maxMessageLength,
       },
       uid: uid,
       password: password,
@@ -1311,6 +1377,238 @@ class TfApiClient {
       uid: uid,
       password: password,
     );
+    talker.info('dealFriendShip: uid=$uid dealt=$dealtUid stat=$stat rawResult=$result parsed=${_parseBool(result)}');
+    return _parseBool(result);
+  }
+
+  Future<List<int>> getFriendList(int uid, String password) async {
+    final result = await secretPost(
+      '/friend/list',
+      {},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return [];
+    try {
+      final list = jsonDecode(result) as List<dynamic>;
+      return list.map((e) => (e as num).toInt()).toList();
+    } catch (e) {
+      talker.error('getFriendList parse failed', e);
+      return [];
+    }
+  }
+
+  /// Unified message send — returns {mid, status: 'sent'} or null.
+  Future<Map<String, dynamic>?> sendMessage(
+    int uid, String password, {
+    required String recipient, // "U123" or "G456"
+    required String content,
+    String contentType = 'plain',
+    String? clientMid,
+    String? fileHash,
+    int quote = -1,
+  }) async {
+    final result = await secretPost('/message/send', {
+      'recipient': recipient,
+      'content': content,
+      'content_type': contentType,
+      'client_mid': clientMid,
+      'file_hash': fileHash,
+      'quote': quote,
+    }, uid: uid, password: password);
+    try {
+      final data = jsonDecode(result ?? '');
+      if (data is Map<String, dynamic>) return data;
+    } catch (_) {}
+    return null;
+  }
+
+  /// Send a text message via REST (WebSocket fallback).
+  /// Returns the server-assigned MID on success, null on failure.
+  Future<int?> sendMessagePlain(
+    int uid,
+    String password,
+    int targetUid,
+    String text, {
+    int quote = -1,
+  }) async {
+    final result = await secretPost(
+      '/message/send_plain',
+      {
+        'target_uid': targetUid,
+        'plain': text,
+        'quote': quote,
+      },
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return null;
+    try {
+      final data = jsonDecode(result);
+      return (data['mid'] as num?)?.toInt();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Send a file message via REST (WebSocket fallback).
+  Future<int?> sendFileMessageRest(
+    int uid, String password, int targetUid, String fileHash, {int quote = -1}
+  ) async {
+    final result = await secretPost('/message/send_file', {
+      'target_uid': targetUid, 'file_hash': fileHash, 'quote': quote,
+    }, uid: uid, password: password);
+    if (result == null) return null;
+    try {
+      final data = jsonDecode(result);
+      return (data['mid'] as num?)?.toInt();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Fetch the chat room list with last message and partner profile.
+  Future<List<TfChatListItem>> queryChatList(int uid, String password) async {
+    final result = await secretPost(
+      '/chat/list',
+      {},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return [];
+    try {
+      final list = jsonDecode(result) as List<dynamic>;
+      return list
+          .map((e) => TfChatListItem.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      talker.error('queryChatList parse failed', e);
+      return [];
+    }
+  }
+
+  /// Fetch paginated message history. Pass [groupId] for group chats.
+  Future<List<ChatMessage>> queryMessageHistory(
+    int uid,
+    String password,
+    int targetUid, {
+    int? groupId,
+    int beforeMid = 0,
+    int limit = 50,
+  }) async {
+    final body = <String, dynamic>{
+      'target_uid': targetUid,
+      'before_mid': beforeMid,
+      'limit': limit,
+    };
+    if (groupId != null) body['group_id'] = groupId;
+
+    final result = await secretPost(
+      '/message/history',
+      body,
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return [];
+    try {
+      final list = jsonDecode(result) as List<dynamic>;
+      return list
+          .map((e) => ChatMessage.fromMessageRecord(e as Map<String, dynamic>, uid))
+          .toList();
+    } catch (e) {
+      talker.error('queryMessageHistory parse failed', e);
+      return [];
+    }
+  }
+
+  // --- group management ---
+
+  Future<int?> createGroup(int uid, String password,
+      {required String groupname, String introduction = '', String enterHint = '',
+       bool allowDirectJoin = false, bool requireReview = true}) async {
+    final result = await secretPost('/group/create_group', {
+      'groupname': groupname,
+      'introduction': introduction,
+      'enter_hint': enterHint,
+      'allow_direct_join': allowDirectJoin,
+      'require_review': requireReview,
+    }, uid: uid, password: password);
+    final data = _parseJsonMap(result);
+    return (data?['gid'] as num?)?.toInt();
+  }
+
+  Future<Map<String, dynamic>?> getGroupSettings(int uid, String password, int gid) async {
+    final result = await secretPost('/group/settings', {'gid': gid},
+        uid: uid, password: password);
+    return _parseJsonMap(result);
+  }
+
+  Future<bool> updateGroupSettings(int uid, String password, int gid, Map<String, dynamic> updates) async {
+    final body = <String, dynamic>{'gid': gid};
+    body.addAll(updates);
+    final result = await secretPost('/group/update_settings', body,
+        uid: uid, password: password);
+    return _parseBool(result);
+  }
+
+  Future<Map<String, dynamic>?> getGroupMembers(int uid, String password, int gid) async {
+    final result = await secretPost('/group/members', {'gid': gid},
+        uid: uid, password: password);
+    return _parseJsonMap(result);
+  }
+
+  Future<bool> transferGroupOwner(int uid, String password, int gid, int newOwner) async {
+    final result = await secretPost('/group/transfer_owner',
+        {'gid': gid, 'new_owner': newOwner},
+        uid: uid, password: password);
+    return _parseBool(result);
+  }
+
+  Future<bool> setGroupAdmin(int uid, String password, int gid, int targetUid, bool isAdmin) async {
+    final endpoint = isAdmin ? '/group/add_admin' : '/group/remove_admin';
+    final key = isAdmin ? 'added' : 'removed';
+    final result = await secretPost(endpoint, {'gid': gid, key: targetUid},
+        uid: uid, password: password);
+    return _parseBool(result);
+  }
+
+  Future<bool> removeGroupMember(int uid, String password, int gid, int targetUid) async {
+    final result = await secretPost('/group/remove_member',
+        {'gid': gid, 'removed': targetUid},
+        uid: uid, password: password);
+    return _parseBool(result);
+  }
+
+  Future<Map<String, dynamic>?> joinGroup(int uid, String password, int gid) async {
+    final result = await secretPost('/group/join', {'gid': gid},
+        uid: uid, password: password);
+    return _parseJsonMap(result);
+  }
+
+  Future<Map<String, dynamic>?> inviteToGroup(int uid, String password, int gid, int invitedUid) async {
+    final result = await secretPost('/group/invite',
+        {'gid': gid, 'invited_uid': invitedUid},
+        uid: uid, password: password);
+    return _parseJsonMap(result);
+  }
+
+  Future<List<Map<String, dynamic>>> getJoinRequests(int uid, String password, int gid) async {
+    final result = await secretPost('/group/join_requests', {'gid': gid},
+        uid: uid, password: password);
+    if (result == null) return [];
+    try {
+      return (jsonDecode(result) as List<dynamic>)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<bool> handleJoinRequest(int uid, String password, int rid, bool approved) async {
+    final result = await secretPost('/group/handle_join_request',
+        {'rid': rid, 'approved': approved},
+        uid: uid, password: password);
     return _parseBool(result);
   }
 
@@ -1396,6 +1694,126 @@ class TfApiClient {
     final result = await secretPost(
       '/auth/manage/delete',
       {'change_uid': targetUid},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  // --- file management ---
+
+  Future<Map<String, dynamic>?> uploadFile(
+    int uid,
+    String password,
+    String fileName,
+    String fileBase64,
+  ) async {
+    final result = await secretPost(
+      '/file/upload_file',
+      {
+        'filename': fileName,
+        'file_b64': fileBase64,
+      },
+      uid: uid,
+      password: password,
+    );
+
+    final data = _parseJsonMap(result);
+    if (data == null) return null;
+
+    final success = data['success'];
+    if (success is bool && !success) return null;
+
+    return data;
+  }
+
+  Future<List<Map<String, dynamic>>> getUserFiles(
+    int uid,
+    String password,
+  ) async {
+    final result = await secretPost(
+      '/file/get_user_files',
+      {},
+      uid: uid,
+      password: password,
+    );
+
+    if (result == null) return [];
+
+    try {
+      final data = jsonDecode(result);
+      if (data is List) {
+        return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      return [];
+    } catch (e) {
+      talker.error('getUserFiles parse failed', e);
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> getStorageInfo(
+    int uid,
+    String password,
+  ) async {
+    final result = await secretPost(
+      '/file/get_storage_info',
+      {},
+      uid: uid,
+      password: password,
+    );
+
+    final data = _parseJsonMap(result);
+    return data;
+  }
+
+  Future<bool> deleteFile(int uid, String password, String hash) async {
+    final result = await secretPost(
+      '/file/delete_file',
+      {'hash': hash},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<List<Map<String, dynamic>>> adminGetAllFiles(
+    int uid,
+    String password, {
+    int? targetUid,
+  }) async {
+    final body = <String, dynamic>{};
+    if (targetUid != null) body['target_uid'] = targetUid;
+
+    final result = await secretPost(
+      '/file/admin_get_all_files',
+      body,
+      uid: uid,
+      password: password,
+    );
+
+    if (result == null) return [];
+
+    try {
+      final data = jsonDecode(result);
+      if (data is List) {
+        return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      return [];
+    } catch (e) {
+      talker.error('adminGetAllFiles parse failed', e);
+      return [];
+    }
+  }
+
+  Future<bool> adminForceDeleteFile(
+    int uid,
+    String password,
+    String hash,
+  ) async {
+    final result = await secretPost(
+      '/file/admin_force_delete_file',
+      {'hash': hash},
       uid: uid,
       password: password,
     );

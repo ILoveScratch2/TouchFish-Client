@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -11,16 +13,19 @@ import '../widgets/chat_input_bar.dart';
 import '../routes/app_routes.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/mention_text_field.dart';
+import '../services/auth_state.dart';
+import '../services/api/tf_api_client.dart';
+import '../services/chat_ws_service.dart';
+import '../services/chat_data_service.dart';
+import '../utils/talker.dart';
 import 'chat_room_settings_screen.dart';
+import 'group_management_screen.dart';
 
 
 class ChatDetailScreen extends StatefulWidget {
   final String roomId;
 
-  const ChatDetailScreen({
-    super.key,
-    required this.roomId,
-  });
+  const ChatDetailScreen({super.key, required this.roomId});
 
   @override
   State<ChatDetailScreen> createState() => _ChatDetailScreenState();
@@ -31,166 +36,393 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   ChatRoom? _currentRoom;
-  List<MentionUser> _mentionUsers = [];
+  final List<MentionUser> _mentionUsers = [];
   bool _isInitialized = false;
+  bool _wsConnected = false;
+  bool _avatarLoadFailed = false;
+  bool _isLoadingOlder = false;
+  bool _hasMoreMessages = true;
+  bool _realtimeListenersAttached = false;
+
+  String get _contactUid => widget.roomId;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialized) {
-      _loadChatRoom();
+      _initRoom();
       _isInitialized = true;
     }
   }
 
   @override
+  void didUpdateWidget(covariant ChatDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.roomId != widget.roomId) {
+      _initRoom();
+    }
+  }
+
+  void _initRoom() {
+    _messages.clear();
+    _currentRoom = null;
+    _avatarLoadFailed = false;
+    _isLoadingOlder = false;
+    _hasMoreMessages = true;
+    _loadChatRoom();
+    _startRealMessaging();
+  }
+
+  @override
   void dispose() {
+    _detachRealtimeListeners();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
+  void _attachRealtimeListeners() {
+    if (_realtimeListenersAttached) return;
+    ChatWsService.instance.addListener(_onWsStateChanged);
+    ChatDataService.instance.addListener(_onChatDataChanged);
+    _realtimeListenersAttached = true;
+  }
+
+  void _detachRealtimeListeners() {
+    if (!_realtimeListenersAttached) return;
+    ChatWsService.instance.removeListener(_onWsStateChanged);
+    ChatDataService.instance.removeListener(_onChatDataChanged);
+    _realtimeListenersAttached = false;
+  }
+
+  void _startRealMessaging() {
+    if (!AuthState.instance.isLoggedIn) return;
+
+    final ws = ChatWsService.instance;
+    _wsConnected = ws.isAuthenticated;
+    _attachRealtimeListeners();
+    if (!ws.isAuthenticated) ws.connect();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadAndShowMessages();
+    });
+  }
+
+  void _markVisibleMessagesRead({String? previousLastId}) {
+    if (_messages.isEmpty) return;
+    final lastMsg = _messages.last;
+    final hasNewVisibleTail = previousLastId == null || lastMsg.id != previousLastId;
+    if (!hasNewVisibleTail || lastMsg.isMe || lastMsg.mid == null) return;
+    ChatDataService.instance.clearUnread(_contactUid);
+    if (_wsConnected) {
+      ChatWsService.instance.sendReadReceipt(_contactUid, lastMsg.mid!);
+    }
+  }
+
+  Future<void> _loadAndShowMessages() async {
+    final chatData = ChatDataService.instance;
+
+    final messages = await chatData.refreshMessagesForContact(_contactUid);
+    _refreshRoom();
+
+    if (!mounted) return;
+    setState(() {
+      _messages.clear();
+      _messages.addAll(messages);
+    });
+    _scrollToBottom();
+    _markVisibleMessagesRead();
+  }
+
+  Future<void> _onRefresh() async {
+    await _loadAndShowMessages();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_isLoadingOlder || !_hasMoreMessages) return;
+    // Trigger when user scrolls near the top
+    if (_scrollController.position.pixels < 50) {
+      _loadOlder();
+    }
+  }
+
+  Future<void> _loadOlder() async {
+    if (_isLoadingOlder) return;
+
+    setState(() => _isLoadingOlder = true);
+
+    final oldLen = _messages.length;
+    final older = await ChatDataService.instance.loadOlderMessages(_contactUid);
+    final allMessages = ChatDataService.instance.getMessages(_contactUid);
+
+    if (!mounted) return;
+    setState(() {
+      _messages.clear();
+      _messages.addAll(allMessages);
+      _isLoadingOlder = false;
+      _hasMoreMessages = older.isNotEmpty;
+    });
+
+    // Preserve scroll position after prepending
+    if (allMessages.length > oldLen && _scrollController.hasClients) {
+      final addedCount = allMessages.length - oldLen;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          // Estimate: each message bubble ~72px
+          _scrollController.jumpTo(_scrollController.offset + addedCount * 72.0);
+        }
+      });
+    }
+  }
+
+  void _refreshRoom() {
+    final chatData = ChatDataService.instance;
+    final profile = chatData.getUser(_contactUid);
+    if (profile != null) {
+      final updated = ChatRoom(
+        id: _contactUid,
+        name: chatData.displayNameForRoom(_contactUid, profile.username),
+        avatar: profile.avatar,
+        type: _currentRoom?.type ?? ChatType.direct,
+      );
+      if (_currentRoom?.name != updated.name || _currentRoom?.avatar != updated.avatar) {
+        _avatarLoadFailed = false;
+        _currentRoom = updated;
+        if (mounted) setState(() {});
+      }
+    } else if (!widget.roomId.startsWith('G')) {
+      // Profile not cached — fetch for direct chats
+      final targetUid = widget.roomId.startsWith('U') ? int.tryParse(widget.roomId.substring(1)) : null;
+      if (targetUid != null) {
+        TfApiClient.instance.getUserByUid(targetUid).then((p) {
+          if (p != null && mounted) {
+            talker.info('ChatDetail: refreshRoom fetched uid=${p.uid} avatar=${p.avatar}');
+            chatData.cacheUserProfile(p);
+            _avatarLoadFailed = false;
+            setState(() {
+              _currentRoom = ChatRoom(
+                id: _contactUid,
+                name: chatData.displayNameForRoom(_contactUid, p.username),
+                avatar: p.avatar,
+                type: widget.roomId.startsWith('G') ? ChatType.group : ChatType.direct,
+              );
+            });
+          }
+        });
+      }
+    }
+  }
+
+  void _onWsStateChanged() {
+    if (!mounted) return;
+    setState(() => _wsConnected = ChatWsService.instance.isAuthenticated);
+  }
+
+  bool get _isNearBottom {
+    if (!_scrollController.hasClients) return true;
+    final pos = _scrollController.position;
+    return pos.pixels >= pos.maxScrollExtent - 100;
+  }
+
+  void _onChatDataChanged() {
+    if (!mounted) return;
+    _refreshRoom();
+    final cached = ChatDataService.instance.getMessages(_contactUid);
+    final previousLastId = _messages.isNotEmpty ? _messages.last.id : null;
+    final countChanged = cached.length != _messages.length;
+    final lastIdChanged = cached.isNotEmpty && cached.last.id != previousLastId;
+    setState(() {
+      _messages.clear();
+      _messages.addAll(cached);
+    });
+    if ((countChanged || lastIdChanged) && _isNearBottom) {
+      _scrollToBottom();
+    }
+    if (countChanged || lastIdChanged) {
+      _markVisibleMessagesRead(previousLastId: previousLastId);
+    }
+  }
+
   void _loadChatRoom() {
-    final allRooms = ChatDemoData.getDemoChatRooms();
-    final allContacts = ChatDemoData.getDemoContacts();
-    final l10n = AppLocalizations.of(context)!;
-    _mentionUsers = allContacts
-        .map((c) => MentionUser(id: c.id, username: c.name, avatarUrl: c.avatar))
-        .toList();
-    _currentRoom = allRooms.firstWhere(
-      (room) => room.id == widget.roomId,
-      orElse: () {
-        final contact = allContacts.firstWhere(
-          (c) => c.id == widget.roomId,
-          orElse: () => Contact(
-            id: widget.roomId,
-            name: l10n.chatDetailUnknownUser,
-            avatar: null,
-          ),
-        );
-        return ChatRoom(
-          id: contact.id,
-          name: contact.name,
-          avatar: contact.avatar,
-          type: ChatType.direct,
-          lastMessage: null,
-          lastMessageTime: null,
-          unreadCount: 0,
-          isPinned: false,
-        );
-      },
+    final chatData = ChatDataService.instance;
+    final profile = chatData.getUser(_contactUid);
+
+    _currentRoom = ChatRoom(
+      id: _contactUid,
+      name: chatData.displayNameForRoom(
+        _contactUid,
+        profile?.username ?? (widget.roomId.startsWith('G') ? 'Group ${widget.roomId.substring(1)}' : widget.roomId),
+      ),
+      avatar: profile?.avatar,
+      type: widget.roomId.startsWith('G') ? ChatType.group : ChatType.direct,
     );
-
+    _avatarLoadFailed = false;
     setState(() {});
-    
-    // examples
-    if (_messages.isEmpty && widget.roomId == '1') {
-      _messages.addAll([
-        ChatMessage(
-          id: '1',
-          text: 'Welcome to use **TouchFish**!',
-          timestamp: DateTime.now().subtract(const Duration(minutes: 10)),
-          isMe: false,
-          senderName: _currentRoom?.name,
-          type: MessageType.text,
-        ),
-        ChatMessage(
-          id: '2',
-          text: '''Now it supports **Markdown** rendering!
 
-MARKDOWN:
-- *italic text*
-- **bold text**
-- \`inline code\`
-
-CODE:
-
-\`\`\`dart
-void main() {
-  print('Hello, Flutter!');
-}
-\`\`\`''',
-          timestamp: DateTime.now().subtract(const Duration(minutes: 9)),
-          isMe: false,
-          senderName: _currentRoom?.name,
-          type: MessageType.text,
-        ),
-        ChatMessage(
-          id: '3',
-          text: '''It also supports tables:
-
-| Feature | Status |
-|------|------|
-| TCP Trans | ✅ |
-| Register API | ✅ |
-| Info API | ✅ |
-| Forum API | Developing |''',
-          timestamp: DateTime.now().subtract(const Duration(minutes: 8)),
-          isMe: false,
-          senderName: _currentRoom?.name,
-          type: MessageType.text,
-        ),
-        ChatMessage(
-          id: '4',
-          text: r'It also supports math: $E = mc^2$ and $$\int_{0}^{\infty} e^{-x^2} dx = \frac{\sqrt{\pi}}{2}$$',
-          timestamp: DateTime.now().subtract(const Duration(minutes: 7)),
-          isMe: false,
-          senderName: _currentRoom?.name,
-          type: MessageType.text,
-        ),
-        ChatMessage(
-          id: '5',
-          text: 'You can disable Markdown rendering in the settings.',
-          timestamp: DateTime.now().subtract(const Duration(minutes: 6)),
-          isMe: true,
-          type: MessageType.text,
-        ),
-      ]);
+    // Fetch profile to ensure we have latest data + avatar
+    final targetUid = widget.roomId.startsWith('U') ? int.tryParse(widget.roomId.substring(1)) : null;
+    if (targetUid != null && targetUid > 0) {
+      TfApiClient.instance.getUserByUid(targetUid).then((p) {
+        if (p != null && mounted) {
+          talker.info('ChatDetail: fetched profile uid=${p.uid} avatar=${p.avatar}');
+          chatData.cacheUserProfile(p);
+          _avatarLoadFailed = false;
+          setState(() {
+            _currentRoom = ChatRoom(
+              id: _contactUid,
+              name: chatData.displayNameForRoom(_contactUid, p.username),
+              avatar: p.avatar,
+              type: widget.roomId.startsWith('G') ? ChatType.group : ChatType.direct,
+            );
+          });
+        }
+      });
     }
   }
 
   void _sendMessage() {
+    unawaited(_sendMessageAsync());
+  }
+
+  Future<void> _sendMessageAsync() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
+
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+
+    final clientMid = 'c${DateTime.now().microsecondsSinceEpoch}';
     final userMessage = ChatMessage(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: clientMid,
+      clientMid: clientMid,
+      mid: null,
       text: text,
       timestamp: DateTime.now(),
       isMe: true,
+      status: MessageStatus.pending,
       type: MessageType.text,
     );
 
-    setState(() {
-      _messages.add(userMessage);
-    });
-
+    setState(() => _messages.add(userMessage));
     _messageController.clear();
     _scrollToBottom();
-    Future.delayed(const Duration(milliseconds: 500), () {
-      final l10n = AppLocalizations.of(context)!;
-      final replyMessage = ChatMessage(
-        id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
-        text: text,
-        timestamp: DateTime.now(),
-        isMe: false,
-        senderName: _currentRoom?.name ?? l10n.chatDetailOther,
-        senderAvatar: _currentRoom?.avatar,
-        type: MessageType.text,
-      );
 
-      setState(() {
-        _messages.add(replyMessage);
-      });
-      _scrollToBottom();
+    // Add to cache BEFORE sending (so WS ack can find and update it)
+    ChatDataService.instance.addSentMessage(_contactUid, userMessage);
+
+    try {
+      // Send via WebSocket, with REST fallback
+      bool wsSent = false;
+      if (_wsConnected) {
+        if (widget.roomId.startsWith('G')) {
+          final gid = int.tryParse(widget.roomId.substring(1));
+          if (gid != null) {
+            wsSent = await ChatWsService.instance.sendGroupTextMessage(
+              gid,
+              text,
+              clientMid: clientMid,
+            );
+          }
+        } else {
+          final targetUid = int.tryParse(widget.roomId.substring(1));
+          if (targetUid != null) {
+            wsSent = await ChatWsService.instance.sendTextMessage(
+              targetUid.toString(),
+              text,
+              clientMid: clientMid,
+            );
+          }
+        }
+      }
+      if (!wsSent) {
+        // REST fallback
+        final recipient = widget.roomId.startsWith('G') ? widget.roomId : 'U${widget.roomId.substring(1)}';
+        final result = await TfApiClient.instance.sendMessage(uid, password,
+          recipient: recipient, content: text, clientMid: clientMid,
+        );
+        if (result != null) {
+          final mid = (result['mid'] as num?)?.toInt();
+          _updateMessageStatus(clientMid, mid: mid, status: MessageStatus.sent);
+        } else {
+          _updateMessageStatus(clientMid, status: MessageStatus.failed);
+          if (mounted) {
+            final l10n = AppLocalizations.of(context)!;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.chatSendFailed), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 2)),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      talker.error('ChatDetail text send failed', e);
+      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.chatSendFailed), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 2)),
+        );
+      }
+    }
+  }
+
+  void _updateMessageStatus(String clientMid, {int? mid, MessageStatus? status}) {
+    // Update _messageCache
+    final msgs = ChatDataService.instance.getMessages(_contactUid);
+    final cIdx = msgs.indexWhere((m) => m.clientMid == clientMid);
+    if (cIdx != -1) {
+      final updated = msgs.toList();
+      updated[cIdx] = updated[cIdx].copyWith(
+        id: mid?.toString() ?? updated[cIdx].id,
+        mid: mid ?? updated[cIdx].mid,
+        status: status ?? updated[cIdx].status,
+      );
+      ChatDataService.instance.setMessages(_contactUid, updated);
+    }
+    if (!mounted) return;
+    // Update UI list
+    setState(() {
+      final idx = _messages.indexWhere((m) => m.clientMid == clientMid);
+      if (idx != -1) {
+        _messages[idx] = _messages[idx].copyWith(
+          id: mid?.toString() ?? _messages[idx].id,
+          mid: mid ?? _messages[idx].mid,
+          status: status ?? _messages[idx].status,
+        );
+      }
     });
   }
 
-  void _sendMediaMessage(PlatformFile platformFile, MessageType type) {
+  void _updateMessageMedia(String clientMid, MessageMedia media) {
+    final msgs = ChatDataService.instance.getMessages(_contactUid);
+    final cIdx = msgs.indexWhere((m) => m.clientMid == clientMid);
+    if (cIdx != -1) {
+      final updated = msgs.toList();
+      updated[cIdx] = updated[cIdx].copyWith(media: media);
+      ChatDataService.instance.setMessages(_contactUid, updated);
+    }
+    if (!mounted) return;
+    setState(() {
+      final idx = _messages.indexWhere((m) => m.clientMid == clientMid);
+      if (idx != -1) {
+        _messages[idx] = _messages[idx].copyWith(media: media);
+      }
+    });
+  }
+
+  Future<void> _sendMediaMessage(PlatformFile platformFile, MessageType type) async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+
     String filePath;
     String fileName;
     int fileSize;
@@ -205,95 +437,174 @@ void main() {
       filePath = platformFile.path!;
       fileName = path.basename(filePath);
       final file = File(filePath);
-      fileSize = file.lengthSync();
-      if (type == MessageType.image && platformFile.bytes != null) {
-        bytes = platformFile.bytes;
-      }
+      fileSize = await file.length();
+      bytes = platformFile.bytes ?? await file.readAsBytes();
     }
 
     String messageText = '';
     switch (type) {
-      case MessageType.image:
-        messageText = '[IMAGE]';
-        break;
-      case MessageType.video:
-        messageText = '[VIDEO]';
-        break;
-      case MessageType.audio:
-        messageText = '[AUDIO]';
-        break;
-      case MessageType.file:
-        messageText = '[FILE] $fileName';
-        break;
-      default:
-        messageText = fileName;
+      case MessageType.image: messageText = '[IMAGE]'; break;
+      case MessageType.video: messageText = '[VIDEO]'; break;
+      case MessageType.audio: messageText = '[AUDIO]'; break;
+      case MessageType.file: messageText = '[FILE] $fileName'; break;
+      default: messageText = fileName;
     }
 
-    final media = MessageMedia(
-      path: filePath,
-      fileName: fileName,
-      fileSize: fileSize,
-      bytes: bytes,
-    );
-
+    final clientMid = 'c${DateTime.now().microsecondsSinceEpoch}';
+    final media = MessageMedia(path: filePath, fileName: fileName, fileSize: fileSize, bytes: bytes);
     final userMessage = ChatMessage(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: clientMid,
+      clientMid: clientMid,
       text: messageText,
       timestamp: DateTime.now(),
       isMe: true,
       type: type,
       media: media,
+      status: MessageStatus.pending,
     );
 
-    setState(() {
-      _messages.add(userMessage);
-    });
-
+    setState(() => _messages.add(userMessage));
+    ChatDataService.instance.addSentMessage(_contactUid, userMessage);
     _scrollToBottom();
-    Future.delayed(const Duration(milliseconds: 500), () {
-      final l10n = AppLocalizations.of(context)!;
-      final replyMessage = ChatMessage(
-        id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
-        text: messageText,
-        timestamp: DateTime.now(),
-        isMe: false,
-        senderName: _currentRoom?.name ?? l10n.chatDetailOther,
-        senderAvatar: _currentRoom?.avatar,
-        type: type,
-        media: media,
+
+    if (bytes == null) {
+      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      return;
+    }
+
+    final maxSize = await TfApiClient.instance.getMaxFileSize();
+    if (maxSize != null && bytes.length > maxSize) {
+      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.storageFileTooLarge((maxSize / (1024 * 1024)).round()))),
+        );
+      }
+      return;
+    }
+
+    try {
+      final fileBase64 = base64.encode(bytes);
+      final response = await TfApiClient.instance.uploadFile(uid, password, fileName, fileBase64);
+      final hash = response?['hash'] as String?;
+      if (hash == null) {
+        _updateMessageStatus(clientMid, status: MessageStatus.failed);
+        return;
+      }
+
+      final baseUrl = await TfApiClient.instance.getBaseUrl();
+      _updateMessageMedia(
+        clientMid,
+        MessageMedia(
+          path: '$baseUrl/file/get_file/$hash',
+          fileName: fileName,
+          fileSize: fileSize,
+          bytes: bytes,
+          fileHash: hash,
+        ),
       );
 
-      setState(() {
-        _messages.add(replyMessage);
-      });
-      _scrollToBottom();
-    });
+      bool wsSent = false;
+      if (_wsConnected) {
+        if (widget.roomId.startsWith('G')) {
+          final gid = int.tryParse(widget.roomId.substring(1));
+          if (gid != null) {
+            wsSent = await ChatWsService.instance.sendGroupFileMessage(
+              gid,
+              hash,
+              clientMid: clientMid,
+            );
+          }
+        } else {
+          final peerUid = int.tryParse(widget.roomId.substring(1));
+          if (peerUid != null) {
+            wsSent = await ChatWsService.instance.sendFileMessage(
+              peerUid.toString(),
+              hash,
+              clientMid: clientMid,
+            );
+          }
+        }
+      }
+
+      if (!wsSent) {
+        final recipient = widget.roomId.startsWith('G') ? widget.roomId : 'U${widget.roomId.substring(1)}';
+        final result = await TfApiClient.instance.sendMessage(
+          uid,
+          password,
+          recipient: recipient,
+          content: hash,
+          contentType: 'file',
+          clientMid: clientMid,
+          fileHash: hash,
+        );
+        if (result != null) {
+          final mid = (result['mid'] as num?)?.toInt();
+          _updateMessageStatus(clientMid, mid: mid, status: MessageStatus.sent);
+        } else {
+          _updateMessageStatus(clientMid, status: MessageStatus.failed);
+          if (mounted) {
+            final l10n = AppLocalizations.of(context)!;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.chatSendFailed), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 2)),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      talker.error('ChatDetail file send failed', e);
+      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.chatSendFailed), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 2)),
+        );
+      }
+    }
   }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        _scrollController.animateTo(_scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
       }
     });
+  }
+
+  Widget _buildAvatar(ColorScheme colorScheme) {
+    final avatarUrl = _currentRoom!.avatar;
+    if (avatarUrl == null || _avatarLoadFailed) {
+      return CircleAvatar(
+        radius: 18,
+        backgroundColor: colorScheme.primaryContainer,
+        child: Icon(
+          _currentRoom!.type == ChatType.group ? Icons.group : Icons.person,
+          size: 20,
+          color: colorScheme.onPrimaryContainer,
+        ),
+      );
+    }
+    return CircleAvatar(
+      radius: 18,
+      backgroundColor: colorScheme.primaryContainer,
+      backgroundImage: NetworkImage(avatarUrl),
+      onBackgroundImageError: (_, error) {
+        talker.warning('Avatar load failed for ${_currentRoom!.id}: $avatarUrl');
+        if (mounted) setState(() => _avatarLoadFailed = true);
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     if (_currentRoom == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text(l10n.chatDetailLoading),
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        appBar: AppBar(title: Text(l10n.chatDetailLoading)),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -304,75 +615,39 @@ void main() {
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         leading: !isWide
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => context.go(AppRoutes.chat),
-              )
+            ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.go(AppRoutes.chat))
             : null,
         automaticallyImplyLeading: false,
         backgroundColor: colorScheme.surfaceContainerHighest,
         surfaceTintColor: Colors.transparent,
         title: Row(
           children: [
-            if (_currentRoom!.avatar != null)
-              CircleAvatar(
-                radius: 18,
-                backgroundImage: NetworkImage(_currentRoom!.avatar!),
-                onBackgroundImageError: (_, __) {},
-                child: _currentRoom!.avatar == null
-                    ? Icon(
-                        _currentRoom!.type == ChatType.group ? Icons.group : Icons.person,
-                        size: 20,
-                      )
-                    : null,
-              )
-            else
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: colorScheme.primaryContainer,
-                child: Icon(
-                  _currentRoom!.type == ChatType.group ? Icons.group : Icons.person,
-                  size: 20,
-                  color: colorScheme.onPrimaryContainer,
-                ),
-              ),
+            _buildAvatar(colorScheme),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _currentRoom!.name,
-                    style: const TextStyle(fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (_currentRoom!.type == ChatType.group)
-                    Text(
-                      l10n.chatDetailGroupChat,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                ],
-              ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                Text(_currentRoom!.name, style: const TextStyle(fontSize: 16), overflow: TextOverflow.ellipsis),
+                if (_currentRoom!.type == ChatType.group)
+                  Text(l10n.chatDetailGroupChat, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+              ]),
             ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChatRoomSettingsScreen(
-                    chatRoom: _currentRoom!,
-                  ),
-                ),
-              );
-            },
-          ),
+          IconButton(icon: const Icon(Icons.more_vert), onPressed: () {
+            if (_currentRoom!.type == ChatType.group) {
+              final gid = int.tryParse(widget.roomId.replaceFirst('G', ''));
+              if (gid != null) {
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => GroupManagementScreen(gid: gid, groupName: _currentRoom!.name),
+                ));
+              }
+            } else {
+              Navigator.push(context, MaterialPageRoute(
+                builder: (_) => ChatRoomSettingsScreen(chatRoom: _currentRoom!),
+              ));
+            }
+          }),
         ],
       ),
       body: SafeArea(
@@ -380,29 +655,33 @@ void main() {
           children: [
             Expanded(
               child: _messages.isEmpty
-                  ? Center(
-                      child: Text(
-                        l10n.chatDetailNoMessages,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                  ? RefreshIndicator(
+                      onRefresh: _onRefresh,
+                      child: ListView(
+                        children: [
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.4,
+                            child: Center(
+                              child: Text(l10n.chatDetailNoMessages, textAlign: TextAlign.center,
+                                  style: TextStyle(color: colorScheme.onSurfaceVariant)),
+                            ),
+                          ),
+                        ],
                       ),
                     )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      itemCount: _messages.length,
-                      itemBuilder: (context, index) {
-                        return MessageBubble(message: _messages[index]);
-                      },
+                  : RefreshIndicator(
+                      onRefresh: _onRefresh,
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) => MessageBubble(message: _messages[index]),
+                      ),
                     ),
             ),
             ChatInputBar(
-              controller: _messageController,
-              onSend: _sendMessage,
-              onFilePicked: _sendMediaMessage,
-              mentionUsers: _mentionUsers,
+              controller: _messageController, onSend: _sendMessage,
+              onFilePicked: _sendMediaMessage, mentionUsers: _mentionUsers,
             ),
           ],
         ),

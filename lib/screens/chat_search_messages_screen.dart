@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../models/message_model.dart';
+import '../services/chat_data_service.dart';
 
 class ChatSearchMessagesScreen extends StatefulWidget {
   final String roomId;
@@ -17,11 +20,13 @@ class ChatSearchMessagesScreen extends StatefulWidget {
 
 class _ChatSearchMessagesScreenState extends State<ChatSearchMessagesScreen> {
   final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
   bool _isSearching = false;
   List<ChatMessage> _searchResults = [];
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -35,38 +40,31 @@ class _ChatSearchMessagesScreenState extends State<ChatSearchMessagesScreen> {
       return;
     }
 
+    _searchDebounce?.cancel();
     setState(() {
       _isSearching = true;
     });
+    _searchDebounce = Timer(const Duration(milliseconds: 250), () {
+      _executeSearch(query);
+    });
+  }
 
-    Future.delayed(const Duration(milliseconds: 500), () {
-      final demoResults = [
-        ChatMessage(
-          id: '1',
-          text: '这是一条包含"${query}"的示例消息',
-          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-          isMe: false,
-          senderName: 'XSFX',
-        ),
-        ChatMessage(
-          id: '2',
-          text: '另一条相关的消息提到了${query}',
-          timestamp: DateTime.now().subtract(const Duration(days: 1)),
-          isMe: true,
-        ),
-        ChatMessage(
-          id: '3',
-          text: '还有一条关于${query}的讨论',
-          timestamp: DateTime.now().subtract(const Duration(days: 2)),
-          isMe: false,
-          senderName: 'Piaoztsdy',
-        ),
-      ];
+  Future<void> _executeSearch(String query) async {
+    final normalizedQuery = query.trim().toLowerCase();
+    var messages = ChatDataService.instance.getMessages(widget.roomId);
+    if (messages.isEmpty) {
+      messages = await ChatDataService.instance.refreshMessagesForContact(widget.roomId);
+    }
+    if (!mounted) return;
 
-      setState(() {
-        _isSearching = false;
-        _searchResults = demoResults;
-      });
+    final results = messages
+        .where((message) => message.text.toLowerCase().contains(normalizedQuery))
+        .toList()
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+    setState(() {
+      _isSearching = false;
+      _searchResults = results;
     });
   }
 

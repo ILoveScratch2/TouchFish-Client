@@ -655,6 +655,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminServerFieldMaxFileSize => 'Max File Size';
 
   @override
+  String get adminServerFieldMaxMessageLength => 'Max Message Length';
+
+  @override
+  String get adminServerFieldMaxMessageLengthDescription =>
+      'Maximum characters per message (minimum 1).';
+
+  @override
   String get adminServerFieldApiPort => 'API Port';
 
   @override
@@ -2027,4 +2034,171 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminAccountTotalUsers => 'users';
+
+  @override
+  String get storageTitle => 'Storage Management';
+
+  @override
+  String get storageUploadFile => 'Upload File';
+
+  @override
+  String get storageRefresh => 'Refresh';
+
+  @override
+  String get storageNotLoggedIn => 'Not logged in';
+
+  @override
+  String get storageNoFiles => 'No files uploaded';
+
+  @override
+  String get storageDeleteFile => 'Delete File';
+
+  @override
+  String storageDeleteConfirm(String fileName) {
+    return 'Delete \"$fileName\"? This action cannot be undone.';
+  }
+
+  @override
+  String storageDeleted(String fileName) {
+    return 'Deleted: $fileName';
+  }
+
+  @override
+  String get storageDeleteFailed => 'Delete failed';
+
+  @override
+  String storageUploaded(String fileName) {
+    return 'Uploaded: $fileName';
+  }
+
+  @override
+  String get storageUploadFailed => 'Upload failed';
+
+  @override
+  String get storageUploadError => 'Upload error';
+
+  @override
+  String get storageCouldNotReadFile => 'Could not read file';
+
+  @override
+  String storageFileTooLarge(int size) {
+    return 'File too large, max $size MB';
+  }
+
+  @override
+  String get storageUsed => 'Used';
+
+  @override
+  String get storageUnlimited => 'Unlimited';
+
+  @override
+  String get storageRetry => 'Retry';
+
+  @override
+  String get adminFileManagement => 'File Management';
+
+  @override
+  String get adminFileManagementDescription =>
+      'View all uploaded files, filter by user, and force delete files.';
+
+  @override
+  String get adminFileFilterUid => 'Filter by User ID...';
+
+  @override
+  String get adminFileFilter => 'Filter';
+
+  @override
+  String get adminFileFilterClear => 'Clear';
+
+  @override
+  String get adminFileForceDelete => 'Force Delete';
+
+  @override
+  String get adminFileForceDeleteTitle => 'Force Delete File';
+
+  @override
+  String adminFileForceDeleteConfirm(String fileName, String owner) {
+    return 'Permanently delete \"$fileName\" (owner: $owner)?\n\nThis removes the file from disk and database regardless of references.';
+  }
+
+  @override
+  String adminFileForceDeleted(String fileName) {
+    return 'Force deleted: $fileName';
+  }
+
+  @override
+  String get adminFileForceDeleteFailed => 'Force delete failed';
+
+  @override
+  String get adminFileNoFiles => 'No files on server';
+
+  @override
+  String adminFileNoFilesForUid(String uid) {
+    return 'No files found for UID $uid';
+  }
+
+  @override
+  String get adminFileSummaryFiles => 'Files';
+
+  @override
+  String get adminFileSummaryUsers => 'Users';
+
+  @override
+  String get adminFileSummaryTotal => 'Total';
+
+  @override
+  String get chatFunctionTabFiles => 'Files';
+
+  @override
+  String get chatFunctionTabEmoji => 'Emoji';
+
+  @override
+  String get chatFunctionTabSpecial => 'Special';
+
+  @override
+  String get chatFunctionTabFilesHint => 'Select files to send';
+
+  @override
+  String get chatFunctionTabEmojiHint => 'Emoji picker coming soon';
+
+  @override
+  String get chatFunctionTabSpecialHint => 'Special messages coming soon';
+
+  @override
+  String get chatFunctionPickFile => 'Pick File';
+
+  @override
+  String get chatSendFailed => 'Send failed';
+
+  @override
+  String get chatCreateGroup => 'Create Group';
+
+  @override
+  String get chatAddFriend => 'Add Friend';
+
+  @override
+  String get chatAddFriendHint => 'Enter username or UID';
+
+  @override
+  String get chatLoading => 'Loading...';
+
+  @override
+  String get chatInputNotConnected => 'Not connected to chat server';
+
+  @override
+  String get chatInviteAcceptFailed => 'Failed to accept friend request';
+
+  @override
+  String get chatInviteRejectFailed => 'Failed to reject friend request';
+
+  @override
+  String get userProfileFriendRequestHint => 'Say hello...';
+
+  @override
+  String userProfileFriendRequestSent(String username) {
+    return 'Friend request sent to $username';
+  }
+
+  @override
+  String get userProfileFriendRequestFailed => 'Failed to send friend request';
 }

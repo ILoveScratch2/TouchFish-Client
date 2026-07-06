@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
 import '../services/forum_pending_service.dart';
+import 'admin_file_management_screen.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -70,6 +71,14 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Future<void> _openAccountManagement() async {
     await context.push(AppRoutes.adminAccountManagement);
+  }
+
+  Future<void> _openFileManagement() async {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const AdminFileManagementScreen(),
+      ),
+    );
   }
 
   Widget _buildAdminActionCard(
@@ -221,6 +230,13 @@ class _AdminScreenState extends State<AdminScreen> {
                   title: l10n.adminAccountManagement,
                   description: l10n.adminAccountManagementDescription,
                   onTap: _openAccountManagement,
+                ),
+                _buildAdminActionCard(
+                  context,
+                  icon: Icons.folder_outlined,
+                  title: l10n.adminFileManagement,
+                  description: l10n.adminFileManagementDescription,
+                  onTap: _openFileManagement,
                 ),
                 if (currentUser?.isRoot == true)
                   _buildAdminActionCard(

@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../models/chat_model.dart';
-import '../widgets/app_alert_dialog.dart';
+import '../services/chat_data_service.dart';
 import '../widgets/sheet_scaffold.dart';
 import 'chat_search_messages_screen.dart';
 
@@ -17,20 +17,24 @@ class ChatRoomSettingsScreen extends StatefulWidget {
 }
 
 class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
+  final ChatDataService _chatData = ChatDataService.instance;
   late bool _isPinned;
-  int _notifyLevel = 0; // 0: All, 1: Mention, 2: None
+  late int _notifyLevel;
   late String _chatName;
-  String _chatDescription = "";
-  late bool _hasEditPermission; // 随机的，反正没接后端
-  late bool _isGroupChat;
+  late String _chatDescription;
+
+  int? get _targetUid => widget.chatRoom.id.startsWith('U')
+      ? int.tryParse(widget.chatRoom.id.substring(1))
+      : null;
 
   @override
   void initState() {
     super.initState();
-    _isPinned = widget.chatRoom.isPinned;
-    _chatName = widget.chatRoom.name;
-    _isGroupChat = widget.chatRoom.type == ChatType.group;
-    _hasEditPermission = DateTime.now().second % 2 == 0;
+    final prefs = _chatData.getRoomPreference(widget.chatRoom.id);
+    _isPinned = prefs.isPinned || widget.chatRoom.isPinned;
+    _notifyLevel = prefs.notifyLevel;
+    _chatName = prefs.alias.trim().isNotEmpty ? prefs.alias : widget.chatRoom.name;
+    _chatDescription = prefs.description;
   }
 
   @override
@@ -50,24 +54,18 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
             ),
             flexibleSpace: FlexibleSpaceBar(
               background: Container(color: colorScheme.surfaceContainerHighest),
-              title: Text(
-                _chatName,
-                // Pin/Unpin Switch
-              ),
+              title: Text(_chatName),
             ),
             actions: [
-              IconButton(
-                icon: const Icon(Symbols.group),
-                onPressed: () {
-                  _showMembersBottomSheet();
-                },
-                tooltip: l10n.chatRoomMembers,
-              ),
+              if (_targetUid != null)
+                IconButton(
+                  icon: const Icon(Symbols.person),
+                  onPressed: _openUserProfile,
+                  tooltip: _chatName,
+                ),
               IconButton(
                 icon: const Icon(Symbols.edit),
-                onPressed: () {
-                  _showEditChatSheet();
-                },
+                onPressed: _showEditChatSheet,
                 tooltip: l10n.chatRoomEdit,
               ),
             ],
@@ -77,7 +75,7 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 InkWell(
-                  onTap: () => _showEditChatSheet(),
+                  onTap: _showEditChatSheet,
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Text(
@@ -99,7 +97,6 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
           ),
           SliverList(
             delegate: SliverChildListDelegate([
-              // Pin/Unpin Switch
               SwitchListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 24),
                 secondary: Icon(
@@ -113,6 +110,7 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                   setState(() {
                     _isPinned = value;
                   });
+                  _chatData.updateRoomPreference(widget.chatRoom.id, isPinned: value);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
@@ -124,21 +122,15 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                 },
               ),
               const Divider(height: 1),
-
-              // Notification Level
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 24),
                 leading: const Icon(Symbols.notifications),
                 trailing: const Icon(Symbols.chevron_right),
                 title: Text(l10n.chatNotifyLevel),
                 subtitle: Text(_getNotifyLevelText()),
-                onTap: () {
-                  _showNotifyLevelBottomSheet();
-                },
+                onTap: _showNotifyLevelBottomSheet,
               ),
               const Divider(height: 1),
-
-              // Search Messages
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 24),
                 leading: const Icon(Symbols.search),
@@ -153,21 +145,6 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                           ChatSearchMessagesScreen(roomId: widget.chatRoom.id),
                     ),
                   );
-                },
-              ),
-              const Divider(height: 1),
-
-              // Leave Chat
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                leading: Icon(Symbols.exit_to_app, color: colorScheme.error),
-                title: Text(
-                  l10n.chatLeaveRoom,
-                  style: TextStyle(color: colorScheme.error),
-                ),
-                subtitle: Text(l10n.chatLeaveRoomDescription),
-                onTap: () {
-                  _showLeaveConfirmDialog();
                 },
               ),
             ]),
@@ -217,6 +194,7 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                 setState(() {
                   _notifyLevel = 0;
                 });
+                _chatData.updateRoomPreference(widget.chatRoom.id, notifyLevel: 0);
                 Navigator.pop(context);
               },
             ),
@@ -229,6 +207,7 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                 setState(() {
                   _notifyLevel = 1;
                 });
+                _chatData.updateRoomPreference(widget.chatRoom.id, notifyLevel: 1);
                 Navigator.pop(context);
               },
             ),
@@ -241,6 +220,7 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                 setState(() {
                   _notifyLevel = 2;
                 });
+                _chatData.updateRoomPreference(widget.chatRoom.id, notifyLevel: 2);
                 Navigator.pop(context);
               },
             ),
@@ -251,83 +231,16 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
     );
   }
 
-  void _showMembersBottomSheet() {
-    final l10n = AppLocalizations.of(context)!;
-
-    // Demo data
-    final demoMembers = [
-      {'id': '1', 'name': 'XSFX'},
-      {'id': '3', 'name': 'Pztsdy'},
-      {'id': '4', 'name': 'JohnChiao'},
-      {'id': '2', 'name': 'L3'},
-    ];
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.3,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (context, scrollController) => Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            children: [
-              Text(
-                l10n.chatRoomMembers,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
-                  itemCount: demoMembers.length,
-                  itemBuilder: (context, index) {
-                    final member = demoMembers[index];
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        child: Icon(
-                          Icons.person,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                      title: Text(member['name']!),
-                      onTap: () {
-                        Navigator.pop(context);
-                        context.push('/user/${member['id']}');
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  void _openUserProfile() {
+    final targetUid = _targetUid;
+    if (targetUid == null) return;
+    context.push('/user/$targetUid');
   }
 
   void _showEditChatSheet() {
     final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController(text: _chatName);
     final descController = TextEditingController(text: _chatDescription);
-    String nameLabel;
-    String nameHelp;
-    if (_hasEditPermission) {
-      nameLabel = _isGroupChat ? l10n.chatRoomName : l10n.chatRoomContactName;
-      nameHelp = l10n.chatRoomNameHelp;
-    } else {
-      nameLabel = l10n.chatRoomAlias;
-      nameHelp = l10n.chatRoomAliasHelp;
-    }
 
     showModalBottomSheet(
       context: context,
@@ -342,9 +255,9 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
               TextField(
                 controller: nameController,
                 decoration: InputDecoration(
-                  labelText: nameLabel,
+                  labelText: l10n.chatRoomAlias,
                   border: const OutlineInputBorder(),
-                  helperText: nameHelp,
+                  helperText: l10n.chatRoomAliasHelp,
                 ),
               ),
               const SizedBox(height: 16),
@@ -363,15 +276,26 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
-                  onPressed: () {
+                  onPressed: () async {
+                    final navigator = Navigator.of(context);
+                    final messenger = ScaffoldMessenger.of(context);
+                    final alias = nameController.text.trim();
+                    final description = descController.text.trim();
+                    await _chatData.updateRoomPreference(
+                      widget.chatRoom.id,
+                      alias: alias,
+                      description: description,
+                    );
+                    if (!mounted) return;
                     setState(() {
-                      if (nameController.text.isNotEmpty) {
-                        _chatName = nameController.text;
-                      }
-                      _chatDescription = descController.text;
+                      _chatName = _chatData.displayNameForRoom(
+                        widget.chatRoom.id,
+                        widget.chatRoom.name,
+                      );
+                      _chatDescription = description;
                     });
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    navigator.pop();
+                    messenger.showSnackBar(
                       SnackBar(
                         content: Text(l10n.chatRoomUpdated),
                         duration: const Duration(seconds: 2),
@@ -386,37 +310,9 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  void _showLeaveConfirmDialog() {
-    final l10n = AppLocalizations.of(context)!;
-    final router = GoRouter.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-
-    showTouchFishInfoDialog<bool>(
-      context,
-      title: l10n.chatLeaveRoom,
-      message: l10n.chatLeaveRoomConfirm,
-      icon: Symbols.help_rounded,
-      actions: [
-        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
-        TouchFishDialogAction<bool>(
-          label: l10n.leave,
-          result: true,
-          isDestructive: true,
-        ),
-      ],
-    ).then((confirmed) {
-      if (confirmed == true && mounted) {
-        router.pop();
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(l10n.chatRoomLeft),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
+    ).whenComplete(() {
+      nameController.dispose();
+      descController.dispose();
     });
   }
 }

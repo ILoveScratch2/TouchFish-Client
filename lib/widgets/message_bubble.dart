@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
@@ -53,6 +52,10 @@ class _MessageBubbleContent extends StatefulWidget {
 
 class _MessageBubbleState extends State<_MessageBubbleContent> {
   bool _isHovered = false;
+
+  bool _isRemotePath(String path) {
+    return path.startsWith('http://') || path.startsWith('https://');
+  }
 
   void _showActionSheet() {
     showModalBottomSheet(
@@ -262,7 +265,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
           // Priority: cachedBytes > read from file
           if (widget.cachedBytes != null) {
             bytes = widget.cachedBytes!;
-          } else if (!kIsWeb && media.path.isNotEmpty) {
+          } else if (!kIsWeb && media.path.isNotEmpty && !_isRemotePath(media.path)) {
             final file = File(media.path);
             bytes = await file.readAsBytes();
           } else {
@@ -327,10 +330,15 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                     fit: BoxFit.cover,
                     gaplessPlayback: true,
                   )
-                : Image.file(
-                    File(media.path),
-                    fit: BoxFit.cover,
-                  ),
+                : _isRemotePath(media.path)
+                    ? Image.network(
+                        media.path,
+                        fit: BoxFit.cover,
+                      )
+                    : Image.file(
+                        File(media.path),
+                        fit: BoxFit.cover,
+                      ),
           ),
         ),
       ),
@@ -419,7 +427,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                     _formatFileSize(media.fileSize!),
                     style: textTheme.bodySmall?.copyWith(
                       color: widget.message.isMe
-                          ? colorScheme.onPrimaryContainer.withOpacity(0.7)
+                          ? colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
                           : colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -462,7 +470,7 @@ class _MessageHoverActionMenu extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

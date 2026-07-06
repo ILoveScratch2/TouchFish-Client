@@ -17,7 +17,9 @@ class _InviteSheetState extends State<InviteSheet> {
   void initState() {
     super.initState();
     _notificationService.addListener(_onNotificationsChanged);
-    _notificationService.markFriendRead();
+    _notificationService.forceRefresh().then((_) {
+      _notificationService.markFriendRead();
+    });
   }
 
   @override
@@ -36,7 +38,7 @@ class _InviteSheetState extends State<InviteSheet> {
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success ? l10n.chatInviteAccept : l10n.announcementCreateFailed),
+          content: Text(success ? l10n.chatInviteAccept : l10n.chatInviteAcceptFailed),
         ),
       );
     }
@@ -48,7 +50,7 @@ class _InviteSheetState extends State<InviteSheet> {
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success ? l10n.chatInviteReject : l10n.announcementCreateFailed),
+          content: Text(success ? l10n.chatInviteReject : l10n.chatInviteRejectFailed),
         ),
       );
     }
@@ -84,10 +86,15 @@ class _InviteSheetState extends State<InviteSheet> {
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: Icon(
-                    Icons.close,
-                    color: colorScheme.onSurface,
-                  ),
+                  icon: _notificationService.isLoading
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.refresh),
+                  onPressed: _notificationService.isLoading ? null : () => _notificationService.forceRefresh(),
+                  tooltip: l10n.retry,
+                  style: IconButton.styleFrom(minimumSize: const Size(36, 36)),
+                ),
+                IconButton(
+                  icon: Icon(Icons.close, color: colorScheme.onSurface),
                   onPressed: () => Navigator.pop(context),
                   style: IconButton.styleFrom(minimumSize: const Size(36, 36)),
                 ),

@@ -238,6 +238,8 @@
   "adminServerFieldGroupsLimit": "群數之限",
   "adminServerFieldSingleGroupMaxPeople": "單群至多人數",
   "adminServerFieldMaxFileSize": "文件至大之量",
+  "adminServerFieldMaxMessageLength": "消息至大長度",
+  "adminServerFieldMaxMessageLengthDescription": "每條消息最多可輸之字數（至少為 1）。",
   "adminServerFieldApiPort": "API 端口",
   "adminServerFieldTcpPort": "TCP 端口",
   "adminServerFieldEmailActivation": "郵箱啟用",
@@ -799,5 +801,91 @@
     }
   },
   "adminAccountDeleteFailed": "刪除用戶失敗",
-  "adminAccountTotalUsers": "位用戶"
+  "adminAccountTotalUsers": "位用戶",
+  "storageTitle": "存儲管理",
+  "storageUploadFile": "上傳文件",
+  "storageRefresh": "刷新",
+  "storageNotLoggedIn": "未登錄",
+  "storageNoFiles": "暫無文件",
+  "storageDeleteFile": "刪除文件",
+  "storageDeleteConfirm": "確定刪除 \"{fileName}\"？此操作不可撤銷。",
+  "@storageDeleteConfirm": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "storageDeleted": "已刪除：{fileName}",
+  "@storageDeleted": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "storageDeleteFailed": "刪除失敗",
+  "storageUploaded": "已上傳：{fileName}",
+  "@storageUploaded": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "storageUploadFailed": "上傳失敗",
+  "storageUploadError": "上傳錯誤",
+  "storageCouldNotReadFile": "無法讀取文件",
+  "storageFileTooLarge": "檔案過大，最大支援 {size} MB",
+  "storageUsed": "已用",
+  "storageUnlimited": "無限制",
+  "storageRetry": "重試",
+  "adminFileManagement": "文件管理",
+  "adminFileManagementDescription": "查看所有上傳文件，按用戶篩選，強制刪除文件。",
+  "adminFileFilterUid": "按用戶ID篩選...",
+  "adminFileFilter": "篩選",
+  "adminFileFilterClear": "清除",
+  "adminFileForceDelete": "強制刪除",
+  "adminFileForceDeleteTitle": "強制刪除文件",
+  "adminFileForceDeleteConfirm": "永久刪除 \"{fileName}\"（所有者：{owner}）？\n\n此操作將從磁盤和資料庫中移除該文件，忽略所有引用。",
+  "@adminFileForceDeleteConfirm": {
+    "placeholders": {
+      "fileName": {"type": "String"},
+      "owner": {"type": "String"}
+    }
+  },
+  "adminFileForceDeleted": "已強制刪除：{fileName}",
+  "@adminFileForceDeleted": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "adminFileForceDeleteFailed": "強制刪除失敗",
+  "adminFileNoFiles": "服務器上暫無文件",
+  "adminFileNoFilesForUid": "未找到 UID {uid} 的文件",
+  "@adminFileNoFilesForUid": {
+    "placeholders": {
+      "uid": {"type": "String"}
+    }
+  },
+  "adminFileSummaryFiles": "文件",
+  "adminFileSummaryUsers": "用戶",
+  "adminFileSummaryTotal": "總計",
+  "chatFunctionTabFiles": "文件",
+  "chatFunctionTabEmoji": "表情",
+  "chatFunctionTabSpecial": "特別消息",
+  "chatFunctionTabFilesHint": "選擇要發送的文件",
+  "chatFunctionTabEmojiHint": "表情選擇器即將推出",
+  "chatFunctionTabSpecialHint": "特別消息即將推出",
+  "chatFunctionPickFile": "選擇文件",
+  "chatSendFailed": "發送失敗",
+  "chatCreateGroup": "創建羣組",
+  "chatAddFriend": "添加好友",
+  "chatAddFriendHint": "輸入用戶名或 UID",
+  "chatLoading": "加載中...",
+  "chatInputNotConnected": "未連接到聊天服務器",
+  "chatInviteAcceptFailed": "接受好友請求失敗",
+  "chatInviteRejectFailed": "拒絕好友請求失敗",
+  "userProfileFriendRequestHint": "打個招呼...",
+  "userProfileFriendRequestSent": "已向 {username} 發送好友請求",
+  "@userProfileFriendRequestSent": {
+    "placeholders": {
+      "username": {"type": "String"}
+    }
+  },
+  "userProfileFriendRequestFailed": "發送好友請求失敗"
 }

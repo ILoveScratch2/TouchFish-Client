@@ -13,6 +13,7 @@ import '../services/api/tf_api_client.dart';
 import '../services/notification_service.dart';
 import '../widgets/app_alert_dialog.dart';
 import 'debug/debug_options_screen.dart';
+import 'storage_management_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -429,6 +430,20 @@ class _AccountScreenState extends State<AccountScreen> {
         leading: const Icon(Symbols.settings, size: 24),
         title: Text(l10n.accountAppSettings),
         onTap: () => context.push(AppRoutes.settings),
+      ),
+      ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+        trailing: const Icon(Symbols.chevron_right),
+        dense: true,
+        leading: const Icon(Symbols.cloud, size: 24),
+        title: Text(l10n.storageTitle),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const StorageManagementScreen(),
+            ),
+          );
+        },
       ),
       if (_currentUser?.hasAdminAccess == true)
         ListTile(

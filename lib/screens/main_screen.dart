@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../models/app_state.dart';
 import '../services/auth_state.dart';
+import '../services/chat_data_service.dart';
 import '../services/forum_pending_service.dart';
 import '../services/notification_service.dart';
 
@@ -20,18 +21,21 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   final _notificationService = NotificationService.instance;
   final _forumPendingService = ForumPendingService.instance;
+  final _chatDataService = ChatDataService.instance;
 
   @override
   void initState() {
     super.initState();
     _notificationService.addListener(_onNotificationsChanged);
     _forumPendingService.addListener(_onNotificationsChanged);
+    _chatDataService.addListener(_onNotificationsChanged);
   }
 
   @override
   void dispose() {
     _notificationService.removeListener(_onNotificationsChanged);
     _forumPendingService.removeListener(_onNotificationsChanged);
+    _chatDataService.removeListener(_onNotificationsChanged);
     super.dispose();
   }
 
@@ -41,6 +45,10 @@ class _MainScreenState extends State<MainScreen> {
 
   int get _announcementBadgeCount =>
       _notificationService.announcementUnreadCount;
+
+  int get _chatBadgeCount =>
+      _chatDataService.totalUnreadCount +
+      _notificationService.friendUnreadCount;
 
   int get _adminBadgeCount => _forumPendingService.pendingCount;
 
@@ -217,6 +225,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   int _badgeCountFor(String route) {
+    if (route == AppRoutes.chat) return _chatBadgeCount;
     if (route == AppRoutes.announcement) return _announcementBadgeCount;
     if (route == AppRoutes.admin) return _adminBadgeCount;
     return 0;

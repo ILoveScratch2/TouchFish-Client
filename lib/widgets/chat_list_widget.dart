@@ -108,15 +108,16 @@ class ChatListWidget extends StatelessWidget {
 
   Widget _buildAvatar(BuildContext context, ChatRoom room) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return CircleAvatar(
       backgroundColor: colorScheme.primaryContainer,
-      child: room.avatar != null
-          ? null
-          : Icon(
+      backgroundImage: room.avatar != null ? NetworkImage(room.avatar!) : null,
+      child: room.avatar == null
+          ? Icon(
               room.type == ChatType.direct ? Icons.person : Icons.group,
               color: colorScheme.onPrimaryContainer,
-            ),
+            )
+          : null,
     );
   }
 

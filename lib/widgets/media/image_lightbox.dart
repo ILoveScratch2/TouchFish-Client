@@ -28,6 +28,7 @@ class ImageLightbox extends HookWidget {
     final photoViewController = useMemoized(() => PhotoViewController(), []);
     final rotation = useState(0);
     final showExif = useState(exifData != null && exifData!.isNotEmpty);
+    final isRemoteImage = imagePath.startsWith('http://') || imagePath.startsWith('https://');
 
     final shadow = [
       Shadow(
@@ -66,13 +67,17 @@ class ImageLightbox extends HookWidget {
               },
               child: PhotoView(
                 backgroundDecoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.9),
+                  color: Colors.black.withValues(alpha: 0.9),
                 ),
                 controller: photoViewController,
                 heroAttributes: PhotoViewHeroAttributes(tag: heroTag),
                 imageProvider: kIsWeb && imageBytes != null
                     ? MemoryImage(imageBytes!)
-                    : FileImage(File(imagePath)) as ImageProvider,
+                  : imageBytes != null
+                    ? MemoryImage(imageBytes!)
+                    : isRemoteImage
+                      ? NetworkImage(imagePath)
+                      : FileImage(File(imagePath)) as ImageProvider,
                 customSize: MediaQuery.of(context).size,
                 basePosition: Alignment.center,
                 filterQuality: FilterQuality.high,
