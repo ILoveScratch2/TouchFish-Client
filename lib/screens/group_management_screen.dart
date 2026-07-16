@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:file_picker/file_picker.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../utils/talker.dart';
@@ -21,6 +25,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
   List<Map<String, dynamic>> _joinRequests = [];
   bool _isLoading = true;
   int? _currentUserRole;
+  String? _groupAvatarUrl;
 
   int get _uid => AuthState.instance.uid ?? 0;
   String get _password => AuthState.instance.password ?? '';
@@ -36,6 +41,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
   Future<void> _load() async {
     setState(() => _isLoading = true);
     try {
+      _groupAvatarUrl ??= '${await TfApiClient.instance.getBaseUrl()}/avatar/get_avatar/group/${widget.gid}';
       final members = await TfApiClient.instance.getGroupMembers(_uid, _password, widget.gid);
       if (members != null && mounted) {
         _settings = members['settings'] as Map<String, dynamic>?;
@@ -65,15 +71,15 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
     if (ok) _load();
   }
 
-  Future<void> _transferOwner(int newOwner) async {
+  Future<void> _transferOwner(AppLocalizations l10n, int newOwner) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('转让群主'),
-        content: const Text('转让后你将失去群主权限，确定继续吗？'),
+        title: Text(l10n.groupTransferOwner),
+        content: Text(l10n.groupTransferOwnerConfirm),
         actions: [
-          TextButton(onPressed: () => ctx.pop(false), child: const Text('取消')),
-          FilledButton(onPressed: () => ctx.pop(true), child: const Text('确认转让')),
+          TextButton(onPressed: () => ctx.pop(false), child: Text(l10n.commonCancel)),
+          FilledButton(onPressed: () => ctx.pop(true), child: Text(l10n.groupTransferOwnerConfirmAction)),
         ],
       ),
     );
@@ -85,8 +91,11 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
 
   Future<void> _handleRequest(int rid, bool approved) async {
     final ok = await TfApiClient.instance.handleJoinRequest(_uid, _password, rid, approved);
-    if (ok == null) {
-      if (mounted) _showSnack('操作失败，请重试');
+    if (!ok) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        _showSnack(l10n.commonFailedOperation);
+      }
       return;
     }
     _load();
@@ -97,25 +106,25 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
     _load();
   }
 
-  Future<void> _inviteMember() async {
+  Future<void> _inviteMember(AppLocalizations l10n) async {
     final controller = TextEditingController();
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('邀请成员'),
+        title: Text(l10n.groupInviteMember),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: '输入好友的用户名或 UID',
-            prefixIcon: Icon(Icons.person_add),
+          decoration: InputDecoration(
+            hintText: l10n.groupInviteMemberHint,
+            prefixIcon: const Icon(Icons.person_add),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonCancel)),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('邀请'),
+            child: Text(l10n.groupInviteMember),
           ),
         ],
       ),
@@ -133,13 +142,47 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
     if (invitedUid != null) {
       final ok = await TfApiClient.instance.inviteToGroup(_uid, _password, widget.gid, invitedUid);
       if (ok != null) {
-        _showSnack(ok['pending'] == true ? '已发送邀请，等待审核' : '已邀请加入群组');
+        _showSnack(ok['pending'] == true ? l10n.groupInvitePendingReview : l10n.groupInviteJoined);
         _load();
       } else {
-        _showSnack('邀请失败，请确认对方存在且已是你的好友');
+        _showSnack(l10n.groupInviteFailed);
       }
     } else {
-      _showSnack('未找到该用户');
+      _showSnack(l10n.commonUserNotFound);
+    }
+  }
+
+  Future<void> _uploadAvatar(AppLocalizations l10n) async {
+    if (!_isOwner && !_isAdmin) {
+      _showSnack(l10n.groupAvatarPermissionDenied);
+      return;
+    }
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+      final file = result.files.first;
+      final bytes = file.bytes;
+      if (bytes == null) {
+        _showSnack(l10n.commonFileReadError);
+        return;
+      }
+      final base64Str = base64.encode(bytes);
+      final ok = await TfApiClient.instance.uploadGroupAvatar(
+        _uid, _password, widget.gid, base64Str,
+      );
+      if (ok) {
+        _showSnack(l10n.groupAvatarUpdateSuccess);
+        _groupAvatarUrl = null; // bust cache to reload
+        _load();
+      } else {
+        _showSnack(l10n.groupAvatarUploadFailedSize);
+      }
+    } catch (e) {
+      talker.error('GroupManagement uploadAvatar failed', e);
+      _showSnack('${l10n.commonFailedOperation}: $e');
     }
   }
 
@@ -151,6 +194,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -163,25 +207,52 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                // Group avatar
+                Center(
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 48,
+                        backgroundColor: cs.primaryContainer,
+                        backgroundImage: _groupAvatarUrl != null ? NetworkImage(_groupAvatarUrl!) : null,
+                        onBackgroundImageError: (_, __) {},
+                        child: const Icon(Icons.group, size: 48, color: Colors.white54),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: InkWell(
+                          onTap: () => _uploadAvatar(l10n),
+                          child: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: cs.primary,
+                            child: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
                 if (_isOwner) ...[
-                  _buildSection('群组设置'),
-                  ..._buildSettingsTiles(cs),
+                  _buildSection(l10n.groupSettingsSection),
+                  ..._buildSettingsTiles(l10n),
                   const Divider(),
                 ],
                 Row(
                   children: [
-                    Expanded(child: _buildSection('成员 (${_members.length})')),
+                    Expanded(child: _buildSection('${l10n.groupMembersSection} (${_members.length})')),
                     FilledButton.tonalIcon(
-                      onPressed: _inviteMember,
+                      onPressed: () => _inviteMember(l10n),
                       icon: const Icon(Icons.person_add, size: 18),
-                      label: const Text('邀请'),
+                      label: Text(l10n.groupInviteMember),
                     ),
                   ],
                 ),
-                ..._members.map((m) => _buildMemberTile(cs, m)),
+                ..._members.map((m) => _buildMemberTile(l10n, cs, m)),
                 if (_isAdmin && _joinRequests.isNotEmpty) ...[
                   const Divider(),
-                  _buildSection('入群申请 (${_joinRequests.length})'),
+                  _buildSection('${l10n.groupJoinRequestsSection} (${_joinRequests.length})'),
                   ..._joinRequests.map((r) => _buildRequestTile(cs, r)),
                 ],
               ],
@@ -196,51 +267,51 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
     );
   }
 
-  List<Widget> _buildSettingsTiles(ColorScheme cs) {
+  List<Widget> _buildSettingsTiles(AppLocalizations l10n) {
     final settings = _settings ?? {};
     return [
       SwitchListTile.adaptive(
         value: settings['allow_direct_join'] == true,
-        title: const Text('允许直接加入'),
-        subtitle: const Text('非群成员可以自行申请加入群组'),
+        title: Text(l10n.groupAllowDirectJoin),
+        subtitle: Text(l10n.groupAllowDirectJoinDesc),
         onChanged: (v) => _toggleSetting('allow_direct_join', v),
       ),
       SwitchListTile.adaptive(
         value: settings['require_review'] == true,
-        title: const Text('需要审核'),
-        subtitle: const Text('邀请和加入申请均需群主审核'),
+        title: Text(l10n.groupRequireReview),
+        subtitle: Text(l10n.groupRequireReviewDesc),
         onChanged: (v) => _toggleSetting('require_review', v),
       ),
     ];
   }
 
-  Widget _buildMemberTile(ColorScheme cs, Map<String, dynamic> member) {
+  Widget _buildMemberTile(AppLocalizations l10n, ColorScheme cs, Map<String, dynamic> member) {
     final uid = member['uid'] as int;
     final role = member['role'] as String;
     final isMe = uid == _uid;
-    final roleLabel = role == 'owner' ? '群主' : (role == 'admin' ? '管理员' : '');
+    final roleLabel = role == 'owner' ? l10n.roleOwner : (role == 'admin' ? l10n.roleAdmin : '');
 
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: cs.primaryContainer,
         child: Icon(role == 'owner' ? Icons.star : Icons.person, color: cs.onPrimaryContainer),
       ),
-      title: Text('${member['username']}${isMe ? ' (我)' : ''}'),
+      title: Text('${member['username']}${isMe ? ' ${l10n.commonMe}' : ''}'),
       subtitle: roleLabel.isNotEmpty ? Text(roleLabel, style: TextStyle(color: cs.primary, fontSize: 12)) : null,
       trailing: _isOwner && !isMe
           ? PopupMenuButton<String>(
               onSelected: (action) {
                 if (action == 'admin') _toggleAdmin(uid, role == 'admin');
-                if (action == 'owner') _transferOwner(uid);
+                if (action == 'owner') _transferOwner(l10n, uid);
                 if (action == 'remove') _removeMember(uid);
               },
               itemBuilder: (_) => [
                 if (role == 'admin')
-                  const PopupMenuItem(value: 'admin', child: Text('取消管理员'))
+                  PopupMenuItem(value: 'admin', child: Text(l10n.groupRemoveAdmin))
                 else
-                  const PopupMenuItem(value: 'admin', child: Text('设为管理员')),
-                const PopupMenuItem(value: 'owner', child: Text('转让群主')),
-                const PopupMenuItem(value: 'remove', child: Text('移出群组')),
+                  PopupMenuItem(value: 'admin', child: Text(l10n.groupSetAdmin)),
+                PopupMenuItem(value: 'owner', child: Text(l10n.groupTransferOwner)),
+                PopupMenuItem(value: 'remove', child: Text(l10n.groupRemoveMemberAction)),
               ],
             )
           : null,
@@ -248,9 +319,12 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
   }
 
   Widget _buildRequestTile(ColorScheme cs, Map<String, dynamic> req) {
+    final l10n = AppLocalizations.of(context)!;
     final username = req['username'] as String? ?? '';
     final inviter = req['inviter_name'] as String?;
-    final desc = inviter != null && inviter.isNotEmpty ? '由 $inviter 邀请' : '直接申请加入';
+    final desc = inviter != null && inviter.isNotEmpty
+        ? l10n.groupJoinInvitedBy(inviter)
+        : l10n.groupJoinDirectRequest;
 
     return ListTile(
       leading: CircleAvatar(

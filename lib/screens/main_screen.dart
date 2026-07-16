@@ -152,11 +152,33 @@ class _MainScreenState extends State<MainScreen> {
                       child: _buildNavRail(destinations, selectedIndex, context),
                     ),
                     Expanded(
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(16),
-                        ),
-                        child: widget.child,
+                      child: Column(
+                        children: [
+                          if (AuthState.instance.isBanned)
+                            MaterialBanner(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                              leading: Icon(Icons.block, color: Theme.of(context).colorScheme.onErrorContainer),
+                              content: Text(
+                                l10n.chatSendFailedBanned,
+                                style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => AuthState.instance.logout(),
+                                  child: Text(l10n.accountLogout, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)),
+                                ),
+                              ],
+                            ),
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                              ),
+                              child: widget.child,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -164,9 +186,30 @@ class _MainScreenState extends State<MainScreen> {
               );
             }
             final showBottomNav = !_isInChatDetail(context);
+            final isBanned = AuthState.instance.isBanned;
             return Scaffold(
               extendBody: true,
-              body: widget.child,
+              body: Column(
+                children: [
+                  if (isBanned)
+                    MaterialBanner(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                      leading: Icon(Icons.block, color: Theme.of(context).colorScheme.onErrorContainer),
+                      content: Text(
+                        l10n.chatSendFailedBanned,
+                        style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => AuthState.instance.logout(),
+                          child: Text(l10n.accountLogout, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)),
+                        ),
+                      ],
+                    ),
+                  Expanded(child: widget.child),
+                ],
+              ),
               bottomNavigationBar: showBottomNav
                   ? _buildBottomNav(destinations, selectedIndex, context)
                   : null,

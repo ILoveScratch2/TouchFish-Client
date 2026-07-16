@@ -224,6 +224,9 @@ class NotificationService extends ChangeNotifier {
         _handledFriendSenders.add(notification.senderUid!);
       }
       _allNotifications.remove(notification);
+      unawaited(TfApiClient.instance.deleteNotificationsBefore(
+        uid, password, notification.timeStamp + 0.001,
+      ));
       notifyListeners();
       if (stat == 'allow' && notification.senderUid != null) {
         talker.info('NotificationService._handleFriendResponse: calling addFriendToContacts(${notification.senderUid})');

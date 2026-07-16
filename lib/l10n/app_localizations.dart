@@ -4120,6 +4120,258 @@ abstract class AppLocalizations {
   /// **'Enter username or UID'**
   String get chatAddFriendHint;
 
+  /// No description provided for @chatSendFailedBanned.
+  ///
+  /// In en, this message translates to:
+  /// **'You have been banned and cannot send messages'**
+  String get chatSendFailedBanned;
+
+  /// No description provided for @chatSendFailedRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'You are sending messages too fast'**
+  String get chatSendFailedRateLimited;
+
+  /// No description provided for @chatSendFailedNotFriends.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not friends with this user'**
+  String get chatSendFailedNotFriends;
+
+  /// No description provided for @chatSendFailedNotGroupMember.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not a member of this group'**
+  String get chatSendFailedNotGroupMember;
+
+  /// No description provided for @chatSendFailedTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Message is too long'**
+  String get chatSendFailedTooLong;
+
+  /// No description provided for @groupNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Name'**
+  String get groupNameLabel;
+
+  /// No description provided for @groupIntroLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Introduction'**
+  String get groupIntroLabel;
+
+  /// No description provided for @groupEnterHintLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Hint'**
+  String get groupEnterHintLabel;
+
+  /// No description provided for @groupCreateNameEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Group name cannot be empty'**
+  String get groupCreateNameEmpty;
+
+  /// No description provided for @groupCreateNameLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Group name must be {minLen} to {maxLen} characters'**
+  String groupCreateNameLength(int minLen, int maxLen);
+
+  /// No description provided for @groupCreateFailedLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Creation failed, check group count limit'**
+  String get groupCreateFailedLimit;
+
+  /// No description provided for @groupSettingsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Settings'**
+  String get groupSettingsSection;
+
+  /// No description provided for @groupMembersSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get groupMembersSection;
+
+  /// No description provided for @groupJoinRequestsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Requests'**
+  String get groupJoinRequestsSection;
+
+  /// No description provided for @groupAllowDirectJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow direct join'**
+  String get groupAllowDirectJoin;
+
+  /// No description provided for @groupAllowDirectJoinDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Non-members can request to join'**
+  String get groupAllowDirectJoinDesc;
+
+  /// No description provided for @groupRequireReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Require review'**
+  String get groupRequireReview;
+
+  /// No description provided for @groupRequireReviewDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Join requests require owner approval'**
+  String get groupRequireReviewDesc;
+
+  /// No description provided for @groupTransferOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer Ownership'**
+  String get groupTransferOwner;
+
+  /// No description provided for @groupTransferOwnerConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'After transfer, you will lose owner permissions. Continue?'**
+  String get groupTransferOwnerConfirm;
+
+  /// No description provided for @groupTransferOwnerConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Transfer'**
+  String get groupTransferOwnerConfirmAction;
+
+  /// No description provided for @groupInviteMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite Member'**
+  String get groupInviteMember;
+
+  /// No description provided for @groupInviteMemberHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter username or UID of friend'**
+  String get groupInviteMemberHint;
+
+  /// No description provided for @groupInvitePendingReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation sent, pending review'**
+  String get groupInvitePendingReview;
+
+  /// No description provided for @groupInviteJoined.
+  ///
+  /// In en, this message translates to:
+  /// **'Invited to group'**
+  String get groupInviteJoined;
+
+  /// No description provided for @groupInviteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation failed. Make sure the user exists and is your friend'**
+  String get groupInviteFailed;
+
+  /// No description provided for @groupAvatarPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Only owner or admin can change group avatar'**
+  String get groupAvatarPermissionDenied;
+
+  /// No description provided for @groupAvatarUpdateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Group avatar updated'**
+  String get groupAvatarUpdateSuccess;
+
+  /// No description provided for @groupAvatarUploadFailedSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed, check file size'**
+  String get groupAvatarUploadFailedSize;
+
+  /// No description provided for @groupJoinDirectRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct join request'**
+  String get groupJoinDirectRequest;
+
+  /// No description provided for @groupJoinInvitedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Invited by {name}'**
+  String groupJoinInvitedBy(String name);
+
+  /// No description provided for @groupRemoveAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Admin'**
+  String get groupRemoveAdmin;
+
+  /// No description provided for @groupSetAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Set as Admin'**
+  String get groupSetAdmin;
+
+  /// No description provided for @groupRemoveMemberAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from Group'**
+  String get groupRemoveMemberAction;
+
+  /// No description provided for @roleOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get roleOwner;
+
+  /// No description provided for @roleAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get roleAdmin;
+
+  /// No description provided for @commonCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get commonCancel;
+
+  /// No description provided for @commonMe.
+  ///
+  /// In en, this message translates to:
+  /// **'(me)'**
+  String get commonMe;
+
+  /// No description provided for @commonOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get commonOk;
+
+  /// No description provided for @commonFailedOperation.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation failed, please retry'**
+  String get commonFailedOperation;
+
+  /// No description provided for @commonUserNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'User not found'**
+  String get commonUserNotFound;
+
+  /// No description provided for @commonFileReadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot read file'**
+  String get commonFileReadError;
+
   /// No description provided for @chatLoading.
   ///
   /// In en, this message translates to:

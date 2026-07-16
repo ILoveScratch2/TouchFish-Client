@@ -342,8 +342,7 @@ class ChatWsService extends ChangeNotifier {
     try {
       final payload = <String, dynamic>{
         'type': 'message.file',
-        'content': {'send_to': 'U$sendToUid', 'quote': quote},
-        'file_hashes': fileHash,
+        'content': {'send_to': 'U$sendToUid', 'quote': quote, 'file_hashes': fileHash},
       };
       if (clientMid != null) payload['client_mid'] = clientMid;
       _sendEncrypted(jsonEncode(payload));
@@ -359,8 +358,7 @@ class ChatWsService extends ChangeNotifier {
     try {
       final payload = <String, dynamic>{
         'type': 'message.file',
-        'content': {'send_to': 'G$gid', 'quote': quote},
-        'file_hashes': fileHash,
+        'content': {'send_to': 'G$gid', 'quote': quote, 'file_hashes': fileHash},
       };
       if (clientMid != null) payload['client_mid'] = clientMid;
       _sendEncrypted(jsonEncode(payload));

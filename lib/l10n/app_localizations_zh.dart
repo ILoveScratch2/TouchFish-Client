@@ -2100,6 +2100,136 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatAddFriendHint => '输入用户名或 UID';
 
   @override
+  String get chatSendFailedBanned => '你已被封禁，无法发送消息';
+
+  @override
+  String get chatSendFailedRateLimited => '发送消息过快，请稍后再试';
+
+  @override
+  String get chatSendFailedNotFriends => '你与该用户不是好友';
+
+  @override
+  String get chatSendFailedNotGroupMember => '你不是该群成员';
+
+  @override
+  String get chatSendFailedTooLong => '消息过长';
+
+  @override
+  String get groupNameLabel => '群组名称';
+
+  @override
+  String get groupIntroLabel => '群组简介';
+
+  @override
+  String get groupEnterHintLabel => '入群提示';
+
+  @override
+  String get groupCreateNameEmpty => '群组名称不能为空';
+
+  @override
+  String groupCreateNameLength(int minLen, int maxLen) {
+    return '群组名称长度需在 $minLen 到 $maxLen 个字符之间';
+  }
+
+  @override
+  String get groupCreateFailedLimit => '创建失败，请检查群组数量限制';
+
+  @override
+  String get groupSettingsSection => '群组设置';
+
+  @override
+  String get groupMembersSection => '成员';
+
+  @override
+  String get groupJoinRequestsSection => '入群申请';
+
+  @override
+  String get groupAllowDirectJoin => '允许直接加入';
+
+  @override
+  String get groupAllowDirectJoinDesc => '非群成员可以自行申请加入';
+
+  @override
+  String get groupRequireReview => '需要审核';
+
+  @override
+  String get groupRequireReviewDesc => '加入或邀请需群主审核';
+
+  @override
+  String get groupTransferOwner => '转让群主';
+
+  @override
+  String get groupTransferOwnerConfirm => '转让后你将失去群主权限，确定继续吗？';
+
+  @override
+  String get groupTransferOwnerConfirmAction => '确认转让';
+
+  @override
+  String get groupInviteMember => '邀请成员';
+
+  @override
+  String get groupInviteMemberHint => '输入好友的用户名或 UID';
+
+  @override
+  String get groupInvitePendingReview => '已发送邀请，等待审核';
+
+  @override
+  String get groupInviteJoined => '已邀请加入群组';
+
+  @override
+  String get groupInviteFailed => '邀请失败，请确认对方存在且已是你的好友';
+
+  @override
+  String get groupAvatarPermissionDenied => '只有群主或管理员可以修改群头像';
+
+  @override
+  String get groupAvatarUpdateSuccess => '群头像已更新';
+
+  @override
+  String get groupAvatarUploadFailedSize => '上传失败，请检查文件大小';
+
+  @override
+  String get groupJoinDirectRequest => '直接申请加入';
+
+  @override
+  String groupJoinInvitedBy(String name) {
+    return '由 $name 邀请';
+  }
+
+  @override
+  String get groupRemoveAdmin => '取消管理员';
+
+  @override
+  String get groupSetAdmin => '设为管理员';
+
+  @override
+  String get groupRemoveMemberAction => '移出群组';
+
+  @override
+  String get roleOwner => '群主';
+
+  @override
+  String get roleAdmin => '管理员';
+
+  @override
+  String get commonCancel => '取消';
+
+  @override
+  String get commonMe => '（我）';
+
+  @override
+  String get commonOk => '确定';
+
+  @override
+  String get commonFailedOperation => '操作失败，请重试';
+
+  @override
+  String get commonUserNotFound => '未找到该用户';
+
+  @override
+  String get commonFileReadError => '无法读取文件';
+
+  @override
   String get chatLoading => '加载中...';
 
   @override

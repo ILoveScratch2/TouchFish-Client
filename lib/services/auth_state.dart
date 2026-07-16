@@ -31,6 +31,7 @@ class AuthState extends ChangeNotifier {
   SavedSessionRestoreStatus get savedSessionRestoreStatus =>
       _savedSessionRestoreStatus;
   bool get isLoggedIn => _currentUser != null && _uid != null;
+  bool get isBanned => _currentUser?.stat == 'banned';
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();

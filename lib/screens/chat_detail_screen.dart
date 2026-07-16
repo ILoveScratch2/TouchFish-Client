@@ -43,8 +43,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   bool _isLoadingOlder = false;
   bool _hasMoreMessages = true;
   bool _realtimeListenersAttached = false;
+  StreamSubscription? _ackErrorSub;
 
-  String get _contactUid => widget.roomId;
+  String get _contactUid {
+    final id = widget.roomId;
+    if (id.startsWith('U') || id.startsWith('G')) return id;
+    // 修复 dev ID，应该用不着了
+    final parsed = int.tryParse(id);
+    if (parsed != null) return 'U$parsed';
+    return id;
+  }
 
   @override
   void initState() {
@@ -82,9 +90,26 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   @override
   void dispose() {
     _detachRealtimeListeners();
+    _ackErrorSub?.cancel();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onAckError(String error) {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final msg = switch (error) {
+      'banned' => l10n.chatSendFailedBanned,
+      'rate_limited' => l10n.chatSendFailedRateLimited,
+      'not_friends' => l10n.chatSendFailedNotFriends,
+      'not_group_member' => l10n.chatSendFailedNotGroupMember,
+      'message_too_long' => l10n.chatSendFailedTooLong,
+      _ => l10n.chatSendFailed,
+    };
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 3)),
+    );
   }
 
   void _attachRealtimeListeners() {
@@ -108,6 +133,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _wsConnected = ws.isAuthenticated;
     _attachRealtimeListeners();
     if (!ws.isAuthenticated) ws.connect();
+
+    _ackErrorSub?.cancel();
+    _ackErrorSub = ChatDataService.instance.ackErrorStream.listen(_onAckError);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -160,24 +188,23 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     setState(() => _isLoadingOlder = true);
 
     final oldLen = _messages.length;
-    final older = await ChatDataService.instance.loadOlderMessages(_contactUid);
-    final allMessages = ChatDataService.instance.getMessages(_contactUid);
+    final oldOffset = _scrollController.hasClients ? _scrollController.position.pixels : 0.0;
+    final oldMax = _scrollController.hasClients ? _scrollController.position.maxScrollExtent : 0.0;
+    final merged = await ChatDataService.instance.loadOlderMessages(_contactUid);
 
     if (!mounted) return;
     setState(() {
       _messages.clear();
-      _messages.addAll(allMessages);
+      _messages.addAll(merged);
       _isLoadingOlder = false;
-      _hasMoreMessages = older.isNotEmpty;
+      _hasMoreMessages = merged.length > oldLen;
     });
 
-    // Preserve scroll position after prepending
-    if (allMessages.length > oldLen && _scrollController.hasClients) {
-      final addedCount = allMessages.length - oldLen;
+    if (merged.length > oldLen && _scrollController.hasClients) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
-          // Estimate: each message bubble ~72px
-          _scrollController.jumpTo(_scrollController.offset + addedCount * 72.0);
+          final delta = _scrollController.position.maxScrollExtent - oldMax;
+          _scrollController.jumpTo(oldOffset + delta);
         }
       });
     }
@@ -198,9 +225,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         _currentRoom = updated;
         if (mounted) setState(() {});
       }
-    } else if (!widget.roomId.startsWith('G')) {
+    } else if (!_contactUid.startsWith('G')) {
       // Profile not cached — fetch for direct chats
-      final targetUid = widget.roomId.startsWith('U') ? int.tryParse(widget.roomId.substring(1)) : null;
+      final targetUid = _contactUid.startsWith('U') ? int.tryParse(_contactUid.substring(1)) : null;
       if (targetUid != null) {
         TfApiClient.instance.getUserByUid(targetUid).then((p) {
           if (p != null && mounted) {
@@ -212,7 +239,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 id: _contactUid,
                 name: chatData.displayNameForRoom(_contactUid, p.username),
                 avatar: p.avatar,
-                type: widget.roomId.startsWith('G') ? ChatType.group : ChatType.direct,
+                type: _contactUid.startsWith('G') ? ChatType.group : ChatType.direct,
               );
             });
           }
@@ -259,17 +286,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       id: _contactUid,
       name: chatData.displayNameForRoom(
         _contactUid,
-        profile?.username ?? (widget.roomId.startsWith('G') ? 'Group ${widget.roomId.substring(1)}' : widget.roomId),
+        profile?.username ?? (_contactUid.startsWith('G') ? 'Group ${_contactUid.substring(1)}' : _contactUid),
       ),
       avatar: profile?.avatar,
-      type: widget.roomId.startsWith('G') ? ChatType.group : ChatType.direct,
+      type: _contactUid.startsWith('G') ? ChatType.group : ChatType.direct,
     );
     _avatarLoadFailed = false;
     setState(() {});
 
     // Fetch profile to ensure we have latest data + avatar
-    final targetUid = widget.roomId.startsWith('U') ? int.tryParse(widget.roomId.substring(1)) : null;
-    if (targetUid != null && targetUid > 0) {
+    final targetUid = _contactUid.startsWith('U') ? int.tryParse(_contactUid.substring(1)) : null;
+    if (targetUid != null) {
       TfApiClient.instance.getUserByUid(targetUid).then((p) {
         if (p != null && mounted) {
           talker.info('ChatDetail: fetched profile uid=${p.uid} avatar=${p.avatar}');
@@ -280,7 +307,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               id: _contactUid,
               name: chatData.displayNameForRoom(_contactUid, p.username),
               avatar: p.avatar,
-              type: widget.roomId.startsWith('G') ? ChatType.group : ChatType.direct,
+              type: _contactUid.startsWith('G') ? ChatType.group : ChatType.direct,
             );
           });
         }
@@ -323,8 +350,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       // Send via WebSocket, with REST fallback
       bool wsSent = false;
       if (_wsConnected) {
-        if (widget.roomId.startsWith('G')) {
-          final gid = int.tryParse(widget.roomId.substring(1));
+        if (_contactUid.startsWith('G')) {
+          final gid = int.tryParse(_contactUid.substring(1));
           if (gid != null) {
             wsSent = await ChatWsService.instance.sendGroupTextMessage(
               gid,
@@ -333,7 +360,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             );
           }
         } else {
-          final targetUid = int.tryParse(widget.roomId.substring(1));
+          final targetUid = int.tryParse(_contactUid.substring(1));
           if (targetUid != null) {
             wsSent = await ChatWsService.instance.sendTextMessage(
               targetUid.toString(),
@@ -345,7 +372,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       }
       if (!wsSent) {
         // REST fallback
-        final recipient = widget.roomId.startsWith('G') ? widget.roomId : 'U${widget.roomId.substring(1)}';
+        final recipient = _contactUid;
         final result = await TfApiClient.instance.sendMessage(uid, password,
           recipient: recipient, content: text, clientMid: clientMid,
         );
@@ -507,8 +534,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
       bool wsSent = false;
       if (_wsConnected) {
-        if (widget.roomId.startsWith('G')) {
-          final gid = int.tryParse(widget.roomId.substring(1));
+        if (_contactUid.startsWith('G')) {
+          final gid = int.tryParse(_contactUid.substring(1));
           if (gid != null) {
             wsSent = await ChatWsService.instance.sendGroupFileMessage(
               gid,
@@ -517,7 +544,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             );
           }
         } else {
-          final peerUid = int.tryParse(widget.roomId.substring(1));
+          final peerUid = int.tryParse(_contactUid.substring(1));
           if (peerUid != null) {
             wsSent = await ChatWsService.instance.sendFileMessage(
               peerUid.toString(),
@@ -529,7 +556,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       }
 
       if (!wsSent) {
-        final recipient = widget.roomId.startsWith('G') ? widget.roomId : 'U${widget.roomId.substring(1)}';
+        final recipient = _contactUid;
         final result = await TfApiClient.instance.sendMessage(
           uid,
           password,

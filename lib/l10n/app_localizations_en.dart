@@ -2180,6 +2180,142 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatAddFriendHint => 'Enter username or UID';
 
   @override
+  String get chatSendFailedBanned =>
+      'You have been banned and cannot send messages';
+
+  @override
+  String get chatSendFailedRateLimited => 'You are sending messages too fast';
+
+  @override
+  String get chatSendFailedNotFriends => 'You are not friends with this user';
+
+  @override
+  String get chatSendFailedNotGroupMember =>
+      'You are not a member of this group';
+
+  @override
+  String get chatSendFailedTooLong => 'Message is too long';
+
+  @override
+  String get groupNameLabel => 'Group Name';
+
+  @override
+  String get groupIntroLabel => 'Introduction';
+
+  @override
+  String get groupEnterHintLabel => 'Join Hint';
+
+  @override
+  String get groupCreateNameEmpty => 'Group name cannot be empty';
+
+  @override
+  String groupCreateNameLength(int minLen, int maxLen) {
+    return 'Group name must be $minLen to $maxLen characters';
+  }
+
+  @override
+  String get groupCreateFailedLimit =>
+      'Creation failed, check group count limit';
+
+  @override
+  String get groupSettingsSection => 'Group Settings';
+
+  @override
+  String get groupMembersSection => 'Members';
+
+  @override
+  String get groupJoinRequestsSection => 'Join Requests';
+
+  @override
+  String get groupAllowDirectJoin => 'Allow direct join';
+
+  @override
+  String get groupAllowDirectJoinDesc => 'Non-members can request to join';
+
+  @override
+  String get groupRequireReview => 'Require review';
+
+  @override
+  String get groupRequireReviewDesc => 'Join requests require owner approval';
+
+  @override
+  String get groupTransferOwner => 'Transfer Ownership';
+
+  @override
+  String get groupTransferOwnerConfirm =>
+      'After transfer, you will lose owner permissions. Continue?';
+
+  @override
+  String get groupTransferOwnerConfirmAction => 'Confirm Transfer';
+
+  @override
+  String get groupInviteMember => 'Invite Member';
+
+  @override
+  String get groupInviteMemberHint => 'Enter username or UID of friend';
+
+  @override
+  String get groupInvitePendingReview => 'Invitation sent, pending review';
+
+  @override
+  String get groupInviteJoined => 'Invited to group';
+
+  @override
+  String get groupInviteFailed =>
+      'Invitation failed. Make sure the user exists and is your friend';
+
+  @override
+  String get groupAvatarPermissionDenied =>
+      'Only owner or admin can change group avatar';
+
+  @override
+  String get groupAvatarUpdateSuccess => 'Group avatar updated';
+
+  @override
+  String get groupAvatarUploadFailedSize => 'Upload failed, check file size';
+
+  @override
+  String get groupJoinDirectRequest => 'Direct join request';
+
+  @override
+  String groupJoinInvitedBy(String name) {
+    return 'Invited by $name';
+  }
+
+  @override
+  String get groupRemoveAdmin => 'Remove Admin';
+
+  @override
+  String get groupSetAdmin => 'Set as Admin';
+
+  @override
+  String get groupRemoveMemberAction => 'Remove from Group';
+
+  @override
+  String get roleOwner => 'Owner';
+
+  @override
+  String get roleAdmin => 'Admin';
+
+  @override
+  String get commonCancel => 'Cancel';
+
+  @override
+  String get commonMe => '(me)';
+
+  @override
+  String get commonOk => 'OK';
+
+  @override
+  String get commonFailedOperation => 'Operation failed, please retry';
+
+  @override
+  String get commonUserNotFound => 'User not found';
+
+  @override
+  String get commonFileReadError => 'Cannot read file';
+
+  @override
   String get chatLoading => 'Loading...';
 
   @override

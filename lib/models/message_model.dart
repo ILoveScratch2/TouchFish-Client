@@ -50,6 +50,7 @@ class ChatMessage {
   final String? senderAvatar;
   final MessageType type;
   final MessageMedia? media;
+  final String? ackError;
 
   ChatMessage({
     required this.id,
@@ -64,6 +65,7 @@ class ChatMessage {
     this.senderAvatar,
     this.type = MessageType.text,
     this.media,
+    this.ackError,
   });
 
   ChatMessage copyWith({
@@ -79,6 +81,7 @@ class ChatMessage {
     String? senderAvatar,
     MessageType? type,
     MessageMedia? media,
+    String? ackError,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -93,6 +96,7 @@ class ChatMessage {
       senderAvatar: senderAvatar ?? this.senderAvatar,
       type: type ?? this.type,
       media: media ?? this.media,
+      ackError: ackError ?? this.ackError,
     );
   }
 
@@ -106,13 +110,14 @@ class ChatMessage {
     final event = notification.event;
     final content = notification.content;
     final clientMid = notification.clientMid;
-    final senderUid = notification.senderUid ?? 0;
+    final rawSenderUid = notification.senderUid;
+    final senderUid = rawSenderUid ?? 0;
     final serverMid = notification.mid;
 
     final isMe = senderUid == myUid;
     final dt = notification.dateTime;
     final id = serverMid?.toString() ?? notification.timeStamp.toString();
-    final suid = senderUid > 0 ? senderUid : null;
+    final suid = rawSenderUid;
     final resolvedName = isMe ? null : (senderName ?? 'User $senderUid');
 
     if (event == 'message.file') {
@@ -168,7 +173,7 @@ class ChatMessage {
         id: mid?.toString() ?? sendTime.toString(),
         mid: mid,
         clientMid: clientMid,
-        senderUid: senderUid > 0 ? senderUid : null,
+        senderUid: senderUid,
         text: '[FILE]',
         timestamp: dt,
         isMe: isMe,
@@ -185,7 +190,7 @@ class ChatMessage {
       id: mid?.toString() ?? sendTime.toString(),
       mid: mid,
       clientMid: clientMid,
-      senderUid: senderUid > 0 ? senderUid : null,
+      senderUid: senderUid,
       text: content,
       timestamp: dt,
       isMe: isMe,

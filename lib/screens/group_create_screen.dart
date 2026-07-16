@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../utils/talker.dart';
@@ -32,8 +33,29 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
   }
 
   Future<void> _create() async {
+    final l10n = AppLocalizations.of(context)!;
     final name = _nameCtrl.text.trim();
-    if (name.isEmpty) return;
+    if (name.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.groupCreateNameEmpty), behavior: SnackBarBehavior.floating),
+        );
+      }
+      return;
+    }
+    final config = await TfApiClient.instance.fetchServerInfo();
+    if (config != null) {
+      final minLen = config.minGroupNameLength;
+      final maxLen = config.maxGroupNameLength;
+      if (name.length < minLen || name.length > maxLen) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.groupCreateNameLength(minLen, maxLen)), behavior: SnackBarBehavior.floating),
+          );
+        }
+        return;
+      }
+    }
 
     setState(() => _isCreating = true);
     try {
@@ -51,14 +73,14 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('创建失败，请检查群组数量限制'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text(l10n.groupCreateFailedLimit), behavior: SnackBarBehavior.floating),
         );
       }
     } catch (e) {
       talker.error('GroupCreate failed', e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('创建失败: $e'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('${l10n.commonFailedOperation}: $e'), behavior: SnackBarBehavior.floating),
         );
       }
     }
@@ -67,11 +89,11 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('创建群组'),
+        title: Text(l10n.chatCreateGroup),
         leading: IconButton(icon: const Icon(Icons.close), onPressed: () => context.pop()),
       ),
       body: ListView(
@@ -79,36 +101,36 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
         children: [
           TextField(
             controller: _nameCtrl,
-            decoration: const InputDecoration(
-              labelText: '群组名称', prefixIcon: Icon(Icons.group),
+            decoration: InputDecoration(
+              labelText: l10n.groupNameLabel, prefixIcon: const Icon(Icons.group),
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _introCtrl,
             maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: '群组简介', prefixIcon: Icon(Icons.info_outline),
+            decoration: InputDecoration(
+              labelText: l10n.groupIntroLabel, prefixIcon: const Icon(Icons.info_outline),
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _hintCtrl,
-            decoration: const InputDecoration(
-              labelText: '入群提示', prefixIcon: Icon(Icons.login),
+            decoration: InputDecoration(
+              labelText: l10n.groupEnterHintLabel, prefixIcon: const Icon(Icons.login),
             ),
           ),
           const SizedBox(height: 16),
           SwitchListTile.adaptive(
             value: _allowDirectJoin,
-            title: const Text('允许直接加入'),
-            subtitle: const Text('非群成员可以自行申请加入'),
+            title: Text(l10n.groupAllowDirectJoin),
+            subtitle: Text(l10n.groupAllowDirectJoinDesc),
             onChanged: (v) => setState(() => _allowDirectJoin = v),
           ),
           SwitchListTile.adaptive(
             value: _requireReview,
-            title: const Text('需要审核'),
-            subtitle: const Text('加入或邀请需群主审核'),
+            title: Text(l10n.groupRequireReview),
+            subtitle: Text(l10n.groupRequireReviewDesc),
             onChanged: (v) => setState(() => _requireReview = v),
           ),
           const SizedBox(height: 24),
@@ -117,7 +139,7 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
             icon: _isCreating
                 ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.add),
-            label: const Text('创建群组'),
+            label: Text(l10n.chatCreateGroup),
           ),
         ],
       ),

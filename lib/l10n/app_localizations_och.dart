@@ -2099,6 +2099,136 @@ class AppLocalizationsOch extends AppLocalizations {
   String get chatAddFriendHint => '輸入用戶名或 UID';
 
   @override
+  String get chatSendFailedBanned => '你已被封禁，無法發送訊息';
+
+  @override
+  String get chatSendFailedRateLimited => '發送訊息過快，請稍後再試';
+
+  @override
+  String get chatSendFailedNotFriends => '你與該用戶不是好友';
+
+  @override
+  String get chatSendFailedNotGroupMember => '你不是該羣成員';
+
+  @override
+  String get chatSendFailedTooLong => '訊息過長';
+
+  @override
+  String get groupNameLabel => '羣組名稱';
+
+  @override
+  String get groupIntroLabel => '羣組簡介';
+
+  @override
+  String get groupEnterHintLabel => '入羣提示';
+
+  @override
+  String get groupCreateNameEmpty => '羣組名稱不可為空';
+
+  @override
+  String groupCreateNameLength(int minLen, int maxLen) {
+    return '羣組名稱長度需在 $minLen 至 $maxLen 字元之間';
+  }
+
+  @override
+  String get groupCreateFailedLimit => '創建失敗，請檢查羣組數量限制';
+
+  @override
+  String get groupSettingsSection => '羣組設定';
+
+  @override
+  String get groupMembersSection => '成員';
+
+  @override
+  String get groupJoinRequestsSection => '入羣申請';
+
+  @override
+  String get groupAllowDirectJoin => '允許直接加入';
+
+  @override
+  String get groupAllowDirectJoinDesc => '非羣成員可以自行申請加入';
+
+  @override
+  String get groupRequireReview => '需要審核';
+
+  @override
+  String get groupRequireReviewDesc => '加入或邀請需羣主審核';
+
+  @override
+  String get groupTransferOwner => '轉讓羣主';
+
+  @override
+  String get groupTransferOwnerConfirm => '轉讓後你將失去羣主權限，確定繼續嗎？';
+
+  @override
+  String get groupTransferOwnerConfirmAction => '確認轉讓';
+
+  @override
+  String get groupInviteMember => '邀請成員';
+
+  @override
+  String get groupInviteMemberHint => '輸入好友的用戶名或 UID';
+
+  @override
+  String get groupInvitePendingReview => '已發送邀請，等待審核';
+
+  @override
+  String get groupInviteJoined => '已邀請加入羣組';
+
+  @override
+  String get groupInviteFailed => '邀請失敗，請確認對方存在且已是您的好友';
+
+  @override
+  String get groupAvatarPermissionDenied => '僅羣主或管理員可修改羣頭像';
+
+  @override
+  String get groupAvatarUpdateSuccess => '羣頭像已更新';
+
+  @override
+  String get groupAvatarUploadFailedSize => '上傳失敗，請檢查檔案大小';
+
+  @override
+  String get groupJoinDirectRequest => '直接申請加入';
+
+  @override
+  String groupJoinInvitedBy(String name) {
+    return '由 $name 邀請';
+  }
+
+  @override
+  String get groupRemoveAdmin => '取消管理員';
+
+  @override
+  String get groupSetAdmin => '設為管理員';
+
+  @override
+  String get groupRemoveMemberAction => '移出羣組';
+
+  @override
+  String get roleOwner => '羣主';
+
+  @override
+  String get roleAdmin => '管理員';
+
+  @override
+  String get commonCancel => '取消';
+
+  @override
+  String get commonMe => '（我）';
+
+  @override
+  String get commonOk => '確定';
+
+  @override
+  String get commonFailedOperation => '操作失敗，請重試';
+
+  @override
+  String get commonUserNotFound => '未找到該用戶';
+
+  @override
+  String get commonFileReadError => '無法讀取檔案';
+
+  @override
   String get chatLoading => '加載中...';
 
   @override

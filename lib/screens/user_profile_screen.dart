@@ -378,7 +378,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         ],
         Expanded(
           child: FilledButton.icon(
-            onPressed: () => context.go('/chat/${profile.uid}'),
+            onPressed: () => context.go('/chat/U${profile.uid}'),
             icon: const Icon(Symbols.send),
             label: Text(l10n.userProfileSendMessage),
             style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),

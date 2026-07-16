@@ -72,6 +72,8 @@ class TfServerConfig {
   final int? singleGroupMaxPeople;
   final int? maxFileSize;
   final int? maxMessageLength;
+  final int minGroupNameLength;
+  final int maxGroupNameLength;
   final String? verifyEmail;
   final Map<String, dynamic>? rateLimits;
   final Map<String, String> defaultAssetUrls;
@@ -87,6 +89,8 @@ class TfServerConfig {
     this.singleGroupMaxPeople,
     this.maxFileSize,
     this.maxMessageLength,
+    this.minGroupNameLength = 1,
+    this.maxGroupNameLength = 50,
     this.verifyEmail,
     this.rateLimits,
     this.defaultAssetUrls = const {},
@@ -130,6 +134,8 @@ class TfServerConfig {
       ),
       maxFileSize: _parseOptionalIntValue(json['max_file_size']),
       maxMessageLength: _parseOptionalIntValue(json['max_message_length']),
+      minGroupNameLength: _parseIntValue(json['min_group_name_length'], 1),
+      maxGroupNameLength: _parseIntValue(json['max_group_name_length'], 50),
       verifyEmail: json['verify_email'] as String?,
       rateLimits: json['rate_limits'] is Map
           ? Map<String, dynamic>.from(json['rate_limits'] as Map)
@@ -826,6 +832,21 @@ class TfApiClient {
     return _parseBool(result);
   }
 
+  Future<bool> uploadGroupAvatar(
+    int uid,
+    String password,
+    int gid,
+    String picBase64,
+  ) async {
+    final result = await secretPost(
+      '/avatar/upload_group_avatar',
+      {'gid': gid, 'pic': picBase64},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
   Future<bool> uploadDefaultAvatar(
     int uid,
     String password,
@@ -1423,50 +1444,6 @@ class TfApiClient {
     return null;
   }
 
-  /// Send a text message via REST (WebSocket fallback).
-  /// Returns the server-assigned MID on success, null on failure.
-  Future<int?> sendMessagePlain(
-    int uid,
-    String password,
-    int targetUid,
-    String text, {
-    int quote = -1,
-  }) async {
-    final result = await secretPost(
-      '/message/send_plain',
-      {
-        'target_uid': targetUid,
-        'plain': text,
-        'quote': quote,
-      },
-      uid: uid,
-      password: password,
-    );
-    if (result == null) return null;
-    try {
-      final data = jsonDecode(result);
-      return (data['mid'] as num?)?.toInt();
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Send a file message via REST (WebSocket fallback).
-  Future<int?> sendFileMessageRest(
-    int uid, String password, int targetUid, String fileHash, {int quote = -1}
-  ) async {
-    final result = await secretPost('/message/send_file', {
-      'target_uid': targetUid, 'file_hash': fileHash, 'quote': quote,
-    }, uid: uid, password: password);
-    if (result == null) return null;
-    try {
-      final data = jsonDecode(result);
-      return (data['mid'] as num?)?.toInt();
-    } catch (_) {
-      return null;
-    }
-  }
-
   /// Fetch the chat room list with last message and partner profile.
   Future<List<TfChatListItem>> queryChatList(int uid, String password) async {
     final result = await secretPost(
@@ -1477,7 +1454,12 @@ class TfApiClient {
     );
     if (result == null) return [];
     try {
-      final list = jsonDecode(result) as List<dynamic>;
+      final decoded = jsonDecode(result);
+      if (decoded is Map<String, dynamic> && decoded.containsKey('error')) {
+        talker.warning('queryChatList server error: ${decoded['error']}');
+        return [];
+      }
+      final list = decoded as List<dynamic>;
       return list
           .map((e) => TfChatListItem.fromJson(e as Map<String, dynamic>))
           .toList();

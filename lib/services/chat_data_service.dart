@@ -63,6 +63,9 @@ class ChatDataService extends ChangeNotifier {
   static ChatDataService get instance => _instance ??= ChatDataService._();
   ChatDataService._();
 
+  final StreamController<String> _ackErrorController = StreamController<String>.broadcast();
+  Stream<String> get ackErrorStream => _ackErrorController.stream;
+
   List<ChatRoom> _rooms = [];
   List<Contact> _contacts = [];
   final Map<String, List<ChatMessage>> _messageCache = {};
@@ -348,18 +351,23 @@ class ChatDataService extends ChangeNotifier {
     }
   }
 
-  void _onMessageAck(String clientMid, {int? serverMid, required MessageStatus status}) {
+  void _onMessageAck(String clientMid, {int? serverMid, required MessageStatus status, String? error}) {
     for (final roomId in _messageCache.keys) {
       final msgs = _messageCache[roomId]!;
       final idx = msgs.indexWhere((m) => m.clientMid == clientMid);
       if (idx != -1) {
-        msgs[idx] = msgs[idx].copyWith(
-          id: serverMid?.toString() ?? msgs[idx].id,
-          mid: serverMid ?? msgs[idx].mid,
+        final updated = List<ChatMessage>.from(msgs, growable: true);
+        updated[idx] = updated[idx].copyWith(
+          id: serverMid?.toString() ?? updated[idx].id,
+          mid: serverMid ?? updated[idx].mid,
           status: status,
+          ackError: error,
         );
-        _messageCache[roomId] = msgs;
-        _localStore.saveMessages(roomId, msgs);
+        _messageCache[roomId] = updated;
+        _localStore.saveMessages(roomId, updated);
+        if (status == MessageStatus.failed && error != null) {
+          _ackErrorController.add(error);
+        }
         notifyListeners();
         return;
       }
@@ -388,8 +396,9 @@ class ChatDataService extends ChangeNotifier {
         final status = rawStatus == 'failed'
             ? MessageStatus.failed
             : MessageStatus.sent;
+        final error = data['error'] as String?;
         if (clientMid != null) {
-          _onMessageAck(clientMid, serverMid: mid, status: status);
+          _onMessageAck(clientMid, serverMid: mid, status: status, error: error);
         }
       }
       return;
@@ -425,8 +434,8 @@ class ChatDataService extends ChangeNotifier {
     final msg = ChatMessage.fromNotification(
       notification: info,
       myUid: uid,
-      senderName: senderUid > 0 ? _senderNameFor(senderUid) : null,
-      senderAvatar: senderUid > 0 ? _senderAvatarFor(senderUid) : null,
+      senderName: _senderNameFor(senderUid),
+      senderAvatar: _senderAvatarFor(senderUid),
     );
     _addToCache(roomId, msg);
   }
@@ -442,8 +451,8 @@ class ChatDataService extends ChangeNotifier {
     final msg = ChatMessage.fromNotification(
       notification: info,
       myUid: uid,
-      senderName: senderUid > 0 ? _senderNameFor(senderUid) : null,
-      senderAvatar: senderUid > 0 ? _senderAvatarFor(senderUid) : null,
+      senderName: _senderNameFor(senderUid),
+      senderAvatar: _senderAvatarFor(senderUid),
     );
     _addToCacheSilent(roomId, msg);
   }
@@ -490,8 +499,8 @@ class ChatDataService extends ChangeNotifier {
       _localStore.appendMessage(roomId, msg);
     }
 
-    if (!msg.isMe && msg.senderAvatar == null) {
-      _fetchProfileForRoom(roomId);
+    if (!msg.isMe && msg.senderAvatar == null && msg.senderUid != null) {
+      _fetchProfileForRoom(roomIdFromUid(msg.senderUid!));
     }
 
     final idx = _rooms.indexWhere((r) => r.id == roomId);
@@ -596,6 +605,14 @@ class ChatDataService extends ChangeNotifier {
       );
     } else {
       _addNewRoom(roomId, msg, unreadCount: 0);
+      if (!isGroupRoom(roomId) && !_contacts.any((c) => c.id == roomId)) {
+        final profile = _userCache[roomId];
+        _contacts.add(Contact(
+          id: roomId,
+          name: displayNameForRoom(roomId, profile?.username ?? ''),
+          avatar: profile?.avatar,
+        ));
+      }
     }
     _sortRooms();
     notifyListeners();
@@ -710,6 +727,7 @@ class ChatDataService extends ChangeNotifier {
   @override
   void dispose() {
     _wsSubscription?.cancel();
+    _ackErrorController.close();
     super.dispose();
   }
 }
