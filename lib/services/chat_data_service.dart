@@ -646,7 +646,9 @@ class ChatDataService extends ChangeNotifier {
     final merged = _mergeMessages(serverFilled, localMsgs);
     merged.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-    _messageCache[roomId] = merged;
+    if (merged.isNotEmpty || !_messageCache.containsKey(roomId)) {
+      _messageCache[roomId] = merged;
+    }
     await _localStore.saveMessages(roomId, merged);
     notifyListeners();
     return merged;

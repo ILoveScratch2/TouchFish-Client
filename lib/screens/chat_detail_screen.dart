@@ -193,6 +193,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final merged = await ChatDataService.instance.loadOlderMessages(_contactUid);
 
     if (!mounted) return;
+    if (merged.isEmpty) {
+      setState(() {
+        _isLoadingOlder = false;
+        _hasMoreMessages = false;
+      });
+      return;
+    }
     setState(() {
       _messages.clear();
       _messages.addAll(merged);

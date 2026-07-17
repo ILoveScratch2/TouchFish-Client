@@ -40,7 +40,10 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _onNotificationsChanged() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   int get _announcementBadgeCount =>
