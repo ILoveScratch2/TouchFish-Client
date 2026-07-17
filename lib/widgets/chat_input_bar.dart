@@ -242,49 +242,52 @@ class _ChatInputBarState extends State<ChatInputBar> with SingleTickerProviderSt
             style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
           ),
           const SizedBox(height: 12),
-          PopupMenuButton<String>(
-            onSelected: (value) async {
-              await _handleAttachment(value);
+          ElevatedButton.icon(
+            onPressed: () async {
+              final selected = await showMenu<String>(
+                context: context,
+                position: const RelativeRect.fromLTRB(0, 0, 0, 0),
+                items: [
+                  PopupMenuItem(
+                    value: 'image',
+                    child: Row(children: [
+                      const Icon(Icons.image),
+                      const SizedBox(width: 12),
+                      Text(l10n.mediaPickImage),
+                    ]),
+                  ),
+                  PopupMenuItem(
+                    value: 'video',
+                    child: Row(children: [
+                      const Icon(Icons.videocam),
+                      const SizedBox(width: 12),
+                      Text(l10n.mediaPickVideo),
+                    ]),
+                  ),
+                  PopupMenuItem(
+                    value: 'audio',
+                    child: Row(children: [
+                      const Icon(Icons.audiotrack),
+                      const SizedBox(width: 12),
+                      Text(l10n.mediaPickAudio),
+                    ]),
+                  ),
+                  PopupMenuItem(
+                    value: 'file',
+                    child: Row(children: [
+                      const Icon(Icons.file_upload),
+                      const SizedBox(width: 12),
+                      Text(l10n.chatInputUploadFile),
+                    ]),
+                  ),
+                ],
+              );
+              if (selected != null) {
+                await _handleAttachment(selected);
+              }
             },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'image',
-                child: Row(children: [
-                  const Icon(Icons.image),
-                  const SizedBox(width: 12),
-                  Text(l10n.mediaPickImage),
-                ]),
-              ),
-              PopupMenuItem(
-                value: 'video',
-                child: Row(children: [
-                  const Icon(Icons.videocam),
-                  const SizedBox(width: 12),
-                  Text(l10n.mediaPickVideo),
-                ]),
-              ),
-              PopupMenuItem(
-                value: 'audio',
-                child: Row(children: [
-                  const Icon(Icons.audiotrack),
-                  const SizedBox(width: 12),
-                  Text(l10n.mediaPickAudio),
-                ]),
-              ),
-              PopupMenuItem(
-                value: 'file',
-                child: Row(children: [
-                  const Icon(Icons.file_upload),
-                  const SizedBox(width: 12),
-                  Text(l10n.chatInputUploadFile),
-                ]),
-              ),
-            ],
-            child: ElevatedButton.icon(
-              onPressed: null,
-              icon: const Icon(Icons.add, size: 18),
-              label: Text(l10n.chatFunctionPickFile),
-            ),
+            icon: const Icon(Icons.add, size: 18),
+            label: Text(l10n.chatFunctionPickFile),
           ),
         ],
       ),

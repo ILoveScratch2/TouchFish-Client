@@ -176,8 +176,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void _onScroll() {
     if (!_scrollController.hasClients) return;
     if (_isLoadingOlder || !_hasMoreMessages) return;
-    // Trigger when user scrolls near the top
-    if (_scrollController.position.pixels < 50) {
+    if (_scrollController.position.pixels < 200) {
       _loadOlder();
     }
   }
@@ -256,7 +255,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   bool get _isNearBottom {
     if (!_scrollController.hasClients) return true;
     final pos = _scrollController.position;
-    return pos.pixels >= pos.maxScrollExtent - 100;
+    return pos.maxScrollExtent == 0 || pos.pixels >= pos.maxScrollExtent - 200;
   }
 
   void _onChatDataChanged() {
