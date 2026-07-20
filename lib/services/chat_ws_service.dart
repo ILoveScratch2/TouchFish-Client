@@ -27,14 +27,11 @@ class ChatWsService extends ChangeNotifier {
   Uint8List? _sessionAesKey;
   Timer? _reconnectTimer;
   Timer? _pingTimer;
-  Timer? _pongCheckTimer;
   StreamSubscription? _subscription;
   bool _intentionalClose = false;
   bool _tryingConnectionCandidates = false;
   int _reconnectAttempts = 0;
-  double _lastPongTime = 0;
   static const _maxReconnectAttempts = 10;
-  static const _pongTimeout = Duration(seconds: 15);
 
   Completer<bool>? _authCompleter;
 
@@ -221,7 +218,6 @@ class ChatWsService extends ChangeNotifier {
     }
 
     if (type == 'PONG') {
-      _lastPongTime = DateTime.now().millisecondsSinceEpoch / 1000.0;
       return;
     }
 
@@ -317,24 +313,11 @@ class ChatWsService extends ChangeNotifier {
 
   void _startPing() {
     _pingTimer?.cancel();
-    _pongCheckTimer?.cancel();
-    _pongCheckTimer = null; // only start after first PING
     _pingTimer = Timer.periodic(const Duration(seconds: 50), (_) {
       if (_state == ChatWsState.authenticated && _channel != null) {
         try {
           _sendEncrypted(jsonEncode({'type': 'PING'}));
         } catch (_) {}
-        _lastPongTime = DateTime.now().millisecondsSinceEpoch / 1000.0;
-        if (_pongCheckTimer == null) {
-          _pongCheckTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-            if (_state != ChatWsState.authenticated || _channel == null) return;
-            final now = DateTime.now().millisecondsSinceEpoch / 1000.0;
-            if (now - _lastPongTime > _pongTimeout.inSeconds) {
-              talker.warning('ChatWsService PONG timeout, reconnecting');
-              _scheduleReconnect();
-            }
-          });
-        }
       }
     });
   }
@@ -346,7 +329,6 @@ class ChatWsService extends ChangeNotifier {
     _channel = null;
     _sessionAesKey = null;
     _pingTimer?.cancel();
-    _pongCheckTimer?.cancel();
     _setState(ChatWsState.disconnected);
   }
 
