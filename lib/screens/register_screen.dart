@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smart_form_guard/smart_form_guard.dart';
@@ -12,11 +11,7 @@ class RegisterScreen extends StatefulWidget {
   final String? initialUsername;
   final String? initialPassword;
 
-  const RegisterScreen({
-    super.key,
-    this.initialUsername,
-    this.initialPassword,
-  });
+  const RegisterScreen({super.key, this.initialUsername, this.initialPassword});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -104,7 +99,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.registerTitle),
@@ -137,12 +132,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       Text(
                         l10n.registerCreateAccount,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -152,29 +146,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Username field
                       SmartField(
                         controller: _usernameController,
                         label: l10n.registerUsername,
                         prefixIcon: Icons.person_outline,
                         validator: SmartValidators.compose([
-                          SmartValidators.required(l10n.registerErrorUsernameRequired),
-                          SmartValidators.minLength(3, l10n.registerErrorUsernameMinLength),
+                          SmartValidators.required(
+                            l10n.registerErrorUsernameRequired,
+                          ),
+                          SmartValidators.minLength(
+                            3,
+                            l10n.registerErrorUsernameMinLength,
+                          ),
                         ]),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Password field
                       SmartField(
                         controller: _passwordController,
                         label: l10n.registerPassword,
                         prefixIcon: Icons.lock_outline,
                         obscureText: true,
-                        validator: SmartValidators.required(l10n.registerErrorPasswordRequired),
+                        validator: SmartValidators.required(
+                          l10n.registerErrorPasswordRequired,
+                        ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Confirm Password field
                       SmartField(
                         controller: _confirmPasswordController,
@@ -182,7 +183,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         prefixIcon: Icons.lock_outline,
                         obscureText: true,
                         validator: SmartValidators.compose([
-                          SmartValidators.required(l10n.registerErrorConfirmPasswordRequired),
+                          SmartValidators.required(
+                            l10n.registerErrorConfirmPasswordRequired,
+                          ),
                           (value) {
                             if (value != _passwordController.text) {
                               return l10n.registerErrorPasswordMismatch;
@@ -193,13 +196,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
 
                       // 验证码（服务器要求时显示）
-                      if (_requiresCaptcha) ...[                        
+                      if (_requiresCaptcha) ...[
                         const SizedBox(height: 16),
                         _buildCaptchaSection(l10n),
                       ],
 
                       const SizedBox(height: 24),
-                      
+
                       // Next button
                       _isLoadingServerInfo
                           ? const CircularProgressIndicator()
@@ -208,7 +211,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               icon: Icons.arrow_forward,
                             ),
                       const SizedBox(height: 12),
-                      
+
                       // Back to login button
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
@@ -237,19 +240,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       height: 56,
                       decoration: BoxDecoration(
                         border: Border.all(
-                            color: Theme.of(context).colorScheme.outline),
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: _isLoadingCaptcha
                           ? const Center(
                               child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2)))
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            )
                           : Center(
-                              child: Text(l10n.registerCaptchaLoad,
-                                  style: Theme.of(context).textTheme.bodySmall)),
+                              child: Text(
+                                l10n.registerCaptchaLoad,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
                     )
                   : ClipRRect(
                       borderRadius: BorderRadius.circular(8),
@@ -273,7 +283,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           controller: _captchaController,
           label: l10n.registerCaptchaCode,
           prefixIcon: Icons.security_outlined,
-          validator: SmartValidators.required(l10n.registerErrorCaptchaRequired),
+          validator: SmartValidators.required(
+            l10n.registerErrorCaptchaRequired,
+          ),
         ),
       ],
     );

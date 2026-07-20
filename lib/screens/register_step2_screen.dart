@@ -4,7 +4,6 @@ import 'package:smart_form_guard/smart_form_guard.dart';
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../services/api/tf_api_client.dart';
-import '../utils/talker.dart';
 
 class RegisterStep2Screen extends StatefulWidget {
   final String username;
@@ -73,8 +72,9 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
     setState(() => _isLoading = false);
 
     if (success) {
-      final profile = await TfApiClient.instance
-          .getUserByUsername(widget.username);
+      final profile = await TfApiClient.instance.getUserByUsername(
+        widget.username,
+      );
       if (!mounted) return;
       if (profile == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -85,10 +85,10 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
         );
         return;
       }
-      context.push(AppRoutes.registerStep3, extra: {
-        'username': widget.username,
-        'uid': int.parse(profile.uid),
-      });
+      context.push(
+        AppRoutes.registerStep3,
+        extra: {'username': widget.username, 'uid': int.parse(profile.uid)},
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -120,15 +120,17 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.asset('assets/logo.png',
-                            width: 64, height: 64, fit: BoxFit.contain),
+                        child: Image.asset(
+                          'assets/logo.png',
+                          width: 64,
+                          height: 64,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Text(
                         l10n.registerCreateAccount,
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
+                        style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
@@ -136,10 +138,9 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
                         widget.requiresEmail
                             ? l10n.registerEmailInfo
                             : l10n.registerConfirmInfo,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(color: Colors.grey[600]),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[600],
+                        ),
                       ),
                       const SizedBox(height: 24),
 

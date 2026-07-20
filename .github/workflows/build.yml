@@ -10,7 +10,28 @@ on:
     types: [published]
 
 jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.7'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      - name: Test
+        run: flutter test
+
   build-windows:
+    needs: quality
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,6 +85,7 @@ jobs:
           path: Installer/windows-x86_64-setup.exe
 
   build-macos:
+    needs: quality
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -110,6 +132,7 @@ jobs:
           path: touchfish-macos.zip
 
   build-linux:
+    needs: quality
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -143,6 +166,7 @@ jobs:
           path: touchfish-linux-x64.zip
 
   build-android:
+    needs: quality
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -194,6 +218,7 @@ jobs:
           path: touchfish-android.aab
 
   build-ios:
+    needs: quality
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -227,6 +252,7 @@ jobs:
           path: touchfish-ios.ipa
 
   build-web:
+    needs: quality
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

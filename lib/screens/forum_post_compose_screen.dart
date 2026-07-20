@@ -52,7 +52,8 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
   final _formKey = GlobalKey<FormState>();
   late final List<MentionUser> _mentionUsers;
 
-  final _currentUser = AuthState.instance.currentUser ?? UserProfileDemoData.getDemoProfile('1');
+  final _currentUser =
+      AuthState.instance.currentUser ?? UserProfileDemoData.getDemoProfile('1');
   bool _isSubmitting = false;
 
   @override
@@ -62,7 +63,9 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
       _contentController.text = widget.initialContent!;
     }
     _mentionUsers = ChatDemoData.getDemoContacts()
-        .map((c) => MentionUser(id: c.id, username: c.name, avatarUrl: c.avatar))
+        .map(
+          (c) => MentionUser(id: c.id, username: c.name, avatarUrl: c.avatar),
+        )
         .toList();
   }
 
@@ -113,7 +116,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                     ),
                   ),
                   FilledButton.icon(
-                    onPressed: _submit,
+                    onPressed: _isSubmitting ? null : _submit,
                     icon: const Icon(Icons.send, size: 18),
                     label: Text(l10n.forumPublish),
                   ),
@@ -146,13 +149,11 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                             if (!widget.isReply)
                               TextFormField(
                                 controller: _titleController,
-                                style:
-                                    Theme.of(context).textTheme.titleMedium,
+                                style: Theme.of(context).textTheme.titleMedium,
                                 decoration: InputDecoration(
                                   hintText: l10n.forumPostTitle,
                                   border: InputBorder.none,
-                                  contentPadding:
-                                      const EdgeInsets.symmetric(
+                                  contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 0,
                                     vertical: 8,
                                   ),
@@ -164,10 +165,8 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                                   return null;
                                 },
                               ),
-                            if (!widget.isReply)
-                              const Divider(height: 1),
-                            if (!widget.isReply)
-                              const SizedBox(height: 4),
+                            if (!widget.isReply) const Divider(height: 1),
+                            if (!widget.isReply) const SizedBox(height: 4),
                             // Content field
                             MentionTextField(
                               controller: _contentController,
@@ -178,8 +177,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                               decoration: InputDecoration(
                                 hintText: l10n.forumPostContent,
                                 border: InputBorder.none,
-                                contentPadding:
-                                    const EdgeInsets.symmetric(
+                                contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 0,
                                   vertical: 8,
                                 ),
@@ -204,6 +202,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     }
     return content;
   }
+
   Widget _buildMarkdownToolbar(BuildContext context, AppLocalizations l10n) {
     final colorScheme = Theme.of(context).colorScheme;
     return Material(
@@ -231,15 +230,12 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                         tooltip: l10n.forumMdItalic,
                       ),
                       IconButton(
-                        onPressed: () =>
-                            _insertMarkdown('~~', '~~'),
-                        icon:
-                            const Icon(Icons.format_strikethrough, size: 20),
+                        onPressed: () => _insertMarkdown('~~', '~~'),
+                        icon: const Icon(Icons.format_strikethrough, size: 20),
                         tooltip: l10n.forumMdStrikethrough,
                       ),
                       IconButton(
-                        onPressed: () =>
-                            _insertMarkdownPrefix('## '),
+                        onPressed: () => _insertMarkdownPrefix('## '),
                         icon: const Icon(Icons.title, size: 20),
                         tooltip: l10n.forumMdHeading,
                       ),
@@ -249,8 +245,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                         tooltip: l10n.forumMdList,
                       ),
                       IconButton(
-                        onPressed: () =>
-                            _insertMarkdownPrefix('> '),
+                        onPressed: () => _insertMarkdownPrefix('> '),
                         icon: const Icon(Icons.format_quote, size: 20),
                         tooltip: l10n.forumMdQuote,
                       ),
@@ -260,8 +255,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                         tooltip: l10n.forumMdCode,
                       ),
                       IconButton(
-                        onPressed: () =>
-                            _insertMarkdown('[', '](url)'),
+                        onPressed: () => _insertMarkdown('[', '](url)'),
                         icon: const Icon(Icons.link, size: 20),
                         tooltip: l10n.forumMdLink,
                       ),
@@ -273,8 +267,8 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
               Text(
                 l10n.forumPostContentMarkdown,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -282,6 +276,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
       ),
     );
   }
+
   void _insertMarkdown(String prefix, String suffix) {
     final text = _contentController.text;
     final sel = _contentController.selection;
@@ -308,9 +303,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     }
     _contentController.value = TextEditingValue(
       text: text.replaceRange(lineStart, lineStart, prefix),
-      selection: TextSelection.collapsed(
-        offset: sel.start + prefix.length,
-      ),
+      selection: TextSelection.collapsed(offset: sel.start + prefix.length),
     );
   }
 
@@ -318,9 +311,9 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
     if (_contentController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.forumPostContentRequired)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.forumPostContentRequired)));
       return;
     }
 
@@ -342,12 +335,17 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
           return;
         }
         success = await TfApiClient.instance.addComment(
-          uid, password, fid, pid,
+          uid,
+          password,
+          fid,
+          pid,
           _contentController.text.trim(),
         );
       } else {
         success = await TfApiClient.instance.sendPost(
-          uid, password, fid,
+          uid,
+          password,
+          fid,
           _titleController.text.trim(),
           _contentController.text.trim(),
         );
@@ -356,12 +354,19 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
       setState(() => _isSubmitting = false);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(widget.isReply ? l10n.forumCommentSuccess : l10n.forumPostSuccess)),
+          SnackBar(
+            content: Text(
+              widget.isReply ? l10n.forumCommentSuccess : l10n.forumPostSuccess,
+            ),
+          ),
         );
         Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.forumPostFailed), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text(l10n.forumPostFailed),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (e) {
@@ -369,7 +374,10 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
       if (mounted) {
         setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.forumPostFailed), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text(l10n.forumPostFailed),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     }
