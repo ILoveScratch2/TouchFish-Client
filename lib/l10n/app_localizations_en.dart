@@ -513,10 +513,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serverUseHttps => 'HTTPS';
 
   @override
-  String get serverUseHttpsOn => 'Use encrypted connection';
+  String get serverUseHttpsOn =>
+      'Try encrypted connection (falls back to HTTP)';
 
   @override
   String get serverUseHttpsOff => 'Use unencrypted connection';
+
+  @override
+  String get serverSave => 'Save';
+
+  @override
+  String get serverTryWss => 'WSS';
+
+  @override
+  String get serverTryWssOn => 'Try secure WebSocket (falls back to WS)';
+
+  @override
+  String get serverTryWssOff => 'Use unencrypted WebSocket';
+
+  @override
+  String get serverAutoDetectTcpPort => 'Auto-detect TCP Port';
+
+  @override
+  String get serverAutoDetectTcpPortDesc =>
+      'Fetch the TCP port from the server automatically';
 
   @override
   String get navChat => 'Chat';

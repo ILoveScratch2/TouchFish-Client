@@ -486,10 +486,28 @@ class AppLocalizationsOch extends AppLocalizations {
   String get serverUseHttps => 'HTTPS';
 
   @override
-  String get serverUseHttpsOn => '以加密連接';
+  String get serverUseHttpsOn => '試以加密連接（敗則退HTTP）';
 
   @override
   String get serverUseHttpsOff => '以明文連接';
+
+  @override
+  String get serverSave => '存';
+
+  @override
+  String get serverTryWss => 'WSS';
+
+  @override
+  String get serverTryWssOn => '試以加密WebSocket（敗則退WS）';
+
+  @override
+  String get serverTryWssOff => '以明文WebSocket';
+
+  @override
+  String get serverAutoDetectTcpPort => '自探TCP端口';
+
+  @override
+  String get serverAutoDetectTcpPortDesc => '自服器取TCP端口';
 
   @override
   String get navChat => '聊天';

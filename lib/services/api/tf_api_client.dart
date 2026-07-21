@@ -303,27 +303,91 @@ class TfApiClient {
     }
   }
 
-  Future<String> getBaseUrl() async {
-    if (_cachedBaseUrl != null) return _cachedBaseUrl!;
+  Future<bool> _canReachUrl(
+    String url, {
+    Duration timeout = _probeTimeout,
+  }) async {
+    try {
+      final response = await _http.get(Uri.parse(url)).timeout(timeout);
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// probe！
+  Future<bool> probeServer(ServerInfo? server) async {
+    try {
+      final baseUrl = await _resolveBaseUrlFor(server);
+      return await _canReachUrl('$baseUrl/info');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> probeConnection() async {
+    try {
+      final baseUrl = await getBaseUrl();
+      return await _canReachUrl('$baseUrl/info');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<ServerInfo?> _loadSelectedServer() async {
     final prefs = await SharedPreferences.getInstance();
     final serversJson = prefs.getStringList('serversV2');
     final selectedIndex = prefs.getInt('selectedServerIndex') ?? 0;
-
     if (serversJson != null && serversJson.isNotEmpty) {
       final idx = selectedIndex.clamp(0, serversJson.length - 1);
-      final serverInfo = ServerInfo.fromJson(jsonDecode(serversJson[idx]));
-      final port = serverInfo.apiPort.isNotEmpty
-          ? serverInfo.apiPort
-          : AppConstants.defaultApiPort.toString();
-      final scheme = serverInfo.useHttps ? 'https' : 'http';
-      _cachedBaseUrl = '$scheme://${serverInfo.address}:$port';
-      return _cachedBaseUrl!;
+      return ServerInfo.fromJson(jsonDecode(serversJson[idx]));
     }
-    final defaultScheme =
-        AppConstants.defaultUseHttps ? 'https' : 'http';
-    _cachedBaseUrl =
-        '$defaultScheme://${AppConstants.defaultServerAddress}:${AppConstants.defaultApiPort}';
+    return null;
+  }
+
+  Future<String> _resolveBaseUrlFor(ServerInfo? server) async {
+    final address = (server != null && server.address.isNotEmpty)
+        ? server.address
+        : AppConstants.defaultServerAddress;
+    final port = (server != null && server.apiPort.isNotEmpty)
+        ? server.apiPort
+        : AppConstants.defaultApiPort.toString();
+    final useHttps = server?.useHttps ?? AppConstants.defaultUseHttps;
+
+    if (useHttps) {
+      final httpsUrl = 'https://$address:$port';
+      if (await _canReachUrl('$httpsUrl/info')) {
+        return httpsUrl;
+      }
+      return 'http://$address:$port';
+    }
+
+    return 'http://$address:$port';
+  }
+
+  Future<String> getBaseUrl() async {
+    if (_cachedBaseUrl != null) return _cachedBaseUrl!;
+    final serverInfo = await _loadSelectedServer();
+    _cachedBaseUrl = await _resolveBaseUrlFor(serverInfo);
     return _cachedBaseUrl!;
+  }
+
+
+  Future<int> resolveTcpPort() async {
+    final serverInfo = await _loadSelectedServer();
+    final autoDetect =
+        serverInfo?.autoDetectTcpPort ?? AppConstants.defaultAutoDetectTcpPort;
+    if (autoDetect) {
+      final config = await fetchServerInfo();
+      if (config != null) return config.portTcp;
+    }
+    final raw = serverInfo?.tcpPort ?? '';
+    return int.tryParse(raw) ?? AppConstants.defaultTcpPort;
+  }
+
+  Future<bool> shouldTryWss() async {
+    final serverInfo = await _loadSelectedServer();
+    return serverInfo?.tryWss ?? AppConstants.defaultTryWss;
   }
 
   void invalidateCache() {

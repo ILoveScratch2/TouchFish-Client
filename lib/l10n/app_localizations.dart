@@ -1051,7 +1051,7 @@ abstract class AppLocalizations {
   /// No description provided for @serverUseHttpsOn.
   ///
   /// In en, this message translates to:
-  /// **'Use encrypted connection'**
+  /// **'Try encrypted connection (falls back to HTTP)'**
   String get serverUseHttpsOn;
 
   /// No description provided for @serverUseHttpsOff.
@@ -1059,6 +1059,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use unencrypted connection'**
   String get serverUseHttpsOff;
+
+  /// No description provided for @serverSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get serverSave;
+
+  /// No description provided for @serverTryWss.
+  ///
+  /// In en, this message translates to:
+  /// **'WSS'**
+  String get serverTryWss;
+
+  /// No description provided for @serverTryWssOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Try secure WebSocket (falls back to WS)'**
+  String get serverTryWssOn;
+
+  /// No description provided for @serverTryWssOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Use unencrypted WebSocket'**
+  String get serverTryWssOff;
+
+  /// No description provided for @serverAutoDetectTcpPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-detect TCP Port'**
+  String get serverAutoDetectTcpPort;
+
+  /// No description provided for @serverAutoDetectTcpPortDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch the TCP port from the server automatically'**
+  String get serverAutoDetectTcpPortDesc;
 
   /// No description provided for @navChat.
   ///

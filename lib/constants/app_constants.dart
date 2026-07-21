@@ -26,4 +26,6 @@ class AppConstants {
   static const int defaultApiPort = 8080;
   static const int defaultTcpPort = 9090;
   static const bool defaultUseHttps = false;
+  static const bool defaultTryWss = false;
+  static const bool defaultAutoDetectTcpPort = true;
 }

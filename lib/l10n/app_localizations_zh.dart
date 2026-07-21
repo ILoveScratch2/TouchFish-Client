@@ -486,10 +486,28 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serverUseHttps => 'HTTPS';
 
   @override
-  String get serverUseHttpsOn => '使用加密连接';
+  String get serverUseHttpsOn => '尝试加密连接（失败时回退 HTTP）';
 
   @override
   String get serverUseHttpsOff => '使用非加密连接';
+
+  @override
+  String get serverSave => '保存';
+
+  @override
+  String get serverTryWss => 'WSS';
+
+  @override
+  String get serverTryWssOn => '尝试加密 WebSocket（失败时回退 WS）';
+
+  @override
+  String get serverTryWssOff => '使用非加密 WebSocket';
+
+  @override
+  String get serverAutoDetectTcpPort => '自动检测TCP端口';
+
+  @override
+  String get serverAutoDetectTcpPortDesc => '自动从服务器获取TCP端口';
 
   @override
   String get navChat => '聊天';

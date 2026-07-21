@@ -57,8 +57,9 @@ class ChatWsService extends ChangeNotifier {
 
     try {
       final host = await _resolveHost();
-      final tcpPort = await _resolveTcpPort();
-      for (final uri in candidateWebSocketUris(host, tcpPort)) {
+      final tcpPort = await TfApiClient.instance.resolveTcpPort();
+      final tryWss = await TfApiClient.instance.shouldTryWss();
+      for (final uri in candidateWebSocketUris(host, tcpPort, tryWss: tryWss)) {
         final result = await _connectToCandidate(uri, uid, password);
         if (result == _CandidateConnectionResult.authenticated) {
           return true;
@@ -82,8 +83,12 @@ class ChatWsService extends ChangeNotifier {
   }
 
   @visibleForTesting
-  static List<Uri> candidateWebSocketUris(String host, int port) => [
-    Uri(scheme: 'wss', host: host, port: port),
+  static List<Uri> candidateWebSocketUris(
+    String host,
+    int port, {
+    bool tryWss = true,
+  }) => [
+    if (tryWss) Uri(scheme: 'wss', host: host, port: port),
     Uri(scheme: 'ws', host: host, port: port),
   ];
 
@@ -296,19 +301,6 @@ class ChatWsService extends ChangeNotifier {
       return info['address'] as String? ?? '127.0.0.1';
     }
     return '127.0.0.1';
-  }
-
-  Future<int> _resolveTcpPort() async {
-    final prefs = await SharedPreferences.getInstance();
-    final serversJson = prefs.getStringList('serversV2');
-    final selectedIndex = prefs.getInt('selectedServerIndex') ?? 0;
-    if (serversJson != null && serversJson.isNotEmpty) {
-      final idx = selectedIndex.clamp(0, serversJson.length - 1);
-      final info = jsonDecode(serversJson[idx]) as Map<String, dynamic>;
-      final raw = info['tcpPort'] ?? info['tcp_port'];
-      if (raw != null) return int.tryParse(raw.toString()) ?? 1145;
-    }
-    return 1145;
   }
 
   void _startPing() {

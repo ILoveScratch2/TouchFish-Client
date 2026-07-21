@@ -15,6 +15,16 @@ void main() {
       expect(candidates.every((uri) => uri.host == 'example.com'), isTrue);
       expect(candidates.every((uri) => uri.port == 9090), isTrue);
     });
+
+    test('uses WS only when WSS is disabled', () {
+      final candidates = ChatWsService.candidateWebSocketUris(
+        'example.com',
+        9090,
+        tryWss: false,
+      );
+
+      expect(candidates.map((uri) => uri.scheme), ['ws']);
+    });
   });
 
   group('route authentication', () {
