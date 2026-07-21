@@ -1455,6 +1455,22 @@ class AppLocalizationsOch extends AppLocalizations {
   String get debugLogsDescription => '覽應用之運行日誌';
 
   @override
+  String get debugClearMessageDatabase => '清空消息資料庫';
+
+  @override
+  String get debugClearMessageDatabaseDescription => '刪除此客戶端本地所緩之消息。';
+
+  @override
+  String get debugClearMessageDatabaseConfirmTitle => '清空消息資料庫？';
+
+  @override
+  String get debugClearMessageDatabaseConfirmMessage =>
+      '本地所緩之消息皆將刪除，服器之消息不受影響。';
+
+  @override
+  String get debugClearMessageDatabaseSuccess => '消息資料庫已清空。';
+
+  @override
   String get debugCustomInfoDialog => '自定訊息框';
 
   @override

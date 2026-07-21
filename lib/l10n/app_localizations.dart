@@ -2920,6 +2920,36 @@ abstract class AppLocalizations {
   /// **'View application logs'**
   String get debugLogsDescription;
 
+  /// No description provided for @debugClearMessageDatabase.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Message Database'**
+  String get debugClearMessageDatabase;
+
+  /// No description provided for @debugClearMessageDatabaseDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all locally cached messages from this client.'**
+  String get debugClearMessageDatabaseDescription;
+
+  /// No description provided for @debugClearMessageDatabaseConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Message Database?'**
+  String get debugClearMessageDatabaseConfirmTitle;
+
+  /// No description provided for @debugClearMessageDatabaseConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'All locally cached messages will be deleted. Server messages are not affected.'**
+  String get debugClearMessageDatabaseConfirmMessage;
+
+  /// No description provided for @debugClearMessageDatabaseSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Message database cleared.'**
+  String get debugClearMessageDatabaseSuccess;
+
   /// No description provided for @debugCustomInfoDialog.
   ///
   /// In en, this message translates to:

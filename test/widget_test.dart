@@ -48,6 +48,17 @@ void main() {
       );
     });
 
+    test('keeps the default page available after a saved-session failure', () {
+      expect(
+        AppRoutes.authRedirect(
+          path: AppRoutes.main,
+          isLoggedIn: false,
+          isRestoringSavedSession: true,
+        ),
+        isNull,
+      );
+    });
+
     test('validates registration route arguments', () {
       expect(
         AppRoutes.isValidRegisterStep2Extra({

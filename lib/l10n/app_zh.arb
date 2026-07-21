@@ -572,6 +572,11 @@
   
   "debugLogs": "调试日志",
   "debugLogsDescription": "查看应用运行日志",
+  "debugClearMessageDatabase": "清空消息数据库",
+  "debugClearMessageDatabaseDescription": "删除此客户端本地缓存的所有消息。",
+  "debugClearMessageDatabaseConfirmTitle": "清空消息数据库？",
+  "debugClearMessageDatabaseConfirmMessage": "所有本地缓存的消息都会被删除，服务器上的消息不受影响。",
+  "debugClearMessageDatabaseSuccess": "消息数据库已清空。",
   "debugCustomInfoDialog": "自定义信息框",
   "debugCustomInfoDialogDescription": "预览支持调用方自定义按钮的可复用信息框",
   "debugCustomErrorDialog": "自定义错误框",

@@ -601,6 +601,11 @@
   
   "debugLogs": "Debug Logs",
   "debugLogsDescription": "View application logs",
+  "debugClearMessageDatabase": "Clear Message Database",
+  "debugClearMessageDatabaseDescription": "Delete all locally cached messages from this client.",
+  "debugClearMessageDatabaseConfirmTitle": "Clear Message Database?",
+  "debugClearMessageDatabaseConfirmMessage": "All locally cached messages will be deleted. Server messages are not affected.",
+  "debugClearMessageDatabaseSuccess": "Message database cleared.",
   "debugCustomInfoDialog": "Custom Info Dialog",
   "debugCustomInfoDialogDescription": "Preview the reusable info dialog with caller-defined actions",
   "debugCustomErrorDialog": "Custom Error Dialog",

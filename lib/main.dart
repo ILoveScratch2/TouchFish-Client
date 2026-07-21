@@ -575,7 +575,8 @@ class _TouchFishAppState extends State<TouchFishApp> {
 
         return MaterialApp.router(
           routerConfig: _router,
-          onGenerateTitle: (context) => AppLocalizations.of(context)?.appName ?? '',
+          onGenerateTitle: (context) =>
+              AppLocalizations.of(context)?.appName ?? '',
           debugShowCheckedModeBanner: false,
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -667,9 +668,7 @@ class _TouchFishAppState extends State<TouchFishApp> {
       tertiary: customColors['tertiary'] != null
           ? Color(customColors['tertiary']!)
           : null,
-        surface: surfaceColor != null
-          ? Color(surfaceColor)
-          : null,
+      surface: surfaceColor != null ? Color(surfaceColor) : null,
       error: customColors['error'] != null
           ? Color(customColors['error']!)
           : null,

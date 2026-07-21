@@ -1455,6 +1455,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get debugLogsDescription => '查看应用运行日志';
 
   @override
+  String get debugClearMessageDatabase => '清空消息数据库';
+
+  @override
+  String get debugClearMessageDatabaseDescription => '删除此客户端本地缓存的所有消息。';
+
+  @override
+  String get debugClearMessageDatabaseConfirmTitle => '清空消息数据库？';
+
+  @override
+  String get debugClearMessageDatabaseConfirmMessage =>
+      '所有本地缓存的消息都会被删除，服务器上的消息不受影响。';
+
+  @override
+  String get debugClearMessageDatabaseSuccess => '消息数据库已清空。';
+
+  @override
   String get debugCustomInfoDialog => '自定义信息框';
 
   @override

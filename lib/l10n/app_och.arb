@@ -571,6 +571,11 @@
 
   "debugLogs": "調試日誌",
   "debugLogsDescription": "覽應用之運行日誌",
+  "debugClearMessageDatabase": "清空消息資料庫",
+  "debugClearMessageDatabaseDescription": "刪除此客戶端本地所緩之消息。",
+  "debugClearMessageDatabaseConfirmTitle": "清空消息資料庫？",
+  "debugClearMessageDatabaseConfirmMessage": "本地所緩之消息皆將刪除，服器之消息不受影響。",
+  "debugClearMessageDatabaseSuccess": "消息資料庫已清空。",
   "debugCustomInfoDialog": "自定訊息框",
   "debugCustomInfoDialogDescription": "預觀可為調者自定鈕之複用訊息框",
   "debugCustomErrorDialog": "自定誤框",

@@ -107,8 +107,7 @@ class AppRoutes {
       redirect: (context, state) {
         final auth = AuthState.instance;
         final restoringSavedSession =
-            auth.hasStoredCredentials &&
-            auth.savedSessionRestoreStatus != SavedSessionRestoreStatus.failed;
+            auth.hasStoredCredentials && !auth.isLoggedIn;
         return authRedirect(
           path: state.uri.path,
           isLoggedIn: auth.isLoggedIn,

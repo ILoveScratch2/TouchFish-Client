@@ -1515,6 +1515,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get debugLogsDescription => 'View application logs';
 
   @override
+  String get debugClearMessageDatabase => 'Clear Message Database';
+
+  @override
+  String get debugClearMessageDatabaseDescription =>
+      'Delete all locally cached messages from this client.';
+
+  @override
+  String get debugClearMessageDatabaseConfirmTitle => 'Clear Message Database?';
+
+  @override
+  String get debugClearMessageDatabaseConfirmMessage =>
+      'All locally cached messages will be deleted. Server messages are not affected.';
+
+  @override
+  String get debugClearMessageDatabaseSuccess => 'Message database cleared.';
+
+  @override
   String get debugCustomInfoDialog => 'Custom Info Dialog';
 
   @override

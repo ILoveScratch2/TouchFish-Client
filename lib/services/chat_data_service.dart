@@ -63,7 +63,8 @@ class ChatDataService extends ChangeNotifier {
   static ChatDataService get instance => _instance ??= ChatDataService._();
   ChatDataService._();
 
-  final StreamController<String> _ackErrorController = StreamController<String>.broadcast();
+  final StreamController<String> _ackErrorController =
+      StreamController<String>.broadcast();
   Stream<String> get ackErrorStream => _ackErrorController.stream;
 
   List<ChatRoom> _rooms = [];
@@ -81,11 +82,9 @@ class ChatDataService extends ChangeNotifier {
   List<Contact> get contacts => _contacts;
   bool get isLoading => _isLoading;
 
-  int get totalUnreadCount =>
-      _rooms.fold(0, (sum, r) => sum + r.unreadCount);
+  int get totalUnreadCount => _rooms.fold(0, (sum, r) => sum + r.unreadCount);
 
-  List<ChatMessage> getMessages(String roomId) =>
-      _messageCache[roomId] ?? [];
+  List<ChatMessage> getMessages(String roomId) => _messageCache[roomId] ?? [];
 
   void setMessages(String roomId, List<ChatMessage> msgs) {
     _messageCache[roomId] = msgs;
@@ -104,7 +103,8 @@ class ChatDataService extends ChangeNotifier {
     return alias.isNotEmpty ? alias : fallback;
   }
 
-  String roomDescription(String roomId) => getRoomPreference(roomId).description;
+  String roomDescription(String roomId) =>
+      getRoomPreference(roomId).description;
 
   int roomNotifyLevel(String roomId) => getRoomPreference(roomId).notifyLevel;
 
@@ -134,7 +134,9 @@ class ChatDataService extends ChangeNotifier {
       final data = jsonDecode(raw) as Map<String, dynamic>;
       for (final entry in data.entries) {
         if (entry.value is Map<String, dynamic>) {
-          _roomPreferences[entry.key] = ChatRoomPreference.fromJson(entry.value as Map<String, dynamic>);
+          _roomPreferences[entry.key] = ChatRoomPreference.fromJson(
+            entry.value as Map<String, dynamic>,
+          );
         } else if (entry.value is Map) {
           _roomPreferences[entry.key] = ChatRoomPreference.fromJson(
             Map<String, dynamic>.from(entry.value as Map),
@@ -186,7 +188,8 @@ class ChatDataService extends ChangeNotifier {
     }
     final contactIdx = _contacts.indexWhere((contact) => contact.id == roomId);
     if (contactIdx >= 0) {
-      final fallbackName = _userCache[roomId]?.username ?? _contacts[contactIdx].name;
+      final fallbackName =
+          _userCache[roomId]?.username ?? _contacts[contactIdx].name;
       _contacts[contactIdx] = Contact(
         id: roomId,
         name: displayNameForRoom(roomId, fallbackName),
@@ -235,13 +238,21 @@ class ChatDataService extends ChangeNotifier {
     }
   }
 
+  Future<void> clearLocalMessageDatabase() async {
+    await _localStore.clearDatabase();
+    _messageCache.clear();
+    notifyListeners();
+  }
+
   // --- ID helpers ---
 
   static String roomIdFromUid(int uid) => 'U$uid';
 
   /// Parse numeric UID from roomId. "U123" → 123, "G456" → -456.
   static int roomKey(String roomId) {
-    if (roomId.startsWith('G')) return -(int.tryParse(roomId.substring(1)) ?? 0);
+    if (roomId.startsWith('G')) {
+      return -(int.tryParse(roomId.substring(1)) ?? 0);
+    }
     if (roomId.startsWith('U')) return int.tryParse(roomId.substring(1)) ?? 0;
     return int.tryParse(roomId) ?? 0;
   }
@@ -287,7 +298,9 @@ class ChatDataService extends ChangeNotifier {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) {
-      talker.warning('ChatDataService.loadContactsAndRooms: skipped (uid=$uid, hasPassword=${password != null})');
+      talker.warning(
+        'ChatDataService.loadContactsAndRooms: skipped (uid=$uid, hasPassword=${password != null})',
+      );
       return;
     }
 
@@ -297,9 +310,13 @@ class ChatDataService extends ChangeNotifier {
     try {
       await _ensureRoomPreferencesLoaded();
       final existingRooms = {for (final room in _rooms) room.id: room};
-      talker.info('ChatDataService.loadContactsAndRooms: calling /chat/list for uid=$uid');
+      talker.info(
+        'ChatDataService.loadContactsAndRooms: calling /chat/list for uid=$uid',
+      );
       final chatItems = await TfApiClient.instance.queryChatList(uid, password);
-      talker.info('ChatDataService.loadContactsAndRooms: got ${chatItems.length} items from server');
+      talker.info(
+        'ChatDataService.loadContactsAndRooms: got ${chatItems.length} items from server',
+      );
       final baseUrl = await TfApiClient.instance.getBaseUrl();
 
       final nextRooms = <ChatRoom>[];
@@ -310,7 +327,9 @@ class ChatDataService extends ChangeNotifier {
         final isGroup = item.roomType == 'group';
         final existingRoom = existingRooms[item.roomId];
         final lastTime = item.lastTime != null
-            ? DateTime.fromMillisecondsSinceEpoch((item.lastTime! * 1000).toInt())
+            ? DateTime.fromMillisecondsSinceEpoch(
+                (item.lastTime! * 1000).toInt(),
+              )
             : null;
         final avatarUrl = item.avatar != null ? '$baseUrl${item.avatar}' : null;
 
@@ -324,25 +343,31 @@ class ChatDataService extends ChangeNotifier {
         );
         final displayName = displayNameForRoom(item.roomId, item.username);
         if (!isGroup) {
-          nextContacts.add(Contact(id: item.roomId, name: displayName, avatar: avatarUrl));
+          nextContacts.add(
+            Contact(id: item.roomId, name: displayName, avatar: avatarUrl),
+          );
         }
 
-        nextRooms.add(ChatRoom(
-          id: item.roomId,
-          name: displayName,
-          avatar: avatarUrl,
-          type: isGroup ? ChatType.group : ChatType.direct,
-          lastMessage: item.lastContent ?? existingRoom?.lastMessage,
-          lastMessageTime: lastTime ?? existingRoom?.lastMessageTime,
-          unreadCount: existingRoom?.unreadCount ?? 0,
-          isPinned: getRoomPreference(item.roomId).isPinned,
-        ));
+        nextRooms.add(
+          ChatRoom(
+            id: item.roomId,
+            name: displayName,
+            avatar: avatarUrl,
+            type: isGroup ? ChatType.group : ChatType.direct,
+            lastMessage: item.lastContent ?? existingRoom?.lastMessage,
+            lastMessageTime: lastTime ?? existingRoom?.lastMessageTime,
+            unreadCount: existingRoom?.unreadCount ?? 0,
+            isPinned: getRoomPreference(item.roomId).isPinned,
+          ),
+        );
       }
 
       _rooms = nextRooms;
       _contacts = nextContacts;
       _sortRooms();
-      talker.info('ChatDataService.loadContactsAndRooms: loaded ${_rooms.length} rooms, ${_contacts.length} contacts');
+      talker.info(
+        'ChatDataService.loadContactsAndRooms: loaded ${_rooms.length} rooms, ${_contacts.length} contacts',
+      );
     } catch (e) {
       talker.error('ChatDataService loadContactsAndRooms error', e);
     } finally {
@@ -351,7 +376,12 @@ class ChatDataService extends ChangeNotifier {
     }
   }
 
-  void _onMessageAck(String clientMid, {int? serverMid, required MessageStatus status, String? error}) {
+  void _onMessageAck(
+    String clientMid, {
+    int? serverMid,
+    required MessageStatus status,
+    String? error,
+  }) {
     for (final roomId in _messageCache.keys) {
       final msgs = _messageCache[roomId]!;
       final idx = msgs.indexWhere((m) => m.clientMid == clientMid);
@@ -374,7 +404,10 @@ class ChatDataService extends ChangeNotifier {
     }
   }
 
-  List<ChatMessage> _mergeMessages(List<ChatMessage> server, List<ChatMessage> local) {
+  List<ChatMessage> _mergeMessages(
+    List<ChatMessage> server,
+    List<ChatMessage> local,
+  ) {
     final seen = <String>{};
     final result = <ChatMessage>[];
     for (final m in [...server, ...local]) {
@@ -398,7 +431,12 @@ class ChatDataService extends ChangeNotifier {
             : MessageStatus.sent;
         final error = data['error'] as String?;
         if (clientMid != null) {
-          _onMessageAck(clientMid, serverMid: mid, status: status, error: error);
+          _onMessageAck(
+            clientMid,
+            serverMid: mid,
+            status: status,
+            error: error,
+          );
         }
       }
       return;
@@ -508,7 +546,9 @@ class ChatDataService extends ChangeNotifier {
       _rooms[idx] = _rooms[idx].copyWith(
         lastMessage: msg.text,
         lastMessageTime: msg.timestamp,
-        unreadCount: msg.isMe ? _rooms[idx].unreadCount : _rooms[idx].unreadCount + 1,
+        unreadCount: msg.isMe
+            ? _rooms[idx].unreadCount
+            : _rooms[idx].unreadCount + 1,
       );
     } else {
       _addNewRoom(roomId, msg, unreadCount: msg.isMe ? 0 : 1);
@@ -522,19 +562,25 @@ class ChatDataService extends ChangeNotifier {
       final puid = _parseUid(roomId);
       if (puid != null) _fetchProfileForRoom(roomId);
     }
-    _rooms.insert(0, ChatRoom(
-      id: roomId,
-      name: displayNameForRoom(
-        roomId,
-        _userCache[roomId]?.username ?? (isGroupRoom(roomId) ? 'Group ${roomId.substring(1)}' : 'User ${roomId.substring(1)}'),
+    _rooms.insert(
+      0,
+      ChatRoom(
+        id: roomId,
+        name: displayNameForRoom(
+          roomId,
+          _userCache[roomId]?.username ??
+              (isGroupRoom(roomId)
+                  ? 'Group ${roomId.substring(1)}'
+                  : 'User ${roomId.substring(1)}'),
+        ),
+        avatar: _userCache[roomId]?.avatar,
+        type: isGroupRoom(roomId) ? ChatType.group : ChatType.direct,
+        lastMessage: msg.text,
+        lastMessageTime: msg.timestamp,
+        unreadCount: unreadCount,
+        isPinned: getRoomPreference(roomId).isPinned,
       ),
-      avatar: _userCache[roomId]?.avatar,
-      type: isGroupRoom(roomId) ? ChatType.group : ChatType.direct,
-      lastMessage: msg.text,
-      lastMessageTime: msg.timestamp,
-      unreadCount: unreadCount,
-      isPinned: getRoomPreference(roomId).isPinned,
-    ));
+    );
   }
 
   int? _parseUid(String roomId) {
@@ -607,11 +653,13 @@ class ChatDataService extends ChangeNotifier {
       _addNewRoom(roomId, msg, unreadCount: 0);
       if (!isGroupRoom(roomId) && !_contacts.any((c) => c.id == roomId)) {
         final profile = _userCache[roomId];
-        _contacts.add(Contact(
-          id: roomId,
-          name: displayNameForRoom(roomId, profile?.username ?? ''),
-          avatar: profile?.avatar,
-        ));
+        _contacts.add(
+          Contact(
+            id: roomId,
+            name: displayNameForRoom(roomId, profile?.username ?? ''),
+            avatar: profile?.avatar,
+          ),
+        );
       }
     }
     _sortRooms();
@@ -635,7 +683,8 @@ class ChatDataService extends ChangeNotifier {
 
     final rk = roomKey(roomId);
     final serverMsgs = await TfApiClient.instance.queryMessageHistory(
-      uid, password,
+      uid,
+      password,
       rk > 0 ? rk : 0,
       groupId: rk < 0 ? -rk : null,
       limit: 50,
@@ -672,7 +721,8 @@ class ChatDataService extends ChangeNotifier {
 
     final rk = roomKey(roomId);
     final olderMsgs = await TfApiClient.instance.queryMessageHistory(
-      uid, password,
+      uid,
+      password,
       rk > 0 ? rk : 0,
       groupId: rk < 0 ? -rk : null,
       beforeMid: oldestMid,
@@ -703,7 +753,10 @@ class ChatDataService extends ChangeNotifier {
 
   Future<void> addFriendToContacts(int friendUid) async {
     final roomId = roomIdFromUid(friendUid);
-    if (_contacts.any((c) => c.id == roomId) && _rooms.any((r) => r.id == roomId)) return;
+    if (_contacts.any((c) => c.id == roomId) &&
+        _rooms.any((r) => r.id == roomId)) {
+      return;
+    }
 
     final profile = await TfApiClient.instance.getUserByUid(friendUid);
     final baseName = profile?.username ?? 'User $friendUid';
@@ -718,10 +771,17 @@ class ChatDataService extends ChangeNotifier {
       _contacts.add(Contact(id: roomId, name: name, avatar: avatar));
     }
     if (!_rooms.any((r) => r.id == roomId)) {
-      _rooms.insert(0, ChatRoom(
-        id: roomId, name: name, avatar: avatar,
-        type: ChatType.direct, unreadCount: 0, isPinned: getRoomPreference(roomId).isPinned,
-      ));
+      _rooms.insert(
+        0,
+        ChatRoom(
+          id: roomId,
+          name: name,
+          avatar: avatar,
+          type: ChatType.direct,
+          unreadCount: 0,
+          isPinned: getRoomPreference(roomId).isPinned,
+        ),
+      );
     }
     notifyListeners();
   }
