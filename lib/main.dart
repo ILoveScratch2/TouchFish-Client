@@ -15,6 +15,8 @@ import 'models/app_state.dart';
 import 'models/settings_service.dart';
 import 'routes/app_routes.dart';
 import 'services/auth_state.dart';
+import 'services/chat_data_service.dart';
+import 'services/chat_ws_service.dart';
 import 'services/forum_pending_service.dart';
 import 'services/notification_service.dart';
 import 'services/server_connection_status_service.dart';
@@ -353,6 +355,8 @@ class _TouchFishAppState extends State<TouchFishApp> {
     } else {
       NotificationService.instance.stopPolling();
       ForumPendingService.instance.stopPolling();
+      unawaited(ChatWsService.instance.disconnect());
+      unawaited(ChatDataService.instance.reset());
     }
   }
 
@@ -575,7 +579,8 @@ class _TouchFishAppState extends State<TouchFishApp> {
 
         return MaterialApp.router(
           routerConfig: _router,
-          onGenerateTitle: (context) => AppLocalizations.of(context)?.appName ?? '',
+          onGenerateTitle: (context) =>
+              AppLocalizations.of(context)?.appName ?? '',
           debugShowCheckedModeBanner: false,
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -667,9 +672,7 @@ class _TouchFishAppState extends State<TouchFishApp> {
       tertiary: customColors['tertiary'] != null
           ? Color(customColors['tertiary']!)
           : null,
-        surface: surfaceColor != null
-          ? Color(surfaceColor)
-          : null,
+      surface: surfaceColor != null ? Color(surfaceColor) : null,
       error: customColors['error'] != null
           ? Color(customColors['error']!)
           : null,

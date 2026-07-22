@@ -8,7 +8,8 @@ class AdminFileManagementScreen extends StatefulWidget {
   const AdminFileManagementScreen({super.key});
 
   @override
-  State<AdminFileManagementScreen> createState() => _AdminFileManagementScreenState();
+  State<AdminFileManagementScreen> createState() =>
+      _AdminFileManagementScreenState();
 }
 
 class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
@@ -43,7 +44,8 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
 
     try {
       final files = await TfApiClient.instance.adminGetAllFiles(
-        uid, password,
+        uid,
+        password,
         targetUid: _filterUid,
       );
       if (!mounted) return;
@@ -87,7 +89,8 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
     final l10n = AppLocalizations.of(context)!;
     final hash = file['hash'] as String? ?? '';
     final fileName = file['file_name'] as String? ?? 'Unknown';
-    final fileOwner = file['username'] as String? ?? file['uid']?.toString() ?? 'Unknown';
+    final fileOwner =
+        file['username'] as String? ?? file['uid']?.toString() ?? 'Unknown';
 
     final confirmed = await showTouchFishErrorDialog<bool>(
       context,
@@ -97,21 +100,36 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
       selectableMessage: false,
       actions: [
         TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
-        TouchFishDialogAction<bool>(label: l10n.adminFileForceDelete, result: true, isPrimary: true, isDestructive: true),
+        TouchFishDialogAction<bool>(
+          label: l10n.adminFileForceDelete,
+          result: true,
+          isPrimary: true,
+          isDestructive: true,
+        ),
       ],
     );
     if (confirmed != true || !mounted) return;
 
-    final ok = await TfApiClient.instance.adminForceDeleteFile(uid, password, hash);
+    final ok = await TfApiClient.instance.adminForceDeleteFile(
+      uid,
+      password,
+      hash,
+    );
     if (!mounted) return;
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.adminFileForceDeleted(fileName)), behavior: SnackBarBehavior.floating),
+        SnackBar(
+          content: Text(l10n.adminFileForceDeleted(fileName)),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       await _loadAllFiles();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.adminFileForceDeleteFailed), behavior: SnackBarBehavior.floating),
+        SnackBar(
+          content: Text(l10n.adminFileForceDeleteFailed),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
@@ -119,7 +137,9 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
   String _formatSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 
@@ -162,8 +182,13 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
               decoration: InputDecoration(
                 hintText: l10n.adminFileFilterUid,
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 suffixIcon: _filterUid != null
                     ? IconButton(
                         icon: const Icon(Icons.clear, size: 18),
@@ -179,7 +204,10 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          ElevatedButton(onPressed: _applyUidFilter, child: Text(l10n.adminFileFilter)),
+          ElevatedButton(
+            onPressed: _applyUidFilter,
+            child: Text(l10n.adminFileFilter),
+          ),
           if (_filterUid != null) ...[
             const SizedBox(width: 8),
             TextButton(
@@ -197,7 +225,10 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
   }
 
   Widget _buildSummaryBar(AppLocalizations l10n, ColorScheme colorScheme) {
-    final totalSize = _filteredFiles.fold<int>(0, (sum, f) => sum + ((f['size'] as num?)?.toInt() ?? 0));
+    final totalSize = _filteredFiles.fold<int>(
+      0,
+      (sum, f) => sum + ((f['size'] as num?)?.toInt() ?? 0),
+    );
     final uniqueUsers = _filteredFiles.map((f) => f['uid']).toSet().length;
 
     return Container(
@@ -205,14 +236,20 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
       color: colorScheme.surfaceContainerLow,
       child: Row(
         children: [
-          Text('${l10n.adminFileSummaryFiles}: ${_filteredFiles.length}',
-              style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(
+            '${l10n.adminFileSummaryFiles}: ${_filteredFiles.length}',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(width: 16),
-          Text('${l10n.adminFileSummaryUsers}: $uniqueUsers',
-              style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(
+            '${l10n.adminFileSummaryUsers}: $uniqueUsers',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(width: 16),
-          Text('${l10n.adminFileSummaryTotal}: ${_formatSize(totalSize)}',
-              style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(
+            '${l10n.adminFileSummaryTotal}: ${_formatSize(totalSize)}',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );
@@ -230,7 +267,10 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
             const SizedBox(height: 16),
             Text(_error!, style: TextStyle(color: colorScheme.error)),
             const SizedBox(height: 16),
-            ElevatedButton(onPressed: _loadAllFiles, child: Text(l10n.storageRetry)),
+            ElevatedButton(
+              onPressed: _loadAllFiles,
+              child: Text(l10n.storageRetry),
+            ),
           ],
         ),
       );
@@ -241,11 +281,16 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.inventory_2_outlined, size: 64,
-                color: colorScheme.onSurfaceVariant.withOpacity(0.4)),
+            Icon(
+              Icons.inventory_2_outlined,
+              size: 64,
+              color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+            ),
             const SizedBox(height: 16),
             Text(
-              _filterUid != null ? l10n.adminFileNoFilesForUid('$_filterUid') : l10n.adminFileNoFiles,
+              _filterUid != null
+                  ? l10n.adminFileNoFilesForUid('$_filterUid')
+                  : l10n.adminFileNoFiles,
               style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
           ],
@@ -257,13 +302,17 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
       onRefresh: _loadAllFiles,
       child: ListView.builder(
         itemCount: _filteredFiles.length,
-        itemBuilder: (context, index) => _buildFileTile(_filteredFiles[index], colorScheme, l10n),
+        itemBuilder: (context, index) =>
+            _buildFileTile(_filteredFiles[index], colorScheme, l10n),
       ),
     );
   }
 
-  Widget _buildFileTile(Map<String, dynamic> file, ColorScheme colorScheme, AppLocalizations l10n) {
-    final hash = file['hash'] as String? ?? '';
+  Widget _buildFileTile(
+    Map<String, dynamic> file,
+    ColorScheme colorScheme,
+    AppLocalizations l10n,
+  ) {
     final fileName = file['file_name'] as String? ?? 'Unknown';
     final fileOwner = file['username'] as String? ?? 'UID: ${file['uid']}';
     final fileUid = file['uid']?.toString() ?? '?';

@@ -22,10 +22,10 @@ class ProfileEditScreen extends StatefulWidget {
 class _ProfileEditScreenState extends State<ProfileEditScreen> {
   UserProfile? _currentUser;
   bool _isSubmitting = false;
-  
+
   // File picker
   PlatformFile? _selectedAvatar;
-  
+
   // Form fields
   late TextEditingController _emailController;
   late TextEditingController _bioController;
@@ -61,7 +61,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   Future<void> _selectAvatar() async {
     final l10n = AppLocalizations.of(context)!;
-    
+
     final choice = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -84,14 +84,23 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         ),
       ),
     );
-    
+
     if (choice == 'change') {
       FilePickerResult? result;
-      
+
       if (!kIsWeb && Platform.isAndroid) {
         result = await FilePicker.platform.pickFiles(
           type: FileType.custom,
-          allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'],
+          allowedExtensions: [
+            'jpg',
+            'jpeg',
+            'png',
+            'gif',
+            'bmp',
+            'webp',
+            'heic',
+            'heif',
+          ],
           allowMultiple: false,
           withData: false,
         );
@@ -102,7 +111,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           withData: true,
         );
       }
-      
+
       if (result != null) {
         final file = result.files.single;
         if (file.bytes != null || file.path != null) {
@@ -131,31 +140,50 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       // 修改个性签名
       final newSign = _bioController.text.trim();
       if (newSign != (_currentUser!.personalSign ?? '')) {
-        final ok = await TfApiClient.instance.changeSign(uid, password, newSign);
+        final ok = await TfApiClient.instance.changeSign(
+          uid,
+          password,
+          newSign,
+        );
         if (!ok) allOk = false;
       }
 
       // 修改个人介绍
       final newIntro = _introductionController.text.trim();
       if (newIntro != (_currentUser!.introduction ?? '')) {
-        final ok = await TfApiClient.instance.changeIntroduction(uid, password, newIntro);
+        final ok = await TfApiClient.instance.changeIntroduction(
+          uid,
+          password,
+          newIntro,
+        );
         if (!ok) allOk = false;
       }
 
       // 修改邮筱
       final newEmail = _emailController.text.trim();
       if (newEmail != _currentUser!.email && newEmail.isNotEmpty) {
-        final ok = await TfApiClient.instance.changeEmail(uid, password, newEmail);
+        final ok = await TfApiClient.instance.changeEmail(
+          uid,
+          password,
+          newEmail,
+        );
         if (!ok) allOk = false;
       }
 
       // 上传头像
       if (_selectedAvatar != null) {
-        final bytes = _selectedAvatar!.bytes ??
-            ((_selectedAvatar!.path != null) ? await File(_selectedAvatar!.path!).readAsBytes() : null);
+        final bytes =
+            _selectedAvatar!.bytes ??
+            ((_selectedAvatar!.path != null)
+                ? await File(_selectedAvatar!.path!).readAsBytes()
+                : null);
         if (bytes != null) {
           final b64 = base64.encode(bytes);
-          final ok = await TfApiClient.instance.uploadUserAvatar(uid, password, b64);
+          final ok = await TfApiClient.instance.uploadUserAvatar(
+            uid,
+            password,
+            b64,
+          );
           if (ok) {
             AuthState.instance.bumpAvatarVersion();
             imageCache.clear();
@@ -170,19 +198,25 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
       await AuthState.instance.refreshProfile();
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(allOk ? l10n.profileEditUpdated : l10n.profileEditSaveFailed),
-        behavior: SnackBarBehavior.floating,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            allOk ? l10n.profileEditUpdated : l10n.profileEditSaveFailed,
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       if (allOk) context.pop();
     } catch (e) {
       talker.error('_saveProfile failed', e);
       if (mounted) {
         setState(() => _isSubmitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(l10n.profileEditSaveFailed),
-          behavior: SnackBarBehavior.floating,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.profileEditSaveFailed),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }
@@ -193,9 +227,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     if (_currentUser == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -233,11 +265,15 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                         child: _selectedAvatar != null
                             ? CircleAvatar(
                                 radius: 60,
-                                backgroundImage: kIsWeb && _selectedAvatar!.bytes != null
+                                backgroundImage:
+                                    kIsWeb && _selectedAvatar!.bytes != null
                                     ? MemoryImage(_selectedAvatar!.bytes!)
                                     : (_selectedAvatar!.path != null
-                                        ? FileImage(File(_selectedAvatar!.path!)) as ImageProvider
-                                        : null),
+                                          ? FileImage(
+                                                  File(_selectedAvatar!.path!),
+                                                )
+                                                as ImageProvider
+                                          : null),
                               )
                             : ProfilePictureWidget(
                                 avatarUrl: _currentUser!.avatar,
@@ -269,7 +305,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 ),
               ),
             ),
-            
+
             // Basic Info Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -279,11 +315,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   Text(
                     l10n.profileEditBasicInfo,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Username (readonly)
                   TextField(
                     decoration: InputDecoration(
@@ -297,9 +333,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     ),
                     readOnly: true,
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Email
                   TextField(
                     decoration: InputDecoration(
@@ -309,9 +345,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Bio / Personal Sign
                   TextField(
                     decoration: InputDecoration(
@@ -322,9 +358,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     controller: _bioController,
                     maxLength: 100,
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Introduction
                   TextField(
                     decoration: InputDecoration(
@@ -337,9 +373,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     maxLines: 6,
                     maxLength: 500,
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Save Button
                   SizedBox(
                     width: double.infinity,
@@ -349,9 +385,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Symbols.save),
                       label: Text(l10n.profileEditSaveChanges),

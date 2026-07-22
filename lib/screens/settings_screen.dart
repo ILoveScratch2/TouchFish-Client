@@ -258,6 +258,9 @@ class _SettingsScreenState extends State<SettingsScreen>
             },
           );
         }
+        if (item.key == 'maxCachedRooms') {
+          return _buildMaxCachedRoomsSetting(context);
+        }
         return const SizedBox.shrink();
     }
   }
@@ -968,6 +971,72 @@ class _SettingsScreenState extends State<SettingsScreen>
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildMaxCachedRoomsSetting(BuildContext context) {
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        final currentVal = _settingsService
+            .getValue<int>('maxCachedRooms', 50)
+            .toDouble();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.memory),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '消息缓存房间数',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Text(
+                                '内存中保留的最大聊天房间数，超出后驱逐最久未使用的记录',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '${currentVal.round()} 个',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Slider(
+                    value: currentVal.clamp(10.0, 200.0),
+                    min: 10,
+                    max: 200,
+                    divisions: 19,
+                    label: '${currentVal.round()}',
+                    onChanged: (v) async {
+                      await _settingsService.setValue(
+                        'maxCachedRooms',
+                        v.round(),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

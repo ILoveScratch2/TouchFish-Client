@@ -4,14 +4,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 
-
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
   Future<void> _completeWelcome(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isFirstLaunch', false);
-    
+
     if (context.mounted) {
       context.go(AppRoutes.login);
     }
@@ -20,7 +19,7 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Scaffold(
       body: Center(
         child: Container(
@@ -41,7 +40,7 @@ class WelcomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              
+
               // Title
               Text(
                 AppLocalizations.of(context)!.appName,
@@ -52,7 +51,7 @@ class WelcomeScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              
+
               // Subtitle
               Text(
                 AppLocalizations.of(context)!.appSubtitle,
@@ -62,7 +61,7 @@ class WelcomeScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
-              
+
               // Features Card
               Card(
                 child: Padding(
@@ -71,32 +70,47 @@ class WelcomeScreen extends StatelessWidget {
                     children: [
                       _FeatureItem(
                         icon: Icons.speed_rounded,
-                        title: AppLocalizations.of(context)!.welcomeFeatureLightweightTitle,
-                        description: AppLocalizations.of(context)!.welcomeFeatureLightweightDesc,
+                        title: AppLocalizations.of(
+                          context,
+                        )!.welcomeFeatureLightweightTitle,
+                        description: AppLocalizations.of(
+                          context,
+                        )!.welcomeFeatureLightweightDesc,
                       ),
                       const SizedBox(height: 16),
                       _FeatureItem(
                         icon: Icons.devices_rounded,
-                        title: AppLocalizations.of(context)!.welcomeFeatureMultiplatformTitle,
-                        description: AppLocalizations.of(context)!.welcomeFeatureMultiplatformDesc,
+                        title: AppLocalizations.of(
+                          context,
+                        )!.welcomeFeatureMultiplatformTitle,
+                        description: AppLocalizations.of(
+                          context,
+                        )!.welcomeFeatureMultiplatformDesc,
                       ),
                       const SizedBox(height: 16),
                       _FeatureItem(
                         icon: Icons.dns_rounded,
-                        title: AppLocalizations.of(context)!.welcomeFeatureLanTitle,
-                        description: AppLocalizations.of(context)!.welcomeFeatureLanDesc,
+                        title: AppLocalizations.of(
+                          context,
+                        )!.welcomeFeatureLanTitle,
+                        description: AppLocalizations.of(
+                          context,
+                        )!.welcomeFeatureLanDesc,
                       ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 48),
-              
+
               // Start Button
               FilledButton(
                 onPressed: () => _completeWelcome(context),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 12,
+                  ),
                   child: Text(AppLocalizations.of(context)!.welcomeStart),
                 ),
               ),
@@ -122,14 +136,10 @@ class _FeatureItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 32,
-          color: colorScheme.primary,
-        ),
+        Icon(icon, size: 32, color: colorScheme.primary),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
@@ -137,9 +147,9 @@ class _FeatureItem extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               Text(
@@ -155,4 +165,3 @@ class _FeatureItem extends StatelessWidget {
     );
   }
 }
-

@@ -47,7 +47,8 @@ class _AccountScreenState extends State<AccountScreen> {
 
   int get _unreadCount =>
       _notificationService.announcementUnreadCount +
-      _notificationService.friendUnreadCount;
+      _notificationService.inviteUnreadCount +
+      _notificationService.forumUnreadCount;
 
   void _loadUser() {
     setState(() {
@@ -66,6 +67,10 @@ class _AccountScreenState extends State<AccountScreen> {
 
   void _showNotificationSheet(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    _notificationService.markAnnouncementRead();
+    _notificationService.markFriendRead();
+    _notificationService.markInviteRead();
+    _notificationService.markForumRead();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -341,8 +346,7 @@ class _AccountScreenState extends State<AccountScreen> {
                         const SizedBox(height: 8),
                         SignatureEditorWidget(
                           currentSignature: user.personalSign,
-                          onUpdate: (newSign) =>
-                              _updateSignature(newSign),
+                          onUpdate: (newSign) => _updateSignature(newSign),
                         ),
                         const SizedBox(height: 12),
                       ],
@@ -544,7 +548,12 @@ class _AccountNotificationSheet extends StatelessWidget {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 16, left: 20, right: 16, bottom: 12),
+            padding: const EdgeInsets.only(
+              top: 16,
+              left: 20,
+              right: 16,
+              bottom: 12,
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -571,37 +580,36 @@ class _AccountNotificationSheet extends StatelessWidget {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : notifs.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.notifications_none,
-                              size: 64,
-                              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              l10n.notificationEmpty,
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.notifications_none,
+                          size: 64,
+                          color: colorScheme.onSurfaceVariant.withOpacity(0.5),
                         ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                        const SizedBox(height: 16),
+                        Text(
+                          l10n.notificationEmpty,
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
                         ),
-                        itemCount: notifs.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 6),
-                        itemBuilder: (context, index) {
-                          final notif = notifs[index];
-                          return _NotificationCard(notification: notif);
-                        },
-                      ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    itemCount: notifs.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 6),
+                    itemBuilder: (context, index) {
+                      final notif = notifs[index];
+                      return _NotificationCard(notification: notif);
+                    },
+                  ),
           ),
         ],
       ),
@@ -670,10 +678,7 @@ class _NotificationCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              notification.content,
-              style: theme.textTheme.bodyMedium,
-            ),
+            Text(notification.content, style: theme.textTheme.bodyMedium),
           ],
         ),
       ),

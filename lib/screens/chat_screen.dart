@@ -8,16 +8,17 @@ import '../services/api/tf_api_client.dart';
 import '../services/chat_data_service.dart';
 import '../services/chat_ws_service.dart';
 import '../services/auth_state.dart';
-import '../services/local_message_store.dart';
 import '../widgets/chat_list_widget.dart';
 import '../widgets/contact_list_widget.dart';
 import '../widgets/invite_sheet.dart';
+import '../widgets/text_entry_dialog.dart';
+import '../services/notification_service.dart';
 import 'chat_detail_screen.dart';
 import 'group_create_screen.dart';
 
 class ChatShellScreen extends StatefulWidget {
   final Widget child;
-  
+
   const ChatShellScreen({super.key, required this.child});
 
   @override
@@ -31,7 +32,7 @@ class _ChatShellScreenState extends State<ChatShellScreen> {
   static const double _minSidebarWidth = 260.0;
   static const double _maxSidebarWidth = 520.0;
   static const double _collapseThreshold = 210.0;
-  
+
   double _leftFlex = 2.0;
   double _rightFlex = 4.0;
   bool _isHovering = false;
@@ -49,7 +50,7 @@ class _ChatShellScreenState extends State<ChatShellScreen> {
     final savedRatio = prefs.getDouble(_dividerPositionKey);
     final savedCollapsed = prefs.getBool(_collapsedStateKey) ?? false;
     final savedWidth = prefs.getDouble('chat_sidebar_width') ?? 320.0;
-    
+
     if (mounted) {
       setState(() {
         _isCollapsed = savedCollapsed;
@@ -77,8 +78,11 @@ class _ChatShellScreenState extends State<ChatShellScreen> {
         _sidebarWidth = _minSidebarWidth;
       });
     }
-    
-    final next = (_sidebarWidth + dx).clamp(_collapseThreshold, _maxSidebarWidth);
+
+    final next = (_sidebarWidth + dx).clamp(
+      _collapseThreshold,
+      _maxSidebarWidth,
+    );
     setState(() {
       _sidebarWidth = next;
     });
@@ -90,7 +94,7 @@ class _ChatShellScreenState extends State<ChatShellScreen> {
 
     if (isWide) {
       final currentWidth = _isCollapsed ? _collapsedWidth : _sidebarWidth;
-      
+
       return Scaffold(
         body: Row(
           children: [
@@ -120,7 +124,10 @@ class _ChatShellScreenState extends State<ChatShellScreen> {
                       _saveDividerPosition();
                     },
                     onDragUpdate: (dx) {
-                      _updateDividerPosition(dx, MediaQuery.of(context).size.width);
+                      _updateDividerPosition(
+                        dx,
+                        MediaQuery.of(context).size.width,
+                      );
                     },
                     onDragEnd: () {
                       if (_sidebarWidth <= _collapseThreshold) {
@@ -167,7 +174,7 @@ class ChatListScreen extends StatefulWidget {
   final VoidCallback? onToggleCollapse;
   final Function(double)? onDragUpdate;
   final VoidCallback? onDragEnd;
-  
+
   const ChatListScreen({
     super.key,
     this.isAside = false,
@@ -185,9 +192,10 @@ class ChatListScreen extends StatefulWidget {
 class _ChatListScreenState extends State<ChatListScreen>
     with SingleTickerProviderStateMixin {
   static int _lastSelectedTab = 0;
-  
+
   late TabController _tabController;
   final ChatDataService _chatData = ChatDataService.instance;
+  final NotificationService _notificationService = NotificationService.instance;
 
   List<ChatRoom> get _chatRooms => _chatData.rooms;
   List<Contact> get _contacts => _chatData.contacts;
@@ -195,12 +203,17 @@ class _ChatListScreenState extends State<ChatListScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this, initialIndex: _lastSelectedTab);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: _lastSelectedTab,
+    );
     _tabController.addListener(() {
       _lastSelectedTab = _tabController.index;
       setState(() {});
     });
     _chatData.addListener(_onDataChanged);
+    _notificationService.addListener(_onDataChanged);
     AuthState.instance.addListener(_onAuthChanged);
     _initRealData();
   }
@@ -209,6 +222,7 @@ class _ChatListScreenState extends State<ChatListScreen>
   void dispose() {
     _tabController.dispose();
     _chatData.removeListener(_onDataChanged);
+    _notificationService.removeListener(_onDataChanged);
     AuthState.instance.removeListener(_onAuthChanged);
     super.dispose();
   }
@@ -230,17 +244,15 @@ class _ChatListScreenState extends State<ChatListScreen>
     }
   }
 
-  void _initRealData() {
+  Future<void> _initRealData() async {
     if (AuthState.instance.isLoggedIn) {
-      final uid = AuthState.instance.uid;
-      if (uid != null) {
-        LocalMessageStore.instance.setUid(uid);
+      try {
+        await TfApiClient.instance.getBaseUrl();
+      } catch (_) {
+        return;
       }
-      TfApiClient.instance.getBaseUrl().then((baseUrl) {
-        final uri = Uri.parse(baseUrl);
-        LocalMessageStore.instance.setServerKey(uri.host, uri.port);
-      }).catchError((_) {});
-      _chatData.init();         // clears caches, sets up WS, auto-calls loadContactsAndRooms
+      if (!AuthState.instance.isLoggedIn) return;
+      _chatData.init();
       ChatWsService.instance.connect();
     }
   }
@@ -250,13 +262,13 @@ class _ChatListScreenState extends State<ChatListScreen>
     if (widget.isAside) {
       return _buildAsideView(context);
     }
-    
+
     return _buildFullScreenView(context);
   }
 
   Widget _buildAsideView(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     if (widget.isCollapsed) {
       return Card(
         margin: EdgeInsets.zero,
@@ -264,13 +276,7 @@ class _ChatListScreenState extends State<ChatListScreen>
           borderRadius: const BorderRadius.all(Radius.circular(8)),
           child: Stack(
             children: [
-              Column(
-                children: [
-                  Expanded(
-                    child: _buildCollapsedView(context),
-                  ),
-                ],
-              ),
+              Column(children: [Expanded(child: _buildCollapsedView(context))]),
               // 拖动区
               Positioned(
                 top: 0,
@@ -309,7 +315,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                       curve: Curves.easeOut,
                       child: Center(
                         child: Material(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
                           borderRadius: const BorderRadius.horizontal(
                             left: Radius.circular(10),
                           ),
@@ -345,7 +353,7 @@ class _ChatListScreenState extends State<ChatListScreen>
         ),
       );
     }
-    
+
     return Card(
       margin: EdgeInsets.zero,
       child: ClipRRect(
@@ -370,11 +378,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                     ),
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: IconButton(
-                        icon: const Icon(Icons.mail_outline),
-                        onPressed: () => _showInviteSheet(context),
-                        tooltip: l10n.chatInvites,
-                      ),
+                      child: _buildInviteButton(context, l10n),
                     ),
                   ],
                 ),
@@ -438,7 +442,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                     curve: Curves.easeOut,
                     child: Center(
                       child: Material(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         borderRadius: const BorderRadius.horizontal(
                           left: Radius.circular(10),
                         ),
@@ -479,7 +485,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     final colorScheme = Theme.of(context).colorScheme;
     final items = _tabController.index == 0 ? _chatRooms : [];
     final contactItems = _tabController.index == 1 ? _contacts : [];
-    
+
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
@@ -492,20 +498,21 @@ class _ChatListScreenState extends State<ChatListScreen>
                 context.go('/chat/${room.id}');
               },
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(
-                width: 48,
-                height: 48,
-              ),
+              constraints: const BoxConstraints.tightFor(width: 48, height: 48),
               splashRadius: 24,
               icon: Stack(
                 children: [
                   CircleAvatar(
                     radius: 18,
                     backgroundColor: colorScheme.primaryContainer,
-                    backgroundImage: room.avatar != null ? NetworkImage(room.avatar!) : null,
+                    backgroundImage: room.avatar != null
+                        ? NetworkImage(room.avatar!)
+                        : null,
                     child: room.avatar == null
                         ? Icon(
-                            room.type == ChatType.direct ? Icons.person : Icons.group,
+                            room.type == ChatType.direct
+                                ? Icons.person
+                                : Icons.group,
                             color: colorScheme.onPrimaryContainer,
                             size: 18,
                           )
@@ -527,7 +534,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                         ),
                         child: Center(
                           child: Text(
-                            room.unreadCount > 99 ? '99+' : room.unreadCount.toString(),
+                            room.unreadCount > 99
+                                ? '99+'
+                                : room.unreadCount.toString(),
                             style: TextStyle(
                               color: colorScheme.onError,
                               fontSize: 9,
@@ -549,21 +558,26 @@ class _ChatListScreenState extends State<ChatListScreen>
             child: IconButton(
               tooltip: contact.name,
               onPressed: () {
-                final userId = contact.id.startsWith('U') ? contact.id.substring(1) : contact.id;
+                final userId = contact.id.startsWith('U')
+                    ? contact.id.substring(1)
+                    : contact.id;
                 context.go('/user/$userId');
               },
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(
-                width: 48,
-                height: 48,
-              ),
+              constraints: const BoxConstraints.tightFor(width: 48, height: 48),
               splashRadius: 24,
               icon: CircleAvatar(
                 radius: 18,
                 backgroundColor: colorScheme.primaryContainer,
-                backgroundImage: contact.avatar != null ? NetworkImage(contact.avatar!) : null,
+                backgroundImage: contact.avatar != null
+                    ? NetworkImage(contact.avatar!)
+                    : null,
                 child: contact.avatar == null
-                    ? Icon(Icons.person, color: colorScheme.onPrimaryContainer, size: 18)
+                    ? Icon(
+                        Icons.person,
+                        color: colorScheme.onPrimaryContainer,
+                        size: 18,
+                      )
                     : null,
               ),
             ),
@@ -616,11 +630,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.mail_outline),
-                  color: appbarFeColor,
-                  onPressed: () => _showInviteSheet(context),
-                  tooltip: l10n.chatInvites,
+                IconTheme(
+                  data: IconThemeData(color: appbarFeColor),
+                  child: _buildInviteButton(context, l10n),
                 ),
               ],
             ),
@@ -645,6 +657,20 @@ class _ChatListScreenState extends State<ChatListScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) => const InviteSheet(),
+    );
+  }
+
+  Widget _buildInviteButton(BuildContext context, AppLocalizations l10n) {
+    final unread = _notificationService.inviteUnreadCount;
+    return IconButton(
+      icon: unread > 0
+          ? Badge(
+              label: Text(unread > 99 ? '99+' : '$unread'),
+              child: const Icon(Icons.mail_outline),
+            )
+          : const Icon(Icons.mail_outline),
+      onPressed: () => _showInviteSheet(context),
+      tooltip: l10n.chatInvites,
     );
   }
 
@@ -693,42 +719,35 @@ class _ChatListScreenState extends State<ChatListScreen>
     );
   }
 
-  void _showAddFriendDialog() {
-    final controller = TextEditingController();
-    showDialog(
+  Future<void> _showAddFriendDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+    final input = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.chatAddFriend),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: AppLocalizations.of(context)!.chatAddFriendHint,
-            prefixIcon: const Icon(Icons.search),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              final input = controller.text.trim();
-              if (input.isEmpty) return;
-              Navigator.pop(ctx);
-              final targetUid = int.tryParse(input);
-              if (targetUid != null) {
-                context.go('/user/$targetUid');
-              } else {
-                // Search by username — go to a search page
-                context.go('/user/search/$input');
-              }
-            },
-            child: const Text('Search'),
-          ),
-        ],
+      builder: (ctx) => TextEntryDialog(
+        title: l10n.chatAddFriend,
+        hintText: l10n.chatAddFriendHint,
+        cancelLabel: l10n.cancel,
+        confirmLabel: l10n.confirm,
+        icon: Icons.search,
       ),
     );
+    if (input == null || !mounted) return;
+
+    final parsedUid = int.tryParse(input);
+    final profile = parsedUid != null
+        ? await TfApiClient.instance.getUserByUid(parsedUid)
+        : await TfApiClient.instance.getUserByUsername(input);
+    if (!mounted) return;
+    final targetUid = profile == null ? null : int.tryParse(profile.uid);
+    if (targetUid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.commonUserNotFound),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    context.push('/user/$targetUid');
   }
 }

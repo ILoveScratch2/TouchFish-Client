@@ -486,10 +486,28 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serverUseHttps => 'HTTPS';
 
   @override
-  String get serverUseHttpsOn => '使用加密连接';
+  String get serverUseHttpsOn => '尝试加密连接（失败时回退 HTTP）';
 
   @override
   String get serverUseHttpsOff => '使用非加密连接';
+
+  @override
+  String get serverSave => '保存';
+
+  @override
+  String get serverTryWss => 'WSS';
+
+  @override
+  String get serverTryWssOn => '尝试加密 WebSocket（失败时回退 WS）';
+
+  @override
+  String get serverTryWssOff => '使用非加密 WebSocket';
+
+  @override
+  String get serverAutoDetectTcpPort => '自动检测TCP端口';
+
+  @override
+  String get serverAutoDetectTcpPortDesc => '自动从服务器获取TCP端口';
 
   @override
   String get navChat => '聊天';
@@ -1455,6 +1473,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get debugLogsDescription => '查看应用运行日志';
 
   @override
+  String get debugClearMessageDatabase => '清空消息数据库';
+
+  @override
+  String get debugClearMessageDatabaseDescription => '删除此客户端本地缓存的所有消息。';
+
+  @override
+  String get debugClearMessageDatabaseConfirmTitle => '清空消息数据库？';
+
+  @override
+  String get debugClearMessageDatabaseConfirmMessage =>
+      '所有本地缓存的消息都会被删除，服务器上的消息不受影响。';
+
+  @override
+  String get debugClearMessageDatabaseSuccess => '消息数据库已清空。';
+
+  @override
   String get debugCustomInfoDialog => '自定义信息框';
 
   @override
@@ -2124,6 +2158,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get groupEnterHintLabel => '入群提示';
 
   @override
+  String get groupEnterHintHelp => '成员入群后显示在聊天顶部';
+
+  @override
+  String get groupEnterHintUpdated => '入群提示已更新';
+
+  @override
+  String get groupManagement => '群组管理';
+
+  @override
+  String get groupOpen => '打开群聊';
+
+  @override
   String get groupCreateNameEmpty => '群组名称不能为空';
 
   @override
@@ -2163,6 +2209,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get groupTransferOwnerConfirmAction => '确认转让';
+
+  @override
+  String get groupSelectNewOwner => '选择新群主';
+
+  @override
+  String get groupLeave => '退出群组';
+
+  @override
+  String get groupLeaveConfirm => '确定要退出该群组吗？';
+
+  @override
+  String get groupLeaveOwnerHint => '群主需要先转让群主后才能退出';
 
   @override
   String get groupInviteMember => '邀请成员';

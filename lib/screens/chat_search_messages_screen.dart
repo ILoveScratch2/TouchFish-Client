@@ -9,13 +9,11 @@ import '../services/chat_data_service.dart';
 class ChatSearchMessagesScreen extends StatefulWidget {
   final String roomId;
 
-  const ChatSearchMessagesScreen({
-    super.key,
-    required this.roomId,
-  });
+  const ChatSearchMessagesScreen({super.key, required this.roomId});
 
   @override
-  State<ChatSearchMessagesScreen> createState() => _ChatSearchMessagesScreenState();
+  State<ChatSearchMessagesScreen> createState() =>
+      _ChatSearchMessagesScreenState();
 }
 
 class _ChatSearchMessagesScreenState extends State<ChatSearchMessagesScreen> {
@@ -53,14 +51,19 @@ class _ChatSearchMessagesScreenState extends State<ChatSearchMessagesScreen> {
     final normalizedQuery = query.trim().toLowerCase();
     var messages = ChatDataService.instance.getMessages(widget.roomId);
     if (messages.isEmpty) {
-      messages = await ChatDataService.instance.refreshMessagesForContact(widget.roomId);
+      messages = await ChatDataService.instance.refreshMessagesForContact(
+        widget.roomId,
+      );
     }
     if (!mounted) return;
 
-    final results = messages
-        .where((message) => message.text.toLowerCase().contains(normalizedQuery))
-        .toList()
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    final results =
+        messages
+            .where(
+              (message) => message.text.toLowerCase().contains(normalizedQuery),
+            )
+            .toList()
+          ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
     setState(() {
       _isSearching = false;
@@ -128,67 +131,62 @@ class _ChatSearchMessagesScreenState extends State<ChatSearchMessagesScreen> {
                         const SizedBox(height: 16),
                         Text(
                           l10n.chatSearchMessagesHint,
-                          style: TextStyle(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                          style: TextStyle(color: colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
                   )
                 : _searchResults.isEmpty && !_isSearching
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Symbols.search_off,
-                              size: 64,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              l10n.chatSearchMessagesNoResults,
-                              style: TextStyle(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Symbols.search_off,
+                          size: 64,
+                          color: colorScheme.onSurfaceVariant,
                         ),
-                      )
-                    : ListView.builder(
-                        itemCount: _searchResults.length,
-                        itemBuilder: (context, index) {
-                          final message = _searchResults[index];
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: colorScheme.primaryContainer,
-                              child: Icon(
-                                Icons.person,
-                                color: colorScheme.onPrimaryContainer,
-                              ),
-                            ),
-                            title: Text(
-                              message.senderName ?? l10n.chatDetailOther,
-                              style: const TextStyle(fontWeight: FontWeight.w500),
-                            ),
-                            subtitle: Text(
-                              message.text,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            trailing: Text(
-                              _formatTime(message.timestamp),
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            onTap: () {
-                              // 应该导航到对应消息的位置，但这里并没有
-                              Navigator.pop(context);
-                            },
-                          );
+                        const SizedBox(height: 16),
+                        Text(
+                          l10n.chatSearchMessagesNoResults,
+                          style: TextStyle(color: colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _searchResults.length,
+                    itemBuilder: (context, index) {
+                      final message = _searchResults[index];
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: colorScheme.primaryContainer,
+                          child: Icon(
+                            Icons.person,
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                        title: Text(
+                          message.senderName ?? l10n.chatDetailOther,
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        subtitle: Text(
+                          message.text,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: Text(
+                          _formatTime(message.timestamp),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                        onTap: () {
+                          // 应该导航到对应消息的位置，但这里并没有
+                          Navigator.pop(context);
                         },
-                      ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

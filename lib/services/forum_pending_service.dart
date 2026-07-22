@@ -6,7 +6,8 @@ import '../utils/talker.dart';
 
 class ForumPendingService extends ChangeNotifier {
   static ForumPendingService? _instance;
-  static ForumPendingService get instance => _instance ??= ForumPendingService._();
+  static ForumPendingService get instance =>
+      _instance ??= ForumPendingService._();
   ForumPendingService._();
 
   Timer? _pollTimer;
@@ -33,7 +34,10 @@ class ForumPendingService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final forums = await TfApiClient.instance.getApprovingForumList(uid, password);
+      final forums = await TfApiClient.instance.getApprovingForumList(
+        uid,
+        password,
+      );
       _pendingCount = forums.length;
       _error = null;
     } catch (e) {

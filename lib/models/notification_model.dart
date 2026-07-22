@@ -5,11 +5,14 @@ class NotificationInfo {
   final String content;
   final String? senderRaw; // raw server format: "U123" or "G456U123"
   final Map<String, dynamic> meta;
-  final int? mid;          // message ID from messages table
-  final String? clientMid; // client-generated message ID for optimistic dedupe
-  final String? roomId;    // explicit room identifier such as U123 or G456
-  final String? fileHash;  // file hash for message.file events
-  final int? groupId;      // group ID for group messages
+  final int? mid; // message ID
+  final String? clientMid; // client message
+  final String? roomId; // explicit room id
+  final String? fileHash; // file hash
+  final int? groupId; // group ID
+  final List<int> mentionedUids;
+  final bool mentionsMe;
+  final bool? shouldAlert;
 
   const NotificationInfo({
     required this.timeStamp,
@@ -23,6 +26,9 @@ class NotificationInfo {
     this.roomId,
     this.fileHash,
     this.groupId,
+    this.mentionedUids = const [],
+    this.mentionsMe = false,
+    this.shouldAlert,
   });
 
   /// Parsed sender UID from the raw sender string.
@@ -48,7 +54,10 @@ class NotificationInfo {
     // Fallback: old channel.py messages put sender at outerInfo level
     final rawSender = info['sender'] ?? outerInfo['sender'];
     return NotificationInfo(
-      timeStamp: (json['time_stamp'] as num?)?.toDouble() ?? 0.0,
+      timeStamp:
+          (json['time_stamp'] as num?)?.toDouble() ??
+          (outerInfo['time_stamp'] as num?)?.toDouble() ??
+          0.0,
       event: info['event'] as String? ?? '',
       title: info['title'] as String? ?? '',
       content: info['content'] as String? ?? '',
@@ -61,6 +70,11 @@ class NotificationInfo {
       roomId: info['room_id'] as String?,
       fileHash: info['file_hash'] as String?,
       groupId: (info['group_id'] as num?)?.toInt(),
+      mentionedUids: (info['mentioned_uids'] as List<dynamic>? ?? const [])
+          .map((uid) => (uid as num).toInt())
+          .toList(),
+      mentionsMe: info['mentions_me'] as bool? ?? false,
+      shouldAlert: info['should_alert'] as bool?,
     );
   }
 
@@ -73,4 +87,20 @@ class NotificationInfo {
   bool get isForumEvent => event.startsWith('forum.');
   bool get isGroupEvent => event.startsWith('group.');
   bool get isAuthEvent => event.startsWith('auth.');
+  bool get isInviteEvent =>
+      isFriendEvent ||
+      event == 'group.invited' ||
+      event == 'group.join.request' ||
+      event == 'group.join.approved';
+  int? get groupEventGid => (meta['gid'] as num?)?.toInt();
+  int? get groupRequestRid => (meta['rid'] as num?)?.toInt();
+
+  String get identityKey => [
+    timeStamp,
+    event,
+    senderRaw ?? '',
+    mid ?? '',
+    clientMid ?? '',
+    content,
+  ].join('|');
 }

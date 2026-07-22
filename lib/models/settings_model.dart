@@ -9,11 +9,7 @@ enum SettingType {
   customWidget,
 }
 
-enum SettingCategory {
-  appearance,
-  notifications,
-  about,
-}
+enum SettingCategory { appearance, notifications, about }
 
 class SettingItem {
   final String key;
@@ -41,10 +37,7 @@ class SettingOption {
   final String value;
   final String labelKey;
 
-  const SettingOption({
-    required this.value,
-    required this.labelKey,
-  });
+  const SettingOption({required this.value, required this.labelKey});
 }
 
 class SettingCategoryData {
@@ -130,7 +123,9 @@ class SettingsData {
           options: [
             SettingOption(value: 'enter', labelKey: 'settingsSendModeEnter'),
             SettingOption(
-                value: 'ctrlEnter', labelKey: 'settingsSendModeCtrlEnter'),
+              value: 'ctrlEnter',
+              labelKey: 'settingsSendModeCtrlEnter',
+            ),
           ],
         ),
         SettingItem(
@@ -180,6 +175,14 @@ class SettingsData {
       titleKey: 'settingsCategoryNotifications',
       icon: Icons.notifications_active,
       items: [
+        SettingItem(
+          key: 'maxCachedRooms',
+          titleKey: 'maxCachedRooms',
+          descriptionKey: 'maxCachedRoomsDesc',
+          type: SettingType.customWidget,
+          defaultValue: 50,
+          icon: Icons.memory,
+        ),
         SettingItem(
           key: 'systemNotifications',
           titleKey: 'settingsSystemNotificationsTitle',

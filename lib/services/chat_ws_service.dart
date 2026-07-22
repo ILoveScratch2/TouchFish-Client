@@ -21,19 +21,20 @@ class ChatWsService extends ChangeNotifier {
 
   ChatWsState _state = ChatWsState.disconnected;
   ChatWsState get state => _state;
-  bool get isAuthenticated => _state == ChatWsState.authenticated;
+  int? _authenticatedUid;
+  bool get isAuthenticated =>
+      _state == ChatWsState.authenticated &&
+      _authenticatedUid == AuthState.instance.uid;
 
   WebSocketChannel? _channel;
   Uint8List? _sessionAesKey;
   Timer? _reconnectTimer;
   Timer? _pingTimer;
-  Timer? _pongCheckTimer;
   StreamSubscription? _subscription;
   bool _intentionalClose = false;
+  bool _tryingConnectionCandidates = false;
   int _reconnectAttempts = 0;
-  double _lastPongTime = 0;
   static const _maxReconnectAttempts = 10;
-  static const _pongTimeout = Duration(seconds: 15);
 
   Completer<bool>? _authCompleter;
 
@@ -43,28 +44,78 @@ class ChatWsService extends ChangeNotifier {
 
   /// Connect to WebSocket, perform RSA+AES handshake, authenticate.
   Future<bool> connect() async {
-    if (_state == ChatWsState.connecting || _state == ChatWsState.authenticated) {
-      return _state == ChatWsState.authenticated;
-    }
-
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) return false;
 
+    if (_state == ChatWsState.authenticated && _authenticatedUid == uid) {
+      return true;
+    }
+    if (_state == ChatWsState.connecting) return false;
+    if (_state != ChatWsState.disconnected || _authenticatedUid != null) {
+      await disconnect();
+    }
+
     _intentionalClose = false;
     _setState(ChatWsState.connecting);
 
+    _tryingConnectionCandidates = true;
+
     try {
       final host = await _resolveHost();
-      final tcpPort = await _resolveTcpPort();
-      final wsUrl = 'ws://$host:$tcpPort';
+      final tcpPort = await TfApiClient.instance.resolveTcpPort();
+      final tryWss = await TfApiClient.instance.shouldTryWss();
+      for (final uri in candidateWebSocketUris(host, tcpPort, tryWss: tryWss)) {
+        final result = await _connectToCandidate(uri, uid, password);
+        if (result == _CandidateConnectionResult.authenticated) {
+          return true;
+        }
+        if (result == _CandidateConnectionResult.authenticationFailed) {
+          break;
+        }
+      }
+    } catch (error, stackTrace) {
+      talker.error(
+        'ChatWsService failed to resolve the server endpoint',
+        error,
+        stackTrace,
+      );
+    } finally {
+      _tryingConnectionCandidates = false;
+    }
 
-      talker.info('ChatWsService connecting to $wsUrl');
+    _scheduleReconnect();
+    return false;
+  }
 
-      final channel = WebSocketChannel.connect(Uri.parse(wsUrl));
+  @visibleForTesting
+  static List<Uri> candidateWebSocketUris(
+    String host,
+    int port, {
+    bool tryWss = true,
+  }) => [
+    if (tryWss) Uri(scheme: 'wss', host: host, port: port),
+    Uri(scheme: 'ws', host: host, port: port),
+  ];
+
+  Future<_CandidateConnectionResult> _connectToCandidate(
+    Uri uri,
+    int uid,
+    String password,
+  ) async {
+    WebSocketChannel? candidateChannel;
+    var transportConnected = false;
+    try {
+      _setState(ChatWsState.connecting);
+      talker.info('ChatWsService connecting to $uri');
+      final channel = WebSocketChannel.connect(uri);
+      candidateChannel = channel;
+      await channel.ready.timeout(const Duration(seconds: 5));
+      transportConnected = true;
+
       _channel = channel;
       _setState(ChatWsState.connected);
-
+      _authCompleter = Completer<bool>();
       _subscription = channel.stream.listen(
         _onData,
         onError: _onError,
@@ -72,48 +123,54 @@ class ChatWsService extends ChangeNotifier {
         cancelOnError: false,
       );
 
-      // Phase 1: Send RSA-encrypted AES key as plain JSON
       final pubKey = await TfApiClient.instance.getRsaPublicKey();
       final aesKey = TfCrypto.generateAesKey();
       _sessionAesKey = aesKey;
       final encryptedAesKey = TfCrypto.rsaEncrypt(aesKey, pubKey);
-      channel.sink.add(jsonEncode({
-        'type': 'REQ.UPDATE_AES_KEY',
-        'aes_key': base64.encode(encryptedAesKey),
-      }));
+      channel.sink.add(
+        jsonEncode({
+          'type': 'REQ.UPDATE_AES_KEY',
+          'aes_key': base64.encode(encryptedAesKey),
+        }),
+      );
+      _sendEncrypted(
+        jsonEncode({'type': 'AUTH.LOGIN', 'uid': uid, 'password': password}),
+      );
 
-      // Phase 2: Send AUTH.LOGIN encrypted as {"iv": ..., "content": ...}
-      // TCP guarantees ordering, so the server will process REQ.UPDATE_AES_KEY first.
-      _sendEncrypted(jsonEncode({
-        'type': 'AUTH.LOGIN',
-        'uid': uid,
-        'password': password,
-      }));
-
-      // Phase 3: Wait for AUTH.LOGIN_SUCCEEDED
-      _authCompleter = Completer<bool>();
       final success = await _authCompleter!.future.timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          talker.warning('ChatWsService auth timeout');
+          talker.warning('ChatWsService auth timeout for $uri');
           return false;
         },
       );
       _authCompleter = null;
 
-      if (success) {
-        _setState(ChatWsState.authenticated);
-        _reconnectAttempts = 0;
-        _startPing();
-        talker.info('ChatWsService authenticated');
-      } else {
+      if (!success) {
         _disconnectCleanup();
+        return _CandidateConnectionResult.authenticationFailed;
       }
-      return success;
-    } catch (e) {
-      talker.error('ChatWsService connect error', e);
-      _scheduleReconnect();
-      return false;
+
+      _authenticatedUid = uid;
+      _setState(ChatWsState.authenticated);
+      _reconnectAttempts = 0;
+      _startPing();
+      talker.info(
+        'ChatWsService authenticated over ${uri.scheme.toUpperCase()}',
+      );
+      return _CandidateConnectionResult.authenticated;
+    } catch (error, stackTrace) {
+      talker.warning(
+        'ChatWsService ${uri.scheme.toUpperCase()} connection failed',
+        error,
+        stackTrace,
+      );
+      candidateChannel?.sink.close();
+      _authCompleter = null;
+      _disconnectCleanup();
+      return transportConnected
+          ? _CandidateConnectionResult.authenticationFailed
+          : _CandidateConnectionResult.connectionFailed;
     }
   }
 
@@ -144,7 +201,7 @@ class ChatWsService extends ChangeNotifier {
       final parsed = jsonDecode(text);
       if (parsed is Map<String, dynamic>) {
         if (parsed['type'] == 'AUTH.LOGIN_SUCCEEDED') {
-          _authCompleter?.complete(true);
+          _completeAuthentication(true);
         }
       }
     } catch (_) {}
@@ -152,11 +209,15 @@ class ChatWsService extends ChangeNotifier {
 
   void _onError(Object error) {
     talker.error('ChatWsService stream error', error);
+    _completeAuthentication(false);
   }
 
   void _onDone() {
     talker.info('ChatWsService stream closed');
-    if (!_intentionalClose) _scheduleReconnect();
+    _completeAuthentication(false);
+    if (!_intentionalClose && !_tryingConnectionCandidates) {
+      _scheduleReconnect();
+    }
   }
 
   void _processPacket(Map<String, dynamic> data) {
@@ -164,12 +225,19 @@ class ChatWsService extends ChangeNotifier {
     if (type == null) return;
 
     if (type == 'AUTH.LOGIN_SUCCEEDED') {
-      _authCompleter?.complete(true);
+      _completeAuthentication(true);
       return;
     }
 
     if (type == 'PONG') {
-      _lastPongTime = DateTime.now().millisecondsSinceEpoch / 1000.0;
+      return;
+    }
+
+    if (_authenticatedUid == null ||
+        _authenticatedUid != AuthState.instance.uid) {
+      talker.warning(
+        'ChatWsService discarded packet from stale uid=$_authenticatedUid',
+      );
       return;
     }
 
@@ -177,24 +245,35 @@ class ChatWsService extends ChangeNotifier {
       final notif = data['notification'] as Map<String, dynamic>?;
       if (notif != null) {
         final ts = (notif['time_stamp'] as num?)?.toDouble();
-        _eventController.add(ChatWsEvent(
-          type: 'NOTIFICATION.NEW',
-          notification: notif,
-          timeStamp: ts ?? DateTime.now().millisecondsSinceEpoch / 1000.0,
-        ));
+        _eventController.add(
+          ChatWsEvent(
+            type: 'NOTIFICATION.NEW',
+            notification: notif,
+            timeStamp: ts ?? DateTime.now().millisecondsSinceEpoch / 1000.0,
+          ),
+        );
       }
       return;
     }
 
     // Forward other typed events (message.ack, message.read, typing.*)
-    _eventController.add(ChatWsEvent(
-      type: type,
-      notification: data,
-      timeStamp: DateTime.now().millisecondsSinceEpoch / 1000.0,
-    ));
+    _eventController.add(
+      ChatWsEvent(
+        type: type,
+        notification: data,
+        timeStamp: DateTime.now().millisecondsSinceEpoch / 1000.0,
+      ),
+    );
   }
 
-  /// Send AES-encrypted payload as {"iv": "<base64>", "content": "<base64>"}
+  void _completeAuthentication(bool success) {
+    final completer = _authCompleter;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete(success);
+    }
+  }
+
+  /// Send an AES-encrypted payload containing base64 IV and content fields.
   void _sendEncrypted(String plainJson) {
     if (_sessionAesKey == null || _channel == null) return;
     final iv = TfCrypto.generateIv();
@@ -217,7 +296,11 @@ class ChatWsService extends ChangeNotifier {
       if (ivB64 is! String || contentB64 is! String) return null;
       final iv = base64.decode(ivB64);
       final ct = base64.decode(contentB64);
-      return TfCrypto.aesDecrypt(Uint8List.fromList(ct), _sessionAesKey!, Uint8List.fromList(iv));
+      return TfCrypto.aesDecrypt(
+        Uint8List.fromList(ct),
+        _sessionAesKey!,
+        Uint8List.fromList(iv),
+      );
     } catch (_) {
       return null;
     }
@@ -235,39 +318,13 @@ class ChatWsService extends ChangeNotifier {
     return '127.0.0.1';
   }
 
-  Future<int> _resolveTcpPort() async {
-    final prefs = await SharedPreferences.getInstance();
-    final serversJson = prefs.getStringList('serversV2');
-    final selectedIndex = prefs.getInt('selectedServerIndex') ?? 0;
-    if (serversJson != null && serversJson.isNotEmpty) {
-      final idx = selectedIndex.clamp(0, serversJson.length - 1);
-      final info = jsonDecode(serversJson[idx]) as Map<String, dynamic>;
-      final raw = info['tcpPort'] ?? info['tcp_port'];
-      if (raw != null) return int.tryParse(raw.toString()) ?? 1145;
-    }
-    return 1145;
-  }
-
   void _startPing() {
     _pingTimer?.cancel();
-    _pongCheckTimer?.cancel();
-    _pongCheckTimer = null; // only start after first PING
     _pingTimer = Timer.periodic(const Duration(seconds: 50), (_) {
       if (_state == ChatWsState.authenticated && _channel != null) {
         try {
           _sendEncrypted(jsonEncode({'type': 'PING'}));
         } catch (_) {}
-        if (_pongCheckTimer == null) {
-          _lastPongTime = DateTime.now().millisecondsSinceEpoch / 1000.0;
-          _pongCheckTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-            if (_state != ChatWsState.authenticated || _channel == null) return;
-            final now = DateTime.now().millisecondsSinceEpoch / 1000.0;
-            if (now - _lastPongTime > _pongTimeout.inSeconds) {
-              talker.warning('ChatWsService PONG timeout, reconnecting');
-              _scheduleReconnect();
-            }
-          });
-        }
       }
     });
   }
@@ -278,8 +335,8 @@ class ChatWsService extends ChangeNotifier {
     _channel?.sink.close();
     _channel = null;
     _sessionAesKey = null;
+    _authenticatedUid = null;
     _pingTimer?.cancel();
-    _pongCheckTimer?.cancel();
     _setState(ChatWsState.disconnected);
   }
 
@@ -289,7 +346,9 @@ class ChatWsService extends ChangeNotifier {
     if (_reconnectAttempts >= _maxReconnectAttempts) return;
     _reconnectAttempts++;
     final delay = Duration(seconds: min(_reconnectAttempts * 2, 30));
-    talker.info('ChatWsService reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts)');
+    talker.info(
+      'ChatWsService reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts)',
+    );
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(delay, () {
       if (!_intentionalClose) connect();
@@ -305,8 +364,13 @@ class ChatWsService extends ChangeNotifier {
 
   // --- Public API ---
 
-  Future<bool> sendTextMessage(String sendToUid, String text, {int quote = -1, String? clientMid}) {
-    if (_state != ChatWsState.authenticated) return Future.value(false);
+  Future<bool> sendTextMessage(
+    String sendToUid,
+    String text, {
+    int quote = -1,
+    String? clientMid,
+  }) {
+    if (!isAuthenticated) return Future.value(false);
     try {
       final payload = <String, dynamic>{
         'type': 'message.plain',
@@ -321,8 +385,13 @@ class ChatWsService extends ChangeNotifier {
     }
   }
 
-  Future<bool> sendGroupTextMessage(int gid, String text, {int quote = -1, String? clientMid}) {
-    if (_state != ChatWsState.authenticated) return Future.value(false);
+  Future<bool> sendGroupTextMessage(
+    int gid,
+    String text, {
+    int quote = -1,
+    String? clientMid,
+  }) {
+    if (!isAuthenticated) return Future.value(false);
     try {
       final payload = <String, dynamic>{
         'type': 'message.plain',
@@ -337,8 +406,13 @@ class ChatWsService extends ChangeNotifier {
     }
   }
 
-  Future<bool> sendFileMessage(String sendToUid, String fileHash, {int quote = -1, String? clientMid}) {
-    if (_state != ChatWsState.authenticated) return Future.value(false);
+  Future<bool> sendFileMessage(
+    String sendToUid,
+    String fileHash, {
+    int quote = -1,
+    String? clientMid,
+  }) {
+    if (!isAuthenticated) return Future.value(false);
     try {
       final payload = <String, dynamic>{
         'type': 'message.file',
@@ -353,8 +427,13 @@ class ChatWsService extends ChangeNotifier {
     }
   }
 
-  Future<bool> sendGroupFileMessage(int gid, String fileHash, {int quote = -1, String? clientMid}) {
-    if (_state != ChatWsState.authenticated) return Future.value(false);
+  Future<bool> sendGroupFileMessage(
+    int gid,
+    String fileHash, {
+    int quote = -1,
+    String? clientMid,
+  }) {
+    if (!isAuthenticated) return Future.value(false);
     try {
       final payload = <String, dynamic>{
         'type': 'message.file',
@@ -370,20 +449,24 @@ class ChatWsService extends ChangeNotifier {
   }
 
   void sendReadReceipt(String roomId, int lastMid) {
-    if (_state != ChatWsState.authenticated) return;
-    _sendEncrypted(jsonEncode({
-      'type': 'message.read',
-      'room_id': roomId,
-      'last_mid': lastMid,
-    }));
+    if (!isAuthenticated) return;
+    _sendEncrypted(
+      jsonEncode({
+        'type': 'message.read',
+        'room_id': roomId,
+        'last_mid': lastMid,
+      }),
+    );
   }
 
   void sendTyping(String roomId, bool isTyping) {
-    if (_state != ChatWsState.authenticated) return;
-    _sendEncrypted(jsonEncode({
-      'type': isTyping ? 'typing.start' : 'typing.stop',
-      'room_id': roomId,
-    }));
+    if (!isAuthenticated) return;
+    _sendEncrypted(
+      jsonEncode({
+        'type': isTyping ? 'typing.start' : 'typing.stop',
+        'room_id': roomId,
+      }),
+    );
   }
 
   Future<void> disconnect() async {
@@ -400,14 +483,16 @@ class ChatWsService extends ChangeNotifier {
   }
 }
 
+enum _CandidateConnectionResult {
+  connectionFailed,
+  authenticationFailed,
+  authenticated,
+}
+
 class ChatWsEvent {
   final String type;
   final Map<String, dynamic>? notification;
   final double? timeStamp;
 
-  const ChatWsEvent({
-    required this.type,
-    this.notification,
-    this.timeStamp,
-  });
+  const ChatWsEvent({required this.type, this.notification, this.timeStamp});
 }

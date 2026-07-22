@@ -52,14 +52,11 @@ class Contact {
   final String name;
   final String? avatar;
 
-  Contact({
-    required this.id,
-    required this.name,
-    this.avatar,
-  });
+  Contact({required this.id, required this.name, this.avatar});
 }
 
 // 例子数据，肥肠真实
+// 对了这些数据是不是用不着了
 class ChatDemoData {
   static List<ChatRoom> getDemoChatRooms() {
     return [
@@ -108,31 +105,11 @@ class ChatDemoData {
 
   static List<Contact> getDemoContacts() {
     return [
-      Contact(
-        id: '1',
-        name: 'XSFX',
-        avatar: null,
-      ),
-      Contact(
-        id: '2',
-        name: 'L3',
-        avatar: null,
-      ),
-      Contact(
-        id: '3',
-        name: 'Pztsdy',
-        avatar: null,
-      ),
-      Contact(
-        id: '4',
-        name: 'JohnChiao',
-        avatar: null,
-      ),
-      Contact(
-        id: '5',
-        name: 'Hughpig',
-        avatar: null,
-      ),
+      Contact(id: '1', name: 'XSFX', avatar: null),
+      Contact(id: '2', name: 'L3', avatar: null),
+      Contact(id: '3', name: 'Pztsdy', avatar: null),
+      Contact(id: '4', name: 'JohnChiao', avatar: null),
+      Contact(id: '5', name: 'Hughpig', avatar: null),
     ];
   }
 }

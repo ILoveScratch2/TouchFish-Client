@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../widgets/app_alert_dialog.dart';
+import '../../services/chat_data_service.dart';
 import './api_test_screen.dart';
 import './markdown_test_screen.dart';
 import './talker_log_screen.dart';
@@ -69,6 +70,29 @@ class DebugOptionsScreen extends StatelessWidget {
       );
   }
 
+  Future<void> _clearMessageDatabase(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showTouchFishInfoDialog<bool>(
+      context,
+      title: l10n.debugClearMessageDatabaseConfirmTitle,
+      message: l10n.debugClearMessageDatabaseConfirmMessage,
+      actions: [
+        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
+        TouchFishDialogAction<bool>(
+          label: l10n.clear,
+          result: true,
+          isPrimary: true,
+        ),
+      ],
+    );
+    if (confirmed != true) return;
+    await ChatDataService.instance.clearLocalMessageDatabase();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.debugClearMessageDatabaseSuccess)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -95,7 +119,10 @@ class DebugOptionsScreen extends StatelessWidget {
           ),
           const Divider(height: 1),
           ListTile(
-            leading: Icon(Icons.text_snippet_outlined, color: colorScheme.primary),
+            leading: Icon(
+              Icons.text_snippet_outlined,
+              color: colorScheme.primary,
+            ),
             trailing: const Icon(Symbols.chevron_right),
             contentPadding: const EdgeInsets.symmetric(horizontal: 24),
             title: Text(l10n.debugMarkdownTester),
@@ -138,6 +165,14 @@ class DebugOptionsScreen extends StatelessWidget {
             title: Text(l10n.debugCustomErrorDialog),
             subtitle: Text(l10n.debugCustomErrorDialogDescription),
             onTap: () => _showErrorDialogPreview(context),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(Symbols.delete_sweep, color: colorScheme.error),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+            title: Text(l10n.debugClearMessageDatabase),
+            subtitle: Text(l10n.debugClearMessageDatabaseDescription),
+            onTap: () => _clearMessageDatabase(context),
           ),
           const Divider(height: 1),
         ],

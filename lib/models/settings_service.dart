@@ -40,6 +40,7 @@ class SettingsService extends ChangeNotifier {
 
     return defaultValue;
   }
+
   Map<String, dynamic>? getJsonValue(String key) {
     if (!_initialized) return null;
     final jsonString = _prefs.getString(key);
@@ -72,14 +73,14 @@ class SettingsService extends ChangeNotifier {
   // Set JSON value
   Future<void> setJsonValue(String key, Map<String, dynamic>? value) async {
     if (!_initialized) await init();
-    
+
     if (value != null) {
       final jsonString = jsonEncode(value);
       await _prefs.setString(key, jsonString);
     } else {
       await _prefs.remove(key);
     }
-    
+
     notifyListeners();
   }
 

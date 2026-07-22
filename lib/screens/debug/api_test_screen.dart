@@ -27,7 +27,8 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
   TfDebugRequestMethod _requestMethod = TfDebugRequestMethod.post;
 
   bool get _hasCredentials {
-    return AuthState.instance.uid != null && AuthState.instance.password != null;
+    return AuthState.instance.uid != null &&
+        AuthState.instance.password != null;
   }
 
   bool get _canEncryptRequest => _requestMethod == TfDebugRequestMethod.post;
@@ -172,9 +173,9 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         Container(
@@ -207,9 +208,9 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
           children: [
             Text(
               l10n.debugApiTester,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -229,7 +230,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<TfDebugRequestMethod>(
-                initialValue: _requestMethod,
+              initialValue: _requestMethod,
               decoration: InputDecoration(
                 labelText: l10n.debugApiTesterMethod,
                 prefixIcon: const Icon(Icons.swap_horiz_rounded),
@@ -327,9 +328,9 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
           children: [
             Text(
               l10n.debugApiTesterResultTitle,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -349,9 +350,9 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
             else ...[
               Text(
                 '${l10n.debugApiTesterStatus}: ${result.statusCode == null ? l10n.debugApiTesterStatusUnavailable : 'HTTP ${result.statusCode}'}',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
               if (result.requestUrl.isNotEmpty) ...[
                 const SizedBox(height: 16),

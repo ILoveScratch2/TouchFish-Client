@@ -1,19 +1,8 @@
 import 'notification_model.dart';
 
-enum MessageType {
-  text,
-  image,
-  video,
-  audio,
-  file,
-}
+enum MessageType { text, image, video, audio, file }
 
-enum MessageStatus {
-  pending,
-  sent,
-  delivered,
-  failed,
-}
+enum MessageStatus { pending, sent, delivered, failed }
 
 class MessageMedia {
   final String path; // file path, URL, or file hash
@@ -51,6 +40,9 @@ class ChatMessage {
   final MessageType type;
   final MessageMedia? media;
   final String? ackError;
+  final List<int> mentionedUids;
+  final bool mentionsMe;
+  final bool? shouldAlert;
 
   ChatMessage({
     required this.id,
@@ -66,6 +58,9 @@ class ChatMessage {
     this.type = MessageType.text,
     this.media,
     this.ackError,
+    this.mentionedUids = const [],
+    this.mentionsMe = false,
+    this.shouldAlert,
   });
 
   ChatMessage copyWith({
@@ -82,6 +77,10 @@ class ChatMessage {
     MessageType? type,
     MessageMedia? media,
     String? ackError,
+    bool clearAckError = false,
+    List<int>? mentionedUids,
+    bool? mentionsMe,
+    bool? shouldAlert,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -96,7 +95,10 @@ class ChatMessage {
       senderAvatar: senderAvatar ?? this.senderAvatar,
       type: type ?? this.type,
       media: media ?? this.media,
-      ackError: ackError ?? this.ackError,
+      ackError: clearAckError ? null : ackError ?? this.ackError,
+      mentionedUids: mentionedUids ?? this.mentionedUids,
+      mentionsMe: mentionsMe ?? this.mentionsMe,
+      shouldAlert: shouldAlert ?? this.shouldAlert,
     );
   }
 
@@ -138,6 +140,9 @@ class ChatMessage {
           fileName: fileHash,
           fileHash: fileHash,
         ),
+        mentionedUids: notification.mentionedUids,
+        mentionsMe: notification.mentionsMe,
+        shouldAlert: notification.shouldAlert,
       );
     }
 
@@ -152,6 +157,9 @@ class ChatMessage {
       senderName: resolvedName,
       senderAvatar: senderAvatar,
       type: MessageType.text,
+      mentionedUids: notification.mentionedUids,
+      mentionsMe: notification.mentionsMe,
+      shouldAlert: notification.shouldAlert,
     );
   }
 
@@ -163,6 +171,9 @@ class ChatMessage {
     final content = json['content'] as String? ?? '';
     final contentType = json['content_type'] as String? ?? 'plain';
     final sendTime = (json['send_time'] as num?)?.toDouble() ?? 0.0;
+    final mentionedUids = (json['mentioned_uids'] as List<dynamic>? ?? const [])
+        .map((uid) => (uid as num).toInt())
+        .toList();
 
     final isMe = senderUid == myUid;
     final dt = DateTime.fromMillisecondsSinceEpoch((sendTime * 1000).toInt());
@@ -183,6 +194,8 @@ class ChatMessage {
           fileName: fileHash,
           fileHash: fileHash,
         ),
+        mentionedUids: mentionedUids,
+        mentionsMe: mentionedUids.contains(myUid),
       );
     }
 
@@ -195,6 +208,8 @@ class ChatMessage {
       timestamp: dt,
       isMe: isMe,
       type: MessageType.text,
+      mentionedUids: mentionedUids,
+      mentionsMe: mentionedUids.contains(myUid),
     );
   }
 
@@ -211,17 +226,22 @@ class ChatMessage {
       'senderName': senderName,
       'senderAvatar': senderAvatar,
       'type': type.index,
-      if (media != null) 'media': {
-        'path': media!.path,
-        'fileName': media!.fileName,
-        'fileSize': media!.fileSize,
-        'mimeType': media!.mimeType,
-        'fileHash': media!.fileHash,
-      },
+      'ackError': ackError,
+      'mentionedUids': mentionedUids,
+      'mentionsMe': mentionsMe,
+      'shouldAlert': shouldAlert,
+      if (media != null)
+        'media': {
+          'path': media!.path,
+          'fileName': media!.fileName,
+          'fileSize': media!.fileSize,
+          'mimeType': media!.mimeType,
+          'fileHash': media!.fileHash,
+        },
     };
   }
 
-  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+  factory ChatMessage.fromJson(Map<String, dynamic> json, {int? activeUid}) {
     MessageMedia? media;
     if (json['media'] is Map) {
       final m = json['media'] as Map<String, dynamic>;
@@ -233,7 +253,8 @@ class ChatMessage {
         fileHash: m['fileHash'] as String?,
       );
     }
-    final rawStatus = (json['status'] as num?)?.toInt() ?? MessageStatus.sent.index;
+    final rawStatus =
+        (json['status'] as num?)?.toInt() ?? MessageStatus.sent.index;
     final rawType = (json['type'] as num?)?.toInt() ?? MessageType.text.index;
     final status = rawStatus >= 0 && rawStatus < MessageStatus.values.length
         ? MessageStatus.values[rawStatus]
@@ -241,19 +262,34 @@ class ChatMessage {
     final type = rawType >= 0 && rawType < MessageType.values.length
         ? MessageType.values[rawType]
         : MessageType.text;
+    var senderUid = (json['senderUid'] as num?)?.toInt();
+    final legacyIsMe = json['isMe'] as bool? ?? false;
+    if (senderUid == null && activeUid != null && legacyIsMe) {
+      senderUid = activeUid;
+    }
     return ChatMessage(
       id: json['id'] as String? ?? '',
       mid: (json['mid'] as num?)?.toInt(),
       clientMid: json['clientMid'] as String?,
-      senderUid: (json['senderUid'] as num?)?.toInt(),
+      senderUid: senderUid,
       status: status,
       text: json['text'] as String? ?? '',
-      timestamp: DateTime.fromMillisecondsSinceEpoch((json['timestamp'] as int?) ?? 0),
-      isMe: json['isMe'] as bool? ?? false,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(
+        (json['timestamp'] as int?) ?? 0,
+      ),
+      isMe: activeUid != null && senderUid != null
+          ? senderUid == activeUid
+          : legacyIsMe,
       senderName: json['senderName'] as String?,
       senderAvatar: json['senderAvatar'] as String?,
       type: type,
       media: media,
+      ackError: json['ackError'] as String?,
+      mentionedUids: (json['mentionedUids'] as List<dynamic>? ?? const [])
+          .map((uid) => (uid as num).toInt())
+          .toList(),
+      mentionsMe: json['mentionsMe'] as bool? ?? false,
+      shouldAlert: json['shouldAlert'] as bool?,
     );
   }
 }

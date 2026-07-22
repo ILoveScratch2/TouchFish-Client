@@ -83,24 +83,28 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _members.isEmpty
-                    ? Center(
-                        child: Text(
-                          l10n.adminPendingForumsEmpty,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: _members.length,
-                        itemBuilder: (context, index) {
-                          final member = _members[index];
-                          final account = _profiles[member.accountUid];
-                          return _buildMemberTile(
-                            context, l10n, member, account, isModerator,
-                          );
-                        },
+                ? Center(
+                    child: Text(
+                      l10n.adminPendingForumsEmpty,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _members.length,
+                    itemBuilder: (context, index) {
+                      final member = _members[index];
+                      final account = _profiles[member.accountUid];
+                      return _buildMemberTile(
+                        context,
+                        l10n,
+                        member,
+                        account,
+                        isModerator,
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -136,7 +140,8 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
   }
 
   Future<void> _showAddMemberDialog(
-    BuildContext context, AppLocalizations l10n,
+    BuildContext context,
+    AppLocalizations l10n,
   ) async {
     final uidController = TextEditingController();
     final result = await showDialog<bool>(
@@ -165,7 +170,13 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
               final pwd = AuthState.instance.password;
               final fid = int.tryParse(widget.forumId);
               if (uid == null || pwd == null || fid == null) return;
-              final ok = await TfApiClient.instance.addMember(uid, pwd, fid, targetUid, 0);
+              final ok = await TfApiClient.instance.addMember(
+                uid,
+                pwd,
+                fid,
+                targetUid,
+                0,
+              );
               if (ctx.mounted) Navigator.pop(ctx, ok);
             },
             child: Text(l10n.forumInviteMember),
@@ -187,8 +198,8 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
     bool isModerator,
   ) {
     final displayName = account?.username ?? 'UID:${member.accountUid}';
-    final canManage = isModerator &&
-        (widget.currentIdentity?.role ?? 0) > member.role;
+    final canManage =
+        isModerator && (widget.currentIdentity?.role ?? 0) > member.role;
 
     return ListTile(
       contentPadding: const EdgeInsets.only(left: 16, right: 12),
@@ -200,7 +211,11 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
       title: Row(
         children: [
           Flexible(
-            child: Text(displayName, maxLines: 1, overflow: TextOverflow.ellipsis),
+            child: Text(
+              displayName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           if (member.joinedAt == null) ...[
             const SizedBox(width: 6),
@@ -213,7 +228,10 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
           Text(_getRoleLabel(l10n, member.role)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: const Text('·', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              '·',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
           Expanded(child: Text('@$displayName')),
         ],
@@ -250,8 +268,17 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
                       final pwd = AuthState.instance.password;
                       final fid = int.tryParse(widget.forumId);
                       final targetUid = int.tryParse(member.accountUid);
-                      if (uid == null || pwd == null || fid == null || targetUid == null) return;
-                      final ok = await TfApiClient.instance.removeMember(uid, pwd, fid, targetUid);
+                      if (uid == null ||
+                          pwd == null ||
+                          fid == null ||
+                          targetUid == null)
+                        return;
+                      final ok = await TfApiClient.instance.removeMember(
+                        uid,
+                        pwd,
+                        fid,
+                        targetUid,
+                      );
                       if (mounted && ok) {
                         _fetchMembers();
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -284,13 +311,20 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
       final pwd = AuthState.instance.password;
       final fid = int.tryParse(widget.forumId);
       final targetUid = int.tryParse(member.accountUid);
-      if (uid == null || pwd == null || fid == null || targetUid == null) return;
-      final ok = await TfApiClient.instance.changeMemberRole(uid, pwd, fid, targetUid, newRole);
+      if (uid == null || pwd == null || fid == null || targetUid == null)
+        return;
+      final ok = await TfApiClient.instance.changeMemberRole(
+        uid,
+        pwd,
+        fid,
+        targetUid,
+        newRole,
+      );
       if (mounted && ok) {
         _fetchMembers();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.forumMemberRole)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.forumMemberRole)));
       }
     }
   }
@@ -332,23 +366,32 @@ class _ForumMemberRoleSheetState extends State<_ForumMemberRoleSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final displayName = widget.account?.username ?? 'UID:${widget.member.accountUid}';
+    final displayName =
+        widget.account?.username ?? 'UID:${widget.member.accountUid}';
 
     return Container(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 16, left: 20, right: 16, bottom: 12),
+              padding: const EdgeInsets.only(
+                top: 16,
+                left: 20,
+                right: 16,
+                bottom: 12,
+              ),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       l10n.forumMemberRoleEdit(displayName),
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
                             fontWeight: FontWeight.w600,
                             letterSpacing: -0.5,
                           ),
@@ -357,7 +400,9 @@ class _ForumMemberRoleSheetState extends State<_ForumMemberRoleSheet> {
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
-                    style: IconButton.styleFrom(minimumSize: const Size(36, 36)),
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(36, 36),
+                    ),
                   ),
                 ],
               ),
@@ -370,28 +415,31 @@ class _ForumMemberRoleSheetState extends State<_ForumMemberRoleSheet> {
                 children: [
                   Autocomplete<int>(
                     optionsBuilder: (TextEditingValue textEditingValue) {
-                      if (textEditingValue.text.isEmpty) return const [100, 50, 0];
+                      if (textEditingValue.text.isEmpty)
+                        return const [100, 50, 0];
                       final int? value = int.tryParse(textEditingValue.text);
                       if (value == null) return const [100, 50, 0];
                       return [100, 50, 0].where(
-                        (option) => option.toString().contains(textEditingValue.text),
+                        (option) =>
+                            option.toString().contains(textEditingValue.text),
                       );
                     },
                     onSelected: (int selection) {
                       _roleController.text = selection.toString();
                     },
-                    fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                      return TextField(
-                        controller: controller,
-                        focusNode: focusNode,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: l10n.forumMemberRole,
-                          helperText: l10n.forumMemberRoleHint,
-                        ),
-                        onTapOutside: (event) => focusNode.unfocus(),
-                      );
-                    },
+                    fieldViewBuilder:
+                        (context, controller, focusNode, onFieldSubmitted) {
+                          return TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: l10n.forumMemberRole,
+                              helperText: l10n.forumMemberRoleHint,
+                            ),
+                            onTapOutside: (event) => focusNode.unfocus(),
+                          );
+                        },
                   ),
                   const SizedBox(height: 16),
                   FilledButton.icon(

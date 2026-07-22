@@ -5,10 +5,7 @@ import '../models/chat_model.dart';
 class ContactListWidget extends StatelessWidget {
   final List<Contact> contacts;
 
-  const ContactListWidget({
-    super.key,
-    required this.contacts,
-  });
+  const ContactListWidget({super.key, required this.contacts});
 
   @override
   Widget build(BuildContext context) {
@@ -27,14 +24,18 @@ class ContactListWidget extends StatelessWidget {
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: colorScheme.primaryContainer,
-        backgroundImage: contact.avatar != null ? NetworkImage(contact.avatar!) : null,
+        backgroundImage: contact.avatar != null
+            ? NetworkImage(contact.avatar!)
+            : null,
         child: contact.avatar == null
             ? Icon(Icons.person, color: colorScheme.onPrimaryContainer)
             : null,
       ),
       title: Text(contact.name),
       onTap: () {
-        final userId = contact.id.startsWith('U') ? contact.id.substring(1) : contact.id;
+        final userId = contact.id.startsWith('U')
+            ? contact.id.substring(1)
+            : contact.id;
         context.push('/user/$userId');
       },
     );

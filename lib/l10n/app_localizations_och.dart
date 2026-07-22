@@ -486,10 +486,28 @@ class AppLocalizationsOch extends AppLocalizations {
   String get serverUseHttps => 'HTTPS';
 
   @override
-  String get serverUseHttpsOn => '以加密連接';
+  String get serverUseHttpsOn => '試以加密連接（敗則退HTTP）';
 
   @override
   String get serverUseHttpsOff => '以明文連接';
+
+  @override
+  String get serverSave => '存';
+
+  @override
+  String get serverTryWss => 'WSS';
+
+  @override
+  String get serverTryWssOn => '試以加密WebSocket（敗則退WS）';
+
+  @override
+  String get serverTryWssOff => '以明文WebSocket';
+
+  @override
+  String get serverAutoDetectTcpPort => '自探TCP端口';
+
+  @override
+  String get serverAutoDetectTcpPortDesc => '自服器取TCP端口';
 
   @override
   String get navChat => '聊天';
@@ -1455,6 +1473,22 @@ class AppLocalizationsOch extends AppLocalizations {
   String get debugLogsDescription => '覽應用之運行日誌';
 
   @override
+  String get debugClearMessageDatabase => '清空消息資料庫';
+
+  @override
+  String get debugClearMessageDatabaseDescription => '刪除此客戶端本地所緩之消息。';
+
+  @override
+  String get debugClearMessageDatabaseConfirmTitle => '清空消息資料庫？';
+
+  @override
+  String get debugClearMessageDatabaseConfirmMessage =>
+      '本地所緩之消息皆將刪除，服器之消息不受影響。';
+
+  @override
+  String get debugClearMessageDatabaseSuccess => '消息資料庫已清空。';
+
+  @override
   String get debugCustomInfoDialog => '自定訊息框';
 
   @override
@@ -2123,6 +2157,18 @@ class AppLocalizationsOch extends AppLocalizations {
   String get groupEnterHintLabel => '入羣提示';
 
   @override
+  String get groupEnterHintHelp => '成員入羣後顯示於聊天頂部';
+
+  @override
+  String get groupEnterHintUpdated => '入羣提示已更新';
+
+  @override
+  String get groupManagement => '羣組管理';
+
+  @override
+  String get groupOpen => '打開羣聊';
+
+  @override
   String get groupCreateNameEmpty => '羣組名稱不可為空';
 
   @override
@@ -2162,6 +2208,18 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get groupTransferOwnerConfirmAction => '確認轉讓';
+
+  @override
+  String get groupSelectNewOwner => '選擇新羣主';
+
+  @override
+  String get groupLeave => '退出羣組';
+
+  @override
+  String get groupLeaveConfirm => '確定要退出該羣組嗎？';
+
+  @override
+  String get groupLeaveOwnerHint => '羣主需先轉讓羣主後方可退出';
 
   @override
   String get groupInviteMember => '邀請成員';

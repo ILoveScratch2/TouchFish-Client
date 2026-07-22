@@ -49,7 +49,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _subscribeToConnectivityChanges() {
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> result) {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
+      List<ConnectivityResult> result,
+    ) {
       if (!mounted) return;
       setState(() {
         _connectionStatus = result;
@@ -58,10 +60,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   bool get _isConnectedToInternet {
-    return _connectionStatus.any((result) => 
-      result == ConnectivityResult.mobile ||
-      result == ConnectivityResult.wifi ||
-      result == ConnectivityResult.ethernet
+    return _connectionStatus.any(
+      (result) =>
+          result == ConnectivityResult.mobile ||
+          result == ConnectivityResult.wifi ||
+          result == ConnectivityResult.ethernet,
     );
   }
 
@@ -112,11 +115,11 @@ class _LoginScreenState extends State<LoginScreen> {
     context.push(
       AppRoutes.register,
       extra: {
-        'username': _usernameController.text.trim().isEmpty 
-            ? null 
+        'username': _usernameController.text.trim().isEmpty
+            ? null
             : _usernameController.text,
-        'password': _passwordController.text.trim().isEmpty 
-            ? null 
+        'password': _passwordController.text.trim().isEmpty
+            ? null
             : _passwordController.text,
       },
     );
@@ -139,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildNetworkStatusSheet(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Container(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -149,9 +152,9 @@ class _LoginScreenState extends State<LoginScreen> {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: _isConnectedToInternet 
-                ? colorScheme.primaryContainer 
-                : colorScheme.errorContainer,
+              color: _isConnectedToInternet
+                  ? colorScheme.primaryContainer
+                  : colorScheme.errorContainer,
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -164,19 +167,19 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 24),
           Text(
             l10n.networkStatusTitle,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
-            _isConnectedToInternet 
-              ? l10n.networkStatusConnected 
-              : l10n.networkStatusDisconnected,
+            _isConnectedToInternet
+                ? l10n.networkStatusConnected
+                : l10n.networkStatusDisconnected,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: _isConnectedToInternet 
-                ? colorScheme.primary 
-                : colorScheme.error,
+              color: _isConnectedToInternet
+                  ? colorScheme.primary
+                  : colorScheme.error,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -185,9 +188,9 @@ class _LoginScreenState extends State<LoginScreen> {
             height: 40,
             child: Center(
               child: Text(
-                _isConnectedToInternet 
-                  ? l10n.networkStatusConnectedDesc 
-                  : l10n.networkStatusDisconnectedDesc,
+                _isConnectedToInternet
+                    ? l10n.networkStatusConnectedDesc
+                    : l10n.networkStatusDisconnectedDesc,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
@@ -204,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.appName),
@@ -239,24 +242,25 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       Text(
                         AppLocalizations.of(context)!.appName,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Server selector
                       const ServerSelector(),
                       const SizedBox(height: 24),
-                      
+
                       // Username field
                       TextField(
                         controller: _usernameController,
                         decoration: InputDecoration(
-                          labelText: AppLocalizations.of(context)!.loginUsername,
+                          labelText: AppLocalizations.of(
+                            context,
+                          )!.loginUsername,
                           prefixIcon: const Icon(Icons.person_outline),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -265,18 +269,24 @@ class _LoginScreenState extends State<LoginScreen> {
                         textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Password field
                       TextField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
                         decoration: InputDecoration(
-                          labelText: AppLocalizations.of(context)!.loginPassword,
+                          labelText: AppLocalizations.of(
+                            context,
+                          )!.loginPassword,
                           prefixIcon: const Icon(Icons.lock_outline),
                           suffixIcon: IconButton(
-                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                              _obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
                             ),
                           ),
                           border: OutlineInputBorder(
@@ -287,7 +297,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onSubmitted: (_) => _isLoading ? null : _login(),
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Login button
                       SizedBox(
                         width: double.infinity,
@@ -299,20 +309,23 @@ class _LoginScreenState extends State<LoginScreen> {
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2),
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : Text(AppLocalizations.of(context)!.loginLogin),
                         ),
                       ),
                       const SizedBox(height: 12),
-                      
+
                       // Register button
                       SizedBox(
                         width: double.infinity,
                         height: 48,
                         child: OutlinedButton(
                           onPressed: _register,
-                          child: Text(AppLocalizations.of(context)!.loginRegister),
+                          child: Text(
+                            AppLocalizations.of(context)!.loginRegister,
+                          ),
                         ),
                       ),
                     ],
@@ -321,7 +334,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          
+
           Positioned(
             right: 24,
             bottom: 24,

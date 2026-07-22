@@ -10,7 +10,7 @@ class CustomTitleBar extends StatefulWidget {
 
   final String title;
   final bool showTitle;
-  
+
   const CustomTitleBar({
     super.key,
     this.title = AppConstants.appName,
@@ -115,64 +115,65 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
           ),
         ),
         child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-              child: Row(
-                children: [
-                  Image.asset(
-                    'assets/logo.png',
-                    width: 20,
-                    height: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  if (widget.showTitle)
-                    Text(
-                      widget.title,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 5,
+                ),
+                child: Row(
+                  children: [
+                    Image.asset('assets/logo.png', width: 20, height: 20),
+                    const SizedBox(width: 8),
+                    if (widget.showTitle)
+                      Text(
+                        widget.title,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          _buildWindowButton(
-            icon: Symbols.minimize,
-            onPressed: () => windowManager.minimize(),
-            tooltip: '最小化',
-          ),
-          
-          ValueListenableBuilder<bool>(
-            valueListenable: _isMaximized,
-            builder: (context, isMaximized, _) {
-              return _buildWindowButton(
-                icon: isMaximized ? Symbols.fullscreen_exit : Symbols.fullscreen,
-                onPressed: () async {
-                  if (await windowManager.isMaximized()) {
-                    windowManager.restore();
-                  } else {
-                    windowManager.maximize();
-                  }
-                },
-                tooltip: isMaximized ? '还原' : '最大化',
-              );
-            },
-          ),
-          
-          _buildWindowButton(
-            icon: Symbols.close,
-            onPressed: () => windowManager.close(),
-            tooltip: '关闭',
-            isClose: true,
-          ),
-        ],
-      ),
+            _buildWindowButton(
+              icon: Symbols.minimize,
+              onPressed: () => windowManager.minimize(),
+              tooltip: '最小化',
+            ),
+
+            ValueListenableBuilder<bool>(
+              valueListenable: _isMaximized,
+              builder: (context, isMaximized, _) {
+                return _buildWindowButton(
+                  icon: isMaximized
+                      ? Symbols.fullscreen_exit
+                      : Symbols.fullscreen,
+                  onPressed: () async {
+                    if (await windowManager.isMaximized()) {
+                      windowManager.restore();
+                    } else {
+                      windowManager.maximize();
+                    }
+                  },
+                  tooltip: isMaximized ? '还原' : '最大化',
+                );
+              },
+            ),
+
+            _buildWindowButton(
+              icon: Symbols.close,
+              onPressed: () => windowManager.close(),
+              tooltip: '关闭',
+              isClose: true,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -188,9 +189,9 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
       waitDuration: const Duration(milliseconds: 500),
       child: InkWell(
         onTap: onPressed,
-        hoverColor: isClose 
-          ? Colors.red.withValues(alpha: 0.9)
-          : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        hoverColor: isClose
+            ? Colors.red.withValues(alpha: 0.9)
+            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
         child: SizedBox(
           width: 46,
           height: CustomTitleBar.height,

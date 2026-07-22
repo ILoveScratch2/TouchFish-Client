@@ -54,6 +54,47 @@ class AppRoutes {
   static const String licenses = '/licenses';
   static const String profileEdit = '/profile/edit';
 
+  static const _publicPaths = {
+    welcome,
+    login,
+    settings,
+    register,
+    registerStep2,
+    registerStep3,
+    registerSuccess,
+    about,
+    licenses,
+  };
+
+  @visibleForTesting
+  static String? authRedirect({
+    required String path,
+    required bool isLoggedIn,
+    required bool isRestoringSavedSession,
+  }) {
+    if (isLoggedIn || isRestoringSavedSession || _publicPaths.contains(path)) {
+      return null;
+    }
+    return login;
+  }
+
+  @visibleForTesting
+  static bool isValidRegisterStep2Extra(Object? extra) {
+    return extra is Map<String, dynamic> &&
+        extra['username'] is String &&
+        extra['password'] is String &&
+        (extra['requiresEmail'] == null || extra['requiresEmail'] is bool) &&
+        (extra['captchaStamp'] == null || extra['captchaStamp'] is String) &&
+        (extra['captchaCode'] == null || extra['captchaCode'] is String);
+  }
+
+  @visibleForTesting
+  static bool isValidRegisterStep3Extra(Object? extra) {
+    return extra is Map<String, dynamic> &&
+        extra['username'] is String &&
+        extra['uid'] is int;
+  }
+
   static GoRouter createRouter({
     required bool isFirstLaunch,
     required bool hasSavedSession,
@@ -63,6 +104,16 @@ class AppRoutes {
           ? welcome
           : (hasSavedSession ? main : login),
       refreshListenable: AuthState.instance,
+      redirect: (context, state) {
+        final auth = AuthState.instance;
+        final restoringSavedSession =
+            auth.hasStoredCredentials && !auth.isLoggedIn;
+        return authRedirect(
+          path: state.uri.path,
+          isLoggedIn: auth.isLoggedIn,
+          isRestoringSavedSession: restoringSavedSession,
+        );
+      },
       routes: [
         ShellRoute(
           builder: (context, state, child) {
@@ -84,15 +135,19 @@ class AppRoutes {
             GoRoute(
               path: register,
               builder: (context, state) {
-                final args = state.extra as Map<String, String?>?;
+                final args = state.extra;
+                final username = args is Map ? args['username'] : null;
+                final password = args is Map ? args['password'] : null;
                 return RegisterScreen(
-                  initialUsername: args?['username'],
-                  initialPassword: args?['password'],
+                  initialUsername: username is String ? username : null,
+                  initialPassword: password is String ? password : null,
                 );
               },
             ),
             GoRoute(
               path: registerStep2,
+              redirect: (context, state) =>
+                  isValidRegisterStep2Extra(state.extra) ? null : register,
               builder: (context, state) {
                 final args = state.extra as Map<String, dynamic>;
                 return RegisterStep2Screen(
@@ -106,6 +161,8 @@ class AppRoutes {
             ),
             GoRoute(
               path: registerStep3,
+              redirect: (context, state) =>
+                  isValidRegisterStep3Extra(state.extra) ? null : register,
               builder: (context, state) {
                 final args = state.extra as Map<String, dynamic>;
                 return RegisterStep3Screen(
@@ -167,7 +224,9 @@ class AppRoutes {
                           child: Text(
                             '选择一个聊天开始对话',
                             style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -185,7 +244,9 @@ class AppRoutes {
                           child: Text(
                             '选择一个聊天开始对话',
                             style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -198,7 +259,7 @@ class AppRoutes {
                   pageBuilder: (context, state) {
                     final roomId = state.pathParameters['roomId']!;
                     final isWide = MediaQuery.of(context).size.width >= 600;
-                    
+
                     if (!isWide) {
                       return MaterialPage(
                         child: ChatShellScreen(
@@ -221,54 +282,51 @@ class AppRoutes {
                 ),
                 GoRoute(
                   path: announcement,
-                  pageBuilder: (context, state) => const NoTransitionPage(
-                    child: AnnouncementScreen(),
-                  ),
+                  pageBuilder: (context, state) =>
+                      const NoTransitionPage(child: AnnouncementScreen()),
                 ),
                 GoRoute(
                   path: forum,
-                  pageBuilder: (context, state) => const NoTransitionPage(
-                    child: ForumScreen(),
-                  ),
+                  pageBuilder: (context, state) =>
+                      const NoTransitionPage(child: ForumScreen()),
                 ),
                 GoRoute(
                   path: account,
-                  pageBuilder: (context, state) => const NoTransitionPage(
-                    child: AccountScreen(),
-                  ),
+                  pageBuilder: (context, state) =>
+                      const NoTransitionPage(child: AccountScreen()),
                 ),
                 GoRoute(
                   path: admin,
                   redirect: (context, state) {
-                    return AuthState.instance.currentUser?.hasAdminAccess == true
+                    return AuthState.instance.currentUser?.hasAdminAccess ==
+                            true
                         ? null
                         : AppRoutes.account;
                   },
-                  pageBuilder: (context, state) => const NoTransitionPage(
-                    child: AdminScreen(),
-                  ),
+                  pageBuilder: (context, state) =>
+                      const NoTransitionPage(child: AdminScreen()),
                 ),
                 GoRoute(
                   path: adminPendingForums,
                   redirect: (context, state) {
-                    return AuthState.instance.currentUser?.hasAdminAccess == true
+                    return AuthState.instance.currentUser?.hasAdminAccess ==
+                            true
                         ? null
                         : AppRoutes.account;
                   },
-                  pageBuilder: (context, state) => const NoTransitionPage(
-                    child: PendingForumsScreen(),
-                  ),
+                  pageBuilder: (context, state) =>
+                      const NoTransitionPage(child: PendingForumsScreen()),
                 ),
                 GoRoute(
                   path: adminDefaultAssets,
                   redirect: (context, state) {
-                    return AuthState.instance.currentUser?.hasAdminAccess == true
+                    return AuthState.instance.currentUser?.hasAdminAccess ==
+                            true
                         ? null
                         : AppRoutes.account;
                   },
-                  pageBuilder: (context, state) => const NoTransitionPage(
-                    child: DefaultAssetsScreen(),
-                  ),
+                  pageBuilder: (context, state) =>
+                      const NoTransitionPage(child: DefaultAssetsScreen()),
                 ),
                 GoRoute(
                   path: adminServerSettings,
@@ -277,20 +335,19 @@ class AppRoutes {
                         ? null
                         : AppRoutes.admin;
                   },
-                  pageBuilder: (context, state) => const NoTransitionPage(
-                    child: ServerSettingsScreen(),
-                  ),
+                  pageBuilder: (context, state) =>
+                      const NoTransitionPage(child: ServerSettingsScreen()),
                 ),
                 GoRoute(
                   path: adminAccountManagement,
                   redirect: (context, state) {
-                    return AuthState.instance.currentUser?.hasAdminAccess == true
+                    return AuthState.instance.currentUser?.hasAdminAccess ==
+                            true
                         ? null
                         : AppRoutes.account;
                   },
-                  pageBuilder: (context, state) => const NoTransitionPage(
-                    child: AccountManagementScreen(),
-                  ),
+                  pageBuilder: (context, state) =>
+                      const NoTransitionPage(child: AccountManagementScreen()),
                 ),
               ],
             ),
@@ -301,8 +358,7 @@ class AppRoutes {
 
     String? previousUri;
     router.routerDelegate.addListener(() {
-      final uri =
-          router.routerDelegate.currentConfiguration.uri.toString();
+      final uri = router.routerDelegate.currentConfiguration.uri.toString();
       if (uri != previousUri) {
         talker.debug('Route: $previousUri -> $uri');
         previousUri = uri;

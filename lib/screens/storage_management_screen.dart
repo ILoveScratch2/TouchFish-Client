@@ -10,7 +10,8 @@ class StorageManagementScreen extends StatefulWidget {
   const StorageManagementScreen({super.key});
 
   @override
-  State<StorageManagementScreen> createState() => _StorageManagementScreenState();
+  State<StorageManagementScreen> createState() =>
+      _StorageManagementScreenState();
 }
 
 class _StorageManagementScreenState extends State<StorageManagementScreen> {
@@ -91,7 +92,10 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.storageCouldNotReadFile), behavior: SnackBarBehavior.floating),
+        SnackBar(
+          content: Text(l10n.storageCouldNotReadFile),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
@@ -102,7 +106,9 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.storageFileTooLarge((maxSize / (1024 * 1024)).round())),
+          content: Text(
+            l10n.storageFileTooLarge((maxSize / (1024 * 1024)).round()),
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -113,24 +119,38 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
 
     try {
       final fileBase64 = base64.encode(bytes);
-      final response = await TfApiClient.instance.uploadFile(uid, password, file.name, fileBase64);
+      final response = await TfApiClient.instance.uploadFile(
+        uid,
+        password,
+        file.name,
+        fileBase64,
+      );
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       if (response != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.storageUploaded(file.name)), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text(l10n.storageUploaded(file.name)),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
         await _loadData();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.storageUploadFailed), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text(l10n.storageUploadFailed),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${l10n.storageUploadError}: $e'), behavior: SnackBarBehavior.floating),
+        SnackBar(
+          content: Text('${l10n.storageUploadError}: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -151,7 +171,12 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
       selectableMessage: false,
       actions: [
         TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
-        TouchFishDialogAction<bool>(label: l10n.storageDeleteFile, result: true, isPrimary: true, isDestructive: true),
+        TouchFishDialogAction<bool>(
+          label: l10n.storageDeleteFile,
+          result: true,
+          isPrimary: true,
+          isDestructive: true,
+        ),
       ],
     );
     if (confirmed != true || !mounted) return;
@@ -160,29 +185,50 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     if (!mounted) return;
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.storageDeleted(fileName)), behavior: SnackBarBehavior.floating),
+        SnackBar(
+          content: Text(l10n.storageDeleted(fileName)),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       await _loadData();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.storageDeleteFailed), behavior: SnackBarBehavior.floating),
+        SnackBar(
+          content: Text(l10n.storageDeleteFailed),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
 
   IconData _fileIcon(String fileName) {
     final ext = fileName.toLowerCase();
-    if (ext.endsWith('.png') || ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.gif') || ext.endsWith('.webp') || ext.endsWith('.bmp')) {
+    if (ext.endsWith('.png') ||
+        ext.endsWith('.jpg') ||
+        ext.endsWith('.jpeg') ||
+        ext.endsWith('.gif') ||
+        ext.endsWith('.webp') ||
+        ext.endsWith('.bmp')) {
       return Icons.image;
     }
-    if (ext.endsWith('.mp4') || ext.endsWith('.mov') || ext.endsWith('.avi') || ext.endsWith('.mkv')) {
+    if (ext.endsWith('.mp4') ||
+        ext.endsWith('.mov') ||
+        ext.endsWith('.avi') ||
+        ext.endsWith('.mkv')) {
       return Icons.videocam;
     }
-    if (ext.endsWith('.mp3') || ext.endsWith('.wav') || ext.endsWith('.ogg') || ext.endsWith('.flac')) {
+    if (ext.endsWith('.mp3') ||
+        ext.endsWith('.wav') ||
+        ext.endsWith('.ogg') ||
+        ext.endsWith('.flac')) {
       return Icons.audiotrack;
     }
     if (ext.endsWith('.pdf')) return Icons.picture_as_pdf;
-    if (ext.endsWith('.zip') || ext.endsWith('.rar') || ext.endsWith('.7z') || ext.endsWith('.tar') || ext.endsWith('.gz')) {
+    if (ext.endsWith('.zip') ||
+        ext.endsWith('.rar') ||
+        ext.endsWith('.7z') ||
+        ext.endsWith('.tar') ||
+        ext.endsWith('.gz')) {
       return Icons.folder_zip;
     }
     if (ext.endsWith('.doc') || ext.endsWith('.docx')) return Icons.description;
@@ -193,11 +239,19 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
 
   Color _fileIconColor(String fileName, ColorScheme cs) {
     final ext = fileName.toLowerCase();
-    if (ext.endsWith('.png') || ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.gif') || ext.endsWith('.webp')) return cs.tertiary;
-    if (ext.endsWith('.mp4') || ext.endsWith('.mov') || ext.endsWith('.avi')) return cs.error;
-    if (ext.endsWith('.mp3') || ext.endsWith('.wav') || ext.endsWith('.ogg')) return cs.secondary;
+    if (ext.endsWith('.png') ||
+        ext.endsWith('.jpg') ||
+        ext.endsWith('.jpeg') ||
+        ext.endsWith('.gif') ||
+        ext.endsWith('.webp'))
+      return cs.tertiary;
+    if (ext.endsWith('.mp4') || ext.endsWith('.mov') || ext.endsWith('.avi'))
+      return cs.error;
+    if (ext.endsWith('.mp3') || ext.endsWith('.wav') || ext.endsWith('.ogg'))
+      return cs.secondary;
     if (ext.endsWith('.pdf')) return cs.error;
-    if (ext.endsWith('.zip') || ext.endsWith('.rar') || ext.endsWith('.7z')) return cs.primary;
+    if (ext.endsWith('.zip') || ext.endsWith('.rar') || ext.endsWith('.7z'))
+      return cs.primary;
     return cs.onSurfaceVariant;
   }
 
@@ -212,7 +266,11 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
         actions: [
           IconButton(
             icon: _isUploading
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(Icons.upload_file),
             tooltip: l10n.storageUploadFile,
             onPressed: _isUploading ? null : _uploadFile,
@@ -243,7 +301,10 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
             const SizedBox(height: 16),
             Text(msg, style: TextStyle(color: colorScheme.error)),
             const SizedBox(height: 16),
-            ElevatedButton(onPressed: _loadData, child: Text(l10n.storageRetry)),
+            ElevatedButton(
+              onPressed: _loadData,
+              child: Text(l10n.storageRetry),
+            ),
           ],
         ),
       );
@@ -282,12 +343,19 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
               const SizedBox(width: 8),
               Text(
                 '${l10n.storageUsed}: $usedStr / $quotaStr',
-                style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
               ),
               const Spacer(),
               Text(
                 quota == -1 ? '--' : '${(pct * 100).toStringAsFixed(1)}%',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -316,9 +384,16 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_off, size: 64, color: colorScheme.onSurfaceVariant.withOpacity(0.4)),
+            Icon(
+              Icons.cloud_off,
+              size: 64,
+              color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+            ),
             const SizedBox(height: 16),
-            Text(l10n.storageNoFiles, style: TextStyle(color: colorScheme.onSurfaceVariant)),
+            Text(
+              l10n.storageNoFiles,
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
               onPressed: _uploadFile,
@@ -335,12 +410,17 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
       child: ListView.separated(
         itemCount: _files.length,
         separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
-        itemBuilder: (context, index) => _buildFileTile(_files[index], l10n, colorScheme),
+        itemBuilder: (context, index) =>
+            _buildFileTile(_files[index], l10n, colorScheme),
       ),
     );
   }
 
-  Widget _buildFileTile(Map<String, dynamic> file, AppLocalizations l10n, ColorScheme colorScheme) {
+  Widget _buildFileTile(
+    Map<String, dynamic> file,
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
     final hash = file['hash'] as String? ?? '';
     final fileName = file['file_name'] as String? ?? 'Unknown';
     final uploadTimeRaw = file['upload_time'];
@@ -349,8 +429,11 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
 
     String uploadTime = '';
     if (uploadTimeRaw is num) {
-      final dt = DateTime.fromMillisecondsSinceEpoch((uploadTimeRaw.toDouble() * 1000).toInt());
-      uploadTime = '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
+      final dt = DateTime.fromMillisecondsSinceEpoch(
+        (uploadTimeRaw.toDouble() * 1000).toInt(),
+      );
+      uploadTime =
+          '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
           '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
     }
 
@@ -362,9 +445,18 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
           color: _fileIconColor(fileName, colorScheme).withOpacity(0.12),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(_fileIcon(fileName), color: _fileIconColor(fileName, colorScheme), size: 24),
+        child: Icon(
+          _fileIcon(fileName),
+          color: _fileIconColor(fileName, colorScheme),
+          size: 24,
+        ),
       ),
-      title: Text(fileName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
+      title: Text(
+        fileName,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 14),
+      ),
       subtitle: Text(
         '${_formatSize(size)}  •  Ref: $refCount  •  $uploadTime',
         style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),

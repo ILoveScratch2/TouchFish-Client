@@ -10,8 +10,8 @@ import 'package:photo_view/photo_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
-import '../models/user_profile.dart';
-import 'account/profile_picture.dart';
+import '../services/api/tf_api_client.dart';
+import '../services/auth_state.dart';
 
 class MarkdownRenderer extends HookWidget {
   final String data;
@@ -45,7 +45,12 @@ class MarkdownRenderer extends HookWidget {
     final mentionGenerator = MentionChipGenerator(
       backgroundColor: theme.colorScheme.primary,
       foregroundColor: theme.colorScheme.onPrimary,
-      onTap: (profile) => context.push('/user/${profile.uid}'),
+      onTap: (username) async {
+        final profile = await TfApiClient.instance.getUserByUsername(username);
+        if (profile != null && context.mounted) {
+          context.push('/user/${profile.uid}');
+        }
+      },
     );
 
     final highlightGenerator = HighlightGenerator(
@@ -91,10 +96,12 @@ class MarkdownRenderer extends HookWidget {
                   decoration: codeBlockDecoration,
                 ),
           PConfig(
-            textStyle: theme.textTheme.bodyMedium ?? const TextStyle(fontSize: 14),
+            textStyle:
+                theme.textTheme.bodyMedium ?? const TextStyle(fontSize: 14),
           ),
           Heading1Config(
-            style: theme.textTheme.headlineMedium?.copyWith(
+            style:
+                theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ) ??
                 const TextStyle(
@@ -104,7 +111,8 @@ class MarkdownRenderer extends HookWidget {
                 ),
           ),
           Heading2Config(
-            style: theme.textTheme.headlineSmall?.copyWith(
+            style:
+                theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ) ??
                 const TextStyle(
@@ -114,7 +122,8 @@ class MarkdownRenderer extends HookWidget {
                 ),
           ),
           Heading3Config(
-            style: theme.textTheme.titleLarge?.copyWith(
+            style:
+                theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ) ??
                 const TextStyle(
@@ -125,10 +134,7 @@ class MarkdownRenderer extends HookWidget {
           ),
           PreConfig(
             theme: isDark ? a11yDarkTheme : a11yLightTheme,
-            textStyle: const TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 14,
-            ),
+            textStyle: const TextStyle(fontFamily: 'monospace', fontSize: 14),
             styleNotMatched: const TextStyle(
               fontFamily: 'monospace',
               fontSize: 14,
@@ -161,11 +167,7 @@ class MarkdownRenderer extends HookWidget {
       ),
       generator: MarkdownRenderer.buildGenerator(
         isDark: isDark,
-        generators: [
-          mentionGenerator,
-          highlightGenerator,
-          spoilerGenerator,
-        ],
+        generators: [mentionGenerator, highlightGenerator, spoilerGenerator],
       ),
     );
 
@@ -211,28 +213,20 @@ class MarkdownRenderer extends HookWidget {
 
 class _MentionInlineSyntax extends markdown.InlineSyntax {
   _MentionInlineSyntax()
-      : super(r'(^|[^A-Za-z0-9._%+\-/\[])(@[-A-Za-z0-9_]+)(?=\s|$)');
+    : super(r'(^|\s)(@[^\s@,.!?;:，。！？；：]+)(?=\s|$|[,.!?;:，。！？；：])');
 
   @override
   bool onMatch(markdown.InlineParser parser, Match match) {
     final prefix = match[1] ?? '';
     final alias = match[2]!;
     final username = alias.substring(1);
-    final profile = UserProfileDemoData.findByUsername(username);
-
     if (prefix.isNotEmpty) {
       parser.addNode(markdown.Text(prefix));
     }
 
-    if (profile == null) {
-      parser.addNode(markdown.Text(alias));
-      return true;
-    }
-
     final element = markdown.Element('mention-chip', [markdown.Text(alias)])
       ..attributes['alias'] = alias
-      ..attributes['username'] = username
-      ..attributes['uid'] = profile.uid;
+      ..attributes['username'] = username;
     parser.addNode(element);
 
     return true;
@@ -267,7 +261,7 @@ class MentionChipGenerator extends SpanNodeGeneratorWithTag {
   MentionChipGenerator({
     required Color backgroundColor,
     required Color foregroundColor,
-    required void Function(UserProfile profile) onTap,
+    required void Function(String username) onTap,
   }) : super(
          tag: 'mention-chip',
          generator: (element, config, visitor) {
@@ -285,7 +279,7 @@ class MentionChipSpanNode extends SpanNode {
   final Map<String, String> attributes;
   final Color backgroundColor;
   final Color foregroundColor;
-  final void Function(UserProfile profile) onTap;
+  final void Function(String username) onTap;
 
   MentionChipSpanNode({
     required this.attributes,
@@ -297,31 +291,26 @@ class MentionChipSpanNode extends SpanNode {
   @override
   InlineSpan build() {
     final username = attributes['username'] ?? '';
-    final profile = UserProfileDemoData.findByUsername(username);
-    if (profile == null) {
-      return TextSpan(text: attributes['alias'] ?? '@$username');
-    }
-
     return WidgetSpan(
       alignment: PlaceholderAlignment.middle,
       child: _MentionChipContent(
-        profile: profile,
+        username: username,
         backgroundColor: backgroundColor,
         foregroundColor: foregroundColor,
-        onTap: () => onTap(profile),
+        onTap: () => onTap(username),
       ),
     );
   }
 }
 
 class _MentionChipContent extends StatelessWidget {
-  final UserProfile profile;
+  final String username;
   final Color backgroundColor;
   final Color foregroundColor;
   final VoidCallback onTap;
 
   const _MentionChipContent({
-    required this.profile,
+    required this.username,
     required this.backgroundColor,
     required this.foregroundColor,
     required this.onTap,
@@ -329,37 +318,45 @@ class _MentionChipContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCurrentUser =
+        AuthState.instance.currentUser?.username.toLowerCase() ==
+        username.toLowerCase();
+    final chipColor = isCurrentUser
+        ? Theme.of(context).colorScheme.tertiary
+        : backgroundColor;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(32),
       child: Container(
-        padding: const EdgeInsets.only(left: 5, right: 7, top: 2.5, bottom: 2.5),
+        padding: const EdgeInsets.only(
+          left: 5,
+          right: 7,
+          top: 2.5,
+          bottom: 2.5,
+        ),
         margin: const EdgeInsets.symmetric(horizontal: 2),
         decoration: BoxDecoration(
-          color: backgroundColor.withValues(alpha: 0.1),
+          color: chipColor.withValues(alpha: isCurrentUser ? 0.25 : 0.1),
           borderRadius: BorderRadius.circular(32),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              decoration: BoxDecoration(
-                color: backgroundColor.withValues(alpha: 0.5),
-                borderRadius: const BorderRadius.all(Radius.circular(32)),
-              ),
-              child: ProfilePictureWidget(
-                avatarUrl: profile.avatar,
-                radius: 9,
-                fallbackText: profile.username,
+            CircleAvatar(
+              radius: 9,
+              backgroundColor: chipColor.withValues(alpha: 0.35),
+              child: Text(
+                '@',
+                style: TextStyle(color: chipColor, fontSize: 11),
               ),
             ),
             const SizedBox(width: 6),
             Text(
-              '@${profile.username}',
+              '@$username',
               style: TextStyle(
-                color: backgroundColor,
+                color: chipColor,
                 fontSize: 14,
-                fontWeight: FontWeight.w500,
+                fontWeight: isCurrentUser ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
           ],
@@ -371,15 +368,15 @@ class _MentionChipContent extends StatelessWidget {
 
 class HighlightGenerator extends SpanNodeGeneratorWithTag {
   HighlightGenerator({required Color highlightColor})
-      : super(
-         tag: 'highlight',
-         generator: (element, config, visitor) {
-           return HighlightSpanNode(
-             text: element.textContent,
-             highlightColor: highlightColor,
-           );
-         },
-       );
+    : super(
+        tag: 'highlight',
+        generator: (element, config, visitor) {
+          return HighlightSpanNode(
+            text: element.textContent,
+            highlightColor: highlightColor,
+          );
+        },
+      );
 }
 
 class HighlightSpanNode extends SpanNode {
@@ -414,7 +411,7 @@ class SpoilerGenerator extends SpanNodeGeneratorWithTag {
              foregroundColor: foregroundColor,
              outlineColor: outlineColor,
              revealed: revealed,
-              hiddenLabel: hiddenLabel,
+             hiddenLabel: hiddenLabel,
              onToggle: onToggle,
            );
          },
@@ -471,10 +468,7 @@ class SpoilerSpanNode extends SpanNode {
                       size: 18,
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      hiddenLabel,
-                      style: TextStyle(color: foregroundColor),
-                    ),
+                    Text(hiddenLabel, style: TextStyle(color: foregroundColor)),
                   ],
                 ),
         ),
@@ -657,7 +651,7 @@ class _MarkdownRemoteImage extends StatelessWidget {
                   value: loadingProgress.expectedTotalBytes == null
                       ? null
                       : loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!,
+                            loadingProgress.expectedTotalBytes!,
                 ),
               );
             },

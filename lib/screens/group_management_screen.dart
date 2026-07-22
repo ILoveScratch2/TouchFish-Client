@@ -7,13 +7,21 @@ import 'package:file_picker/file_picker.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/chat_data_service.dart';
+import '../routes/app_routes.dart';
 import '../utils/talker.dart';
+import '../widgets/account/profile_picture.dart';
+import '../widgets/text_entry_dialog.dart';
 
 class GroupManagementScreen extends StatefulWidget {
   final int gid;
   final String groupName;
 
-  const GroupManagementScreen({super.key, required this.gid, required this.groupName});
+  const GroupManagementScreen({
+    super.key,
+    required this.gid,
+    required this.groupName,
+  });
 
   @override
   State<GroupManagementScreen> createState() => _GroupManagementScreenState();
@@ -26,6 +34,8 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
   bool _isLoading = true;
   int? _currentUserRole;
   String? _groupAvatarUrl;
+  String? _baseUrl;
+  int _avatarVersion = 0;
 
   int get _uid => AuthState.instance.uid ?? 0;
   String get _password => AuthState.instance.password ?? '';
@@ -39,21 +49,39 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      _groupAvatarUrl ??= '${await TfApiClient.instance.getBaseUrl()}/avatar/get_avatar/group/${widget.gid}';
-      final members = await TfApiClient.instance.getGroupMembers(_uid, _password, widget.gid);
+      _baseUrl ??= await TfApiClient.instance.getBaseUrl();
+      _groupAvatarUrl =
+          '$_baseUrl/avatar/get_avatar/group/${widget.gid}?v=$_avatarVersion';
+      final members = await TfApiClient.instance.getGroupMembers(
+        _uid,
+        _password,
+        widget.gid,
+      );
       if (members != null && mounted) {
         _settings = members['settings'] as Map<String, dynamic>?;
-        _members = (members['members'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+        _members =
+            (members['members'] as List<dynamic>?)
+                ?.cast<Map<String, dynamic>>() ??
+            [];
         _currentUserRole = _members
             .where((m) => m['uid'] == _uid)
-            .map((m) => m['role'] == 'owner' ? 2 : (m['role'] == 'admin' ? 1 : 0))
+            .map(
+              (m) => m['role'] == 'owner' ? 2 : (m['role'] == 'admin' ? 1 : 0),
+            )
             .firstOrNull;
       }
       if (_isAdmin) {
-        final requests = await TfApiClient.instance.getJoinRequests(_uid, _password, widget.gid);
+        final requests = await TfApiClient.instance.getJoinRequests(
+          _uid,
+          _password,
+          widget.gid,
+        );
         if (mounted) _joinRequests = requests;
+      } else {
+        _joinRequests = [];
       }
     } catch (e) {
       talker.error('GroupManagement load failed', e);
@@ -62,12 +90,23 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
   }
 
   Future<void> _toggleAdmin(int targetUid, bool currentlyAdmin) async {
-    final ok = await TfApiClient.instance.setGroupAdmin(_uid, _password, widget.gid, targetUid, !currentlyAdmin);
+    final ok = await TfApiClient.instance.setGroupAdmin(
+      _uid,
+      _password,
+      widget.gid,
+      targetUid,
+      !currentlyAdmin,
+    );
     if (ok) _load();
   }
 
   Future<void> _removeMember(int targetUid) async {
-    final ok = await TfApiClient.instance.removeGroupMember(_uid, _password, widget.gid, targetUid);
+    final ok = await TfApiClient.instance.removeGroupMember(
+      _uid,
+      _password,
+      widget.gid,
+      targetUid,
+    );
     if (ok) _load();
   }
 
@@ -78,19 +117,67 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
         title: Text(l10n.groupTransferOwner),
         content: Text(l10n.groupTransferOwnerConfirm),
         actions: [
-          TextButton(onPressed: () => ctx.pop(false), child: Text(l10n.commonCancel)),
-          FilledButton(onPressed: () => ctx.pop(true), child: Text(l10n.groupTransferOwnerConfirmAction)),
+          TextButton(
+            onPressed: () => ctx.pop(false),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
+            onPressed: () => ctx.pop(true),
+            child: Text(l10n.groupTransferOwnerConfirmAction),
+          ),
         ],
       ),
     );
     if (confirm == true) {
-      final ok = await TfApiClient.instance.transferGroupOwner(_uid, _password, widget.gid, newOwner);
+      final ok = await TfApiClient.instance.transferGroupOwner(
+        _uid,
+        _password,
+        widget.gid,
+        newOwner,
+      );
       if (ok) _load();
     }
   }
 
+  Future<void> _chooseNewOwner(AppLocalizations l10n) async {
+    final candidates = _members
+        .where((member) => member['uid'] != _uid)
+        .toList();
+    if (candidates.isEmpty) return;
+    final newOwner = await showDialog<int>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(l10n.groupSelectNewOwner),
+        children: candidates.map((member) {
+          final uid = (member['uid'] as num).toInt();
+          final username = member['username'] as String? ?? 'User $uid';
+          return SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, uid),
+            child: ListTile(
+              leading: ProfilePictureWidget(
+                avatarUrl: _baseUrl == null
+                    ? null
+                    : '$_baseUrl/avatar/get_avatar/user/$uid?v=$_avatarVersion',
+                radius: 18,
+                fallbackText: username,
+              ),
+              title: Text(username),
+              subtitle: Text('UID $uid'),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+    if (newOwner != null && mounted) await _transferOwner(l10n, newOwner);
+  }
+
   Future<void> _handleRequest(int rid, bool approved) async {
-    final ok = await TfApiClient.instance.handleJoinRequest(_uid, _password, rid, approved);
+    final ok = await TfApiClient.instance.handleJoinRequest(
+      _uid,
+      _password,
+      rid,
+      approved,
+    );
     if (!ok) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
@@ -102,34 +189,89 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
   }
 
   Future<void> _toggleSetting(String key, bool value) async {
-    await TfApiClient.instance.updateGroupSettings(_uid, _password, widget.gid, {key: value});
+    await TfApiClient.instance.updateGroupSettings(
+      _uid,
+      _password,
+      widget.gid,
+      {key: value},
+    );
     _load();
   }
 
-  Future<void> _inviteMember(AppLocalizations l10n) async {
-    final controller = TextEditingController();
-    final result = await showDialog<String>(
+  Future<void> _editEnterHint(AppLocalizations l10n) async {
+    final value = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.groupInviteMember),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: l10n.groupInviteMemberHint,
-            prefixIcon: const Icon(Icons.person_add),
-          ),
-        ),
+      builder: (_) => TextEntryDialog(
+        title: l10n.groupEnterHintLabel,
+        hintText: l10n.groupEnterHintHelp,
+        cancelLabel: l10n.commonCancel,
+        confirmLabel: l10n.save,
+        icon: Icons.info_outline,
+        initialValue: _settings?['enter_hint'] as String? ?? '',
+        maxLines: 3,
+        allowEmpty: true,
+      ),
+    );
+    if (value == null) return;
+    final ok = await TfApiClient.instance.updateGroupSettings(
+      _uid,
+      _password,
+      widget.gid,
+      {'enter_hint': value},
+    );
+    if (!mounted) return;
+    _showSnack(ok ? l10n.groupEnterHintUpdated : l10n.commonFailedOperation);
+    if (ok) _load();
+  }
+
+  Future<void> _leaveGroup(AppLocalizations l10n) async {
+    if (_isOwner) {
+      _showSnack(l10n.groupLeaveOwnerHint);
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.groupLeave),
+        content: Text(l10n.groupLeaveConfirm),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonCancel)),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.commonCancel),
+          ),
           FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: Text(l10n.groupInviteMember),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.groupLeave),
           ),
         ],
       ),
     );
-    controller.dispose();
+    if (confirmed != true) return;
+    final ok = await TfApiClient.instance.leaveGroup(
+      _uid,
+      _password,
+      widget.gid,
+    );
+    if (!mounted) return;
+    if (!ok) {
+      _showSnack(l10n.commonFailedOperation);
+      return;
+    }
+    await ChatDataService.instance.removeRoom('G${widget.gid}');
+    if (mounted) context.go(AppRoutes.chat);
+  }
+
+  Future<void> _inviteMember(AppLocalizations l10n) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => TextEntryDialog(
+        title: l10n.groupInviteMember,
+        hintText: l10n.groupInviteMemberHint,
+        cancelLabel: l10n.commonCancel,
+        confirmLabel: l10n.groupInviteMember,
+        icon: Icons.person_add,
+      ),
+    );
     if (result == null || result.isEmpty) return;
     int? invitedUid = int.tryParse(result);
     if (invitedUid == null) {
@@ -140,9 +282,18 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
       }
     }
     if (invitedUid != null) {
-      final ok = await TfApiClient.instance.inviteToGroup(_uid, _password, widget.gid, invitedUid);
+      final ok = await TfApiClient.instance.inviteToGroup(
+        _uid,
+        _password,
+        widget.gid,
+        invitedUid,
+      );
       if (ok != null) {
-        _showSnack(ok['pending'] == true ? l10n.groupInvitePendingReview : l10n.groupInviteJoined);
+        _showSnack(
+          ok['pending'] == true
+              ? l10n.groupInvitePendingReview
+              : l10n.groupInviteJoined,
+        );
         _load();
       } else {
         _showSnack(l10n.groupInviteFailed);
@@ -171,12 +322,24 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
       }
       final base64Str = base64.encode(bytes);
       final ok = await TfApiClient.instance.uploadGroupAvatar(
-        _uid, _password, widget.gid, base64Str,
+        _uid,
+        _password,
+        widget.gid,
+        base64Str,
       );
       if (ok) {
         _showSnack(l10n.groupAvatarUpdateSuccess);
-        _groupAvatarUrl = null; // bust cache to reload
-        _load();
+        _avatarVersion++;
+        PaintingBinding.instance.imageCache
+          ..clear()
+          ..clearLiveImages();
+        await ChatDataService.instance.loadContactsAndRooms();
+        await ChatDataService.instance.invalidateAvatarCache(
+          groupId: widget.gid,
+          memberUids: _members.map((member) => (member['uid'] as num).toInt()),
+          version: DateTime.now().millisecondsSinceEpoch,
+        );
+        await _load();
       } else {
         _showSnack(l10n.groupAvatarUploadFailedSize);
       }
@@ -188,7 +351,9 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
 
   void _showSnack(String msg) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating),
+      );
     }
   }
 
@@ -200,7 +365,10 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.groupName),
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.pop()),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -214,9 +382,15 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
                       CircleAvatar(
                         radius: 48,
                         backgroundColor: cs.primaryContainer,
-                        backgroundImage: _groupAvatarUrl != null ? NetworkImage(_groupAvatarUrl!) : null,
+                        backgroundImage: _groupAvatarUrl != null
+                            ? NetworkImage(_groupAvatarUrl!)
+                            : null,
                         onBackgroundImageError: (_, __) {},
-                        child: const Icon(Icons.group, size: 48, color: Colors.white54),
+                        child: const Icon(
+                          Icons.group,
+                          size: 48,
+                          color: Colors.white54,
+                        ),
                       ),
                       Positioned(
                         bottom: 0,
@@ -226,7 +400,11 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
                           child: CircleAvatar(
                             radius: 18,
                             backgroundColor: cs.primary,
-                            child: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              size: 18,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -241,7 +419,11 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
                 ],
                 Row(
                   children: [
-                    Expanded(child: _buildSection('${l10n.groupMembersSection} (${_members.length})')),
+                    Expanded(
+                      child: _buildSection(
+                        '${l10n.groupMembersSection} (${_members.length})',
+                      ),
+                    ),
                     FilledButton.tonalIcon(
                       onPressed: () => _inviteMember(l10n),
                       icon: const Icon(Icons.person_add, size: 18),
@@ -252,9 +434,28 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
                 ..._members.map((m) => _buildMemberTile(l10n, cs, m)),
                 if (_isAdmin && _joinRequests.isNotEmpty) ...[
                   const Divider(),
-                  _buildSection('${l10n.groupJoinRequestsSection} (${_joinRequests.length})'),
+                  _buildSection(
+                    '${l10n.groupJoinRequestsSection} (${_joinRequests.length})',
+                  ),
                   ..._joinRequests.map((r) => _buildRequestTile(cs, r)),
                 ],
+                const Divider(),
+                if (_isOwner)
+                  ListTile(
+                    leading: const Icon(Icons.swap_horiz),
+                    title: Text(l10n.groupTransferOwner),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _chooseNewOwner(l10n),
+                  ),
+                ListTile(
+                  leading: Icon(Icons.logout, color: cs.error),
+                  title: Text(
+                    l10n.groupLeave,
+                    style: TextStyle(color: cs.error),
+                  ),
+                  subtitle: _isOwner ? Text(l10n.groupLeaveOwnerHint) : null,
+                  onTap: () => _leaveGroup(l10n),
+                ),
               ],
             ),
     );
@@ -263,13 +464,29 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
   Widget _buildSection(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+      child: Text(
+        title,
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+      ),
     );
   }
 
   List<Widget> _buildSettingsTiles(AppLocalizations l10n) {
     final settings = _settings ?? {};
     return [
+      ListTile(
+        leading: const Icon(Icons.info_outline),
+        title: Text(l10n.groupEnterHintLabel),
+        subtitle: Text(
+          (_settings?['enter_hint'] as String?)?.trim().isNotEmpty == true
+              ? _settings!['enter_hint'] as String
+              : l10n.groupEnterHintHelp,
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => _editEnterHint(l10n),
+      ),
       SwitchListTile.adaptive(
         value: settings['allow_direct_join'] == true,
         title: Text(l10n.groupAllowDirectJoin),
@@ -285,19 +502,33 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
     ];
   }
 
-  Widget _buildMemberTile(AppLocalizations l10n, ColorScheme cs, Map<String, dynamic> member) {
-    final uid = member['uid'] as int;
-    final role = member['role'] as String;
+  Widget _buildMemberTile(
+    AppLocalizations l10n,
+    ColorScheme cs,
+    Map<String, dynamic> member,
+  ) {
+    final uid = (member['uid'] as num).toInt();
+    final role = member['role'] as String? ?? 'member';
+    final username = member['username'] as String? ?? 'User $uid';
     final isMe = uid == _uid;
-    final roleLabel = role == 'owner' ? l10n.roleOwner : (role == 'admin' ? l10n.roleAdmin : '');
+    final roleLabel = role == 'owner'
+        ? l10n.roleOwner
+        : (role == 'admin' ? l10n.roleAdmin : '');
+    final avatarUrl = _baseUrl == null
+        ? null
+        : '$_baseUrl/avatar/get_avatar/user/$uid?v=$_avatarVersion';
 
     return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: cs.primaryContainer,
-        child: Icon(role == 'owner' ? Icons.star : Icons.person, color: cs.onPrimaryContainer),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+      leading: ProfilePictureWidget(
+        avatarUrl: avatarUrl,
+        radius: 20,
+        fallbackText: username,
       ),
-      title: Text('${member['username']}${isMe ? ' ${l10n.commonMe}' : ''}'),
-      subtitle: roleLabel.isNotEmpty ? Text(roleLabel, style: TextStyle(color: cs.primary, fontSize: 12)) : null,
+      title: Text('$username${isMe ? ' ${l10n.commonMe}' : ''}'),
+      subtitle: roleLabel.isNotEmpty
+          ? Text(roleLabel, style: TextStyle(color: cs.primary, fontSize: 12))
+          : null,
       trailing: _isOwner && !isMe
           ? PopupMenuButton<String>(
               onSelected: (action) {
@@ -307,14 +538,31 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
               },
               itemBuilder: (_) => [
                 if (role == 'admin')
-                  PopupMenuItem(value: 'admin', child: Text(l10n.groupRemoveAdmin))
+                  PopupMenuItem(
+                    value: 'admin',
+                    child: Text(l10n.groupRemoveAdmin),
+                  )
                 else
-                  PopupMenuItem(value: 'admin', child: Text(l10n.groupSetAdmin)),
-                PopupMenuItem(value: 'owner', child: Text(l10n.groupTransferOwner)),
-                PopupMenuItem(value: 'remove', child: Text(l10n.groupRemoveMemberAction)),
+                  PopupMenuItem(
+                    value: 'admin',
+                    child: Text(l10n.groupSetAdmin),
+                  ),
+                PopupMenuItem(
+                  value: 'owner',
+                  child: Text(l10n.groupTransferOwner),
+                ),
+                PopupMenuItem(
+                  value: 'remove',
+                  child: Text(l10n.groupRemoveMemberAction),
+                ),
               ],
             )
+          : role == 'owner'
+          ? Icon(Icons.star, color: cs.primary, size: 20)
+          : role == 'admin'
+          ? Icon(Icons.shield_outlined, color: cs.primary, size: 20)
           : null,
+      onTap: () => context.push('/user/$uid'),
     );
   }
 

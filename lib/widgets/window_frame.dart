@@ -2,14 +2,16 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:window_manager/window_manager.dart';import '../utils/talker.dart';import 'custom_title_bar.dart';
+import 'package:window_manager/window_manager.dart';
+import '../utils/talker.dart';
+import 'custom_title_bar.dart';
 import '../constants/app_constants.dart';
 
 /// Custom Window Frame by ILoveScratch2
 class WindowFrame extends StatefulWidget {
   final Widget child;
   final String title;
-  
+
   const WindowFrame({
     super.key,
     required this.child,
@@ -20,13 +22,14 @@ class WindowFrame extends StatefulWidget {
   State<WindowFrame> createState() => _WindowFrameState();
 }
 
-class _WindowFrameState extends State<WindowFrame> 
+class _WindowFrameState extends State<WindowFrame>
     with WidgetsBindingObserver, WindowListener {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+    final isDesktop =
+        !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
     if (isDesktop) {
       windowManager.addListener(this);
     }
@@ -35,7 +38,8 @@ class _WindowFrameState extends State<WindowFrame>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+    final isDesktop =
+        !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
     if (isDesktop) {
       windowManager.removeListener(this);
     }
@@ -44,7 +48,8 @@ class _WindowFrameState extends State<WindowFrame>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       _saveWindowSize();
     }
   }
@@ -83,7 +88,8 @@ class _WindowFrameState extends State<WindowFrame>
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+    final isDesktop =
+        !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
     if (!isDesktop) {
       return widget.child;
     }

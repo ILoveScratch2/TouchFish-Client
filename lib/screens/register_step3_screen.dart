@@ -34,33 +34,42 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
     final l10n = AppLocalizations.of(context)!;
     final code = int.tryParse(_verificationCodeController.text.trim());
     if (code == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(l10n.registerErrorVerificationCodeInvalid),
-        behavior: SnackBarBehavior.floating,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.registerErrorVerificationCodeInvalid),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
     setState(() => _isLoading = true);
     try {
-      final success = await TfApiClient.instance.activateAccount(widget.uid, code);
+      final success = await TfApiClient.instance.activateAccount(
+        widget.uid,
+        code,
+      );
       if (!mounted) return;
       setState(() => _isLoading = false);
       if (success) {
         context.go(AppRoutes.registerSuccess);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(l10n.registerActivateFailed),
-          behavior: SnackBarBehavior.floating,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.registerActivateFailed),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } catch (e) {
       talker.error('RegisterStep3: activate failed', e);
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(l10n.registerActivateFailed),
-          behavior: SnackBarBehavior.floating,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.registerActivateFailed),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }
@@ -68,11 +77,9 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.registerTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.registerTitle)),
       body: Center(
         child: SizedBox(
           width: 400,
@@ -97,12 +104,11 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       Text(
                         l10n.registerCreateAccount,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -112,7 +118,7 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Verification Code field
                       SmartField(
                         controller: _verificationCodeController,
@@ -120,7 +126,9 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
                         prefixIcon: Icons.verified_user_outlined,
                         keyboardType: TextInputType.number,
                         validator: SmartValidators.compose([
-                          SmartValidators.required(l10n.registerErrorVerificationCodeRequired),
+                          SmartValidators.required(
+                            l10n.registerErrorVerificationCodeRequired,
+                          ),
                           (value) {
                             if (value == null || value.isEmpty) return null;
                             if (!RegExp(r'^\d{6}$').hasMatch(value)) {
@@ -131,7 +139,7 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
                         ]),
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Register button
                       _isLoading
                           ? const CircularProgressIndicator()
@@ -140,7 +148,7 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
                               icon: Icons.check_circle,
                             ),
                       const SizedBox(height: 12),
-                      
+
                       // Back button
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),

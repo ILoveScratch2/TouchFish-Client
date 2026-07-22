@@ -60,7 +60,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       ]);
 
       try {
-        _forum = (results[0] as List<Forum>).firstWhere((f) => f.id == widget.forumId);
+        _forum = (results[0] as List<Forum>).firstWhere(
+          (f) => f.id == widget.forumId,
+        );
       } catch (_) {
         _forum = null;
       }
@@ -79,9 +81,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _members = results[3] as List<ForumMember>;
         _identity = uid != null
             ? _members.cast<ForumMember?>().firstWhere(
-                  (m) => m?.accountUid == uid.toString(),
-                  orElse: () => null,
-                )
+                (m) => m?.accountUid == uid.toString(),
+                orElse: () => null,
+              )
             : null;
       } else {
         _members = const [];
@@ -102,7 +104,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   /// Try to fetch members; returns empty list if access is denied.
   Future<List<ForumMember>> _fetchMembersSafe(
-    int uid, String password, int fid,
+    int uid,
+    String password,
+    int fid,
   ) async {
     try {
       return await TfApiClient.instance.getMembers(uid, password, fid);
@@ -194,8 +198,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                     child: Column(
                       children: [
                         _buildDescriptionCard(context, forum, l10n),
-                        if (!_isMember)
-                          _buildJoinCard(context, l10n),
+                        if (!_isMember) _buildJoinCard(context, l10n),
                       ],
                     ),
                   ),
@@ -379,7 +382,11 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             final ok = await TfApiClient.instance.joinForum(uid, password, fid);
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(ok ? l10n.forumJoinSuccess : l10n.forumCreateFailed)),
+                SnackBar(
+                  content: Text(
+                    ok ? l10n.forumJoinSuccess : l10n.forumCreateFailed,
+                  ),
+                ),
               );
               if (ok) setState(() => _isMember = true);
             }
@@ -406,14 +413,18 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           collapsedShape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(8)),
           ),
-          children: _pinnedPosts.map((post) => Padding(
-            padding: const EdgeInsets.all(8),
-            child: _PostCard(
-              post: post,
-              onTap: () => _openPostDetail(context, post),
-              profileCache: _profileCache,
-            ),
-          )).toList(),
+          children: _pinnedPosts
+              .map(
+                (post) => Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: _PostCard(
+                    post: post,
+                    onTap: () => _openPostDetail(context, post),
+                    profileCache: _profileCache,
+                  ),
+                ),
+              )
+              .toList(),
         ),
       ),
     );
@@ -530,7 +541,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     if (uid == null || password == null || fid == null) return;
 
     final ok = await TfApiClient.instance.editForum(
-      uid, password, fid,
+      uid,
+      password,
+      fid,
       forumName: nameController.text.trim(),
       introduction: introController.text.trim(),
     );
@@ -545,9 +558,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
     final allPosts = [..._pinnedPosts, ..._posts];
     if (allPosts.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.forumNoPosts)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.forumNoPosts)));
       return;
     }
     final selectedPid = await showModalBottomSheet<String>(
@@ -561,15 +574,20 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 16, left: 20, right: 16, bottom: 12),
+              padding: const EdgeInsets.only(
+                top: 16,
+                left: 20,
+                right: 16,
+                bottom: 12,
+              ),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       l10n.forumPinPost,
                       style: Theme.of(ctx).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -585,12 +603,23 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 itemCount: allPosts.length,
                 itemBuilder: (_, i) => ListTile(
                   leading: allPosts[i].isPinned
-                      ? Icon(Icons.push_pin, color: Theme.of(ctx).colorScheme.primary)
+                      ? Icon(
+                          Icons.push_pin,
+                          color: Theme.of(ctx).colorScheme.primary,
+                        )
                       : null,
-                  title: Text(allPosts[i].title.isNotEmpty ? allPosts[i].title : '(untitled)',
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
-                  subtitle: Text(allPosts[i].content,
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                  title: Text(
+                    allPosts[i].title.isNotEmpty
+                        ? allPosts[i].title
+                        : '(untitled)',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    allPosts[i].content,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   onTap: () => Navigator.pop(ctx, allPosts[i].id),
                 ),
               ),
@@ -645,8 +674,10 @@ class _ForumActionMenu extends StatelessWidget {
           PopupMenuItem(
             child: Row(
               children: [
-                Icon(Icons.edit,
-                    color: Theme.of(context).colorScheme.onSecondaryContainer),
+                Icon(
+                  Icons.edit,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
                 const SizedBox(width: 12),
                 Text(l10n.forumEdit),
               ],
@@ -656,8 +687,10 @@ class _ForumActionMenu extends StatelessWidget {
           PopupMenuItem(
             child: Row(
               children: [
-                Icon(Icons.push_pin,
-                    color: Theme.of(context).colorScheme.primary),
+                Icon(
+                  Icons.push_pin,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: 12),
                 Text(l10n.forumPinPost),
               ],
@@ -671,8 +704,10 @@ class _ForumActionMenu extends StatelessWidget {
               children: [
                 const Icon(Icons.delete, color: Colors.red),
                 const SizedBox(width: 12),
-                Text(l10n.forumDelete,
-                    style: const TextStyle(color: Colors.red)),
+                Text(
+                  l10n.forumDelete,
+                  style: const TextStyle(color: Colors.red),
+                ),
               ],
             ),
             onTap: () => _handleDelete(context, l10n),
@@ -681,11 +716,15 @@ class _ForumActionMenu extends StatelessWidget {
           PopupMenuItem(
             child: Row(
               children: [
-                Icon(Icons.bookmark_remove,
-                    color: Theme.of(context).colorScheme.error),
+                Icon(
+                  Icons.bookmark_remove,
+                  color: Theme.of(context).colorScheme.error,
+                ),
                 const SizedBox(width: 12),
-                Text(l10n.forumLeave,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                Text(
+                  l10n.forumLeave,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               ],
             ),
             onTap: () => _handleLeave(context, l10n),
@@ -704,10 +743,11 @@ class _ForumActionMenu extends StatelessWidget {
       actions: [
         TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
         TouchFishDialogAction<bool>(
-            label: l10n.forumDelete,
-            result: true,
-            isPrimary: true,
-            isDestructive: true),
+          label: l10n.forumDelete,
+          result: true,
+          isPrimary: true,
+          isDestructive: true,
+        ),
       ],
     ).then((confirmed) async {
       if (confirmed == true && context.mounted) {
@@ -715,20 +755,25 @@ class _ForumActionMenu extends StatelessWidget {
         final password = AuthState.instance.password;
         final fid = int.tryParse(forum.id);
         if (uid == null || password == null || fid == null) return;
-        final success =
-            await TfApiClient.instance.removeForum(uid, password, fid);
+        final success = await TfApiClient.instance.removeForum(
+          uid,
+          password,
+          fid,
+        );
         if (!context.mounted) return;
         if (success) {
           context.pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.forumDeleteSuccess)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.forumDeleteSuccess)));
           onRefresh();
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(l10n.forumDeleteFailed),
-            behavior: SnackBarBehavior.floating,
-          ));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.forumDeleteFailed),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       }
     });
@@ -744,10 +789,11 @@ class _ForumActionMenu extends StatelessWidget {
       actions: [
         TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
         TouchFishDialogAction<bool>(
-            label: l10n.forumLeave,
-            result: true,
-            isPrimary: true,
-            isDestructive: true),
+          label: l10n.forumLeave,
+          result: true,
+          isPrimary: true,
+          isDestructive: true,
+        ),
       ],
     ).then((confirmed) async {
       if (confirmed == true && context.mounted) {
@@ -850,7 +896,9 @@ class _PostCardState extends State<_PostCard> {
     final author = _author;
     final comments = _comments;
     final commentCount = comments?.length ?? 0;
-    final featuredComment = comments?.isNotEmpty == true ? comments!.last : null;
+    final featuredComment = comments?.isNotEmpty == true
+        ? comments!.last
+        : null;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -882,7 +930,9 @@ class _PostCardState extends State<_PostCard> {
                           _formatDate(post.createdAt),
                           style: Theme.of(context).textTheme.labelSmall
                               ?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                         ),
                       ],
@@ -941,7 +991,8 @@ class _PostCardState extends State<_PostCard> {
                 Row(
                   children: [
                     const SizedBox(
-                      width: 16, height: 16,
+                      width: 16,
+                      height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                     const SizedBox(width: 4),
