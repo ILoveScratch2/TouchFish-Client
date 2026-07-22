@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
 import '../l10n/app_localizations.dart';
 import '../models/notification_model.dart';
 import '../services/notification_service.dart';
@@ -17,9 +19,7 @@ class _InviteSheetState extends State<InviteSheet> {
   void initState() {
     super.initState();
     _notificationService.addListener(_onNotificationsChanged);
-    _notificationService.forceRefresh().then((_) {
-      _notificationService.markFriendRead();
-    });
+    _refresh();
   }
 
   @override
@@ -32,35 +32,61 @@ class _InviteSheetState extends State<InviteSheet> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _acceptFriendRequest(NotificationInfo notif) async {
-    final success = await _notificationService.acceptFriendRequest(notif);
-    if (mounted) {
-      final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(success ? l10n.chatInviteAccept : l10n.chatInviteAcceptFailed),
-        ),
-      );
-    }
+  Future<void> _refresh() async {
+    await _notificationService.forceRefresh();
+    _notificationService.markInviteRead();
   }
 
-  Future<void> _rejectFriendRequest(NotificationInfo notif) async {
-    final success = await _notificationService.rejectFriendRequest(notif);
-    if (mounted) {
-      final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(success ? l10n.chatInviteReject : l10n.chatInviteRejectFailed),
-        ),
-      );
-    }
+  Future<void> _handleFriend(
+    NotificationInfo notification,
+    bool accepted,
+  ) async {
+    final success = accepted
+        ? await _notificationService.acceptFriendRequest(notification)
+        : await _notificationService.rejectFriendRequest(notification);
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    _showResult(
+      success,
+      accepted ? l10n.chatInviteAccept : l10n.chatInviteReject,
+      accepted ? l10n.chatInviteAcceptFailed : l10n.chatInviteRejectFailed,
+    );
+  }
+
+  Future<void> _handleGroupRequest(
+    NotificationInfo notification,
+    bool approved,
+  ) async {
+    final success = await _notificationService.handleGroupJoinRequest(
+      notification,
+      approved,
+    );
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    _showResult(
+      success,
+      approved ? l10n.chatInviteAccept : l10n.chatInviteReject,
+      l10n.commonFailedOperation,
+    );
+  }
+
+  void _showResult(bool success, String successText, String failureText) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(success ? successText : failureText)),
+    );
+  }
+
+  void _openGroup(int gid) {
+    final router = GoRouter.of(context);
+    Navigator.pop(context);
+    router.go('/chat/G$gid');
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
-    final friendNotifs = _notificationService.friendNotifications;
+    final notifications = _notificationService.inviteNotifications;
 
     return Container(
       padding: MediaQuery.of(context).viewInsets,
@@ -70,7 +96,12 @@ class _InviteSheetState extends State<InviteSheet> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 16, left: 20, right: 16, bottom: 12),
+            padding: const EdgeInsets.only(
+              top: 16,
+              left: 20,
+              right: 16,
+              bottom: 12,
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -78,67 +109,61 @@ class _InviteSheetState extends State<InviteSheet> {
                     l10n.chatInvites,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w600,
-                      letterSpacing: -0.5,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Spacer(),
                 IconButton(
                   icon: _notificationService.isLoading
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Icon(Icons.refresh),
-                  onPressed: _notificationService.isLoading ? null : () => _notificationService.forceRefresh(),
+                  onPressed: _notificationService.isLoading ? null : _refresh,
                   tooltip: l10n.retry,
-                  style: IconButton.styleFrom(minimumSize: const Size(36, 36)),
                 ),
                 IconButton(
                   icon: Icon(Icons.close, color: colorScheme.onSurface),
                   onPressed: () => Navigator.pop(context),
-                  style: IconButton.styleFrom(minimumSize: const Size(36, 36)),
                 ),
               ],
             ),
           ),
           const Divider(height: 1),
           Expanded(
-            child: _notificationService.isLoading
+            child: _notificationService.isLoading && notifications.isEmpty
                 ? const Center(child: CircularProgressIndicator())
-                : friendNotifs.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.inbox_outlined,
-                              size: 64,
-                              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              l10n.chatNoInvites,
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: friendNotifs.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final notif = friendNotifs[index];
-                          return _FriendNotificationTile(
-                            notification: notif,
-                            onAccept: () => _acceptFriendRequest(notif),
-                            onReject: () => _rejectFriendRequest(notif),
-                          );
-                        },
-                      ),
+                : notifications.isEmpty
+                ? _EmptyInvites(label: l10n.chatNoInvites)
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: notifications.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final notification = notifications[index];
+                      return _InviteNotificationTile(
+                        notification: notification,
+                        onAccept: notification.event == 'friend.request'
+                            ? () => _handleFriend(notification, true)
+                            : notification.event == 'group.join.request'
+                            ? () => _handleGroupRequest(notification, true)
+                            : null,
+                        onReject: notification.event == 'friend.request'
+                            ? () => _handleFriend(notification, false)
+                            : notification.event == 'group.join.request'
+                            ? () => _handleGroupRequest(notification, false)
+                            : null,
+                        onOpenGroup:
+                            notification.groupEventGid != null &&
+                                notification.groupRequestRid == null &&
+                                (notification.event == 'group.invited' ||
+                                    notification.event == 'group.join.approved')
+                            ? () => _openGroup(notification.groupEventGid!)
+                            : null,
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -146,97 +171,112 @@ class _InviteSheetState extends State<InviteSheet> {
   }
 }
 
-class _FriendNotificationTile extends StatelessWidget {
-  final NotificationInfo notification;
-  final VoidCallback onAccept;
-  final VoidCallback onReject;
+class _EmptyInvites extends StatelessWidget {
+  final String label;
 
-  const _FriendNotificationTile({
+  const _EmptyInvites({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.inbox_outlined,
+            size: 64,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 16),
+          Text(label, style: TextStyle(color: colorScheme.onSurfaceVariant)),
+        ],
+      ),
+    );
+  }
+}
+
+class _InviteNotificationTile extends StatelessWidget {
+  final NotificationInfo notification;
+  final VoidCallback? onAccept;
+  final VoidCallback? onReject;
+  final VoidCallback? onOpenGroup;
+
+  const _InviteNotificationTile({
     required this.notification,
-    required this.onAccept,
-    required this.onReject,
+    this.onAccept,
+    this.onReject,
+    this.onOpenGroup,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final timeLabel = _formatTime(notification.dateTime);
-
-    final bool isPending = notification.event == 'friend.request';
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
+    final isGroup = notification.isGroupEvent;
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      leading: CircleAvatar(
+        backgroundColor: theme.colorScheme.primaryContainer,
+        child: Icon(
+          isGroup ? Icons.group_add_outlined : Icons.person_add_outlined,
+          color: theme.colorScheme.onPrimaryContainer,
+        ),
+      ),
+      title: Text(notification.title),
+      subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                notification.event == 'friend.request'
-                    ? Icons.person_add
-                    : Icons.person,
-                size: 20,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      notification.title,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      notification.content,
-                      style: theme.textTheme.bodySmall,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      timeLabel,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          const SizedBox(height: 4),
+          Text(notification.content),
+          const SizedBox(height: 4),
+          Text(
+            _formatTime(notification.dateTime),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
-          if (isPending) ...[
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                OutlinedButton(
-                  onPressed: onReject,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: theme.colorScheme.error,
-                  ),
-                  child: Text(l10n.chatInviteReject),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: onAccept,
-                  child: Text(l10n.chatInviteAccept),
-                ),
-              ],
+          if (notification.event == 'group.invited' &&
+              notification.groupRequestRid != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              l10n.groupInvitePendingReview,
+              style: TextStyle(color: theme.colorScheme.primary),
             ),
           ],
         ],
       ),
+      trailing: onAccept != null || onReject != null
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.close, color: theme.colorScheme.error),
+                  tooltip: l10n.chatInviteReject,
+                  onPressed: onReject,
+                ),
+                IconButton.filled(
+                  icon: const Icon(Icons.check),
+                  tooltip: l10n.chatInviteAccept,
+                  style: IconButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                  ),
+                  onPressed: onAccept,
+                ),
+              ],
+            )
+          : onOpenGroup != null
+          ? IconButton(
+              icon: const Icon(Icons.arrow_forward),
+              tooltip: l10n.groupOpen,
+              onPressed: onOpenGroup,
+            )
+          : null,
     );
   }
 
-  String _formatTime(DateTime dt) {
+  static String _formatTime(DateTime dt) {
     return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }

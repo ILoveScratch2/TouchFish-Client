@@ -2157,6 +2157,18 @@ class AppLocalizationsOch extends AppLocalizations {
   String get groupEnterHintLabel => '入羣提示';
 
   @override
+  String get groupEnterHintHelp => '成員入羣後顯示於聊天頂部';
+
+  @override
+  String get groupEnterHintUpdated => '入羣提示已更新';
+
+  @override
+  String get groupManagement => '羣組管理';
+
+  @override
+  String get groupOpen => '打開羣聊';
+
+  @override
   String get groupCreateNameEmpty => '羣組名稱不可為空';
 
   @override
@@ -2196,6 +2208,18 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get groupTransferOwnerConfirmAction => '確認轉讓';
+
+  @override
+  String get groupSelectNewOwner => '選擇新羣主';
+
+  @override
+  String get groupLeave => '退出羣組';
+
+  @override
+  String get groupLeaveConfirm => '確定要退出該羣組嗎？';
+
+  @override
+  String get groupLeaveOwnerHint => '羣主需先轉讓羣主後方可退出';
 
   @override
   String get groupInviteMember => '邀請成員';

@@ -81,8 +81,7 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
     }
   }
 
-  bool get _isAdmin =>
-      AuthState.instance.currentUser?.hasAdminAccess ?? false;
+  bool get _isAdmin => AuthState.instance.currentUser?.hasAdminAccess ?? false;
 
   Future<void> _showCreateDialog() async {
     final l10n = AppLocalizations.of(context)!;
@@ -116,9 +115,9 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
     final content = controller.text.trim();
     if (mounted) {
       if (content.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.announcementCreateEmpty)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.announcementCreateEmpty)));
         return;
       }
       final uid = AuthState.instance.uid;
@@ -132,9 +131,11 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success
-                ? l10n.announcementCreateSuccess
-                : l10n.announcementCreateFailed),
+            content: Text(
+              success
+                  ? l10n.announcementCreateSuccess
+                  : l10n.announcementCreateFailed,
+            ),
           ),
         );
         if (success) _load();
@@ -148,11 +149,7 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(l10n.announcementDeleteConfirm),
-        content: Text(
-          a.content,
-          maxLines: 3,
-          overflow: TextOverflow.ellipsis,
-        ),
+        content: Text(a.content, maxLines: 3, overflow: TextOverflow.ellipsis),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -182,9 +179,11 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success
-              ? l10n.announcementDeleteSuccess
-              : l10n.announcementDeleteFailed),
+          content: Text(
+            success
+                ? l10n.announcementDeleteSuccess
+                : l10n.announcementDeleteFailed,
+          ),
         ),
       );
       if (success) _load();
@@ -231,7 +230,10 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
                       color: Theme.of(context).colorScheme.error,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    constraints: const BoxConstraints(minWidth: 16, minHeight: 14),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 14,
+                    ),
                     child: Text(
                       badgeCount > 99 ? '99+' : '$badgeCount',
                       style: TextStyle(
@@ -269,13 +271,12 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error)),
-            const SizedBox(height: 8),
-            FilledButton.tonal(
-              onPressed: _load,
-              child: Text(l10n.retry),
+            Text(
+              _error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
+            const SizedBox(height: 8),
+            FilledButton.tonal(onPressed: _load, child: Text(l10n.retry)),
           ],
         ),
       );
@@ -317,7 +318,12 @@ class _AnnouncementNotificationSheet extends StatelessWidget {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 16, left: 20, right: 16, bottom: 12),
+            padding: const EdgeInsets.only(
+              top: 16,
+              left: 20,
+              right: 16,
+              bottom: 12,
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -344,38 +350,37 @@ class _AnnouncementNotificationSheet extends StatelessWidget {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : notifs.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.notifications_none,
-                              size: 64,
-                              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              l10n.notificationEmpty,
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.notifications_none,
+                          size: 64,
+                          color: colorScheme.onSurfaceVariant.withOpacity(0.5),
                         ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                        const SizedBox(height: 16),
+                        Text(
+                          l10n.notificationEmpty,
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
                         ),
-                        itemCount: notifs.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 6),
-                        itemBuilder: (context, index) {
-                          return _AnnouncementNotificationCard(
-                            notification: notifs[index],
-                          );
-                        },
-                      ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    itemCount: notifs.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 6),
+                    itemBuilder: (context, index) {
+                      return _AnnouncementNotificationCard(
+                        notification: notifs[index],
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -397,7 +402,8 @@ class _AnnouncementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final senderLabel = announcement.senderName ?? 'User ${announcement.sender}';
+    final senderLabel =
+        announcement.senderName ?? 'User ${announcement.sender}';
     final timeLabel = _formatTime(announcement.dateTime);
 
     return Card(
@@ -412,8 +418,11 @@ class _AnnouncementCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.campaign_outlined,
-                      size: 24, color: theme.colorScheme.primary),
+                  Icon(
+                    Icons.campaign_outlined,
+                    size: 24,
+                    color: theme.colorScheme.primary,
+                  ),
                   const SizedBox(width: 10),
                   Text(
                     senderLabel,
@@ -432,10 +441,7 @@ class _AnnouncementCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Text(
-                announcement.content,
-                style: theme.textTheme.bodyLarge,
-              ),
+              Text(announcement.content, style: theme.textTheme.bodyLarge),
             ],
           ),
         ),
@@ -474,8 +480,8 @@ class _AnnouncementNotificationCard extends StatelessWidget {
                   isDeleted
                       ? Icons.delete_outline
                       : isEdited
-                          ? Icons.edit_notifications
-                          : Icons.campaign,
+                      ? Icons.edit_notifications
+                      : Icons.campaign,
                   size: 16,
                   color: isDeleted
                       ? theme.colorScheme.error
@@ -501,10 +507,7 @@ class _AnnouncementNotificationCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              notification.content,
-              style: theme.textTheme.bodyMedium,
-            ),
+            Text(notification.content, style: theme.textTheme.bodyMedium),
           ],
         ),
       ),

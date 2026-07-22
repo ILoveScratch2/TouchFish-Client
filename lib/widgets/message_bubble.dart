@@ -18,10 +18,7 @@ import '../utils/talker.dart';
 class MessageBubble extends HookWidget {
   final ChatMessage message;
 
-  const MessageBubble({
-    super.key,
-    required this.message,
-  });
+  const MessageBubble({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -30,10 +27,7 @@ class MessageBubble extends HookWidget {
       return media?.bytes != null ? Uint8List.fromList(media!.bytes!) : null;
     }, [message.media?.bytes]);
 
-    return _MessageBubbleContent(
-      message: message,
-      cachedBytes: cachedBytes,
-    );
+    return _MessageBubbleContent(message: message, cachedBytes: cachedBytes);
   }
 }
 
@@ -41,10 +35,7 @@ class _MessageBubbleContent extends StatefulWidget {
   final ChatMessage message;
   final Uint8List? cachedBytes;
 
-  const _MessageBubbleContent({
-    required this.message,
-    this.cachedBytes,
-  });
+  const _MessageBubbleContent({required this.message, this.cachedBytes});
 
   @override
   State<_MessageBubbleContent> createState() => _MessageBubbleState();
@@ -60,9 +51,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
   void _showActionSheet() {
     showModalBottomSheet(
       context: context,
-      builder: (context) => _MessageActionSheet(
-        message: widget.message,
-      ),
+      builder: (context) => _MessageActionSheet(message: widget.message),
     );
   }
 
@@ -72,9 +61,18 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
     final textTheme = Theme.of(context).textTheme;
 
     return Align(
-      alignment: widget.message.isMe ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: widget.message.isMe
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: widget.message.mentionsMe
+            ? BoxDecoration(
+                color: colorScheme.tertiaryContainer.withValues(alpha: 0.35),
+                border: Border.all(color: colorScheme.tertiary),
+                borderRadius: BorderRadius.circular(8),
+              )
+            : null,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
@@ -85,8 +83,9 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                 onLongPress: _showActionSheet,
                 onSecondaryTap: _showActionSheet,
                 child: Row(
-                  mainAxisAlignment:
-                      widget.message.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                  mainAxisAlignment: widget.message.isMe
+                      ? MainAxisAlignment.end
+                      : MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (!widget.message.isMe) ...[
@@ -126,9 +125,13 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                             ? CrossAxisAlignment.end
                             : CrossAxisAlignment.start,
                         children: [
-                          if (!widget.message.isMe && widget.message.senderName != null)
+                          if (!widget.message.isMe &&
+                              widget.message.senderName != null)
                             Padding(
-                              padding: const EdgeInsets.only(left: 4, bottom: 2),
+                              padding: const EdgeInsets.only(
+                                left: 4,
+                                bottom: 2,
+                              ),
                               child: Text(
                                 widget.message.senderName!,
                                 style: textTheme.bodySmall?.copyWith(
@@ -139,7 +142,11 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                             ),
                           _buildMessageContent(context, colorScheme, textTheme),
                           Padding(
-                            padding: const EdgeInsets.only(top: 2, left: 12, right: 12),
+                            padding: const EdgeInsets.only(
+                              top: 2,
+                              left: 12,
+                              right: 12,
+                            ),
                             child: Text(
                               _formatTime(widget.message.timestamp),
                               style: textTheme.bodySmall?.copyWith(
@@ -194,7 +201,11 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
     }
   }
 
-  Widget _buildMessageContent(BuildContext context, ColorScheme colorScheme, TextTheme textTheme) {
+  Widget _buildMessageContent(
+    BuildContext context,
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+  ) {
     switch (widget.message.type) {
       case MessageType.image:
         return _buildImageMessage(context, colorScheme);
@@ -209,9 +220,16 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
     }
   }
 
-  Widget _buildTextMessage(BuildContext context, ColorScheme colorScheme, TextTheme textTheme) {
+  Widget _buildTextMessage(
+    BuildContext context,
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+  ) {
     final settingsService = SettingsService.instance;
-    final enableMarkdown = settingsService.getValue<bool>('enableMarkdownRendering', true);
+    final enableMarkdown = settingsService.getValue<bool>(
+      'enableMarkdownRendering',
+      true,
+    );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -220,8 +238,12 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
             ? colorScheme.primaryContainer
             : colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.only(
-          topLeft: widget.message.isMe ? const Radius.circular(18) : const Radius.circular(4),
-          topRight: widget.message.isMe ? const Radius.circular(4) : const Radius.circular(18),
+          topLeft: widget.message.isMe
+              ? const Radius.circular(18)
+              : const Radius.circular(4),
+          topRight: widget.message.isMe
+              ? const Radius.circular(4)
+              : const Radius.circular(18),
           bottomLeft: const Radius.circular(18),
           bottomRight: const Radius.circular(18),
         ),
@@ -255,7 +277,12 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
 
   Widget _buildImageMessage(BuildContext context, ColorScheme colorScheme) {
     final media = widget.message.media;
-    if (media == null) return _buildTextMessage(context, colorScheme, Theme.of(context).textTheme);
+    if (media == null)
+      return _buildTextMessage(
+        context,
+        colorScheme,
+        Theme.of(context).textTheme,
+      );
 
     return GestureDetector(
       onTap: () async {
@@ -265,16 +292,18 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
           // Priority: cachedBytes > read from file
           if (widget.cachedBytes != null) {
             bytes = widget.cachedBytes!;
-          } else if (!kIsWeb && media.path.isNotEmpty && !_isRemotePath(media.path)) {
+          } else if (!kIsWeb &&
+              media.path.isNotEmpty &&
+              !_isRemotePath(media.path)) {
             final file = File(media.path);
             bytes = await file.readAsBytes();
           } else {
             bytes = Uint8List(0);
           }
-          
+
           if (bytes.isNotEmpty) {
             final tags = await readExifFromBytes(bytes);
-            
+
             if (tags.isNotEmpty) {
               exifData = {};
               if (tags.containsKey('Image DateTime')) {
@@ -284,7 +313,8 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                 exifData['Model'] = tags['Image Model'].toString();
               }
               if (tags.containsKey('EXIF ISOSpeedRatings')) {
-                exifData['ISOSpeedRatings'] = tags['EXIF ISOSpeedRatings'].toString();
+                exifData['ISOSpeedRatings'] = tags['EXIF ISOSpeedRatings']
+                    .toString();
               }
               if (tags.containsKey('EXIF FNumber')) {
                 exifData['FNumber'] = tags['EXIF FNumber'].toString();
@@ -320,10 +350,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 300,
-              maxHeight: 400,
-            ),
+            constraints: const BoxConstraints(maxWidth: 300, maxHeight: 400),
             child: widget.cachedBytes != null
                 ? Image.memory(
                     widget.cachedBytes!,
@@ -331,14 +358,8 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                     gaplessPlayback: true,
                   )
                 : _isRemotePath(media.path)
-                    ? Image.network(
-                        media.path,
-                        fit: BoxFit.cover,
-                      )
-                    : Image.file(
-                        File(media.path),
-                        fit: BoxFit.cover,
-                      ),
+                ? Image.network(media.path, fit: BoxFit.cover)
+                : Image.file(File(media.path), fit: BoxFit.cover),
           ),
         ),
       ),
@@ -347,15 +368,17 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
 
   Widget _buildVideoMessage(BuildContext context, ColorScheme colorScheme) {
     final media = widget.message.media;
-    if (media == null) return _buildTextMessage(context, colorScheme, Theme.of(context).textTheme);
+    if (media == null)
+      return _buildTextMessage(
+        context,
+        colorScheme,
+        Theme.of(context).textTheme,
+      );
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: 300,
-          maxHeight: 400,
-        ),
+        constraints: const BoxConstraints(maxWidth: 300, maxHeight: 400),
         child: AspectRatio(
           aspectRatio: media.aspectRatio ?? 16 / 9,
           child: VideoViewer(
@@ -371,7 +394,12 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
 
   Widget _buildAudioMessage(BuildContext context, ColorScheme colorScheme) {
     final media = widget.message.media;
-    if (media == null) return _buildTextMessage(context, colorScheme, Theme.of(context).textTheme);
+    if (media == null)
+      return _buildTextMessage(
+        context,
+        colorScheme,
+        Theme.of(context).textTheme,
+      );
 
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 300),
@@ -384,9 +412,14 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
     );
   }
 
-  Widget _buildFileMessage(BuildContext context, ColorScheme colorScheme, TextTheme textTheme) {
+  Widget _buildFileMessage(
+    BuildContext context,
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+  ) {
     final media = widget.message.media;
-    if (media == null) return _buildTextMessage(context, colorScheme, textTheme);
+    if (media == null)
+      return _buildTextMessage(context, colorScheme, textTheme);
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -412,7 +445,8 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  media.fileName ?? AppLocalizations.of(context)!.mediaFileMessage,
+                  media.fileName ??
+                      AppLocalizations.of(context)!.mediaFileMessage,
                   style: textTheme.bodyMedium?.copyWith(
                     color: widget.message.isMe
                         ? colorScheme.onPrimaryContainer
@@ -427,7 +461,9 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                     _formatFileSize(media.fileSize!),
                     style: textTheme.bodySmall?.copyWith(
                       color: widget.message.isMe
-                          ? colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
+                          ? colorScheme.onPrimaryContainer.withValues(
+                              alpha: 0.7,
+                            )
                           : colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -442,7 +478,8 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
   String _formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (bytes < 1024 * 1024 * 1024)
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 }
@@ -463,7 +500,7 @@ class _MessageHoverActionMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -518,14 +555,12 @@ class _MessageHoverActionMenu extends StatelessWidget {
 class _MessageActionSheet extends StatelessWidget {
   final ChatMessage message;
 
-  const _MessageActionSheet({
-    required this.message,
-  });
+  const _MessageActionSheet({required this.message});
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20),
       child: Column(
@@ -533,9 +568,9 @@ class _MessageActionSheet extends StatelessWidget {
         children: [
           Text(
             l10n.messageActions,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           ListTile(

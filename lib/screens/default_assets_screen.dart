@@ -427,4 +427,4 @@ class _DefaultAssetsScreenState extends State<DefaultAssetsScreen> {
       body: _buildBody(context),
     );
   }
-}
+}

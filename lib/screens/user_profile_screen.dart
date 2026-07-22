@@ -28,6 +28,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   bool _isLoading = true;
   String? _error;
   bool _isAddingFriend = false;
+  bool? _isFriend;
 
   @override
   void initState() {
@@ -36,15 +37,41 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Future<void> _loadProfile() async {
-    setState(() { _isLoading = true; _error = null; });
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       final uid = int.tryParse(widget.userId);
       if (uid == null) throw Exception('Invalid userId');
       final profile = await TfApiClient.instance.getUserByUid(uid);
-      if (mounted) setState(() { _profile = profile; _isLoading = false; });
+      bool? isFriend;
+      final myUid = AuthState.instance.uid;
+      final password = AuthState.instance.password;
+      if (profile != null &&
+          myUid != null &&
+          password != null &&
+          uid != myUid) {
+        final friendUids = await TfApiClient.instance.getFriendList(
+          myUid,
+          password,
+        );
+        if (friendUids != null) isFriend = friendUids.contains(uid);
+      }
+      if (mounted) {
+        setState(() {
+          _profile = profile;
+          _isFriend = isFriend;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       talker.error('UserProfileScreen: _loadProfile failed', e);
-      if (mounted) setState(() { _isLoading = false; _error = e.toString(); });
+      if (mounted)
+        setState(() {
+          _isLoading = false;
+          _error = e.toString();
+        });
     }
   }
 
@@ -53,7 +80,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final password = AuthState.instance.password;
     if (myUid == null || password == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.storageNotLoggedIn), behavior: SnackBarBehavior.floating),
+        SnackBar(
+          content: Text(l10n.storageNotLoggedIn),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
@@ -61,41 +91,28 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final targetUid = int.tryParse(target.uid);
     if (targetUid == null) return;
 
-    final controller = TextEditingController();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('${l10n.userProfileAddFriend}: ${target.username}'),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: l10n.userProfileFriendRequestHint,
-            border: const OutlineInputBorder(),
-          ),
-          maxLines: 2,
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.userProfileSendMessage)),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-
     setState(() => _isAddingFriend = true);
-
-    final ok = await TfApiClient.instance.addFriend(myUid, password, targetUid, controller.text.trim());
-    if (!mounted) return;
-    setState(() => _isAddingFriend = false);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok ? l10n.userProfileFriendRequestSent(target.username) : l10n.userProfileFriendRequestFailed),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    try {
+      final ok = await TfApiClient.instance.addFriend(
+        myUid,
+        password,
+        targetUid,
+        '',
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ok
+                ? l10n.userProfileFriendRequestSent(target.username)
+                : l10n.userProfileFriendRequestFailed,
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isAddingFriend = false);
+    }
   }
 
   @override
@@ -114,11 +131,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       return Scaffold(
         appBar: AppBar(),
         body: Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(l10n.userProfileNotFound),
-            const SizedBox(height: 8),
-            TextButton(onPressed: _loadProfile, child: Text(l10n.retry)),
-          ]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l10n.userProfileNotFound),
+              const SizedBox(height: 8),
+              TextButton(onPressed: _loadProfile, child: Text(l10n.retry)),
+            ],
+          ),
         ),
       );
     }
@@ -181,14 +201,21 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       _buildProfileHeader(context, profile, l10n, colorScheme),
                       _buildActionButtons(context, profile, l10n),
                       const SizedBox(height: 16),
-                      if (profile.personalSign != null && profile.personalSign!.isNotEmpty) ...[
+                      if (profile.personalSign != null &&
+                          profile.personalSign!.isNotEmpty) ...[
                         _buildBioCard(context, profile, l10n, colorScheme),
                         const SizedBox(height: 16),
                       ],
                       _buildDetailsCard(context, profile, l10n, colorScheme),
                       const SizedBox(height: 16),
-                      if (profile.introduction != null && profile.introduction!.isNotEmpty) ...[
-                        _buildIntroductionCard(context, profile, l10n, colorScheme),
+                      if (profile.introduction != null &&
+                          profile.introduction!.isNotEmpty) ...[
+                        _buildIntroductionCard(
+                          context,
+                          profile,
+                          l10n,
+                          colorScheme,
+                        ),
                         const SizedBox(height: 16),
                       ],
                       const SizedBox(height: 16),
@@ -226,7 +253,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         const SizedBox(height: 12),
         Text(
           profile.username,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),
@@ -252,9 +281,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.userProfilePersonalSign, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              l10n.userProfilePersonalSign,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
-            Text('"${profile.personalSign!}"',
+            Text(
+              '"${profile.personalSign!}"',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 fontStyle: FontStyle.italic,
                 color: colorScheme.onSurfaceVariant,
@@ -278,26 +313,50 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildDetailRow(context, Symbols.fingerprint, l10n.userProfileUid, profile.uid,
+            _buildDetailRow(
+              context,
+              Symbols.fingerprint,
+              l10n.userProfileUid,
+              profile.uid,
               onTap: () {
                 Clipboard.setData(ClipboardData(text: profile.uid));
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l10n.userProfileUidCopied), duration: const Duration(seconds: 2)),
+                  SnackBar(
+                    content: Text(l10n.userProfileUidCopied),
+                    duration: const Duration(seconds: 2),
+                  ),
                 );
               },
             ),
             const SizedBox(height: 12),
-            _buildDetailRow(context, Symbols.email, l10n.userProfileEmail,
-              profile.email.isEmpty ? l10n.userProfileUnknownEmail : profile.email,
-              onTap: profile.email.isEmpty ? null : () {
-                Clipboard.setData(ClipboardData(text: profile.email));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${l10n.userProfileEmail} ${l10n.userProfileUidCopied}'), duration: const Duration(seconds: 2)),
-                );
-              },
+            _buildDetailRow(
+              context,
+              Symbols.email,
+              l10n.userProfileEmail,
+              profile.email.isEmpty
+                  ? l10n.userProfileUnknownEmail
+                  : profile.email,
+              onTap: profile.email.isEmpty
+                  ? null
+                  : () {
+                      Clipboard.setData(ClipboardData(text: profile.email));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '${l10n.userProfileEmail} ${l10n.userProfileUidCopied}',
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    },
             ),
             const SizedBox(height: 12),
-            _buildDetailRow(context, Symbols.event, l10n.userProfileJoinedAt, _formatTimestamp(profile.createTime)),
+            _buildDetailRow(
+              context,
+              Symbols.event,
+              l10n.userProfileJoinedAt,
+              _formatTimestamp(profile.createTime),
+            ),
           ],
         ),
       ),
@@ -317,16 +376,40 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         Icon(icon, size: 20, color: colorScheme.onSurfaceVariant),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(label, style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
-            Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-          ]),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
-        if (onTap != null) Icon(Symbols.content_copy, size: 16, color: colorScheme.onSurfaceVariant),
+        if (onTap != null)
+          Icon(
+            Symbols.content_copy,
+            size: 16,
+            color: colorScheme.onSurfaceVariant,
+          ),
       ],
     );
     if (onTap != null) {
-      return InkWell(onTap: onTap, borderRadius: BorderRadius.circular(8), child: content);
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: content,
+      );
     }
     return content;
   }
@@ -338,17 +421,34 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     ColorScheme colorScheme,
   ) {
     final settingsService = SettingsService.instance;
-    final enableMarkdown = settingsService.getValue<bool>('enableMarkdownRendering', true);
+    final enableMarkdown = settingsService.getValue<bool>(
+      'enableMarkdownRendering',
+      true,
+    );
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text(l10n.userProfileIntroduction, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          enableMarkdown
-              ? MarkdownRenderer(data: profile.introduction!, selectable: true)
-              : Text(profile.introduction!, style: Theme.of(context).textTheme.bodyMedium),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.userProfileIntroduction,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            enableMarkdown
+                ? MarkdownRenderer(
+                    data: profile.introduction!,
+                    selectable: true,
+                  )
+                : Text(
+                    profile.introduction!,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+          ],
+        ),
       ),
     );
   }
@@ -360,30 +460,41 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   ) {
     final myUid = AuthState.instance.uid;
     final isSelf = myUid != null && myUid.toString() == profile.uid;
+    if (isSelf || _isFriend == null) return const SizedBox.shrink();
 
     return Row(
       children: [
-        if (!isSelf) ...[
+        if (!_isFriend!) ...[
           Expanded(
             child: OutlinedButton.icon(
-              onPressed: _isAddingFriend ? null : () => _addFriend(profile, l10n),
+              onPressed: _isAddingFriend
+                  ? null
+                  : () => _addFriend(profile, l10n),
               icon: _isAddingFriend
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Icon(Symbols.person_add),
               label: Text(l10n.userProfileAddFriend),
-              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
             ),
           ),
-          const SizedBox(width: 12),
         ],
-        Expanded(
-          child: FilledButton.icon(
-            onPressed: () => context.go('/chat/U${profile.uid}'),
-            icon: const Icon(Symbols.send),
-            label: Text(l10n.userProfileSendMessage),
-            style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+        if (_isFriend!)
+          Expanded(
+            child: FilledButton.icon(
+              onPressed: () => context.go('/chat/U${profile.uid}'),
+              icon: const Icon(Symbols.send),
+              label: Text(l10n.userProfileSendMessage),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
           ),
-        ),
       ],
     );
   }
@@ -391,7 +502,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   String _formatTimestamp(String timestamp) {
     try {
       final seconds = double.parse(timestamp);
-      final date = DateTime.fromMillisecondsSinceEpoch((seconds * 1000).round());
+      final date = DateTime.fromMillisecondsSinceEpoch(
+        (seconds * 1000).round(),
+      );
       return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
           '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
     } catch (e) {

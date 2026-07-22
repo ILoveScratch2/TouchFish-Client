@@ -27,7 +27,8 @@ class ChatInputBar extends StatefulWidget {
   State<ChatInputBar> createState() => _ChatInputBarState();
 }
 
-class _ChatInputBarState extends State<ChatInputBar> with SingleTickerProviderStateMixin {
+class _ChatInputBarState extends State<ChatInputBar>
+    with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
   late final TabController _tabController;
 
@@ -79,7 +80,9 @@ class _ChatInputBarState extends State<ChatInputBar> with SingleTickerProviderSt
                       key: ValueKey(_isExpanded),
                     ),
                   ),
-                  tooltip: _isExpanded ? l10n.chatInputCollapse : l10n.chatInputExpand,
+                  tooltip: _isExpanded
+                      ? l10n.chatInputCollapse
+                      : l10n.chatInputExpand,
                   onPressed: () {
                     setState(() {
                       _isExpanded = !_isExpanded;
@@ -197,12 +200,20 @@ class _ChatInputBarState extends State<ChatInputBar> with SingleTickerProviderSt
                                 Tab(text: l10n.chatFunctionTabEmoji),
                                 Tab(text: l10n.chatFunctionTabSpecial),
                               ],
-                              labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                              unselectedLabelStyle: const TextStyle(fontSize: 13),
+                              labelStyle: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              unselectedLabelStyle: const TextStyle(
+                                fontSize: 13,
+                              ),
                               indicatorSize: TabBarIndicatorSize.label,
                               labelColor: colorScheme.primary,
-                              unselectedLabelColor: colorScheme.onSurfaceVariant,
-                              indicatorPadding: const EdgeInsets.symmetric(horizontal: 12),
+                              unselectedLabelColor:
+                                  colorScheme.onSurfaceVariant,
+                              indicatorPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                               dividerColor: Colors.transparent,
                               tabAlignment: TabAlignment.center,
                               splashFactory: NoSplash.splashFactory,
@@ -235,7 +246,11 @@ class _ChatInputBarState extends State<ChatInputBar> with SingleTickerProviderSt
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.folder_open, size: 40, color: colorScheme.onSurfaceVariant.withOpacity(0.4)),
+          Icon(
+            Icons.folder_open,
+            size: 40,
+            color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+          ),
           const SizedBox(height: 8),
           Text(
             l10n.chatFunctionTabFilesHint,
@@ -249,35 +264,43 @@ class _ChatInputBarState extends State<ChatInputBar> with SingleTickerProviderSt
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'image',
-                child: Row(children: [
-                  const Icon(Icons.image),
-                  const SizedBox(width: 12),
-                  Text(l10n.mediaPickImage),
-                ]),
+                child: Row(
+                  children: [
+                    const Icon(Icons.image),
+                    const SizedBox(width: 12),
+                    Text(l10n.mediaPickImage),
+                  ],
+                ),
               ),
               PopupMenuItem(
                 value: 'video',
-                child: Row(children: [
-                  const Icon(Icons.videocam),
-                  const SizedBox(width: 12),
-                  Text(l10n.mediaPickVideo),
-                ]),
+                child: Row(
+                  children: [
+                    const Icon(Icons.videocam),
+                    const SizedBox(width: 12),
+                    Text(l10n.mediaPickVideo),
+                  ],
+                ),
               ),
               PopupMenuItem(
                 value: 'audio',
-                child: Row(children: [
-                  const Icon(Icons.audiotrack),
-                  const SizedBox(width: 12),
-                  Text(l10n.mediaPickAudio),
-                ]),
+                child: Row(
+                  children: [
+                    const Icon(Icons.audiotrack),
+                    const SizedBox(width: 12),
+                    Text(l10n.mediaPickAudio),
+                  ],
+                ),
               ),
               PopupMenuItem(
                 value: 'file',
-                child: Row(children: [
-                  const Icon(Icons.file_upload),
-                  const SizedBox(width: 12),
-                  Text(l10n.chatInputUploadFile),
-                ]),
+                child: Row(
+                  children: [
+                    const Icon(Icons.file_upload),
+                    const SizedBox(width: 12),
+                    Text(l10n.chatInputUploadFile),
+                  ],
+                ),
               ),
             ],
             child: ElevatedButton.icon(
@@ -296,8 +319,11 @@ class _ChatInputBarState extends State<ChatInputBar> with SingleTickerProviderSt
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.emoji_emotions_outlined, size: 40,
-              color: colorScheme.onSurfaceVariant.withOpacity(0.4)),
+          Icon(
+            Icons.emoji_emotions_outlined,
+            size: 40,
+            color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+          ),
           const SizedBox(height: 8),
           Text(
             l10n.chatFunctionTabEmojiHint,
@@ -308,13 +334,19 @@ class _ChatInputBarState extends State<ChatInputBar> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildSpecialMessagesTab(ColorScheme colorScheme, AppLocalizations l10n) {
+  Widget _buildSpecialMessagesTab(
+    ColorScheme colorScheme,
+    AppLocalizations l10n,
+  ) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.star_outline, size: 40,
-              color: colorScheme.onSurfaceVariant.withOpacity(0.4)),
+          Icon(
+            Icons.star_outline,
+            size: 40,
+            color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+          ),
           const SizedBox(height: 8),
           Text(
             l10n.chatFunctionTabSpecialHint,
@@ -333,7 +365,16 @@ class _ChatInputBarState extends State<ChatInputBar> with SingleTickerProviderSt
         if (!kIsWeb && Platform.isAndroid) {
           result = await FilePicker.platform.pickFiles(
             type: FileType.custom,
-            allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'],
+            allowedExtensions: [
+              'jpg',
+              'jpeg',
+              'png',
+              'gif',
+              'bmp',
+              'webp',
+              'heic',
+              'heif',
+            ],
             allowMultiple: false,
             withData: false,
           );
@@ -390,14 +431,15 @@ class _ChatInputBarState extends State<ChatInputBar> with SingleTickerProviderSt
         );
         if (result != null && widget.onFilePicked != null) {
           final file = result.files.single;
-          if ((kIsWeb && file.bytes != null) || (!kIsWeb && file.path != null)) {
+          if ((kIsWeb && file.bytes != null) ||
+              (!kIsWeb && file.path != null)) {
             String? mimeType;
             if (kIsWeb) {
               mimeType = lookupMimeType(file.name);
             } else {
               mimeType = lookupMimeType(file.path!);
             }
-            
+
             MessageType messageType = MessageType.file;
             if (mimeType != null) {
               if (mimeType.startsWith('image/')) {
@@ -408,7 +450,7 @@ class _ChatInputBarState extends State<ChatInputBar> with SingleTickerProviderSt
                 messageType = MessageType.audio;
               }
             }
-            
+
             widget.onFilePicked!(file, messageType);
           }
         }

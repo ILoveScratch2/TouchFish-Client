@@ -60,10 +60,12 @@ class AppState extends ChangeNotifier {
         return const Color(0xFF6750A4);
     }
   }
+
   int? get customSeedColor {
     final customColors = _settingsService.getJsonValue('customColors');
     return customColors?['seedColor'] as int?;
   }
+
   Map<String, int>? get customColors {
     final json = _settingsService.getJsonValue('customColors');
     if (json == null) return null;
@@ -83,11 +85,16 @@ class AppState extends ChangeNotifier {
   }
 
   String? get fontFamily {
-    final font = _settingsService.getValue<String>('fontFamily', 'HarmonyOS Sans SC');
+    final font = _settingsService.getValue<String>(
+      'fontFamily',
+      'HarmonyOS Sans SC',
+    );
     if (font == 'System Default') return null;
     if (font == '__custom__') {
-      final customFontName =
-          _settingsService.getValue<String>('customFontName', '');
+      final customFontName = _settingsService.getValue<String>(
+        'customFontName',
+        '',
+      );
       if (customFontName.isEmpty) return null;
       return customFontName;
     }

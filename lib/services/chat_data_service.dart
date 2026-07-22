@@ -7,6 +7,7 @@ import '../models/message_model.dart';
 import '../models/notification_model.dart';
 import '../models/user_profile.dart';
 import '../utils/talker.dart';
+import '../models/settings_service.dart';
 import 'api/tf_api_client.dart';
 import 'auth_state.dart';
 import 'chat_ws_service.dart';
@@ -58,6 +59,18 @@ class ChatRoomPreference {
   }
 }
 
+class ChatNotificationPrompt {
+  final String roomId;
+  final String roomName;
+  final String message;
+
+  const ChatNotificationPrompt({
+    required this.roomId,
+    required this.roomName,
+    required this.message,
+  });
+}
+
 class ChatDataService extends ChangeNotifier {
   static ChatDataService? _instance;
   static ChatDataService get instance => _instance ??= ChatDataService._();
@@ -66,17 +79,47 @@ class ChatDataService extends ChangeNotifier {
   final StreamController<String> _ackErrorController =
       StreamController<String>.broadcast();
   Stream<String> get ackErrorStream => _ackErrorController.stream;
+  final StreamController<ChatNotificationPrompt> _notificationPromptController =
+      StreamController<ChatNotificationPrompt>.broadcast();
+  Stream<ChatNotificationPrompt> get notificationPromptStream =>
+      _notificationPromptController.stream;
 
   List<ChatRoom> _rooms = [];
   List<Contact> _contacts = [];
   final Map<String, List<ChatMessage>> _messageCache = {};
+  // LRU 顺序追踪：末尾是最近访问，开头是最久未访问
+  final List<String> _cacheAccessOrder = [];
   final Map<String, UserProfile> _userCache = {};
   final Map<String, ChatRoomPreference> _roomPreferences = {};
   bool _isLoading = false;
   StreamSubscription? _wsSubscription;
   final LocalMessageStore _localStore = LocalMessageStore.instance;
   int? _initializedUid;
+  int _generation = 0;
   int? _roomPreferencesUid;
+  String? _roomPreferencesScope;
+
+  /// 从设置读取消息缓存的最大会话房间数（默认 50）
+  int get _maxCachedRooms =>
+      SettingsService.instance.getValue<int>('maxCachedRooms', 50);
+
+  /// 将 roomId 标记为最近访问
+  void _touchCacheRoom(String roomId) {
+    _cacheAccessOrder.remove(roomId);
+    _cacheAccessOrder.add(roomId);
+  }
+
+  /// 若缓存超出上限，驱逐最久未访问的房间消息
+  void _evictCacheIfNeeded() {
+    final limit = _maxCachedRooms;
+    while (_messageCache.length > limit && _cacheAccessOrder.isNotEmpty) {
+      final oldest = _cacheAccessOrder.removeAt(0);
+      _messageCache.remove(oldest);
+      talker.info(
+        'ChatDataService: evicted message cache for room $oldest (limit=$limit)',
+      );
+    }
+  }
 
   List<ChatRoom> get rooms => _rooms;
   List<Contact> get contacts => _contacts;
@@ -84,10 +127,15 @@ class ChatDataService extends ChangeNotifier {
 
   int get totalUnreadCount => _rooms.fold(0, (sum, r) => sum + r.unreadCount);
 
-  List<ChatMessage> getMessages(String roomId) => _messageCache[roomId] ?? [];
+  List<ChatMessage> getMessages(String roomId) {
+    if (_messageCache.containsKey(roomId)) _touchCacheRoom(roomId);
+    return _messageCache[roomId] ?? [];
+  }
 
   void setMessages(String roomId, List<ChatMessage> msgs) {
     _messageCache[roomId] = msgs;
+    _touchCacheRoom(roomId);
+    _evictCacheIfNeeded();
     unawaited(_localStore.saveMessages(roomId, msgs));
     notifyListeners();
   }
@@ -108,6 +156,28 @@ class ChatDataService extends ChangeNotifier {
 
   int roomNotifyLevel(String roomId) => getRoomPreference(roomId).notifyLevel;
 
+  @visibleForTesting
+  static bool shouldNotifyMessage({
+    required int notifyLevel,
+    required String message,
+    required int currentUid,
+    required String currentUsername,
+  }) {
+    if (notifyLevel == 2) return false;
+    if (notifyLevel == 0) return true;
+    return _containsMention(message, currentUsername) ||
+        _containsMention(message, currentUid.toString());
+  }
+
+  static bool _containsMention(String message, String target) {
+    if (target.isEmpty) return false;
+    final escaped = RegExp.escape(target);
+    return RegExp(
+      '(^|\\s)@$escaped(?=\\s|\$|[.,!?，。！？:：;；])',
+      caseSensitive: false,
+    ).hasMatch(message);
+  }
+
   void cacheUserProfile(UserProfile profile) {
     _userCache[profile.uid] = profile;
     // Also store under "U{uid}" key for compatibility with roomId-based lookups
@@ -115,58 +185,151 @@ class ChatDataService extends ChangeNotifier {
     if (puid != null) _userCache[roomIdFromUid(puid)] = profile;
   }
 
+  Future<void> invalidateAvatarCache({
+    required int groupId,
+    required Iterable<int> memberUids,
+    required int version,
+  }) async {
+    String? versioned(String? url) {
+      if (url == null || url.isEmpty) return null;
+      final uri = Uri.parse(url);
+      return uri
+          .replace(queryParameters: {...uri.queryParameters, 'v': '$version'})
+          .toString();
+    }
+
+    final memberSet = memberUids.toSet();
+    final groupRoomId = 'G$groupId';
+    for (final entry in _userCache.entries.toList()) {
+      final profile = entry.value;
+      final profileUid = int.tryParse(profile.uid.replaceFirst('U', ''));
+      final isGroupProfile = entry.key == groupRoomId;
+      if (!isGroupProfile &&
+          (profileUid == null || !memberSet.contains(profileUid))) {
+        continue;
+      }
+      final avatar = profile.avatar;
+      final avatarBase = avatar == null
+          ? null
+          : Uri.parse(avatar).replace(query: null).toString();
+      _userCache[entry.key] = UserProfile(
+        uid: profile.uid,
+        username: profile.username,
+        email: profile.email,
+        stat: profile.stat,
+        createTime: profile.createTime,
+        personalSign: profile.personalSign,
+        introduction: profile.introduction,
+        avatar: avatarBase,
+        avatarVersion: version,
+      );
+    }
+    final roomIndex = _rooms.indexWhere((room) => room.id == groupRoomId);
+    if (roomIndex >= 0) {
+      _rooms[roomIndex] = _rooms[roomIndex].copyWith(
+        avatar: versioned(_rooms[roomIndex].avatar),
+      );
+    }
+    for (var index = 0; index < _contacts.length; index++) {
+      final uid = _parseUid(_contacts[index].id);
+      if (uid != null && memberSet.contains(uid)) {
+        _contacts[index] = Contact(
+          id: _contacts[index].id,
+          name: _contacts[index].name,
+          avatar: versioned(_contacts[index].avatar),
+        );
+      }
+    }
+    for (final entry in _messageCache.entries) {
+      var changed = false;
+      final messages = entry.value.map((message) {
+        if (message.senderUid != null &&
+            memberSet.contains(message.senderUid) &&
+            message.senderAvatar != null) {
+          changed = true;
+          return message.copyWith(
+            senderAvatar: versioned(message.senderAvatar),
+          );
+        }
+        return message;
+      }).toList();
+      if (changed) {
+        _messageCache[entry.key] = messages;
+        unawaited(_localStore.saveMessages(entry.key, messages));
+      }
+    }
+    notifyListeners();
+  }
+
   Future<void> _ensureRoomPreferencesLoaded() async {
     final uid = AuthState.instance.uid;
     if (uid == null) {
       _roomPreferences.clear();
       _roomPreferencesUid = null;
+      _roomPreferencesScope = null;
       return;
     }
-    if (_roomPreferencesUid == uid) return;
+    final baseUrl = await TfApiClient.instance.getBaseUrl();
+    if (AuthState.instance.uid != uid) return;
+    final scope = '${base64Url.encode(utf8.encode(baseUrl))}:$uid';
+    if (_roomPreferencesUid == uid && _roomPreferencesScope == scope) return;
 
-    _roomPreferences.clear();
-    _roomPreferencesUid = uid;
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString('chat_room_prefs_$uid');
-    if (raw == null || raw.isEmpty) return;
+    if (AuthState.instance.uid != uid) return;
+    final raw = prefs.getString('chat_room_prefs_$scope');
+    final loaded = <String, ChatRoomPreference>{};
 
-    try {
-      final data = jsonDecode(raw) as Map<String, dynamic>;
-      for (final entry in data.entries) {
-        if (entry.value is Map<String, dynamic>) {
-          _roomPreferences[entry.key] = ChatRoomPreference.fromJson(
-            entry.value as Map<String, dynamic>,
-          );
-        } else if (entry.value is Map) {
-          _roomPreferences[entry.key] = ChatRoomPreference.fromJson(
-            Map<String, dynamic>.from(entry.value as Map),
-          );
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final data = jsonDecode(raw) as Map<String, dynamic>;
+        for (final entry in data.entries) {
+          if (entry.value is Map<String, dynamic>) {
+            loaded[entry.key] = ChatRoomPreference.fromJson(
+              entry.value as Map<String, dynamic>,
+            );
+          } else if (entry.value is Map) {
+            loaded[entry.key] = ChatRoomPreference.fromJson(
+              Map<String, dynamic>.from(entry.value as Map),
+            );
+          }
         }
+      } catch (e) {
+        talker.error('ChatDataService load room preferences failed', e);
       }
-    } catch (e) {
-      talker.error('ChatDataService load room preferences failed', e);
-      _roomPreferences.clear();
     }
+    if (AuthState.instance.uid != uid) return;
+    _roomPreferences
+      ..clear()
+      ..addAll(loaded);
+    _roomPreferencesUid = uid;
+    _roomPreferencesScope = scope;
   }
 
   Future<void> _saveRoomPreferences() async {
-    final uid = AuthState.instance.uid;
-    if (uid == null) return;
-    final prefs = await SharedPreferences.getInstance();
+    final scope = _roomPreferencesScope;
+    if (scope == null) return;
     final encoded = _roomPreferences.map(
       (key, value) => MapEntry(key, value.toJson()),
     );
-    await prefs.setString('chat_room_prefs_$uid', jsonEncode(encoded));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('chat_room_prefs_$scope', jsonEncode(encoded));
   }
 
-  Future<void> updateRoomPreference(
+  Future<bool> updateRoomPreference(
     String roomId, {
     bool? isPinned,
     int? notifyLevel,
     String? alias,
     String? description,
   }) async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final generation = _generation;
+    if (uid == null) return false;
     await _ensureRoomPreferencesLoaded();
+    if (_generation != generation || AuthState.instance.uid != uid) {
+      return false;
+    }
     final current = getRoomPreference(roomId);
     final updated = current.copyWith(
       isPinned: isPinned,
@@ -174,6 +337,20 @@ class ChatDataService extends ChangeNotifier {
       alias: alias,
       description: description,
     );
+    if (isPinned != null || notifyLevel != null) {
+      if (password == null) return false;
+      final saved = await TfApiClient.instance.updateChatPreference(
+        uid,
+        password,
+        roomId,
+        isPinned: isPinned,
+        notifyLevel: notifyLevel,
+      );
+      if (!saved) return false;
+      if (_generation != generation || AuthState.instance.uid != uid) {
+        return false;
+      }
+    }
     _roomPreferences[roomId] = updated;
     await _saveRoomPreferences();
 
@@ -184,6 +361,9 @@ class ChatDataService extends ChangeNotifier {
       _rooms[roomIdx] = currentRoom.copyWith(
         name: displayNameForRoom(roomId, fallbackName),
         isPinned: updated.isPinned,
+        unreadCount: notifyLevel != null && notifyLevel != 0
+            ? 0
+            : currentRoom.unreadCount,
       );
     }
     final contactIdx = _contacts.indexWhere((contact) => contact.id == roomId);
@@ -198,6 +378,7 @@ class ChatDataService extends ChangeNotifier {
     }
     _sortRooms();
     notifyListeners();
+    return true;
   }
 
   Future<void> init() async {
@@ -206,8 +387,11 @@ class ChatDataService extends ChangeNotifier {
     if (_initializedUid == uid && _wsSubscription != null) {
       return;
     }
-    _wsSubscription?.cancel();
+    final generation = ++_generation;
+    await _wsSubscription?.cancel();
+    if (_generation != generation || AuthState.instance.uid != uid) return;
     _messageCache.clear();
+    _cacheAccessOrder.clear();
     _userCache.clear();
     _rooms.clear();
     _contacts.clear();
@@ -217,25 +401,21 @@ class ChatDataService extends ChangeNotifier {
   }
 
   Future<void> reset() async {
-    _wsSubscription?.cancel();
+    final generation = ++_generation;
+    await _wsSubscription?.cancel();
+    if (_generation != generation) return;
     _wsSubscription = null;
-    final uid = _roomPreferencesUid;
     _initializedUid = null;
     _roomPreferencesUid = null;
+    _roomPreferencesScope = null;
     _messageCache.clear();
+    _cacheAccessOrder.clear();
     _userCache.clear();
     _roomPreferences.clear();
     _rooms.clear();
     _contacts.clear();
     _isLoading = false;
     notifyListeners();
-    if (uid != null) {
-      final prefs = await SharedPreferences.getInstance();
-      final key = 'chat_room_prefs_$uid';
-      if (prefs.containsKey(key)) {
-        await prefs.remove(key);
-      }
-    }
   }
 
   Future<void> clearLocalMessageDatabase() async {
@@ -303,29 +483,42 @@ class ChatDataService extends ChangeNotifier {
       );
       return;
     }
+    final generation = _generation;
 
     _isLoading = true;
     notifyListeners();
 
     try {
       await _ensureRoomPreferencesLoaded();
+      if (_generation != generation || AuthState.instance.uid != uid) return;
       final existingRooms = {for (final room in _rooms) room.id: room};
       talker.info(
         'ChatDataService.loadContactsAndRooms: calling /chat/list for uid=$uid',
       );
       final chatItems = await TfApiClient.instance.queryChatList(uid, password);
+      if (_generation != generation || AuthState.instance.uid != uid) return;
       talker.info(
         'ChatDataService.loadContactsAndRooms: got ${chatItems.length} items from server',
       );
       final baseUrl = await TfApiClient.instance.getBaseUrl();
+      if (_generation != generation || AuthState.instance.uid != uid) return;
 
       final nextRooms = <ChatRoom>[];
       final nextContacts = <Contact>[];
 
       for (final item in chatItems) {
+        // 过滤无效项：partnerUid 为负数（非群聊）或等于自己
+        if (item.partnerUid == uid) continue;
         if (item.partnerUid < 0 && item.roomType != 'group') continue;
         final isGroup = item.roomType == 'group';
         final existingRoom = existingRooms[item.roomId];
+        if (item.isPinned != null || item.notifyLevel != null) {
+          final currentPreference = getRoomPreference(item.roomId);
+          _roomPreferences[item.roomId] = currentPreference.copyWith(
+            isPinned: item.isPinned,
+            notifyLevel: item.notifyLevel,
+          );
+        }
         final lastTime = item.lastTime != null
             ? DateTime.fromMillisecondsSinceEpoch(
                 (item.lastTime! * 1000).toInt(),
@@ -342,7 +535,7 @@ class ChatDataService extends ChangeNotifier {
           avatar: avatarUrl,
         );
         final displayName = displayNameForRoom(item.roomId, item.username);
-        if (!isGroup) {
+        if (!isGroup && item.isFriend) {
           nextContacts.add(
             Contact(id: item.roomId, name: displayName, avatar: avatarUrl),
           );
@@ -364,6 +557,7 @@ class ChatDataService extends ChangeNotifier {
 
       _rooms = nextRooms;
       _contacts = nextContacts;
+      await _saveRoomPreferences();
       _sortRooms();
       talker.info(
         'ChatDataService.loadContactsAndRooms: loaded ${_rooms.length} rooms, ${_contacts.length} contacts',
@@ -371,8 +565,10 @@ class ChatDataService extends ChangeNotifier {
     } catch (e) {
       talker.error('ChatDataService loadContactsAndRooms error', e);
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (_generation == generation && AuthState.instance.uid == uid) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -392,6 +588,7 @@ class ChatDataService extends ChangeNotifier {
           mid: serverMid ?? updated[idx].mid,
           status: status,
           ackError: error,
+          clearAckError: error == null,
         );
         _messageCache[roomId] = updated;
         _localStore.saveMessages(roomId, updated);
@@ -478,7 +675,10 @@ class ChatDataService extends ChangeNotifier {
     _addToCache(roomId, msg);
   }
 
-  void processPolledMessage(NotificationInfo info) {
+  void processPolledMessage(
+    NotificationInfo info, {
+    bool isHistorical = false,
+  }) {
     final uid = AuthState.instance.uid;
     if (uid == null) return;
     final senderUid = info.senderUid;
@@ -492,7 +692,11 @@ class ChatDataService extends ChangeNotifier {
       senderName: _senderNameFor(senderUid),
       senderAvatar: _senderAvatarFor(senderUid),
     );
-    _addToCacheSilent(roomId, msg);
+    if (isHistorical) {
+      _addToCacheSilent(roomId, msg);
+    } else {
+      _addToCache(roomId, msg);
+    }
   }
 
   void _addToCacheSilent(String roomId, ChatMessage msg) {
@@ -502,6 +706,8 @@ class ChatDataService extends ChangeNotifier {
       cached.add(msg);
       cached.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       _messageCache[roomId] = cached;
+      _touchCacheRoom(roomId);
+      _evictCacheIfNeeded();
       _localStore.appendMessage(roomId, msg);
     }
     // Don't bump unread for historical polled messages
@@ -534,31 +740,68 @@ class ChatDataService extends ChangeNotifier {
       cached.add(msg);
       cached.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       _messageCache[roomId] = cached;
+      _touchCacheRoom(roomId);
+      _evictCacheIfNeeded();
       _localStore.appendMessage(roomId, msg);
     }
+    if (exists) return;
 
     if (!msg.isMe && msg.senderAvatar == null && msg.senderUid != null) {
-      _fetchProfileForRoom(roomIdFromUid(msg.senderUid!));
+      _fetchProfileForRoom(
+        roomIdFromUid(msg.senderUid!),
+        messageRoomId: roomId,
+      );
     }
+
+    final uid = AuthState.instance.uid;
+    final username = AuthState.instance.currentUser?.username ?? '';
+    final shouldNotify =
+        !msg.isMe &&
+        (msg.shouldAlert ??
+            (uid != null &&
+                shouldNotifyMessage(
+                  notifyLevel: roomNotifyLevel(roomId),
+                  message: msg.text,
+                  currentUid: uid,
+                  currentUsername: username,
+                )));
 
     final idx = _rooms.indexWhere((r) => r.id == roomId);
     if (idx >= 0) {
       _rooms[idx] = _rooms[idx].copyWith(
         lastMessage: msg.text,
         lastMessageTime: msg.timestamp,
-        unreadCount: msg.isMe
-            ? _rooms[idx].unreadCount
-            : _rooms[idx].unreadCount + 1,
+        unreadCount: shouldNotify
+            ? _rooms[idx].unreadCount + 1
+            : _rooms[idx].unreadCount,
       );
     } else {
-      _addNewRoom(roomId, msg, unreadCount: msg.isMe ? 0 : 1);
+      _addNewRoom(roomId, msg, unreadCount: shouldNotify ? 1 : 0);
     }
     _sortRooms();
     notifyListeners();
+    if (shouldNotify && _shouldShowInAppPrompt(roomId)) {
+      final room = _rooms.firstWhere((room) => room.id == roomId);
+      _notificationPromptController.add(
+        ChatNotificationPrompt(
+          roomId: roomId,
+          roomName: room.name,
+          message: msg.text,
+        ),
+      );
+    }
+  }
+
+  bool _shouldShowInAppPrompt(String roomId) {
+    final settings = SettingsService.instance;
+    if (!settings.getValue<bool>('inAppNotifications', true)) return false;
+    return isGroupRoom(roomId)
+        ? settings.getValue<bool>('groupChat', true)
+        : settings.getValue<bool>('privateChat', true);
   }
 
   void _addNewRoom(String roomId, ChatMessage msg, {int unreadCount = 1}) {
-    if (_userCache[roomId] == null) {
+    if (!isGroupRoom(roomId) && _userCache[roomId] == null) {
       final puid = _parseUid(roomId);
       if (puid != null) _fetchProfileForRoom(roomId);
     }
@@ -589,18 +832,29 @@ class ChatDataService extends ChangeNotifier {
     return int.tryParse(roomId);
   }
 
-  void _fetchProfileForRoom(String roomId) {
+  void _fetchProfileForRoom(String roomId, {String? messageRoomId}) {
     if (_userCache[roomId] != null) return;
     final puid = _parseUid(roomId);
     if (puid == null) return;
+    final generation = _generation;
+    final uid = AuthState.instance.uid;
     TfApiClient.instance.getUserByUid(puid).then((profile) {
-      if (profile == null) return;
+      if (profile == null ||
+          _generation != generation ||
+          AuthState.instance.uid != uid) {
+        return;
+      }
       _userCache[profile.uid] = profile;
       // Note: profile.uid is plain "123", but our cache uses "U123"
       // Store under both keys for compatibility
       _userCache[roomIdFromUid(puid)] = profile;
       _updateRoomAndContacts(roomId, profile.username, profile.avatar);
-      _fillMsgAvatars(roomId, profile.username, profile.avatar);
+      _fillMsgAvatars(
+        messageRoomId ?? roomId,
+        puid,
+        profile.username,
+        profile.avatar,
+      );
       notifyListeners();
     });
   }
@@ -617,12 +871,17 @@ class ChatDataService extends ChangeNotifier {
     }
   }
 
-  void _fillMsgAvatars(String roomId, String? username, String? avatar) {
+  void _fillMsgAvatars(
+    String roomId,
+    int senderUid,
+    String? username,
+    String? avatar,
+  ) {
     final msgs = _messageCache[roomId];
     if (msgs == null) return;
     var changed = false;
     final updated = msgs.map((m) {
-      if (!m.isMe && m.senderAvatar == null) {
+      if (!m.isMe && m.senderUid == senderUid && m.senderAvatar == null) {
         changed = true;
         return m.copyWith(senderName: username, senderAvatar: avatar);
       }
@@ -640,6 +899,8 @@ class ChatDataService extends ChangeNotifier {
       cached.add(msg);
       cached.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       _messageCache[roomId] = cached;
+      _touchCacheRoom(roomId);
+      _evictCacheIfNeeded();
       _localStore.appendMessage(roomId, msg);
     }
 
@@ -674,12 +935,25 @@ class ChatDataService extends ChangeNotifier {
     }
   }
 
+  Future<void> removeRoom(String roomId) async {
+    _rooms.removeWhere((room) => room.id == roomId);
+    _contacts.removeWhere((contact) => contact.id == roomId);
+    _messageCache.remove(roomId);
+    _cacheAccessOrder.remove(roomId);
+    _userCache.remove(roomId);
+    _roomPreferences.remove(roomId);
+    await _saveRoomPreferences();
+    await _localStore.deleteRoom(roomId);
+    notifyListeners();
+  }
+
   // --- Message history ---
 
   Future<List<ChatMessage>> refreshMessagesForContact(String roomId) async {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) return [];
+    final generation = _generation;
 
     final rk = roomKey(roomId);
     final serverMsgs = await TfApiClient.instance.queryMessageHistory(
@@ -689,14 +963,18 @@ class ChatDataService extends ChangeNotifier {
       groupId: rk < 0 ? -rk : null,
       limit: 50,
     );
+    if (_generation != generation || AuthState.instance.uid != uid) return [];
 
     final serverFilled = _fillSenderInfo(serverMsgs);
     final localMsgs = await _localStore.loadMessages(roomId);
+    if (_generation != generation || AuthState.instance.uid != uid) return [];
     final merged = _mergeMessages(serverFilled, localMsgs);
     merged.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
     if (merged.isNotEmpty || !_messageCache.containsKey(roomId)) {
       _messageCache[roomId] = merged;
+      _touchCacheRoom(roomId);
+      _evictCacheIfNeeded();
     }
     await _localStore.saveMessages(roomId, merged);
     notifyListeners();
@@ -707,6 +985,7 @@ class ChatDataService extends ChangeNotifier {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) return [];
+    final generation = _generation;
 
     final cached = _messageCache[roomId] ?? [];
     if (cached.isEmpty) return [];
@@ -728,6 +1007,7 @@ class ChatDataService extends ChangeNotifier {
       beforeMid: oldestMid,
       limit: 50,
     );
+    if (_generation != generation || AuthState.instance.uid != uid) return [];
     if (olderMsgs.isEmpty) return [];
 
     final olderFilled = _fillSenderInfo(olderMsgs);
@@ -735,6 +1015,7 @@ class ChatDataService extends ChangeNotifier {
     merged.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
     _messageCache[roomId] = merged;
+    _touchCacheRoom(roomId);
     await _localStore.saveMessages(roomId, merged);
     notifyListeners();
     return merged;
@@ -752,6 +1033,11 @@ class ChatDataService extends ChangeNotifier {
   }
 
   Future<void> addFriendToContacts(int friendUid) async {
+    final uid = AuthState.instance.uid;
+    final generation = _generation;
+    if (uid == null) return;
+    // 不把自己加入联系人列表
+    if (friendUid == uid) return;
     final roomId = roomIdFromUid(friendUid);
     if (_contacts.any((c) => c.id == roomId) &&
         _rooms.any((r) => r.id == roomId)) {
@@ -759,6 +1045,7 @@ class ChatDataService extends ChangeNotifier {
     }
 
     final profile = await TfApiClient.instance.getUserByUid(friendUid);
+    if (_generation != generation || AuthState.instance.uid != uid) return;
     final baseName = profile?.username ?? 'User $friendUid';
     final name = displayNameForRoom(roomId, baseName);
     final avatar = profile?.avatar;
@@ -790,6 +1077,7 @@ class ChatDataService extends ChangeNotifier {
   void dispose() {
     _wsSubscription?.cancel();
     _ackErrorController.close();
+    _notificationPromptController.close();
     super.dispose();
   }
 }

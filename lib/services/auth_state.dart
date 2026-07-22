@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
 import '../utils/talker.dart';
 import 'api/tf_api_client.dart';
+import 'local_message_store.dart';
 
 enum SavedSessionRestoreStatus { idle, restoring, succeeded, failed }
 
@@ -51,12 +52,17 @@ class AuthState extends ChangeNotifier {
     final savedPassword = _rememberedPassword!;
 
     try {
-      final profile = await TfApiClient.instance.getUserByUid(savedUid, avatarVersion: _avatarVersion);
+      final profile = await TfApiClient.instance.getUserByUid(
+        savedUid,
+        avatarVersion: _avatarVersion,
+      );
       if (profile != null && _rememberedUsername == null) {
         _rememberedUsername = profile.username;
       }
       final valid = await TfApiClient.instance.login(savedUid, savedPassword);
       if (valid && profile != null) {
+        final baseUrl = await TfApiClient.instance.getBaseUrl();
+        LocalMessageStore.instance.configureScope(baseUrl, savedUid);
         _uid = savedUid;
         _password = savedPassword;
         _currentUser = profile;
@@ -101,8 +107,7 @@ class AuthState extends ChangeNotifier {
 
   Future<String?> login(String username, String password) async {
     try {
-      final profile =
-          await TfApiClient.instance.getUserByUsername(username);
+      final profile = await TfApiClient.instance.getUserByUsername(username);
       if (profile == null) {
         return 'userNotFound';
       }
@@ -115,6 +120,8 @@ class AuthState extends ChangeNotifier {
         return 'invalidCredentials';
       }
 
+      final baseUrl = await TfApiClient.instance.getBaseUrl();
+      LocalMessageStore.instance.configureScope(baseUrl, uid);
       _uid = uid;
       _password = password;
       _currentUser = profile;
@@ -147,15 +154,19 @@ class AuthState extends ChangeNotifier {
     _rememberedUsername = null;
     _rememberedPassword = null;
     _savedSessionRestoreStatus = SavedSessionRestoreStatus.idle;
+    notifyListeners();
+    LocalMessageStore.instance.clearScope();
     final prefs = await SharedPreferences.getInstance();
     await _clearStorage(prefs);
-    notifyListeners();
   }
 
   Future<void> refreshProfile() async {
     if (_uid == null) return;
     try {
-      final profile = await TfApiClient.instance.getUserByUid(_uid!, avatarVersion: _avatarVersion);
+      final profile = await TfApiClient.instance.getUserByUid(
+        _uid!,
+        avatarVersion: _avatarVersion,
+      );
       if (profile != null) {
         _currentUser = profile;
         notifyListeners();

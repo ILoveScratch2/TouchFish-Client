@@ -104,4 +104,4 @@ class ServerConnectionBanner extends StatelessWidget {
       ),
     );
   }
-}
+}

@@ -6,6 +6,7 @@ import '../models/chat_model.dart';
 import '../services/chat_data_service.dart';
 import '../widgets/sheet_scaffold.dart';
 import 'chat_search_messages_screen.dart';
+import 'group_management_screen.dart';
 
 class ChatRoomSettingsScreen extends StatefulWidget {
   final ChatRoom chatRoom;
@@ -26,6 +27,9 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
   int? get _targetUid => widget.chatRoom.id.startsWith('U')
       ? int.tryParse(widget.chatRoom.id.substring(1))
       : null;
+  int? get _groupId => widget.chatRoom.id.startsWith('G')
+      ? int.tryParse(widget.chatRoom.id.substring(1))
+      : null;
 
   @override
   void initState() {
@@ -33,7 +37,9 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
     final prefs = _chatData.getRoomPreference(widget.chatRoom.id);
     _isPinned = prefs.isPinned || widget.chatRoom.isPinned;
     _notifyLevel = prefs.notifyLevel;
-    _chatName = prefs.alias.trim().isNotEmpty ? prefs.alias : widget.chatRoom.name;
+    _chatName = prefs.alias.trim().isNotEmpty
+        ? prefs.alias
+        : widget.chatRoom.name;
     _chatDescription = prefs.description;
   }
 
@@ -106,12 +112,25 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                 title: Text(l10n.chatRoomPin),
                 subtitle: Text(l10n.chatRoomPinDescription),
                 value: _isPinned,
-                onChanged: (value) {
+                onChanged: (value) async {
+                  final previous = _isPinned;
+                  final messenger = ScaffoldMessenger.of(context);
                   setState(() {
                     _isPinned = value;
                   });
-                  _chatData.updateRoomPreference(widget.chatRoom.id, isPinned: value);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  final saved = await _chatData.updateRoomPreference(
+                    widget.chatRoom.id,
+                    isPinned: value,
+                  );
+                  if (!mounted) return;
+                  if (!saved) {
+                    setState(() => _isPinned = previous);
+                    messenger.showSnackBar(
+                      SnackBar(content: Text(l10n.commonFailedOperation)),
+                    );
+                    return;
+                  }
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text(
                         value ? l10n.chatRoomPinned : l10n.chatRoomUnpinned,
@@ -122,6 +141,26 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                 },
               ),
               const Divider(height: 1),
+              if (_groupId != null) ...[
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                  leading: const Icon(Symbols.group),
+                  trailing: const Icon(Symbols.chevron_right),
+                  title: Text(l10n.groupManagement),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => GroupManagementScreen(
+                          gid: _groupId!,
+                          groupName: widget.chatRoom.name,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+              ],
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 24),
                 leading: const Icon(Symbols.notifications),
@@ -168,6 +207,23 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
     }
   }
 
+  Future<void> _setNotifyLevel(int level) async {
+    final previous = _notifyLevel;
+    setState(() => _notifyLevel = level);
+    Navigator.pop(context);
+    final saved = await _chatData.updateRoomPreference(
+      widget.chatRoom.id,
+      notifyLevel: level,
+    );
+    if (!mounted || saved) return;
+    setState(() => _notifyLevel = previous);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.commonFailedOperation),
+      ),
+    );
+  }
+
   void _showNotifyLevelBottomSheet() {
     final l10n = AppLocalizations.of(context)!;
 
@@ -190,39 +246,21 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
               subtitle: Text(l10n.chatNotifyLevelAllDescription),
               leading: const Icon(Symbols.notifications_active),
               selected: _notifyLevel == 0,
-              onTap: () {
-                setState(() {
-                  _notifyLevel = 0;
-                });
-                _chatData.updateRoomPreference(widget.chatRoom.id, notifyLevel: 0);
-                Navigator.pop(context);
-              },
+              onTap: () => _setNotifyLevel(0),
             ),
             ListTile(
               title: Text(l10n.chatNotifyLevelMention),
               subtitle: Text(l10n.chatNotifyLevelMentionDescription),
               leading: const Icon(Symbols.alternate_email),
               selected: _notifyLevel == 1,
-              onTap: () {
-                setState(() {
-                  _notifyLevel = 1;
-                });
-                _chatData.updateRoomPreference(widget.chatRoom.id, notifyLevel: 1);
-                Navigator.pop(context);
-              },
+              onTap: () => _setNotifyLevel(1),
             ),
             ListTile(
               title: Text(l10n.chatNotifyLevelNone),
               subtitle: Text(l10n.chatNotifyLevelNoneDescription),
               leading: const Icon(Symbols.notifications_off),
               selected: _notifyLevel == 2,
-              onTap: () {
-                setState(() {
-                  _notifyLevel = 2;
-                });
-                _chatData.updateRoomPreference(widget.chatRoom.id, notifyLevel: 2);
-                Navigator.pop(context);
-              },
+              onTap: () => _setNotifyLevel(2),
             ),
             const SizedBox(height: 16),
           ],

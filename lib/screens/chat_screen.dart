@@ -8,10 +8,11 @@ import '../services/api/tf_api_client.dart';
 import '../services/chat_data_service.dart';
 import '../services/chat_ws_service.dart';
 import '../services/auth_state.dart';
-import '../services/local_message_store.dart';
 import '../widgets/chat_list_widget.dart';
 import '../widgets/contact_list_widget.dart';
 import '../widgets/invite_sheet.dart';
+import '../widgets/text_entry_dialog.dart';
+import '../services/notification_service.dart';
 import 'chat_detail_screen.dart';
 import 'group_create_screen.dart';
 
@@ -194,6 +195,7 @@ class _ChatListScreenState extends State<ChatListScreen>
 
   late TabController _tabController;
   final ChatDataService _chatData = ChatDataService.instance;
+  final NotificationService _notificationService = NotificationService.instance;
 
   List<ChatRoom> get _chatRooms => _chatData.rooms;
   List<Contact> get _contacts => _chatData.contacts;
@@ -211,6 +213,7 @@ class _ChatListScreenState extends State<ChatListScreen>
       setState(() {});
     });
     _chatData.addListener(_onDataChanged);
+    _notificationService.addListener(_onDataChanged);
     AuthState.instance.addListener(_onAuthChanged);
     _initRealData();
   }
@@ -219,6 +222,7 @@ class _ChatListScreenState extends State<ChatListScreen>
   void dispose() {
     _tabController.dispose();
     _chatData.removeListener(_onDataChanged);
+    _notificationService.removeListener(_onDataChanged);
     AuthState.instance.removeListener(_onAuthChanged);
     super.dispose();
   }
@@ -242,19 +246,13 @@ class _ChatListScreenState extends State<ChatListScreen>
 
   Future<void> _initRealData() async {
     if (AuthState.instance.isLoggedIn) {
-      final uid = AuthState.instance.uid;
-      if (uid != null) {
-        LocalMessageStore.instance.setUid(uid);
-      }
       try {
-        final baseUrl = await TfApiClient.instance.getBaseUrl();
-        LocalMessageStore.instance.setServerKey(baseUrl);
+        await TfApiClient.instance.getBaseUrl();
       } catch (_) {
         return;
       }
       if (!AuthState.instance.isLoggedIn) return;
-      _chatData
-          .init();
+      _chatData.init();
       ChatWsService.instance.connect();
     }
   }
@@ -380,11 +378,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                     ),
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: IconButton(
-                        icon: const Icon(Icons.mail_outline),
-                        onPressed: () => _showInviteSheet(context),
-                        tooltip: l10n.chatInvites,
-                      ),
+                      child: _buildInviteButton(context, l10n),
                     ),
                   ],
                 ),
@@ -636,11 +630,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.mail_outline),
-                  color: appbarFeColor,
-                  onPressed: () => _showInviteSheet(context),
-                  tooltip: l10n.chatInvites,
+                IconTheme(
+                  data: IconThemeData(color: appbarFeColor),
+                  child: _buildInviteButton(context, l10n),
                 ),
               ],
             ),
@@ -665,6 +657,20 @@ class _ChatListScreenState extends State<ChatListScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) => const InviteSheet(),
+    );
+  }
+
+  Widget _buildInviteButton(BuildContext context, AppLocalizations l10n) {
+    final unread = _notificationService.inviteUnreadCount;
+    return IconButton(
+      icon: unread > 0
+          ? Badge(
+              label: Text(unread > 99 ? '99+' : '$unread'),
+              child: const Icon(Icons.mail_outline),
+            )
+          : const Icon(Icons.mail_outline),
+      onPressed: () => _showInviteSheet(context),
+      tooltip: l10n.chatInvites,
     );
   }
 
@@ -713,42 +719,35 @@ class _ChatListScreenState extends State<ChatListScreen>
     );
   }
 
-  void _showAddFriendDialog() {
-    final controller = TextEditingController();
-    showDialog(
+  Future<void> _showAddFriendDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+    final input = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.chatAddFriend),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: AppLocalizations.of(context)!.chatAddFriendHint,
-            prefixIcon: const Icon(Icons.search),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              final input = controller.text.trim();
-              if (input.isEmpty) return;
-              Navigator.pop(ctx);
-              final targetUid = int.tryParse(input);
-              if (targetUid != null) {
-                context.go('/user/$targetUid');
-              } else {
-                // Search by username — go to a search page
-                context.go('/user/search/$input');
-              }
-            },
-            child: const Text('Search'),
-          ),
-        ],
+      builder: (ctx) => TextEntryDialog(
+        title: l10n.chatAddFriend,
+        hintText: l10n.chatAddFriendHint,
+        cancelLabel: l10n.cancel,
+        confirmLabel: l10n.confirm,
+        icon: Icons.search,
       ),
     );
+    if (input == null || !mounted) return;
+
+    final parsedUid = int.tryParse(input);
+    final profile = parsedUid != null
+        ? await TfApiClient.instance.getUserByUid(parsedUid)
+        : await TfApiClient.instance.getUserByUsername(input);
+    if (!mounted) return;
+    final targetUid = profile == null ? null : int.tryParse(profile.uid);
+    if (targetUid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.commonUserNotFound),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    context.push('/user/$targetUid');
   }
 }

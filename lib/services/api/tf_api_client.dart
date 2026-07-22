@@ -29,6 +29,8 @@ class TfChatListItem {
   final int? lastSenderUid;
   final int? lastMid;
   final bool isFriend;
+  final bool? isPinned;
+  final int? notifyLevel;
 
   const TfChatListItem({
     required this.roomId,
@@ -42,6 +44,8 @@ class TfChatListItem {
     this.lastSenderUid,
     this.lastMid,
     required this.isFriend,
+    this.isPinned,
+    this.notifyLevel,
   });
 
   factory TfChatListItem.fromJson(Map<String, dynamic> json) {
@@ -57,6 +61,8 @@ class TfChatListItem {
       lastSenderUid: (json['last_sender_uid'] as num?)?.toInt(),
       lastMid: (json['last_mid'] as num?)?.toInt(),
       isFriend: json['is_friend'] as bool? ?? false,
+      isPinned: json['is_pinned'] as bool?,
+      notifyLevel: (json['notify_level'] as num?)?.toInt(),
     );
   }
 }
@@ -372,7 +378,6 @@ class TfApiClient {
     return _cachedBaseUrl!;
   }
 
-
   Future<int> resolveTcpPort() async {
     final serverInfo = await _loadSelectedServer();
     final autoDetect =
@@ -632,8 +637,7 @@ class TfApiClient {
       talker.error('debugRequest $path failed', e, stackTrace);
       return TfDebugRequestResult(
         method: method,
-        requestEncrypted:
-            method == TfDebugRequestMethod.post && encryptRequest,
+        requestEncrypted: method == TfDebugRequestMethod.post && encryptRequest,
         requestUrl: '',
         requestPayload: '',
         errorMessage: e.toString(),
@@ -767,10 +771,16 @@ class TfApiClient {
     }
   }
 
-  Future<UserProfile?> getUserByUsername(String username, {int avatarVersion = 0}) async {
+  Future<UserProfile?> getUserByUsername(
+    String username, {
+    int avatarVersion = 0,
+  }) async {
     try {
       final baseUrl = await getBaseUrl();
-      final response = await _getRequest('$baseUrl/auth/username/$username');
+      final encodedUsername = Uri.encodeComponent(username);
+      final response = await _getRequest(
+        '$baseUrl/auth/username/$encodedUsername',
+      );
       if (response.statusCode != 200) return null;
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       if (data.isEmpty) return null;
@@ -783,6 +793,27 @@ class TfApiClient {
     } catch (e) {
       talker.error('getUserByUsername $username failed', e);
       return null;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getMentionCandidates(
+    int uid,
+    String password,
+  ) async {
+    final result = await secretPost(
+      '/auth/mention_candidates',
+      {},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return [];
+    try {
+      return (jsonDecode(result) as List<dynamic>)
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList();
+    } catch (e) {
+      talker.error('getMentionCandidates parse failed', e);
+      return [];
     }
   }
 
@@ -936,7 +967,10 @@ class TfApiClient {
       final data = jsonDecode(response.body);
       if (data is! List) return [];
       return data
-          .map((row) => Forum.fromServerRow(row as List<dynamic>, baseUrl: baseUrl))
+          .map(
+            (row) =>
+                Forum.fromServerRow(row as List<dynamic>, baseUrl: baseUrl),
+          )
           .toList();
     } catch (e) {
       talker.error('getForumList failed', e);
@@ -1158,7 +1192,11 @@ class TfApiClient {
     return result.endsWith('True') || result.endsWith('False');
   }
 
-  Future<List<ForumMember>> getMembers(int uid, String password, int fid) async {
+  Future<List<ForumMember>> getMembers(
+    int uid,
+    String password,
+    int fid,
+  ) async {
     final result = await secretPost(
       '/forum/members',
       {'fid': fid},
@@ -1179,7 +1217,11 @@ class TfApiClient {
   }
 
   Future<bool> addMember(
-    int uid, String password, int fid, int targetUid, int role,
+    int uid,
+    String password,
+    int fid,
+    int targetUid,
+    int role,
   ) async {
     final result = await secretPost(
       '/forum/add_member',
@@ -1191,7 +1233,10 @@ class TfApiClient {
   }
 
   Future<bool> removeMember(
-    int uid, String password, int fid, int targetUid,
+    int uid,
+    String password,
+    int fid,
+    int targetUid,
   ) async {
     final result = await secretPost(
       '/forum/remove_member',
@@ -1203,7 +1248,11 @@ class TfApiClient {
   }
 
   Future<bool> changeMemberRole(
-    int uid, String password, int fid, int targetUid, int newRole,
+    int uid,
+    String password,
+    int fid,
+    int targetUid,
+    int newRole,
   ) async {
     final result = await secretPost(
       '/forum/change_member_role',
@@ -1215,7 +1264,9 @@ class TfApiClient {
   }
 
   Future<bool> editForum(
-    int uid, String password, int fid, {
+    int uid,
+    String password,
+    int fid, {
     String? forumName,
     String? introduction,
   }) async {
@@ -1254,7 +1305,10 @@ class TfApiClient {
   }
 
   /// Returns list of [fid, role] pairs.
-  Future<List<Map<String, int>>> getMyMemberships(int uid, String password) async {
+  Future<List<Map<String, int>>> getMyMemberships(
+    int uid,
+    String password,
+  ) async {
     final result = await secretPost(
       '/forum/my_memberships',
       {},
@@ -1329,10 +1383,10 @@ class TfApiClient {
       if (response.statusCode != 200) return [];
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final list = data.entries
-          .map((e) => Announcement.fromJson(
-                e.key,
-                e.value as Map<String, dynamic>,
-              ))
+          .map(
+            (e) =>
+                Announcement.fromJson(e.key, e.value as Map<String, dynamic>),
+          )
           .toList();
       list.sort((a, b) => b.timeStamp.compareTo(a.timeStamp));
       return list;
@@ -1342,7 +1396,11 @@ class TfApiClient {
     }
   }
 
-  Future<bool> createAnnouncement(int uid, String password, String content) async {
+  Future<bool> createAnnouncement(
+    int uid,
+    String password,
+    String content,
+  ) async {
     final result = await secretPost(
       '/announcement/upload_announcement',
       {'content': content},
@@ -1352,7 +1410,11 @@ class TfApiClient {
     return _parseBool(result);
   }
 
-  Future<bool> deleteAnnouncement(int uid, String password, String timeStamp) async {
+  Future<bool> deleteAnnouncement(
+    int uid,
+    String password,
+    String timeStamp,
+  ) async {
     final result = await secretPost(
       '/announcement/delete_announcement',
       {'time_stamp': timeStamp},
@@ -1378,7 +1440,9 @@ class TfApiClient {
     try {
       final list = jsonDecode(result) as List<dynamic>;
       return list
-          .map((e) => NotificationInfo.fromServerJson(e as Map<String, dynamic>))
+          .map(
+            (e) => NotificationInfo.fromServerJson(e as Map<String, dynamic>),
+          )
           .toList();
     } catch (e) {
       talker.error('queryAllNotifications parse failed', e);
@@ -1401,7 +1465,9 @@ class TfApiClient {
     try {
       final list = jsonDecode(result) as List<dynamic>;
       return list
-          .map((e) => NotificationInfo.fromServerJson(e as Map<String, dynamic>))
+          .map(
+            (e) => NotificationInfo.fromServerJson(e as Map<String, dynamic>),
+          )
           .toList();
     } catch (e) {
       talker.error('queryNotificationsAfter parse failed', e);
@@ -1462,30 +1528,33 @@ class TfApiClient {
       uid: uid,
       password: password,
     );
-    talker.info('dealFriendShip: uid=$uid dealt=$dealtUid stat=$stat rawResult=$result parsed=${_parseBool(result)}');
+    talker.info(
+      'dealFriendShip: uid=$uid dealt=$dealtUid stat=$stat rawResult=$result parsed=${_parseBool(result)}',
+    );
     return _parseBool(result);
   }
 
-  Future<List<int>> getFriendList(int uid, String password) async {
+  Future<List<int>?> getFriendList(int uid, String password) async {
     final result = await secretPost(
       '/friend/list',
       {},
       uid: uid,
       password: password,
     );
-    if (result == null) return [];
+    if (result == null) return null;
     try {
       final list = jsonDecode(result) as List<dynamic>;
       return list.map((e) => (e as num).toInt()).toList();
     } catch (e) {
       talker.error('getFriendList parse failed', e);
-      return [];
+      return null;
     }
   }
 
   /// Unified message send — returns {mid, status: 'sent'} or null.
   Future<Map<String, dynamic>?> sendMessage(
-    int uid, String password, {
+    int uid,
+    String password, {
     required String recipient, // "U123" or "G456"
     required String content,
     String contentType = 'plain',
@@ -1493,14 +1562,19 @@ class TfApiClient {
     String? fileHash,
     int quote = -1,
   }) async {
-    final result = await secretPost('/message/send', {
-      'recipient': recipient,
-      'content': content,
-      'content_type': contentType,
-      'client_mid': clientMid,
-      'file_hash': fileHash,
-      'quote': quote,
-    }, uid: uid, password: password);
+    final result = await secretPost(
+      '/message/send',
+      {
+        'recipient': recipient,
+        'content': content,
+        'content_type': contentType,
+        'client_mid': clientMid,
+        'file_hash': fileHash,
+        'quote': quote,
+      },
+      uid: uid,
+      password: password,
+    );
     try {
       final data = jsonDecode(result ?? '');
       if (data is Map<String, dynamic>) return data;
@@ -1533,6 +1607,25 @@ class TfApiClient {
     }
   }
 
+  Future<bool> updateChatPreference(
+    int uid,
+    String password,
+    String roomId, {
+    bool? isPinned,
+    int? notifyLevel,
+  }) async {
+    final body = <String, dynamic>{'room_id': roomId};
+    if (isPinned != null) body['is_pinned'] = isPinned;
+    if (notifyLevel != null) body['notify_level'] = notifyLevel;
+    final result = await secretPost(
+      '/chat/preferences/update',
+      body,
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
   /// Fetch paginated message history. Pass [groupId] for group chats.
   Future<List<ChatMessage>> queryMessageHistory(
     int uid,
@@ -1559,7 +1652,10 @@ class TfApiClient {
     try {
       final list = jsonDecode(result) as List<dynamic>;
       return list
-          .map((e) => ChatMessage.fromMessageRecord(e as Map<String, dynamic>, uid))
+          .map(
+            (e) =>
+                ChatMessage.fromMessageRecord(e as Map<String, dynamic>, uid),
+          )
           .toList();
     } catch (e) {
       talker.error('queryMessageHistory parse failed', e);
@@ -1569,78 +1665,174 @@ class TfApiClient {
 
   // --- group management ---
 
-  Future<int?> createGroup(int uid, String password,
-      {required String groupname, String introduction = '', String enterHint = '',
-       bool allowDirectJoin = false, bool requireReview = true}) async {
-    final result = await secretPost('/group/create_group', {
-      'groupname': groupname,
-      'introduction': introduction,
-      'enter_hint': enterHint,
-      'allow_direct_join': allowDirectJoin,
-      'require_review': requireReview,
-    }, uid: uid, password: password);
+  Future<int?> createGroup(
+    int uid,
+    String password, {
+    required String groupname,
+    String introduction = '',
+    String enterHint = '',
+    bool allowDirectJoin = false,
+    bool requireReview = true,
+  }) async {
+    final result = await secretPost(
+      '/group/create_group',
+      {
+        'groupname': groupname,
+        'introduction': introduction,
+        'enter_hint': enterHint,
+        'allow_direct_join': allowDirectJoin,
+        'require_review': requireReview,
+      },
+      uid: uid,
+      password: password,
+    );
     final data = _parseJsonMap(result);
     return (data?['gid'] as num?)?.toInt();
   }
 
-  Future<Map<String, dynamic>?> getGroupSettings(int uid, String password, int gid) async {
-    final result = await secretPost('/group/settings', {'gid': gid},
-        uid: uid, password: password);
+  Future<Map<String, dynamic>?> getGroupSettings(
+    int uid,
+    String password,
+    int gid,
+  ) async {
+    final result = await secretPost(
+      '/group/settings',
+      {'gid': gid},
+      uid: uid,
+      password: password,
+    );
     return _parseJsonMap(result);
   }
 
-  Future<bool> updateGroupSettings(int uid, String password, int gid, Map<String, dynamic> updates) async {
+  Future<bool> updateGroupSettings(
+    int uid,
+    String password,
+    int gid,
+    Map<String, dynamic> updates,
+  ) async {
     final body = <String, dynamic>{'gid': gid};
     body.addAll(updates);
-    final result = await secretPost('/group/update_settings', body,
-        uid: uid, password: password);
+    final result = await secretPost(
+      '/group/update_settings',
+      body,
+      uid: uid,
+      password: password,
+    );
     return _parseBool(result);
   }
 
-  Future<Map<String, dynamic>?> getGroupMembers(int uid, String password, int gid) async {
-    final result = await secretPost('/group/members', {'gid': gid},
-        uid: uid, password: password);
+  Future<Map<String, dynamic>?> getGroupMembers(
+    int uid,
+    String password,
+    int gid,
+  ) async {
+    final result = await secretPost(
+      '/group/members',
+      {'gid': gid},
+      uid: uid,
+      password: password,
+    );
     return _parseJsonMap(result);
   }
 
-  Future<bool> transferGroupOwner(int uid, String password, int gid, int newOwner) async {
-    final result = await secretPost('/group/transfer_owner',
-        {'gid': gid, 'new_owner': newOwner},
-        uid: uid, password: password);
+  Future<bool> transferGroupOwner(
+    int uid,
+    String password,
+    int gid,
+    int newOwner,
+  ) async {
+    final result = await secretPost(
+      '/group/transfer_owner',
+      {'gid': gid, 'new_owner': newOwner},
+      uid: uid,
+      password: password,
+    );
     return _parseBool(result);
   }
 
-  Future<bool> setGroupAdmin(int uid, String password, int gid, int targetUid, bool isAdmin) async {
+  Future<bool> setGroupAdmin(
+    int uid,
+    String password,
+    int gid,
+    int targetUid,
+    bool isAdmin,
+  ) async {
     final endpoint = isAdmin ? '/group/add_admin' : '/group/remove_admin';
     final key = isAdmin ? 'added' : 'removed';
-    final result = await secretPost(endpoint, {'gid': gid, key: targetUid},
-        uid: uid, password: password);
+    final result = await secretPost(
+      endpoint,
+      {'gid': gid, key: targetUid},
+      uid: uid,
+      password: password,
+    );
     return _parseBool(result);
   }
 
-  Future<bool> removeGroupMember(int uid, String password, int gid, int targetUid) async {
-    final result = await secretPost('/group/remove_member',
-        {'gid': gid, 'removed': targetUid},
-        uid: uid, password: password);
+  Future<bool> removeGroupMember(
+    int uid,
+    String password,
+    int gid,
+    int targetUid,
+  ) async {
+    final result = await secretPost(
+      '/group/remove_member',
+      {'gid': gid, 'removed': targetUid},
+      uid: uid,
+      password: password,
+    );
     return _parseBool(result);
   }
 
-  Future<Map<String, dynamic>?> joinGroup(int uid, String password, int gid) async {
-    final result = await secretPost('/group/join', {'gid': gid},
-        uid: uid, password: password);
+  Future<bool> leaveGroup(int uid, String password, int gid) async {
+    final result = await secretPost(
+      '/group/leave',
+      {'gid': gid},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<Map<String, dynamic>?> joinGroup(
+    int uid,
+    String password,
+    int gid,
+  ) async {
+    final result = await secretPost(
+      '/group/join',
+      {'gid': gid},
+      uid: uid,
+      password: password,
+    );
     return _parseJsonMap(result);
   }
 
-  Future<Map<String, dynamic>?> inviteToGroup(int uid, String password, int gid, int invitedUid) async {
-    final result = await secretPost('/group/invite',
-        {'gid': gid, 'invited_uid': invitedUid},
-        uid: uid, password: password);
+  Future<Map<String, dynamic>?> inviteToGroup(
+    int uid,
+    String password,
+    int gid,
+    int invitedUid,
+  ) async {
+    final result = await secretPost(
+      '/group/invite',
+      {'gid': gid, 'invited_uid': invitedUid},
+      uid: uid,
+      password: password,
+    );
     return _parseJsonMap(result);
   }
 
-  Future<List<Map<String, dynamic>>> getJoinRequests(int uid, String password, int gid) async {
-    final result = await secretPost('/group/join_requests', {'gid': gid},
-        uid: uid, password: password);
+  Future<List<Map<String, dynamic>>> getJoinRequests(
+    int uid,
+    String password,
+    int gid,
+  ) async {
+    final result = await secretPost(
+      '/group/join_requests',
+      {'gid': gid},
+      uid: uid,
+      password: password,
+    );
     if (result == null) return [];
     try {
       return (jsonDecode(result) as List<dynamic>)
@@ -1651,10 +1843,18 @@ class TfApiClient {
     }
   }
 
-  Future<bool> handleJoinRequest(int uid, String password, int rid, bool approved) async {
-    final result = await secretPost('/group/handle_join_request',
-        {'rid': rid, 'approved': approved},
-        uid: uid, password: password);
+  Future<bool> handleJoinRequest(
+    int uid,
+    String password,
+    int rid,
+    bool approved,
+  ) async {
+    final result = await secretPost(
+      '/group/handle_join_request',
+      {'rid': rid, 'approved': approved},
+      uid: uid,
+      password: password,
+    );
     return _parseBool(result);
   }
 
@@ -1718,11 +1918,7 @@ class TfApiClient {
     return _parseBool(result);
   }
 
-  Future<bool> manageBanUser(
-    int uid,
-    String password,
-    int targetUid,
-  ) async {
+  Future<bool> manageBanUser(int uid, String password, int targetUid) async {
     final result = await secretPost(
       '/auth/manage/ban',
       {'change_uid': targetUid},
@@ -1732,11 +1928,7 @@ class TfApiClient {
     return _parseBool(result);
   }
 
-  Future<bool> manageDeleteUser(
-    int uid,
-    String password,
-    int targetUid,
-  ) async {
+  Future<bool> manageDeleteUser(int uid, String password, int targetUid) async {
     final result = await secretPost(
       '/auth/manage/delete',
       {'change_uid': targetUid},
@@ -1756,10 +1948,7 @@ class TfApiClient {
   ) async {
     final result = await secretPost(
       '/file/upload_file',
-      {
-        'filename': fileName,
-        'file_b64': fileBase64,
-      },
+      {'filename': fileName, 'file_b64': fileBase64},
       uid: uid,
       password: password,
     );
@@ -1798,10 +1987,7 @@ class TfApiClient {
     }
   }
 
-  Future<Map<String, dynamic>?> getStorageInfo(
-    int uid,
-    String password,
-  ) async {
+  Future<Map<String, dynamic>?> getStorageInfo(int uid, String password) async {
     final result = await secretPost(
       '/file/get_storage_info',
       {},

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
-import '../models/chat_model.dart';
 import '../models/user_profile.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
@@ -50,7 +49,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  late final List<MentionUser> _mentionUsers;
+  final List<MentionUser> _mentionUsers = [];
 
   final _currentUser =
       AuthState.instance.currentUser ?? UserProfileDemoData.getDemoProfile('1');
@@ -62,11 +61,30 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     if (widget.initialContent != null) {
       _contentController.text = widget.initialContent!;
     }
-    _mentionUsers = ChatDemoData.getDemoContacts()
-        .map(
-          (c) => MentionUser(id: c.id, username: c.name, avatarUrl: c.avatar),
-        )
-        .toList();
+    _loadMentionUsers();
+  }
+
+  Future<void> _loadMentionUsers() async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+    final rows = await TfApiClient.instance.getMentionCandidates(uid, password);
+    final baseUrl = await TfApiClient.instance.getBaseUrl();
+    if (!mounted) return;
+    setState(() {
+      _mentionUsers
+        ..clear()
+        ..addAll(
+          rows.map((row) {
+            final candidateUid = (row['uid'] as num).toInt();
+            return MentionUser(
+              id: candidateUid.toString(),
+              username: row['username'] as String? ?? 'User $candidateUid',
+              avatarUrl: '$baseUrl/avatar/get_avatar/user/$candidateUid',
+            );
+          }),
+        );
+    });
   }
 
   @override

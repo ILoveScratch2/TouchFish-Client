@@ -31,7 +31,10 @@ class TfCrypto {
     final bitString = spki.elements![1] as ASN1BitString;
     // valueBytes includes unused-bits prefix byte; skip it to get the inner DER
     final bitStringContent = Uint8List.fromList(
-        (bitString.valueBytes ?? bitString.encodedBytes!).skip(bitString.valueBytes != null ? 1 : 4).toList());
+      (bitString.valueBytes ?? bitString.encodedBytes!)
+          .skip(bitString.valueBytes != null ? 1 : 4)
+          .toList(),
+    );
     final innerParser = ASN1Parser(bitStringContent);
     final rsaSeq = innerParser.nextObject() as ASN1Sequence;
 
@@ -56,7 +59,9 @@ class TfCrypto {
     cipher.init(
       true,
       PaddedBlockCipherParameters(
-          ParametersWithIV(KeyParameter(key), iv), null),
+        ParametersWithIV(KeyParameter(key), iv),
+        null,
+      ),
     );
     return cipher.process(data);
   }
@@ -69,7 +74,9 @@ class TfCrypto {
     cipher.init(
       false,
       PaddedBlockCipherParameters(
-          ParametersWithIV(KeyParameter(key), iv), null),
+        ParametersWithIV(KeyParameter(key), iv),
+        null,
+      ),
     );
     final plain = cipher.process(ciphertext);
     return utf8.decode(plain);

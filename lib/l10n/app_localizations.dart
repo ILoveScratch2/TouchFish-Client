@@ -4234,6 +4234,30 @@ abstract class AppLocalizations {
   /// **'Join Hint'**
   String get groupEnterHintLabel;
 
+  /// No description provided for @groupEnterHintHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown at the top of the chat after members join'**
+  String get groupEnterHintHelp;
+
+  /// No description provided for @groupEnterHintUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Join hint updated'**
+  String get groupEnterHintUpdated;
+
+  /// No description provided for @groupManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Management'**
+  String get groupManagement;
+
+  /// No description provided for @groupOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Group'**
+  String get groupOpen;
+
   /// No description provided for @groupCreateNameEmpty.
   ///
   /// In en, this message translates to:
@@ -4311,6 +4335,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm Transfer'**
   String get groupTransferOwnerConfirmAction;
+
+  /// No description provided for @groupSelectNewOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Select New Owner'**
+  String get groupSelectNewOwner;
+
+  /// No description provided for @groupLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave Group'**
+  String get groupLeave;
+
+  /// No description provided for @groupLeaveConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to leave this group?'**
+  String get groupLeaveConfirm;
+
+  /// No description provided for @groupLeaveOwnerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer ownership before leaving the group'**
+  String get groupLeaveOwnerHint;
 
   /// No description provided for @groupInviteMember.
   ///

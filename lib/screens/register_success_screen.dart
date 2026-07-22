@@ -9,7 +9,7 @@ class RegisterSuccessScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     return Scaffold(
       body: Center(
         child: SizedBox(
@@ -36,7 +36,7 @@ class RegisterSuccessScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   Text(
                     l10n.registerSuccess,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -45,15 +45,15 @@ class RegisterSuccessScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   Text(
                     l10n.registerSuccessMessage,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // Back to login button
                   SizedBox(
                     width: double.infinity,

@@ -7,10 +7,7 @@ import '../l10n/app_localizations.dart';
 class ChatListWidget extends StatelessWidget {
   final List<ChatRoom> chatRooms;
 
-  const ChatListWidget({
-    super.key,
-    required this.chatRooms,
-  });
+  const ChatListWidget({super.key, required this.chatRooms});
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +27,7 @@ class ChatListWidget extends StatelessWidget {
   Widget _buildPinnedSection(BuildContext context, List<ChatRoom> rooms) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
@@ -39,20 +36,24 @@ class ChatListWidget extends StatelessWidget {
         title: Text(l10n.chatPinned),
         leading: const Icon(Icons.push_pin),
         initiallyExpanded: true,
-        children: rooms.map((room) => _buildChatRoomTile(context, room)).toList(),
+        children: rooms
+            .map((room) => _buildChatRoomTile(context, room))
+            .toList(),
       ),
     );
   }
 
   Widget _buildChatRoomTile(BuildContext context, ChatRoom room) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return ListTile(
       leading: _buildAvatar(context, room),
       title: Text(
         room.name,
         style: TextStyle(
-          fontWeight: room.unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+          fontWeight: room.unreadCount > 0
+              ? FontWeight.bold
+              : FontWeight.normal,
         ),
       ),
       subtitle: room.lastMessage != null
@@ -75,8 +76,8 @@ class ChatListWidget extends StatelessWidget {
             Text(
               _formatTime(room.lastMessageTime!, context),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           if (room.unreadCount > 0) ...[
             const SizedBox(height: 4),
@@ -134,7 +135,9 @@ class ChatListWidget extends StatelessWidget {
       return l10n.chatYesterday;
     } else if (difference.inDays < 7) {
       // 一周内显示星期
-      return DateFormat.E(Localizations.localeOf(context).toString()).format(time);
+      return DateFormat.E(
+        Localizations.localeOf(context).toString(),
+      ).format(time);
     } else {
       // 超过一周显示日期
       return DateFormat('MM/dd').format(time);

@@ -49,7 +49,9 @@ class Forum {
       createdByUid: row[2].toString(),
       createdAt: DateTime.fromMillisecondsSinceEpoch(ms),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(ms),
-      avatarUrl: baseUrl != null ? '$baseUrl/avatar/get_avatar/forum/$fid' : null,
+      avatarUrl: baseUrl != null
+          ? '$baseUrl/avatar/get_avatar/forum/$fid'
+          : null,
     );
   }
 
@@ -280,6 +282,7 @@ class ForumComment {
   }
 }
 
+// 是不是用不着了
 class ForumDemoData {
   static List<Forum> getDemoForums() {
     return [
@@ -331,28 +334,119 @@ class ForumDemoData {
     switch (forumId) {
       case 'forum-1':
         return [
-          ForumMember(forumId: forumId, accountUid: '1', role: 100, joinedAt: DateTime(2025, 1, 1), createdAt: DateTime(2025, 1, 1), updatedAt: now),
-          ForumMember(forumId: forumId, accountUid: '2', role: 0, joinedAt: DateTime(2025, 1, 5), createdAt: DateTime(2025, 1, 5), updatedAt: now),
-          ForumMember(forumId: forumId, accountUid: '3', role: 0, joinedAt: DateTime(2025, 2, 1), createdAt: DateTime(2025, 2, 1), updatedAt: now),
-          ForumMember(forumId: forumId, accountUid: '4', role: 50, joinedAt: DateTime(2025, 1, 10), createdAt: DateTime(2025, 1, 10), updatedAt: now),
-          ForumMember(forumId: forumId, accountUid: '5', role: 0, joinedAt: DateTime(2025, 3, 1), createdAt: DateTime(2025, 3, 1), updatedAt: now),
+          ForumMember(
+            forumId: forumId,
+            accountUid: '1',
+            role: 100,
+            joinedAt: DateTime(2025, 1, 1),
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: now,
+          ),
+          ForumMember(
+            forumId: forumId,
+            accountUid: '2',
+            role: 0,
+            joinedAt: DateTime(2025, 1, 5),
+            createdAt: DateTime(2025, 1, 5),
+            updatedAt: now,
+          ),
+          ForumMember(
+            forumId: forumId,
+            accountUid: '3',
+            role: 0,
+            joinedAt: DateTime(2025, 2, 1),
+            createdAt: DateTime(2025, 2, 1),
+            updatedAt: now,
+          ),
+          ForumMember(
+            forumId: forumId,
+            accountUid: '4',
+            role: 50,
+            joinedAt: DateTime(2025, 1, 10),
+            createdAt: DateTime(2025, 1, 10),
+            updatedAt: now,
+          ),
+          ForumMember(
+            forumId: forumId,
+            accountUid: '5',
+            role: 0,
+            joinedAt: DateTime(2025, 3, 1),
+            createdAt: DateTime(2025, 3, 1),
+            updatedAt: now,
+          ),
         ];
       case 'forum-2':
         return [
-          ForumMember(forumId: forumId, accountUid: '1', role: 100, joinedAt: DateTime(2025, 2, 1), createdAt: DateTime(2025, 2, 1), updatedAt: now),
-          ForumMember(forumId: forumId, accountUid: '2', role: 0, joinedAt: DateTime(2025, 2, 5), createdAt: DateTime(2025, 2, 5), updatedAt: now),
-          ForumMember(forumId: forumId, accountUid: '5', role: 0, joinedAt: DateTime(2025, 2, 10), createdAt: DateTime(2025, 2, 10), updatedAt: now),
+          ForumMember(
+            forumId: forumId,
+            accountUid: '1',
+            role: 100,
+            joinedAt: DateTime(2025, 2, 1),
+            createdAt: DateTime(2025, 2, 1),
+            updatedAt: now,
+          ),
+          ForumMember(
+            forumId: forumId,
+            accountUid: '2',
+            role: 0,
+            joinedAt: DateTime(2025, 2, 5),
+            createdAt: DateTime(2025, 2, 5),
+            updatedAt: now,
+          ),
+          ForumMember(
+            forumId: forumId,
+            accountUid: '5',
+            role: 0,
+            joinedAt: DateTime(2025, 2, 10),
+            createdAt: DateTime(2025, 2, 10),
+            updatedAt: now,
+          ),
         ];
       case 'forum-3':
         return [
-          ForumMember(forumId: forumId, accountUid: '4', role: 100, joinedAt: DateTime(2025, 3, 10), createdAt: DateTime(2025, 3, 10), updatedAt: now),
-          ForumMember(forumId: forumId, accountUid: '1', role: 50, joinedAt: DateTime(2025, 3, 15), createdAt: DateTime(2025, 3, 15), updatedAt: now),
-          ForumMember(forumId: forumId, accountUid: '2', role: 0, joinedAt: DateTime(2025, 4, 1), createdAt: DateTime(2025, 4, 1), updatedAt: now),
+          ForumMember(
+            forumId: forumId,
+            accountUid: '4',
+            role: 100,
+            joinedAt: DateTime(2025, 3, 10),
+            createdAt: DateTime(2025, 3, 10),
+            updatedAt: now,
+          ),
+          ForumMember(
+            forumId: forumId,
+            accountUid: '1',
+            role: 50,
+            joinedAt: DateTime(2025, 3, 15),
+            createdAt: DateTime(2025, 3, 15),
+            updatedAt: now,
+          ),
+          ForumMember(
+            forumId: forumId,
+            accountUid: '2',
+            role: 0,
+            joinedAt: DateTime(2025, 4, 1),
+            createdAt: DateTime(2025, 4, 1),
+            updatedAt: now,
+          ),
         ];
       case 'forum-4':
         return [
-          ForumMember(forumId: forumId, accountUid: '1', role: 100, joinedAt: DateTime(2025, 4, 5), createdAt: DateTime(2025, 4, 5), updatedAt: now),
-          ForumMember(forumId: forumId, accountUid: '4', role: 50, joinedAt: DateTime(2025, 4, 10), createdAt: DateTime(2025, 4, 10), updatedAt: now),
+          ForumMember(
+            forumId: forumId,
+            accountUid: '1',
+            role: 100,
+            joinedAt: DateTime(2025, 4, 5),
+            createdAt: DateTime(2025, 4, 5),
+            updatedAt: now,
+          ),
+          ForumMember(
+            forumId: forumId,
+            accountUid: '4',
+            role: 50,
+            joinedAt: DateTime(2025, 4, 10),
+            createdAt: DateTime(2025, 4, 10),
+            updatedAt: now,
+          ),
         ];
       default:
         return [];
@@ -364,7 +458,10 @@ class ForumDemoData {
     try {
       return members.firstWhere((m) => m.accountUid == currentUid);
     } catch (e) {
-      talker.error('Forum member not found for uid: $currentUid in forum: $forumId', e);
+      talker.error(
+        'Forum member not found for uid: $currentUid in forum: $forumId',
+        e,
+      );
       return null;
     }
   }
@@ -378,7 +475,8 @@ class ForumDemoData {
             forumId: forumId,
             authorUid: '1',
             title: 'Welcome to TouchFish Devs!',
-            content: '欢迎来到 TouchFish Devs！专门为 TouchFish 开发者准备的讨论区，可以交流 TF 相关的话题！\n\n在这里你可以：\n- 晶石后刃\n- 申请发行版\n- 报告 bug\n- 提出建议\n\n**期待大家的积极参与**！',
+            content:
+                '欢迎来到 TouchFish Devs！专门为 TouchFish 开发者准备的讨论区，可以交流 TF 相关的话题！\n\n在这里你可以：\n- 晶石后刃\n- 申请发行版\n- 报告 bug\n- 提出建议\n\n**期待大家的积极参与**！',
             isPinned: true,
             createdAt: DateTime(2025, 1, 2),
             updatedAt: DateTime(2025, 1, 2),
@@ -411,7 +509,8 @@ class ForumDemoData {
             forumId: forumId,
             authorUid: '1',
             title: '社区准则',
-            content: '社区准则：\n\n1. 尊重他人，禁止人身攻击\n2. 禁止发布违法违规内容\n3. 推荐进行积极分享和建设性讨论\n4.本区管理员 xsfx 有权删除违规内容并对违规用户进行处理\n\n**让我们一起营造一个友好、积极的社区环境！**',
+            content:
+                '社区准则：\n\n1. 尊重他人，禁止人身攻击\n2. 禁止发布违法违规内容\n3. 推荐进行积极分享和建设性讨论\n4.本区管理员 xsfx 有权删除违规内容并对违规用户进行处理\n\n**让我们一起营造一个友好、积极的社区环境！**',
             isPinned: true,
             createdAt: DateTime(2025, 2, 2),
             updatedAt: DateTime(2025, 2, 2),
@@ -434,7 +533,8 @@ class ForumDemoData {
             forumId: forumId,
             authorUid: '4',
             title: 'TouchFish 宣传',
-            content: 'TouchFish：\n\n- 使用 \$Python\$ 编写，性能~~不太优越但是很可靠就对了~~\n- 支持论坛聊天公告等板块\n- 内置功能丰富\n\n欢迎大家讨论和提建议！',
+            content:
+                'TouchFish：\n\n- 使用 \$Python\$ 编写，性能~~不太优越但是很可靠就对了~~\n- 支持论坛聊天公告等板块\n- 内置功能丰富\n\n欢迎大家讨论和提建议！',
             isPinned: true,
             createdAt: DateTime(2025, 3, 15),
             updatedAt: DateTime(2025, 3, 15),
@@ -444,7 +544,8 @@ class ForumDemoData {
             forumId: forumId,
             authorUid: '2',
             title: '补药 xsfx',
-            content: '西西爱抚：xsfx 兴奋作用过强，禁止在比赛前食用 xsfx，比赛前食用 xsfx 可能会导致过度兴奋，影响发挥，甚至属于作弊行为。请大家合理安排 xsfx 的食用时间，避免在比赛前食用，以确保最佳表现和安全。',
+            content:
+                '西西爱抚：xsfx 兴奋作用过强，禁止在比赛前食用 xsfx，比赛前食用 xsfx 可能会导致过度兴奋，影响发挥，甚至属于作弊行为。请大家合理安排 xsfx 的食用时间，避免在比赛前食用，以确保最佳表现和安全。',
             isPinned: false,
             createdAt: DateTime(2025, 5, 20),
             updatedAt: DateTime(2025, 5, 20),

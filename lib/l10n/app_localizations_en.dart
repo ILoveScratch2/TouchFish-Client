@@ -2243,6 +2243,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupEnterHintLabel => 'Join Hint';
 
   @override
+  String get groupEnterHintHelp =>
+      'Shown at the top of the chat after members join';
+
+  @override
+  String get groupEnterHintUpdated => 'Join hint updated';
+
+  @override
+  String get groupManagement => 'Group Management';
+
+  @override
+  String get groupOpen => 'Open Group';
+
+  @override
   String get groupCreateNameEmpty => 'Group name cannot be empty';
 
   @override
@@ -2284,6 +2297,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupTransferOwnerConfirmAction => 'Confirm Transfer';
+
+  @override
+  String get groupSelectNewOwner => 'Select New Owner';
+
+  @override
+  String get groupLeave => 'Leave Group';
+
+  @override
+  String get groupLeaveConfirm => 'Are you sure you want to leave this group?';
+
+  @override
+  String get groupLeaveOwnerHint =>
+      'Transfer ownership before leaving the group';
 
   @override
   String get groupInviteMember => 'Invite Member';

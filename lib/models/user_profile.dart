@@ -9,7 +9,8 @@ class UserProfile {
   final String? _avatarBase;
   final int avatarVersion;
 
-  String? get avatar => _avatarBase != null ? '$_avatarBase?v=$avatarVersion' : null;
+  String? get avatar =>
+      _avatarBase != null ? '$_avatarBase?v=$avatarVersion' : null;
 
   UserProfile({
     required this.uid,
@@ -37,8 +38,10 @@ class UserProfile {
   }
 
   factory UserProfile.fromServerJson(
-      Map<String, dynamic> json, String avatarUrl,
-      {int avatarVersion = 0}) {
+    Map<String, dynamic> json,
+    String avatarUrl, {
+    int avatarVersion = 0,
+  }) {
     return UserProfile(
       uid: json['uid'].toString(),
       username: json['username'] as String,
@@ -201,17 +204,19 @@ def hello():
       ),
     };
 
-    return demoUsers[userId] ?? UserProfile(
-      uid: userId,
-      username: 'Unknown User',
-      email: '',
-      stat: 'user',
-      createTime: DateTime.now().millisecondsSinceEpoch.toString(),
-      personalSign: null,
-      introduction: null,
-      avatar: null,
-    );
+    return demoUsers[userId] ??
+        UserProfile(
+          uid: userId,
+          username: 'Unknown User',
+          email: '',
+          stat: 'user',
+          createTime: DateTime.now().millisecondsSinceEpoch.toString(),
+          personalSign: null,
+          introduction: null,
+          avatar: null,
+        );
   }
+
   static UserProfile? findByUsername(String username) {
     const knownUids = ['1', '2', '3', '4', '5'];
     for (final uid in knownUids) {

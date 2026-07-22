@@ -92,4 +92,4 @@ class ServerConnectionStatusService extends ChangeNotifier {
     _hideTimer?.cancel();
     super.dispose();
   }
-}
+}

@@ -38,7 +38,10 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
     if (name.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.groupCreateNameEmpty), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text(l10n.groupCreateNameEmpty),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
       return;
@@ -50,7 +53,10 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
       if (name.length < minLen || name.length > maxLen) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.groupCreateNameLength(minLen, maxLen)), behavior: SnackBarBehavior.floating),
+            SnackBar(
+              content: Text(l10n.groupCreateNameLength(minLen, maxLen)),
+              behavior: SnackBarBehavior.floating,
+            ),
           );
         }
         return;
@@ -60,7 +66,8 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
     setState(() => _isCreating = true);
     try {
       final gid = await TfApiClient.instance.createGroup(
-        _uid, _password,
+        _uid,
+        _password,
         groupname: name,
         introduction: _introCtrl.text.trim(),
         enterHint: _hintCtrl.text.trim(),
@@ -73,14 +80,20 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.groupCreateFailedLimit), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text(l10n.groupCreateFailedLimit),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (e) {
       talker.error('GroupCreate failed', e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${l10n.commonFailedOperation}: $e'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('${l10n.commonFailedOperation}: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     }
@@ -94,7 +107,10 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.chatCreateGroup),
-        leading: IconButton(icon: const Icon(Icons.close), onPressed: () => context.pop()),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => context.pop(),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -102,7 +118,8 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
           TextField(
             controller: _nameCtrl,
             decoration: InputDecoration(
-              labelText: l10n.groupNameLabel, prefixIcon: const Icon(Icons.group),
+              labelText: l10n.groupNameLabel,
+              prefixIcon: const Icon(Icons.group),
             ),
           ),
           const SizedBox(height: 12),
@@ -110,14 +127,16 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
             controller: _introCtrl,
             maxLines: 3,
             decoration: InputDecoration(
-              labelText: l10n.groupIntroLabel, prefixIcon: const Icon(Icons.info_outline),
+              labelText: l10n.groupIntroLabel,
+              prefixIcon: const Icon(Icons.info_outline),
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _hintCtrl,
             decoration: InputDecoration(
-              labelText: l10n.groupEnterHintLabel, prefixIcon: const Icon(Icons.login),
+              labelText: l10n.groupEnterHintLabel,
+              prefixIcon: const Icon(Icons.login),
             ),
           ),
           const SizedBox(height: 16),
@@ -137,7 +156,11 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
           FilledButton.icon(
             onPressed: _isCreating ? null : _create,
             icon: _isCreating
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(Icons.add),
             label: Text(l10n.chatCreateGroup),
           ),

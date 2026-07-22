@@ -2158,6 +2158,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get groupEnterHintLabel => '入群提示';
 
   @override
+  String get groupEnterHintHelp => '成员入群后显示在聊天顶部';
+
+  @override
+  String get groupEnterHintUpdated => '入群提示已更新';
+
+  @override
+  String get groupManagement => '群组管理';
+
+  @override
+  String get groupOpen => '打开群聊';
+
+  @override
   String get groupCreateNameEmpty => '群组名称不能为空';
 
   @override
@@ -2197,6 +2209,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get groupTransferOwnerConfirmAction => '确认转让';
+
+  @override
+  String get groupSelectNewOwner => '选择新群主';
+
+  @override
+  String get groupLeave => '退出群组';
+
+  @override
+  String get groupLeaveConfirm => '确定要退出该群组吗？';
+
+  @override
+  String get groupLeaveOwnerHint => '群主需要先转让群主后才能退出';
 
   @override
   String get groupInviteMember => '邀请成员';

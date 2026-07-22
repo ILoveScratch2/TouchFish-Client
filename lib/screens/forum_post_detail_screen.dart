@@ -10,6 +10,7 @@ import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import 'forum_post_compose_screen.dart';
 import '../utils/talker.dart';
+import '../widgets/mention_text_field.dart';
 
 const double _kPostDetailMaxWidth = 680;
 
@@ -41,11 +42,36 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   bool _isSendingComment = false;
   final _commentController = TextEditingController();
   final _scrollController = ScrollController();
+  final List<MentionUser> _mentionUsers = [];
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _loadMentionUsers();
+  }
+
+  Future<void> _loadMentionUsers() async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+    final rows = await TfApiClient.instance.getMentionCandidates(uid, password);
+    final baseUrl = await TfApiClient.instance.getBaseUrl();
+    if (!mounted) return;
+    setState(() {
+      _mentionUsers
+        ..clear()
+        ..addAll(
+          rows.map((row) {
+            final candidateUid = (row['uid'] as num).toInt();
+            return MentionUser(
+              id: candidateUid.toString(),
+              username: row['username'] as String? ?? 'User $candidateUid',
+              avatarUrl: '$baseUrl/avatar/get_avatar/user/$candidateUid',
+            );
+          }),
+        );
+    });
   }
 
   Future<void> _loadData() async {
@@ -113,8 +139,10 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     }
     final post = _post!;
     final author = _postAuthor;
-    final enableMarkdown =
-        SettingsService.instance.getValue<bool>('enableMarkdownRendering', true);
+    final enableMarkdown = SettingsService.instance.getValue<bool>(
+      'enableMarkdownRendering',
+      true,
+    );
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
@@ -129,11 +157,18 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
               SliverToBoxAdapter(
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: _kPostDetailMaxWidth),
+                    constraints: const BoxConstraints(
+                      maxWidth: _kPostDetailMaxWidth,
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: _buildPostBody(
-                          context, post, author, enableMarkdown, l10n),
+                        context,
+                        post,
+                        author,
+                        enableMarkdown,
+                        l10n,
+                      ),
                     ),
                   ),
                 ),
@@ -141,7 +176,9 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
               SliverToBoxAdapter(
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: _kPostDetailMaxWidth),
+                    constraints: const BoxConstraints(
+                      maxWidth: _kPostDetailMaxWidth,
+                    ),
                     child: _buildActionButtons(context, l10n),
                   ),
                 ),
@@ -149,17 +186,17 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
               SliverToBoxAdapter(
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: _kPostDetailMaxWidth),
+                    constraints: const BoxConstraints(
+                      maxWidth: _kPostDetailMaxWidth,
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
                       child: Row(
                         children: [
                           Text(
                             l10n.forumComments(_commentDataList.length),
-                            style:
-                                Theme.of(context).textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(width: 8),
                           const Expanded(child: Divider()),
@@ -187,13 +224,11 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
                           const SizedBox(height: 8),
                           Text(
                             l10n.forumNoComments,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
+                            style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                           ),
                         ],
@@ -203,23 +238,19 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
                 )
               else
                 SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final cd = _commentDataList[index];
-                      return Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: _kPostDetailMaxWidth),
-                          child: _buildCommentCard(
-                              context, cd, enableMarkdown),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final cd = _commentDataList[index];
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: _kPostDetailMaxWidth,
                         ),
-                      );
-                    },
-                    childCount: _commentDataList.length,
-                  ),
+                        child: _buildCommentCard(context, cd, enableMarkdown),
+                      ),
+                    );
+                  }, childCount: _commentDataList.length),
                 ),
-              SliverToBoxAdapter(
-                child: SizedBox(height: bottomPadding + 80),
-              ),
+              SliverToBoxAdapter(child: SizedBox(height: bottomPadding + 80)),
             ],
           ),
           Positioned(
@@ -228,7 +259,9 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
             right: 16,
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: _kPostDetailMaxWidth),
+                constraints: const BoxConstraints(
+                  maxWidth: _kPostDetailMaxWidth,
+                ),
                 child: _buildQuickReplyBar(context, l10n),
               ),
             ),
@@ -271,10 +304,8 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
                     Text(
                       _formatDateTime(post.createdAt),
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -292,23 +323,21 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
           const SizedBox(height: 16),
           Text(
             post.title,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
         ],
         const SizedBox(height: 12),
         if (enableMarkdown)
           MarkdownRenderer(data: post.content)
         else
-          Text(
-            post.content,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
+          Text(post.content, style: Theme.of(context).textTheme.bodyLarge),
         const SizedBox(height: 8),
       ],
     );
   }
+
   Widget _buildActionButtons(BuildContext context, AppLocalizations l10n) {
     return SizedBox(
       height: 48,
@@ -337,6 +366,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       ),
     );
   }
+
   Widget _buildCommentCard(
     BuildContext context,
     _CommentData cd,
@@ -369,20 +399,16 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
                     children: [
                       Text(
                         displayName,
-                        style:
-                            Theme.of(context).textTheme.labelLarge?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         _formatRelativeTime(comment.createdAt),
-                        style:
-                            Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
@@ -402,6 +428,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       ),
     );
   }
+
   Widget _buildQuickReplyBar(BuildContext context, AppLocalizations l10n) {
     final colorScheme = Theme.of(context).colorScheme;
     final currentUser = AuthState.instance.currentUser;
@@ -425,8 +452,9 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
             ),
             const SizedBox(width: 4),
             Expanded(
-              child: TextField(
+              child: MentionTextField(
                 controller: _commentController,
+                mentionUsers: _mentionUsers,
                 minLines: 1,
                 maxLines: 5,
                 style: const TextStyle(fontSize: 14),
@@ -452,8 +480,11 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
             IconButton(
               onPressed: _isSendingComment ? null : _submitComment,
               icon: _isSendingComment
-                  ? const SizedBox(width: 20, height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : Icon(Icons.send, size: 20, color: colorScheme.primary),
               visualDensity: VisualDensity.compact,
               tooltip: l10n.forumCommentSend,
@@ -492,18 +523,27 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
 
     setState(() => _isSendingComment = true);
     try {
-      final success = await TfApiClient.instance.addComment(uid, password, fid, pid, text);
+      final success = await TfApiClient.instance.addComment(
+        uid,
+        password,
+        fid,
+        pid,
+        text,
+      );
       if (!mounted) return;
       setState(() => _isSendingComment = false);
       if (success) {
         _commentController.clear();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.forumCommentSuccess)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.forumCommentSuccess)));
         await _loadData();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.forumCommentFailed), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text(l10n.forumCommentFailed),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (e) {
@@ -511,7 +551,10 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       if (mounted) {
         setState(() => _isSendingComment = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.forumCommentFailed), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text(l10n.forumCommentFailed),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     }

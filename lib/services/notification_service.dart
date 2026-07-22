@@ -5,6 +5,7 @@ import '../models/notification_model.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import 'chat_data_service.dart';
+import 'chat_ws_service.dart';
 import '../utils/talker.dart';
 
 class NotificationService extends ChangeNotifier {
@@ -16,16 +17,23 @@ class NotificationService extends ChangeNotifier {
   static const _keyLastFetchTime = 'notif_last_fetch_time';
   static const _keyLastReadAnnouncement = 'notif_last_read_announcement';
   static const _keyLastReadFriend = 'notif_last_read_friend';
+  static const _keyLastReadInvite = 'notif_last_read_invite';
+  static const _keyLastReadForum = 'notif_last_read_forum';
 
   final List<NotificationInfo> _allNotifications = [];
   final Set<int> _handledFriendSenders = {};
+  final Set<String> _handledInviteKeys = {};
   Timer? _pollTimer;
+  StreamSubscription<ChatWsEvent>? _wsSubscription;
   bool _isLoading = false;
   bool _isInitialLoad = true;
+  bool _isFirstFetchForSession = true;
   String? _error;
   double _lastFetchTime = 0;
   double _lastReadAnnouncementTime = 0;
   double _lastReadFriendTime = 0;
+  double _lastReadInviteTime = 0;
+  double _lastReadForumTime = 0;
   int? _activeUid;
   String? _activeBaseUrl;
 
@@ -44,6 +52,17 @@ class NotificationService extends ChangeNotifier {
   List<NotificationInfo> get announcementNotifications =>
       _allNotifications.where((n) => n.isAnnouncementEvent).toList();
 
+  List<NotificationInfo> get inviteNotifications => _allNotifications
+      .where(
+        (n) =>
+            n.isInviteEvent &&
+            !_handledInviteKeys.contains(n.identityKey) &&
+            (!n.isFriendEvent || !_handledFriendSenders.contains(n.senderUid)),
+      )
+      .toList();
+  List<NotificationInfo> get forumNotifications =>
+      _allNotifications.where((n) => n.isForumEvent).toList();
+
   int get announcementUnreadCount => _allNotifications
       .where(
         (n) => n.isAnnouncementEvent && n.timeStamp > _lastReadAnnouncementTime,
@@ -53,6 +72,12 @@ class NotificationService extends ChangeNotifier {
   int get friendUnreadCount => _allNotifications
       .where((n) => n.isFriendEvent && n.timeStamp > _lastReadFriendTime)
       .length;
+
+  int get inviteUnreadCount => inviteNotifications
+      .where((n) => n.timeStamp > _lastReadInviteTime)
+      .length;
+  int get forumUnreadCount =>
+      forumNotifications.where((n) => n.timeStamp > _lastReadForumTime).length;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -82,11 +107,21 @@ class NotificationService extends ChangeNotifier {
           scopedPreferenceKey(_keyLastReadFriend, baseUrl, uid),
         ) ??
         0;
+    final lastReadInviteTime =
+        prefs.getDouble(
+          scopedPreferenceKey(_keyLastReadInvite, baseUrl, uid),
+        ) ??
+        0;
+    final lastReadForumTime =
+        prefs.getDouble(scopedPreferenceKey(_keyLastReadForum, baseUrl, uid)) ??
+        0;
     if (_activeUid != uid || _activeBaseUrl != baseUrl) return false;
 
     _lastFetchTime = lastFetchTime;
     _lastReadAnnouncementTime = lastReadAnnouncementTime;
     _lastReadFriendTime = lastReadFriendTime;
+    _lastReadInviteTime = lastReadInviteTime;
+    _lastReadForumTime = lastReadForumTime;
     _isInitialLoad = _lastFetchTime == 0;
     return true;
   }
@@ -115,6 +150,14 @@ class NotificationService extends ChangeNotifier {
       scopedPreferenceKey(_keyLastReadFriend, baseUrl, uid),
       _lastReadFriendTime,
     );
+    await prefs.setDouble(
+      scopedPreferenceKey(_keyLastReadInvite, baseUrl, uid),
+      _lastReadInviteTime,
+    );
+    await prefs.setDouble(
+      scopedPreferenceKey(_keyLastReadForum, baseUrl, uid),
+      _lastReadForumTime,
+    );
   }
 
   Future<void> fetchNotifications() async {
@@ -128,7 +171,9 @@ class NotificationService extends ChangeNotifier {
       _activeBaseUrl = baseUrl;
       _allNotifications.clear();
       _handledFriendSenders.clear();
+      _handledInviteKeys.clear();
       _lastFetchTime = 0;
+      _isFirstFetchForSession = true;
       if (!await _loadReadTimestamps(baseUrl, uid)) return;
     }
 
@@ -137,6 +182,8 @@ class NotificationService extends ChangeNotifier {
 
     try {
       List<NotificationInfo> fetched;
+      final shouldProcessAsHistorical =
+          _isInitialLoad || _isFirstFetchForSession;
       if (_isInitialLoad) {
         talker.info(
           'NotificationService: initial load (queryAll) for uid=$uid',
@@ -166,15 +213,18 @@ class NotificationService extends ChangeNotifier {
 
       if (fetched.isNotEmpty) {
         _isInitialLoad = false;
-        final existingStamps = _allNotifications
-            .map((n) => n.timeStamp)
+        final existingKeys = _allNotifications
+            .map((n) => n.identityKey)
             .toSet();
         for (final n in fetched) {
-          if (!existingStamps.contains(n.timeStamp)) {
+          if (existingKeys.add(n.identityKey)) {
             _allNotifications.add(n);
             // Forward message notifications to chat data service
             if (n.isMessageEvent && n.senderUid != null) {
-              ChatDataService.instance.processPolledMessage(n);
+              ChatDataService.instance.processPolledMessage(
+                n,
+                isHistorical: shouldProcessAsHistorical,
+              );
             } else if (n.event == 'friend.accepted' && n.senderUid != null) {
               ChatDataService.instance.addFriendToContacts(n.senderUid!);
             } else if (n.event == 'group.invited' ||
@@ -189,6 +239,8 @@ class NotificationService extends ChangeNotifier {
         _allNotifications.sort((a, b) => b.timeStamp.compareTo(a.timeStamp));
       }
 
+      _isInitialLoad = false;
+      _isFirstFetchForSession = false;
       final newestFetchTime = fetched.fold<double>(
         _lastFetchTime,
         (currentMax, notification) => notification.timeStamp > currentMax
@@ -216,6 +268,7 @@ class NotificationService extends ChangeNotifier {
 
   void startPolling({Duration interval = const Duration(seconds: 30)}) {
     _pollTimer?.cancel();
+    _wsSubscription ??= ChatWsService.instance.eventStream.listen(_onWsEvent);
     fetchNotifications();
     _pollTimer = Timer.periodic(interval, (_) => fetchNotifications());
   }
@@ -223,23 +276,95 @@ class NotificationService extends ChangeNotifier {
   void stopPolling() {
     _pollTimer?.cancel();
     _pollTimer = null;
+    _wsSubscription?.cancel();
+    _wsSubscription = null;
+  }
+
+  void _onWsEvent(ChatWsEvent event) {
+    if (event.type != 'NOTIFICATION.NEW' || event.notification == null) return;
+    final notification = NotificationInfo.fromServerJson(event.notification!);
+    if (notification.isMessageEvent ||
+        _allNotifications.any(
+          (n) => n.identityKey == notification.identityKey,
+        )) {
+      return;
+    }
+    _allNotifications.add(notification);
+    _allNotifications.sort((a, b) => b.timeStamp.compareTo(a.timeStamp));
+    notifyListeners();
   }
 
   void markAnnouncementRead() {
-    if (_allNotifications.any((n) => n.isAnnouncementEvent)) {
-      _lastReadAnnouncementTime =
-          DateTime.now().millisecondsSinceEpoch / 1000.0;
+    final notifications = announcementNotifications;
+    if (notifications.isNotEmpty) {
+      _lastReadAnnouncementTime = notifications.fold<double>(
+        _lastReadAnnouncementTime,
+        (latest, notification) =>
+            notification.timeStamp > latest ? notification.timeStamp : latest,
+      );
       _saveReadTimestamps();
       notifyListeners();
     }
   }
 
   void markFriendRead() {
-    if (_allNotifications.any((n) => n.isFriendEvent)) {
-      _lastReadFriendTime = DateTime.now().millisecondsSinceEpoch / 1000.0;
+    final notifications = friendNotifications;
+    if (notifications.isNotEmpty) {
+      _lastReadFriendTime = notifications.fold<double>(
+        _lastReadFriendTime,
+        (latest, notification) =>
+            notification.timeStamp > latest ? notification.timeStamp : latest,
+      );
       _saveReadTimestamps();
       notifyListeners();
     }
+  }
+
+  void markInviteRead() {
+    final notifications = inviteNotifications;
+    if (notifications.isEmpty) return;
+    _lastReadInviteTime = notifications.fold<double>(
+      _lastReadInviteTime,
+      (latest, notification) =>
+          notification.timeStamp > latest ? notification.timeStamp : latest,
+    );
+    _saveReadTimestamps();
+    notifyListeners();
+  }
+
+  void markForumRead() {
+    final notifications = forumNotifications;
+    if (notifications.isEmpty) return;
+    _lastReadForumTime = notifications.fold<double>(
+      _lastReadForumTime,
+      (latest, notification) =>
+          notification.timeStamp > latest ? notification.timeStamp : latest,
+    );
+    _saveReadTimestamps();
+    notifyListeners();
+  }
+
+  Future<bool> handleGroupJoinRequest(
+    NotificationInfo notification,
+    bool approved,
+  ) async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final rid = notification.groupRequestRid;
+    if (uid == null || password == null || rid == null) return false;
+    final success = await TfApiClient.instance.handleJoinRequest(
+      uid,
+      password,
+      rid,
+      approved,
+    );
+    if (success) {
+      _handledInviteKeys.add(notification.identityKey);
+      _allNotifications.remove(notification);
+      notifyListeners();
+      if (approved) ChatDataService.instance.loadContactsAndRooms();
+    }
+    return success;
   }
 
   Future<bool> clearAllNotifications() async {
@@ -254,6 +379,7 @@ class NotificationService extends ChangeNotifier {
     if (success) {
       _allNotifications.clear();
       _handledFriendSenders.clear();
+      _handledInviteKeys.clear();
       notifyListeners();
     }
     return success;

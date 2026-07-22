@@ -19,8 +19,6 @@ import '../services/chat_ws_service.dart';
 import '../services/chat_data_service.dart';
 import '../utils/talker.dart';
 import 'chat_room_settings_screen.dart';
-import 'group_management_screen.dart';
-
 
 class ChatDetailScreen extends StatefulWidget {
   final String roomId;
@@ -44,6 +42,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   bool _hasMoreMessages = true;
   bool _realtimeListenersAttached = false;
   StreamSubscription? _ackErrorSub;
+  String _groupEnterHint = '';
+  bool _showGroupEnterHint = true;
 
   String get _contactUid {
     final id = widget.roomId;
@@ -83,6 +83,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _avatarLoadFailed = false;
     _isLoadingOlder = false;
     _hasMoreMessages = true;
+    _groupEnterHint = '';
+    _showGroupEnterHint = true;
     _loadChatRoom();
     _startRealMessaging();
   }
@@ -108,7 +110,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       _ => l10n.chatSendFailed,
     };
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 3)),
+      SnackBar(
+        content: Text(msg),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 
@@ -146,7 +152,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void _markVisibleMessagesRead({String? previousLastId}) {
     if (_messages.isEmpty) return;
     final lastMsg = _messages.last;
-    final hasNewVisibleTail = previousLastId == null || lastMsg.id != previousLastId;
+    final hasNewVisibleTail =
+        previousLastId == null || lastMsg.id != previousLastId;
     if (!hasNewVisibleTail || lastMsg.isMe || lastMsg.mid == null) return;
     ChatDataService.instance.clearUnread(_contactUid);
     if (_wsConnected) {
@@ -188,9 +195,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     setState(() => _isLoadingOlder = true);
 
     final oldLen = _messages.length;
-    final oldOffset = _scrollController.hasClients ? _scrollController.position.pixels : 0.0;
-    final oldMax = _scrollController.hasClients ? _scrollController.position.maxScrollExtent : 0.0;
-    final merged = await ChatDataService.instance.loadOlderMessages(_contactUid);
+    final oldOffset = _scrollController.hasClients
+        ? _scrollController.position.pixels
+        : 0.0;
+    final oldMax = _scrollController.hasClients
+        ? _scrollController.position.maxScrollExtent
+        : 0.0;
+    final merged = await ChatDataService.instance.loadOlderMessages(
+      _contactUid,
+    );
 
     if (!mounted) return;
     if (merged.isEmpty) {
@@ -227,18 +240,23 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         avatar: profile.avatar,
         type: _currentRoom?.type ?? ChatType.direct,
       );
-      if (_currentRoom?.name != updated.name || _currentRoom?.avatar != updated.avatar) {
+      if (_currentRoom?.name != updated.name ||
+          _currentRoom?.avatar != updated.avatar) {
         _avatarLoadFailed = false;
         _currentRoom = updated;
         if (mounted) setState(() {});
       }
     } else if (!_contactUid.startsWith('G')) {
       // Profile not cached — fetch for direct chats
-      final targetUid = _contactUid.startsWith('U') ? int.tryParse(_contactUid.substring(1)) : null;
+      final targetUid = _contactUid.startsWith('U')
+          ? int.tryParse(_contactUid.substring(1))
+          : null;
       if (targetUid != null) {
         TfApiClient.instance.getUserByUid(targetUid).then((p) {
           if (p != null && mounted) {
-            talker.info('ChatDetail: refreshRoom fetched uid=${p.uid} avatar=${p.avatar}');
+            talker.info(
+              'ChatDetail: refreshRoom fetched uid=${p.uid} avatar=${p.avatar}',
+            );
             chatData.cacheUserProfile(p);
             _avatarLoadFailed = false;
             setState(() {
@@ -246,7 +264,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 id: _contactUid,
                 name: chatData.displayNameForRoom(_contactUid, p.username),
                 avatar: p.avatar,
-                type: _contactUid.startsWith('G') ? ChatType.group : ChatType.direct,
+                type: _contactUid.startsWith('G')
+                    ? ChatType.group
+                    : ChatType.direct,
               );
             });
           }
@@ -288,12 +308,25 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void _loadChatRoom() {
     final chatData = ChatDataService.instance;
     final profile = chatData.getUser(_contactUid);
+    _mentionUsers.clear();
+    if (profile != null && _contactUid.startsWith('U')) {
+      _mentionUsers.add(
+        MentionUser(
+          id: profile.uid.replaceFirst('U', ''),
+          username: profile.username,
+          avatarUrl: profile.avatar,
+        ),
+      );
+    }
 
     _currentRoom = ChatRoom(
       id: _contactUid,
       name: chatData.displayNameForRoom(
         _contactUid,
-        profile?.username ?? (_contactUid.startsWith('G') ? 'Group ${_contactUid.substring(1)}' : _contactUid),
+        profile?.username ??
+            (_contactUid.startsWith('G')
+                ? 'Group ${_contactUid.substring(1)}'
+                : _contactUid),
       ),
       avatar: profile?.avatar,
       type: _contactUid.startsWith('G') ? ChatType.group : ChatType.direct,
@@ -302,24 +335,74 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     setState(() {});
 
     // Fetch profile to ensure we have latest data + avatar
-    final targetUid = _contactUid.startsWith('U') ? int.tryParse(_contactUid.substring(1)) : null;
+    final targetUid = _contactUid.startsWith('U')
+        ? int.tryParse(_contactUid.substring(1))
+        : null;
     if (targetUid != null) {
       TfApiClient.instance.getUserByUid(targetUid).then((p) {
         if (p != null && mounted) {
-          talker.info('ChatDetail: fetched profile uid=${p.uid} avatar=${p.avatar}');
+          talker.info(
+            'ChatDetail: fetched profile uid=${p.uid} avatar=${p.avatar}',
+          );
           chatData.cacheUserProfile(p);
+          _mentionUsers
+            ..clear()
+            ..add(
+              MentionUser(id: p.uid, username: p.username, avatarUrl: p.avatar),
+            );
           _avatarLoadFailed = false;
           setState(() {
             _currentRoom = ChatRoom(
               id: _contactUid,
               name: chatData.displayNameForRoom(_contactUid, p.username),
               avatar: p.avatar,
-              type: _contactUid.startsWith('G') ? ChatType.group : ChatType.direct,
+              type: _contactUid.startsWith('G')
+                  ? ChatType.group
+                  : ChatType.direct,
             );
           });
         }
       });
+    } else if (_contactUid.startsWith('G')) {
+      unawaited(_loadMentionUsers());
     }
+  }
+
+  Future<void> _loadMentionUsers() async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final gid = int.tryParse(_contactUid.substring(1));
+    if (uid == null || password == null || gid == null) return;
+
+    final result = await TfApiClient.instance.getGroupMembers(
+      uid,
+      password,
+      gid,
+    );
+    final members = result?['members'] as List<dynamic>?;
+    if (members == null) return;
+    final settings = result?['settings'] as Map<String, dynamic>?;
+    final enterHint = settings?['enter_hint'] as String? ?? '';
+    final baseUrl = await TfApiClient.instance.getBaseUrl();
+    final mentionUsers = members
+        .map((raw) {
+          final member = Map<String, dynamic>.from(raw as Map);
+          final memberUid = (member['uid'] as num).toInt();
+          return MentionUser(
+            id: memberUid.toString(),
+            username: member['username'] as String? ?? 'User $memberUid',
+            avatarUrl: '$baseUrl/avatar/get_avatar/user/$memberUid',
+          );
+        })
+        .where((member) => member.id != uid.toString())
+        .toList();
+    if (!mounted || _contactUid != 'G$gid') return;
+    setState(() {
+      _mentionUsers
+        ..clear()
+        ..addAll(mentionUsers);
+      _groupEnterHint = enterHint.trim();
+    });
   }
 
   void _sendMessage() {
@@ -338,6 +421,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final userMessage = ChatMessage(
       id: clientMid,
       clientMid: clientMid,
+      senderUid: uid,
       mid: null,
       text: text,
       timestamp: DateTime.now(),
@@ -380,8 +464,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       if (!wsSent) {
         // REST fallback
         final recipient = _contactUid;
-        final result = await TfApiClient.instance.sendMessage(uid, password,
-          recipient: recipient, content: text, clientMid: clientMid,
+        final result = await TfApiClient.instance.sendMessage(
+          uid,
+          password,
+          recipient: recipient,
+          content: text,
+          clientMid: clientMid,
         );
         if (result != null) {
           final mid = (result['mid'] as num?)?.toInt();
@@ -391,7 +479,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           if (mounted) {
             final l10n = AppLocalizations.of(context)!;
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.chatSendFailed), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 2)),
+              SnackBar(
+                content: Text(l10n.chatSendFailed),
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 2),
+              ),
             );
           }
         }
@@ -402,13 +494,21 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.chatSendFailed), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 2)),
+          SnackBar(
+            content: Text(l10n.chatSendFailed),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
         );
       }
     }
   }
 
-  void _updateMessageStatus(String clientMid, {int? mid, MessageStatus? status}) {
+  void _updateMessageStatus(
+    String clientMid, {
+    int? mid,
+    MessageStatus? status,
+  }) {
     // Update _messageCache
     final msgs = ChatDataService.instance.getMessages(_contactUid);
     final cIdx = msgs.indexWhere((m) => m.clientMid == clientMid);
@@ -452,7 +552,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     });
   }
 
-  Future<void> _sendMediaMessage(PlatformFile platformFile, MessageType type) async {
+  Future<void> _sendMediaMessage(
+    PlatformFile platformFile,
+    MessageType type,
+  ) async {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
@@ -464,31 +567,71 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
     if (kIsWeb) {
       fileName = platformFile.name;
-      filePath = 'web_upload_${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      filePath =
+          'web_upload_${DateTime.now().millisecondsSinceEpoch}_$fileName';
       fileSize = platformFile.bytes?.length ?? 0;
+      // Web: bytes already in browser memory — no separate read needed
       bytes = platformFile.bytes;
     } else {
       filePath = platformFile.path!;
       fileName = path.basename(filePath);
       final file = File(filePath);
+      // Get size WITHOUT reading the file into memory yet
       fileSize = await file.length();
-      bytes = platformFile.bytes ?? await file.readAsBytes();
     }
+
+    // Early size check BEFORE allocating memory and BEFORE adding message to UI
+    final maxSize = await TfApiClient.instance.getMaxFileSize();
+    if (maxSize != null && fileSize > maxSize) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.storageFileTooLarge((maxSize / (1024 * 1024)).round()),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Now read bytes (non-web only; web bytes already loaded above)
+    if (!kIsWeb) {
+      bytes = platformFile.bytes ?? await File(filePath).readAsBytes();
+    }
+
+    if (bytes == null) return;
 
     String messageText = '';
     switch (type) {
-      case MessageType.image: messageText = '[IMAGE]'; break;
-      case MessageType.video: messageText = '[VIDEO]'; break;
-      case MessageType.audio: messageText = '[AUDIO]'; break;
-      case MessageType.file: messageText = '[FILE] $fileName'; break;
-      default: messageText = fileName;
+      case MessageType.image:
+        messageText = '[IMAGE]';
+        break;
+      case MessageType.video:
+        messageText = '[VIDEO]';
+        break;
+      case MessageType.audio:
+        messageText = '[AUDIO]';
+        break;
+      case MessageType.file:
+        messageText = '[FILE] $fileName';
+        break;
+      default:
+        messageText = fileName;
     }
 
     final clientMid = 'c${DateTime.now().microsecondsSinceEpoch}';
-    final media = MessageMedia(path: filePath, fileName: fileName, fileSize: fileSize, bytes: bytes);
+    final media = MessageMedia(
+      path: filePath,
+      fileName: fileName,
+      fileSize: fileSize,
+      bytes: bytes,
+    );
     final userMessage = ChatMessage(
       id: clientMid,
       clientMid: clientMid,
+      senderUid: uid,
       text: messageText,
       timestamp: DateTime.now(),
       isMe: true,
@@ -501,26 +644,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     ChatDataService.instance.addSentMessage(_contactUid, userMessage);
     _scrollToBottom();
 
-    if (bytes == null) {
-      _updateMessageStatus(clientMid, status: MessageStatus.failed);
-      return;
-    }
-
-    final maxSize = await TfApiClient.instance.getMaxFileSize();
-    if (maxSize != null && bytes.length > maxSize) {
-      _updateMessageStatus(clientMid, status: MessageStatus.failed);
-      if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.storageFileTooLarge((maxSize / (1024 * 1024)).round()))),
-        );
-      }
-      return;
-    }
-
     try {
       final fileBase64 = base64.encode(bytes);
-      final response = await TfApiClient.instance.uploadFile(uid, password, fileName, fileBase64);
+      final response = await TfApiClient.instance.uploadFile(
+        uid,
+        password,
+        fileName,
+        fileBase64,
+      );
       final hash = response?['hash'] as String?;
       if (hash == null) {
         _updateMessageStatus(clientMid, status: MessageStatus.failed);
@@ -581,7 +712,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           if (mounted) {
             final l10n = AppLocalizations.of(context)!;
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.chatSendFailed), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 2)),
+              SnackBar(
+                content: Text(l10n.chatSendFailed),
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 2),
+              ),
             );
           }
         }
@@ -592,7 +727,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.chatSendFailed), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 2)),
+          SnackBar(
+            content: Text(l10n.chatSendFailed),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
         );
       }
     }
@@ -601,8 +740,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(_scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
     });
   }
@@ -625,7 +767,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       backgroundColor: colorScheme.primaryContainer,
       backgroundImage: NetworkImage(avatarUrl),
       onBackgroundImageError: (_, error) {
-        talker.warning('Avatar load failed for ${_currentRoom!.id}: $avatarUrl');
+        talker.warning(
+          'Avatar load failed for ${_currentRoom!.id}: $avatarUrl',
+        );
         if (mounted) setState(() => _avatarLoadFailed = true);
       },
     );
@@ -649,7 +793,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         leading: !isWide
-            ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.go(AppRoutes.chat))
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => context.go(AppRoutes.chat),
+              )
             : null,
         automaticallyImplyLeading: false,
         backgroundColor: colorScheme.surfaceContainerHighest,
@@ -659,34 +806,69 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             _buildAvatar(colorScheme),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                Text(_currentRoom!.name, style: const TextStyle(fontSize: 16), overflow: TextOverflow.ellipsis),
-                if (_currentRoom!.type == ChatType.group)
-                  Text(l10n.chatDetailGroupChat, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
-              ]),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _currentRoom!.name,
+                    style: const TextStyle(fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (_currentRoom!.type == ChatType.group)
+                    Text(
+                      l10n.chatDetailGroupChat,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.more_vert), onPressed: () {
-            if (_currentRoom!.type == ChatType.group) {
-              final gid = int.tryParse(widget.roomId.replaceFirst('G', ''));
-              if (gid != null) {
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => GroupManagementScreen(gid: gid, groupName: _currentRoom!.name),
-                ));
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      ChatRoomSettingsScreen(chatRoom: _currentRoom!),
+                ),
+              );
+              if (mounted && _currentRoom?.type == ChatType.group) {
+                unawaited(_loadMentionUsers());
               }
-            } else {
-              Navigator.push(context, MaterialPageRoute(
-                builder: (_) => ChatRoomSettingsScreen(chatRoom: _currentRoom!),
-              ));
-            }
-          }),
+            },
+          ),
         ],
       ),
       body: SafeArea(
         child: Column(
           children: [
+            if (_currentRoom!.type == ChatType.group &&
+                _groupEnterHint.isNotEmpty &&
+                _showGroupEnterHint)
+              Material(
+                color: colorScheme.secondaryContainer,
+                child: ListTile(
+                  leading: Icon(
+                    Icons.info_outline,
+                    color: colorScheme.onSecondaryContainer,
+                  ),
+                  title: Text(
+                    _groupEnterHint,
+                    style: TextStyle(color: colorScheme.onSecondaryContainer),
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () =>
+                        setState(() => _showGroupEnterHint = false),
+                  ),
+                ),
+              ),
             Expanded(
               child: _messages.isEmpty
                   ? RefreshIndicator(
@@ -696,8 +878,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                           SizedBox(
                             height: MediaQuery.of(context).size.height * 0.4,
                             child: Center(
-                              child: Text(l10n.chatDetailNoMessages, textAlign: TextAlign.center,
-                                  style: TextStyle(color: colorScheme.onSurfaceVariant)),
+                              child: Text(
+                                l10n.chatDetailNoMessages,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -709,13 +896,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                         controller: _scrollController,
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         itemCount: _messages.length,
-                        itemBuilder: (context, index) => MessageBubble(message: _messages[index]),
+                        itemBuilder: (context, index) =>
+                            MessageBubble(message: _messages[index]),
                       ),
                     ),
             ),
             ChatInputBar(
-              controller: _messageController, onSend: _sendMessage,
-              onFilePicked: _sendMediaMessage, mentionUsers: _mentionUsers,
+              controller: _messageController,
+              onSend: _sendMessage,
+              onFilePicked: _sendMediaMessage,
+              mentionUsers: _mentionUsers,
             ),
           ],
         ),

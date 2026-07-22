@@ -8,18 +8,17 @@ import 'package:sqlite3/sqlite3.dart';
 import '../models/message_model.dart';
 import '../utils/talker.dart';
 
-
 class LocalMessageStore {
   static LocalMessageStore? _instance;
   static LocalMessageStore get instance => _instance ??= LocalMessageStore._();
   LocalMessageStore._();
 
+  // Key format: "$server\x00$uid"
   final Map<String, Database> _databases = {};
   final Map<String, Future<Database>> _openingDatabases = {};
-  String _serverKey = 'default';
-  int? _uid;
+  ({String server, int uid})? _scope;
 
-  void setServerKey(String serverAddress) {
+  void configureScope(String serverAddress, int uid) {
     final uri = Uri.parse(serverAddress);
     final key = uri
         .replace(
@@ -28,34 +27,41 @@ class LocalMessageStore {
           path: uri.path.replaceFirst(RegExp(r'/$'), ''),
         )
         .toString();
-    if (_serverKey == key) return;
-    _serverKey = key;
+    _scope = (server: key, uid: uid);
   }
 
-  void setUid(int uid) {
-    if (_uid == uid) return;
-    _uid = uid;
+  void clearScope() => _scope = null;
+
+  ({String server, int uid}) _requireScope() {
+    final scope = _scope;
+    if (scope == null) {
+      throw StateError('LocalMessageStore scope is not configured');
+    }
+    return scope;
   }
 
-  Future<Database> _db(String server) async {
-    final existing = _databases[server];
+  String _dbKey(String server, int uid) => '$server\x00$uid';
+
+  Future<Database> _db(String server, int uid) async {
+    final key = _dbKey(server, uid);
+    final existing = _databases[key];
     if (existing != null) return existing;
-    final opening = _openingDatabases[server] ??= _open(server);
+    final opening = _openingDatabases[key] ??= _open(server, uid);
     try {
       return await opening;
     } finally {
-      _openingDatabases.remove(server);
+      _openingDatabases.remove(key);
     }
   }
 
-  Future<Database> _open(String server) async {
+  Future<Database> _open(String server, int uid) async {
     final base = await getApplicationSupportDirectory();
     final dir = Directory(p.join(base.path, 'touchfish'));
     await dir.create(recursive: true);
     final encodedServer = base64Url
         .encode(utf8.encode(server))
         .replaceAll('=', '');
-    final file = p.join(dir.path, 'messages_$encodedServer.sqlite3');
+    final file = p.join(dir.path, 'messages_${encodedServer}_$uid.sqlite3');
     final db = sqlite3.open(file);
     db.execute('PRAGMA busy_timeout = 10000');
     db.execute('PRAGMA journal_mode = WAL');
@@ -84,11 +90,9 @@ class LocalMessageStore {
     final legacyServer = '${uri.host}_${uri.port}';
     await _importSharedDatabase(db, dir, server, legacyServer);
     await _importLegacyFiles(db, server, legacyServer);
-    _databases[server] = db;
+    _databases[_dbKey(server, uid)] = db;
     return db;
   }
-
-  int get _scopeUid => _uid ?? 0;
 
   Future<void> _importSharedDatabase(
     Database db,
@@ -187,6 +191,7 @@ class LocalMessageStore {
         for (final raw in values) {
           final message = ChatMessage.fromJson(
             Map<String, dynamic>.from(raw as Map),
+            activeUid: uid,
           );
           _upsert(db, server, uid, room, message);
         }
@@ -231,10 +236,11 @@ class LocalMessageStore {
   }
 
   Future<List<ChatMessage>> loadMessages(String roomId) async {
-    final server = _serverKey;
-    final uid = _scopeUid;
+    final scope = _requireScope();
+    final server = scope.server;
+    final uid = scope.uid;
     try {
-      final db = await _db(server);
+      final db = await _db(server, uid);
       final rows = db.select(
         'SELECT payload FROM messages WHERE server_key = ? AND uid = ? AND room_id = ? ORDER BY timestamp ASC',
         [server, uid, roomId],
@@ -243,6 +249,7 @@ class LocalMessageStore {
           .map(
             (row) => ChatMessage.fromJson(
               jsonDecode(row['payload'] as String) as Map<String, dynamic>,
+              activeUid: uid,
             ),
           )
           .toList();
@@ -253,10 +260,11 @@ class LocalMessageStore {
   }
 
   Future<void> saveMessages(String roomId, List<ChatMessage> messages) async {
-    final server = _serverKey;
-    final uid = _scopeUid;
+    final scope = _requireScope();
+    final server = scope.server;
+    final uid = scope.uid;
     try {
-      final db = await _db(server);
+      final db = await _db(server, uid);
       db.execute('BEGIN IMMEDIATE');
       var inTransaction = true;
       try {
@@ -274,10 +282,11 @@ class LocalMessageStore {
   }
 
   Future<void> appendMessage(String roomId, ChatMessage message) async {
-    final server = _serverKey;
-    final uid = _scopeUid;
+    final scope = _requireScope();
+    final server = scope.server;
+    final uid = scope.uid;
     try {
-      final db = await _db(server);
+      final db = await _db(server, uid);
       _upsert(db, server, uid, roomId, message);
     } catch (e) {
       talker.error('LocalMessageStore appendMessage error', e);
@@ -285,9 +294,10 @@ class LocalMessageStore {
   }
 
   Future<void> deleteRoom(String roomId) async {
-    final server = _serverKey;
-    final uid = _scopeUid;
-    final db = await _db(server);
+    final scope = _requireScope();
+    final server = scope.server;
+    final uid = scope.uid;
+    final db = await _db(server, uid);
     db.execute(
       'DELETE FROM messages WHERE server_key = ? AND uid = ? AND room_id = ?',
       [server, uid, roomId],
@@ -295,7 +305,11 @@ class LocalMessageStore {
   }
 
   Future<void> clearDatabase() async {
-    final db = await _db(_serverKey);
-    db.execute('DELETE FROM messages');
+    final scope = _requireScope();
+    final db = await _db(scope.server, scope.uid);
+    db.execute('DELETE FROM messages WHERE server_key = ? AND uid = ?', [
+      scope.server,
+      scope.uid,
+    ]);
   }
 }

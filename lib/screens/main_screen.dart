@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -22,6 +23,7 @@ class _MainScreenState extends State<MainScreen> {
   final _notificationService = NotificationService.instance;
   final _forumPendingService = ForumPendingService.instance;
   final _chatDataService = ChatDataService.instance;
+  StreamSubscription<ChatNotificationPrompt>? _chatPromptSubscription;
 
   @override
   void initState() {
@@ -29,6 +31,9 @@ class _MainScreenState extends State<MainScreen> {
     _notificationService.addListener(_onNotificationsChanged);
     _forumPendingService.addListener(_onNotificationsChanged);
     _chatDataService.addListener(_onNotificationsChanged);
+    _chatPromptSubscription = _chatDataService.notificationPromptStream.listen(
+      _showChatPrompt,
+    );
   }
 
   @override
@@ -36,6 +41,7 @@ class _MainScreenState extends State<MainScreen> {
     _notificationService.removeListener(_onNotificationsChanged);
     _forumPendingService.removeListener(_onNotificationsChanged);
     _chatDataService.removeListener(_onNotificationsChanged);
+    _chatPromptSubscription?.cancel();
     super.dispose();
   }
 
@@ -49,11 +55,28 @@ class _MainScreenState extends State<MainScreen> {
   int get _announcementBadgeCount =>
       _notificationService.announcementUnreadCount;
 
-  int get _chatBadgeCount =>
-      _chatDataService.totalUnreadCount +
-      _notificationService.friendUnreadCount;
+  int get _chatBadgeCount => _chatDataService.totalUnreadCount;
 
   int get _adminBadgeCount => _forumPendingService.pendingCount;
+
+  void _showChatPrompt(ChatNotificationPrompt prompt) {
+    if (!mounted) return;
+    final currentPath = GoRouterState.of(context).uri.path;
+    if (currentPath == '/chat/${prompt.roomId}') return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    messenger
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('${prompt.roomName}: ${prompt.message}'),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: AppLocalizations.of(context)!.navChat,
+            onPressed: () => context.go('/chat/${prompt.roomId}'),
+          ),
+        ),
+      );
+  }
 
   int _getCurrentIndex(
     BuildContext context,
@@ -73,7 +96,9 @@ class _MainScreenState extends State<MainScreen> {
 
   bool _matchesLocation(String location, String route) {
     if (route == AppRoutes.chat) {
-      return location == AppRoutes.main || location == AppRoutes.chat || location.startsWith('${AppRoutes.chat}/');
+      return location == AppRoutes.main ||
+          location == AppRoutes.chat ||
+          location.startsWith('${AppRoutes.chat}/');
     }
     return location == route || location.startsWith('$route/');
   }
@@ -150,26 +175,52 @@ class _MainScreenState extends State<MainScreen> {
                   children: [
                     Container(
                       color: hasBackgroundImage
-                          ? Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.7)
+                          ? Theme.of(context).colorScheme.surfaceContainer
+                                .withValues(alpha: 0.7)
                           : Colors.transparent,
-                      child: _buildNavRail(destinations, selectedIndex, context),
+                      child: _buildNavRail(
+                        destinations,
+                        selectedIndex,
+                        context,
+                      ),
                     ),
                     Expanded(
                       child: Column(
                         children: [
                           if (AuthState.instance.isBanned)
                             MaterialBanner(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              backgroundColor: Theme.of(context).colorScheme.errorContainer,
-                              leading: Icon(Icons.block, color: Theme.of(context).colorScheme.onErrorContainer),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.errorContainer,
+                              leading: Icon(
+                                Icons.block,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onErrorContainer,
+                              ),
                               content: Text(
                                 l10n.chatSendFailedBanned,
-                                style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+                                style: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onErrorContainer,
+                                ),
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => AuthState.instance.logout(),
-                                  child: Text(l10n.accountLogout, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)),
+                                  child: Text(
+                                    l10n.accountLogout,
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onErrorContainer,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -196,17 +247,34 @@ class _MainScreenState extends State<MainScreen> {
                 children: [
                   if (isBanned)
                     MaterialBanner(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      backgroundColor: Theme.of(context).colorScheme.errorContainer,
-                      leading: Icon(Icons.block, color: Theme.of(context).colorScheme.onErrorContainer),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.errorContainer,
+                      leading: Icon(
+                        Icons.block,
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
                       content: Text(
                         l10n.chatSendFailedBanned,
-                        style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
                       ),
                       actions: [
                         TextButton(
                           onPressed: () => AuthState.instance.logout(),
-                          child: Text(l10n.accountLogout, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)),
+                          child: Text(
+                            l10n.accountLogout,
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onErrorContainer,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -231,7 +299,8 @@ class _MainScreenState extends State<MainScreen> {
     return NavigationRail(
       backgroundColor: Colors.transparent,
       selectedIndex: selectedIndex,
-      onDestinationSelected: (index) => _onItemTapped(context, destinations, index),
+      onDestinationSelected: (index) =>
+          _onItemTapped(context, destinations, index),
       labelType: NavigationRailLabelType.all,
       destinations: [
         for (final destination in destinations)
@@ -277,7 +346,10 @@ class _MainScreenState extends State<MainScreen> {
     return 0;
   }
 
-  Widget _buildBadgedIcon(IconData iconData, _NavDestinationConfig destination) {
+  Widget _buildBadgedIcon(
+    IconData iconData,
+    _NavDestinationConfig destination,
+  ) {
     final icon = Icon(iconData);
     final badgeCount = _badgeCountFor(destination.route);
     if (badgeCount > 0) {
@@ -311,12 +383,16 @@ class _MainScreenState extends State<MainScreen> {
           child: NavigationBar(
             backgroundColor: Colors.transparent,
             selectedIndex: selectedIndex,
-            onDestinationSelected: (index) => _onItemTapped(context, destinations, index),
+            onDestinationSelected: (index) =>
+                _onItemTapped(context, destinations, index),
             destinations: [
               for (final destination in destinations)
                 NavigationDestination(
                   icon: _buildBadgedIcon(destination.icon, destination),
-                  selectedIcon: _buildBadgedIcon(destination.selectedIcon, destination),
+                  selectedIcon: _buildBadgedIcon(
+                    destination.selectedIcon,
+                    destination,
+                  ),
                   label: destination.label,
                 ),
             ],

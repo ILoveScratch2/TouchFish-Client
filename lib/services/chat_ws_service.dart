@@ -21,7 +21,10 @@ class ChatWsService extends ChangeNotifier {
 
   ChatWsState _state = ChatWsState.disconnected;
   ChatWsState get state => _state;
-  bool get isAuthenticated => _state == ChatWsState.authenticated;
+  int? _authenticatedUid;
+  bool get isAuthenticated =>
+      _state == ChatWsState.authenticated &&
+      _authenticatedUid == AuthState.instance.uid;
 
   WebSocketChannel? _channel;
   Uint8List? _sessionAesKey;
@@ -41,14 +44,17 @@ class ChatWsService extends ChangeNotifier {
 
   /// Connect to WebSocket, perform RSA+AES handshake, authenticate.
   Future<bool> connect() async {
-    if (_state == ChatWsState.connecting ||
-        _state == ChatWsState.authenticated) {
-      return _state == ChatWsState.authenticated;
-    }
-
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) return false;
+
+    if (_state == ChatWsState.authenticated && _authenticatedUid == uid) {
+      return true;
+    }
+    if (_state == ChatWsState.connecting) return false;
+    if (_state != ChatWsState.disconnected || _authenticatedUid != null) {
+      await disconnect();
+    }
 
     _intentionalClose = false;
     _setState(ChatWsState.connecting);
@@ -145,6 +151,7 @@ class ChatWsService extends ChangeNotifier {
         return _CandidateConnectionResult.authenticationFailed;
       }
 
+      _authenticatedUid = uid;
       _setState(ChatWsState.authenticated);
       _reconnectAttempts = 0;
       _startPing();
@@ -226,6 +233,14 @@ class ChatWsService extends ChangeNotifier {
       return;
     }
 
+    if (_authenticatedUid == null ||
+        _authenticatedUid != AuthState.instance.uid) {
+      talker.warning(
+        'ChatWsService discarded packet from stale uid=$_authenticatedUid',
+      );
+      return;
+    }
+
     if (type == 'NOTIFICATION.NEW') {
       final notif = data['notification'] as Map<String, dynamic>?;
       if (notif != null) {
@@ -258,7 +273,7 @@ class ChatWsService extends ChangeNotifier {
     }
   }
 
-  /// Send AES-encrypted payload as {"iv": "<base64>", "content": "<base64>"}
+  /// Send an AES-encrypted payload containing base64 IV and content fields.
   void _sendEncrypted(String plainJson) {
     if (_sessionAesKey == null || _channel == null) return;
     final iv = TfCrypto.generateIv();
@@ -320,6 +335,7 @@ class ChatWsService extends ChangeNotifier {
     _channel?.sink.close();
     _channel = null;
     _sessionAesKey = null;
+    _authenticatedUid = null;
     _pingTimer?.cancel();
     _setState(ChatWsState.disconnected);
   }
@@ -354,7 +370,7 @@ class ChatWsService extends ChangeNotifier {
     int quote = -1,
     String? clientMid,
   }) {
-    if (_state != ChatWsState.authenticated) return Future.value(false);
+    if (!isAuthenticated) return Future.value(false);
     try {
       final payload = <String, dynamic>{
         'type': 'message.plain',
@@ -375,7 +391,7 @@ class ChatWsService extends ChangeNotifier {
     int quote = -1,
     String? clientMid,
   }) {
-    if (_state != ChatWsState.authenticated) return Future.value(false);
+    if (!isAuthenticated) return Future.value(false);
     try {
       final payload = <String, dynamic>{
         'type': 'message.plain',
@@ -396,7 +412,7 @@ class ChatWsService extends ChangeNotifier {
     int quote = -1,
     String? clientMid,
   }) {
-    if (_state != ChatWsState.authenticated) return Future.value(false);
+    if (!isAuthenticated) return Future.value(false);
     try {
       final payload = <String, dynamic>{
         'type': 'message.file',
@@ -421,7 +437,7 @@ class ChatWsService extends ChangeNotifier {
     int quote = -1,
     String? clientMid,
   }) {
-    if (_state != ChatWsState.authenticated) return Future.value(false);
+    if (!isAuthenticated) return Future.value(false);
     try {
       final payload = <String, dynamic>{
         'type': 'message.file',
@@ -441,7 +457,7 @@ class ChatWsService extends ChangeNotifier {
   }
 
   void sendReadReceipt(String roomId, int lastMid) {
-    if (_state != ChatWsState.authenticated) return;
+    if (!isAuthenticated) return;
     _sendEncrypted(
       jsonEncode({
         'type': 'message.read',
@@ -452,7 +468,7 @@ class ChatWsService extends ChangeNotifier {
   }
 
   void sendTyping(String roomId, bool isTyping) {
-    if (_state != ChatWsState.authenticated) return;
+    if (!isAuthenticated) return;
     _sendEncrypted(
       jsonEncode({
         'type': isTyping ? 'typing.start' : 'typing.stop',

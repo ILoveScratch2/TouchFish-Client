@@ -6,6 +6,8 @@ import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../widgets/account/profile_picture.dart';
 import '../utils/talker.dart';
+import '../services/notification_service.dart';
+import '../widgets/forum_notification_sheet.dart';
 
 class ForumScreen extends StatefulWidget {
   const ForumScreen({super.key});
@@ -19,6 +21,7 @@ class _ForumScreenState extends State<ForumScreen> {
   Set<String> _joinedIds = {};
   bool _isLoading = true;
   String? _error;
+  final _notificationService = NotificationService.instance;
 
   List<Forum> get _joinedForums =>
       _allForums?.where((f) => _joinedIds.contains(f.id)).toList() ?? [];
@@ -28,7 +31,27 @@ class _ForumScreenState extends State<ForumScreen> {
   @override
   void initState() {
     super.initState();
+    _notificationService.addListener(_onNotificationsChanged);
     _loadForums();
+  }
+
+  @override
+  void dispose() {
+    _notificationService.removeListener(_onNotificationsChanged);
+    super.dispose();
+  }
+
+  void _onNotificationsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _showNotifications() {
+    _notificationService.markForumRead();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const ForumNotificationSheet(),
+    );
   }
 
   Future<void> _loadForums() async {
@@ -125,7 +148,10 @@ class _ForumScreenState extends State<ForumScreen> {
               final name = nameController.text.trim();
               final intro = introController.text.trim();
               final success = await TfApiClient.instance.createForum(
-                uid, password, name, intro.isNotEmpty ? intro : '',
+                uid,
+                password,
+                name,
+                intro.isNotEmpty ? intro : '',
               );
               if (!context.mounted) return;
               if (success) {
@@ -162,6 +188,18 @@ class _ForumScreenState extends State<ForumScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(l10n.forumTitle),
+          actions: [
+            IconButton(
+              tooltip: l10n.notificationTabNotifications,
+              onPressed: _showNotifications,
+              icon: _notificationService.forumUnreadCount > 0
+                  ? Badge(
+                      label: Text('${_notificationService.forumUnreadCount}'),
+                      child: const Icon(Icons.notifications_outlined),
+                    )
+                  : const Icon(Icons.notifications_outlined),
+            ),
+          ],
           bottom: TabBar(
             tabs: [
               Tab(text: l10n.forumTabJoined),
@@ -178,35 +216,36 @@ class _ForumScreenState extends State<ForumScreen> {
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(l10n.forumLoadFailed),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: _loadForums,
-                          child: Text(l10n.retry),
-                        ),
-                      ],
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(l10n.forumLoadFailed),
+                    const SizedBox(height: 8),
+                    TextButton(onPressed: _loadForums, child: Text(l10n.retry)),
+                  ],
+                ),
+              )
+            : RefreshIndicator(
+                onRefresh: _loadForums,
+                child: TabBarView(
+                  children: [
+                    _ForumListView(
+                      forums: _joinedForums,
+                      emptyMessage: l10n.forumNoJoined,
+                      onReturn: () {
+                        if (mounted) _loadForums();
+                      },
                     ),
-                  )
-                : RefreshIndicator(
-                    onRefresh: _loadForums,
-                    child: TabBarView(
-                      children: [
-                        _ForumListView(
-                          forums: _joinedForums,
-                          emptyMessage: l10n.forumNoJoined,
-                          onReturn: () { if (mounted) _loadForums(); },
-                        ),
-                        _ForumListView(
-                          forums: _exploreForums,
-                          onReturn: () { if (mounted) _loadForums(); },
-                        ),
-                      ],
+                    _ForumListView(
+                      forums: _exploreForums,
+                      onReturn: () {
+                        if (mounted) _loadForums();
+                      },
                     ),
-                  ),
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -217,7 +256,11 @@ class _ForumListView extends StatelessWidget {
   final String? emptyMessage;
   final VoidCallback? onReturn;
 
-  const _ForumListView({required this.forums, this.emptyMessage, this.onReturn});
+  const _ForumListView({
+    required this.forums,
+    this.emptyMessage,
+    this.onReturn,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -226,8 +269,8 @@ class _ForumListView extends StatelessWidget {
         child: Text(
           emptyMessage!,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       );
     }

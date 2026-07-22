@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../constants/app_constants.dart';
 import '../services/api/tf_api_client.dart';
+import '../services/auth_state.dart';
+import '../services/chat_ws_service.dart';
 
 class ServerInfo {
   final String displayName;
@@ -42,7 +44,8 @@ class ServerInfo {
     useHttps: json['useHttps'] as bool? ?? false,
     tryWss: json['tryWss'] as bool? ?? AppConstants.defaultTryWss,
     autoDetectTcpPort:
-        json['autoDetectTcpPort'] as bool? ?? AppConstants.defaultAutoDetectTcpPort,
+        json['autoDetectTcpPort'] as bool? ??
+        AppConstants.defaultAutoDetectTcpPort,
   );
 
   ServerInfo copyWith({
@@ -81,7 +84,7 @@ class _ServerSelectorState extends State<ServerSelector> {
       apiPort: AppConstants.defaultApiPort.toString(),
       tcpPort: AppConstants.defaultTcpPort.toString(),
       useHttps: AppConstants.defaultUseHttps,
-    )
+    ),
   ];
   int _selectedIndex = 0;
   bool _isLoading = true;
@@ -97,13 +100,13 @@ class _ServerSelectorState extends State<ServerSelector> {
   Future<void> _loadServers() async {
     final prefs = await SharedPreferences.getInstance();
     final serversJson = prefs.getStringList('serversV2');
-    
+
     if (serversJson != null && serversJson.isNotEmpty) {
       final servers = serversJson
           .map((json) => ServerInfo.fromJson(jsonDecode(json)))
           .toList();
       final selectedIndex = prefs.getInt('selectedServerIndex') ?? 0;
-      
+
       setState(() {
         _servers = servers;
         _selectedIndex = selectedIndex.clamp(0, servers.length - 1);
@@ -113,12 +116,14 @@ class _ServerSelectorState extends State<ServerSelector> {
       final oldServers = prefs.getStringList('servers');
       if (oldServers != null && oldServers.isNotEmpty) {
         final migratedServers = oldServers
-            .map((url) => ServerInfo(
-                  displayName: _extractDisplayName(url),
-                  address: url,
-                  apiPort: '',
-                  tcpPort: '',
-                ))
+            .map(
+              (url) => ServerInfo(
+                displayName: _extractDisplayName(url),
+                address: url,
+                apiPort: '',
+                tcpPort: '',
+              ),
+            )
             .toList();
         setState(() {
           _servers = migratedServers;
@@ -175,6 +180,10 @@ class _ServerSelectorState extends State<ServerSelector> {
         servers: _servers,
         selectedIndex: _selectedIndex,
         onSelect: (index) async {
+          if (AuthState.instance.isLoggedIn) {
+            await ChatWsService.instance.disconnect();
+            await AuthState.instance.logout();
+          }
           setState(() => _selectedIndex = index);
           await _saveServers();
           TfApiClient.instance.invalidateCache();
@@ -182,6 +191,10 @@ class _ServerSelectorState extends State<ServerSelector> {
           if (context.mounted) Navigator.pop(context);
         },
         onAdd: (server) async {
+          if (AuthState.instance.isLoggedIn) {
+            await ChatWsService.instance.disconnect();
+            await AuthState.instance.logout();
+          }
           setState(() {
             _servers.add(server);
             _selectedIndex = _servers.length - 1;
@@ -191,6 +204,10 @@ class _ServerSelectorState extends State<ServerSelector> {
           _probeSelectedServer();
         },
         onEdit: (index, server) async {
+          if (index == _selectedIndex && AuthState.instance.isLoggedIn) {
+            await ChatWsService.instance.disconnect();
+            await AuthState.instance.logout();
+          }
           setState(() => _servers[index] = server);
           await _saveServers();
           if (index == _selectedIndex) {
@@ -233,24 +250,20 @@ class _ServerSelectorState extends State<ServerSelector> {
           color: colorScheme.primary,
         );
       case _ServerProbeStatus.failed:
-        return Icon(
-          Icons.cancel_rounded,
-          size: 18,
-          color: colorScheme.error,
-        );
+        return Icon(Icons.cancel_rounded, size: 18, color: colorScheme.error);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     if (_isLoading) {
       return const SizedBox(height: 40);
     }
 
     final displayName = _servers[_selectedIndex].displayName;
-    
+
     return InkWell(
       onTap: _showServerDialog,
       borderRadius: BorderRadius.circular(20),
@@ -323,7 +336,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
     final apiPortController = TextEditingController();
     final tcpPortController = TextEditingController();
     final l10n = AppLocalizations.of(context)!;
-    
+
     bool useHttps = false;
     bool tryWss = AppConstants.defaultTryWss;
     bool autoDetectTcpPort = AppConstants.defaultAutoDetectTcpPort;
@@ -339,12 +352,12 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
             final portNum = int.tryParse(port);
             return portNum != null && portNum >= 0 && portNum <= 65535;
           }
-          
+
           bool checkDuplicatePorts(String apiPort, String tcpPort) {
             if (apiPort.isEmpty || tcpPort.isEmpty) return false;
             return apiPort == tcpPort;
           }
-          
+
           void validate() {
             setDialogState(() {
               final apiPort = apiPortController.text.trim();
@@ -369,7 +382,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
               }
             });
           }
-          
+
           return AlertDialog(
             title: Text(l10n.serverAdd),
             content: SingleChildScrollView(
@@ -443,9 +456,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                   SwitchListTile(
                     title: Text(l10n.serverUseHttps),
                     subtitle: Text(
-                      useHttps
-                          ? l10n.serverUseHttpsOn
-                          : l10n.serverUseHttpsOff,
+                      useHttps ? l10n.serverUseHttpsOn : l10n.serverUseHttpsOff,
                     ),
                     value: useHttps,
                     onChanged: (value) {
@@ -456,9 +467,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                   SwitchListTile(
                     title: Text(l10n.serverTryWss),
                     subtitle: Text(
-                      tryWss
-                          ? l10n.serverTryWssOn
-                          : l10n.serverTryWssOff,
+                      tryWss ? l10n.serverTryWssOn : l10n.serverTryWssOff,
                     ),
                     value: tryWss,
                     onChanged: (value) {
@@ -479,14 +488,19 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                   final displayName = displayNameController.text.trim();
                   final address = addressController.text.trim();
                   final apiPort = apiPortController.text.trim();
-                  final tcpPort =
-                      autoDetectTcpPort ? '' : tcpPortController.text.trim();
+                  final tcpPort = autoDetectTcpPort
+                      ? ''
+                      : tcpPortController.text.trim();
                   if (!validatePort(apiPort)) {
-                    setDialogState(() => apiPortError = l10n.serverErrorInvalidPort);
+                    setDialogState(
+                      () => apiPortError = l10n.serverErrorInvalidPort,
+                    );
                     return;
                   }
                   if (!autoDetectTcpPort && !validatePort(tcpPort)) {
-                    setDialogState(() => tcpPortError = l10n.serverErrorInvalidPort);
+                    setDialogState(
+                      () => tcpPortError = l10n.serverErrorInvalidPort,
+                    );
                     return;
                   }
                   if (!autoDetectTcpPort &&
@@ -497,7 +511,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                     });
                     return;
                   }
-                  
+
                   if (displayName.isNotEmpty || address.isNotEmpty) {
                     Navigator.pop(context);
                     final server = ServerInfo(
@@ -527,7 +541,9 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
 
   void _showEditDialog(int index) {
     final server = _servers[index];
-    final displayNameController = TextEditingController(text: server.displayName);
+    final displayNameController = TextEditingController(
+      text: server.displayName,
+    );
     final l10n = AppLocalizations.of(context)!;
 
     bool useHttps = server.useHttps;
@@ -601,9 +617,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                   SwitchListTile(
                     title: Text(l10n.serverUseHttps),
                     subtitle: Text(
-                      useHttps
-                          ? l10n.serverUseHttpsOn
-                          : l10n.serverUseHttpsOff,
+                      useHttps ? l10n.serverUseHttpsOn : l10n.serverUseHttpsOff,
                     ),
                     value: useHttps,
                     onChanged: (value) {
@@ -614,9 +628,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                   SwitchListTile(
                     title: Text(l10n.serverTryWss),
                     subtitle: Text(
-                      tryWss
-                          ? l10n.serverTryWssOn
-                          : l10n.serverTryWssOff,
+                      tryWss ? l10n.serverTryWssOn : l10n.serverTryWssOff,
                     ),
                     value: tryWss,
                     onChanged: (value) {
@@ -637,8 +649,9 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                   final displayName = displayNameController.text.trim();
                   Navigator.pop(context);
                   final updated = server.copyWith(
-                    displayName:
-                        displayName.isEmpty ? server.address : displayName,
+                    displayName: displayName.isEmpty
+                        ? server.address
+                        : displayName,
                     useHttps: useHttps,
                     tryWss: tryWss,
                     autoDetectTcpPort: autoDetectTcpPort,
@@ -658,7 +671,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return DraggableScrollableSheet(
       initialChildSize: 0.5,
       minChildSize: 0.3,
@@ -679,7 +692,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                 ),
               ),
             ),
-            
+
             // Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -699,7 +712,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
               ),
             ),
             const SizedBox(height: 8),
-            
+
             // Server list
             Expanded(
               child: ListView.builder(
@@ -709,26 +722,31 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                 itemBuilder: (context, index) {
                   final isSelected = index == _selectedIndex;
                   final server = _servers[index];
-                  
+
                   return Card(
                     elevation: 0,
-                    color: isSelected 
-                        ? colorScheme.primaryContainer 
+                    color: isSelected
+                        ? colorScheme.primaryContainer
                         : colorScheme.surfaceContainerHighest,
-                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     child: ListTile(
                       leading: Icon(
                         Icons.dns_outlined,
-                        color: isSelected 
-                            ? colorScheme.onPrimaryContainer 
+                        color: isSelected
+                            ? colorScheme.onPrimaryContainer
                             : colorScheme.onSurfaceVariant,
                       ),
                       title: Text(
                         server.displayName,
                         style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                          color: isSelected 
-                              ? colorScheme.onPrimaryContainer 
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                          color: isSelected
+                              ? colorScheme.onPrimaryContainer
                               : colorScheme.onSurface,
                         ),
                       ),
@@ -738,7 +756,8 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                               style: TextStyle(
                                 fontSize: 12,
                                 color: isSelected
-                                    ? colorScheme.onPrimaryContainer.withOpacity(0.7)
+                                    ? colorScheme.onPrimaryContainer
+                                          .withOpacity(0.7)
                                     : colorScheme.onSurfaceVariant,
                               ),
                             )
@@ -778,7 +797,9 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                                 Icons.delete_outline,
                                 color: colorScheme.error,
                               ),
-                              tooltip: AppLocalizations.of(context)!.serverDelete,
+                              tooltip: AppLocalizations.of(
+                                context,
+                              )!.serverDelete,
                             ),
                         ],
                       ),

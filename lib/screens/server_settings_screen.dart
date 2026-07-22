@@ -55,10 +55,11 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     _serverNameController.text = settings.serverName;
     _fileLastTimeController.text = (settings.fileLastTime ?? 0).toString();
     _groupsLimitController.text = (settings.groupsLimit ?? -1).toString();
-    _singleGroupMaxPeopleController.text =
-        (settings.singleGroupMaxPeople ?? -1).toString();
+    _singleGroupMaxPeopleController.text = (settings.singleGroupMaxPeople ?? -1)
+        .toString();
     _maxFileSizeController.text = (settings.maxFileSize ?? -1).toString();
-    _maxMessageLengthController.text = (settings.maxMessageLength ?? 10000).toString();
+    _maxMessageLengthController.text = (settings.maxMessageLength ?? 10000)
+        .toString();
     _captcha = settings.captcha;
   }
 
@@ -269,9 +270,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           children: [
             Text(
               l10n.adminServerSettings,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -386,9 +387,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           children: [
             Text(
               l10n.adminTitle,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
@@ -481,9 +482,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                     : const Icon(Icons.save_outlined),
                 label: Text(l10n.save),
               ),
-              SizedBox(
-                height: MediaQuery.of(context).padding.bottom + 16,
-              ),
+              SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
             ],
           ),
         ),
