@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:touchfish_client/models/app_notification.dart';
 import 'package:touchfish_client/models/notification_model.dart';
+import 'package:touchfish_client/models/settings_service.dart';
 import 'package:touchfish_client/services/app_notification_service.dart';
 import 'package:touchfish_client/widgets/notification_overlay.dart';
 
 void main() {
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+    await SettingsService.instance.init();
+  });
+
   NotificationInfo notification({
     required String event,
     String? roomId,
@@ -116,5 +123,36 @@ void main() {
     expect(tester.takeException(), isNull);
     AppNotificationService.instance.clear();
     await tester.pump();
+  });
+
+  test('notification test actions honor global and chat settings', () async {
+    const privateMessage = AppNotification(
+      id: 'private-test',
+      title: 'Private',
+      body: 'Body',
+      route: '/chat/U1',
+      topic: 'message.private',
+    );
+    const groupMessage = AppNotification(
+      id: 'group-test',
+      title: 'Group',
+      body: 'Body',
+      route: '/chat/G1',
+      topic: 'message.group',
+    );
+
+    await SettingsService.instance.setValue('inAppNotifications', false);
+    expect(
+      AppNotificationService.instance.canShowInApp(privateMessage),
+      isFalse,
+    );
+    await SettingsService.instance.setValue('inAppNotifications', true);
+    await SettingsService.instance.setValue('privateChat', false);
+    expect(
+      AppNotificationService.instance.canShowInApp(privateMessage),
+      isFalse,
+    );
+    expect(AppNotificationService.instance.canShowInApp(groupMessage), isTrue);
+    await SettingsService.instance.setValue('privateChat', true);
   });
 }

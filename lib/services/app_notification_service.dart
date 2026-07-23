@@ -106,6 +106,7 @@ class AppNotificationService extends ChangeNotifier
 
   Future<void> present(AppNotification notification) async {
     final settings = SettingsService.instance;
+    if (!_isNotificationTypeEnabled(notification)) return;
     if (await _shouldShowInApp()) {
       if (!settings.getValue<bool>('inAppNotifications', true)) return;
       if (settings.getValue<bool>('notificationSound', true)) {
@@ -133,13 +134,43 @@ class AppNotificationService extends ChangeNotifier
     return _lifecycleState == AppLifecycleState.resumed;
   }
 
+  bool canShowInApp(AppNotification notification) {
+    return SettingsService.instance.getValue<bool>(
+          'inAppNotifications',
+          true,
+        ) &&
+        _isNotificationTypeEnabled(notification);
+  }
+
+  bool canShowSystem(AppNotification notification) {
+    return !kIsWeb &&
+        _localNotificationsReady &&
+        SettingsService.instance.getValue<bool>('systemNotifications', true) &&
+        _isNotificationTypeEnabled(notification);
+  }
+
   void showInAppTest(AppNotification notification) {
+    if (!canShowInApp(notification)) return;
+    if (SettingsService.instance.getValue<bool>('notificationSound', true)) {
+      unawaited(SystemSound.play(SystemSoundType.alert));
+    }
     add(notification);
   }
 
   Future<bool> showSystemTest(AppNotification notification) async {
-    if (kIsWeb || !_localNotificationsReady) return false;
+    if (!canShowSystem(notification)) return false;
     return _showSystemNotification(notification);
+  }
+
+  bool _isNotificationTypeEnabled(AppNotification notification) {
+    final settings = SettingsService.instance;
+    if (notification.topic == 'message.private') {
+      return settings.getValue<bool>('privateChat', true);
+    }
+    if (notification.topic == 'message.group') {
+      return settings.getValue<bool>('groupChat', true);
+    }
+    return true;
   }
 
   void add(AppNotification notification, {Duration? duration}) {

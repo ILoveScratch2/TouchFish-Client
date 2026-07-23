@@ -775,7 +775,7 @@ class ChatDataService extends ChangeNotifier {
             body: msg.text,
             avatarUrl: msg.senderAvatar ?? room.avatar,
             route: '/chat/$roomId',
-            topic: 'message',
+            topic: isGroupRoom(roomId) ? 'message.group' : 'message.private',
           ),
         ),
       );

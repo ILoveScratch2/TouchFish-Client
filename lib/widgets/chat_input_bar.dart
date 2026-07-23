@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:mime/mime.dart';
 import '../l10n/app_localizations.dart';
 import '../models/message_model.dart';
+import '../models/settings_service.dart';
 import 'mention_text_field.dart';
 
 class ChatInputBar extends StatefulWidget {
@@ -31,17 +32,66 @@ class _ChatInputBarState extends State<ChatInputBar>
     with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
   late final TabController _tabController;
+  late final FocusNode _inputFocusNode;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _inputFocusNode = FocusNode(onKeyEvent: _handleInputKeyEvent);
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _inputFocusNode.dispose();
     super.dispose();
+  }
+
+  KeyEventResult _handleInputKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent ||
+        (event.logicalKey != LogicalKeyboardKey.enter &&
+            event.logicalKey != LogicalKeyboardKey.numpadEnter)) {
+      return KeyEventResult.ignored;
+    }
+
+    final value = widget.controller.value;
+    if (value.composing.isValid && !value.composing.isCollapsed) {
+      return KeyEventResult.ignored;
+    }
+
+    final keyboard = HardwareKeyboard.instance;
+    final controlOrMeta = keyboard.isControlPressed || keyboard.isMetaPressed;
+    final sendMode = SettingsService.instance.getValue<String>(
+      'sendMode',
+      'enter',
+    );
+    final shouldSend = sendMode == 'ctrlEnter'
+        ? controlOrMeta && !keyboard.isShiftPressed && !keyboard.isAltPressed
+        : !controlOrMeta && !keyboard.isShiftPressed && !keyboard.isAltPressed;
+
+    if (shouldSend) {
+      if (value.text.trim().isNotEmpty) widget.onSend();
+      return KeyEventResult.handled;
+    }
+
+    if (sendMode == 'enter' && controlOrMeta) {
+      _insertNewline();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  void _insertNewline() {
+    final value = widget.controller.value;
+    final selection = value.selection;
+    final start = selection.isValid ? selection.start : value.text.length;
+    final end = selection.isValid ? selection.end : value.text.length;
+    widget.controller.value = value.copyWith(
+      text: value.text.replaceRange(start, end, '\n'),
+      selection: TextSelection.collapsed(offset: start + 1),
+      composing: TextRange.empty,
+    );
   }
 
   @override
@@ -141,6 +191,7 @@ class _ChatInputBarState extends State<ChatInputBar>
                 Expanded(
                   child: MentionTextField(
                     controller: widget.controller,
+                    focusNode: _inputFocusNode,
                     mentionUsers: widget.mentionUsers,
                     maxLines: 5,
                     minLines: 1,
@@ -155,11 +206,6 @@ class _ChatInputBarState extends State<ChatInputBar>
                         vertical: 12,
                       ),
                     ),
-                    onSubmitted: (_) {
-                      if (widget.controller.text.trim().isNotEmpty) {
-                        widget.onSend();
-                      }
-                    },
                   ),
                 ),
                 IconButton(

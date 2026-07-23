@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/app_notification.dart';
+import '../../models/settings_service.dart';
 import '../../services/app_notification_service.dart';
 
 class NotificationTestScreen extends StatelessWidget {
@@ -50,40 +50,49 @@ class NotificationTestScreen extends StatelessWidget {
       ),
     ];
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.debugNotificationTester)),
-      body: ListView.separated(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: samples.length,
-        separatorBuilder: (_, _) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          final sample = samples[index];
-          return ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 8,
-            ),
-            leading: CircleAvatar(child: Icon(sample.icon)),
-            title: Text(sample.title),
-            subtitle: Text(l10n.debugNotificationTestBody),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton.filledTonal(
-                  icon: const Icon(Icons.web_asset_outlined),
-                  tooltip: l10n.debugNotificationTestInApp,
-                  onPressed: () => _showInApp(context, sample),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filledTonal(
-                  icon: const Icon(Icons.desktop_windows_outlined),
-                  tooltip: l10n.debugNotificationTestSystem,
-                  onPressed: kIsWeb ? null : () => _showSystem(context, sample),
-                ),
-              ],
-            ),
-          );
-        },
+    return ListenableBuilder(
+      listenable: SettingsService.instance,
+      builder: (context, _) => Scaffold(
+        appBar: AppBar(title: Text(l10n.debugNotificationTester)),
+        body: ListView.separated(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: samples.length,
+          separatorBuilder: (_, _) => const Divider(height: 1),
+          itemBuilder: (context, index) {
+            final sample = samples[index];
+            final notification = _notification(context, sample);
+            final service = AppNotificationService.instance;
+            return ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 8,
+              ),
+              leading: CircleAvatar(child: Icon(sample.icon)),
+              title: Text(sample.title),
+              subtitle: Text(l10n.debugNotificationTestBody),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton.filledTonal(
+                    icon: const Icon(Icons.web_asset_outlined),
+                    tooltip: l10n.debugNotificationTestInApp,
+                    onPressed: service.canShowInApp(notification)
+                        ? () => service.showInAppTest(notification)
+                        : null,
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filledTonal(
+                    icon: const Icon(Icons.desktop_windows_outlined),
+                    tooltip: l10n.debugNotificationTestSystem,
+                    onPressed: service.canShowSystem(notification)
+                        ? () => _showSystem(context, notification)
+                        : null,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -102,18 +111,12 @@ class NotificationTestScreen extends StatelessWidget {
     );
   }
 
-  void _showInApp(BuildContext context, _NotificationSample sample) {
-    AppNotificationService.instance.showInAppTest(
-      _notification(context, sample),
-    );
-  }
-
   Future<void> _showSystem(
     BuildContext context,
-    _NotificationSample sample,
+    AppNotification notification,
   ) async {
     final shown = await AppNotificationService.instance.showSystemTest(
-      _notification(context, sample),
+      notification,
     );
     if (!context.mounted || shown) return;
     ScaffoldMessenger.of(context).showSnackBar(
