@@ -72,6 +72,7 @@ dependencies:
   pointycastle: ^3.9.1
   web_socket_channel: ^3.0.2
   sqlite3: ^2.9.4
+  flutter_local_notifications: ^19.5.0
 
 dev_dependencies:
   flutter_test:

@@ -1473,6 +1473,42 @@ class AppLocalizationsOch extends AppLocalizations {
   String get debugLogsDescription => '覽應用之運行日誌';
 
   @override
+  String get debugNotificationTester => '通知之試';
+
+  @override
+  String get debugNotificationTesterDescription => '觸發諸類應用內通知與系統通知';
+
+  @override
+  String get debugNotificationTypePrivateMessage => '私聊消息';
+
+  @override
+  String get debugNotificationTypeGroupMessage => '群聊消息';
+
+  @override
+  String get debugNotificationTypeAnnouncement => '公告通知';
+
+  @override
+  String get debugNotificationTypeForum => '論壇通知';
+
+  @override
+  String get debugNotificationTypeInvite => '邀請通知';
+
+  @override
+  String get debugNotificationTypeGeneral => '通用通知';
+
+  @override
+  String get debugNotificationTestBody => '此乃用以驗通知之顯、列與路由之試訊。';
+
+  @override
+  String get debugNotificationTestInApp => '觸發應用內通知';
+
+  @override
+  String get debugNotificationTestSystem => '觸發系統通知';
+
+  @override
+  String get debugNotificationSystemUnavailable => '系統通知未初始化，或今平台不支持。';
+
+  @override
   String get debugClearMessageDatabase => '清空消息資料庫';
 
   @override

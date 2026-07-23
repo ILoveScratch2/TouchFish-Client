@@ -1535,6 +1535,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get debugLogsDescription => 'View application logs';
 
   @override
+  String get debugNotificationTester => 'Notification Test';
+
+  @override
+  String get debugNotificationTesterDescription =>
+      'Trigger each in-app and system notification type';
+
+  @override
+  String get debugNotificationTypePrivateMessage => 'Private Message';
+
+  @override
+  String get debugNotificationTypeGroupMessage => 'Group Message';
+
+  @override
+  String get debugNotificationTypeAnnouncement => 'Announcement';
+
+  @override
+  String get debugNotificationTypeForum => 'Forum Notification';
+
+  @override
+  String get debugNotificationTypeInvite => 'Invitation';
+
+  @override
+  String get debugNotificationTypeGeneral => 'General Notification';
+
+  @override
+  String get debugNotificationTestBody =>
+      'This test notification verifies rendering, queueing, and navigation.';
+
+  @override
+  String get debugNotificationTestInApp => 'Trigger in-app notification';
+
+  @override
+  String get debugNotificationTestSystem => 'Trigger system notification';
+
+  @override
+  String get debugNotificationSystemUnavailable =>
+      'System notifications are not initialized or supported on this platform.';
+
+  @override
   String get debugClearMessageDatabase => 'Clear Message Database';
 
   @override

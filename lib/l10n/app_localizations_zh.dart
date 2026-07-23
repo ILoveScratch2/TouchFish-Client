@@ -1473,6 +1473,42 @@ class AppLocalizationsZh extends AppLocalizations {
   String get debugLogsDescription => '查看应用运行日志';
 
   @override
+  String get debugNotificationTester => '通知测试';
+
+  @override
+  String get debugNotificationTesterDescription => '触发各种应用内通知和系统通知';
+
+  @override
+  String get debugNotificationTypePrivateMessage => '私聊消息';
+
+  @override
+  String get debugNotificationTypeGroupMessage => '群聊消息';
+
+  @override
+  String get debugNotificationTypeAnnouncement => '公告通知';
+
+  @override
+  String get debugNotificationTypeForum => '论坛通知';
+
+  @override
+  String get debugNotificationTypeInvite => '邀请通知';
+
+  @override
+  String get debugNotificationTypeGeneral => '通用通知';
+
+  @override
+  String get debugNotificationTestBody => '这是一条用于验证通知显示、队列和点击路由的测试通知。';
+
+  @override
+  String get debugNotificationTestInApp => '触发应用内通知';
+
+  @override
+  String get debugNotificationTestSystem => '触发系统通知';
+
+  @override
+  String get debugNotificationSystemUnavailable => '系统通知尚未初始化或当前平台不支持。';
+
+  @override
   String get debugClearMessageDatabase => '清空消息数据库';
 
   @override

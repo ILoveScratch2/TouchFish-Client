@@ -3,12 +3,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/chat_model.dart';
+import '../models/app_notification.dart';
 import '../models/message_model.dart';
 import '../models/notification_model.dart';
 import '../models/user_profile.dart';
 import '../utils/talker.dart';
 import '../models/settings_service.dart';
 import 'api/tf_api_client.dart';
+import 'app_notification_service.dart';
 import 'auth_state.dart';
 import 'chat_ws_service.dart';
 import 'local_message_store.dart';
@@ -59,18 +61,6 @@ class ChatRoomPreference {
   }
 }
 
-class ChatNotificationPrompt {
-  final String roomId;
-  final String roomName;
-  final String message;
-
-  const ChatNotificationPrompt({
-    required this.roomId,
-    required this.roomName,
-    required this.message,
-  });
-}
-
 class ChatDataService extends ChangeNotifier {
   static ChatDataService? _instance;
   static ChatDataService get instance => _instance ??= ChatDataService._();
@@ -79,11 +69,6 @@ class ChatDataService extends ChangeNotifier {
   final StreamController<String> _ackErrorController =
       StreamController<String>.broadcast();
   Stream<String> get ackErrorStream => _ackErrorController.stream;
-  final StreamController<ChatNotificationPrompt> _notificationPromptController =
-      StreamController<ChatNotificationPrompt>.broadcast();
-  Stream<ChatNotificationPrompt> get notificationPromptStream =>
-      _notificationPromptController.stream;
-
   List<ChatRoom> _rooms = [];
   List<Contact> _contacts = [];
   final Map<String, List<ChatMessage>> _messageCache = {};
@@ -780,21 +765,25 @@ class ChatDataService extends ChangeNotifier {
     }
     _sortRooms();
     notifyListeners();
-    if (shouldNotify && _shouldShowInAppPrompt(roomId)) {
+    if (shouldNotify && _shouldSendNotification(roomId)) {
       final room = _rooms.firstWhere((room) => room.id == roomId);
-      _notificationPromptController.add(
-        ChatNotificationPrompt(
-          roomId: roomId,
-          roomName: room.name,
-          message: msg.text,
+      unawaited(
+        AppNotificationService.instance.present(
+          AppNotification(
+            id: '$roomId:${msg.id}',
+            title: room.name,
+            body: msg.text,
+            avatarUrl: msg.senderAvatar ?? room.avatar,
+            route: '/chat/$roomId',
+            topic: 'message',
+          ),
         ),
       );
     }
   }
 
-  bool _shouldShowInAppPrompt(String roomId) {
+  bool _shouldSendNotification(String roomId) {
     final settings = SettingsService.instance;
-    if (!settings.getValue<bool>('inAppNotifications', true)) return false;
     return isGroupRoom(roomId)
         ? settings.getValue<bool>('groupChat', true)
         : settings.getValue<bool>('privateChat', true);
@@ -1077,7 +1066,6 @@ class ChatDataService extends ChangeNotifier {
   void dispose() {
     _wsSubscription?.cancel();
     _ackErrorController.close();
-    _notificationPromptController.close();
     super.dispose();
   }
 }

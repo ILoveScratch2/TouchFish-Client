@@ -1,5 +1,4 @@
 import 'dart:ui';
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -23,7 +22,6 @@ class _MainScreenState extends State<MainScreen> {
   final _notificationService = NotificationService.instance;
   final _forumPendingService = ForumPendingService.instance;
   final _chatDataService = ChatDataService.instance;
-  StreamSubscription<ChatNotificationPrompt>? _chatPromptSubscription;
 
   @override
   void initState() {
@@ -31,9 +29,6 @@ class _MainScreenState extends State<MainScreen> {
     _notificationService.addListener(_onNotificationsChanged);
     _forumPendingService.addListener(_onNotificationsChanged);
     _chatDataService.addListener(_onNotificationsChanged);
-    _chatPromptSubscription = _chatDataService.notificationPromptStream.listen(
-      _showChatPrompt,
-    );
   }
 
   @override
@@ -41,7 +36,6 @@ class _MainScreenState extends State<MainScreen> {
     _notificationService.removeListener(_onNotificationsChanged);
     _forumPendingService.removeListener(_onNotificationsChanged);
     _chatDataService.removeListener(_onNotificationsChanged);
-    _chatPromptSubscription?.cancel();
     super.dispose();
   }
 
@@ -58,25 +52,6 @@ class _MainScreenState extends State<MainScreen> {
   int get _chatBadgeCount => _chatDataService.totalUnreadCount;
 
   int get _adminBadgeCount => _forumPendingService.pendingCount;
-
-  void _showChatPrompt(ChatNotificationPrompt prompt) {
-    if (!mounted) return;
-    final currentPath = GoRouterState.of(context).uri.path;
-    if (currentPath == '/chat/${prompt.roomId}') return;
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    messenger
-      ?..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text('${prompt.roomName}: ${prompt.message}'),
-          behavior: SnackBarBehavior.floating,
-          action: SnackBarAction(
-            label: AppLocalizations.of(context)!.navChat,
-            onPressed: () => context.go('/chat/${prompt.roomId}'),
-          ),
-        ),
-      );
-  }
 
   int _getCurrentIndex(
     BuildContext context,

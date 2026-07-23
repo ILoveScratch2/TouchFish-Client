@@ -2,10 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/notification_model.dart';
+import '../models/app_notification.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import 'chat_data_service.dart';
 import 'chat_ws_service.dart';
+import 'app_notification_service.dart';
 import '../utils/talker.dart';
 
 class NotificationService extends ChangeNotifier {
@@ -291,6 +293,11 @@ class NotificationService extends ChangeNotifier {
     }
     _allNotifications.add(notification);
     _allNotifications.sort((a, b) => b.timeStamp.compareTo(a.timeStamp));
+    unawaited(
+      AppNotificationService.instance.present(
+        AppNotification.fromNotificationInfo(notification),
+      ),
+    );
     notifyListeners();
   }
 

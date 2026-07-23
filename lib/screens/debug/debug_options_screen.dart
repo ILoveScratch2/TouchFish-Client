@@ -6,6 +6,7 @@ import '../../widgets/app_alert_dialog.dart';
 import '../../services/chat_data_service.dart';
 import './api_test_screen.dart';
 import './markdown_test_screen.dart';
+import './notification_test_screen.dart';
 import './talker_log_screen.dart';
 
 class DebugOptionsScreen extends StatelessWidget {
@@ -113,6 +114,24 @@ class DebugOptionsScreen extends StatelessWidget {
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => const TalkerLogScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(
+              Icons.notifications_active_outlined,
+              color: colorScheme.primary,
+            ),
+            trailing: const Icon(Symbols.chevron_right),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+            title: Text(l10n.debugNotificationTester),
+            subtitle: Text(l10n.debugNotificationTesterDescription),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const NotificationTestScreen(),
                 ),
               );
             },

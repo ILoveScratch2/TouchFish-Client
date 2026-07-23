@@ -15,6 +15,7 @@ import 'models/app_state.dart';
 import 'models/settings_service.dart';
 import 'routes/app_routes.dart';
 import 'services/auth_state.dart';
+import 'services/app_notification_service.dart';
 import 'services/chat_data_service.dart';
 import 'services/chat_ws_service.dart';
 import 'services/forum_pending_service.dart';
@@ -22,6 +23,7 @@ import 'services/notification_service.dart';
 import 'services/server_connection_status_service.dart';
 import 'utils/talker.dart';
 import 'widgets/app_alert_dialog.dart';
+import 'widgets/notification_overlay.dart';
 import 'widgets/custom_title_bar.dart';
 import 'widgets/server_connection_banner.dart';
 import 'utils/web_splash_stub.dart'
@@ -326,6 +328,7 @@ class _TouchFishAppState extends State<TouchFishApp> {
   void initState() {
     super.initState();
     AuthState.instance.addListener(_onAuthStateChanged);
+    unawaited(AppNotificationService.instance.initialize(_router));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _startSavedSessionRestoreIfNeeded();
@@ -335,6 +338,8 @@ class _TouchFishAppState extends State<TouchFishApp> {
 
   void _startNotificationPollingIfLoggedIn() {
     if (AuthState.instance.isLoggedIn) {
+      unawaited(ChatDataService.instance.init());
+      unawaited(ChatWsService.instance.connect());
       NotificationService.instance.startPolling();
       ForumPendingService.instance.startPolling();
     }
@@ -350,11 +355,11 @@ class _TouchFishAppState extends State<TouchFishApp> {
 
   void _onAuthStateChanged() {
     if (AuthState.instance.isLoggedIn) {
-      NotificationService.instance.startPolling();
-      ForumPendingService.instance.startPolling();
+      _startNotificationPollingIfLoggedIn();
     } else {
       NotificationService.instance.stopPolling();
       ForumPendingService.instance.stopPolling();
+      AppNotificationService.instance.clear();
       unawaited(ChatWsService.instance.disconnect());
       unawaited(ChatDataService.instance.reset());
     }
@@ -546,6 +551,7 @@ class _TouchFishAppState extends State<TouchFishApp> {
                 ),
               ),
             ),
+            const AppNotificationOverlay(),
           ],
         );
       },

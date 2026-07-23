@@ -2956,6 +2956,78 @@ abstract class AppLocalizations {
   /// **'View application logs'**
   String get debugLogsDescription;
 
+  /// No description provided for @debugNotificationTester.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Test'**
+  String get debugNotificationTester;
+
+  /// No description provided for @debugNotificationTesterDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Trigger each in-app and system notification type'**
+  String get debugNotificationTesterDescription;
+
+  /// No description provided for @debugNotificationTypePrivateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Private Message'**
+  String get debugNotificationTypePrivateMessage;
+
+  /// No description provided for @debugNotificationTypeGroupMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Message'**
+  String get debugNotificationTypeGroupMessage;
+
+  /// No description provided for @debugNotificationTypeAnnouncement.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcement'**
+  String get debugNotificationTypeAnnouncement;
+
+  /// No description provided for @debugNotificationTypeForum.
+  ///
+  /// In en, this message translates to:
+  /// **'Forum Notification'**
+  String get debugNotificationTypeForum;
+
+  /// No description provided for @debugNotificationTypeInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation'**
+  String get debugNotificationTypeInvite;
+
+  /// No description provided for @debugNotificationTypeGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General Notification'**
+  String get debugNotificationTypeGeneral;
+
+  /// No description provided for @debugNotificationTestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This test notification verifies rendering, queueing, and navigation.'**
+  String get debugNotificationTestBody;
+
+  /// No description provided for @debugNotificationTestInApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Trigger in-app notification'**
+  String get debugNotificationTestInApp;
+
+  /// No description provided for @debugNotificationTestSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'Trigger system notification'**
+  String get debugNotificationTestSystem;
+
+  /// No description provided for @debugNotificationSystemUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'System notifications are not initialized or supported on this platform.'**
+  String get debugNotificationSystemUnavailable;
+
   /// No description provided for @debugClearMessageDatabase.
   ///
   /// In en, this message translates to:
