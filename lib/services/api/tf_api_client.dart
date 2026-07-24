@@ -651,7 +651,11 @@ class TfApiClient {
     }
   }
 
-  bool _parseBool(String? result) => result?.endsWith('True') ?? false;
+  bool _parseBool(String? result) {
+    if (result == null) return false;
+    final trimmed = result.trim().toLowerCase();
+    return trimmed == 'true' || trimmed.endsWith('true');
+  }
 
   Map<String, dynamic>? _parseJsonMap(String? result) {
     if (result == null) {

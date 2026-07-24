@@ -695,7 +695,6 @@ class ChatDataService extends ChangeNotifier {
     if (uid == null) return;
     final senderUid = info.senderUid;
     if (senderUid == null) return;
-    if (senderUid == uid && info.groupId == null && info.roomId == null) return;
 
     final roomId = _roomIdForNotification(info, uid);
     final msg = ChatMessage.fromNotification(
@@ -727,7 +726,6 @@ class ChatDataService extends ChangeNotifier {
     if (uid == null) return;
     final senderUid = info.senderUid;
     if (senderUid == null) return;
-    if (senderUid == uid && info.groupId == null && info.roomId == null) return;
 
     final roomId = _roomIdForNotification(info, uid);
     final msg = ChatMessage.fromNotification(
@@ -744,7 +742,7 @@ class ChatDataService extends ChangeNotifier {
   }
 
   void _addToCacheSilent(String roomId, ChatMessage msg) {
-    final cached = _messageCache[roomId] ?? [];
+    final cached = List<ChatMessage>.from(_messageCache[roomId] ?? []);
     final exists = _containsMessage(cached, msg);
     if (!exists) {
       cached.add(msg);
@@ -779,7 +777,7 @@ class ChatDataService extends ChangeNotifier {
   }
 
   void _addToCache(String roomId, ChatMessage msg) {
-    final cached = _messageCache[roomId] ?? [];
+    final cached = List<ChatMessage>.from(_messageCache[roomId] ?? []);
     final exists = _containsMessage(cached, msg);
     if (!exists) {
       cached.add(msg);
@@ -962,7 +960,7 @@ class ChatDataService extends ChangeNotifier {
   }
 
   void addSentMessage(String roomId, ChatMessage msg) {
-    final cached = _messageCache[roomId] ?? [];
+    final cached = List<ChatMessage>.from(_messageCache[roomId] ?? []);
     if (!_containsMessage(cached, msg)) {
       cached.add(msg);
       cached.sort((a, b) => a.timestamp.compareTo(b.timestamp));
