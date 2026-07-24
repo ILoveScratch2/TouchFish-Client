@@ -34,6 +34,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   final Map<int, GlobalKey> _messageKeys = {};
+  // Timers that fire a REST fallback if a WS-sent message never receives an ack
+  final Map<String, Timer> _pendingWsTimers = {};
   ChatRoom? _currentRoom;
   final List<MentionUser> _mentionUsers = [];
   bool _isInitialized = false;
@@ -82,6 +84,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   void _initRoom() {
+    // Cancel any pending WS ack fallback timers from the previous room
+    for (final timer in _pendingWsTimers.values) {
+      timer.cancel();
+    }
+    _pendingWsTimers.clear();
+    // Clear stale GlobalKeys so we don't carry over keys from the previous room
+    _messageKeys.clear();
     _messages.clear();
     _currentRoom = null;
     _avatarLoadFailed = false;
@@ -97,6 +106,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   @override
   void dispose() {
+    for (final timer in _pendingWsTimers.values) {
+      timer.cancel();
+    }
+    _pendingWsTimers.clear();
     _detachRealtimeListeners();
     _ackErrorSub?.cancel();
     _messageController.dispose();
@@ -625,6 +638,24 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             );
           }
         }
+      } else {
+        // WS send returned true but ack may never arrive (e.g. network drop).
+        // Schedule a REST fallback that fires if the message is still pending
+        // after 15 seconds. The server's client_mid dedup ensures no duplicate
+        // is stored even if the WS message already reached the server.
+        _pendingWsTimers[clientMid]?.cancel();
+        _pendingWsTimers[clientMid] = Timer(
+          const Duration(seconds: 15),
+          () => _wsAckFallback(
+            clientMid: clientMid,
+            content: outgoingText,
+            contentType:
+                outgoingType == MessageType.file ? 'file' : 'plain',
+            fileHash: forwardTarget?.media?.fileHash,
+            quoteMid: quoteMid,
+            forwardedMid: forwardedMid,
+          ),
+        );
       }
     } catch (e) {
       talker.error('ChatDetail text send failed', e);
@@ -642,11 +673,55 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
   }
 
+  /// REST fallback called when a WS-sent message hasn't received an ack within
+  /// the timeout window. Uses the same [clientMid] so the server dedup index
+  /// prevents double-storage.
+  Future<void> _wsAckFallback({
+    required String clientMid,
+    required String content,
+    required String contentType,
+    String? fileHash,
+    required int quoteMid,
+    required int forwardedMid,
+  }) async {
+    _pendingWsTimers.remove(clientMid);
+    if (!mounted) return;
+    // No-op if ack already arrived
+    final msgs = ChatDataService.instance.getMessages(_contactUid);
+    final idx = msgs.indexWhere((m) => m.clientMid == clientMid);
+    if (idx == -1 || msgs[idx].status != MessageStatus.pending) return;
+
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+
+    final result = await TfApiClient.instance.sendMessage(
+      uid,
+      password,
+      recipient: _contactUid,
+      content: content,
+      contentType: contentType,
+      fileHash: fileHash,
+      clientMid: clientMid,
+      quote: quoteMid,
+      forwarded: forwardedMid,
+    );
+    if (!mounted) return;
+    if (result != null) {
+      final serverMid = (result['mid'] as num?)?.toInt();
+      _updateMessageStatus(clientMid, mid: serverMid, status: MessageStatus.sent);
+    } else {
+      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+    }
+  }
+
   void _updateMessageStatus(
     String clientMid, {
     int? mid,
     MessageStatus? status,
   }) {
+    // Ack arrived — cancel any pending fallback timer for this message
+    _pendingWsTimers.remove(clientMid)?.cancel();
     // Update _messageCache
     final msgs = ChatDataService.instance.getMessages(_contactUid);
     final cIdx = msgs.indexWhere((m) => m.clientMid == clientMid);
@@ -880,6 +955,20 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             );
           }
         }
+      } else {
+        // WS sent — schedule REST fallback in case ack never arrives
+        _pendingWsTimers[clientMid]?.cancel();
+        _pendingWsTimers[clientMid] = Timer(
+          const Duration(seconds: 15),
+          () => _wsAckFallback(
+            clientMid: clientMid,
+            content: hash,
+            contentType: 'file',
+            fileHash: hash,
+            quoteMid: quoteMid,
+            forwardedMid: -1,
+          ),
+        );
       }
     } catch (e) {
       talker.error('ChatDetail file send failed', e);

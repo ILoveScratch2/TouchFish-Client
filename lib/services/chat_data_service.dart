@@ -460,7 +460,16 @@ class ChatDataService extends ChangeNotifier {
 
   bool _containsMessage(List<ChatMessage> messages, ChatMessage candidate) {
     final key = _messageDedupKey(candidate);
-    return messages.any((message) => _messageDedupKey(message) == key);
+    if (messages.any((m) => _messageDedupKey(m) == key)) return true;
+    // Secondary check: if the candidate has a server mid, reject duplicates
+    // even when the dedup keys don't match (e.g. one side has clientMid and
+    // the other only has the server mid — a timing window that occurs when
+    // NOTIFICATION.NEW arrives before message.ack updates the cached entry).
+    final candidateMid = candidate.mid;
+    if (candidateMid != null) {
+      return messages.any((m) => m.mid == candidateMid);
+    }
+    return false;
   }
 
   // --- Room/Contact list ---
