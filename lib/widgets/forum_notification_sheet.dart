@@ -73,17 +73,21 @@ class ForumNotificationSheet extends StatelessWidget {
     final router = GoRouter.of(context);
     final fid = (notification.meta['fid'] as num?)?.toInt();
     final pid = (notification.meta['pid'] as num?)?.toInt();
-    Navigator.pop(context);
+    String route;
     if (notification.event == 'forum.review.pending') {
-      router.go(AppRoutes.adminPendingForums);
+      route = AppRoutes.adminPendingForums;
     } else if (notification.event == 'forum.post.deleted' && fid != null) {
-      router.go('/forum/$fid');
+      route = '/forum/$fid';
     } else if (fid != null && pid != null) {
-      router.go('/forum/$fid/post/$pid');
+      route = '/forum/$fid/post/$pid';
     } else if (fid != null) {
-      router.go('/forum/$fid');
+      route = '/forum/$fid';
     } else {
-      router.go(AppRoutes.forum);
+      route = AppRoutes.forum;
+    }
+    Navigator.pop(context);
+    if (router.routerDelegate.currentConfiguration.uri.toString() != route) {
+      router.push(route);
     }
   }
 }

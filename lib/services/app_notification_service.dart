@@ -88,7 +88,9 @@ class AppNotificationService extends ChangeNotifier
           .getNotificationAppLaunchDetails();
       final payload = launchDetails?.notificationResponse?.payload;
       if (launchDetails?.didNotificationLaunchApp == true && payload != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) => openRoute(payload));
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => openRoute(payload, replace: true),
+        );
       }
     } catch (error, stackTrace) {
       talker.error(
@@ -221,9 +223,18 @@ class AppNotificationService extends ChangeNotifier
     openRoute(notification.route);
   }
 
-  void openRoute(String route) {
+  void openRoute(String route, {bool replace = false}) {
     if (!route.startsWith('/')) return;
-    _router?.go(route);
+    final router = _router;
+    if (router == null) return;
+    if (router.routerDelegate.currentConfiguration.uri.toString() == route) {
+      return;
+    }
+    if (replace) {
+      router.go(route);
+    } else {
+      router.push(route);
+    }
   }
 
   Future<bool> _showSystemNotification(AppNotification notification) async {

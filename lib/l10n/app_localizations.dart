@@ -1990,6 +1990,60 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get messageActionDelete;
 
+  /// No description provided for @messageActionRecall.
+  ///
+  /// In en, this message translates to:
+  /// **'Recall'**
+  String get messageActionRecall;
+
+  /// No description provided for @messageRecallConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recall message?'**
+  String get messageRecallConfirmTitle;
+
+  /// No description provided for @messageRecallConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the message content for everyone. This action cannot be undone.'**
+  String get messageRecallConfirmBody;
+
+  /// No description provided for @messageRecallFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not recall the message'**
+  String get messageRecallFailed;
+
+  /// No description provided for @messageRecalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Message recalled'**
+  String get messageRecalled;
+
+  /// No description provided for @messageQuoteRecalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Recalled message'**
+  String get messageQuoteRecalled;
+
+  /// No description provided for @messageQuoteMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Original message unavailable'**
+  String get messageQuoteMissing;
+
+  /// No description provided for @messageReplyingTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Replying to {name}'**
+  String messageReplyingTo(String name);
+
+  /// No description provided for @messageReplyDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel reply'**
+  String get messageReplyDismiss;
+
   /// No description provided for @chatRoomSettings.
   ///
   /// In en, this message translates to:
@@ -2289,6 +2343,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pause Audio'**
   String get mediaPauseAudio;
+
+  /// No description provided for @filePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get filePreview;
+
+  /// No description provided for @filePreviewFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview unavailable'**
+  String get filePreviewFailed;
+
+  /// No description provided for @fileDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get fileDownload;
+
+  /// No description provided for @fileDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading...'**
+  String get fileDownloading;
+
+  /// No description provided for @fileDownloadStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Download started'**
+  String get fileDownloadStarted;
+
+  /// No description provided for @fileDownloadSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {path}'**
+  String fileDownloadSaved(String path);
+
+  /// No description provided for @fileDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed'**
+  String get fileDownloadFailed;
+
+  /// No description provided for @forumAttachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get forumAttachments;
+
+  /// No description provided for @forumAttachmentRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove attachment'**
+  String get forumAttachmentRemove;
+
+  /// No description provided for @forumAttachmentFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment upload failed'**
+  String get forumAttachmentFailed;
+
+  /// No description provided for @settingsAutomaticPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic file previews'**
+  String get settingsAutomaticPreviewTitle;
+
+  /// No description provided for @settingsAutomaticPreviewDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview supported files automatically up to this size'**
+  String get settingsAutomaticPreviewDesc;
+
+  /// No description provided for @settingsAutomaticPreviewDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get settingsAutomaticPreviewDisabled;
+
+  /// No description provided for @settingsAutomaticPreviewSize.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} MiB'**
+  String settingsAutomaticPreviewSize(int size);
 
   /// No description provided for @userProfileTitle.
   ///

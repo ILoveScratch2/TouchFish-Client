@@ -5,6 +5,7 @@ class ChatRoom {
   final ChatType type;
   final String? lastMessage;
   final DateTime? lastMessageTime;
+  final int? lastMessageMid;
   final int unreadCount;
   final bool isPinned;
 
@@ -15,6 +16,7 @@ class ChatRoom {
     required this.type,
     this.lastMessage,
     this.lastMessageTime,
+    this.lastMessageMid,
     this.unreadCount = 0,
     this.isPinned = false,
   });
@@ -26,6 +28,7 @@ class ChatRoom {
     ChatType? type,
     String? lastMessage,
     DateTime? lastMessageTime,
+    int? lastMessageMid,
     int? unreadCount,
     bool? isPinned,
   }) {
@@ -36,6 +39,7 @@ class ChatRoom {
       type: type ?? this.type,
       lastMessage: lastMessage ?? this.lastMessage,
       lastMessageTime: lastMessageTime ?? this.lastMessageTime,
+      lastMessageMid: lastMessageMid ?? this.lastMessageMid,
       unreadCount: unreadCount ?? this.unreadCount,
       isPinned: isPinned ?? this.isPinned,
     );

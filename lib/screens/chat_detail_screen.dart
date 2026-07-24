@@ -33,6 +33,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
+  final Map<int, GlobalKey> _messageKeys = {};
   ChatRoom? _currentRoom;
   final List<MentionUser> _mentionUsers = [];
   bool _isInitialized = false;
@@ -44,6 +45,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   StreamSubscription? _ackErrorSub;
   String _groupEnterHint = '';
   bool _showGroupEnterHint = true;
+  ChatMessage? _replyingTo;
+  ChatMessage? _forwardingTo;
+  bool _canModerateGroup = false;
 
   String get _contactUid {
     final id = widget.roomId;
@@ -85,6 +89,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _hasMoreMessages = true;
     _groupEnterHint = '';
     _showGroupEnterHint = true;
+    _replyingTo = null;
+    _canModerateGroup = false;
     _loadChatRoom();
     _startRealMessaging();
   }
@@ -396,13 +402,99 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         })
         .where((member) => member.id != uid.toString())
         .toList();
+    final currentMember = members.cast<dynamic>().firstWhere(
+      (raw) => raw is Map && (raw['uid'] as num?)?.toInt() == uid,
+      orElse: () => null,
+    );
+    final currentRole = currentMember is Map
+        ? currentMember['role']?.toString().toLowerCase()
+        : null;
     if (!mounted || _contactUid != 'G$gid') return;
     setState(() {
       _mentionUsers
         ..clear()
         ..addAll(mentionUsers);
       _groupEnterHint = enterHint.trim();
+      _canModerateGroup = currentRole == 'owner' || currentRole == 'admin';
     });
+  }
+
+  void _startReply(ChatMessage message) {
+    if (message.mid == null || message.isDeleted) return;
+    setState(() {
+      _replyingTo = message;
+      _forwardingTo = null;
+    });
+  }
+
+  void _startForward(ChatMessage message) {
+    if (message.mid == null || message.isDeleted) return;
+    setState(() {
+      _forwardingTo = message;
+      _replyingTo = null;
+    });
+  }
+
+  bool _canRecall(ChatMessage message) {
+    if (message.mid == null || message.isDeleted) return false;
+    if (message.isMe) return true;
+    if (AuthState.instance.currentUser?.hasAdminAccess == true) return true;
+    return _currentRoom?.type == ChatType.group && _canModerateGroup;
+  }
+
+  Future<void> _recallMessage(ChatMessage message) async {
+    if (!_canRecall(message)) return;
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.messageRecallConfirmTitle),
+        content: Text(l10n.messageRecallConfirmBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: Text(l10n.messageActionRecall),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final mid = message.mid;
+    if (uid == null || password == null || mid == null) return;
+    final recalled = await TfApiClient.instance.recallMessage(
+      uid,
+      password,
+      mid,
+    );
+    if (!mounted) return;
+    if (recalled != null) {
+      final deletedAtRaw = recalled['deleted_at'];
+      final deletedAt = deletedAtRaw is num
+          ? DateTime.fromMillisecondsSinceEpoch(
+              (deletedAtRaw.toDouble() * 1000).toInt(),
+            )
+          : DateTime.tryParse(deletedAtRaw?.toString() ?? '');
+      ChatDataService.instance.markMessageRecalled(
+        mid,
+        roomId: _contactUid,
+        deletedAt: deletedAt,
+        deletedBy: (recalled['deleted_by'] as num?)?.toInt() ?? uid,
+      );
+      if (_replyingTo?.mid == mid) setState(() => _replyingTo = null);
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.messageRecallFailed)));
+    }
   }
 
   void _sendMessage() {
@@ -411,11 +503,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   Future<void> _sendMessageAsync() async {
     final text = _messageController.text.trim();
-    if (text.isEmpty) return;
+    final forwardTarget = _forwardingTo;
+    if (text.isEmpty && forwardTarget == null) return;
 
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
+    final replyTarget = _replyingTo;
+    final quoteMid = replyTarget?.mid ?? -1;
+    final forwardedMid = forwardTarget?.mid ?? -1;
+    final outgoingText = forwardTarget?.text ?? text;
+    final outgoingType = forwardTarget?.type ?? MessageType.text;
 
     final clientMid = 'c${DateTime.now().microsecondsSinceEpoch}';
     final userMessage = ChatMessage(
@@ -423,14 +521,48 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       clientMid: clientMid,
       senderUid: uid,
       mid: null,
-      text: text,
+      text: outgoingText,
       timestamp: DateTime.now(),
       isMe: true,
       status: MessageStatus.pending,
-      type: MessageType.text,
+      type: outgoingType,
+      media: forwardTarget?.media,
+      quoteMid: quoteMid >= 0 ? quoteMid : null,
+      quotePreview: replyTarget == null
+          ? null
+          : QuotedMessagePreview(
+              mid: replyTarget.mid,
+              senderUid: replyTarget.senderUid,
+              senderName: replyTarget.isMe
+                  ? AuthState.instance.currentUser?.username
+                  : replyTarget.senderName,
+              content: replyTarget.text,
+              contentType: replyTarget.type == MessageType.file
+                  ? 'file'
+                  : 'plain',
+              isDeleted: replyTarget.isDeleted,
+            ),
+      forwardedMid: forwardedMid >= 0 ? forwardedMid : null,
+      forwardPreview: forwardTarget == null
+          ? null
+          : QuotedMessagePreview(
+              mid: forwardTarget.mid,
+              senderUid: forwardTarget.senderUid,
+              senderName: forwardTarget.isMe
+                  ? AuthState.instance.currentUser?.username
+                  : forwardTarget.senderName,
+              content: forwardTarget.text,
+              contentType: forwardTarget.type == MessageType.file
+                  ? 'file'
+                  : 'plain',
+            ),
     );
 
-    setState(() => _messages.add(userMessage));
+    setState(() {
+      _messages.add(userMessage);
+      _replyingTo = null;
+      _forwardingTo = null;
+    });
     _messageController.clear();
     _scrollToBottom();
 
@@ -440,7 +572,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     try {
       // Send via WebSocket, with REST fallback
       bool wsSent = false;
-      if (_wsConnected) {
+      if (_wsConnected && forwardTarget == null) {
         if (_contactUid.startsWith('G')) {
           final gid = int.tryParse(_contactUid.substring(1));
           if (gid != null) {
@@ -448,6 +580,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               gid,
               text,
               clientMid: clientMid,
+              quote: quoteMid,
             );
           }
         } else {
@@ -457,6 +590,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               targetUid.toString(),
               text,
               clientMid: clientMid,
+              quote: quoteMid,
             );
           }
         }
@@ -468,8 +602,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           uid,
           password,
           recipient: recipient,
-          content: text,
+          content: outgoingText,
+          contentType: outgoingType == MessageType.file ? 'file' : 'plain',
+          fileHash: forwardTarget?.media?.fileHash,
           clientMid: clientMid,
+          quote: quoteMid,
+          forwarded: forwardedMid,
         );
         if (result != null) {
           final mid = (result['mid'] as num?)?.toInt();
@@ -559,6 +697,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
+    final replyTarget = _replyingTo;
+    final quoteMid = replyTarget?.mid ?? -1;
 
     String filePath;
     String fileName;
@@ -638,9 +778,26 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       type: type,
       media: media,
       status: MessageStatus.pending,
+      quoteMid: quoteMid >= 0 ? quoteMid : null,
+      quotePreview: replyTarget == null
+          ? null
+          : QuotedMessagePreview(
+              mid: replyTarget.mid,
+              senderUid: replyTarget.senderUid,
+              senderName: replyTarget.isMe
+                  ? AuthState.instance.currentUser?.username
+                  : replyTarget.senderName,
+              content: replyTarget.text,
+              contentType: replyTarget.type == MessageType.file
+                  ? 'file'
+                  : 'plain',
+            ),
     );
 
-    setState(() => _messages.add(userMessage));
+    setState(() {
+      _messages.add(userMessage);
+      _replyingTo = null;
+    });
     ChatDataService.instance.addSentMessage(_contactUid, userMessage);
     _scrollToBottom();
 
@@ -679,6 +836,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               gid,
               hash,
               clientMid: clientMid,
+              quote: quoteMid,
             );
           }
         } else {
@@ -688,6 +846,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               peerUid.toString(),
               hash,
               clientMid: clientMid,
+              quote: quoteMid,
             );
           }
         }
@@ -703,6 +862,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           contentType: 'file',
           clientMid: clientMid,
           fileHash: hash,
+          quote: quoteMid,
         );
         if (result != null) {
           final mid = (result['mid'] as num?)?.toInt();
@@ -747,6 +907,30 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         );
       }
     });
+  }
+
+  void _scrollToQuotedMessage(int mid) {
+    final index = _messages.indexWhere((message) => message.mid == mid);
+    if (index < 0) return;
+    final targetContext = _messageKeys[mid]?.currentContext;
+    if (targetContext != null) {
+      Scrollable.ensureVisible(
+        targetContext,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+        alignment: 0.35,
+      );
+      return;
+    }
+    if (!_scrollController.hasClients) return;
+    final fraction = _messages.length <= 1
+        ? 0.0
+        : index / (_messages.length - 1);
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent * fraction,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
   }
 
   Widget _buildAvatar(ColorScheme colorScheme) {
@@ -896,8 +1080,66 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                         controller: _scrollController,
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         itemCount: _messages.length,
-                        itemBuilder: (context, index) =>
-                            MessageBubble(message: _messages[index]),
+                        itemBuilder: (context, index) {
+                          final message = _messages[index];
+                          final previous = index > 0
+                              ? _messages[index - 1]
+                              : null;
+                          final showAvatar =
+                              previous == null ||
+                              previous.senderUid != message.senderUid ||
+                              message.timestamp
+                                      .difference(previous.timestamp)
+                                      .inMinutes >=
+                                  5;
+                          final key = message.mid == null
+                              ? null
+                              : _messageKeys.putIfAbsent(
+                                  message.mid!,
+                                  GlobalKey.new,
+                                );
+                          return Dismissible(
+                            key: ValueKey('swipe-${message.id}'),
+                            direction: message.isDeleted
+                                ? DismissDirection.none
+                                : DismissDirection.endToStart,
+                            dismissThresholds: const {
+                              DismissDirection.endToStart: 0.22,
+                            },
+                            resizeDuration: null,
+                            movementDuration: const Duration(milliseconds: 120),
+                            confirmDismiss: (_) async {
+                              if (message.isMe) {
+                                _startForward(message);
+                              } else {
+                                _startReply(message);
+                              }
+                              return false;
+                            },
+                            background: Align(
+                              alignment: Alignment.centerRight,
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 24),
+                                child: Icon(
+                                  message.isMe ? Icons.forward : Icons.reply,
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                            child: KeyedSubtree(
+                              key: key,
+                              child: MessageBubble(
+                                message: message,
+                                onReply: _startReply,
+                                onForward: _startForward,
+                                onRecall: _recallMessage,
+                                onQuoteTap: _scrollToQuotedMessage,
+                                showAvatar: showAvatar,
+                                canRecall: _canRecall(message),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
             ),
@@ -906,6 +1148,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               onSend: _sendMessage,
               onFilePicked: _sendMediaMessage,
               mentionUsers: _mentionUsers,
+              actionMessage: _replyingTo ?? _forwardingTo,
+              actionIsForward: _forwardingTo != null,
+              onClearAction: () => setState(() {
+                _replyingTo = null;
+                _forwardingTo = null;
+              }),
             ),
           ],
         ),

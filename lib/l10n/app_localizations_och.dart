@@ -974,6 +974,35 @@ class AppLocalizationsOch extends AppLocalizations {
   String get messageActionDelete => '刪除';
 
   @override
+  String get messageActionRecall => '撤回';
+
+  @override
+  String get messageRecallConfirmTitle => '撤回消息乎？';
+
+  @override
+  String get messageRecallConfirmBody => '消息之文將為眾人所移，且不可復。';
+
+  @override
+  String get messageRecallFailed => '消息撤回未成';
+
+  @override
+  String get messageRecalled => '消息已撤回';
+
+  @override
+  String get messageQuoteRecalled => '已撤之消息';
+
+  @override
+  String get messageQuoteMissing => '原消息不可得';
+
+  @override
+  String messageReplyingTo(String name) {
+    return '回覆 $name';
+  }
+
+  @override
+  String get messageReplyDismiss => '罷回覆';
+
+  @override
   String get chatRoomSettings => '聊天之設';
 
   @override
@@ -1122,6 +1151,52 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get mediaPauseAudio => '暫音';
+
+  @override
+  String get filePreview => '預觀';
+
+  @override
+  String get filePreviewFailed => '不可預觀文件';
+
+  @override
+  String get fileDownload => '下載';
+
+  @override
+  String get fileDownloading => '方下載…';
+
+  @override
+  String get fileDownloadStarted => '下載已始';
+
+  @override
+  String fileDownloadSaved(String path) {
+    return '已存至 $path';
+  }
+
+  @override
+  String get fileDownloadFailed => '下載未成';
+
+  @override
+  String get forumAttachments => '附件';
+
+  @override
+  String get forumAttachmentRemove => '移除附件';
+
+  @override
+  String get forumAttachmentFailed => '附件上傳未成';
+
+  @override
+  String get settingsAutomaticPreviewTitle => '自動預觀文件';
+
+  @override
+  String get settingsAutomaticPreviewDesc => '自動預觀不逾所擇大小之可觀文件';
+
+  @override
+  String get settingsAutomaticPreviewDisabled => '關';
+
+  @override
+  String settingsAutomaticPreviewSize(int size) {
+    return '$size MiB';
+  }
 
   @override
   String get userProfileTitle => '用戶之資';

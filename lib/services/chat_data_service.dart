@@ -425,11 +425,17 @@ class ChatDataService extends ChangeNotifier {
   static bool isGroupRoom(String roomId) => roomId.startsWith('G');
 
   String? _senderNameFor(int senderUid) {
+    if (senderUid == AuthState.instance.uid) {
+      return AuthState.instance.currentUser?.username;
+    }
     final profile = _userCache[roomIdFromUid(senderUid)];
     return profile?.username;
   }
 
   String? _senderAvatarFor(int senderUid) {
+    if (senderUid == AuthState.instance.uid) {
+      return AuthState.instance.currentUser?.avatar;
+    }
     return _userCache[roomIdFromUid(senderUid)]?.avatar;
   }
 
@@ -532,8 +538,11 @@ class ChatDataService extends ChangeNotifier {
             name: displayName,
             avatar: avatarUrl,
             type: isGroup ? ChatType.group : ChatType.direct,
-            lastMessage: item.lastContent ?? existingRoom?.lastMessage,
+            lastMessage: item.lastDeleted
+                ? ''
+                : item.visibleLastContent ?? existingRoom?.lastMessage,
             lastMessageTime: lastTime ?? existingRoom?.lastMessageTime,
+            lastMessageMid: item.lastMid,
             unreadCount: existingRoom?.unreadCount ?? 0,
             isPinned: getRoomPreference(item.roomId).isPinned,
           ),
@@ -577,6 +586,14 @@ class ChatDataService extends ChangeNotifier {
         );
         _messageCache[roomId] = updated;
         _localStore.saveMessages(roomId, updated);
+        if (idx == updated.length - 1 && serverMid != null) {
+          final roomIndex = _rooms.indexWhere((room) => room.id == roomId);
+          if (roomIndex >= 0) {
+            _rooms[roomIndex] = _rooms[roomIndex].copyWith(
+              lastMessageMid: serverMid,
+            );
+          }
+        }
         if (status == MessageStatus.failed && error != null) {
           _ackErrorController.add(error);
         }
@@ -591,9 +608,13 @@ class ChatDataService extends ChangeNotifier {
     List<ChatMessage> local,
   ) {
     final seen = <String>{};
-    final result = <ChatMessage>[];
+    var result = <ChatMessage>[];
     for (final m in [...server, ...local]) {
       if (seen.add(_messageDedupKey(m))) result.add(m);
+    }
+    for (final recalled in result.where((message) => message.isDeleted)) {
+      final mid = recalled.mid;
+      if (mid != null) result = applyRecallToMessages(result, mid);
     }
     return result;
   }
@@ -624,10 +645,36 @@ class ChatDataService extends ChangeNotifier {
       return;
     }
 
+    if (event.type == 'message.recalled' || event.type == 'message.recall') {
+      final data = event.notification;
+      final mid =
+          (data?['mid'] as num?)?.toInt() ??
+          (data?['recalled_mid'] as num?)?.toInt();
+      if (mid != null) {
+        markMessageRecalled(
+          mid,
+          deletedBy: (data?['deleted_by'] as num?)?.toInt(),
+        );
+      }
+      return;
+    }
+
     if (event.type != 'NOTIFICATION.NEW' || event.notification == null) return;
 
     final info = NotificationInfo.fromServerJson(event.notification!);
     final eventType = info.event;
+
+    if (eventType == 'message.recalled' || eventType == 'message.recall') {
+      final mid = info.recalledMid;
+      if (mid != null) {
+        markMessageRecalled(
+          mid,
+          deletedAt: info.deletedAt,
+          deletedBy: info.deletedBy,
+        );
+      }
+      return;
+    }
 
     if (eventType == 'friend.accepted') {
       final suid = info.senderUid;
@@ -664,6 +711,18 @@ class ChatDataService extends ChangeNotifier {
     NotificationInfo info, {
     bool isHistorical = false,
   }) {
+    if (info.event == 'message.recalled' || info.event == 'message.recall') {
+      final mid = info.recalledMid;
+      if (mid != null) {
+        markMessageRecalled(
+          mid,
+          roomId: info.roomId,
+          deletedAt: info.deletedAt,
+          deletedBy: info.deletedBy,
+        );
+      }
+      return;
+    }
     final uid = AuthState.instance.uid;
     if (uid == null) return;
     final senderUid = info.senderUid;
@@ -705,6 +764,7 @@ class ChatDataService extends ChangeNotifier {
         _rooms[idx] = _rooms[idx].copyWith(
           lastMessage: msg.text,
           lastMessageTime: msg.timestamp,
+          lastMessageMid: msg.mid,
         );
       }
     }
@@ -756,6 +816,7 @@ class ChatDataService extends ChangeNotifier {
       _rooms[idx] = _rooms[idx].copyWith(
         lastMessage: msg.text,
         lastMessageTime: msg.timestamp,
+        lastMessageMid: msg.mid,
         unreadCount: shouldNotify
             ? _rooms[idx].unreadCount + 1
             : _rooms[idx].unreadCount,
@@ -809,6 +870,7 @@ class ChatDataService extends ChangeNotifier {
         type: isGroupRoom(roomId) ? ChatType.group : ChatType.direct,
         lastMessage: msg.text,
         lastMessageTime: msg.timestamp,
+        lastMessageMid: msg.mid,
         unreadCount: unreadCount,
         isPinned: getRoomPreference(roomId).isPinned,
       ),
@@ -870,11 +932,28 @@ class ChatDataService extends ChangeNotifier {
     if (msgs == null) return;
     var changed = false;
     final updated = msgs.map((m) {
-      if (!m.isMe && m.senderUid == senderUid && m.senderAvatar == null) {
+      var next = m;
+      if (!next.isMe &&
+          next.senderUid == senderUid &&
+          next.senderAvatar == null) {
         changed = true;
-        return m.copyWith(senderName: username, senderAvatar: avatar);
+        next = next.copyWith(senderName: username, senderAvatar: avatar);
       }
-      return m;
+      final quote = next.quotePreview;
+      if (quote?.senderUid == senderUid && quote?.senderName == null) {
+        changed = true;
+        next = next.copyWith(
+          quotePreview: quote!.copyWith(senderName: username),
+        );
+      }
+      final forwarded = next.forwardPreview;
+      if (forwarded?.senderUid == senderUid && forwarded?.senderName == null) {
+        changed = true;
+        next = next.copyWith(
+          forwardPreview: forwarded!.copyWith(senderName: username),
+        );
+      }
+      return next;
     }).toList();
     if (changed) {
       _messageCache[roomId] = updated;
@@ -914,6 +993,70 @@ class ChatDataService extends ChangeNotifier {
     }
     _sortRooms();
     notifyListeners();
+  }
+
+  void markMessageRecalled(
+    int mid, {
+    String? roomId,
+    DateTime? deletedAt,
+    int? deletedBy,
+  }) {
+    var changed = false;
+    for (final id in _messageCache.keys.toList()) {
+      final messages = _messageCache[id];
+      if (messages == null) continue;
+      final updated = applyRecallToMessages(
+        messages,
+        mid,
+        deletedAt: deletedAt,
+        deletedBy: deletedBy,
+      );
+      final latestIsRecalled = updated.isNotEmpty && updated.last.mid == mid;
+      final roomIndex = _rooms.indexWhere((room) => room.id == id);
+      if (roomIndex >= 0 &&
+          (latestIsRecalled || _rooms[roomIndex].lastMessageMid == mid)) {
+        _rooms[roomIndex] = _rooms[roomIndex].copyWith(lastMessage: '');
+        changed = true;
+      }
+      if (identical(updated, messages)) continue;
+      _messageCache[id] = updated;
+      unawaited(_localStore.saveMessages(id, updated));
+      changed = true;
+    }
+    if (roomId != null) {
+      final roomIndex = _rooms.indexWhere((room) => room.id == roomId);
+      if (roomIndex >= 0 && _rooms[roomIndex].lastMessageMid == mid) {
+        _rooms[roomIndex] = _rooms[roomIndex].copyWith(lastMessage: '');
+        changed = true;
+      }
+    }
+    if (changed) notifyListeners();
+  }
+
+  static List<ChatMessage> applyRecallToMessages(
+    List<ChatMessage> messages,
+    int mid, {
+    DateTime? deletedAt,
+    int? deletedBy,
+  }) {
+    var changed = false;
+    final updated = messages.map((message) {
+      var next = message;
+      if (message.mid == mid && !message.isDeleted) {
+        next = message.asTombstone(at: deletedAt, by: deletedBy);
+        changed = true;
+      }
+      final quote = next.quotePreview;
+      if (quote?.mid == mid &&
+          (!quote!.isDeleted ||
+              quote.content.isNotEmpty ||
+              quote.contentType != 'plain')) {
+        next = next.copyWith(quotePreview: quote.asRecalled());
+        changed = true;
+      }
+      return next;
+    }).toList();
+    return changed ? updated : messages;
   }
 
   void clearUnread(String roomId) {
@@ -1012,12 +1155,31 @@ class ChatDataService extends ChangeNotifier {
 
   List<ChatMessage> _fillSenderInfo(List<ChatMessage> msgs) {
     return msgs.map((m) {
-      if (m.isMe) return m;
-      final suid = m.senderUid;
-      if (suid == null) return m;
-      final name = m.senderName ?? _senderNameFor(suid);
-      final avatar = m.senderAvatar ?? _senderAvatarFor(suid);
-      return m.copyWith(senderName: name, senderAvatar: avatar);
+      var next = m;
+      if (next.senderUid != null) {
+        final suid = next.senderUid!;
+        next = next.copyWith(
+          senderName: next.senderName ?? _senderNameFor(suid),
+          senderAvatar: next.senderAvatar ?? _senderAvatarFor(suid),
+        );
+      }
+      final quote = next.quotePreview;
+      if (quote?.senderName == null && quote?.senderUid != null) {
+        final name = _senderNameFor(quote!.senderUid!);
+        if (name != null) {
+          next = next.copyWith(quotePreview: quote.copyWith(senderName: name));
+        }
+      }
+      final forwarded = next.forwardPreview;
+      if (forwarded?.senderName == null && forwarded?.senderUid != null) {
+        final name = _senderNameFor(forwarded!.senderUid!);
+        if (name != null) {
+          next = next.copyWith(
+            forwardPreview: forwarded.copyWith(senderName: name),
+          );
+        }
+      }
+      return next;
     }).toList();
   }
 

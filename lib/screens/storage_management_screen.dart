@@ -5,6 +5,9 @@ import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../l10n/app_localizations.dart';
+import '../models/file_attachment.dart';
+import '../widgets/file_attachment_view.dart';
+import '../widgets/sheet_scaffold.dart';
 
 class StorageManagementScreen extends StatefulWidget {
   const StorageManagementScreen({super.key});
@@ -387,7 +390,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
             Icon(
               Icons.cloud_off,
               size: 64,
-              color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 16),
             Text(
@@ -442,7 +445,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: _fileIconColor(fileName, colorScheme).withOpacity(0.12),
+          color: _fileIconColor(fileName, colorScheme).withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(
@@ -461,11 +464,40 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
         '${_formatSize(size)}  •  Ref: $refCount  •  $uploadTime',
         style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
       ),
-      trailing: IconButton(
-        icon: const Icon(Icons.delete_outline, size: 20),
-        color: colorScheme.error,
-        onPressed: () => _deleteFile(hash, fileName),
-        tooltip: l10n.storageDeleteFile,
+      onTap: () => _showFileActions(file),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.visibility_outlined, size: 20),
+            onPressed: () => _showFileActions(file),
+            tooltip: l10n.filePreview,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 20),
+            color: colorScheme.error,
+            onPressed: () => _deleteFile(hash, fileName),
+            tooltip: l10n.storageDeleteFile,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showFileActions(Map<String, dynamic> file) {
+    final attachment = FileAttachment.fromMap(file);
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => SheetScaffold(
+        titleText: attachment.fileName,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: FileAttachmentView(
+            attachment: attachment,
+            allowAutomaticPreview: false,
+          ),
+        ),
       ),
     );
   }

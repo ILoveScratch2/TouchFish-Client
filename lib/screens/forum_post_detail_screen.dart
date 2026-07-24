@@ -11,6 +11,7 @@ import '../services/auth_state.dart';
 import 'forum_post_compose_screen.dart';
 import '../utils/talker.dart';
 import '../widgets/mention_text_field.dart';
+import '../widgets/forum_attachments.dart';
 
 const double _kPostDetailMaxWidth = 680;
 
@@ -80,12 +81,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       final fid = int.tryParse(widget.forumId);
       final pid = int.tryParse(widget.postId);
       if (fid == null || pid == null) throw Exception('Invalid IDs');
-      final posts = await TfApiClient.instance.getPostList(fid);
-      try {
-        _post = posts.firstWhere((p) => p.id == widget.postId);
-      } catch (_) {
-        _post = null;
-      }
+      _post = await TfApiClient.instance.getPost(fid, pid);
 
       if (_post != null) {
         final authorUid = int.tryParse(_post!.authorUid);
@@ -126,14 +122,14 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
 
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(),
+        appBar: AppBar(leading: BackButton(onPressed: _leavePost)),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_post == null) {
       return Scaffold(
-        appBar: AppBar(),
+        appBar: AppBar(leading: BackButton(onPressed: _leavePost)),
         body: Center(child: Text(l10n.forumPostNotFound)),
       );
     }
@@ -147,6 +143,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: BackButton(onPressed: _leavePost),
         title: Text(post.title.isNotEmpty ? post.title : l10n.forumPostDetail),
       ),
       body: Stack(
@@ -271,6 +268,14 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     );
   }
 
+  void _leavePost() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/forum/${widget.forumId}');
+    }
+  }
+
   Widget _buildPostBody(
     BuildContext context,
     ForumPost post,
@@ -333,6 +338,8 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
           MarkdownRenderer(data: post.content)
         else
           Text(post.content, style: Theme.of(context).textTheme.bodyLarge),
+        if (post.attachments.isNotEmpty)
+          ForumAttachmentsRow(attachments: post.attachments),
         const SizedBox(height: 8),
       ],
     );

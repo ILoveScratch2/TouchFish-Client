@@ -13,6 +13,14 @@ class NotificationInfo {
   final List<int> mentionedUids;
   final bool mentionsMe;
   final bool? shouldAlert;
+  final int? quoteMid;
+  final Map<String, dynamic>? quotePreview;
+  final int? forwardedMid;
+  final Map<String, dynamic>? forwardPreview;
+  final Map<String, dynamic>? fileMetadata;
+  final int? recalledMid;
+  final int? deletedBy;
+  final DateTime? deletedAt;
 
   const NotificationInfo({
     required this.timeStamp,
@@ -29,6 +37,14 @@ class NotificationInfo {
     this.mentionedUids = const [],
     this.mentionsMe = false,
     this.shouldAlert,
+    this.quoteMid,
+    this.quotePreview,
+    this.forwardedMid,
+    this.forwardPreview,
+    this.fileMetadata,
+    this.recalledMid,
+    this.deletedBy,
+    this.deletedAt,
   });
 
   /// Parsed sender UID from the raw sender string.
@@ -53,6 +69,14 @@ class NotificationInfo {
 
     // Fallback: old channel.py messages put sender at outerInfo level
     final rawSender = info['sender'] ?? outerInfo['sender'];
+    final rawMeta = info['meta'];
+    final rawQuote = info['quote'] ?? (rawMeta is num ? rawMeta : null);
+    final preview =
+        info['quote_preview'] ??
+        info['reply_preview'] ??
+        info['quoted_message'];
+    final rawForwarded = info['forwarded'] ?? info['forwarded_message_id'];
+    final forwardPreview = info['forward_preview'] ?? info['forwarded_message'];
     return NotificationInfo(
       timeStamp:
           (json['time_stamp'] as num?)?.toDouble() ??
@@ -75,6 +99,26 @@ class NotificationInfo {
           .toList(),
       mentionsMe: info['mentions_me'] as bool? ?? false,
       shouldAlert: info['should_alert'] as bool?,
+      quoteMid: rawQuote is num
+          ? rawQuote.toInt()
+          : (rawQuote is String ? int.tryParse(rawQuote) : null),
+      quotePreview: preview is Map
+          ? Map<String, dynamic>.from(preview)
+          : rawQuote is Map
+          ? Map<String, dynamic>.from(rawQuote)
+          : null,
+      forwardedMid: _notificationInt(rawForwarded),
+      forwardPreview: forwardPreview is Map
+          ? Map<String, dynamic>.from(forwardPreview)
+          : null,
+      fileMetadata: info['file'] is Map
+          ? Map<String, dynamic>.from(info['file'] as Map)
+          : null,
+      recalledMid: _notificationInt(
+        info['recalled_mid'] ?? info['message_mid'] ?? info['mid'],
+      ),
+      deletedBy: _notificationInt(info['deleted_by']),
+      deletedAt: _notificationDateTime(info['deleted_at']),
     );
   }
 
@@ -103,4 +147,20 @@ class NotificationInfo {
     clientMid ?? '',
     content,
   ].join('|');
+}
+
+int? _notificationInt(dynamic value) {
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '');
+}
+
+DateTime? _notificationDateTime(dynamic value) {
+  if (value == null) return null;
+  if (value is num) {
+    final number = value.toDouble();
+    return DateTime.fromMillisecondsSinceEpoch(
+      (number > 100000000000 ? number : number * 1000).toInt(),
+    );
+  }
+  return DateTime.tryParse(value.toString());
 }

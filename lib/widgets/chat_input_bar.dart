@@ -15,6 +15,9 @@ class ChatInputBar extends StatefulWidget {
   final VoidCallback onSend;
   final Function(PlatformFile file, MessageType type)? onFilePicked;
   final List<MentionUser> mentionUsers;
+  final ChatMessage? actionMessage;
+  final bool actionIsForward;
+  final VoidCallback? onClearAction;
 
   const ChatInputBar({
     super.key,
@@ -22,6 +25,9 @@ class ChatInputBar extends StatefulWidget {
     required this.onSend,
     this.onFilePicked,
     this.mentionUsers = const [],
+    this.actionMessage,
+    this.actionIsForward = false,
+    this.onClearAction,
   });
 
   @override
@@ -71,7 +77,9 @@ class _ChatInputBarState extends State<ChatInputBar>
         : !controlOrMeta && !keyboard.isShiftPressed && !keyboard.isAltPressed;
 
     if (shouldSend) {
-      if (value.text.trim().isNotEmpty) widget.onSend();
+      if (value.text.trim().isNotEmpty || widget.actionIsForward) {
+        widget.onSend();
+      }
       return KeyEventResult.handled;
     }
 
@@ -117,6 +125,7 @@ class _ChatInputBarState extends State<ChatInputBar>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            _buildMessageActionPreview(context),
             // Main input row
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -212,7 +221,8 @@ class _ChatInputBarState extends State<ChatInputBar>
                   icon: const Icon(Icons.send),
                   color: colorScheme.primary,
                   onPressed: () {
-                    if (widget.controller.text.trim().isNotEmpty) {
+                    if (widget.controller.text.trim().isNotEmpty ||
+                        widget.actionIsForward) {
                       widget.onSend();
                     }
                   },
@@ -284,6 +294,102 @@ class _ChatInputBarState extends State<ChatInputBar>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMessageActionPreview(BuildContext context) {
+    final message = widget.actionMessage;
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) => SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, -0.2),
+          end: Offset.zero,
+        ).animate(animation),
+        child: FadeTransition(
+          opacity: animation,
+          child: SizeTransition(
+            sizeFactor: animation,
+            axisAlignment: -1,
+            child: child,
+          ),
+        ),
+      ),
+      child: message == null
+          ? const SizedBox.shrink(key: ValueKey('no-message-action'))
+          : Container(
+              key: ValueKey(
+                '${widget.actionIsForward ? 'forward' : 'reply'}-${message.id}',
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: colorScheme.outline.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        widget.actionIsForward
+                            ? Symbols.forward
+                            : Symbols.reply,
+                        size: 18,
+                        color: colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          widget.actionIsForward
+                              ? l10n.messageActionForward
+                              : l10n.messageReplyingTo(
+                                  message.isMe
+                                      ? 'Me'
+                                      : message.senderName ?? 'Unknown',
+                                ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(fontWeight: FontWeight.w500),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      SizedBox.square(
+                        dimension: 24,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          icon: const Icon(Icons.close, size: 18),
+                          onPressed: widget.onClearAction,
+                          tooltip: l10n.messageReplyDismiss,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6, left: 26),
+                    child: Text(
+                      message.type == MessageType.file
+                          ? l10n.mediaFileMessage
+                          : message.text,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 

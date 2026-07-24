@@ -1,4 +1,5 @@
 import '../utils/talker.dart';
+import 'file_attachment.dart';
 
 class Forum {
   final String id;
@@ -167,6 +168,7 @@ class ForumPost {
   final bool isPinned;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final List<FileAttachment> attachments;
 
   ForumPost({
     required this.id,
@@ -177,18 +179,34 @@ class ForumPost {
     required this.isPinned,
     required this.createdAt,
     required this.updatedAt,
+    this.attachments = const [],
   });
 
   factory ForumPost.fromJson(Map<String, dynamic> json) {
+    final createdRaw = json['created_at'] ?? json['send_time'] ?? 0;
+    final createdAt = createdRaw is num
+        ? DateTime.fromMillisecondsSinceEpoch(
+            (createdRaw.toDouble() * 1000).toInt(),
+          )
+        : DateTime.tryParse(createdRaw.toString()) ??
+              DateTime.fromMillisecondsSinceEpoch(0);
     return ForumPost(
-      id: json['id'] as String,
-      forumId: json['forum_id'] as String,
-      authorUid: json['author_uid'] as String,
-      title: json['title'] as String,
-      content: json['content'] as String,
-      isPinned: json['is_pinned'] as bool,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      id: (json['id'] ?? json['pid']).toString(),
+      forumId: (json['forum_id'] ?? json['fid']).toString(),
+      authorUid:
+          (json['author_uid'] ??
+                  json['creater'] ??
+                  json['sender_uid'] ??
+                  json['uid'])
+              .toString(),
+      title: json['title'] as String? ?? '',
+      content: json['content'] as String? ?? '',
+      isPinned: json['is_pinned'] as bool? ?? false,
+      createdAt: createdAt,
+      updatedAt: json['updated_at'] == null
+          ? createdAt
+          : DateTime.tryParse(json['updated_at'].toString()) ?? createdAt,
+      attachments: _parseAttachments(json['attachments']),
     );
   }
 
@@ -203,6 +221,7 @@ class ForumPost {
       isPinned: false,
       createdAt: DateTime.fromMillisecondsSinceEpoch(ms),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(ms),
+      attachments: row.length > 6 ? _parseAttachments(row[6]) : const [],
     );
   }
 
@@ -216,6 +235,16 @@ class ForumPost {
       'is_pinned': isPinned,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'attachments': attachments
+          .map(
+            (file) => {
+              'hash': file.hash,
+              'file_name': file.fileName,
+              'size': file.fileSize,
+              'mime_type': file.mimeType,
+            },
+          )
+          .toList(),
     };
   }
 
@@ -228,6 +257,7 @@ class ForumPost {
     bool? isPinned,
     DateTime? createdAt,
     DateTime? updatedAt,
+    List<FileAttachment>? attachments,
   }) {
     return ForumPost(
       id: id ?? this.id,
@@ -238,8 +268,18 @@ class ForumPost {
       isPinned: isPinned ?? this.isPinned,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      attachments: attachments ?? this.attachments,
     );
   }
+}
+
+List<FileAttachment> _parseAttachments(dynamic raw) {
+  if (raw is! List) return const [];
+  return raw
+      .whereType<Map>()
+      .map((item) => FileAttachment.fromMap(Map<String, dynamic>.from(item)))
+      .where((item) => item.hash.isNotEmpty)
+      .toList();
 }
 
 class ForumComment {

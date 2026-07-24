@@ -137,6 +137,14 @@ class SettingsData {
           icon: Icons.text_format,
         ),
         SettingItem(
+          key: 'automaticPreviewMaxMiB',
+          titleKey: 'settingsAutomaticPreviewTitle',
+          descriptionKey: 'settingsAutomaticPreviewDesc',
+          type: SettingType.customWidget,
+          defaultValue: 10,
+          icon: Icons.preview,
+        ),
+        SettingItem(
           key: 'cardOpacity',
           titleKey: 'settingsCardOpacityTitle',
           descriptionKey: 'settingsCardOpacityDesc',

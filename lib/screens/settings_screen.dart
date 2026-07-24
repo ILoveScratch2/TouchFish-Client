@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
@@ -260,6 +261,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         }
         if (item.key == 'maxCachedRooms') {
           return _buildMaxCachedRoomsSetting(context);
+        }
+        if (item.key == 'automaticPreviewMaxMiB') {
+          return _buildAutomaticPreviewSetting(context, l10n, item);
         }
         return const SizedBox.shrink();
     }
@@ -1040,6 +1044,112 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
+  Widget _buildAutomaticPreviewSetting(
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingItem item,
+  ) {
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        final value = _settingsService.getValue<int>(item.key, 10);
+        final presets = <int>[0, 1, 10, 50, 100];
+        final customLabel = l10n.settingsColorCustom;
+        final selectedLabel = presets.contains(value)
+            ? value == 0
+                  ? l10n.settingsAutomaticPreviewDisabled
+                  : l10n.settingsAutomaticPreviewSize(value)
+            : l10n.settingsAutomaticPreviewSize(value);
+        final items = [
+          ...presets.map(
+            (size) => size == 0
+                ? l10n.settingsAutomaticPreviewDisabled
+                : l10n.settingsAutomaticPreviewSize(size),
+          ),
+          customLabel,
+        ];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Card(
+            child: ListTile(
+              leading: Icon(item.icon),
+              title: Text(l10n.settingsAutomaticPreviewTitle),
+              subtitle: Text(l10n.settingsAutomaticPreviewDesc),
+              trailing: SizedBox(
+                width: 150,
+                child: CustomDropdown<String>(
+                  hintText: selectedLabel,
+                  initialItem: presets.contains(value) ? selectedLabel : null,
+                  items: items,
+                  decoration: CustomDropdownDecoration(
+                    closedBorderRadius: BorderRadius.circular(8),
+                    expandedBorderRadius: BorderRadius.circular(8),
+                    closedFillColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    expandedFillColor: Theme.of(context).colorScheme.surface,
+                  ),
+                  onChanged: (selection) async {
+                    if (selection == null) return;
+                    if (selection == customLabel) {
+                      await _showCustomPreviewLimit(context, value);
+                      return;
+                    }
+                    final index = items.indexOf(selection);
+                    if (index >= 0 && index < presets.length) {
+                      await _settingsService.setValue(item.key, presets[index]);
+                    }
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showCustomPreviewLimit(
+    BuildContext context,
+    int currentValue,
+  ) async {
+    final controller = TextEditingController(text: '$currentValue');
+    final value = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(AppLocalizations.of(context)!.settingsColorCustom),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration: const InputDecoration(suffixText: 'MiB'),
+          onSubmitted: (raw) {
+            final parsed = int.tryParse(raw);
+            if (parsed != null) Navigator.pop(dialogContext, parsed);
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              final parsed = int.tryParse(controller.text);
+              if (parsed != null) Navigator.pop(dialogContext, parsed);
+            },
+            child: Text(AppLocalizations.of(context)!.confirm),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (value != null) {
+      await _settingsService.setValue('automaticPreviewMaxMiB', value);
+    }
+  }
+
   Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Text(
@@ -1125,6 +1235,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsEnableMarkdownTitle;
       case 'settingsEnableMarkdownDesc':
         return l10n.settingsEnableMarkdownDesc;
+      case 'settingsAutomaticPreviewTitle':
+        return l10n.settingsAutomaticPreviewTitle;
+      case 'settingsAutomaticPreviewDesc':
+        return l10n.settingsAutomaticPreviewDesc;
       case 'settingsCardOpacityTitle':
         return l10n.settingsCardOpacityTitle;
       case 'settingsCardOpacityDesc':

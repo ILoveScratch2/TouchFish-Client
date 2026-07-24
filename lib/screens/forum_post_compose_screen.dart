@@ -1,4 +1,8 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:mime/mime.dart';
 import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
 import '../services/api/tf_api_client.dart';
@@ -6,6 +10,8 @@ import '../services/auth_state.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/mention_text_field.dart';
 import '../utils/talker.dart';
+import '../models/file_attachment.dart';
+import '../widgets/file_attachment_view.dart';
 
 class ForumPostComposeSheet extends StatefulWidget {
   final String forumId;
@@ -54,6 +60,8 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
   final _currentUser =
       AuthState.instance.currentUser ?? UserProfileDemoData.getDemoProfile('1');
   bool _isSubmitting = false;
+  bool _isUploadingAttachment = false;
+  final List<FileAttachment> _attachments = [];
 
   @override
   void initState() {
@@ -134,7 +142,8 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                     ),
                   ),
                   FilledButton.icon(
-                    onPressed: _isSubmitting ? null : _submit,
+                    onPressed:
+                        (_isSubmitting || _isUploadingAttachment) ? null : _submit,
                     icon: const Icon(Icons.send, size: 18),
                     label: Text(l10n.forumPublish),
                   ),
@@ -201,6 +210,36 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                                 ),
                               ),
                             ),
+                            if (!widget.isReply && _attachments.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              ..._attachments.map(
+                                (attachment) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: FileAttachmentView(
+                                          attachment: attachment,
+                                          allowAutomaticPreview: false,
+                                          compact: true,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        onPressed: _isSubmitting
+                                            ? null
+                                            : () => setState(
+                                                () => _attachments.remove(
+                                                  attachment,
+                                                ),
+                                              ),
+                                        icon: const Icon(Icons.close),
+                                        tooltip: l10n.forumAttachmentRemove,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -242,6 +281,21 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                         icon: const Icon(Icons.format_bold, size: 20),
                         tooltip: l10n.forumMdBold,
                       ),
+                      if (!widget.isReply)
+                        IconButton(
+                          onPressed: _isUploadingAttachment
+                              ? null
+                              : _pickAttachments,
+                          icon: _isUploadingAttachment
+                              ? const SizedBox.square(
+                                  dimension: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.attach_file, size: 20),
+                          tooltip: l10n.forumComposeAttachFile,
+                        ),
                       IconButton(
                         onPressed: () => _insertMarkdown('*', '*'),
                         icon: const Icon(Icons.format_italic, size: 20),
@@ -325,9 +379,73 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     );
   }
 
+  Future<void> _pickAttachments() async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      withData: true,
+      type: FileType.any,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+    setState(() => _isUploadingAttachment = true);
+    try {
+      for (final file in result.files) {
+        final bytes = file.bytes;
+        if (bytes == null) continue;
+        final maxSize = await TfApiClient.instance.getMaxFileSize();
+        if (maxSize != null && bytes.length > maxSize) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(
+                    context,
+                  )!.storageFileTooLarge((maxSize / (1024 * 1024)).round()),
+                ),
+              ),
+            );
+          }
+          continue;
+        }
+        final uploaded = await TfApiClient.instance.uploadFile(
+          uid,
+          password,
+          file.name,
+          base64Encode(bytes),
+        );
+        final hash = (uploaded?['hash'] ?? uploaded?['file_hash'])?.toString();
+        if (hash == null || hash.isEmpty || !mounted) continue;
+        setState(() {
+          _attachments.add(
+            FileAttachment(
+              hash: hash,
+              fileName: file.name,
+              fileSize: file.size,
+              mimeType: lookupMimeType(file.name),
+            ),
+          );
+        });
+      }
+    } catch (error, stackTrace) {
+      talker.error('Forum attachment upload failed', error, stackTrace);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.forumAttachmentFailed),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingAttachment = false);
+    }
+  }
+
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
+    if (_isUploadingAttachment) return;
     if (_contentController.text.trim().isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -366,6 +484,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
           fid,
           _titleController.text.trim(),
           _contentController.text.trim(),
+          attachmentHashes: _attachments.map((file) => file.hash).toList(),
         );
       }
       if (!mounted) return;

@@ -13,6 +13,7 @@ import '../../models/user_profile.dart';
 import '../../models/forum_model.dart';
 import '../../models/announcement_model.dart';
 import '../../models/notification_model.dart';
+import '../../models/file_attachment.dart';
 import '../server_connection_status_service.dart';
 import '../../widgets/server_selector.dart';
 import '../../utils/talker.dart';
@@ -28,6 +29,7 @@ class TfChatListItem {
   final double? lastTime;
   final int? lastSenderUid;
   final int? lastMid;
+  final bool lastDeleted;
   final bool isFriend;
   final bool? isPinned;
   final int? notifyLevel;
@@ -43,10 +45,13 @@ class TfChatListItem {
     this.lastTime,
     this.lastSenderUid,
     this.lastMid,
+    this.lastDeleted = false,
     required this.isFriend,
     this.isPinned,
     this.notifyLevel,
   });
+
+  String? get visibleLastContent => lastDeleted ? null : lastContent;
 
   factory TfChatListItem.fromJson(Map<String, dynamic> json) {
     return TfChatListItem(
@@ -60,6 +65,7 @@ class TfChatListItem {
       lastTime: (json['last_time'] as num?)?.toDouble(),
       lastSenderUid: (json['last_sender_uid'] as num?)?.toInt(),
       lastMid: (json['last_mid'] as num?)?.toInt(),
+      lastDeleted: json['last_deleted'] as bool? ?? false,
       isFriend: json['is_friend'] as bool? ?? false,
       isPinned: json['is_pinned'] as bool?,
       notifyLevel: (json['notify_level'] as num?)?.toInt(),
@@ -1038,19 +1044,29 @@ class TfApiClient {
         // Legacy format: plain list of rows
         return data
             .map(
-              (row) =>
-                  ForumPost.fromServerRow(fid.toString(), row as List<dynamic>),
+              (row) => row is Map
+                  ? ForumPost.fromJson({
+                      ...Map<String, dynamic>.from(row),
+                      'forum_id': row['forum_id']?.toString() ?? fid.toString(),
+                    })
+                  : ForumPost.fromServerRow(
+                      fid.toString(),
+                      row as List<dynamic>,
+                    ),
             )
             .toList();
       }
       if (data is Map) {
-        final posts = data['posts'] as List? ?? [];
+        final posts =
+            data['post_rows'] as List? ?? data['posts'] as List? ?? const [];
         final pinnedPid = data['pinned_pid'];
         return posts.map((row) {
-          final post = ForumPost.fromServerRow(
-            fid.toString(),
-            row as List<dynamic>,
-          );
+          final post = row is Map
+              ? ForumPost.fromJson({
+                  ...Map<String, dynamic>.from(row),
+                  'forum_id': row['forum_id']?.toString() ?? fid.toString(),
+                })
+              : ForumPost.fromServerRow(fid.toString(), row as List<dynamic>);
           if (pinnedPid != null && post.id == pinnedPid.toString()) {
             return post.copyWith(isPinned: true);
           }
@@ -1064,16 +1080,36 @@ class TfApiClient {
     }
   }
 
+  Future<ForumPost?> getPost(int fid, int pid) async {
+    try {
+      final baseUrl = await getBaseUrl();
+      final response = await _getRequest('$baseUrl/forum/get_post/$fid/$pid');
+      if (response.statusCode != 200) return null;
+      final data = jsonDecode(response.body);
+      if (data is! Map || data.isEmpty) return null;
+      return ForumPost.fromJson(Map<String, dynamic>.from(data));
+    } catch (e) {
+      talker.error('getPost $fid/$pid failed', e);
+      return null;
+    }
+  }
+
   Future<bool> sendPost(
     int uid,
     String password,
     int fid,
     String title,
-    String content,
-  ) async {
+    String content, {
+    List<String> attachmentHashes = const [],
+  }) async {
     final result = await secretPost(
       '/forum/send_post',
-      {'fid': fid, 'title': title, 'content': content},
+      {
+        'fid': fid,
+        'title': title,
+        'content': content,
+        'attachments': attachmentHashes,
+      },
       uid: uid,
       password: password,
     );
@@ -1561,6 +1597,7 @@ class TfApiClient {
     String? clientMid,
     String? fileHash,
     int quote = -1,
+    int forwarded = -1,
   }) async {
     final result = await secretPost(
       '/message/send',
@@ -1571,6 +1608,7 @@ class TfApiClient {
         'client_mid': clientMid,
         'file_hash': fileHash,
         'quote': quote,
+        'forwarded': forwarded,
       },
       uid: uid,
       password: password,
@@ -1580,6 +1618,58 @@ class TfApiClient {
       if (data is Map<String, dynamic>) return data;
     } catch (_) {}
     return null;
+  }
+
+  Future<Map<String, dynamic>?> recallMessage(
+    int uid,
+    String password,
+    int mid,
+  ) async {
+    final result = await secretPost(
+      '/message/recall',
+      {'mid': mid},
+      uid: uid,
+      password: password,
+    );
+    final data = _parseJsonMap(result);
+    if (data?['success'] != true || data?['message'] is! Map) return null;
+    return Map<String, dynamic>.from(data!['message'] as Map);
+  }
+
+  Future<String> getFileUrl(String hash) async {
+    final baseUrl = await getBaseUrl();
+    return '$baseUrl/file/get_file/${Uri.encodeComponent(hash)}';
+  }
+
+  Future<FileAttachment?> getFileMetadata(String hash) async {
+    try {
+      final url = await getFileUrl(hash);
+      final response = await _http
+          .head(Uri.parse(url))
+          .timeout(_defaultTimeout);
+      if (response.statusCode < 200 || response.statusCode >= 400) return null;
+      final disposition = response.headers['content-disposition'] ?? '';
+      final encodedName = RegExp(
+        r"filename\*=UTF-8''([^;]+)",
+        caseSensitive: false,
+      ).firstMatch(disposition)?.group(1);
+      final plainName = RegExp(
+        r'filename="?([^";]+)',
+        caseSensitive: false,
+      ).firstMatch(disposition)?.group(1);
+      final fileName = encodedName == null
+          ? plainName ?? hash
+          : Uri.decodeComponent(encodedName);
+      return FileAttachment(
+        hash: hash,
+        fileName: fileName,
+        fileSize: int.tryParse(response.headers['content-length'] ?? ''),
+        mimeType: response.headers['content-type']?.split(';').first.trim(),
+      );
+    } catch (e) {
+      talker.warning('getFileMetadata $hash failed', e);
+      return null;
+    }
   }
 
   /// Fetch the chat room list with last message and partner profile.

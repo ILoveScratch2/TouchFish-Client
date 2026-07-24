@@ -3,6 +3,9 @@ import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../l10n/app_localizations.dart';
+import '../models/file_attachment.dart';
+import '../widgets/file_attachment_view.dart';
+import '../widgets/sheet_scaffold.dart';
 
 class AdminFileManagementScreen extends StatefulWidget {
   const AdminFileManagementScreen({super.key});
@@ -284,7 +287,7 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
             Icon(
               Icons.inventory_2_outlined,
               size: 64,
-              color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 16),
             Text(
@@ -327,11 +330,40 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
         'Owner: $fileOwner (UID: $fileUid)  •  ${_formatSize(size)}  •  Refs: $refCount  •  Uploads: $uploadCount',
         style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
       ),
-      trailing: IconButton(
-        icon: const Icon(Icons.delete_forever),
-        color: colorScheme.error,
-        onPressed: () => _forceDeleteFile(file),
-        tooltip: l10n.adminFileForceDelete,
+      onTap: () => _showFileActions(file),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.visibility_outlined),
+            onPressed: () => _showFileActions(file),
+            tooltip: l10n.filePreview,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_forever),
+            color: colorScheme.error,
+            onPressed: () => _forceDeleteFile(file),
+            tooltip: l10n.adminFileForceDelete,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showFileActions(Map<String, dynamic> file) {
+    final attachment = FileAttachment.fromMap(file);
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => SheetScaffold(
+        titleText: attachment.fileName,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: FileAttachmentView(
+            attachment: attachment,
+            allowAutomaticPreview: false,
+          ),
+        ),
       ),
     );
   }

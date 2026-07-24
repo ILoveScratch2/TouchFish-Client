@@ -12,6 +12,8 @@ import 'forum_members_screen.dart';
 import 'forum_post_compose_screen.dart';
 import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
+import '../widgets/forum_attachments.dart';
+import '../routes/app_routes.dart';
 
 class ForumDetailScreen extends StatefulWidget {
   final String forumId;
@@ -218,7 +220,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     ColorScheme colorScheme,
   ) {
     return AppBar(
-      leading: BackButton(onPressed: () => context.pop()),
+      leading: BackButton(onPressed: () => _leaveForum(context)),
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -279,7 +281,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         SliverAppBar(
           expandedHeight: 180,
           pinned: true,
-          leading: BackButton(onPressed: () => context.pop()),
+          leading: BackButton(onPressed: () => _leaveForum(context)),
           flexibleSpace: FlexibleSpaceBar(
             title: Row(
               mainAxisSize: MainAxisSize.min,
@@ -327,6 +329,14 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _buildPostListSliver(context, l10n),
       ],
     );
+  }
+
+  void _leaveForum(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRoutes.forum);
+    }
   }
 
   Widget _buildDescriptionCard(
@@ -1006,6 +1016,8 @@ class _PostCardState extends State<_PostCard> {
                 ),
               if (featuredComment != null)
                 _buildCommentPreview(context, featuredComment, commentCount),
+              if (post.attachments.isNotEmpty)
+                ForumAttachmentsRow(attachments: post.attachments),
             ],
           ),
         ),

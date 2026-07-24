@@ -1021,6 +1021,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageActionDelete => 'Delete';
 
   @override
+  String get messageActionRecall => 'Recall';
+
+  @override
+  String get messageRecallConfirmTitle => 'Recall message?';
+
+  @override
+  String get messageRecallConfirmBody =>
+      'This removes the message content for everyone. This action cannot be undone.';
+
+  @override
+  String get messageRecallFailed => 'Could not recall the message';
+
+  @override
+  String get messageRecalled => 'Message recalled';
+
+  @override
+  String get messageQuoteRecalled => 'Recalled message';
+
+  @override
+  String get messageQuoteMissing => 'Original message unavailable';
+
+  @override
+  String messageReplyingTo(String name) {
+    return 'Replying to $name';
+  }
+
+  @override
+  String get messageReplyDismiss => 'Cancel reply';
+
+  @override
   String get chatRoomSettings => 'Chat Settings';
 
   @override
@@ -1175,6 +1205,53 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mediaPauseAudio => 'Pause Audio';
+
+  @override
+  String get filePreview => 'Preview';
+
+  @override
+  String get filePreviewFailed => 'Preview unavailable';
+
+  @override
+  String get fileDownload => 'Download';
+
+  @override
+  String get fileDownloading => 'Downloading...';
+
+  @override
+  String get fileDownloadStarted => 'Download started';
+
+  @override
+  String fileDownloadSaved(String path) {
+    return 'Saved to $path';
+  }
+
+  @override
+  String get fileDownloadFailed => 'Download failed';
+
+  @override
+  String get forumAttachments => 'Attachments';
+
+  @override
+  String get forumAttachmentRemove => 'Remove attachment';
+
+  @override
+  String get forumAttachmentFailed => 'Attachment upload failed';
+
+  @override
+  String get settingsAutomaticPreviewTitle => 'Automatic file previews';
+
+  @override
+  String get settingsAutomaticPreviewDesc =>
+      'Preview supported files automatically up to this size';
+
+  @override
+  String get settingsAutomaticPreviewDisabled => 'Off';
+
+  @override
+  String settingsAutomaticPreviewSize(int size) {
+    return '$size MiB';
+  }
 
   @override
   String get userProfileTitle => 'User Profile';
