@@ -65,7 +65,7 @@ class AppNotificationService extends ChangeNotifier
       requestSoundPermission: false,
     );
     const settings = InitializationSettings(
-      android: AndroidInitializationSettings('ic_launcher'),
+      android: AndroidInitializationSettings('ic_notification'),
       iOS: darwinSettings,
       macOS: darwinSettings,
       linux: LinuxInitializationSettings(
