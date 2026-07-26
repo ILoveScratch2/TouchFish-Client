@@ -203,7 +203,6 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final isNarrow = MediaQuery.of(context).size.width < 600;
     final badgeCount = _badgeCount;
 
     return Scaffold(
@@ -250,12 +249,9 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
         ],
       ),
       floatingActionButton: _isAdmin
-          ? Padding(
-              padding: EdgeInsets.only(bottom: isNarrow ? 80.0 : 0.0),
-              child: FloatingActionButton(
-                onPressed: _showCreateDialog,
-                child: const Icon(Icons.add),
-              ),
+          ? FloatingActionButton(
+              onPressed: _showCreateDialog,
+              child: const Icon(Icons.add),
             )
           : null,
       body: _buildAnnouncementList(l10n),

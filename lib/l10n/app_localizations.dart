@@ -1840,6 +1840,12 @@ abstract class AppLocalizations {
   /// **'No messages yet\nSend a message to start chatting'**
   String get chatDetailNoMessages;
 
+  /// No description provided for @chatBackToBottom.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to bottom'**
+  String get chatBackToBottom;
+
   /// No description provided for @chatInputCollapse.
   ///
   /// In en, this message translates to:

@@ -899,6 +899,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatDetailNoMessages => '暂无消息\n发送一条消息开始聊天吧';
 
   @override
+  String get chatBackToBottom => '回到底部';
+
+  @override
   String get chatInputCollapse => '收起';
 
   @override

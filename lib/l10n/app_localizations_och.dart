@@ -899,6 +899,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get chatDetailNoMessages => '暫無消息\n發送一則以啟聊';
 
   @override
+  String get chatBackToBottom => '返至底部';
+
+  @override
   String get chatInputCollapse => '收';
 
   @override

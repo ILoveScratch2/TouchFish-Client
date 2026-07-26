@@ -639,6 +639,11 @@ class _ChatListScreenState extends State<ChatListScreen>
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton.small(
+        heroTag: 'chat-fab',
+        onPressed: () => _showAddMenu(context),
+        child: const Icon(Icons.add),
+      ),
       body: TabBarView(
         controller: _tabController,
         children: [

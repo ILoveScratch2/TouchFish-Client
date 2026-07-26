@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as path;
 import 'package:file_picker/file_picker.dart';
@@ -47,6 +48,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   StreamSubscription? _ackErrorSub;
   String _groupEnterHint = '';
   bool _showGroupEnterHint = true;
+  bool _followBottom = true;
+  bool _showBackToBottom = false;
   ChatMessage? _replyingTo;
   ChatMessage? _forwardingTo;
   bool _canModerateGroup = false;
@@ -98,6 +101,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _hasMoreMessages = true;
     _groupEnterHint = '';
     _showGroupEnterHint = true;
+    _followBottom = true;
+    _showBackToBottom = false;
     _replyingTo = null;
     _canModerateGroup = false;
     _loadChatRoom();
@@ -191,7 +196,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       _messages.clear();
       _messages.addAll(messages);
     });
-    _scrollToBottom();
+    _scrollToBottom(animated: false);
     _markVisibleMessagesRead();
   }
 
@@ -201,11 +206,35 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
+    final showBackToBottom = !_isNearBottom;
+    if (_showBackToBottom != showBackToBottom && mounted) {
+      setState(() => _showBackToBottom = showBackToBottom);
+    }
+    if (_isAtBottom) _followBottom = true;
+
     if (_isLoadingOlder || !_hasMoreMessages) return;
     // Trigger when user scrolls near the top
     if (_scrollController.position.pixels < 50) {
       _loadOlder();
     }
+  }
+
+  bool _onUserScroll(ScrollNotification notification) {
+    if (notification is UserScrollNotification &&
+        notification.direction != ScrollDirection.idle) {
+      _followBottom = false;
+    } else if (notification is ScrollUpdateNotification &&
+        notification.dragDetails != null) {
+      _followBottom = false;
+    } else if (notification is ScrollEndNotification && _isAtBottom) {
+      _followBottom = true;
+    }
+    return false;
+  }
+
+  bool _onScrollMetricsChanged(ScrollMetricsNotification notification) {
+    if (_followBottom) _scrollToBottom(animated: false);
+    return false;
   }
 
   Future<void> _loadOlder() async {
@@ -303,6 +332,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (!_scrollController.hasClients) return true;
     final pos = _scrollController.position;
     return pos.pixels >= pos.maxScrollExtent - 100;
+  }
+
+  bool get _isAtBottom {
+    if (!_scrollController.hasClients) return true;
+    final pos = _scrollController.position;
+    return pos.pixels >= pos.maxScrollExtent - 1;
   }
 
   void _onChatDataChanged() {
@@ -649,8 +684,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           () => _wsAckFallback(
             clientMid: clientMid,
             content: outgoingText,
-            contentType:
-                outgoingType == MessageType.file ? 'file' : 'plain',
+            contentType: outgoingType == MessageType.file ? 'file' : 'plain',
             fileHash: forwardTarget?.media?.fileHash,
             quoteMid: quoteMid,
             forwardedMid: forwardedMid,
@@ -709,7 +743,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (!mounted) return;
     if (result != null) {
       final serverMid = (result['mid'] as num?)?.toInt();
-      _updateMessageStatus(clientMid, mid: serverMid, status: MessageStatus.sent);
+      _updateMessageStatus(
+        clientMid,
+        mid: serverMid,
+        status: MessageStatus.sent,
+      );
     } else {
       _updateMessageStatus(clientMid, status: MessageStatus.failed);
     }
@@ -986,14 +1024,18 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool animated = true}) {
+    _followBottom = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+      if (!mounted || !_scrollController.hasClients) return;
+      if (animated) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
+      } else {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
     });
   }
@@ -1143,94 +1185,138 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 ),
               ),
             Expanded(
-              child: _messages.isEmpty
-                  ? RefreshIndicator(
-                      onRefresh: _onRefresh,
-                      child: ListView(
-                        children: [
-                          SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.4,
-                            child: Center(
-                              child: Text(
-                                l10n.chatDetailNoMessages,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: colorScheme.onSurfaceVariant,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: NotificationListener<ScrollMetricsNotification>(
+                      onNotification: _onScrollMetricsChanged,
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: _onUserScroll,
+                        child: _messages.isEmpty
+                            ? RefreshIndicator(
+                                onRefresh: _onRefresh,
+                                child: ListView(
+                                  children: [
+                                    SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                          0.4,
+                                      child: Center(
+                                        child: Text(
+                                          l10n.chatDetailNoMessages,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : RefreshIndicator(
+                                onRefresh: _onRefresh,
+                                child: ListView.builder(
+                                  controller: _scrollController,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
+                                  itemCount: _messages.length,
+                                  itemBuilder: (context, index) {
+                                    final message = _messages[index];
+                                    final previous = index > 0
+                                        ? _messages[index - 1]
+                                        : null;
+                                    final showAvatar =
+                                        previous == null ||
+                                        previous.senderUid !=
+                                            message.senderUid ||
+                                        message.timestamp
+                                                .difference(previous.timestamp)
+                                                .inMinutes >=
+                                            5;
+                                    final key = message.mid == null
+                                        ? null
+                                        : _messageKeys.putIfAbsent(
+                                            message.mid!,
+                                            GlobalKey.new,
+                                          );
+                                    return Dismissible(
+                                      key: ValueKey('swipe-${message.id}'),
+                                      direction: message.isDeleted
+                                          ? DismissDirection.none
+                                          : DismissDirection.endToStart,
+                                      dismissThresholds: const {
+                                        DismissDirection.endToStart: 0.22,
+                                      },
+                                      resizeDuration: null,
+                                      movementDuration: const Duration(
+                                        milliseconds: 120,
+                                      ),
+                                      confirmDismiss: (_) async {
+                                        if (message.isMe) {
+                                          _startForward(message);
+                                        } else {
+                                          _startReply(message);
+                                        }
+                                        return false;
+                                      },
+                                      background: Align(
+                                        alignment: Alignment.centerRight,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 24,
+                                          ),
+                                          child: Icon(
+                                            message.isMe
+                                                ? Icons.forward
+                                                : Icons.reply,
+                                            color: colorScheme.primary,
+                                          ),
+                                        ),
+                                      ),
+                                      child: KeyedSubtree(
+                                        key: key,
+                                        child: MessageBubble(
+                                          message: message,
+                                          onReply: _startReply,
+                                          onForward: _startForward,
+                                          onRecall: _recallMessage,
+                                          onQuoteTap: _scrollToQuotedMessage,
+                                          showAvatar: showAvatar,
+                                          canRecall: _canRecall(message),
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _onRefresh,
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          final message = _messages[index];
-                          final previous = index > 0
-                              ? _messages[index - 1]
-                              : null;
-                          final showAvatar =
-                              previous == null ||
-                              previous.senderUid != message.senderUid ||
-                              message.timestamp
-                                      .difference(previous.timestamp)
-                                      .inMinutes >=
-                                  5;
-                          final key = message.mid == null
-                              ? null
-                              : _messageKeys.putIfAbsent(
-                                  message.mid!,
-                                  GlobalKey.new,
-                                );
-                          return Dismissible(
-                            key: ValueKey('swipe-${message.id}'),
-                            direction: message.isDeleted
-                                ? DismissDirection.none
-                                : DismissDirection.endToStart,
-                            dismissThresholds: const {
-                              DismissDirection.endToStart: 0.22,
-                            },
-                            resizeDuration: null,
-                            movementDuration: const Duration(milliseconds: 120),
-                            confirmDismiss: (_) async {
-                              if (message.isMe) {
-                                _startForward(message);
-                              } else {
-                                _startReply(message);
-                              }
-                              return false;
-                            },
-                            background: Align(
-                              alignment: Alignment.centerRight,
-                              child: Padding(
-                                padding: const EdgeInsets.only(right: 24),
-                                child: Icon(
-                                  message.isMe ? Icons.forward : Icons.reply,
-                                  color: colorScheme.primary,
-                                ),
-                              ),
-                            ),
-                            child: KeyedSubtree(
-                              key: key,
-                              child: MessageBubble(
-                                message: message,
-                                onReply: _startReply,
-                                onForward: _startForward,
-                                onRecall: _recallMessage,
-                                onQuoteTap: _scrollToQuotedMessage,
-                                showAvatar: showAvatar,
-                                canRecall: _canRecall(message),
-                              ),
-                            ),
-                          );
-                        },
                       ),
                     ),
+                  ),
+                  Positioned(
+                    right: 12,
+                    bottom: 8,
+                    child: AnimatedScale(
+                      scale: _showBackToBottom ? 1 : 0.8,
+                      duration: const Duration(milliseconds: 180),
+                      child: AnimatedOpacity(
+                        opacity: _showBackToBottom ? 1 : 0,
+                        duration: const Duration(milliseconds: 180),
+                        child: IgnorePointer(
+                          ignoring: !_showBackToBottom,
+                          child: FloatingActionButton.small(
+                            heroTag: 'chat-back-to-bottom',
+                            tooltip: l10n.chatBackToBottom,
+                            onPressed: _scrollToBottom,
+                            child: const Icon(Icons.arrow_downward),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             ChatInputBar(
               controller: _messageController,

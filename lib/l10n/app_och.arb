@@ -374,6 +374,7 @@
   "chatDetailOther": "對方",
   "chatDetailGroupChat": "群聊",
   "chatDetailNoMessages": "暫無消息\n發送一則以啟聊",
+  "chatBackToBottom": "返至底部",
 
   "chatInputCollapse": "收",
   "chatInputExpand": "展",

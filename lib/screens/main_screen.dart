@@ -217,7 +217,6 @@ class _MainScreenState extends State<MainScreen> {
             final showBottomNav = !_isInChatDetail(context);
             final isBanned = AuthState.instance.isBanned;
             return Scaffold(
-              extendBody: true,
               body: Column(
                 children: [
                   if (isBanned)

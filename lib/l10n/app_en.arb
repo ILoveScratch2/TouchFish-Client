@@ -388,6 +388,7 @@
   "chatDetailOther": "Other",
   "chatDetailGroupChat": "Group Chat",
   "chatDetailNoMessages": "No messages yet\nSend a message to start chatting",
+  "chatBackToBottom": "Back to bottom",
   
   "chatInputCollapse": "Collapse",
   "chatInputExpand": "More",

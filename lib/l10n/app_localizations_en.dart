@@ -943,6 +943,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'No messages yet\nSend a message to start chatting';
 
   @override
+  String get chatBackToBottom => 'Back to bottom';
+
+  @override
   String get chatInputCollapse => 'Collapse';
 
   @override
