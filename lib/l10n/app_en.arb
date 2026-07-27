@@ -538,7 +538,7 @@
   "aboutDocumentation": "Documentation",
   "aboutServerRepository": "Backend Server",
   "aboutFontLicense": "Font License",
-  "aboutFontLicenseDialogTitle": "HarmonyOS Sans SC Font License",
+  "aboutFontLicenseDialogTitle": "Font License",
   "aboutFontLicenseDescription": "This application uses HarmonyOS Sans SC  & LXGW WenKai fonts, provided by Huawei Device Co., Ltd. under the HarmonyOS Sans Fonts License Agreement and LXGW under the SIL Open Font License 1.1. The use of these fonts is subject to their respective license agreements.",
   "aboutFontLicenseFullText": "Full License Text",
   "aboutFontLicenseClose": "Close",

@@ -515,7 +515,7 @@
   "aboutDocumentation": "文档",
   "aboutServerRepository": "后端服务器",
   "aboutFontLicense": "字体许可",
-  "aboutFontLicenseDialogTitle": "HarmonyOS Sans Fonts License Agreement",
+  "aboutFontLicenseDialogTitle": "字体许可",
   "aboutFontLicenseDescription": "本应用使用 HarmonyOS Sans SC 与 LXGW WenKai 字体，由华为终端有限公司根据 HarmonyOS Sans Fonts License Agreement 提供和 LXGW 根据 SIL Open Font License 1.1 提供。这些字体的使用遵循各自的许可证协议。",
   "aboutFontLicenseFullText": "完整许可证文本",
   "aboutFontLicenseClose": "关闭",

@@ -71,7 +71,7 @@
 
   "settingsCategoryAppearance": "觀",
   "settingsCategoryNotifications": "知",
-  "settingsCategoryDrafts": "草稿",
+  "settingsCategoryDrafts": "稿",
   "settingsSaveChatDraftsTitle": "存對話草稿",
   "settingsSaveChatDraftsDesc": "自存各對話未發之文。關之則清當前服器與賬戶之對話草稿。",
   "settingsSaveForumDraftsTitle": "存論壇草稿",
@@ -144,7 +144,7 @@
   "settingsSendModeCtrlEnter": "擊 Ctrl+Enter 以發",
 
   "settingsEnableMarkdownTitle": "染 Markdown/LaTeX 內容",
-  "settingsEnableMarkdownDesc": "將可渲染之 Markdown/LaTeX 文予以渲染",
+  "settingsEnableMarkdownDesc": "將可染之 Markdown/LaTeX 文予以渲染",
 
   "settingsSystemNotificationsTitle": "系統通知",
   "settingsSystemNotificationsDesc": "藉作業系統通知以達消息之知",
@@ -189,8 +189,8 @@
   "serverUseHttpsOff": "以明文連接",
   "serverSave": "存",
   "serverTryWss": "WSS",
-  "serverTryWssOn": "試以加密WebSocket（敗則退WS）",
-  "serverTryWssOff": "以明文WebSocket",
+  "serverTryWssOn": "試密WebSocket（敗則退WS）",
+  "serverTryWssOff": "以明WebSocket",
   "serverAutoDetectTcpPort": "自探TCP端口",
   "serverAutoDetectTcpPortDesc": "自服器取TCP端口",
 
@@ -218,7 +218,7 @@
   "adminDefaultAssetUserDescription": "用戶未上傳頭像時用之。",
   "adminDefaultAssetGroup": "默認群組頭像",
   "adminDefaultAssetGroupDescription": "群組無自定頭像時用之。",
-  "adminDefaultAssetUploadSuccess": "已更新 {assetName}。",
+  "adminDefaultAssetUploadSuccess": "已更 {assetName}。",
   "@adminDefaultAssetUploadSuccess": {
     "placeholders": {
       "assetName": {
@@ -226,7 +226,7 @@
       }
     }
   },
-  "adminDefaultAssetUploadFailed": "更新 {assetName} 敗。",
+  "adminDefaultAssetUploadFailed": "更 {assetName} 敗。",
   "@adminDefaultAssetUploadFailed": {
     "placeholders": {
       "assetName": {
@@ -466,7 +466,7 @@
   "mediaImageMessage": "［圖］",
   "mediaVideoMessage": "［影］",
   "mediaAudioMessage": "［音］",
-  "mediaFileMessage": "［文件］",
+  "mediaFileMessage": "［案］",
   "mediaUnknown": "未知",
   "mediaPlayAudio": "播音",
   "mediaPauseAudio": "暫音",
@@ -515,7 +515,7 @@
   "aboutDocumentation": "文檔",
   "aboutServerRepository": "後端服器",
   "aboutFontLicense": "字體許可",
-  "aboutFontLicenseDialogTitle": "HarmonyOS Sans Fonts License Agreement",
+  "aboutFontLicenseDialogTitle": "字之許可",
   "aboutFontLicenseDescription": "本應用用 HarmonyOS Sans SC 與 LXGW WenKai 字體，由華為終端有限公司據 HarmonyOS Sans Fonts License Agreement 提供，LXGW 據 SIL Open Font License 1.1 提供。此等字體之用各循其許可。",
   "aboutFontLicenseFullText": "許可之全文",
   "aboutFontLicenseClose": "關閉",
@@ -618,11 +618,11 @@
   "debugNotificationTestInApp": "觸發應用內通知",
   "debugNotificationTestSystem": "觸發系統通知",
   "debugNotificationSystemUnavailable": "系統通知未初始化，或今平台不支持。",
-  "debugClearMessageDatabase": "清空消息資料庫",
+  "debugClearMessageDatabase": "清空消息庫",
   "debugClearMessageDatabaseDescription": "刪除此客戶端本地所緩之消息。",
-  "debugClearMessageDatabaseConfirmTitle": "清空消息資料庫？",
+  "debugClearMessageDatabaseConfirmTitle": "清空消息庫？",
   "debugClearMessageDatabaseConfirmMessage": "本地所緩之消息皆將刪除，服器之消息不受影響。",
-  "debugClearMessageDatabaseSuccess": "消息資料庫已清空。",
+  "debugClearMessageDatabaseSuccess": "消息庫已清空。",
   "debugCustomInfoDialog": "自定訊息框",
   "debugCustomInfoDialogDescription": "預觀可為調者自定鈕之複用訊息框",
   "debugCustomErrorDialog": "自定誤框",
@@ -668,7 +668,7 @@
   "debugApiTesterResultDescription": "觀今次所提交之參與服器之返。",
   "debugApiTesterAwaitingResult": "發請求後，此將示所提交之參與返回之值。",
   "debugApiTesterStatus": "狀",
-  "debugApiTesterStatusUnavailable": "不可用",
+  "debugApiTesterStatusUnavailable": "不可",
   "debugApiTesterRequestUrl": "請求之址",
   "debugApiTesterRequestPayload": "請求之荷",
   "debugApiTesterEncodedBody": "已編碼之請求體",
@@ -736,7 +736,7 @@
     }
   },
   "forumMemberRole": "角色",
-  "forumMemberRoleHint": "0=成員，50=管理員，100=主",
+  "forumMemberRoleHint": "0=成員，50=管員，100=主",
   "forumRoleOwner": "主",
   "forumRoleAdmin": "管員",
   "forumRoleMember": "成員",
@@ -915,7 +915,7 @@
   "adminFileFilterClear": "清除",
   "adminFileForceDelete": "強制刪除",
   "adminFileForceDeleteTitle": "強制刪除文件",
-  "adminFileForceDeleteConfirm": "永久刪除 \"{fileName}\"（所有者：{owner}）？\n\n此操作將從磁盤和資料庫中移除該文件，忽略所有引用。",
+  "adminFileForceDeleteConfirm": "永久刪除 \"{fileName}\"（所有者：{owner}）？\n\n此操作將從磁盤和庫中移除該文件，忽略所有引用。",
   "@adminFileForceDeleteConfirm": {
     "placeholders": {
       "fileName": {"type": "String"},
@@ -990,7 +990,7 @@
   "groupInvitePendingReview": "已發送邀請，等待審核",
   "groupInviteJoined": "已邀請加入羣組",
   "groupInviteFailed": "邀請失敗，請確認對方存在且已是您的好友",
-  "groupAvatarPermissionDenied": "僅羣主或管理員可修改羣頭像",
+  "groupAvatarPermissionDenied": "僅羣主或管員可修改羣頭像",
   "groupAvatarUpdateSuccess": "羣頭像已更新",
   "groupAvatarUploadFailedSize": "上傳失敗，請檢查檔案大小",
   "groupJoinDirectRequest": "直接申請加入",
@@ -1004,7 +1004,7 @@
   "groupSetAdmin": "設為管理員",
   "groupRemoveMemberAction": "移出羣組",
   "roleOwner": "羣主",
-  "roleAdmin": "管理員",
+  "roleAdmin": "管員",
   "commonCancel": "取消",
   "commonMe": "（我）",
   "commonOk": "確定",
@@ -1024,8 +1024,8 @@
   },
   "userProfileFriendRequestFailed": "發送好友請求失敗",
 
-  "settingsCategoryConnection": "連接",
-  "settingsCategoryStorage": "存儲",
+  "settingsCategoryConnection": "接",
+  "settingsCategoryStorage": "儲",
   "settingsNotifyWithHaptic": "通知觸感反饋",
   "settingsNotifyWithHapticDescription": "收到應用內新通知時觸發觸感反饋",
   "settingsMediaProxy": "媒體代理",
