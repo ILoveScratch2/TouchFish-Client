@@ -183,9 +183,7 @@ Widget _buildTouchFishAlertDialog<T>(
               const SizedBox(height: 8),
             ],
             content ??
-                (selectableMessage
-                    ? SelectableText(message!)
-                    : Text(message!)),
+                (selectableMessage ? SelectableText(message!) : Text(message!)),
             const SizedBox(height: 8),
           ],
         ),
@@ -203,13 +201,13 @@ List<Widget> _buildDialogActionWidgets<T>(
   final theme = Theme.of(context);
   final effectiveActions = actions == null || actions.isEmpty
       ? (addDefaultActionWhenEmpty
-          ? <TouchFishDialogAction<T>>[
-              TouchFishDialogAction<T>(
-                label: MaterialLocalizations.of(context).okButtonLabel,
-                isPrimary: true,
-              ),
-            ]
-          : <TouchFishDialogAction<T>>[])
+            ? <TouchFishDialogAction<T>>[
+                TouchFishDialogAction<T>(
+                  label: MaterialLocalizations.of(context).okButtonLabel,
+                  isPrimary: true,
+                ),
+              ]
+            : <TouchFishDialogAction<T>>[])
       : actions;
 
   return [

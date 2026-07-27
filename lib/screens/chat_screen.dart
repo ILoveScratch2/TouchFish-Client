@@ -383,6 +383,8 @@ class _ChatListScreenState extends State<ChatListScreen>
                   ],
                 ),
                 const Divider(height: 1),
+                if (_chatData.isLoading)
+                  const LinearProgressIndicator(minHeight: 2),
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
@@ -644,11 +646,18 @@ class _ChatListScreenState extends State<ChatListScreen>
         onPressed: () => _showAddMenu(context),
         child: const Icon(Icons.add),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          ChatListWidget(chatRooms: _chatRooms),
-          ContactListWidget(contacts: _contacts),
+          if (_chatData.isLoading) const LinearProgressIndicator(minHeight: 2),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                ChatListWidget(chatRooms: _chatRooms),
+                ContactListWidget(contacts: _contacts),
+              ],
+            ),
+          ),
         ],
       ),
     );

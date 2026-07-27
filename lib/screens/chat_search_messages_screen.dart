@@ -49,12 +49,9 @@ class _ChatSearchMessagesScreenState extends State<ChatSearchMessagesScreen> {
 
   Future<void> _executeSearch(String query) async {
     final normalizedQuery = query.trim().toLowerCase();
-    var messages = ChatDataService.instance.getMessages(widget.roomId);
-    if (messages.isEmpty) {
-      messages = await ChatDataService.instance.refreshMessagesForContact(
-        widget.roomId,
-      );
-    }
+    final messages = await ChatDataService.instance.getSearchableMessages(
+      widget.roomId,
+    );
     if (!mounted) return;
 
     final results =

@@ -114,6 +114,9 @@ class AppNotificationService extends ChangeNotifier
       if (settings.getValue<bool>('notificationSound', true)) {
         unawaited(SystemSound.play(SystemSoundType.alert));
       }
+      if (!kIsWeb && settings.getValue<bool>('notifyWithHaptic', true)) {
+        unawaited(HapticFeedback.lightImpact());
+      }
       add(notification);
       return;
     }

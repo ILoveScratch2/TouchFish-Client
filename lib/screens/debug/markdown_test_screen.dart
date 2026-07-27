@@ -48,9 +48,9 @@ Type **Markdown** here and preview the rendered result.
           children: [
             Text(
               l10n.debugMarkdownTesterEditorTitle,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -93,9 +93,9 @@ Type **Markdown** here and preview the rendered result.
           children: [
             Text(
               l10n.debugMarkdownTesterPreviewTitle,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -170,4 +170,4 @@ Type **Markdown** here and preview the rendered result.
       ),
     );
   }
-}
+}

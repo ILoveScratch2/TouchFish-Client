@@ -2132,6 +2132,50 @@ class AppLocalizationsEn extends AppLocalizations {
       'View and manage user accounts';
 
   @override
+  String get adminAccountSearch => 'Search username, email, or UID';
+
+  @override
+  String get adminAccountCreate => 'Create account';
+
+  @override
+  String get adminAccountCreateDescription =>
+      'Create a server account as an administrator';
+
+  @override
+  String get adminAccountUsername => 'Username';
+
+  @override
+  String get adminAccountPassword => 'Password';
+
+  @override
+  String get adminAccountConfirmPassword => 'Confirm password';
+
+  @override
+  String get adminAccountEmail => 'Email (optional)';
+
+  @override
+  String get adminAccountRole => 'Account role';
+
+  @override
+  String get adminAccountSign => 'Profile signature (optional)';
+
+  @override
+  String get adminAccountIntroduction => 'Introduction (optional)';
+
+  @override
+  String get adminAccountRequired => 'This field is required';
+
+  @override
+  String get adminAccountPasswordMismatch => 'Passwords do not match';
+
+  @override
+  String get adminAccountCreateSuccess => 'Account created';
+
+  @override
+  String get adminAccountCreateFailed =>
+      'Could not create account. Check whether the username exists and your permissions.';
+
+  @override
   String get adminAccountLoadFailed => 'Failed to load users';
 
   @override
@@ -2561,4 +2605,90 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get userProfileFriendRequestFailed => 'Failed to send friend request';
+
+  @override
+  String get settingsCategoryConnection => 'Connection';
+
+  @override
+  String get settingsCategoryStorage => 'Storage';
+
+  @override
+  String get settingsNotifyWithHaptic => 'Haptic Feedback on Notification';
+
+  @override
+  String get settingsNotifyWithHapticDescription =>
+      'Trigger haptic feedback when a new in-app notification arrives';
+
+  @override
+  String get settingsMediaProxy => 'Media Proxy';
+
+  @override
+  String get settingsMediaProxyDescription =>
+      'Runs a local HTTP proxy to cache and stream media files for smoother playback';
+
+  @override
+  String get settingsMediaProxyUnsupported => 'Not supported on this platform';
+
+  @override
+  String get settingsStorageUsed => 'Storage used';
+
+  @override
+  String get settingsStorageFree => 'Free';
+
+  @override
+  String get settingsStorageUnavailable =>
+      'Disk info is not available on this platform';
+
+  @override
+  String get settingsChatStorage => 'Chat Message Storage';
+
+  @override
+  String get settingsChatStorageDescription =>
+      'View and manage locally stored chat messages';
+
+  @override
+  String get settingsCloudFiles => 'Cloud Files';
+
+  @override
+  String get settingsCloudFilesDescription =>
+      'Manage files uploaded to the server';
+
+  @override
+  String get settingsAppCache => 'App Cache';
+
+  @override
+  String get settingsMediaCache => 'Media Proxy Cache';
+
+  @override
+  String get settingsClearCache => 'Clear';
+
+  @override
+  String get settingsCacheCleared => 'Cache cleared';
+
+  @override
+  String get settingsLocalDatabase => 'Local Database';
+
+  @override
+  String get settingsOpenDatabaseFolder => 'Open database folder';
+
+  @override
+  String get settingsLocalDatabaseSize => 'Local message database';
+
+  @override
+  String get settingsResetLocalMessages => 'Reset local messages';
+
+  @override
+  String get settingsResetLocalMessagesConfirm =>
+      'Delete all locally cached messages from this client. Server messages are not affected.';
+
+  @override
+  String get settingsNoLocalMessages => 'No locally stored messages';
+
+  @override
+  String settingsLocalMessageCount(int count, String size) {
+    return '$count messages · $size';
+  }
+
+  @override
+  String get settingsClearLocalMessages => 'Clear';
 }

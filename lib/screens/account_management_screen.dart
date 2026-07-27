@@ -19,7 +19,9 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
   List<UserProfile> _users = const [];
   UserManagePagination? _pagination;
   bool _isLoading = true;
+  bool _isCreating = false;
   String? _error;
+  String _query = '';
   int _currentPage = 1;
   static const _pageSize = 50;
 
@@ -274,7 +276,9 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
   void _showRoleChangeDialog(UserProfile user) {
     final l10n = AppLocalizations.of(context)!;
     final currentStat = user.normalizedStat;
-    const availableRoles = ['user', 'admin', 'root', 'banned'];
+    final availableRoles = AuthState.instance.currentUser?.isRoot == true
+        ? const ['user', 'admin', 'root', 'banned']
+        : const ['user', 'banned'];
 
     showModalBottomSheet(
       context: context,
@@ -355,6 +359,408 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
     return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
   }
 
+  Future<void> _showCreateAccountDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+    final formKey = GlobalKey<FormState>();
+    final usernameController = TextEditingController();
+    final passwordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    final emailController = TextEditingController();
+    final signController = TextEditingController();
+    final introductionController = TextEditingController();
+    var role = 'user';
+    var obscurePassword = true;
+    final roles = AuthState.instance.currentUser?.isRoot == true
+        ? const ['user', 'admin', 'root', 'banned']
+        : const ['user', 'banned'];
+
+    final data = await showDialog<_CreateAccountData>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          icon: const Icon(Icons.person_add_alt_1_outlined),
+          title: Text(l10n.adminAccountCreate),
+          content: SizedBox(
+            width: 520,
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      l10n.adminAccountCreateDescription,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: usernameController,
+                      autofocus: true,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: l10n.adminAccountUsername,
+                        prefixIcon: const Icon(Icons.person_outline),
+                      ),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                          ? l10n.adminAccountRequired
+                          : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: passwordController,
+                      obscureText: obscurePassword,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: l10n.adminAccountPassword,
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          tooltip: l10n.adminAccountPassword,
+                          onPressed: () => setDialogState(
+                            () => obscurePassword = !obscurePassword,
+                          ),
+                          icon: Icon(
+                            obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                        ),
+                      ),
+                      validator: (value) => value == null || value.isEmpty
+                          ? l10n.adminAccountRequired
+                          : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: confirmPasswordController,
+                      obscureText: obscurePassword,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: l10n.adminAccountConfirmPassword,
+                        prefixIcon: const Icon(Icons.lock_reset_outlined),
+                      ),
+                      validator: (value) => value != passwordController.text
+                          ? l10n.adminAccountPasswordMismatch
+                          : null,
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: role,
+                      decoration: InputDecoration(
+                        labelText: l10n.adminAccountRole,
+                        prefixIcon: const Icon(
+                          Icons.admin_panel_settings_outlined,
+                        ),
+                      ),
+                      items: roles
+                          .map(
+                            (value) => DropdownMenuItem(
+                              value: value,
+                              child: Text(_statDisplayName(l10n, value)),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) role = value;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: l10n.adminAccountEmail,
+                        prefixIcon: const Icon(Icons.mail_outline),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: signController,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: l10n.adminAccountSign,
+                        prefixIcon: const Icon(Icons.short_text),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: introductionController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText: l10n.adminAccountIntroduction,
+                        prefixIcon: const Icon(Icons.notes_outlined),
+                        alignLabelWithHint: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton.icon(
+              onPressed: () {
+                if (formKey.currentState?.validate() != true) return;
+                Navigator.pop(
+                  dialogContext,
+                  _CreateAccountData(
+                    username: usernameController.text.trim(),
+                    password: passwordController.text,
+                    role: role,
+                    email: emailController.text.trim(),
+                    sign: signController.text.trim(),
+                    introduction: introductionController.text.trim(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.person_add_alt_1),
+              label: Text(l10n.adminAccountCreate),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    usernameController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    emailController.dispose();
+    signController.dispose();
+    introductionController.dispose();
+    if (data == null || !mounted) return;
+
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+    setState(() => _isCreating = true);
+    try {
+      final success = await TfApiClient.instance.manageCreateUser(
+        uid,
+        password,
+        username: data.username,
+        targetPassword: data.password,
+        role: data.role,
+        email: data.email,
+        sign: data.sign,
+        introduction: data.introduction,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? l10n.adminAccountCreateSuccess
+                : l10n.adminAccountCreateFailed,
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      if (success) await _loadUsers(page: 1);
+    } catch (e) {
+      talker.error('AccountManagementScreen: create user failed', e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.adminAccountCreateFailed),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isCreating = false);
+    }
+  }
+
+  Widget _buildToolbar(AppLocalizations l10n) {
+    final total = _pagination?.total ?? _users.length;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 960),
+          child: Row(
+            children: [
+              Expanded(
+                child: SearchBar(
+                  hintText: l10n.adminAccountSearch,
+                  leading: const Icon(Icons.search),
+                  constraints: const BoxConstraints(minHeight: 46),
+                  onChanged: (value) => setState(() => _query = value.trim()),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '$total ${l10n.adminAccountTotalUsers}',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton.icon(
+                onPressed: _isCreating ? null : _showCreateAccountDialog,
+                icon: _isCreating
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.person_add_alt_1, size: 18),
+                label: Text(l10n.adminAccountCreate),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserCard(UserProfile user, AppLocalizations l10n) {
+    final stat = user.normalizedStat;
+    final scheme = Theme.of(context).colorScheme;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 960),
+        child: Material(
+          color: scheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 22,
+                  backgroundImage: user.avatar == null
+                      ? null
+                      : NetworkImage(user.avatar!),
+                  child: user.avatar == null
+                      ? Text(user.username.characters.first.toUpperCase())
+                      : null,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.username,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'UID ${user.uid}  ${user.email.isEmpty ? '' : '· ${user.email}'}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (MediaQuery.sizeOf(context).width >= 620) ...[
+                  Expanded(
+                    child: Text(
+                      l10n.adminAccountCreated(
+                        _formatCreateTime(user.createTime),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _statColor(stat, scheme).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    _statDisplayName(l10n, stat),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: _statColor(stat, scheme),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                PopupMenuButton<String>(
+                  tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'role':
+                        _showRoleChangeDialog(user);
+                      case 'ban':
+                        _banUser(user);
+                      case 'delete':
+                        _deleteUser(user);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'role',
+                      child: ListTile(
+                        leading: const Icon(Icons.manage_accounts_outlined),
+                        title: Text(l10n.adminAccountChangeRole),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'ban',
+                      child: ListTile(
+                        leading: Icon(
+                          stat == 'banned'
+                              ? Icons.lock_open_outlined
+                              : Icons.block_outlined,
+                        ),
+                        title: Text(
+                          stat == 'banned'
+                              ? l10n.adminAccountUnbanAction
+                              : l10n.adminAccountBanAction,
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.delete_outline,
+                          color: scheme.error,
+                        ),
+                        title: Text(
+                          l10n.adminAccountDeleteAction,
+                          style: TextStyle(color: scheme.error),
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -362,7 +768,20 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
         AuthState.instance.currentUser?.hasAdminAccess == true;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.adminAccountManagement)),
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.adminAccountManagement),
+            Text(
+              l10n.adminAccountManagementDescription,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
       body: !hasAdminAccess
           ? Center(child: Text(l10n.adminAccessDenied))
           : _isLoading
@@ -381,191 +800,78 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
                 ],
               ),
             )
-          : RefreshIndicator(
-              onRefresh: () => _loadUsers(page: _currentPage),
-              child: _users.isEmpty
-                  ? ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.2,
-                        ),
-                        Icon(
-                          Icons.people_outline,
-                          size: 56,
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                        const SizedBox(height: 16),
-                        Center(
-                          child: Text(
-                            l10n.adminAccountEmpty,
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
-                        ),
-                      ],
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.all(12),
-                      itemCount: _users.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final user = _users[index];
-                        final stat = user.normalizedStat;
-                        return Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 720),
-                            child: Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  spacing: 8,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            user.username,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleMedium
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                          ),
-                                        ),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: _statColor(
-                                              stat,
-                                              Theme.of(context).colorScheme,
-                                            ).withValues(alpha: 0.15),
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            _statDisplayName(l10n, stat),
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .labelSmall
-                                                ?.copyWith(
-                                                  color: _statColor(
-                                                    stat,
-                                                    Theme.of(
-                                                      context,
-                                                    ).colorScheme,
-                                                  ),
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Text(
-                                      'UID: ${user.uid}  ·  ${user.email.isNotEmpty ? user.email : l10n.userProfileUnknownEmail}',
+          : Column(
+              children: [
+                _buildToolbar(l10n),
+                Expanded(
+                  child: Builder(
+                    builder: (context) {
+                      final query = _query.toLowerCase();
+                      final visibleUsers = query.isEmpty
+                          ? _users
+                          : _users
+                                .where(
+                                  (user) =>
+                                      user.username.toLowerCase().contains(
+                                        query,
+                                      ) ||
+                                      user.email.toLowerCase().contains(
+                                        query,
+                                      ) ||
+                                      user.uid.contains(query),
+                                )
+                                .toList();
+                      return RefreshIndicator(
+                        onRefresh: () => _loadUsers(page: _currentPage),
+                        child: visibleUsers.isEmpty
+                            ? ListView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                children: [
+                                  SizedBox(
+                                    height:
+                                        MediaQuery.of(context).size.height *
+                                        0.2,
+                                  ),
+                                  Icon(
+                                    Icons.people_outline,
+                                    size: 56,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.outline,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Center(
+                                    child: Text(
+                                      l10n.adminAccountEmpty,
                                       style: Theme.of(context)
                                           .textTheme
-                                          .bodyMedium
+                                          .bodyLarge
                                           ?.copyWith(
                                             color: Theme.of(
                                               context,
                                             ).colorScheme.onSurfaceVariant,
                                           ),
                                     ),
-                                    if (user.personalSign != null &&
-                                        user.personalSign!.isNotEmpty)
-                                      Text(
-                                        user.personalSign!,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.onSurfaceVariant,
-                                            ),
-                                      ),
-                                    Text(
-                                      l10n.adminAccountCreated(
-                                        _formatCreateTime(user.createTime),
-                                      ),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelSmall
-                                          ?.copyWith(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.outline,
-                                          ),
-                                    ),
-                                    const Divider(height: 8),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      spacing: 8,
-                                      children: [
-                                        OutlinedButton.icon(
-                                          onPressed: () =>
-                                              _showRoleChangeDialog(user),
-                                          icon: const Icon(
-                                            Icons.manage_accounts_outlined,
-                                            size: 18,
-                                          ),
-                                          label: Text(
-                                            l10n.adminAccountChangeRole,
-                                          ),
-                                        ),
-                                        OutlinedButton.icon(
-                                          onPressed: () => _banUser(user),
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: Theme.of(
-                                              context,
-                                            ).colorScheme.error,
-                                          ),
-                                          icon: Icon(
-                                            stat == 'banned'
-                                                ? Icons.lock_open_outlined
-                                                : Icons.block_outlined,
-                                            size: 18,
-                                          ),
-                                          label: Text(
-                                            stat == 'banned'
-                                                ? l10n.adminAccountUnbanAction
-                                                : l10n.adminAccountBanAction,
-                                          ),
-                                        ),
-                                        IconButton(
-                                          onPressed: () => _deleteUser(user),
-                                          tooltip:
-                                              l10n.adminAccountDeleteAction,
-                                          icon: Icon(
-                                            Icons.delete_outline,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.error,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.all(12),
+                                itemCount: visibleUsers.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(height: 8),
+                                itemBuilder: (context, index) {
+                                  return _buildUserCard(
+                                    visibleUsers[index],
+                                    l10n,
+                                  );
+                                },
                               ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
       bottomNavigationBar: _pagination != null && _pagination!.totalPages > 1
           ? _buildPaginationBar(l10n)
@@ -602,4 +908,22 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
       ),
     );
   }
+}
+
+class _CreateAccountData {
+  final String username;
+  final String password;
+  final String role;
+  final String email;
+  final String sign;
+  final String introduction;
+
+  const _CreateAccountData({
+    required this.username,
+    required this.password,
+    required this.role,
+    required this.email,
+    required this.sign,
+    required this.introduction,
+  });
 }

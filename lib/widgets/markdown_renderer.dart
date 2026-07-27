@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/chat_data_service.dart';
 
 class MarkdownRenderer extends HookWidget {
   final String data;
@@ -324,6 +325,11 @@ class _MentionChipContent extends StatelessWidget {
     final chipColor = isCurrentUser
         ? Theme.of(context).colorScheme.tertiary
         : backgroundColor;
+
+    // Try to resolve an avatar from the local user cache (chat context).
+    final profile = ChatDataService.instance.getUserByUsername(username);
+    final avatarUrl = profile?.avatar;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(32),
@@ -345,10 +351,13 @@ class _MentionChipContent extends StatelessWidget {
             CircleAvatar(
               radius: 9,
               backgroundColor: chipColor.withValues(alpha: 0.35),
-              child: Text(
-                '@',
-                style: TextStyle(color: chipColor, fontSize: 11),
-              ),
+              backgroundImage: avatarUrl != null
+                  ? NetworkImage(avatarUrl)
+                  : null,
+              // Fallback: show '@' when no avatar is available.
+              child: avatarUrl == null
+                  ? Text('@', style: TextStyle(color: chipColor, fontSize: 11))
+                  : null,
             ),
             const SizedBox(width: 6),
             Text(

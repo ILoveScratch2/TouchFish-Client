@@ -24,9 +24,13 @@ class _LicensesScreenState extends State<LicensesScreen> {
         _filteredPackages = allDependencies;
       } else {
         _filteredPackages = allDependencies
-            .where((package) =>
-                package.name.toLowerCase().contains(query.toLowerCase()) ||
-                package.description.toLowerCase().contains(query.toLowerCase()))
+            .where(
+              (package) =>
+                  package.name.toLowerCase().contains(query.toLowerCase()) ||
+                  package.description.toLowerCase().contains(
+                    query.toLowerCase(),
+                  ),
+            )
             .toList();
       }
     });
@@ -170,10 +174,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
                   runSpacing: 4,
                   children: package.spdxIdentifiers.map((license) {
                     return Chip(
-                      label: Text(
-                        license,
-                        style: theme.textTheme.bodySmall,
-                      ),
+                      label: Text(license, style: theme.textTheme.bodySmall),
                       padding: EdgeInsets.zero,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       visualDensity: VisualDensity.compact,
@@ -300,7 +301,8 @@ class _LicensesScreenState extends State<LicensesScreen> {
                       const SizedBox(height: 16),
                     ],
 
-                    if (package.homepage != null || package.repository != null) ...[
+                    if (package.homepage != null ||
+                        package.repository != null) ...[
                       Text(
                         l10n.licensesLinks,
                         style: theme.textTheme.titleSmall?.copyWith(
@@ -390,11 +392,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
       child: ListTile(
         leading: Icon(icon, size: 20),
         title: Text(label),
-        subtitle: Text(
-          url,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+        subtitle: Text(url, maxLines: 1, overflow: TextOverflow.ellipsis),
         trailing: const Icon(Symbols.open_in_new, size: 20),
         onTap: () async {
           final uri = Uri.parse(url);

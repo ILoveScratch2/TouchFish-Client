@@ -14,9 +14,11 @@ class NetworkIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = color ?? (isConnected 
-      ? Theme.of(context).colorScheme.primary 
-      : Theme.of(context).colorScheme.error);
+    final iconColor =
+        color ??
+        (isConnected
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.error);
 
     return Icon(
       isConnected ? Icons.wifi : Icons.wifi_off,

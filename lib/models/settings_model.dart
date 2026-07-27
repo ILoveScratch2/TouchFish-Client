@@ -9,7 +9,14 @@ enum SettingType {
   customWidget,
 }
 
-enum SettingCategory { appearance, notifications, drafts, about }
+enum SettingCategory {
+  appearance,
+  notifications,
+  connection,
+  storage,
+  drafts,
+  about,
+}
 
 class SettingItem {
   final String key;
@@ -184,14 +191,6 @@ class SettingsData {
       icon: Icons.notifications_active,
       items: [
         SettingItem(
-          key: 'maxCachedRooms',
-          titleKey: 'maxCachedRooms',
-          descriptionKey: 'maxCachedRoomsDesc',
-          type: SettingType.customWidget,
-          defaultValue: 50,
-          icon: Icons.memory,
-        ),
-        SettingItem(
           key: 'systemNotifications',
           titleKey: 'settingsSystemNotificationsTitle',
           descriptionKey: 'settingsSystemNotificationsDesc',
@@ -214,6 +213,14 @@ class SettingsData {
           type: SettingType.switchSetting,
           defaultValue: true,
           icon: Icons.volume_up,
+        ),
+        SettingItem(
+          key: 'notifyWithHaptic',
+          titleKey: 'settingsNotifyWithHaptic',
+          descriptionKey: 'settingsNotifyWithHapticDescription',
+          type: SettingType.switchSetting,
+          defaultValue: true,
+          icon: Icons.vibration,
         ),
         SettingItem(
           key: 'chatNotifications',
@@ -241,6 +248,42 @@ class SettingsData {
               icon: Icons.group,
             ),
           ],
+        ),
+      ],
+    ),
+    SettingCategoryData(
+      category: SettingCategory.connection,
+      titleKey: 'settingsCategoryConnection',
+      icon: Icons.link,
+      items: [
+        SettingItem(
+          key: 'mediaProxyEnabled',
+          titleKey: 'settingsMediaProxy',
+          descriptionKey: 'settingsMediaProxyDescription',
+          type: SettingType.switchSetting,
+          defaultValue: true,
+          icon: Icons.speed,
+        ),
+      ],
+    ),
+    SettingCategoryData(
+      category: SettingCategory.storage,
+      titleKey: 'settingsCategoryStorage',
+      icon: Icons.storage,
+      items: [
+        SettingItem(
+          key: 'localStorage',
+          titleKey: 'settingsCategoryStorage',
+          type: SettingType.customWidget,
+          defaultValue: null,
+        ),
+        SettingItem(
+          key: 'maxCachedRooms',
+          titleKey: 'maxCachedRooms',
+          descriptionKey: 'maxCachedRoomsDesc',
+          type: SettingType.customWidget,
+          defaultValue: 50,
+          icon: Icons.memory,
         ),
       ],
     ),

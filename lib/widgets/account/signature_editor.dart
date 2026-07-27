@@ -84,15 +84,9 @@ class _SignatureEditorWidgetState extends State<SignatureEditorWidget> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                TextButton(
-                  onPressed: _toggleEdit,
-                  child: Text(l10n.cancel),
-                ),
+                TextButton(onPressed: _toggleEdit, child: Text(l10n.cancel)),
                 const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: _saveSignature,
-                  child: Text(l10n.save),
-                ),
+                FilledButton(onPressed: _saveSignature, child: Text(l10n.save)),
               ],
             ),
           ],

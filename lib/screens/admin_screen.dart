@@ -129,7 +129,9 @@ class _AdminScreenState extends State<AdminScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(children: titleRowChildren.whereType<Widget>().toList()),
+                    Row(
+                      children: titleRowChildren.whereType<Widget>().toList(),
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       description,

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import '../../services/media_proxy_service.dart';
 
 class VideoViewer extends StatefulWidget {
   final String videoPath;
@@ -58,7 +59,7 @@ class VideoViewerState extends State<VideoViewer> {
     }
   }
 
-  void _initPlayer() {
+  Future<void> _initPlayer() async {
     MediaKit.ensureInitialized();
 
     _player = Player();
@@ -89,9 +90,12 @@ class VideoViewerState extends State<VideoViewer> {
       final base64String = base64Encode(widget.videoBytes!);
       mediaSource = 'data:video/mp4;base64,$base64String';
     } else {
-      mediaSource = widget.videoPath;
+      mediaSource = await MediaProxyService.instance.resolveUrl(
+        widget.videoPath,
+      );
     }
 
+    if (!mounted || _player == null) return;
     _player!.open(Media(mediaSource), play: widget.autoplay);
   }
 

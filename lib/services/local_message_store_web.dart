@@ -27,6 +27,16 @@ class LocalMessageStore {
       'touchfish_messages/$scope/$roomId';
   int _scopeUid(String scope) => int.parse(scope.split('/').last);
 
+  String _messageKey(ChatMessage message) =>
+      message.clientMid?.isNotEmpty == true
+      ? 'client:${message.clientMid}'
+      : 'id:${message.id}';
+
+  int _compareMessages(ChatMessage a, ChatMessage b) {
+    final byTime = a.timestamp.compareTo(b.timestamp);
+    return byTime != 0 ? byTime : _messageKey(a).compareTo(_messageKey(b));
+  }
+
   Future<List<ChatMessage>> _loadMessages(
     SharedPreferences prefs,
     String scope,
@@ -44,18 +54,34 @@ class LocalMessageStore {
         .toList();
   }
 
-  Future<List<ChatMessage>> loadMessages(String roomId) async {
+  Future<List<ChatMessage>> loadMessages(
+    String roomId, {
+    int? limit,
+    ChatMessage? before,
+  }) async {
     final scope = _requireScope();
     final prefs = await SharedPreferences.getInstance();
-    return _loadMessages(prefs, scope, roomId);
+    final messages = await _loadMessages(prefs, scope, roomId);
+    messages.sort(_compareMessages);
+    final filtered = before == null
+        ? messages
+        : messages.where((message) => _compareMessages(message, before) < 0);
+    final result = filtered.toList();
+    if (limit == null || result.length <= limit) return result;
+    return result.sublist(result.length - limit);
   }
 
   Future<void> saveMessages(String roomId, List<ChatMessage> messages) async {
     final scope = _requireScope();
     final prefs = await SharedPreferences.getInstance();
+    final existing = await _loadMessages(prefs, scope, roomId);
+    final merged = <String, ChatMessage>{
+      for (final message in existing) _messageKey(message): message,
+      for (final message in messages) _messageKey(message): message,
+    }.values.toList()..sort(_compareMessages);
     await prefs.setString(
       _key(scope, roomId),
-      jsonEncode(messages.map((e) => e.toJson()).toList()),
+      jsonEncode(merged.map((e) => e.toJson()).toList()),
     );
   }
 
@@ -79,6 +105,32 @@ class LocalMessageStore {
     final scope = _requireScope();
     await (await SharedPreferences.getInstance()).remove(_key(scope, roomId));
   }
+
+  Future<Map<String, ({int messages, int bytes})>> roomStats() async {
+    final scope = _requireScope();
+    final prefs = await SharedPreferences.getInstance();
+    final prefix = 'touchfish_messages/$scope/';
+    final result = <String, ({int messages, int bytes})>{};
+    for (final key in prefs.getKeys().where((key) => key.startsWith(prefix))) {
+      final raw = prefs.getString(key) ?? '[]';
+      var count = 0;
+      try {
+        count = (jsonDecode(raw) as List<dynamic>).length;
+      } catch (_) {}
+      result[key.substring(prefix.length)] = (
+        messages: count,
+        bytes: utf8.encode(raw).length,
+      );
+    }
+    return result;
+  }
+
+  Future<int> databaseSize() async {
+    final stats = await roomStats();
+    return stats.values.fold<int>(0, (sum, value) => sum + value.bytes);
+  }
+
+  Future<String?> databasePath() async => null;
 
   Future<void> clearDatabase() async {
     final scope = _requireScope();

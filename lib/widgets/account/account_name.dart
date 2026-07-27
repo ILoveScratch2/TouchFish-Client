@@ -5,11 +5,7 @@ class AccountNameWidget extends StatelessWidget {
   final UserProfile account;
   final TextStyle? style;
 
-  const AccountNameWidget({
-    super.key,
-    required this.account,
-    this.style,
-  });
+  const AccountNameWidget({super.key, required this.account, this.style});
 
   @override
   Widget build(BuildContext context) {

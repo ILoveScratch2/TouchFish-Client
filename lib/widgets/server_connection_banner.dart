@@ -7,23 +7,17 @@ class ServerConnectionBanner extends StatelessWidget {
   final ServerConnectionBannerPhase phase;
   final VoidCallback? onTap;
 
-  const ServerConnectionBanner({
-    super.key,
-    required this.phase,
-    this.onTap,
-  });
+  const ServerConnectionBanner({super.key, required this.phase, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final label = switch (phase) {
-      ServerConnectionBannerPhase.connecting =>
-        l10n.connectionBannerConnecting,
+      ServerConnectionBannerPhase.connecting => l10n.connectionBannerConnecting,
       ServerConnectionBannerPhase.disconnected =>
         l10n.connectionBannerDisconnected,
-      ServerConnectionBannerPhase.connected =>
-        l10n.connectionBannerConnected,
+      ServerConnectionBannerPhase.connected => l10n.connectionBannerConnected,
       ServerConnectionBannerPhase.hidden => '',
     };
 
@@ -35,8 +29,7 @@ class ServerConnectionBanner extends StatelessWidget {
     };
 
     final foregroundColor = switch (phase) {
-      ServerConnectionBannerPhase.connecting =>
-        colorScheme.onPrimaryContainer,
+      ServerConnectionBannerPhase.connecting => colorScheme.onPrimaryContainer,
       ServerConnectionBannerPhase.disconnected => colorScheme.onErrorContainer,
       ServerConnectionBannerPhase.connected => colorScheme.onTertiaryContainer,
       ServerConnectionBannerPhase.hidden => colorScheme.onSurface,
@@ -104,4 +97,4 @@ class ServerConnectionBanner extends StatelessWidget {
       ),
     );
   }
-}
+}

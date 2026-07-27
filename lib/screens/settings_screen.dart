@@ -16,6 +16,8 @@ import '../services/font_loader_service.dart';
 import '../services/draft_service.dart';
 import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
+import '../widgets/local_storage_settings.dart';
+import '../services/media_proxy_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -37,6 +39,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   void initState() {
     super.initState();
     _settingsService.init();
+    _selectedCategory = SettingsData.categories.first.category;
     _customFontController.text = _settingsService.getValue<String>(
       'customFontName',
       '',
@@ -61,35 +64,14 @@ class _SettingsScreenState extends State<SettingsScreen>
       builder: (context, constraints) {
         final isWideScreen = constraints.maxWidth >= 600;
 
-        if (isWideScreen && _selectedCategory == null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && _selectedCategory == null) {
-              setState(() {
-                _selectedCategory = SettingsData.categories.first.category;
-              });
-            }
-          });
-        }
-
-        if (isWideScreen) {
-          return Scaffold(
-            appBar: AppBar(
-              title: Text(AppLocalizations.of(context)!.settingsTitle),
-            ),
-            body: _buildWideLayout(context),
-          );
-        } else {
-          if (_selectedCategory == null) {
-            return Scaffold(
-              appBar: AppBar(
-                title: Text(AppLocalizations.of(context)!.settingsTitle),
-              ),
-              body: _buildNarrowLayout(context),
-            );
-          } else {
-            return _buildNarrowLayout(context);
-          }
-        }
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(AppLocalizations.of(context)!.settingsTitle),
+          ),
+          body: isWideScreen
+              ? _buildWideLayout(context)
+              : _buildNarrowLayout(context),
+        );
       },
     );
   }
@@ -135,28 +117,75 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _buildNarrowLayout(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      switchInCurve: Curves.easeInOut,
-      switchOutCurve: Curves.easeInOut,
-      transitionBuilder: (child, animation) {
-        return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(1.0, 0.0),
-            end: Offset.zero,
-          ).animate(animation),
-          child: child,
-        );
-      },
-      child: _selectedCategory == null
-          ? KeyedSubtree(
-              key: const ValueKey('category_list'),
-              child: _buildCategoryList(context, isWideLayout: false),
-            )
-          : KeyedSubtree(
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Material(
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<SettingCategory>(
+                  isExpanded: true,
+                  value: _selectedCategory,
+                  borderRadius: BorderRadius.circular(8),
+                  items: SettingsData.categories
+                      .map(
+                        (category) => DropdownMenuItem(
+                          value: category.category,
+                          child: Row(
+                            children: [
+                              Icon(category.icon, size: 20),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _getCategoryTitle(l10n, category.titleKey),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _selectedCategory = value);
+                    }
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: AnimatedSwitcher(
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 280),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.04, 0),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            ),
+            child: KeyedSubtree(
               key: ValueKey(_selectedCategory),
               child: _buildSettingsContent(context, _selectedCategory!),
             ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -166,23 +195,35 @@ class _SettingsScreenState extends State<SettingsScreen>
   }) {
     final l10n = AppLocalizations.of(context)!;
 
-    return ListView(
-      children: SettingsData.categories.map((category) {
-        final isSelected = _selectedCategory == category.category;
-        final title = _getCategoryTitle(l10n, category.titleKey);
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+        children: SettingsData.categories.map((category) {
+          final isSelected = _selectedCategory == category.category;
+          final title = _getCategoryTitle(l10n, category.titleKey);
 
-        return ListTile(
-          leading: Icon(category.icon),
-          title: Text(title),
-          selected: isWideLayout && isSelected,
-          onTap: () {
-            setState(() {
-              _selectedCategory = category.category;
-            });
-          },
-          trailing: isWideLayout ? null : const Icon(Icons.chevron_right),
-        );
-      }).toList(),
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: ListTile(
+              leading: Icon(category.icon),
+              title: Text(title),
+              selected: isWideLayout && isSelected,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              selectedTileColor: Theme.of(
+                context,
+              ).colorScheme.primaryContainer.withValues(alpha: 0.55),
+              onTap: () {
+                setState(() {
+                  _selectedCategory = category.category;
+                });
+              },
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -191,30 +232,23 @@ class _SettingsScreenState extends State<SettingsScreen>
     final categoryData = SettingsData.categories.firstWhere(
       (c) => c.category == category,
     );
-    final isWideScreen = MediaQuery.of(context).size.width >= 600;
-
-    return Scaffold(
-      appBar: isWideScreen
-          ? null
-          : AppBar(
-              title: Text(_getCategoryTitle(l10n, categoryData.titleKey)),
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  setState(() {
-                    _selectedCategory = null;
-                  });
-                },
-              ),
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      itemCount: categoryData.items.length + 1,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+            child: Text(
+              _getCategoryTitle(l10n, categoryData.titleKey),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
             ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: categoryData.items.length,
-        itemBuilder: (context, index) {
-          final item = categoryData.items[index];
-          return _buildSettingItem(context, item);
-        },
-      ),
+          );
+        }
+        return _buildSettingItem(context, categoryData.items[index - 1]);
+      },
     );
   }
 
@@ -265,6 +299,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         }
         if (item.key == 'automaticPreviewMaxMiB') {
           return _buildAutomaticPreviewSetting(context, l10n, item);
+        }
+        if (item.key == 'localStorage') {
+          return const LocalStorageSettings();
         }
         return const SizedBox.shrink();
     }
@@ -756,6 +793,9 @@ class _SettingsScreenState extends State<SettingsScreen>
               value: value,
               onChanged: (newValue) async {
                 await _settingsService.setValue(item.key, newValue);
+                if (!newValue && item.key == 'mediaProxyEnabled') {
+                  await MediaProxyService.instance.stop();
+                }
                 if (!newValue && item.key == 'saveChatDrafts') {
                   await DraftService.instance.clearDraftGroup('chat');
                 } else if (!newValue && item.key == 'saveForumDrafts') {
@@ -1173,6 +1213,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsCategoryNotifications;
       case 'settingsCategoryDrafts':
         return l10n.settingsCategoryDrafts;
+      case 'settingsCategoryConnection':
+        return l10n.settingsCategoryConnection;
+      case 'settingsCategoryStorage':
+        return l10n.settingsCategoryStorage;
       case 'settingsCategoryAbout':
         return l10n.settingsCategoryAbout;
       default:
@@ -1276,6 +1320,16 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsNotificationSoundTitle;
       case 'settingsNotificationSoundDesc':
         return l10n.settingsNotificationSoundDesc;
+      case 'settingsNotifyWithHaptic':
+        return l10n.settingsNotifyWithHaptic;
+      case 'settingsNotifyWithHapticDescription':
+        return l10n.settingsNotifyWithHapticDescription;
+      case 'settingsMediaProxy':
+        return l10n.settingsMediaProxy;
+      case 'settingsMediaProxyDescription':
+        return kIsWeb
+            ? l10n.settingsMediaProxyUnsupported
+            : l10n.settingsMediaProxyDescription;
       case 'settingsChatNotificationsTitle':
         return l10n.settingsChatNotificationsTitle;
       case 'settingsChatNotificationsDesc':

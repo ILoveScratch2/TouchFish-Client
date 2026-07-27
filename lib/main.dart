@@ -611,6 +611,16 @@ class _TouchFishAppState extends State<TouchFishApp> {
               ),
               elevation: cardOpacity < 1 ? 0 : null,
             ),
+            pageTransitionsTheme: const PageTransitionsTheme(
+              builders: {
+                TargetPlatform.android: ZoomPageTransitionsBuilder(),
+                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
+                TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
+                TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
+                TargetPlatform.fuchsia: FadeForwardsPageTransitionsBuilder(),
+              },
+            ),
           ),
           darkTheme: ThemeData(
             colorScheme: darkColorScheme,
@@ -624,6 +634,16 @@ class _TouchFishAppState extends State<TouchFishApp> {
                 alpha: cardOpacity,
               ),
               elevation: cardOpacity < 1 ? 0 : null,
+            ),
+            pageTransitionsTheme: const PageTransitionsTheme(
+              builders: {
+                TargetPlatform.android: ZoomPageTransitionsBuilder(),
+                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
+                TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
+                TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
+                TargetPlatform.fuchsia: FadeForwardsPageTransitionsBuilder(),
+              },
             ),
           ),
           themeMode: _appState.themeMode,

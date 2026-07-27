@@ -789,6 +789,20 @@
   "adminAnnouncementsDescription": "创建和管理系统公告",
   "adminAccountManagement": "账户管理",
   "adminAccountManagementDescription": "查看和管理用户账户",
+  "adminAccountSearch": "搜索用户名、邮箱或 UID",
+  "adminAccountCreate": "创建账户",
+  "adminAccountCreateDescription": "由管理员直接创建服务器账户",
+  "adminAccountUsername": "用户名",
+  "adminAccountPassword": "密码",
+  "adminAccountConfirmPassword": "确认密码",
+  "adminAccountEmail": "邮箱（可选）",
+  "adminAccountRole": "账户角色",
+  "adminAccountSign": "个性签名（可选）",
+  "adminAccountIntroduction": "个人介绍（可选）",
+  "adminAccountRequired": "此项不能为空",
+  "adminAccountPasswordMismatch": "两次输入的密码不一致",
+  "adminAccountCreateSuccess": "账户已创建",
+  "adminAccountCreateFailed": "创建账户失败，请检查用户名是否已存在或当前账户权限",
   "adminAccountLoadFailed": "加载用户列表失败",
   "adminAccountEmpty": "暂无用户",
   "adminAccountCreated": "创建时间：{date}",
@@ -1009,5 +1023,39 @@
       "username": {"type": "String"}
     }
   },
-  "userProfileFriendRequestFailed": "发送好友请求失败"
+  "userProfileFriendRequestFailed": "发送好友请求失败",
+
+  "settingsCategoryConnection": "连接",
+  "settingsCategoryStorage": "存储",
+  "settingsNotifyWithHaptic": "通知触感反馈",
+  "settingsNotifyWithHapticDescription": "收到应用内新通知时触发触感反馈",
+  "settingsMediaProxy": "媒体代理",
+  "settingsMediaProxyDescription": "在本机运行 HTTP 代理以缓存和流式播放媒体文件，提供更流畅的播放体验",
+  "settingsMediaProxyUnsupported": "当前平台不支持此功能",
+
+  "settingsStorageUsed": "已用空间",
+  "settingsStorageFree": "可用空间",
+  "settingsStorageUnavailable": "当前平台不支持查看磁盘信息",
+  "settingsChatStorage": "聊天消息存储",
+  "settingsChatStorageDescription": "查看和管理本地缓存的聊天消息",
+  "settingsCloudFiles": "云端文件",
+  "settingsCloudFilesDescription": "管理上传到服务器的文件",
+  "settingsAppCache": "应用缓存",
+  "settingsMediaCache": "媒体代理缓存",
+  "settingsClearCache": "清除",
+  "settingsCacheCleared": "缓存已清除",
+  "settingsLocalDatabase": "本地数据库",
+  "settingsOpenDatabaseFolder": "打开数据库目录",
+  "settingsLocalDatabaseSize": "本地消息数据库",
+  "settingsResetLocalMessages": "重置本地消息",
+  "settingsResetLocalMessagesConfirm": "将删除此客户端的所有本地缓存消息，服务器上的消息不受影响。",
+  "settingsNoLocalMessages": "暂无本地存储的消息",
+  "settingsLocalMessageCount": "{count} 条消息 · {size}",
+  "@settingsLocalMessageCount": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "size": {"type": "String"}
+    }
+  },
+  "settingsClearLocalMessages": "清除"
 }

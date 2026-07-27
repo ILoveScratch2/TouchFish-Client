@@ -3,9 +3,11 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  disk_space_2
   file_selector_linux
   media_kit_libs_linux
   media_kit_video
+  open_file_linux
   screen_retriever_linux
   sqlite3_flutter_libs
   url_launcher_linux

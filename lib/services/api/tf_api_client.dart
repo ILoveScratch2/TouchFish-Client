@@ -1955,6 +1955,33 @@ class TfApiClient {
 
   // --- account management (admin) ---
 
+  Future<bool> manageCreateUser(
+    int uid,
+    String password, {
+    required String username,
+    required String targetPassword,
+    String role = 'user',
+    String? email,
+    String? sign,
+    String? introduction,
+  }) async {
+    final result = await secretPost(
+      '/auth/manage/create',
+      {
+        'username': username,
+        'target_password': targetPassword,
+        'new_auth': role,
+        if (email != null && email.isNotEmpty) 'email': email,
+        if (sign != null && sign.isNotEmpty) 'sign': sign,
+        if (introduction != null && introduction.isNotEmpty)
+          'introduction': introduction,
+      },
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
   Future<UserManageResult?> manageListUsers(
     int uid,
     String password, {

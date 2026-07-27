@@ -9,7 +9,7 @@ class TalkerLogScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     return TalkerScreen(
       talker: talker,
       theme: TalkerScreenTheme(

@@ -821,6 +821,20 @@
   "adminAnnouncementsDescription": "Create and manage system announcements",
   "adminAccountManagement": "Account Management",
   "adminAccountManagementDescription": "View and manage user accounts",
+  "adminAccountSearch": "Search username, email, or UID",
+  "adminAccountCreate": "Create account",
+  "adminAccountCreateDescription": "Create a server account as an administrator",
+  "adminAccountUsername": "Username",
+  "adminAccountPassword": "Password",
+  "adminAccountConfirmPassword": "Confirm password",
+  "adminAccountEmail": "Email (optional)",
+  "adminAccountRole": "Account role",
+  "adminAccountSign": "Profile signature (optional)",
+  "adminAccountIntroduction": "Introduction (optional)",
+  "adminAccountRequired": "This field is required",
+  "adminAccountPasswordMismatch": "Passwords do not match",
+  "adminAccountCreateSuccess": "Account created",
+  "adminAccountCreateFailed": "Could not create account. Check whether the username exists and your permissions.",
   "adminAccountLoadFailed": "Failed to load users",
   "adminAccountEmpty": "No users found",
   "adminAccountCreated": "Created: {date}",
@@ -1046,5 +1060,39 @@
       "username": {"type": "String"}
     }
   },
-  "userProfileFriendRequestFailed": "Failed to send friend request"
+  "userProfileFriendRequestFailed": "Failed to send friend request",
+
+  "settingsCategoryConnection": "Connection",
+  "settingsCategoryStorage": "Storage",
+  "settingsNotifyWithHaptic": "Haptic Feedback on Notification",
+  "settingsNotifyWithHapticDescription": "Trigger haptic feedback when a new in-app notification arrives",
+  "settingsMediaProxy": "Media Proxy",
+  "settingsMediaProxyDescription": "Runs a local HTTP proxy to cache and stream media files for smoother playback",
+  "settingsMediaProxyUnsupported": "Not supported on this platform",
+
+  "settingsStorageUsed": "Storage used",
+  "settingsStorageFree": "Free",
+  "settingsStorageUnavailable": "Disk info is not available on this platform",
+  "settingsChatStorage": "Chat Message Storage",
+  "settingsChatStorageDescription": "View and manage locally stored chat messages",
+  "settingsCloudFiles": "Cloud Files",
+  "settingsCloudFilesDescription": "Manage files uploaded to the server",
+  "settingsAppCache": "App Cache",
+  "settingsMediaCache": "Media Proxy Cache",
+  "settingsClearCache": "Clear",
+  "settingsCacheCleared": "Cache cleared",
+  "settingsLocalDatabase": "Local Database",
+  "settingsOpenDatabaseFolder": "Open database folder",
+  "settingsLocalDatabaseSize": "Local message database",
+  "settingsResetLocalMessages": "Reset local messages",
+  "settingsResetLocalMessagesConfirm": "Delete all locally cached messages from this client. Server messages are not affected.",
+  "settingsNoLocalMessages": "No locally stored messages",
+  "settingsLocalMessageCount": "{count} messages · {size}",
+  "@settingsLocalMessageCount": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "size": {"type": "String"}
+    }
+  },
+  "settingsClearLocalMessages": "Clear"
 }

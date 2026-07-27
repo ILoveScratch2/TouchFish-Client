@@ -61,7 +61,9 @@ class ExifInfoOverlay extends StatelessWidget {
     final items = <Widget>[];
 
     if (dateTime != null && dateTime.toString().isNotEmpty) {
-      items.add(_buildExifItem('DateTime', dateTime.toString(), Symbols.calendar_check));
+      items.add(
+        _buildExifItem('DateTime', dateTime.toString(), Symbols.calendar_check),
+      );
     }
     if (model != null && model.toString().isNotEmpty) {
       items.add(_buildExifItem('Model', model.toString(), Symbols.camera_alt));
@@ -70,11 +72,17 @@ class ExifInfoOverlay extends StatelessWidget {
       items.add(_buildExifItem('ISO', iso.toString(), Icons.iso));
     }
     if (fnumber != null) {
-      items.add(_buildExifItem('FNumber', fnumber.toString(), Symbols.camera_enhance));
+      items.add(
+        _buildExifItem('FNumber', fnumber.toString(), Symbols.camera_enhance),
+      );
     }
     if (exposureTime != null) {
       items.add(
-        _buildExifItem('ExposureTime', exposureTime.toString(), Icons.shutter_speed),
+        _buildExifItem(
+          'ExposureTime',
+          exposureTime.toString(),
+          Icons.shutter_speed,
+        ),
       );
     }
     if (focalLength != null) {

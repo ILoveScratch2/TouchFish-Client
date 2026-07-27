@@ -61,6 +61,13 @@ class ChatRoomPreference {
   }
 }
 
+class MessageHistoryPage {
+  final List<ChatMessage> messages;
+  final bool hasMore;
+
+  const MessageHistoryPage({required this.messages, required this.hasMore});
+}
+
 class ChatDataService extends ChangeNotifier {
   static ChatDataService? _instance;
   static ChatDataService get instance => _instance ??= ChatDataService._();
@@ -82,6 +89,7 @@ class ChatDataService extends ChangeNotifier {
   int? _initializedUid;
   int _generation = 0;
   int _roomListGeneration = 0;
+  static const int _messagePageSize = 50;
   int? _roomPreferencesUid;
   String? _roomPreferencesScope;
 
@@ -118,6 +126,14 @@ class ChatDataService extends ChangeNotifier {
     return _messageCache[roomId] ?? [];
   }
 
+  Future<List<ChatMessage>> getSearchableMessages(String roomId) async {
+    final local = await _localStore.loadMessages(roomId);
+    final merged = _mergeMessages(_messageCache[roomId] ?? [], local);
+    merged.sort(_compareMessages);
+    if (merged.isNotEmpty) return merged;
+    return (await refreshMessagesForContact(roomId)).messages;
+  }
+
   void setMessages(String roomId, List<ChatMessage> msgs) {
     _messageCache[roomId] = msgs;
     _touchCacheRoom(roomId);
@@ -127,6 +143,16 @@ class ChatDataService extends ChangeNotifier {
   }
 
   UserProfile? getUser(String roomId) => _userCache[roomId];
+
+  /// Look up a cached profile by username (case-insensitive).
+  /// Returns null if no matching profile is found in the local cache.
+  UserProfile? getUserByUsername(String username) {
+    final lower = username.toLowerCase();
+    for (final profile in _userCache.values) {
+      if (profile.username.toLowerCase() == lower) return profile;
+    }
+    return null;
+  }
 
   ChatRoomPreference getRoomPreference(String roomId) {
     return _roomPreferences[roomId] ?? const ChatRoomPreference();
@@ -457,6 +483,13 @@ class ChatDataService extends ChangeNotifier {
       return 'client:$clientMid';
     }
     return 'id:${message.id}';
+  }
+
+  int _compareMessages(ChatMessage a, ChatMessage b) {
+    final byTime = a.timestamp.compareTo(b.timestamp);
+    return byTime != 0
+        ? byTime
+        : _messageDedupKey(a).compareTo(_messageDedupKey(b));
   }
 
   bool _containsMessage(List<ChatMessage> messages, ChatMessage candidate) {
@@ -1115,10 +1148,12 @@ class ChatDataService extends ChangeNotifier {
 
   // --- Message history ---
 
-  Future<List<ChatMessage>> refreshMessagesForContact(String roomId) async {
+  Future<MessageHistoryPage> refreshMessagesForContact(String roomId) async {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
-    if (uid == null || password == null) return [];
+    if (uid == null || password == null) {
+      return const MessageHistoryPage(messages: [], hasMore: false);
+    }
     final generation = _generation;
 
     final rk = roomKey(roomId);
@@ -1127,34 +1162,53 @@ class ChatDataService extends ChangeNotifier {
       password,
       rk > 0 ? rk : 0,
       groupId: rk < 0 ? -rk : null,
-      limit: 50,
+      limit: _messagePageSize,
     );
-    if (_generation != generation || AuthState.instance.uid != uid) return [];
+    if (_generation != generation || AuthState.instance.uid != uid) {
+      return const MessageHistoryPage(messages: [], hasMore: false);
+    }
 
     final serverFilled = _fillSenderInfo(serverMsgs);
-    final localMsgs = await _localStore.loadMessages(roomId);
-    if (_generation != generation || AuthState.instance.uid != uid) return [];
+    final localMsgs = await _localStore.loadMessages(
+      roomId,
+      limit: _messagePageSize,
+    );
+    if (_generation != generation || AuthState.instance.uid != uid) {
+      return const MessageHistoryPage(messages: [], hasMore: false);
+    }
     final merged = _mergeMessages(serverFilled, localMsgs);
-    merged.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    merged.sort(_compareMessages);
+    final visible = merged.length <= _messagePageSize
+        ? merged
+        : merged.sublist(merged.length - _messagePageSize);
 
-    if (merged.isNotEmpty || !_messageCache.containsKey(roomId)) {
-      _messageCache[roomId] = merged;
+    if (visible.isNotEmpty || !_messageCache.containsKey(roomId)) {
+      _messageCache[roomId] = visible;
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
     }
-    await _localStore.saveMessages(roomId, merged);
+    await _localStore.saveMessages(roomId, serverFilled);
     notifyListeners();
-    return merged;
+    return MessageHistoryPage(
+      messages: visible,
+      hasMore:
+          serverMsgs.length == _messagePageSize ||
+          localMsgs.length == _messagePageSize,
+    );
   }
 
-  Future<List<ChatMessage>> loadOlderMessages(String roomId) async {
+  Future<MessageHistoryPage> loadOlderMessages(String roomId) async {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
-    if (uid == null || password == null) return [];
+    if (uid == null || password == null) {
+      return const MessageHistoryPage(messages: [], hasMore: false);
+    }
     final generation = _generation;
 
     final cached = _messageCache[roomId] ?? [];
-    if (cached.isEmpty) return [];
+    if (cached.isEmpty) {
+      return const MessageHistoryPage(messages: [], hasMore: false);
+    }
 
     int? oldestMid;
     for (final m in cached) {
@@ -1162,29 +1216,44 @@ class ChatDataService extends ChangeNotifier {
         oldestMid = m.mid;
       }
     }
-    if (oldestMid == null) return [];
+    final localMsgs = await _localStore.loadMessages(
+      roomId,
+      limit: _messagePageSize,
+      before: cached.first,
+    );
+    if (_generation != generation || AuthState.instance.uid != uid) {
+      return const MessageHistoryPage(messages: [], hasMore: false);
+    }
 
     final rk = roomKey(roomId);
-    final olderMsgs = await TfApiClient.instance.queryMessageHistory(
-      uid,
-      password,
-      rk > 0 ? rk : 0,
-      groupId: rk < 0 ? -rk : null,
-      beforeMid: oldestMid,
-      limit: 50,
-    );
-    if (_generation != generation || AuthState.instance.uid != uid) return [];
-    if (olderMsgs.isEmpty) return [];
+    final olderMsgs = oldestMid == null
+        ? <ChatMessage>[]
+        : await TfApiClient.instance.queryMessageHistory(
+            uid,
+            password,
+            rk > 0 ? rk : 0,
+            groupId: rk < 0 ? -rk : null,
+            beforeMid: oldestMid,
+            limit: _messagePageSize,
+          );
+    if (_generation != generation || AuthState.instance.uid != uid) {
+      return const MessageHistoryPage(messages: [], hasMore: false);
+    }
 
     final olderFilled = _fillSenderInfo(olderMsgs);
-    final merged = _mergeMessages(olderFilled, cached);
-    merged.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final merged = _mergeMessages(olderFilled, [...localMsgs, ...cached]);
+    merged.sort(_compareMessages);
 
     _messageCache[roomId] = merged;
     _touchCacheRoom(roomId);
-    await _localStore.saveMessages(roomId, merged);
-    notifyListeners();
-    return merged;
+    await _localStore.saveMessages(roomId, olderFilled);
+    if (merged.length != cached.length) notifyListeners();
+    return MessageHistoryPage(
+      messages: merged,
+      hasMore:
+          olderMsgs.length == _messagePageSize ||
+          localMsgs.length == _messagePageSize,
+    );
   }
 
   List<ChatMessage> _fillSenderInfo(List<ChatMessage> msgs) {

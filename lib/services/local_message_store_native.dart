@@ -235,17 +235,35 @@ class LocalMessageStore {
     );
   }
 
-  Future<List<ChatMessage>> loadMessages(String roomId) async {
+  Future<List<ChatMessage>> loadMessages(
+    String roomId, {
+    int? limit,
+    ChatMessage? before,
+  }) async {
     final scope = _requireScope();
     final server = scope.server;
     final uid = scope.uid;
     try {
       final db = await _db(server, uid);
-      final rows = db.select(
-        'SELECT payload FROM messages WHERE server_key = ? AND uid = ? AND room_id = ? ORDER BY timestamp ASC',
-        [server, uid, roomId],
-      );
-      return rows
+      final beforeClause = before == null
+          ? ''
+          : ' AND (timestamp < ? OR (timestamp = ? AND message_key < ?))';
+      final limitClause = limit == null ? '' : ' LIMIT ?';
+      final parameters = <Object?>[server, uid, roomId];
+      if (before != null) {
+        parameters.addAll([
+          before.timestamp.millisecondsSinceEpoch,
+          before.timestamp.millisecondsSinceEpoch,
+          _key(before),
+        ]);
+      }
+      if (limit != null) parameters.add(limit);
+      final rows = db.select('''
+        SELECT payload FROM messages
+        WHERE server_key = ? AND uid = ? AND room_id = ?$beforeClause
+        ORDER BY timestamp DESC, message_key DESC$limitClause
+        ''', parameters);
+      return rows.reversed
           .map(
             (row) => ChatMessage.fromJson(
               jsonDecode(row['payload'] as String) as Map<String, dynamic>,
@@ -302,6 +320,45 @@ class LocalMessageStore {
       'DELETE FROM messages WHERE server_key = ? AND uid = ? AND room_id = ?',
       [server, uid, roomId],
     );
+  }
+
+  Future<Map<String, ({int messages, int bytes})>> roomStats() async {
+    final scope = _requireScope();
+    final db = await _db(scope.server, scope.uid);
+    final rows = db.select(
+      '''
+      SELECT room_id, COUNT(*) AS message_count,
+             COALESCE(SUM(LENGTH(payload)), 0) AS payload_bytes
+      FROM messages
+      WHERE server_key = ? AND uid = ?
+      GROUP BY room_id
+      ORDER BY payload_bytes DESC
+      ''',
+      [scope.server, scope.uid],
+    );
+    return {
+      for (final row in rows)
+        row['room_id'] as String: (
+          messages: row['message_count'] as int,
+          bytes: row['payload_bytes'] as int,
+        ),
+    };
+  }
+
+  Future<int> databaseSize() async {
+    final scope = _requireScope();
+    final db = await _db(scope.server, scope.uid);
+    final rows = db.select('PRAGMA database_list');
+    if (rows.isEmpty) return 0;
+    final file = File(rows.first['file'] as String);
+    return await file.exists() ? file.length() : 0;
+  }
+
+  Future<String?> databasePath() async {
+    final scope = _requireScope();
+    final db = await _db(scope.server, scope.uid);
+    final rows = db.select('PRAGMA database_list');
+    return rows.isEmpty ? null : rows.first['file'] as String;
   }
 
   Future<void> clearDatabase() async {

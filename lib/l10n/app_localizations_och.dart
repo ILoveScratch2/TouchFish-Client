@@ -2042,6 +2042,48 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminAccountManagementDescription => '查察並管理用戶賬戶';
 
   @override
+  String get adminAccountSearch => '檢索用戶名、郵箱或 UID';
+
+  @override
+  String get adminAccountCreate => '創建賬戶';
+
+  @override
+  String get adminAccountCreateDescription => '由管理員直建服務器賬戶';
+
+  @override
+  String get adminAccountUsername => '用戶名';
+
+  @override
+  String get adminAccountPassword => '密碼';
+
+  @override
+  String get adminAccountConfirmPassword => '再輸密碼';
+
+  @override
+  String get adminAccountEmail => '郵箱（可選）';
+
+  @override
+  String get adminAccountRole => '賬戶角色';
+
+  @override
+  String get adminAccountSign => '個性簽名（可選）';
+
+  @override
+  String get adminAccountIntroduction => '個人介紹（可選）';
+
+  @override
+  String get adminAccountRequired => '此項不可空';
+
+  @override
+  String get adminAccountPasswordMismatch => '兩次密碼不合';
+
+  @override
+  String get adminAccountCreateSuccess => '賬戶已創建';
+
+  @override
+  String get adminAccountCreateFailed => '創建賬戶失敗，請察用戶名或權限';
+
+  @override
   String get adminAccountLoadFailed => '加載用戶列表失敗';
 
   @override
@@ -2462,4 +2504,86 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get userProfileFriendRequestFailed => '發送好友請求失敗';
+
+  @override
+  String get settingsCategoryConnection => '連接';
+
+  @override
+  String get settingsCategoryStorage => '存儲';
+
+  @override
+  String get settingsNotifyWithHaptic => '通知觸感反饋';
+
+  @override
+  String get settingsNotifyWithHapticDescription => '收到應用內新通知時觸發觸感反饋';
+
+  @override
+  String get settingsMediaProxy => '媒體代理';
+
+  @override
+  String get settingsMediaProxyDescription =>
+      '於本機運行 HTTP 代理以緩存並流式播放媒體，提供更流暢之播放體驗';
+
+  @override
+  String get settingsMediaProxyUnsupported => '當前平台不支持此功能';
+
+  @override
+  String get settingsStorageUsed => '已用空間';
+
+  @override
+  String get settingsStorageFree => '可用空間';
+
+  @override
+  String get settingsStorageUnavailable => '當前平台不支持查看磁盤信息';
+
+  @override
+  String get settingsChatStorage => '聊天消息存儲';
+
+  @override
+  String get settingsChatStorageDescription => '查察並管理本地緩存之聊天消息';
+
+  @override
+  String get settingsCloudFiles => '雲端文件';
+
+  @override
+  String get settingsCloudFilesDescription => '管理上傳至服務器之文件';
+
+  @override
+  String get settingsAppCache => '應用緩存';
+
+  @override
+  String get settingsMediaCache => '媒體代理緩存';
+
+  @override
+  String get settingsClearCache => '清除';
+
+  @override
+  String get settingsCacheCleared => '緩存已清除';
+
+  @override
+  String get settingsLocalDatabase => '本地數據庫';
+
+  @override
+  String get settingsOpenDatabaseFolder => '打開數據庫目錄';
+
+  @override
+  String get settingsLocalDatabaseSize => '本地消息數據庫';
+
+  @override
+  String get settingsResetLocalMessages => '重置本地消息';
+
+  @override
+  String get settingsResetLocalMessagesConfirm =>
+      '將刪除此客戶端之所有本地緩存消息，服務器上之消息不受影響。';
+
+  @override
+  String get settingsNoLocalMessages => '暫無本地存儲之消息';
+
+  @override
+  String settingsLocalMessageCount(int count, String size) {
+    return '$count 條消息 · $size';
+  }
+
+  @override
+  String get settingsClearLocalMessages => '清除';
 }

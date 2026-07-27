@@ -4054,6 +4054,90 @@ abstract class AppLocalizations {
   /// **'View and manage user accounts'**
   String get adminAccountManagementDescription;
 
+  /// No description provided for @adminAccountSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search username, email, or UID'**
+  String get adminAccountSearch;
+
+  /// No description provided for @adminAccountCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get adminAccountCreate;
+
+  /// No description provided for @adminAccountCreateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a server account as an administrator'**
+  String get adminAccountCreateDescription;
+
+  /// No description provided for @adminAccountUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get adminAccountUsername;
+
+  /// No description provided for @adminAccountPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get adminAccountPassword;
+
+  /// No description provided for @adminAccountConfirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get adminAccountConfirmPassword;
+
+  /// No description provided for @adminAccountEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email (optional)'**
+  String get adminAccountEmail;
+
+  /// No description provided for @adminAccountRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Account role'**
+  String get adminAccountRole;
+
+  /// No description provided for @adminAccountSign.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile signature (optional)'**
+  String get adminAccountSign;
+
+  /// No description provided for @adminAccountIntroduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Introduction (optional)'**
+  String get adminAccountIntroduction;
+
+  /// No description provided for @adminAccountRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required'**
+  String get adminAccountRequired;
+
+  /// No description provided for @adminAccountPasswordMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get adminAccountPasswordMismatch;
+
+  /// No description provided for @adminAccountCreateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created'**
+  String get adminAccountCreateSuccess;
+
+  /// No description provided for @adminAccountCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create account. Check whether the username exists and your permissions.'**
+  String get adminAccountCreateFailed;
+
   /// No description provided for @adminAccountLoadFailed.
   ///
   /// In en, this message translates to:
@@ -4821,6 +4905,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to send friend request'**
   String get userProfileFriendRequestFailed;
+
+  /// No description provided for @settingsCategoryConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get settingsCategoryConnection;
+
+  /// No description provided for @settingsCategoryStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get settingsCategoryStorage;
+
+  /// No description provided for @settingsNotifyWithHaptic.
+  ///
+  /// In en, this message translates to:
+  /// **'Haptic Feedback on Notification'**
+  String get settingsNotifyWithHaptic;
+
+  /// No description provided for @settingsNotifyWithHapticDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Trigger haptic feedback when a new in-app notification arrives'**
+  String get settingsNotifyWithHapticDescription;
+
+  /// No description provided for @settingsMediaProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Media Proxy'**
+  String get settingsMediaProxy;
+
+  /// No description provided for @settingsMediaProxyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs a local HTTP proxy to cache and stream media files for smoother playback'**
+  String get settingsMediaProxyDescription;
+
+  /// No description provided for @settingsMediaProxyUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Not supported on this platform'**
+  String get settingsMediaProxyUnsupported;
+
+  /// No description provided for @settingsStorageUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage used'**
+  String get settingsStorageUsed;
+
+  /// No description provided for @settingsStorageFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get settingsStorageFree;
+
+  /// No description provided for @settingsStorageUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Disk info is not available on this platform'**
+  String get settingsStorageUnavailable;
+
+  /// No description provided for @settingsChatStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat Message Storage'**
+  String get settingsChatStorage;
+
+  /// No description provided for @settingsChatStorageDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'View and manage locally stored chat messages'**
+  String get settingsChatStorageDescription;
+
+  /// No description provided for @settingsCloudFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud Files'**
+  String get settingsCloudFiles;
+
+  /// No description provided for @settingsCloudFilesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage files uploaded to the server'**
+  String get settingsCloudFilesDescription;
+
+  /// No description provided for @settingsAppCache.
+  ///
+  /// In en, this message translates to:
+  /// **'App Cache'**
+  String get settingsAppCache;
+
+  /// No description provided for @settingsMediaCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Media Proxy Cache'**
+  String get settingsMediaCache;
+
+  /// No description provided for @settingsClearCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get settingsClearCache;
+
+  /// No description provided for @settingsCacheCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache cleared'**
+  String get settingsCacheCleared;
+
+  /// No description provided for @settingsLocalDatabase.
+  ///
+  /// In en, this message translates to:
+  /// **'Local Database'**
+  String get settingsLocalDatabase;
+
+  /// No description provided for @settingsOpenDatabaseFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Open database folder'**
+  String get settingsOpenDatabaseFolder;
+
+  /// No description provided for @settingsLocalDatabaseSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Local message database'**
+  String get settingsLocalDatabaseSize;
+
+  /// No description provided for @settingsResetLocalMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset local messages'**
+  String get settingsResetLocalMessages;
+
+  /// No description provided for @settingsResetLocalMessagesConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all locally cached messages from this client. Server messages are not affected.'**
+  String get settingsResetLocalMessagesConfirm;
+
+  /// No description provided for @settingsNoLocalMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'No locally stored messages'**
+  String get settingsNoLocalMessages;
+
+  /// No description provided for @settingsLocalMessageCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} messages · {size}'**
+  String settingsLocalMessageCount(int count, String size);
+
+  /// No description provided for @settingsClearLocalMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get settingsClearLocalMessages;
 }
 
 class _AppLocalizationsDelegate

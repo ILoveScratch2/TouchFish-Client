@@ -28,7 +28,8 @@ class ImageLightbox extends HookWidget {
     final photoViewController = useMemoized(() => PhotoViewController(), []);
     final rotation = useState(0);
     final showExif = useState(exifData != null && exifData!.isNotEmpty);
-    final isRemoteImage = imagePath.startsWith('http://') || imagePath.startsWith('https://');
+    final isRemoteImage =
+        imagePath.startsWith('http://') || imagePath.startsWith('https://');
 
     final shadow = [
       Shadow(
@@ -62,7 +63,10 @@ class ImageLightbox extends HookWidget {
                     photoViewController.scale = clampedScale;
                   }
                 } catch (e) {
-                  talker.error('Failed to handle scroll event in image lightbox', e);
+                  talker.error(
+                    'Failed to handle scroll event in image lightbox',
+                    e,
+                  );
                 }
               },
               child: PhotoView(
@@ -73,11 +77,11 @@ class ImageLightbox extends HookWidget {
                 heroAttributes: PhotoViewHeroAttributes(tag: heroTag),
                 imageProvider: kIsWeb && imageBytes != null
                     ? MemoryImage(imageBytes!)
-                  : imageBytes != null
+                    : imageBytes != null
                     ? MemoryImage(imageBytes!)
                     : isRemoteImage
-                      ? NetworkImage(imagePath)
-                      : FileImage(File(imagePath)) as ImageProvider,
+                    ? NetworkImage(imagePath)
+                    : FileImage(File(imagePath)) as ImageProvider,
                 customSize: MediaQuery.of(context).size,
                 basePosition: Alignment.center,
                 filterQuality: FilterQuality.high,
@@ -90,11 +94,7 @@ class ImageLightbox extends HookWidget {
             right: 16,
             child: IconButton(
               onPressed: () => Navigator.of(context).pop(),
-              icon: Icon(
-                Icons.close,
-                color: Colors.white,
-                shadows: shadow,
-              ),
+              icon: Icon(Icons.close, color: Colors.white, shadows: shadow),
             ),
           ),
           // EXIF Info Overlay
@@ -113,7 +113,11 @@ class ImageLightbox extends HookWidget {
             child: Row(
               children: [
                 IconButton(
-                  icon: Icon(Icons.remove, color: Colors.white, shadows: shadow),
+                  icon: Icon(
+                    Icons.remove,
+                    color: Colors.white,
+                    shadows: shadow,
+                  ),
                   onPressed: () {
                     photoViewController.scale =
                         (photoViewController.scale ?? 1) - 0.05;
@@ -128,17 +132,27 @@ class ImageLightbox extends HookWidget {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: Icon(Icons.rotate_left, color: Colors.white, shadows: shadow),
+                  icon: Icon(
+                    Icons.rotate_left,
+                    color: Colors.white,
+                    shadows: shadow,
+                  ),
                   onPressed: () {
                     rotation.value = (rotation.value - 1) % 4;
-                    photoViewController.rotation = rotation.value * -math.pi / 2;
+                    photoViewController.rotation =
+                        rotation.value * -math.pi / 2;
                   },
                 ),
                 IconButton(
-                  icon: Icon(Icons.rotate_right, color: Colors.white, shadows: shadow),
+                  icon: Icon(
+                    Icons.rotate_right,
+                    color: Colors.white,
+                    shadows: shadow,
+                  ),
                   onPressed: () {
                     rotation.value = (rotation.value + 1) % 4;
-                    photoViewController.rotation = rotation.value * -math.pi / 2;
+                    photoViewController.rotation =
+                        rotation.value * -math.pi / 2;
                   },
                 ),
                 if (exifData != null && exifData!.isNotEmpty) ...[

@@ -30,6 +30,7 @@ class FontLoaderService {
     _cachedFonts = fonts;
     return fonts;
   }
+
   Future<String?> loadFont(String fontName) async {
     if (fontName == 'System Default') {
       return null;
@@ -45,6 +46,7 @@ class FontLoaderService {
     }
     return null;
   }
+
   void rescan() {
     _cachedFonts = null;
   }

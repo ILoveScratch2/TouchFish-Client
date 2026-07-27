@@ -66,6 +66,46 @@ class AppRoutes {
     licenses,
   };
 
+  static Page<void> _mainSectionPage(
+    BuildContext context,
+    GoRouterState state,
+    Widget child,
+  ) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    return CustomTransitionPage<void>(
+      key: state.pageKey,
+      transitionDuration: reduceMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 420),
+      reverseTransitionDuration: reduceMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 240),
+      child: child,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        if (reduceMotion) return child;
+        final isWide = MediaQuery.sizeOf(context).width >= 600;
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return ColoredBox(
+          color: Theme.of(context).colorScheme.surface,
+          child: FadeTransition(
+            opacity: curved,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: isWide ? const Offset(0, 0.06) : const Offset(0.08, 0),
+                end: Offset.zero,
+              ).animate(curved),
+              child: child,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @visibleForTesting
   static String? authRedirect({
     required String path,
@@ -216,8 +256,9 @@ class AppRoutes {
               routes: [
                 GoRoute(
                   path: main,
-                  pageBuilder: (context, state) => NoTransitionPage(
-                    child: ChatShellScreen(
+                  pageBuilder: (context, state) {
+                    final isWide = MediaQuery.of(context).size.width >= 600;
+                    final placeholder = ChatShellScreen(
                       child: Container(
                         color: Theme.of(context).scaffoldBackgroundColor,
                         child: Center(
@@ -231,13 +272,23 @@ class AppRoutes {
                           ),
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                    // In wide mode the sidebar is always visible — suppress
+                    // the transition to avoid the entire shell (sidebar + content)
+                    // sliding in whenever a chat room is selected.
+                    return isWide
+                        ? NoTransitionPage(
+                            key: state.pageKey,
+                            child: placeholder,
+                          )
+                        : _mainSectionPage(context, state, placeholder);
+                  },
                 ),
                 GoRoute(
                   path: chat,
-                  pageBuilder: (context, state) => NoTransitionPage(
-                    child: ChatShellScreen(
+                  pageBuilder: (context, state) {
+                    final isWide = MediaQuery.of(context).size.width >= 600;
+                    final placeholder = ChatShellScreen(
                       child: Container(
                         color: Theme.of(context).scaffoldBackgroundColor,
                         child: Center(
@@ -251,49 +302,51 @@ class AppRoutes {
                           ),
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                    return isWide
+                        ? NoTransitionPage(
+                            key: state.pageKey,
+                            child: placeholder,
+                          )
+                        : _mainSectionPage(context, state, placeholder);
+                  },
                 ),
                 GoRoute(
                   path: '/chat/:roomId',
                   pageBuilder: (context, state) {
                     final roomId = state.pathParameters['roomId']!;
                     final isWide = MediaQuery.of(context).size.width >= 600;
-
-                    if (!isWide) {
-                      return MaterialPage(
-                        child: ChatShellScreen(
-                          child: ChatDetailScreen(
-                            key: ValueKey(roomId),
-                            roomId: roomId,
-                          ),
-                        ),
-                      );
-                    }
-                    return NoTransitionPage(
-                      child: ChatShellScreen(
-                        child: ChatDetailScreen(
-                          key: ValueKey(roomId),
-                          roomId: roomId,
-                        ),
+                    final shell = ChatShellScreen(
+                      child: ChatDetailScreen(
+                        key: ValueKey(roomId),
+                        roomId: roomId,
                       ),
                     );
+                    // Wide: no-transition — only the detail panel changes
+                    // (sidebar is already in place via ChatShellScreen).
+                    // Narrow: system push animation.
+                    return isWide
+                        ? NoTransitionPage(key: state.pageKey, child: shell)
+                        : MaterialPage(child: shell);
                   },
                 ),
                 GoRoute(
                   path: announcement,
-                  pageBuilder: (context, state) =>
-                      const NoTransitionPage(child: AnnouncementScreen()),
+                  pageBuilder: (context, state) => _mainSectionPage(
+                    context,
+                    state,
+                    const AnnouncementScreen(),
+                  ),
                 ),
                 GoRoute(
                   path: forum,
                   pageBuilder: (context, state) =>
-                      const NoTransitionPage(child: ForumScreen()),
+                      _mainSectionPage(context, state, const ForumScreen()),
                 ),
                 GoRoute(
                   path: account,
                   pageBuilder: (context, state) =>
-                      const NoTransitionPage(child: AccountScreen()),
+                      _mainSectionPage(context, state, const AccountScreen()),
                 ),
                 GoRoute(
                   path: admin,
@@ -304,7 +357,7 @@ class AppRoutes {
                         : AppRoutes.account;
                   },
                   pageBuilder: (context, state) =>
-                      const NoTransitionPage(child: AdminScreen()),
+                      _mainSectionPage(context, state, const AdminScreen()),
                 ),
                 GoRoute(
                   path: adminPendingForums,
@@ -314,8 +367,11 @@ class AppRoutes {
                         ? null
                         : AppRoutes.account;
                   },
-                  pageBuilder: (context, state) =>
-                      const NoTransitionPage(child: PendingForumsScreen()),
+                  pageBuilder: (context, state) => _mainSectionPage(
+                    context,
+                    state,
+                    const PendingForumsScreen(),
+                  ),
                 ),
                 GoRoute(
                   path: adminDefaultAssets,
@@ -325,8 +381,11 @@ class AppRoutes {
                         ? null
                         : AppRoutes.account;
                   },
-                  pageBuilder: (context, state) =>
-                      const NoTransitionPage(child: DefaultAssetsScreen()),
+                  pageBuilder: (context, state) => _mainSectionPage(
+                    context,
+                    state,
+                    const DefaultAssetsScreen(),
+                  ),
                 ),
                 GoRoute(
                   path: adminServerSettings,
@@ -335,8 +394,11 @@ class AppRoutes {
                         ? null
                         : AppRoutes.admin;
                   },
-                  pageBuilder: (context, state) =>
-                      const NoTransitionPage(child: ServerSettingsScreen()),
+                  pageBuilder: (context, state) => _mainSectionPage(
+                    context,
+                    state,
+                    const ServerSettingsScreen(),
+                  ),
                 ),
                 GoRoute(
                   path: adminAccountManagement,
@@ -346,8 +408,11 @@ class AppRoutes {
                         ? null
                         : AppRoutes.account;
                   },
-                  pageBuilder: (context, state) =>
-                      const NoTransitionPage(child: AccountManagementScreen()),
+                  pageBuilder: (context, state) => _mainSectionPage(
+                    context,
+                    state,
+                    const AccountManagementScreen(),
+                  ),
                 ),
               ],
             ),

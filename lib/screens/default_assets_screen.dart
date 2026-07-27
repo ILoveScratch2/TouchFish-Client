@@ -210,9 +210,7 @@ class _DefaultAssetsScreenState extends State<DefaultAssetsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              l10n.adminDefaultAssetUploadFailed(
-                _assetLabel(l10n, assetType),
-              ),
+              l10n.adminDefaultAssetUploadFailed(_assetLabel(l10n, assetType)),
             ),
             behavior: SnackBarBehavior.floating,
           ),
@@ -221,7 +219,8 @@ class _DefaultAssetsScreenState extends State<DefaultAssetsScreen> {
       }
 
       setState(
-        () => _cacheBustToken = DateTime.now().millisecondsSinceEpoch.toString(),
+        () =>
+            _cacheBustToken = DateTime.now().millisecondsSinceEpoch.toString(),
       );
       await _loadServerInfo();
       if (!mounted) {
@@ -418,7 +417,9 @@ class _DefaultAssetsScreenState extends State<DefaultAssetsScreen> {
         ),
         actions: [
           IconButton(
-            onPressed: _isLoading ? null : () => _loadServerInfo(showError: true),
+            onPressed: _isLoading
+                ? null
+                : () => _loadServerInfo(showError: true),
             tooltip: l10n.retry,
             icon: const Icon(Icons.refresh_rounded),
           ),
@@ -427,4 +428,4 @@ class _DefaultAssetsScreenState extends State<DefaultAssetsScreen> {
       body: _buildBody(context),
     );
   }
-}
+}

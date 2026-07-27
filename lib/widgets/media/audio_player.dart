@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:touchfish_client/l10n/app_localizations.dart';
+import '../../services/media_proxy_service.dart';
 
 class AudioPlayer extends HookWidget {
   final String audioPath;
@@ -36,6 +38,7 @@ class AudioPlayer extends HookWidget {
     final sliderPosition = useState(const Duration(seconds: 0));
 
     useEffect(() {
+      var disposed = false;
       player.stream.position.listen((value) {
         position.value = value;
         if (!sliderWorking.value) sliderPosition.value = position.value;
@@ -50,17 +53,21 @@ class AudioPlayer extends HookWidget {
         isPlaying.value = value;
       });
 
-      String mediaSource;
-      if (kIsWeb && audioBytes != null) {
-        final base64String = base64Encode(audioBytes!);
-        mediaSource = 'data:audio/mpeg;base64,$base64String';
-      } else {
-        mediaSource = audioPath;
-      }
-
-      player.open(Media(mediaSource), play: autoplay);
+      unawaited(() async {
+        String mediaSource;
+        if (kIsWeb && audioBytes != null) {
+          final base64String = base64Encode(audioBytes!);
+          mediaSource = 'data:audio/mpeg;base64,$base64String';
+        } else {
+          mediaSource = await MediaProxyService.instance.resolveUrl(audioPath);
+        }
+        if (!disposed) {
+          await player.open(Media(mediaSource), play: autoplay);
+        }
+      }());
 
       return () {
+        disposed = true;
         player.dispose();
       };
     }, []);
@@ -83,7 +90,11 @@ class AudioPlayer extends HookWidget {
               },
               icon: isPlaying.value
                   ? const Icon(Symbols.pause, fill: 1, color: Colors.white)
-                  : const Icon(Symbols.play_arrow, fill: 1, color: Colors.white),
+                  : const Icon(
+                      Symbols.play_arrow,
+                      fill: 1,
+                      color: Colors.white,
+                    ),
             ),
             const SizedBox(width: 20),
             Expanded(
@@ -105,7 +116,11 @@ class AudioPlayer extends HookWidget {
                             width: double.infinity,
                             key: const ValueKey('filename'),
                             child: Text(
-                              filename?.isEmpty ?? true ? AppLocalizations.of(context)!.mediaAudioMessage : filename!,
+                              filename?.isEmpty ?? true
+                                  ? AppLocalizations.of(
+                                      context,
+                                    )!.mediaAudioMessage
+                                  : filename!,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -113,17 +128,21 @@ class AudioPlayer extends HookWidget {
                   ),
                   Slider(
                     value: sliderPosition.value.inMilliseconds.toDouble(),
-                    secondaryTrackValue:
-                        durationBuffered.value.inMilliseconds.toDouble(),
+                    secondaryTrackValue: durationBuffered.value.inMilliseconds
+                        .toDouble(),
                     max: duration.value.inMilliseconds.toDouble(),
                     onChangeStart: (_) {
                       sliderWorking.value = true;
                     },
                     onChanged: (value) {
-                      sliderPosition.value = Duration(milliseconds: value.toInt());
+                      sliderPosition.value = Duration(
+                        milliseconds: value.toInt(),
+                      );
                     },
                     onChangeEnd: (value) {
-                      sliderPosition.value = Duration(milliseconds: value.toInt());
+                      sliderPosition.value = Duration(
+                        milliseconds: value.toInt(),
+                      );
                       sliderWorking.value = false;
                       player.seek(sliderPosition.value);
                     },

@@ -9,7 +9,7 @@ class SheetScaffold extends StatelessWidget {
   final double heightFactor;
   final double? height;
   final VoidCallback? onClose;
-  
+
   const SheetScaffold({
     super.key,
     this.title,
@@ -45,7 +45,12 @@ class SheetScaffold extends StatelessWidget {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 16, left: 20, right: 16, bottom: 12),
+            padding: const EdgeInsets.only(
+              top: 16,
+              left: 20,
+              right: 16,
+              bottom: 12,
+            ),
             child: Row(
               children: [
                 Expanded(child: titleWidget),
@@ -56,11 +61,9 @@ class SheetScaffold extends StatelessWidget {
                     Symbols.close,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
-                  onPressed:
-                      () =>
-                          onClose != null
-                              ? onClose?.call()
-                              : Navigator.pop(context),
+                  onPressed: () => onClose != null
+                      ? onClose?.call()
+                      : Navigator.pop(context),
                   style: IconButton.styleFrom(minimumSize: const Size(36, 36)),
                 ),
               ],

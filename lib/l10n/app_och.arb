@@ -788,6 +788,20 @@
   "adminAnnouncementsDescription": "建而治系統之公告",
   "adminAccountManagement": "賬戶管理",
   "adminAccountManagementDescription": "查察並管理用戶賬戶",
+  "adminAccountSearch": "檢索用戶名、郵箱或 UID",
+  "adminAccountCreate": "創建賬戶",
+  "adminAccountCreateDescription": "由管理員直建服務器賬戶",
+  "adminAccountUsername": "用戶名",
+  "adminAccountPassword": "密碼",
+  "adminAccountConfirmPassword": "再輸密碼",
+  "adminAccountEmail": "郵箱（可選）",
+  "adminAccountRole": "賬戶角色",
+  "adminAccountSign": "個性簽名（可選）",
+  "adminAccountIntroduction": "個人介紹（可選）",
+  "adminAccountRequired": "此項不可空",
+  "adminAccountPasswordMismatch": "兩次密碼不合",
+  "adminAccountCreateSuccess": "賬戶已創建",
+  "adminAccountCreateFailed": "創建賬戶失敗，請察用戶名或權限",
   "adminAccountLoadFailed": "加載用戶列表失敗",
   "adminAccountEmpty": "暫無用戶",
   "adminAccountCreated": "創建時間：{date}",
@@ -1008,5 +1022,39 @@
       "username": {"type": "String"}
     }
   },
-  "userProfileFriendRequestFailed": "發送好友請求失敗"
+  "userProfileFriendRequestFailed": "發送好友請求失敗",
+
+  "settingsCategoryConnection": "連接",
+  "settingsCategoryStorage": "存儲",
+  "settingsNotifyWithHaptic": "通知觸感反饋",
+  "settingsNotifyWithHapticDescription": "收到應用內新通知時觸發觸感反饋",
+  "settingsMediaProxy": "媒體代理",
+  "settingsMediaProxyDescription": "於本機運行 HTTP 代理以緩存並流式播放媒體，提供更流暢之播放體驗",
+  "settingsMediaProxyUnsupported": "當前平台不支持此功能",
+
+  "settingsStorageUsed": "已用空間",
+  "settingsStorageFree": "可用空間",
+  "settingsStorageUnavailable": "當前平台不支持查看磁盤信息",
+  "settingsChatStorage": "聊天消息存儲",
+  "settingsChatStorageDescription": "查察並管理本地緩存之聊天消息",
+  "settingsCloudFiles": "雲端文件",
+  "settingsCloudFilesDescription": "管理上傳至服務器之文件",
+  "settingsAppCache": "應用緩存",
+  "settingsMediaCache": "媒體代理緩存",
+  "settingsClearCache": "清除",
+  "settingsCacheCleared": "緩存已清除",
+  "settingsLocalDatabase": "本地數據庫",
+  "settingsOpenDatabaseFolder": "打開數據庫目錄",
+  "settingsLocalDatabaseSize": "本地消息數據庫",
+  "settingsResetLocalMessages": "重置本地消息",
+  "settingsResetLocalMessagesConfirm": "將刪除此客戶端之所有本地緩存消息，服務器上之消息不受影響。",
+  "settingsNoLocalMessages": "暫無本地存儲之消息",
+  "settingsLocalMessageCount": "{count} 條消息 · {size}",
+  "@settingsLocalMessageCount": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "size": {"type": "String"}
+    }
+  },
+  "settingsClearLocalMessages": "清除"
 }
