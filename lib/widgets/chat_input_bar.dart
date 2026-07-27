@@ -206,6 +206,7 @@ class _ChatInputBarState extends State<ChatInputBar>
                     minLines: 1,
                     keyboardType: TextInputType.multiline,
                     textInputAction: TextInputAction.newline,
+                    textAlign: TextAlign.left,
                     decoration: InputDecoration(
                       hintText: l10n.chatInputPlaceholder,
                       border: InputBorder.none,

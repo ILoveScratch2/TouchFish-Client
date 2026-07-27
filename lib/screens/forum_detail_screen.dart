@@ -283,6 +283,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           pinned: true,
           leading: BackButton(onPressed: () => _leaveForum(context)),
           flexibleSpace: FlexibleSpaceBar(
+            expandedTitleScale: 1,
             title: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

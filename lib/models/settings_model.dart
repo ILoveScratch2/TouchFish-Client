@@ -9,7 +9,7 @@ enum SettingType {
   customWidget,
 }
 
-enum SettingCategory { appearance, notifications, about }
+enum SettingCategory { appearance, notifications, drafts, about }
 
 class SettingItem {
   final String key;
@@ -241,6 +241,29 @@ class SettingsData {
               icon: Icons.group,
             ),
           ],
+        ),
+      ],
+    ),
+    SettingCategoryData(
+      category: SettingCategory.drafts,
+      titleKey: 'settingsCategoryDrafts',
+      icon: Icons.edit_note,
+      items: [
+        SettingItem(
+          key: 'saveChatDrafts',
+          titleKey: 'settingsSaveChatDraftsTitle',
+          descriptionKey: 'settingsSaveChatDraftsDesc',
+          type: SettingType.switchSetting,
+          defaultValue: true,
+          icon: Icons.chat_bubble_outline,
+        ),
+        SettingItem(
+          key: 'saveForumDrafts',
+          titleKey: 'settingsSaveForumDraftsTitle',
+          descriptionKey: 'settingsSaveForumDraftsDesc',
+          type: SettingType.switchSetting,
+          defaultValue: true,
+          icon: Icons.forum_outlined,
         ),
       ],
     ),

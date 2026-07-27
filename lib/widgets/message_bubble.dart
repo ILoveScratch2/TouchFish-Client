@@ -354,7 +354,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                             mainAxisAlignment: widget.message.isMe
                                 ? MainAxisAlignment.end
                                 : MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.end,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               if (!widget.message.isMe) ...[
                                 widget.showAvatar

@@ -76,4 +76,15 @@ void main() {
     expect(sends, 2);
     controller.dispose();
   });
+
+  testWidgets('message text is explicitly left aligned', (tester) async {
+    final controller = TextEditingController();
+    await pumpInput(tester, controller, () {});
+
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).textAlign,
+      TextAlign.left,
+    );
+    controller.dispose();
+  });
 }

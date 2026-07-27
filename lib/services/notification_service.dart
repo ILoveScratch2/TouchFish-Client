@@ -231,9 +231,17 @@ class NotificationService extends ChangeNotifier {
               ChatDataService.instance.addFriendToContacts(n.senderUid!);
             } else if (n.event == 'group.invited' ||
                 n.event == 'group.join.approved' ||
+                n.event == 'group.left' ||
                 n.event == 'group.member.removed' ||
                 n.event == 'group.deleted' ||
                 n.event == 'friend.request') {
+              final gid = n.groupEventGid;
+              if (gid != null &&
+                  (n.event == 'group.left' ||
+                      n.event == 'group.member.removed' ||
+                      n.event == 'group.deleted')) {
+                unawaited(ChatDataService.instance.removeRoom('G$gid'));
+              }
               ChatDataService.instance.loadContactsAndRooms();
             }
           }

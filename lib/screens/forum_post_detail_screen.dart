@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
@@ -12,6 +14,8 @@ import 'forum_post_compose_screen.dart';
 import '../utils/talker.dart';
 import '../widgets/mention_text_field.dart';
 import '../widgets/forum_attachments.dart';
+import '../services/draft_service.dart';
+import '../widgets/app_alert_dialog.dart';
 
 const double _kPostDetailMaxWidth = 680;
 
@@ -41,16 +45,46 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   List<_CommentData> _commentDataList = [];
   bool _isLoading = true;
   bool _isSendingComment = false;
+  bool _isDeletingPost = false;
+  final Set<String> _deletingCommentIds = {};
+  Forum? _forum;
+  int _currentForumRole = -1;
   final _commentController = TextEditingController();
   final _scrollController = ScrollController();
   final List<MentionUser> _mentionUsers = [];
+  Timer? _draftTimer;
+
+  String get _commentDraftId => '${widget.forumId}/${widget.postId}';
 
   @override
   void initState() {
     super.initState();
     _loadData();
     _loadMentionUsers();
+    _commentController.addListener(_scheduleCommentDraftSave);
+    unawaited(_restoreCommentDraft());
   }
+
+  void _scheduleCommentDraftSave() {
+    _draftTimer?.cancel();
+    _draftTimer = Timer(const Duration(milliseconds: 400), _saveCommentDraft);
+  }
+
+  Future<void> _restoreCommentDraft() async {
+    final draft = await DraftService.instance.loadDraft(
+      'forum_comment',
+      _commentDraftId,
+    );
+    if (!mounted || _commentController.text.isNotEmpty) return;
+    final text = draft?['content'] as String? ?? '';
+    if (text.isNotEmpty) _commentController.text = text;
+  }
+
+  Future<void> _saveCommentDraft() => DraftService.instance.saveDraft(
+    'forum_comment',
+    _commentDraftId,
+    {'content': _commentController.text},
+  );
 
   Future<void> _loadMentionUsers() async {
     final uid = AuthState.instance.uid;
@@ -82,6 +116,23 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       final pid = int.tryParse(widget.postId);
       if (fid == null || pid == null) throw Exception('Invalid IDs');
       _post = await TfApiClient.instance.getPost(fid, pid);
+      final forums = await TfApiClient.instance.getForumList();
+      _forum = forums.cast<Forum?>().firstWhere(
+        (forum) => forum?.id == widget.forumId,
+        orElse: () => null,
+      );
+      final uid = AuthState.instance.uid;
+      final password = AuthState.instance.password;
+      if (uid != null && password != null) {
+        final memberships = await TfApiClient.instance.getMyMemberships(
+          uid,
+          password,
+        );
+        _currentForumRole = memberships
+            .where((membership) => membership['fid'] == fid)
+            .map((membership) => membership['role'] ?? -1)
+            .fold(-1, (current, role) => role > current ? role : current);
+      }
 
       if (_post != null) {
         final authorUid = int.tryParse(_post!.authorUid);
@@ -111,6 +162,8 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
 
   @override
   void dispose() {
+    _draftTimer?.cancel();
+    unawaited(_saveCommentDraft());
     _commentController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -145,6 +198,19 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       appBar: AppBar(
         leading: BackButton(onPressed: _leavePost),
         title: Text(post.title.isNotEmpty ? post.title : l10n.forumPostDetail),
+        actions: [
+          if (_canDeletePost(post))
+            IconButton(
+              tooltip: l10n.forumPostDelete,
+              onPressed: _isDeletingPost ? null : _deletePost,
+              icon: _isDeletingPost
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.delete_outline),
+            ),
+        ],
       ),
       body: Stack(
         children: [
@@ -410,6 +476,26 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
+                      if (_canDeleteComment(comment)) ...[
+                        const Spacer(),
+                        IconButton(
+                          tooltip: AppLocalizations.of(
+                            context,
+                          )!.forumCommentDelete,
+                          visualDensity: VisualDensity.compact,
+                          onPressed: _deletingCommentIds.contains(comment.id)
+                              ? null
+                              : () => _deleteComment(comment),
+                          icon: _deletingCommentIds.contains(comment.id)
+                              ? const SizedBox.square(
+                                  dimension: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.delete_outline, size: 18),
+                        ),
+                      ],
                       const SizedBox(width: 8),
                       Text(
                         _formatRelativeTime(comment.createdAt),
@@ -509,6 +595,12 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       initialContent: _commentController.text,
       isReply: true,
       postId: widget.postId,
+      onContentChanged: (text) {
+        _commentController.value = TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        );
+      },
     );
     if (result == true) {
       _commentController.clear();
@@ -541,6 +633,11 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       setState(() => _isSendingComment = false);
       if (success) {
         _commentController.clear();
+        await DraftService.instance.clearDraft(
+          'forum_comment',
+          _commentDraftId,
+        );
+        if (!mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.forumCommentSuccess)));
@@ -565,6 +662,115 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
         );
       }
     }
+  }
+
+  bool get _hasForumModerationAccess =>
+      _currentForumRole >= 50 ||
+      AuthState.instance.currentUser?.hasAdminAccess == true;
+
+  bool _canDeletePost(ForumPost post) {
+    final uid = AuthState.instance.uid?.toString();
+    return uid != null &&
+        (uid == post.authorUid ||
+            uid == _forum?.createdByUid ||
+            _hasForumModerationAccess);
+  }
+
+  bool _canDeleteComment(ForumComment comment) {
+    final uid = AuthState.instance.uid?.toString();
+    return uid != null &&
+        (uid == comment.authorUid || _hasForumModerationAccess);
+  }
+
+  Future<void> _deletePost() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showTouchFishInfoDialog<bool>(
+      context,
+      title: l10n.forumPostDelete,
+      message: l10n.forumPostDeleteHint,
+      actions: [
+        TouchFishDialogAction(label: l10n.cancel, result: false),
+        TouchFishDialogAction(
+          label: l10n.forumPostDelete,
+          result: true,
+          isPrimary: true,
+          isDestructive: true,
+        ),
+      ],
+    );
+    if (confirmed != true || !mounted) return;
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final fid = int.tryParse(widget.forumId);
+    final pid = int.tryParse(widget.postId);
+    if (uid == null || password == null || fid == null || pid == null) return;
+    setState(() => _isDeletingPost = true);
+    final success = await TfApiClient.instance.removePost(
+      uid,
+      password,
+      fid,
+      pid,
+    );
+    if (!mounted) return;
+    if (success) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.forumPostDeleteSuccess)));
+      _leavePost();
+    } else {
+      setState(() => _isDeletingPost = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.forumPostDeleteFailed)));
+    }
+  }
+
+  Future<void> _deleteComment(ForumComment comment) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showTouchFishInfoDialog<bool>(
+      context,
+      title: l10n.forumCommentDelete,
+      message: l10n.forumCommentDeleteHint,
+      actions: [
+        TouchFishDialogAction(label: l10n.cancel, result: false),
+        TouchFishDialogAction(
+          label: l10n.forumCommentDelete,
+          result: true,
+          isPrimary: true,
+          isDestructive: true,
+        ),
+      ],
+    );
+    if (confirmed != true || !mounted) return;
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final fid = int.tryParse(widget.forumId);
+    final pid = int.tryParse(widget.postId);
+    if (uid == null || password == null || fid == null || pid == null) return;
+    setState(() => _deletingCommentIds.add(comment.id));
+    final success = await TfApiClient.instance.removeComment(
+      uid,
+      password,
+      fid,
+      pid,
+      comment.id,
+    );
+    if (!mounted) return;
+    setState(() {
+      _deletingCommentIds.remove(comment.id);
+      if (success) {
+        _commentDataList.removeWhere((item) => item.comment.id == comment.id);
+      }
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? l10n.forumCommentDeleteSuccess
+              : l10n.forumCommentDeleteFailed,
+        ),
+      ),
+    );
   }
 
   String _formatDateTime(DateTime date) {

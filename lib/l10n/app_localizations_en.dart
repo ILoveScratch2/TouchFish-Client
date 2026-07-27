@@ -215,6 +215,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCategoryNotifications => 'Notifications';
 
   @override
+  String get settingsCategoryDrafts => 'Drafts';
+
+  @override
+  String get settingsSaveChatDraftsTitle => 'Save Chat Drafts';
+
+  @override
+  String get settingsSaveChatDraftsDesc =>
+      'Automatically save unsent text in each chat. Turning this off clears chat drafts for the current server and account.';
+
+  @override
+  String get settingsSaveForumDraftsTitle => 'Save Forum Drafts';
+
+  @override
+  String get settingsSaveForumDraftsDesc =>
+      'Automatically save forum creation, post, comment, and attachment drafts. Turning this off clears forum drafts for the current server and account.';
+
+  @override
   String get settingsCategoryAbout => 'About';
 
   @override
@@ -2044,6 +2061,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forumDeleteFailed => 'Failed to delete forum';
+
+  @override
+  String get forumPostDelete => 'Delete Post';
+
+  @override
+  String get forumPostDeleteHint =>
+      'Delete this post? Its comments will also be deleted.';
+
+  @override
+  String get forumPostDeleteSuccess => 'Post deleted';
+
+  @override
+  String get forumPostDeleteFailed => 'Failed to delete post';
+
+  @override
+  String get forumCommentDelete => 'Delete Comment';
+
+  @override
+  String get forumCommentDeleteHint => 'Delete this comment?';
+
+  @override
+  String get forumCommentDeleteSuccess => 'Comment deleted';
+
+  @override
+  String get forumCommentDeleteFailed => 'Failed to delete comment';
 
   @override
   String get announcementTitle => 'Announcements';

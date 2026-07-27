@@ -1369,11 +1369,16 @@ class TfApiClient {
     int uid,
     String password,
     String forumName,
-    String introduction,
-  ) async {
+    String introduction, {
+    String? requestId,
+  }) async {
     final result = await secretPost(
       '/forum/create_forum',
-      {'forum_name': forumName, 'introduction': introduction},
+      {
+        'forum_name': forumName,
+        'introduction': introduction,
+        'request_id': ?requestId,
+      },
       uid: uid,
       password: password,
     );

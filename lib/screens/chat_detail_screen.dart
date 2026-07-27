@@ -18,6 +18,7 @@ import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/chat_ws_service.dart';
 import '../services/chat_data_service.dart';
+import '../services/draft_service.dart';
 import '../utils/talker.dart';
 import 'chat_room_settings_screen.dart';
 
@@ -53,6 +54,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   ChatMessage? _replyingTo;
   ChatMessage? _forwardingTo;
   bool _canModerateGroup = false;
+  Timer? _draftTimer;
+  bool _suppressDraftSave = false;
 
   String get _contactUid {
     final id = widget.roomId;
@@ -67,6 +70,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _messageController.addListener(_scheduleDraftSave);
   }
 
   @override
@@ -82,6 +86,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void didUpdateWidget(covariant ChatDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.roomId != widget.roomId) {
+      _draftTimer?.cancel();
+      unawaited(_saveDraftForRoom(oldWidget.roomId));
       _initRoom();
     }
   }
@@ -105,6 +111,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _showBackToBottom = false;
     _replyingTo = null;
     _canModerateGroup = false;
+    _suppressDraftSave = true;
+    _messageController.clear();
+    _suppressDraftSave = false;
+    unawaited(_restoreDraft(_contactUid));
     _loadChatRoom();
     _startRealMessaging();
   }
@@ -117,10 +127,38 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _pendingWsTimers.clear();
     _detachRealtimeListeners();
     _ackErrorSub?.cancel();
+    _draftTimer?.cancel();
+    unawaited(_saveDraft());
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
+
+  void _scheduleDraftSave() {
+    if (_suppressDraftSave) return;
+    _draftTimer?.cancel();
+    _draftTimer = Timer(const Duration(milliseconds: 400), _saveDraft);
+  }
+
+  Future<void> _restoreDraft(String roomId) async {
+    final draft = await DraftService.instance.loadDraft('chat', roomId);
+    if (!mounted ||
+        _contactUid != roomId ||
+        _messageController.text.isNotEmpty) {
+      return;
+    }
+    final text = draft?['text'] as String? ?? '';
+    if (text.isNotEmpty) _messageController.text = text;
+  }
+
+  Future<void> _saveDraft() => DraftService.instance.saveDraft(
+    'chat',
+    _contactUid,
+    {'text': _messageController.text},
+  );
+
+  Future<void> _saveDraftForRoom(String roomId) => DraftService.instance
+      .saveDraft('chat', roomId, {'text': _messageController.text});
 
   void _onAckError(String error) {
     if (!mounted) return;
@@ -437,6 +475,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (members == null) return;
     final settings = result?['settings'] as Map<String, dynamic>?;
     final enterHint = settings?['enter_hint'] as String? ?? '';
+    final normalizedEnterHint = enterHint.trim();
+    final showEnterHint =
+        normalizedEnterHint.isNotEmpty &&
+        !await DraftService.instance.isAcknowledged(
+          'group_enter_hint',
+          gid.toString(),
+          normalizedEnterHint,
+        );
     final baseUrl = await TfApiClient.instance.getBaseUrl();
     final mentionUsers = members
         .map((raw) {
@@ -462,7 +508,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       _mentionUsers
         ..clear()
         ..addAll(mentionUsers);
-      _groupEnterHint = enterHint.trim();
+      _groupEnterHint = normalizedEnterHint;
+      _showGroupEnterHint = showEnterHint;
       _canModerateGroup = currentRole == 'owner' || currentRole == 'admin';
     });
   }
@@ -612,6 +659,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       _forwardingTo = null;
     });
     _messageController.clear();
+    unawaited(DraftService.instance.clearDraft('chat', _contactUid));
     _scrollToBottom();
 
     // Add to cache BEFORE sending (so WS ack can find and update it)
@@ -662,6 +710,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           _updateMessageStatus(clientMid, mid: mid, status: MessageStatus.sent);
         } else {
           _updateMessageStatus(clientMid, status: MessageStatus.failed);
+          _restoreFailedDraft(text);
           if (mounted) {
             final l10n = AppLocalizations.of(context)!;
             ScaffoldMessenger.of(context).showSnackBar(
@@ -694,6 +743,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     } catch (e) {
       talker.error('ChatDetail text send failed', e);
       _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      _restoreFailedDraft(text);
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -705,6 +755,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         );
       }
     }
+  }
+
+  void _restoreFailedDraft(String text) {
+    if (text.isEmpty || _messageController.text.isNotEmpty) return;
+    _messageController.text = text;
+    _messageController.selection = TextSelection.collapsed(offset: text.length);
   }
 
   /// REST fallback called when a WS-sent message hasn't received an ack within
@@ -1179,8 +1235,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   ),
                   trailing: IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () =>
-                        setState(() => _showGroupEnterHint = false),
+                    onPressed: () {
+                      setState(() => _showGroupEnterHint = false);
+                      unawaited(
+                        DraftService.instance.acknowledge(
+                          'group_enter_hint',
+                          _contactUid.substring(1),
+                          _groupEnterHint,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),

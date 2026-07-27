@@ -420,6 +420,37 @@ void main() {
     await gesture.removePointer();
   });
 
+  testWidgets('incoming avatar aligns with the top of a multiline message', (
+    tester,
+  ) async {
+    await SettingsService.instance.setValue('enableMarkdownRendering', false);
+    final message = ChatMessage(
+      id: 'multiline-avatar',
+      mid: 31,
+      text: 'first line\nsecond line\nthird line',
+      timestamp: DateTime(2026),
+      isMe: false,
+      senderUid: 2,
+      senderName: 'Alice',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: MessageBubble(message: message)),
+      ),
+    );
+
+    final avatarTop = tester.getTopLeft(find.byType(CircleAvatar)).dy;
+    final messageTop = tester.getTopLeft(find.text(message.text)).dy;
+    expect(avatarTop, lessThan(messageTop));
+  });
+
   testWidgets('quickly crossing messages leaves only one hover action menu', (
     tester,
   ) async {

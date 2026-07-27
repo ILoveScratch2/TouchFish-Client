@@ -205,6 +205,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsCategoryNotifications => '通知';
 
   @override
+  String get settingsCategoryDrafts => '草稿';
+
+  @override
+  String get settingsSaveChatDraftsTitle => '保存聊天草稿';
+
+  @override
+  String get settingsSaveChatDraftsDesc =>
+      '自动保存每个聊天会话中未发送的文字。关闭后会清除当前服务器和账户的聊天草稿。';
+
+  @override
+  String get settingsSaveForumDraftsTitle => '保存论坛草稿';
+
+  @override
+  String get settingsSaveForumDraftsDesc =>
+      '自动保存论坛创建、发帖、评论和附件草稿。关闭后会清除当前服务器和账户的论坛草稿。';
+
+  @override
   String get settingsCategoryAbout => '关于';
 
   @override
@@ -1959,6 +1976,30 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get forumDeleteFailed => '删除论坛失败';
+
+  @override
+  String get forumPostDelete => '删除帖子';
+
+  @override
+  String get forumPostDeleteHint => '确定要删除此帖子吗？相关评论也会被删除。';
+
+  @override
+  String get forumPostDeleteSuccess => '帖子已删除';
+
+  @override
+  String get forumPostDeleteFailed => '删除帖子失败';
+
+  @override
+  String get forumCommentDelete => '删除评论';
+
+  @override
+  String get forumCommentDeleteHint => '确定要删除此评论吗？';
+
+  @override
+  String get forumCommentDeleteSuccess => '评论已删除';
+
+  @override
+  String get forumCommentDeleteFailed => '删除评论失败';
 
   @override
   String get announcementTitle => '公告';

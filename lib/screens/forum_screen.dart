@@ -8,6 +8,7 @@ import '../widgets/account/profile_picture.dart';
 import '../utils/talker.dart';
 import '../services/notification_service.dart';
 import '../widgets/forum_notification_sheet.dart';
+import '../services/draft_service.dart';
 
 class ForumScreen extends StatefulWidget {
   const ForumScreen({super.key});
@@ -95,85 +96,128 @@ class _ForumScreenState extends State<ForumScreen> {
     final nameController = TextEditingController();
     final introController = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    final draft = await DraftService.instance.loadDraft('forum_create', 'new');
+    nameController.text = draft?['name'] as String? ?? '';
+    introController.text = draft?['introduction'] as String? ?? '';
+    if (!context.mounted) {
+      nameController.dispose();
+      introController.dispose();
+      return;
+    }
+    var isSubmitting = false;
+    final requestId =
+        '${AuthState.instance.uid}-${DateTime.now().microsecondsSinceEpoch}';
+    void saveDraft() {
+      DraftService.instance.saveDraft('forum_create', 'new', {
+        'name': nameController.text,
+        'introduction': introController.text,
+      });
+    }
+
+    nameController.addListener(saveDraft);
+    introController.addListener(saveDraft);
     await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.forumCreateTitle),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: l10n.forumPostTitle,
-                  hintText: l10n.forumCreateTitleHint,
-                  border: const OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return l10n.forumPostTitleRequired;
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: introController,
-                decoration: InputDecoration(
-                  labelText: l10n.forumPostDescription,
-                  hintText: l10n.forumCreateDescriptionHint,
-                  border: const OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-              final uid = AuthState.instance.uid;
-              final password = AuthState.instance.password;
-              if (uid == null || password == null) {
-                Navigator.pop(context, false);
-                return;
-              }
-              final name = nameController.text.trim();
-              final intro = introController.text.trim();
-              final success = await TfApiClient.instance.createForum(
-                uid,
-                password,
-                name,
-                intro.isNotEmpty ? intro : '',
-              );
-              if (!context.mounted) return;
-              if (success) {
-                Navigator.pop(context, true);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l10n.forumCreateSuccess)),
-                );
-                _loadForums();
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(l10n.forumCreateFailed),
-                    behavior: SnackBarBehavior.floating,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text(l10n.forumCreateTitle),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: l10n.forumPostTitle,
+                    hintText: l10n.forumCreateTitleHint,
+                    border: const OutlineInputBorder(),
                   ),
-                );
-              }
-            },
-            child: Text(l10n.forumPublish),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return l10n.forumPostTitleRequired;
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: introController,
+                  decoration: InputDecoration(
+                    labelText: l10n.forumPostDescription,
+                    hintText: l10n.forumCreateDescriptionHint,
+                    border: const OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+              ],
+            ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () => Navigator.pop(dialogContext, false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      final uid = AuthState.instance.uid;
+                      final password = AuthState.instance.password;
+                      if (uid == null || password == null) {
+                        Navigator.pop(dialogContext, false);
+                        return;
+                      }
+                      setDialogState(() => isSubmitting = true);
+                      final name = nameController.text.trim();
+                      final intro = introController.text.trim();
+                      final success = await TfApiClient.instance.createForum(
+                        uid,
+                        password,
+                        name,
+                        intro.isNotEmpty ? intro : '',
+                        requestId: requestId,
+                      );
+                      if (!dialogContext.mounted) return;
+                      if (success) {
+                        await DraftService.instance.clearDraft(
+                          'forum_create',
+                          'new',
+                        );
+                        if (!dialogContext.mounted) return;
+                        Navigator.pop(dialogContext, true);
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(l10n.forumCreateSuccess)),
+                        );
+                        _loadForums();
+                      } else {
+                        setDialogState(() => isSubmitting = false);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(l10n.forumCreateFailed),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
+              child: isSubmitting
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(l10n.forumPublish),
+            ),
+          ],
+        ),
       ),
     );
+    nameController.removeListener(saveDraft);
+    introController.removeListener(saveDraft);
     nameController.dispose();
     introController.dispose();
   }

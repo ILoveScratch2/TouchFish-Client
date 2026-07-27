@@ -3,12 +3,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:touchfish_client/routes/app_routes.dart';
 import 'package:touchfish_client/models/notification_model.dart';
 import 'package:touchfish_client/models/message_model.dart';
+import 'package:touchfish_client/models/settings_model.dart';
 import 'package:touchfish_client/services/chat_data_service.dart';
 import 'package:touchfish_client/services/chat_ws_service.dart';
 import 'package:touchfish_client/services/notification_service.dart';
 import 'package:touchfish_client/widgets/text_entry_dialog.dart';
 
 void main() {
+  test(
+    'chat and forum draft settings are independently enabled by default',
+    () {
+      final draftCategory = SettingsData.categories.firstWhere(
+        (category) => category.category == SettingCategory.drafts,
+      );
+      final settings = {for (final item in draftCategory.items) item.key: item};
+
+      expect(settings['saveChatDrafts']?.defaultValue, isTrue);
+      expect(settings['saveForumDrafts']?.defaultValue, isTrue);
+    },
+  );
+
   group('WebSocket connection candidates', () {
     test('tries WSS before falling back to WS', () {
       final candidates = ChatWsService.candidateWebSocketUris(

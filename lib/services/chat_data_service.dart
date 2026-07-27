@@ -81,6 +81,7 @@ class ChatDataService extends ChangeNotifier {
   final LocalMessageStore _localStore = LocalMessageStore.instance;
   int? _initializedUid;
   int _generation = 0;
+  int _roomListGeneration = 0;
   int? _roomPreferencesUid;
   String? _roomPreferencesScope;
 
@@ -484,24 +485,37 @@ class ChatDataService extends ChangeNotifier {
       return;
     }
     final generation = _generation;
+    final roomListGeneration = ++_roomListGeneration;
 
     _isLoading = true;
     notifyListeners();
 
     try {
       await _ensureRoomPreferencesLoaded();
-      if (_generation != generation || AuthState.instance.uid != uid) return;
+      if (_generation != generation ||
+          _roomListGeneration != roomListGeneration ||
+          AuthState.instance.uid != uid) {
+        return;
+      }
       final existingRooms = {for (final room in _rooms) room.id: room};
       talker.info(
         'ChatDataService.loadContactsAndRooms: calling /chat/list for uid=$uid',
       );
       final chatItems = await TfApiClient.instance.queryChatList(uid, password);
-      if (_generation != generation || AuthState.instance.uid != uid) return;
+      if (_generation != generation ||
+          _roomListGeneration != roomListGeneration ||
+          AuthState.instance.uid != uid) {
+        return;
+      }
       talker.info(
         'ChatDataService.loadContactsAndRooms: got ${chatItems.length} items from server',
       );
       final baseUrl = await TfApiClient.instance.getBaseUrl();
-      if (_generation != generation || AuthState.instance.uid != uid) return;
+      if (_generation != generation ||
+          _roomListGeneration != roomListGeneration ||
+          AuthState.instance.uid != uid) {
+        return;
+      }
 
       final nextRooms = <ChatRoom>[];
       final nextContacts = <Contact>[];
@@ -568,7 +582,9 @@ class ChatDataService extends ChangeNotifier {
     } catch (e) {
       talker.error('ChatDataService loadContactsAndRooms error', e);
     } finally {
-      if (_generation == generation && AuthState.instance.uid == uid) {
+      if (_generation == generation &&
+          _roomListGeneration == roomListGeneration &&
+          AuthState.instance.uid == uid) {
         _isLoading = false;
         notifyListeners();
       }
@@ -693,8 +709,16 @@ class ChatDataService extends ChangeNotifier {
     if (eventType == 'friend.request' ||
         eventType == 'group.invited' ||
         eventType == 'group.join.approved' ||
+        eventType == 'group.left' ||
         eventType == 'group.member.removed' ||
         eventType == 'group.deleted') {
+      final gid = info.groupEventGid;
+      if (gid != null &&
+          (eventType == 'group.left' ||
+              eventType == 'group.member.removed' ||
+              eventType == 'group.deleted')) {
+        unawaited(removeRoom('G$gid'));
+      }
       loadContactsAndRooms();
       return;
     }
@@ -1077,6 +1101,7 @@ class ChatDataService extends ChangeNotifier {
   }
 
   Future<void> removeRoom(String roomId) async {
+    _roomListGeneration++;
     _rooms.removeWhere((room) => room.id == roomId);
     _contacts.removeWhere((contact) => contact.id == roomId);
     _messageCache.remove(roomId);

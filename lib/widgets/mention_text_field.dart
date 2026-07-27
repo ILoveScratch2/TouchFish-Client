@@ -6,13 +6,8 @@ class MentionUser {
   final String username;
   final String? avatarUrl;
 
-  const MentionUser({
-    required this.id,
-    required this.username,
-    this.avatarUrl,
-  });
+  const MentionUser({required this.id, required this.username, this.avatarUrl});
 }
-
 
 class MentionTextField extends StatefulWidget {
   final TextEditingController controller;
@@ -23,6 +18,7 @@ class MentionTextField extends StatefulWidget {
   final TextStyle? style;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
+  final TextAlign textAlign;
   final ValueChanged<String>? onSubmitted;
   final List<MentionUser> mentionUsers;
 
@@ -37,6 +33,7 @@ class MentionTextField extends StatefulWidget {
     this.style,
     this.keyboardType,
     this.textInputAction,
+    this.textAlign = TextAlign.start,
     this.onSubmitted,
   });
 
@@ -49,8 +46,9 @@ class _MentionTextFieldState extends State<MentionTextField> {
   bool _ownedFocusNode = false;
   OverlayEntry? _overlayEntry;
   final LayerLink _layerLink = LayerLink();
-  final ValueNotifier<List<MentionUser>> _suggestionsNotifier =
-      ValueNotifier(const []);
+  final ValueNotifier<List<MentionUser>> _suggestionsNotifier = ValueNotifier(
+    const [],
+  );
   bool _disposed = false;
 
   @override
@@ -127,6 +125,7 @@ class _MentionTextFieldState extends State<MentionTextField> {
     _suggestionsNotifier.value = filtered;
     _showSuggestions();
   }
+
   int _findMentionTrigger(String text) {
     for (int i = text.length - 1; i >= 0; i--) {
       final ch = text[i];
@@ -213,6 +212,7 @@ class _MentionTextFieldState extends State<MentionTextField> {
         style: widget.style,
         keyboardType: widget.keyboardType,
         textInputAction: widget.textInputAction,
+        textAlign: widget.textAlign,
         decoration: widget.decoration,
         onSubmitted: widget.onSubmitted,
       ),
@@ -293,9 +293,6 @@ class _MentionUserTile extends StatelessWidget {
   }
 
   Widget _buildAvatar(ColorScheme colorScheme) {
-    return ProfilePictureWidget(
-      avatarUrl: user.avatarUrl,
-      radius: 14,
-    );
+    return ProfilePictureWidget(avatarUrl: user.avatarUrl, radius: 14);
   }
 }

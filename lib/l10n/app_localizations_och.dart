@@ -205,6 +205,22 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsCategoryNotifications => '知';
 
   @override
+  String get settingsCategoryDrafts => '草稿';
+
+  @override
+  String get settingsSaveChatDraftsTitle => '存對話草稿';
+
+  @override
+  String get settingsSaveChatDraftsDesc => '自存各對話未發之文。關之則清當前服器與賬戶之對話草稿。';
+
+  @override
+  String get settingsSaveForumDraftsTitle => '存論壇草稿';
+
+  @override
+  String get settingsSaveForumDraftsDesc =>
+      '自存建論壇、發帖、評論及附件之草稿。關之則清當前服器與賬戶之論壇草稿。';
+
+  @override
   String get settingsCategoryAbout => '本';
 
   @override
@@ -1958,6 +1974,30 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get forumDeleteFailed => '毀論壇未成';
+
+  @override
+  String get forumPostDelete => '刪帖子';
+
+  @override
+  String get forumPostDeleteHint => '確欲刪此帖子乎？其評論亦將並刪。';
+
+  @override
+  String get forumPostDeleteSuccess => '帖子已刪';
+
+  @override
+  String get forumPostDeleteFailed => '刪帖子未成';
+
+  @override
+  String get forumCommentDelete => '刪評論';
+
+  @override
+  String get forumCommentDeleteHint => '確欲刪此評論乎？';
+
+  @override
+  String get forumCommentDeleteSuccess => '評論已刪';
+
+  @override
+  String get forumCommentDeleteFailed => '刪評論未成';
 
   @override
   String get announcementTitle => '公告';

@@ -13,6 +13,7 @@ import '../l10n/app_localizations.dart';
 import '../models/settings_model.dart';
 import '../models/settings_service.dart';
 import '../services/font_loader_service.dart';
+import '../services/draft_service.dart';
 import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
 
@@ -753,8 +754,13 @@ class _SettingsScreenState extends State<SettingsScreen>
                   ? Text(_getSettingTitle(l10n, item.descriptionKey!))
                   : null,
               value: value,
-              onChanged: (newValue) {
-                _settingsService.setValue(item.key, newValue);
+              onChanged: (newValue) async {
+                await _settingsService.setValue(item.key, newValue);
+                if (!newValue && item.key == 'saveChatDrafts') {
+                  await DraftService.instance.clearDraftGroup('chat');
+                } else if (!newValue && item.key == 'saveForumDrafts') {
+                  await DraftService.instance.clearDraftGroup('forum');
+                }
               },
             ),
           ),
@@ -1165,6 +1171,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsCategoryAppearance;
       case 'settingsCategoryNotifications':
         return l10n.settingsCategoryNotifications;
+      case 'settingsCategoryDrafts':
+        return l10n.settingsCategoryDrafts;
       case 'settingsCategoryAbout':
         return l10n.settingsCategoryAbout;
       default:
@@ -1276,6 +1284,14 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsPrivateChatTitle;
       case 'settingsGroupChatTitle':
         return l10n.settingsGroupChatTitle;
+      case 'settingsSaveChatDraftsTitle':
+        return l10n.settingsSaveChatDraftsTitle;
+      case 'settingsSaveChatDraftsDesc':
+        return l10n.settingsSaveChatDraftsDesc;
+      case 'settingsSaveForumDraftsTitle':
+        return l10n.settingsSaveForumDraftsTitle;
+      case 'settingsSaveForumDraftsDesc':
+        return l10n.settingsSaveForumDraftsDesc;
       // About
       case 'settingsAboutAppTitle':
         return l10n.settingsAboutAppTitle;

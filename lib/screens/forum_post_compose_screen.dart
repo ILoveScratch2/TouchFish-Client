@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
@@ -11,6 +12,7 @@ import '../widgets/account/profile_picture.dart';
 import '../widgets/mention_text_field.dart';
 import '../utils/talker.dart';
 import '../models/file_attachment.dart';
+import '../services/draft_service.dart';
 import '../widgets/file_attachment_view.dart';
 
 class ForumPostComposeSheet extends StatefulWidget {
@@ -18,6 +20,7 @@ class ForumPostComposeSheet extends StatefulWidget {
   final String? initialContent;
   final bool isReply;
   final String? postId;
+  final ValueChanged<String>? onContentChanged;
 
   const ForumPostComposeSheet({
     super.key,
@@ -25,6 +28,7 @@ class ForumPostComposeSheet extends StatefulWidget {
     this.initialContent,
     this.isReply = false,
     this.postId,
+    this.onContentChanged,
   });
   static Future<bool?> show(
     BuildContext context, {
@@ -32,6 +36,7 @@ class ForumPostComposeSheet extends StatefulWidget {
     String? initialContent,
     bool isReply = false,
     String? postId,
+    ValueChanged<String>? onContentChanged,
   }) {
     return showDialog<bool>(
       context: context,
@@ -43,6 +48,7 @@ class ForumPostComposeSheet extends StatefulWidget {
         initialContent: initialContent,
         isReply: isReply,
         postId: postId,
+        onContentChanged: onContentChanged,
       ),
     );
   }
@@ -62,6 +68,12 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
   bool _isSubmitting = false;
   bool _isUploadingAttachment = false;
   final List<FileAttachment> _attachments = [];
+  Timer? _draftTimer;
+  bool _didSubmit = false;
+
+  String get _draftType => widget.isReply ? 'forum_comment' : 'forum_post';
+  String get _draftId =>
+      widget.isReply ? '${widget.forumId}/${widget.postId}' : widget.forumId;
 
   @override
   void initState() {
@@ -69,8 +81,62 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     if (widget.initialContent != null) {
       _contentController.text = widget.initialContent!;
     }
+    _titleController.addListener(_scheduleDraftSave);
+    _contentController.addListener(_scheduleDraftSave);
+    if (widget.onContentChanged != null) {
+      _contentController.addListener(_reportContentChange);
+    }
+    unawaited(_restoreDraft());
     _loadMentionUsers();
   }
+
+  Future<void> _restoreDraft() async {
+    final draft = await DraftService.instance.loadDraft(_draftType, _draftId);
+    if (!mounted || draft == null) return;
+    if (_titleController.text.isEmpty) {
+      _titleController.text = draft['title'] as String? ?? '';
+    }
+    if (_contentController.text.isEmpty) {
+      _contentController.text = draft['content'] as String? ?? '';
+    }
+    final attachments = draft['attachments'];
+    if (!widget.isReply && attachments is List) {
+      setState(() {
+        _attachments
+          ..clear()
+          ..addAll(
+            attachments.whereType<Map>().map(
+              (item) => FileAttachment.fromMap(Map<String, dynamic>.from(item)),
+            ),
+          );
+      });
+    }
+  }
+
+  void _scheduleDraftSave() {
+    _draftTimer?.cancel();
+    _draftTimer = Timer(const Duration(milliseconds: 400), _saveDraft);
+  }
+
+  void _reportContentChange() {
+    widget.onContentChanged?.call(_contentController.text);
+  }
+
+  Future<void> _saveDraft() =>
+      DraftService.instance.saveDraft(_draftType, _draftId, {
+        'title': _titleController.text,
+        'content': _contentController.text,
+        'attachments': _attachments
+            .map(
+              (file) => {
+                'hash': file.hash,
+                'file_name': file.fileName,
+                if (file.fileSize != null) 'size': file.fileSize,
+                if (file.mimeType != null) 'mime_type': file.mimeType,
+              },
+            )
+            .toList(),
+      });
 
   Future<void> _loadMentionUsers() async {
     final uid = AuthState.instance.uid;
@@ -97,6 +163,11 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
 
   @override
   void dispose() {
+    _draftTimer?.cancel();
+    if (!_didSubmit) unawaited(_saveDraft());
+    if (widget.onContentChanged != null) {
+      _contentController.removeListener(_reportContentChange);
+    }
     _titleController.dispose();
     _contentController.dispose();
     super.dispose();
@@ -142,8 +213,9 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                     ),
                   ),
                   FilledButton.icon(
-                    onPressed:
-                        (_isSubmitting || _isUploadingAttachment) ? null : _submit,
+                    onPressed: (_isSubmitting || _isUploadingAttachment)
+                        ? null
+                        : _submit,
                     icon: const Icon(Icons.send, size: 18),
                     label: Text(l10n.forumPublish),
                   ),
@@ -227,11 +299,14 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                                       IconButton(
                                         onPressed: _isSubmitting
                                             ? null
-                                            : () => setState(
-                                                () => _attachments.remove(
-                                                  attachment,
-                                                ),
-                                              ),
+                                            : () {
+                                                setState(
+                                                  () => _attachments.remove(
+                                                    attachment,
+                                                  ),
+                                                );
+                                                _scheduleDraftSave();
+                                              },
                                         icon: const Icon(Icons.close),
                                         tooltip: l10n.forumAttachmentRemove,
                                       ),
@@ -427,6 +502,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
             ),
           );
         });
+        _scheduleDraftSave();
       }
     } catch (error, stackTrace) {
       talker.error('Forum attachment upload failed', error, stackTrace);
@@ -490,6 +566,9 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
       if (success) {
+        _didSubmit = true;
+        await DraftService.instance.clearDraft(_draftType, _draftId);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

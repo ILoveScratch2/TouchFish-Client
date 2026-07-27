@@ -490,6 +490,36 @@ abstract class AppLocalizations {
   /// **'Notifications'**
   String get settingsCategoryNotifications;
 
+  /// No description provided for @settingsCategoryDrafts.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts'**
+  String get settingsCategoryDrafts;
+
+  /// No description provided for @settingsSaveChatDraftsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Chat Drafts'**
+  String get settingsSaveChatDraftsTitle;
+
+  /// No description provided for @settingsSaveChatDraftsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically save unsent text in each chat. Turning this off clears chat drafts for the current server and account.'**
+  String get settingsSaveChatDraftsDesc;
+
+  /// No description provided for @settingsSaveForumDraftsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Forum Drafts'**
+  String get settingsSaveForumDraftsTitle;
+
+  /// No description provided for @settingsSaveForumDraftsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically save forum creation, post, comment, and attachment drafts. Turning this off clears forum drafts for the current server and account.'**
+  String get settingsSaveForumDraftsDesc;
+
   /// No description provided for @settingsCategoryAbout.
   ///
   /// In en, this message translates to:
@@ -3891,6 +3921,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to delete forum'**
   String get forumDeleteFailed;
+
+  /// No description provided for @forumPostDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Post'**
+  String get forumPostDelete;
+
+  /// No description provided for @forumPostDeleteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this post? Its comments will also be deleted.'**
+  String get forumPostDeleteHint;
+
+  /// No description provided for @forumPostDeleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Post deleted'**
+  String get forumPostDeleteSuccess;
+
+  /// No description provided for @forumPostDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete post'**
+  String get forumPostDeleteFailed;
+
+  /// No description provided for @forumCommentDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Comment'**
+  String get forumCommentDelete;
+
+  /// No description provided for @forumCommentDeleteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this comment?'**
+  String get forumCommentDeleteHint;
+
+  /// No description provided for @forumCommentDeleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment deleted'**
+  String get forumCommentDeleteSuccess;
+
+  /// No description provided for @forumCommentDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete comment'**
+  String get forumCommentDeleteFailed;
 
   /// No description provided for @announcementTitle.
   ///
