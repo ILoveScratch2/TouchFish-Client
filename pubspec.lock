@@ -213,10 +213,10 @@ packages:
     dependency: "direct main"
     description:
       name: disk_space_2
-      sha256: "7e9952cd5142dccf8a177ad8ae08a58788864625058bd3fa1bf0870e0ef02827"
+      sha256: "3d8662a6ed022defb4205bdc453480f5f1ea4b1494fbc6711d564616c1ff8a68"
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "1.0.13"
+    version: "1.0.12"
   dismissible_page:
     dependency: "direct main"
     description:

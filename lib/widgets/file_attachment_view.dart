@@ -1,7 +1,7 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -51,11 +51,13 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
   bool _previewRequested = false;
   bool _downloading = false;
   late FileAttachment _attachment;
+  late Future<String> _urlFuture;
 
   @override
   void initState() {
     super.initState();
     _attachment = widget.attachment;
+    _urlFuture = _previewUrl();
     if (_attachment.hash.isNotEmpty &&
         (_attachment.fileSize == null ||
             _attachment.mimeType == null ||
@@ -76,6 +78,7 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
       return false;
     }
     if (_previewRequested) return true;
+    if (widget.compact) return false;
     if (!widget.allowAutomaticPreview) return false;
     final limitMiB = SettingsService.instance.getValue<int>(
       'automaticPreviewMaxMiB',
@@ -92,6 +95,13 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
       return widget.sourceUrl!;
     }
     return TfApiClient.instance.getFileUrl(widget.attachment.hash);
+  }
+
+  Future<String> _previewUrl() {
+    if (_attachment.isText && widget.bytes != null) {
+      return Future.value(widget.sourceUrl ?? '');
+    }
+    return _url();
   }
 
   Future<void> _download() async {
@@ -139,7 +149,7 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
       }
       return;
     }
-    if (widget.allowAutomaticPreview) {
+    if (widget.allowAutomaticPreview && !widget.compact) {
       setState(() => _previewRequested = true);
       return;
     }
@@ -154,7 +164,7 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
           padding: const EdgeInsets.all(16),
           child: _AttachmentPreview(
             attachment: _attachment,
-            urlFuture: _url(),
+            urlFuture: _urlFuture,
             bytes: widget.bytes,
           ),
         ),
@@ -167,7 +177,7 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
     if (_shouldPreview) {
       return _AttachmentPreview(
         attachment: _attachment,
-        urlFuture: _url(),
+        urlFuture: _urlFuture,
         bytes: widget.bytes,
         onDownload: _download,
       );
@@ -287,21 +297,16 @@ class _AttachmentPreview extends StatelessWidget {
             filename: attachment.fileName,
           );
         } else if (attachment.isText) {
-          preview = FutureBuilder<http.Response>(
-            future: http.get(Uri.parse(url)),
-            builder: (context, textSnapshot) {
-              if (textSnapshot.hasError) return _error(context);
-              if (!textSnapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final response = textSnapshot.data!;
-              if (response.statusCode < 200 || response.statusCode >= 300) {
-                return _error(context);
-              }
-              return SingleChildScrollView(
-                child: SelectableText(response.body),
-              );
-            },
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: _TextAttachmentPreview(
+                attachment: attachment,
+                url: url,
+                bytes: bytes,
+                onDownload: onDownload,
+              ),
+            ),
           );
         } else {
           preview = _error(context);
@@ -335,6 +340,173 @@ class _AttachmentPreview extends StatelessWidget {
 
   Widget _error(BuildContext context) =>
       Center(child: Text(AppLocalizations.of(context)!.filePreviewFailed));
+}
+
+class _TextAttachmentPreview extends StatefulWidget {
+  final FileAttachment attachment;
+  final String url;
+  final Uint8List? bytes;
+  final VoidCallback? onDownload;
+
+  const _TextAttachmentPreview({
+    required this.attachment,
+    required this.url,
+    this.bytes,
+    this.onDownload,
+  });
+
+  @override
+  State<_TextAttachmentPreview> createState() => _TextAttachmentPreviewState();
+}
+
+class _TextAttachmentPreviewState extends State<_TextAttachmentPreview> {
+  late Future<String> _contentFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _contentFuture = _loadContent();
+  }
+
+  @override
+  void didUpdateWidget(covariant _TextAttachmentPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url || oldWidget.bytes != widget.bytes) {
+      _contentFuture = _loadContent();
+    }
+  }
+
+  Future<String> _loadContent() async {
+    final bytes = widget.bytes;
+    if (bytes != null) return utf8.decode(bytes, allowMalformed: true);
+    return TfApiClient.instance.getTextFile(widget.url);
+  }
+
+  void _retry() {
+    setState(() => _contentFuture = _loadContent());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      height: 400,
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: FutureBuilder<String>(
+                future: _contentFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: FilledButton.tonal(
+                        onPressed: _retry,
+                        child: Text(l10n.retry),
+                      ),
+                    );
+                  }
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 68, 20, 20),
+                    child: SelectableText(
+                      snapshot.data ?? '',
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 14,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Positioned(
+              top: 8,
+              left: 8,
+              right: widget.onDownload == null ? 8 : 64,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 240),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Symbols.file_present,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 7),
+                      Flexible(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.attachment.fileName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                            if (widget.attachment.fileSize != null)
+                              Text(
+                                formatFileSize(widget.attachment.fileSize!),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (widget.onDownload != null)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    onPressed: widget.onDownload,
+                    icon: const Icon(
+                      Symbols.download,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    tooltip: l10n.fileDownload,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 String formatFileSize(int bytes) {

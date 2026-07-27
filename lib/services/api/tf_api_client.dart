@@ -1646,6 +1646,17 @@ class TfApiClient {
     return '$baseUrl/file/get_file/${Uri.encodeComponent(hash)}';
   }
 
+  Future<String> getTextFile(String url) async {
+    final response = await _getRequest(url);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw http.ClientException(
+        'Unable to load text file (${response.statusCode})',
+        Uri.parse(url),
+      );
+    }
+    return utf8.decode(response.bodyBytes, allowMalformed: true);
+  }
+
   Future<FileAttachment?> getFileMetadata(String hash) async {
     try {
       final url = await getFileUrl(hash);

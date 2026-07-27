@@ -1159,18 +1159,19 @@ class _SettingsScreenState extends State<SettingsScreen>
     BuildContext context,
     int currentValue,
   ) async {
-    final controller = TextEditingController(text: '$currentValue');
+    var rawValue = '$currentValue';
     final value = await showDialog<int>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(AppLocalizations.of(context)!.settingsColorCustom),
-        content: TextField(
-          controller: controller,
+        content: TextFormField(
+          initialValue: rawValue,
           autofocus: true,
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           decoration: const InputDecoration(suffixText: 'MiB'),
-          onSubmitted: (raw) {
+          onChanged: (value) => rawValue = value,
+          onFieldSubmitted: (raw) {
             final parsed = int.tryParse(raw);
             if (parsed != null) Navigator.pop(dialogContext, parsed);
           },
@@ -1182,7 +1183,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
           FilledButton(
             onPressed: () {
-              final parsed = int.tryParse(controller.text);
+              final parsed = int.tryParse(rawValue);
               if (parsed != null) Navigator.pop(dialogContext, parsed);
             },
             child: Text(AppLocalizations.of(context)!.confirm),
@@ -1190,7 +1191,6 @@ class _SettingsScreenState extends State<SettingsScreen>
         ],
       ),
     );
-    controller.dispose();
     if (value != null) {
       await _settingsService.setValue('automaticPreviewMaxMiB', value);
     }

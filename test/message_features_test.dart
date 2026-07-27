@@ -104,6 +104,18 @@ void main() {
         ),
         isFalse,
       );
+      expect(
+        shouldAutomaticallyPreviewFile(
+          attachment: const FileAttachment(
+            hash: 'log',
+            fileName: 'server.log',
+            fileSize: 1024,
+            mimeType: 'application/octet-stream',
+          ),
+          limitMiB: 10,
+        ),
+        isTrue,
+      );
     },
   );
 

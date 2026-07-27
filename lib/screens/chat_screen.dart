@@ -28,7 +28,7 @@ class ChatShellScreen extends StatefulWidget {
 class _ChatShellScreenState extends State<ChatShellScreen> {
   static const String _dividerPositionKey = 'chat_divider_position';
   static const String _collapsedStateKey = 'chat_list_collapsed';
-  static const double _collapsedWidth = 64.0;
+  static const double _collapsedWidth = 80.0;
   static const double _minSidebarWidth = 260.0;
   static const double _maxSidebarWidth = 520.0;
   static const double _collapseThreshold = 210.0;

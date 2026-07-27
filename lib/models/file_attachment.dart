@@ -43,7 +43,8 @@ class FileAttachment {
         'application/json',
         'application/xml',
         'application/javascript',
-      }.contains(resolvedMimeType);
+      }.contains(resolvedMimeType) ||
+      fileName.toLowerCase().endsWith('.log');
   bool get isPreviewable => isImage || isVideo || isAudio || isText || isPdf;
 
   static int? _asInt(dynamic value) {

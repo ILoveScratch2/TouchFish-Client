@@ -75,7 +75,7 @@ dependencies:
   sqlite3: ^2.9.4
   sqlite3_flutter_libs: ^0.5.28
   flutter_local_notifications: ^19.5.0
-  disk_space_2: ^1.0.12
+  disk_space_2: 1.0.12
   open_file: ^3.5.10
 
 dev_dependencies:

@@ -100,6 +100,15 @@ class MarkdownRenderer extends HookWidget {
             textStyle:
                 theme.textTheme.bodyMedium ?? const TextStyle(fontSize: 14),
           ),
+          CheckBoxConfig(
+            builder: (checked) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Icon(
+                checked ? Icons.check_box : Icons.check_box_outline_blank,
+                size: 20,
+              ),
+            ),
+          ),
           Heading1Config(
             style:
                 theme.textTheme.headlineMedium?.copyWith(
