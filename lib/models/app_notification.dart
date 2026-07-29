@@ -33,6 +33,16 @@ class AppNotification {
     );
   }
 
+  AppNotification copyWith({String? avatarUrl}) => AppNotification(
+    id: id,
+    title: title,
+    body: body,
+    route: route,
+    topic: topic,
+    subtitle: subtitle,
+    avatarUrl: avatarUrl ?? this.avatarUrl,
+  );
+
   static String routeFor(NotificationInfo notification) {
     final actionUri = notification.meta['action_uri'];
     if (actionUri is String) {

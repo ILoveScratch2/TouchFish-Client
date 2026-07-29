@@ -205,7 +205,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsCategoryNotifications => '知';
 
   @override
-  String get settingsCategoryDrafts => '草稿';
+  String get settingsCategoryDrafts => '稿';
 
   @override
   String get settingsSaveChatDraftsTitle => '存對話草稿';
@@ -397,7 +397,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsEnableMarkdownTitle => '染 Markdown/LaTeX 內容';
 
   @override
-  String get settingsEnableMarkdownDesc => '將可渲染之 Markdown/LaTeX 文予以渲染';
+  String get settingsEnableMarkdownDesc => '將可染之 Markdown/LaTeX 文予以渲染';
 
   @override
   String get settingsSystemNotificationsTitle => '系統通知';
@@ -514,10 +514,10 @@ class AppLocalizationsOch extends AppLocalizations {
   String get serverTryWss => 'WSS';
 
   @override
-  String get serverTryWssOn => '試以加密WebSocket（敗則退WS）';
+  String get serverTryWssOn => '試密WebSocket（敗則退WS）';
 
   @override
-  String get serverTryWssOff => '以明文WebSocket';
+  String get serverTryWssOff => '以明WebSocket';
 
   @override
   String get serverAutoDetectTcpPort => '自探TCP端口';
@@ -596,12 +596,12 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String adminDefaultAssetUploadSuccess(String assetName) {
-    return '已更新 $assetName。';
+    return '已更 $assetName。';
   }
 
   @override
   String adminDefaultAssetUploadFailed(String assetName) {
-    return '更新 $assetName 敗。';
+    return '更 $assetName 敗。';
   }
 
   @override
@@ -655,6 +655,18 @@ class AppLocalizationsOch extends AppLocalizations {
   @override
   String get adminServerFieldMaxMessageLengthDescription =>
       '每條消息最多可輸之字數（至少為 1）。';
+
+  @override
+  String get adminServerFieldMaxStickerPacks => '每用戶貼圖包之限';
+
+  @override
+  String get adminServerFieldMaxStickersPerPack => '每貼圖包貼圖之限';
+
+  @override
+  String get adminServerFieldMaxStickerSize => '貼圖至大之量（字節，-1 不限）';
+
+  @override
+  String get adminServerFieldDailyStickerPackLimit => '每日建貼圖包之限';
 
   @override
   String get adminServerFieldApiPort => 'API 端口';
@@ -1160,7 +1172,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get mediaAudioMessage => '［音］';
 
   @override
-  String get mediaFileMessage => '［文件］';
+  String get mediaFileMessage => '［案］';
 
   @override
   String get mediaUnknown => '未知';
@@ -1307,8 +1319,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get aboutFontLicense => '字體許可';
 
   @override
-  String get aboutFontLicenseDialogTitle =>
-      'HarmonyOS Sans Fonts License Agreement';
+  String get aboutFontLicenseDialogTitle => '字之許可';
 
   @override
   String get aboutFontLicenseDescription =>
@@ -1603,20 +1614,20 @@ class AppLocalizationsOch extends AppLocalizations {
   String get debugNotificationSystemUnavailable => '系統通知未初始化，或今平台不支持。';
 
   @override
-  String get debugClearMessageDatabase => '清空消息資料庫';
+  String get debugClearMessageDatabase => '清空消息庫';
 
   @override
   String get debugClearMessageDatabaseDescription => '刪除此客戶端本地所緩之消息。';
 
   @override
-  String get debugClearMessageDatabaseConfirmTitle => '清空消息資料庫？';
+  String get debugClearMessageDatabaseConfirmTitle => '清空消息庫？';
 
   @override
   String get debugClearMessageDatabaseConfirmMessage =>
       '本地所緩之消息皆將刪除，服器之消息不受影響。';
 
   @override
-  String get debugClearMessageDatabaseSuccess => '消息資料庫已清空。';
+  String get debugClearMessageDatabaseSuccess => '消息庫已清空。';
 
   @override
   String get debugCustomInfoDialog => '自定訊息框';
@@ -1737,7 +1748,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get debugApiTesterStatus => '狀';
 
   @override
-  String get debugApiTesterStatusUnavailable => '不可用';
+  String get debugApiTesterStatusUnavailable => '不可';
 
   @override
   String get debugApiTesterRequestUrl => '請求之址';
@@ -1886,7 +1897,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get forumMemberRole => '角色';
 
   @override
-  String get forumMemberRoleHint => '0=成員，50=管理員，100=主';
+  String get forumMemberRoleHint => '0=成員，50=管員，100=主';
 
   @override
   String get forumRoleOwner => '主';
@@ -2267,7 +2278,7 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String adminFileForceDeleteConfirm(String fileName, String owner) {
-    return '永久刪除 \"$fileName\"（所有者：$owner）？\n\n此操作將從磁盤和資料庫中移除該文件，忽略所有引用。';
+    return '永久刪除 \"$fileName\"（所有者：$owner）？\n\n此操作將從磁盤和庫中移除該文件，忽略所有引用。';
   }
 
   @override
@@ -2433,7 +2444,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get groupInviteFailed => '邀請失敗，請確認對方存在且已是您的好友';
 
   @override
-  String get groupAvatarPermissionDenied => '僅羣主或管理員可修改羣頭像';
+  String get groupAvatarPermissionDenied => '僅羣主或管員可修改羣頭像';
 
   @override
   String get groupAvatarUpdateSuccess => '羣頭像已更新';
@@ -2462,7 +2473,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get roleOwner => '羣主';
 
   @override
-  String get roleAdmin => '管理員';
+  String get roleAdmin => '管員';
 
   @override
   String get commonCancel => '取消';
@@ -2506,10 +2517,10 @@ class AppLocalizationsOch extends AppLocalizations {
   String get userProfileFriendRequestFailed => '發送好友請求失敗';
 
   @override
-  String get settingsCategoryConnection => '連接';
+  String get settingsCategoryConnection => '接';
 
   @override
-  String get settingsCategoryStorage => '存儲';
+  String get settingsCategoryStorage => '儲';
 
   @override
   String get settingsNotifyWithHaptic => '通知觸感反饋';
@@ -2585,5 +2596,95 @@ class AppLocalizationsOch extends AppLocalizations {
   }
 
   @override
+  String get settingsAutoLoadStickersTitle => '自載貼圖與表情';
+
+  @override
+  String get settingsAutoLoadStickersDesc => '自下載並緩貼圖。關後需手點貼圖方載之。';
+
+  @override
+  String get settingsClearStickerCache => '清貼圖緩';
+
+  @override
+  String get settingsClearStickerCacheDescription => '刪本地所緩之貼圖。';
+
+  @override
   String get settingsClearLocalMessages => '清除';
+
+  @override
+  String get stickerMarketTitle => '貼圖';
+
+  @override
+  String get stickerSortByDate => '按時間排序';
+
+  @override
+  String get stickerSortByUsage => '按熱度排序';
+
+  @override
+  String get stickerMarketTab => '貼圖市場';
+
+  @override
+  String get stickerOwnedTab => '已收藏';
+
+  @override
+  String get stickerSearchHint => '搜索貼圖包';
+
+  @override
+  String get stickerRemovePack => '移除貼圖包';
+
+  @override
+  String get stickerAddPack => '添加貼圖包';
+
+  @override
+  String get stickerMyPacks => '我之貼圖包';
+
+  @override
+  String get stickerCreatePack => '創建貼圖包';
+
+  @override
+  String get stickerPackName => '名稱';
+
+  @override
+  String get stickerPackPrefix => '前綴';
+
+  @override
+  String get stickerPackDescription => '簡介';
+
+  @override
+  String get stickerPackCreate => '創建';
+
+  @override
+  String get stickerAddSticker => '添加貼圖';
+
+  @override
+  String get stickerSlugLabel => '代碼';
+
+  @override
+  String get stickerAdd => '添加';
+
+  @override
+  String get stickerDeletePack => '刪除貼圖包';
+
+  @override
+  String get forumSearchTitle => '搜索論壇';
+
+  @override
+  String get forumSearchPostsTitle => '搜索帖子';
+
+  @override
+  String get forumSearchHint => '搜索論壇或帖子';
+
+  @override
+  String get forumSearchCurrentForumHint => '搜索當前論壇帖子';
+
+  @override
+  String get forumSearchForumsHeader => '論壇';
+
+  @override
+  String get forumSearchPostsHeader => '帖子';
+
+  @override
+  String get stickerNoPacks => '暫無已藏貼圖包';
+
+  @override
+  String get commonUnknown => '未知';
 }

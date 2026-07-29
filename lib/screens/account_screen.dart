@@ -449,6 +449,22 @@ class _AccountScreenState extends State<AccountScreen> {
           );
         },
       ),
+      ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+        trailing: const Icon(Symbols.chevron_right),
+        dense: true,
+        leading: const Icon(Symbols.storefront, size: 24),
+        title: Text(l10n.stickerMarketTitle),
+        onTap: () => context.push(AppRoutes.stickerMarket),
+      ),
+      ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+        trailing: const Icon(Symbols.chevron_right),
+        dense: true,
+        leading: const Icon(Symbols.sticky_note_2, size: 24),
+        title: Text(l10n.stickerMyPacks),
+        onTap: () => context.push(AppRoutes.myStickers),
+      ),
       if (_currentUser?.hasAdminAccess == true)
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 24),

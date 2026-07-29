@@ -285,6 +285,14 @@ class SettingsData {
           defaultValue: 50,
           icon: Icons.memory,
         ),
+        SettingItem(
+          key: 'autoLoadingStickers',
+          titleKey: 'settingsAutoLoadStickersTitle',
+          descriptionKey: 'settingsAutoLoadStickersDesc',
+          type: SettingType.switchSetting,
+          defaultValue: true,
+          icon: Icons.sticky_note_2_outlined,
+        ),
       ],
     ),
     SettingCategoryData(

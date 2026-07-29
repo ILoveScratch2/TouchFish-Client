@@ -20,6 +20,9 @@ import '../models/file_attachment.dart';
 import 'file_attachment_view.dart';
 import '../services/auth_state.dart';
 import 'sheet_scaffold.dart';
+import 'sticker_text_renderer.dart';
+
+final _stickerTestPattern = RegExp(r':[A-Za-z0-9_]+\+[A-Za-z0-9_-]+:');
 
 class MessageBubble extends HookWidget {
   final ChatMessage message;
@@ -339,7 +342,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  _formatTime(widget.message.timestamp),
+                                  _formatTime(widget.message.timestamp, context),
                                   style: TextStyle(
                                     fontSize: 10,
                                     color: textColor.withValues(alpha: 0.7),
@@ -408,7 +411,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                             child: Padding(
                               padding: const EdgeInsets.only(top: 2, right: 4),
                               child: Text(
-                                _formatTime(widget.message.timestamp),
+                                _formatTime(widget.message.timestamp, context),
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: textColor.withValues(alpha: 0.7),
@@ -483,20 +486,23 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
     return const SizedBox.shrink();
   }
 
-  String _formatTime(DateTime time) {
+  String _formatTime(DateTime time, BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final messageDate = DateTime(time.year, time.month, time.day);
 
     if (messageDate == today) {
       return DateFormat.Hm().format(time);
-    } else if (messageDate == today.subtract(const Duration(days: 1))) {
-      return '昨天 ${DateFormat.Hm().format(time)}';
-    } else if (now.difference(time).inDays < 7) {
-      return '${DateFormat.E('zh_CN').format(time)} ${DateFormat.Hm().format(time)}';
-    } else {
-      return DateFormat.MMMd('zh_CN').add_Hm().format(time);
     }
+    final locale = Localizations.localeOf(context);
+    if (messageDate == today.subtract(const Duration(days: 1))) {
+      return '${l10n.chatYesterday} ${DateFormat.Hm().format(time)}';
+    }
+    if (now.difference(time).inDays < 7) {
+      return '${DateFormat.E(locale.toString()).format(time)} ${DateFormat.Hm().format(time)}';
+    }
+    return DateFormat.MMMd(locale.toString()).add_Hm().format(time);
   }
 
   Widget _buildMessageContent(
@@ -659,6 +665,16 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
     ColorScheme colorScheme,
     TextTheme textTheme,
   ) {
+    final textColor = widget.message.isMe
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurface;
+    final textStyle = textTheme.bodyMedium?.copyWith(color: textColor);
+
+    final hasStickers = _stickerTestPattern.hasMatch(widget.message.text);
+    if (hasStickers) {
+      return StickerTextRenderer(text: widget.message.text, style: textStyle);
+    }
+
     final settingsService = SettingsService.instance;
     final enableMarkdown = settingsService.getValue<bool>(
       'enableMarkdownRendering',
@@ -669,11 +685,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
         ? Theme(
             data: Theme.of(context).copyWith(
               textTheme: textTheme.copyWith(
-                bodyMedium: textTheme.bodyMedium?.copyWith(
-                  color: widget.message.isMe
-                      ? colorScheme.onPrimaryContainer
-                      : colorScheme.onSurface,
-                ),
+                bodyMedium: textStyle,
               ),
             ),
             child: MarkdownRenderer(
@@ -681,14 +693,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
               selectable: true,
             ),
           )
-        : Text(
-            widget.message.text,
-            style: textTheme.bodyMedium?.copyWith(
-              color: widget.message.isMe
-                  ? colorScheme.onPrimaryContainer
-                  : colorScheme.onSurface,
-            ),
-          );
+        : Text(widget.message.text, style: textStyle);
   }
 
   Widget _buildImageMessage(BuildContext context, ColorScheme colorScheme) {
@@ -708,7 +713,6 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
         Map<String, dynamic>? exifData;
         try {
           Uint8List bytes;
-          // Priority: cachedBytes > read from file
           if (widget.cachedBytes != null) {
             bytes = widget.cachedBytes!;
           } else if (!kIsWeb &&

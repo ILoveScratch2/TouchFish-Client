@@ -36,7 +36,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   final Map<int, GlobalKey> _messageKeys = {};
-  // Timers that fire a REST fallback if a WS-sent message never receives an ack
   final Map<String, Timer> _pendingWsTimers = {};
   ChatRoom? _currentRoom;
   final List<MentionUser> _mentionUsers = [];
@@ -96,12 +95,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   void _initRoom() {
     _roomGeneration++;
-    // Cancel any pending WS ack fallback timers from the previous room
     for (final timer in _pendingWsTimers.values) {
       timer.cancel();
     }
     _pendingWsTimers.clear();
-    // Clear stale GlobalKeys so we don't carry over keys from the previous room
     _messageKeys.clear();
     _messages.clear();
     _currentRoom = null;
@@ -265,7 +262,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (_isAtBottom) _followBottom = true;
 
     if (_isLoadingMessages || _isLoadingOlder || !_hasMoreMessages) return;
-    // Trigger when user scrolls near the top
     final position = _scrollController.position;
     if (position.maxScrollExtent > 0 &&
         position.pixels > position.maxScrollExtent - 50) {
@@ -330,7 +326,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         if (mounted) setState(() {});
       }
     } else if (!_contactUid.startsWith('G')) {
-      // Profile not cached — fetch for direct chats
       final targetUid = _contactUid.startsWith('U')
           ? int.tryParse(_contactUid.substring(1))
           : null;
@@ -424,7 +419,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _avatarLoadFailed = false;
     setState(() {});
 
-    // Fetch profile to ensure we have latest data + avatar
     final targetUid = _contactUid.startsWith('U')
         ? int.tryParse(_contactUid.substring(1))
         : null;
@@ -660,11 +654,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     unawaited(DraftService.instance.clearDraft('chat', _contactUid));
     _scrollToBottom();
 
-    // Add to cache BEFORE sending (so WS ack can find and update it)
     ChatDataService.instance.addSentMessage(_contactUid, userMessage);
 
     try {
-      // Send via WebSocket, with REST fallback
+      // WS，启动！
       bool wsSent = false;
       if (_wsConnected && forwardTarget == null) {
         if (_contactUid.startsWith('G')) {
@@ -690,7 +683,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         }
       }
       if (!wsSent) {
-        // REST fallback
+        // REST
         final recipient = _contactUid;
         final result = await TfApiClient.instance.sendMessage(
           uid,
@@ -721,10 +714,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           }
         }
       } else {
-        // WS send returned true but ack may never arrive (e.g. network drop).
-        // Schedule a REST fallback that fires if the message is still pending
-        // after 15 seconds. The server's client_mid dedup ensures no duplicate
-        // is stored even if the WS message already reached the server.
+        // 准备 restful api 回退
         _pendingWsTimers[clientMid]?.cancel();
         _pendingWsTimers[clientMid] = Timer(
           const Duration(seconds: 15),
@@ -761,9 +751,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _messageController.selection = TextSelection.collapsed(offset: text.length);
   }
 
-  /// REST fallback called when a WS-sent message hasn't received an ack within
-  /// the timeout window. Uses the same [clientMid] so the server dedup index
-  /// prevents double-storage.
+  /// REST 回退使用相同的 client mid 避免 dup
   Future<void> _wsAckFallback({
     required String clientMid,
     required String content,
@@ -774,7 +762,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }) async {
     _pendingWsTimers.remove(clientMid);
     if (!mounted) return;
-    // No-op if ack already arrived
     final msgs = ChatDataService.instance.getMessages(_contactUid);
     final idx = msgs.indexWhere((m) => m.clientMid == clientMid);
     if (idx == -1 || msgs[idx].status != MessageStatus.pending) return;
@@ -812,9 +799,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     int? mid,
     MessageStatus? status,
   }) {
-    // Ack arrived — cancel any pending fallback timer for this message
     _pendingWsTimers.remove(clientMid)?.cancel();
-    // Update _messageCache
     final msgs = ChatDataService.instance.getMessages(_contactUid);
     final cIdx = msgs.indexWhere((m) => m.clientMid == clientMid);
     if (cIdx != -1) {
@@ -827,7 +812,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       ChatDataService.instance.setMessages(_contactUid, updated);
     }
     if (!mounted) return;
-    // Update UI list
     setState(() {
       final idx = _messages.indexWhere((m) => m.clientMid == clientMid);
       if (idx != -1) {
@@ -877,17 +861,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       filePath =
           'web_upload_${DateTime.now().millisecondsSinceEpoch}_$fileName';
       fileSize = platformFile.bytes?.length ?? 0;
-      // Web: bytes already in browser memory — no separate read needed
       bytes = platformFile.bytes;
     } else {
       filePath = platformFile.path!;
       fileName = path.basename(filePath);
       final file = File(filePath);
-      // Get size WITHOUT reading the file into memory yet
+      // 获取文件大小
       fileSize = await file.length();
     }
 
-    // Early size check BEFORE allocating memory and BEFORE adding message to UI
     final maxSize = await TfApiClient.instance.getMaxFileSize();
     if (maxSize != null && fileSize > maxSize) {
       if (mounted) {
@@ -903,7 +885,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       return;
     }
 
-    // Now read bytes (non-web only; web bytes already loaded above)
+    // 读文件到内存中（Web 在 platformFile.bytes 中）
     if (!kIsWeb) {
       bytes = platformFile.bytes ?? await File(filePath).readAsBytes();
     }
@@ -929,11 +911,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
 
     final clientMid = 'c${DateTime.now().microsecondsSinceEpoch}';
-    final media = MessageMedia(
-      path: filePath,
-      fileName: fileName,
-      fileSize: fileSize,
-      bytes: bytes,
+      final media = MessageMedia(
+        path: filePath,
+        fileName: fileName,
+        fileSize: fileSize,
+        bytes: bytes,
     );
     final userMessage = ChatMessage(
       id: clientMid,
@@ -988,9 +970,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         MessageMedia(
           path: '$baseUrl/file/get_file/$hash',
           fileName: fileName,
-          fileSize: fileSize,
-          bytes: bytes,
-          fileHash: hash,
+        fileSize: fileSize,
+        bytes: bytes,
+        fileHash: hash,
         ),
       );
 
@@ -1048,7 +1030,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           }
         }
       } else {
-        // WS sent — schedule REST fallback in case ack never arrives
+        // REST 再试一次
         _pendingWsTimers[clientMid]?.cancel();
         _pendingWsTimers[clientMid] = Timer(
           const Duration(seconds: 15),

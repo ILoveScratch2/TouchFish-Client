@@ -251,6 +251,10 @@
   "adminServerFieldMaxFileSize": "最大文件大小",
   "adminServerFieldMaxMessageLength": "最大消息长度",
   "adminServerFieldMaxMessageLengthDescription": "每条消息的最大字符数（最小值为 1）。",
+  "adminServerFieldMaxStickerPacks": "每用户贴图包上限",
+  "adminServerFieldMaxStickersPerPack": "每贴图包贴图上限",
+  "adminServerFieldMaxStickerSize": "贴图最大大小（字节，-1 不限）",
+  "adminServerFieldDailyStickerPackLimit": "每日创建贴图包上限",
   "adminServerFieldApiPort": "API 端口",
   "adminServerFieldTcpPort": "TCP 端口",
   "adminServerFieldEmailActivation": "邮箱激活",
@@ -1057,5 +1061,38 @@
       "size": {"type": "String"}
     }
   },
-  "settingsClearLocalMessages": "清除"
+  "settingsAutoLoadStickersTitle": "自动加载贴图和表情",
+  "settingsAutoLoadStickersDesc": "自动下载并缓存贴图。关闭后需手动点击贴图才会加载。",
+  "settingsClearStickerCache": "清除贴图缓存",
+  "settingsClearStickerCacheDescription": "删除本地缓存的贴图文件。",
+  "settingsClearLocalMessages": "清除",
+
+  "stickerMarketTitle": "贴图",
+  "stickerSortByDate": "按时间排序",
+  "stickerSortByUsage": "按热度排序",
+  "stickerMarketTab": "贴图市场",
+  "stickerOwnedTab": "已收藏",
+  "stickerSearchHint": "搜索贴图包",
+  "stickerRemovePack": "移除贴图包",
+  "stickerAddPack": "添加贴图包",
+  "stickerMyPacks": "我的贴图包",
+  "stickerCreatePack": "创建贴图包",
+  "stickerPackName": "名称",
+  "stickerPackPrefix": "前缀",
+  "stickerPackDescription": "简介",
+  "stickerPackCreate": "创建",
+  "stickerAddSticker": "添加贴图",
+  "stickerSlugLabel": "代码",
+  "stickerAdd": "添加",
+  "stickerDeletePack": "删除贴图包",
+
+  "forumSearchTitle": "搜索论坛",
+  "forumSearchPostsTitle": "搜索帖子",
+  "forumSearchHint": "搜索论坛或帖子",
+  "forumSearchCurrentForumHint": "搜索当前论坛帖子",
+  "forumSearchForumsHeader": "论坛",
+  "forumSearchPostsHeader": "帖子",
+
+  "stickerNoPacks": "暂无已收藏贴图包",
+  "commonUnknown": "未知"
 }

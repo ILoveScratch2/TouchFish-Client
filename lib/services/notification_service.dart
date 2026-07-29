@@ -221,7 +221,6 @@ class NotificationService extends ChangeNotifier {
         for (final n in fetched) {
           if (existingKeys.add(n.identityKey)) {
             _allNotifications.add(n);
-            // Forward message notifications to chat data service
             if (n.isMessageEvent && n.senderUid != null) {
               ChatDataService.instance.processPolledMessage(
                 n,
@@ -301,12 +300,20 @@ class NotificationService extends ChangeNotifier {
     }
     _allNotifications.add(notification);
     _allNotifications.sort((a, b) => b.timeStamp.compareTo(a.timeStamp));
-    unawaited(
-      AppNotificationService.instance.present(
-        AppNotification.fromNotificationInfo(notification),
-      ),
-    );
+    unawaited(_presentNotification(notification));
     notifyListeners();
+  }
+
+  Future<void> _presentNotification(NotificationInfo notification) async {
+    var appNotification = AppNotification.fromNotificationInfo(notification);
+    final avatar = appNotification.avatarUrl;
+    if (avatar != null && avatar.startsWith('/')) {
+      try {
+        final baseUrl = await TfApiClient.instance.getBaseUrl();
+        appNotification = appNotification.copyWith(avatarUrl: '$baseUrl$avatar');
+      } catch (_) {}
+    }
+    await AppNotificationService.instance.present(appNotification);
   }
 
   void markAnnouncementRead() {

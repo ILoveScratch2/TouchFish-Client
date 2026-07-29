@@ -11,9 +11,8 @@ class MessageMedia {
   final int? fileSize;
   final String? mimeType;
   final double? aspectRatio;
-  final Duration? duration;
   final List<int>? bytes;
-  final String? fileHash; // server-side file hash for download
+  final String? fileHash; // FILE HASH
 
   const MessageMedia({
     required this.path,
@@ -21,7 +20,6 @@ class MessageMedia {
     this.fileSize,
     this.mimeType,
     this.aspectRatio,
-    this.duration,
     this.bytes,
     this.fileHash,
   });
@@ -219,7 +217,6 @@ class ChatMessage {
     );
   }
 
-  /// Create from a server notification event (WebSocket push or polling).
   factory ChatMessage.fromNotification({
     required NotificationInfo notification,
     required int myUid,
@@ -310,7 +307,6 @@ class ChatMessage {
     );
   }
 
-  /// Create from a /message/history record (direct DB row).
   factory ChatMessage.fromMessageRecord(Map<String, dynamic> json, int myUid) {
     final mid = (json['mid'] as num?)?.toInt();
     final clientMid = json['client_mid'] as String?;

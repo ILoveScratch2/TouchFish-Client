@@ -157,7 +157,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             l10n.registerErrorUsernameRequired,
                           ),
                           SmartValidators.minLength(
-                            3,
+                             4,
                             l10n.registerErrorUsernameMinLength,
                           ),
                         ]),

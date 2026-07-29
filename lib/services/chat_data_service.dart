@@ -79,7 +79,6 @@ class ChatDataService extends ChangeNotifier {
   List<ChatRoom> _rooms = [];
   List<Contact> _contacts = [];
   final Map<String, List<ChatMessage>> _messageCache = {};
-  // LRU 顺序追踪：末尾是最近访问，开头是最久未访问
   final List<String> _cacheAccessOrder = [];
   final Map<String, UserProfile> _userCache = {};
   final Map<String, ChatRoomPreference> _roomPreferences = {};
@@ -97,13 +96,12 @@ class ChatDataService extends ChangeNotifier {
   int get _maxCachedRooms =>
       SettingsService.instance.getValue<int>('maxCachedRooms', 50);
 
-  /// 将 roomId 标记为最近访问
   void _touchCacheRoom(String roomId) {
     _cacheAccessOrder.remove(roomId);
     _cacheAccessOrder.add(roomId);
   }
 
-  /// 若缓存超出上限，驱逐最久未访问的房间消息
+  /// 若缓存超出上限，rm -rf 最久未访问的房间消息
   void _evictCacheIfNeeded() {
     final limit = _maxCachedRooms;
     while (_messageCache.length > limit && _cacheAccessOrder.isNotEmpty) {
@@ -144,8 +142,6 @@ class ChatDataService extends ChangeNotifier {
 
   UserProfile? getUser(String roomId) => _userCache[roomId];
 
-  /// Look up a cached profile by username (case-insensitive).
-  /// Returns null if no matching profile is found in the local cache.
   UserProfile? getUserByUsername(String username) {
     final lower = username.toLowerCase();
     for (final profile in _userCache.values) {
@@ -192,7 +188,6 @@ class ChatDataService extends ChangeNotifier {
 
   void cacheUserProfile(UserProfile profile) {
     _userCache[profile.uid] = profile;
-    // Also store under "U{uid}" key for compatibility with roomId-based lookups
     final puid = int.tryParse(profile.uid);
     if (puid != null) _userCache[roomIdFromUid(puid)] = profile;
   }
@@ -440,7 +435,6 @@ class ChatDataService extends ChangeNotifier {
 
   static String roomIdFromUid(int uid) => 'U$uid';
 
-  /// Parse numeric UID from roomId. "U123" → 123, "G456" → -456.
   static int roomKey(String roomId) {
     if (roomId.startsWith('G')) {
       return -(int.tryParse(roomId.substring(1)) ?? 0);
@@ -495,10 +489,7 @@ class ChatDataService extends ChangeNotifier {
   bool _containsMessage(List<ChatMessage> messages, ChatMessage candidate) {
     final key = _messageDedupKey(candidate);
     if (messages.any((m) => _messageDedupKey(m) == key)) return true;
-    // Secondary check: if the candidate has a server mid, reject duplicates
-    // even when the dedup keys don't match (e.g. one side has clientMid and
-    // the other only has the server mid — a timing window that occurs when
-    // NOTIFICATION.NEW arrives before message.ack updates the cached entry).
+    // 如果 candidate 有 mid，检查是否有消息的 mid 与之匹配
     final candidateMid = candidate.mid;
     if (candidateMid != null) {
       return messages.any((m) => m.mid == candidateMid);
@@ -554,7 +545,7 @@ class ChatDataService extends ChangeNotifier {
       final nextContacts = <Contact>[];
 
       for (final item in chatItems) {
-        // 过滤无效项：partnerUid 为负数（非群聊）或等于自己
+        // 过滤
         if (item.partnerUid == uid) continue;
         if (item.partnerUid < 0 && item.roomType != 'group') continue;
         final isGroup = item.roomType == 'group';
@@ -680,7 +671,6 @@ class ChatDataService extends ChangeNotifier {
   // --- Real-time events ---
 
   void _onWsEvent(ChatWsEvent event) {
-    // Server ack: message was stored, update status to sent
     if (event.type == 'message.ack') {
       final data = event.notification;
       if (data != null) {
@@ -755,7 +745,10 @@ class ChatDataService extends ChangeNotifier {
       loadContactsAndRooms();
       return;
     }
-    if (eventType != 'message.plain' && eventType != 'message.file') return;
+    if (eventType != 'message.plain' &&
+        eventType != 'message.file') {
+      return;
+    }
 
     final uid = AuthState.instance.uid;
     if (uid == null) return;
@@ -820,7 +813,6 @@ class ChatDataService extends ChangeNotifier {
       _evictCacheIfNeeded();
       _localStore.appendMessage(roomId, msg);
     }
-    // Don't bump unread for historical polled messages
     if (!_rooms.any((r) => r.id == roomId)) {
       _addNewRoom(roomId, msg, unreadCount: 0);
     } else {
@@ -962,8 +954,7 @@ class ChatDataService extends ChangeNotifier {
         return;
       }
       _userCache[profile.uid] = profile;
-      // Note: profile.uid is plain "123", but our cache uses "U123"
-      // Store under both keys for compatibility
+      // profile.uid 是 "U{uid}" 格式，但是之前有问题
       _userCache[roomIdFromUid(puid)] = profile;
       _updateRoomAndContacts(roomId, profile.username, profile.avatar);
       _fillMsgAvatars(

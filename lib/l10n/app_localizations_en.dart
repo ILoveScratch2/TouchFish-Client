@@ -699,6 +699,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Maximum characters per message (minimum 1).';
 
   @override
+  String get adminServerFieldMaxStickerPacks => 'Sticker packs per user';
+
+  @override
+  String get adminServerFieldMaxStickersPerPack => 'Stickers per pack';
+
+  @override
+  String get adminServerFieldMaxStickerSize =>
+      'Max sticker size (bytes, -1 unlimited)';
+
+  @override
+  String get adminServerFieldDailyStickerPackLimit =>
+      'Daily pack creation limit';
+
+  @override
   String get adminServerFieldApiPort => 'API Port';
 
   @override
@@ -1363,7 +1377,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutFontLicense => 'Font License';
 
   @override
-  String get aboutFontLicenseDialogTitle => 'HarmonyOS Sans SC Font License';
+  String get aboutFontLicenseDialogTitle => 'Font License';
 
   @override
   String get aboutFontLicenseDescription =>
@@ -2690,5 +2704,97 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get settingsAutoLoadStickersTitle => 'Auto-load stickers';
+
+  @override
+  String get settingsAutoLoadStickersDesc =>
+      'Download and cache sticker images automatically. When off, tap a sticker to load it.';
+
+  @override
+  String get settingsClearStickerCache => 'Clear sticker cache';
+
+  @override
+  String get settingsClearStickerCacheDescription =>
+      'Delete locally cached sticker images.';
+
+  @override
   String get settingsClearLocalMessages => 'Clear';
+
+  @override
+  String get stickerMarketTitle => 'Stickers';
+
+  @override
+  String get stickerSortByDate => 'Sort by date';
+
+  @override
+  String get stickerSortByUsage => 'Sort by popularity';
+
+  @override
+  String get stickerMarketTab => 'Market';
+
+  @override
+  String get stickerOwnedTab => 'Owned';
+
+  @override
+  String get stickerSearchHint => 'Search sticker packs';
+
+  @override
+  String get stickerRemovePack => 'Remove pack';
+
+  @override
+  String get stickerAddPack => 'Add pack';
+
+  @override
+  String get stickerMyPacks => 'My sticker packs';
+
+  @override
+  String get stickerCreatePack => 'Create sticker pack';
+
+  @override
+  String get stickerPackName => 'Name';
+
+  @override
+  String get stickerPackPrefix => 'Prefix';
+
+  @override
+  String get stickerPackDescription => 'Description';
+
+  @override
+  String get stickerPackCreate => 'Create';
+
+  @override
+  String get stickerAddSticker => 'Add sticker';
+
+  @override
+  String get stickerSlugLabel => 'Code';
+
+  @override
+  String get stickerAdd => 'Add';
+
+  @override
+  String get stickerDeletePack => 'Delete pack';
+
+  @override
+  String get forumSearchTitle => 'Search forums';
+
+  @override
+  String get forumSearchPostsTitle => 'Search posts';
+
+  @override
+  String get forumSearchHint => 'Search forums or posts';
+
+  @override
+  String get forumSearchCurrentForumHint => 'Search posts in this forum';
+
+  @override
+  String get forumSearchForumsHeader => 'Forums';
+
+  @override
+  String get forumSearchPostsHeader => 'Posts';
+
+  @override
+  String get stickerNoPacks => 'No sticker packs';
+
+  @override
+  String get commonUnknown => 'Unknown';
 }

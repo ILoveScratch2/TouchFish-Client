@@ -1,13 +1,15 @@
-import 'dart:io' show Platform;
+import 'dart:io' show File, Platform;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:mime/mime.dart';
+import 'stickers/sticker_picker.dart';
 import '../l10n/app_localizations.dart';
 import '../models/message_model.dart';
 import '../models/settings_service.dart';
+import '../utils/file_type_detector.dart';
 import 'mention_text_field.dart';
 
 class ChatInputBar extends StatefulWidget {
@@ -356,7 +358,7 @@ class _ChatInputBarState extends State<ChatInputBar>
                               : l10n.messageReplyingTo(
                                   message.isMe
                                       ? 'Me'
-                                      : message.senderName ?? 'Unknown',
+                                      : message.senderName ?? l10n.commonUnknown,
                                 ),
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(fontWeight: FontWeight.w500),
@@ -468,23 +470,37 @@ class _ChatInputBarState extends State<ChatInputBar>
   }
 
   Widget _buildEmojiTab(ColorScheme colorScheme, AppLocalizations l10n) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.emoji_emotions_outlined,
-            size: 40,
-            color: colorScheme.onSurfaceVariant.withOpacity(0.4),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.chatFunctionTabEmojiHint,
-            style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
-          ),
-        ],
-      ),
+    return StickerPickerPanel(
+      onPick: (pack, sticker) {
+        _insertText(':${pack.prefix}+${sticker.slug}:');
+      },
+      onLongPress: (pack, sticker) => _insertText(':${pack.prefix}+${sticker.slug}:'),
     );
+  }
+
+  void _insertText(String value) {
+    final selection = widget.controller.selection;
+    final start = selection.start < 0 ? widget.controller.text.length : selection.start;
+    final end = selection.end < 0 ? widget.controller.text.length : selection.end;
+    widget.controller.value = widget.controller.value.copyWith(
+      text: widget.controller.text.replaceRange(start, end, value),
+      selection: TextSelection.collapsed(offset: start + value.length),
+    );
+  }
+
+  MessageType _messageTypeFromExtension(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'png': case 'jpg': case 'jpeg': case 'gif': case 'bmp':
+      case 'svg': case 'tgs': case 'webp':
+        return MessageType.image;
+      case 'mp4': case 'webm': case 'mkv': case 'avi': case 'mov': case 'flv': case 'wmv':
+        return MessageType.video;
+      case 'mp3': case 'wav': case 'flac': case 'ogg': case 'aac': case 'm4a': case 'wma':
+        return MessageType.audio;
+      default:
+        return MessageType.file;
+    }
   }
 
   Widget _buildSpecialMessagesTab(
@@ -496,7 +512,7 @@ class _ChatInputBarState extends State<ChatInputBar>
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.star_outline,
+            Icons.smart_toy_outlined,
             size: 40,
             color: colorScheme.onSurfaceVariant.withOpacity(0.4),
           ),
@@ -586,23 +602,19 @@ class _ChatInputBarState extends State<ChatInputBar>
           final file = result.files.single;
           if ((kIsWeb && file.bytes != null) ||
               (!kIsWeb && file.path != null)) {
-            String? mimeType;
-            if (kIsWeb) {
-              mimeType = lookupMimeType(file.name);
-            } else {
-              mimeType = lookupMimeType(file.path!);
-            }
-
-            MessageType messageType = MessageType.file;
-            if (mimeType != null) {
-              if (mimeType.startsWith('image/')) {
-                messageType = MessageType.image;
-              } else if (mimeType.startsWith('video/')) {
-                messageType = MessageType.video;
-              } else if (mimeType.startsWith('audio/')) {
-                messageType = MessageType.audio;
-              }
-            }
+            final Uint8List header = kIsWeb
+                ? file.bytes!
+                : Uint8List.fromList(await File(file.path!).openRead(0, 4096).first);
+            final detected = detectFileType(header, fallbackName: file.name);
+            final messageType = switch (detected) {
+              DetectedFileType.png ||
+              DetectedFileType.jpg ||
+              DetectedFileType.gif ||
+              DetectedFileType.bmp ||
+              DetectedFileType.svg ||
+              DetectedFileType.tgs => MessageType.image,
+              DetectedFileType.unknown => _messageTypeFromExtension(file.name),
+            };
 
             widget.onFilePicked!(file, messageType);
           }

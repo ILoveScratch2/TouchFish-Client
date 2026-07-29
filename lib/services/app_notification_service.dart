@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,9 +7,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:http/http.dart' as http;
 
 import '../models/app_notification.dart';
 import '../models/settings_service.dart';
+import '../utils/notification_avatar_attachment.dart';
 import '../utils/talker.dart';
 
 const appNotificationBaseDuration = Duration(seconds: 5);
@@ -241,6 +244,46 @@ class AppNotificationService extends ChangeNotifier
   }
 
   Future<bool> _showSystemNotification(AppNotification notification) async {
+    AndroidBitmap<Object>? senderAvatar;
+    List<DarwinNotificationAttachment>? darwinAttachments;
+    List<WindowsImage> windowsImages = const [];
+    LinuxNotificationIcon? linuxIcon;
+    if (notification.avatarUrl != null && notification.avatarUrl!.startsWith('http')) {
+      try {
+        final response = await http.get(Uri.parse(notification.avatarUrl!)).timeout(const Duration(seconds: 3));
+        if (response.statusCode >= 200 && response.statusCode < 300 && response.bodyBytes.isNotEmpty) {
+          senderAvatar = ByteArrayAndroidBitmap(Uint8List.fromList(response.bodyBytes));
+        }
+      } catch (_) {
+        // 发送头像下载失败继续显示通知
+      }
+    }
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            defaultTargetPlatform == TargetPlatform.macOS ||
+            defaultTargetPlatform == TargetPlatform.windows ||
+            defaultTargetPlatform == TargetPlatform.linux)) {
+      final avatarPath = await cacheNotificationAvatarAttachment(
+        notification.avatarUrl,
+      );
+      if (avatarPath != null) {
+        if (defaultTargetPlatform == TargetPlatform.iOS ||
+            defaultTargetPlatform == TargetPlatform.macOS) {
+          darwinAttachments = [DarwinNotificationAttachment(avatarPath)];
+        } else if (defaultTargetPlatform == TargetPlatform.windows) {
+          windowsImages = [
+            WindowsImage(
+              Uri.file(avatarPath, windows: true),
+              altText: notification.title,
+              placement: WindowsImagePlacement.appLogoOverride,
+              crop: WindowsImageCrop.circle,
+            ),
+          ];
+        } else if (defaultTargetPlatform == TargetPlatform.linux) {
+          linuxIcon = FilePathLinuxIcon(avatarPath);
+        }
+      }
+    }
     const androidDetails = AndroidNotificationDetails(
       'touchfish_notifications',
       'TouchFish notifications',
@@ -260,23 +303,30 @@ class AppNotificationService extends ChangeNotifier
         importance: androidDetails.importance,
         priority: androidDetails.priority,
         playSound: playSound,
+        largeIcon: senderAvatar,
       ),
       iOS: DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: playSound,
         threadIdentifier: notification.topic,
+        attachments: darwinAttachments,
       ),
       macOS: DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: playSound,
         threadIdentifier: notification.topic,
+        attachments: darwinAttachments,
       ),
-      linux: LinuxNotificationDetails(suppressSound: !playSound),
+      linux: LinuxNotificationDetails(
+        suppressSound: !playSound,
+        icon: linuxIcon,
+      ),
       windows: WindowsNotificationDetails(
         subtitle: notification.subtitle,
         audio: playSound ? null : WindowsNotificationAudio.silent(),
+        images: windowsImages,
       ),
     );
     try {

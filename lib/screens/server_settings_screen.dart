@@ -22,6 +22,10 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   final _singleGroupMaxPeopleController = TextEditingController();
   final _maxFileSizeController = TextEditingController();
   final _maxMessageLengthController = TextEditingController();
+  final _maxStickerPacksController = TextEditingController();
+  final _maxStickersPerPackController = TextEditingController();
+  final _dailyStickerPackLimitController = TextEditingController();
+  final _maxStickerSizeController = TextEditingController();
 
   TfServerConfig? _settings;
   bool _captcha = false;
@@ -42,6 +46,10 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     _singleGroupMaxPeopleController.dispose();
     _maxFileSizeController.dispose();
     _maxMessageLengthController.dispose();
+    _maxStickerPacksController.dispose();
+    _maxStickersPerPackController.dispose();
+    _dailyStickerPackLimitController.dispose();
+    _maxStickerSizeController.dispose();
     super.dispose();
   }
 
@@ -60,6 +68,11 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     _maxFileSizeController.text = (settings.maxFileSize ?? -1).toString();
     _maxMessageLengthController.text = (settings.maxMessageLength ?? 10000)
         .toString();
+    _maxStickerPacksController.text = settings.maxStickerPacksPerUser.toString();
+    _maxStickersPerPackController.text = settings.maxStickersPerPack.toString();
+    _dailyStickerPackLimitController.text =
+        settings.dailyStickerPackCreationLimit.toString();
+    _maxStickerSizeController.text = settings.maxStickerSize.toString();
     _captcha = settings.captcha;
   }
 
@@ -183,13 +196,37 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       _maxMessageLengthController.text,
       minimum: 1,
     );
+    final maxStickerPacks = _parseIntegerField(
+      _maxStickerPacksController.text,
+      minimum: 1,
+      allowUnlimited: true,
+    );
+    final maxStickersPerPack = _parseIntegerField(
+      _maxStickersPerPackController.text,
+      minimum: 1,
+      allowUnlimited: true,
+    );
+    final dailyStickerPackLimit = _parseIntegerField(
+      _dailyStickerPackLimitController.text,
+      minimum: 1,
+      allowUnlimited: true,
+    );
+    final maxStickerSize = _parseIntegerField(
+      _maxStickerSizeController.text,
+      minimum: 1,
+      allowUnlimited: true,
+    );
 
     if (serverName.isEmpty ||
         fileLastTime == null ||
         groupsLimit == null ||
         singleGroupMaxPeople == null ||
         maxFileSize == null ||
-        maxMessageLength == null) {
+        maxMessageLength == null ||
+        maxStickerPacks == null ||
+        maxStickersPerPack == null ||
+        dailyStickerPackLimit == null ||
+        maxStickerSize == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.adminServerSettingsInvalidInput),
@@ -212,6 +249,10 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         singleGroupMaxPeople: singleGroupMaxPeople,
         maxFileSize: maxFileSize,
         maxMessageLength: maxMessageLength,
+        maxStickerPacksPerUser: maxStickerPacks,
+        maxStickersPerPack: maxStickersPerPack,
+        dailyStickerPackCreationLimit: dailyStickerPackLimit,
+        maxStickerSize: maxStickerSize,
       );
 
       if (!mounted) {
@@ -349,6 +390,46 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                 labelText: l10n.adminServerFieldMaxMessageLength,
                 helperText: l10n.adminServerFieldMaxMessageLengthDescription,
                 prefixIcon: const Icon(Icons.message_outlined),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _maxStickerPacksController,
+              keyboardType: const TextInputType.numberWithOptions(signed: true),
+              decoration: InputDecoration(
+                labelText: l10n.adminServerFieldMaxStickerPacks,
+                helperText: l10n.adminServerUnlimitedHint,
+                prefixIcon: const Icon(Icons.collections_outlined),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _maxStickersPerPackController,
+              keyboardType: const TextInputType.numberWithOptions(signed: true),
+              decoration: InputDecoration(
+                labelText: l10n.adminServerFieldMaxStickersPerPack,
+                helperText: l10n.adminServerUnlimitedHint,
+                prefixIcon: const Icon(Icons.emoji_emotions_outlined),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _dailyStickerPackLimitController,
+              keyboardType: const TextInputType.numberWithOptions(signed: true),
+              decoration: InputDecoration(
+                labelText: l10n.adminServerFieldDailyStickerPackLimit,
+                helperText: l10n.adminServerUnlimitedHint,
+                prefixIcon: const Icon(Icons.today_outlined),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _maxStickerSizeController,
+              keyboardType: const TextInputType.numberWithOptions(signed: true),
+              decoration: InputDecoration(
+                labelText: l10n.adminServerFieldMaxStickerSize,
+                helperText: l10n.adminServerUnlimitedHint,
+                prefixIcon: const Icon(Icons.storage_outlined),
               ),
             ),
           ],

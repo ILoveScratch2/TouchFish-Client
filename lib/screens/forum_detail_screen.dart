@@ -5,6 +5,7 @@ import '../models/forum_model.dart';
 import '../models/user_profile.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/markdown_renderer.dart';
+import '../widgets/sticker_text_renderer.dart';
 import '../models/settings_service.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
@@ -14,6 +15,8 @@ import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/forum_attachments.dart';
 import '../routes/app_routes.dart';
+
+final _stickerTestPatternFd = RegExp(r':[A-Za-z0-9_]+\+[A-Za-z0-9_-]+:');
 
 class ForumDetailScreen extends StatefulWidget {
   final String forumId;
@@ -180,7 +183,6 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left: posts
                 Flexible(
                   flex: 3,
                   child: CustomScrollView(
@@ -193,7 +195,6 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                     ],
                   ),
                 ),
-                // Right: description + join
                 Flexible(
                   flex: 2,
                   child: SingleChildScrollView(
@@ -284,25 +285,30 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           leading: BackButton(onPressed: () => _leaveForum(context)),
           flexibleSpace: FlexibleSpaceBar(
             expandedTitleScale: 1,
-            title: Row(
-              mainAxisSize: MainAxisSize.min,
+            title: Text(
+              forum.name,
+              style: TextStyle(color: colorScheme.onPrimaryContainer),
+              overflow: TextOverflow.ellipsis,
+            ),
+            background: Stack(
+              fit: StackFit.expand,
               children: [
-                ProfilePictureWidget(
-                  avatarUrl: forum.avatarUrl,
-                  radius: 14,
-                  fallbackIcon: Icons.forum,
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    forum.name,
-                    style: TextStyle(color: colorScheme.onPrimaryContainer),
-                    overflow: TextOverflow.ellipsis,
+                if (forum.avatarUrl != null)
+                  Image.network(forum.avatarUrl!, fit: BoxFit.cover)
+                else ...[
+                  ColoredBox(color: colorScheme.surfaceContainerHighest),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.black.withOpacity(0.36), Colors.black.withOpacity(0.7)],
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
-            background: Container(color: colorScheme.surfaceContainerHighest),
           ),
           actions: [
             if ((_identity?.role ?? 0) >= 50)
@@ -542,6 +548,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         ],
       ),
     );
+    final nameText = nameController.text.trim();
+    final introText = introController.text.trim();
     nameController.dispose();
     introController.dispose();
     if (confirmed != true || !mounted) return;
@@ -555,8 +563,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       uid,
       password,
       fid,
-      forumName: nameController.text.trim(),
-      introduction: introController.text.trim(),
+      forumName: nameText,
+      introduction: introText,
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -967,7 +975,14 @@ class _PostCardState extends State<_PostCard> {
                 ),
               ],
               const SizedBox(height: 8),
-              if (enableMarkdown)
+              if (_stickerTestPatternFd.hasMatch(post.content))
+                StickerTextRenderer(
+                  text: post.content.length > 200
+                      ? '${post.content.substring(0, 200)}...'
+                      : post.content,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                )
+              else if (enableMarkdown)
                 MarkdownRenderer(
                   data: post.content.length > 200
                       ? '${post.content.substring(0, 200)}...'

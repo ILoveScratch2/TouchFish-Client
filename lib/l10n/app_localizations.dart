@@ -1378,6 +1378,30 @@ abstract class AppLocalizations {
   /// **'Maximum characters per message (minimum 1).'**
   String get adminServerFieldMaxMessageLengthDescription;
 
+  /// No description provided for @adminServerFieldMaxStickerPacks.
+  ///
+  /// In en, this message translates to:
+  /// **'Sticker packs per user'**
+  String get adminServerFieldMaxStickerPacks;
+
+  /// No description provided for @adminServerFieldMaxStickersPerPack.
+  ///
+  /// In en, this message translates to:
+  /// **'Stickers per pack'**
+  String get adminServerFieldMaxStickersPerPack;
+
+  /// No description provided for @adminServerFieldMaxStickerSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Max sticker size (bytes, -1 unlimited)'**
+  String get adminServerFieldMaxStickerSize;
+
+  /// No description provided for @adminServerFieldDailyStickerPackLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily pack creation limit'**
+  String get adminServerFieldDailyStickerPackLimit;
+
   /// No description provided for @adminServerFieldApiPort.
   ///
   /// In en, this message translates to:
@@ -2641,7 +2665,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutFontLicenseDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'HarmonyOS Sans SC Font License'**
+  /// **'Font License'**
   String get aboutFontLicenseDialogTitle;
 
   /// No description provided for @aboutFontLicenseDescription.
@@ -5056,11 +5080,191 @@ abstract class AppLocalizations {
   /// **'{count} messages · {size}'**
   String settingsLocalMessageCount(int count, String size);
 
+  /// No description provided for @settingsAutoLoadStickersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-load stickers'**
+  String get settingsAutoLoadStickersTitle;
+
+  /// No description provided for @settingsAutoLoadStickersDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Download and cache sticker images automatically. When off, tap a sticker to load it.'**
+  String get settingsAutoLoadStickersDesc;
+
+  /// No description provided for @settingsClearStickerCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear sticker cache'**
+  String get settingsClearStickerCache;
+
+  /// No description provided for @settingsClearStickerCacheDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete locally cached sticker images.'**
+  String get settingsClearStickerCacheDescription;
+
   /// No description provided for @settingsClearLocalMessages.
   ///
   /// In en, this message translates to:
   /// **'Clear'**
   String get settingsClearLocalMessages;
+
+  /// No description provided for @stickerMarketTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stickers'**
+  String get stickerMarketTitle;
+
+  /// No description provided for @stickerSortByDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by date'**
+  String get stickerSortByDate;
+
+  /// No description provided for @stickerSortByUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by popularity'**
+  String get stickerSortByUsage;
+
+  /// No description provided for @stickerMarketTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Market'**
+  String get stickerMarketTab;
+
+  /// No description provided for @stickerOwnedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Owned'**
+  String get stickerOwnedTab;
+
+  /// No description provided for @stickerSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search sticker packs'**
+  String get stickerSearchHint;
+
+  /// No description provided for @stickerRemovePack.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove pack'**
+  String get stickerRemovePack;
+
+  /// No description provided for @stickerAddPack.
+  ///
+  /// In en, this message translates to:
+  /// **'Add pack'**
+  String get stickerAddPack;
+
+  /// No description provided for @stickerMyPacks.
+  ///
+  /// In en, this message translates to:
+  /// **'My sticker packs'**
+  String get stickerMyPacks;
+
+  /// No description provided for @stickerCreatePack.
+  ///
+  /// In en, this message translates to:
+  /// **'Create sticker pack'**
+  String get stickerCreatePack;
+
+  /// No description provided for @stickerPackName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get stickerPackName;
+
+  /// No description provided for @stickerPackPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefix'**
+  String get stickerPackPrefix;
+
+  /// No description provided for @stickerPackDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get stickerPackDescription;
+
+  /// No description provided for @stickerPackCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get stickerPackCreate;
+
+  /// No description provided for @stickerAddSticker.
+  ///
+  /// In en, this message translates to:
+  /// **'Add sticker'**
+  String get stickerAddSticker;
+
+  /// No description provided for @stickerSlugLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get stickerSlugLabel;
+
+  /// No description provided for @stickerAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get stickerAdd;
+
+  /// No description provided for @stickerDeletePack.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete pack'**
+  String get stickerDeletePack;
+
+  /// No description provided for @forumSearchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search forums'**
+  String get forumSearchTitle;
+
+  /// No description provided for @forumSearchPostsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search posts'**
+  String get forumSearchPostsTitle;
+
+  /// No description provided for @forumSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search forums or posts'**
+  String get forumSearchHint;
+
+  /// No description provided for @forumSearchCurrentForumHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search posts in this forum'**
+  String get forumSearchCurrentForumHint;
+
+  /// No description provided for @forumSearchForumsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Forums'**
+  String get forumSearchForumsHeader;
+
+  /// No description provided for @forumSearchPostsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Posts'**
+  String get forumSearchPostsHeader;
+
+  /// No description provided for @stickerNoPacks.
+  ///
+  /// In en, this message translates to:
+  /// **'No sticker packs'**
+  String get stickerNoPacks;
+
+  /// No description provided for @commonUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get commonUnknown;
 }
 
 class _AppLocalizationsDelegate

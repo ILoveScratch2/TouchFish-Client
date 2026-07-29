@@ -24,6 +24,8 @@ import '../screens/licenses_screen.dart';
 import '../screens/profile_edit_screen.dart';
 import '../screens/server_settings_screen.dart';
 import '../screens/account_management_screen.dart';
+import '../screens/sticker_screens.dart';
+import '../screens/forum_search_screen.dart';
 import '../services/auth_state.dart';
 import '../widgets/window_frame.dart';
 import '../utils/talker.dart';
@@ -38,6 +40,7 @@ class AppRoutes {
   static const String forum = '/forum';
   static const String forumDetail = '/forum/:forumId';
   static const String forumPostDetail = '/forum/:forumId/post/:postId';
+  static const String forumSearch = '/forum/search';
   static const String account = '/account';
   static const String admin = '/admin';
   static const String adminPendingForums = '/admin/pending-forums';
@@ -53,6 +56,8 @@ class AppRoutes {
   static const String about = '/about';
   static const String licenses = '/licenses';
   static const String profileEdit = '/profile/edit';
+  static const String stickerMarket = '/stickers';
+  static const String myStickers = '/stickers/mine';
 
   static const _publicPaths = {
     welcome,
@@ -235,6 +240,10 @@ class AppRoutes {
               builder: (context, state) => const ProfileEditScreen(),
             ),
             GoRoute(
+              path: forumSearch,
+              builder: (context, state) => const ForumSearchScreen(),
+            ),
+            GoRoute(
               path: '/forum/:forumId',
               builder: (context, state) {
                 final forumId = state.pathParameters['forumId']!;
@@ -273,9 +282,7 @@ class AppRoutes {
                         ),
                       ),
                     );
-                    // In wide mode the sidebar is always visible — suppress
-                    // the transition to avoid the entire shell (sidebar + content)
-                    // sliding in whenever a chat room is selected.
+                    // 宽的时候没动画（不然很奇怪）
                     return isWide
                         ? NoTransitionPage(
                             key: state.pageKey,
@@ -322,9 +329,8 @@ class AppRoutes {
                         roomId: roomId,
                       ),
                     );
-                    // Wide: no-transition — only the detail panel changes
-                    // (sidebar is already in place via ChatShellScreen).
-                    // Narrow: system push animation.
+                    // 宽的时候没动画（不然很奇怪）
+                    // 窄的时候才能德芙纵享丝滑
                     return isWide
                         ? NoTransitionPage(key: state.pageKey, child: shell)
                         : MaterialPage(child: shell);
@@ -347,6 +353,14 @@ class AppRoutes {
                   path: account,
                   pageBuilder: (context, state) =>
                       _mainSectionPage(context, state, const AccountScreen()),
+                ),
+                GoRoute(
+                  path: stickerMarket,
+                  builder: (context, state) => const StickerMarketplaceScreen(),
+                ),
+                GoRoute(
+                  path: myStickers,
+                  builder: (context, state) => const MyStickerPacksScreen(),
                 ),
                 GoRoute(
                   path: admin,

@@ -8,6 +8,7 @@ import '../screens/storage_management_screen.dart';
 import '../services/chat_data_service.dart';
 import '../services/local_message_store.dart';
 import '../services/media_proxy_service.dart';
+import '../utils/sticker_cache.dart';
 import 'app_alert_dialog.dart';
 import 'sheet_scaffold.dart';
 
@@ -23,6 +24,7 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
   double? _totalMiB;
   int _databaseBytes = 0;
   int _mediaCacheBytes = 0;
+  int _stickerCacheBytes = 0;
   String? _databasePath;
   bool _loading = true;
   bool _working = false;
@@ -50,8 +52,8 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
       _databaseBytes = await LocalMessageStore.instance.databaseSize();
       _databasePath = await LocalMessageStore.instance.databasePath();
       _mediaCacheBytes = await MediaProxyService.instance.cacheSize();
+      _stickerCacheBytes = await StickerCache.instance.sizeBytes;
     } catch (_) {
-      // Individual storage providers can be unavailable on unsupported hosts.
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -63,6 +65,22 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MiB';
     }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GiB';
+  }
+
+  Future<void> _clearStickerCache() async {
+    setState(() => _working = true);
+    await StickerCache.instance.clear();
+    if (!mounted) return;
+    setState(() {
+      _working = false;
+      _stickerCacheBytes = 0;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.settingsCacheCleared),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _clearMediaCache() async {
@@ -266,6 +284,17 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
           subtitle: Text(_formatBytes(_mediaCacheBytes)),
           trailing: TextButton(
             onPressed: _working ? null : _clearMediaCache,
+            child: Text(l10n.settingsClearCache),
+          ),
+        ),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+          minLeadingWidth: 48,
+          leading: const Icon(Icons.sticky_note_2_outlined),
+          title: Text(l10n.settingsClearStickerCache),
+          subtitle: Text(_formatBytes(_stickerCacheBytes)),
+          trailing: TextButton(
+            onPressed: _working ? null : _clearStickerCache,
             child: Text(l10n.settingsClearCache),
           ),
         ),

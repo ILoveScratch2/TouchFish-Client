@@ -73,7 +73,6 @@ class _SignatureEditorWidgetState extends State<SignatureEditorWidget> {
             TextField(
               controller: _controller,
               maxLines: 3,
-              maxLength: 100,
               decoration: InputDecoration(
                 hintText: l10n.accountSignaturePlaceholder,
                 border: const OutlineInputBorder(),

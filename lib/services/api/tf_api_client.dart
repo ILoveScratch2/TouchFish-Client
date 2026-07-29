@@ -11,6 +11,7 @@ import '../../models/message_model.dart';
 import '../../constants/app_constants.dart';
 import '../../models/user_profile.dart';
 import '../../models/forum_model.dart';
+import '../../models/sticker_model.dart';
 import '../../models/announcement_model.dart';
 import '../../models/notification_model.dart';
 import '../../models/file_attachment.dart';
@@ -89,6 +90,12 @@ class TfServerConfig {
   final String? verifyEmail;
   final Map<String, dynamic>? rateLimits;
   final Map<String, String> defaultAssetUrls;
+  final int minUsernameLength;
+  final int minPasswordLength;
+  final int maxStickerPacksPerUser;
+  final int maxStickersPerPack;
+  final int dailyStickerPackCreationLimit;
+  final int maxStickerSize;
 
   const TfServerConfig({
     required this.captcha,
@@ -106,6 +113,12 @@ class TfServerConfig {
     this.verifyEmail,
     this.rateLimits,
     this.defaultAssetUrls = const {},
+    this.minUsernameLength = 4,
+    this.minPasswordLength = 1,
+    this.maxStickerPacksPerUser = 24,
+    this.maxStickersPerPack = 24,
+    this.dailyStickerPackCreationLimit = -1,
+    this.maxStickerSize = -1,
   });
 
   static int _parseIntValue(dynamic value, int fallback) {
@@ -153,13 +166,19 @@ class TfServerConfig {
           ? Map<String, dynamic>.from(json['rate_limits'] as Map)
           : null,
       defaultAssetUrls: defaultAssetUrls,
+      minUsernameLength: _parseIntValue(json['min_username_length'], 4),
+      minPasswordLength: _parseIntValue(json['min_password_length'], 1),
+      maxStickerPacksPerUser: _parseIntValue(json['max_sticker_packs_per_user'], 24),
+      maxStickersPerPack: _parseIntValue(json['max_stickers_per_pack'], 24),
+      dailyStickerPackCreationLimit: _parseIntValue(json['daily_sticker_pack_creation_limit'], -1),
+      maxStickerSize: _parseIntValue(json['max_sticker_size'], -1),
     );
   }
 }
 
 class TfCaptchaInfo {
-  final String pic; // base64 encoded png
-  final String stamp; // captcha identifier token
+  final String pic; // base64 png
+  final String stamp; // captcha token
 
   const TfCaptchaInfo({required this.pic, required this.stamp});
 }
@@ -714,6 +733,10 @@ class TfApiClient {
     required int singleGroupMaxPeople,
     required int maxFileSize,
     required int maxMessageLength,
+    int? maxStickerPacksPerUser,
+    int? maxStickersPerPack,
+    int? dailyStickerPackCreationLimit,
+    int? maxStickerSize,
   }) async {
     final result = await secretPost(
       '/auth/server_settings/update',
@@ -725,6 +748,14 @@ class TfApiClient {
         'single_group_max_people': singleGroupMaxPeople,
         'max_file_size': maxFileSize,
         'max_message_length': maxMessageLength,
+        if (maxStickerPacksPerUser != null)
+          'max_sticker_packs_per_user': maxStickerPacksPerUser,
+        if (maxStickersPerPack != null)
+          'max_stickers_per_pack': maxStickersPerPack,
+        if (dailyStickerPackCreationLimit != null)
+          'daily_sticker_pack_creation_limit': dailyStickerPackCreationLimit,
+        if (maxStickerSize != null)
+          'max_sticker_size': maxStickerSize,
       },
       uid: uid,
       password: password,
@@ -1041,7 +1072,6 @@ class TfApiClient {
       if (response.statusCode != 200) return [];
       final data = jsonDecode(response.body);
       if (data is List) {
-        // Legacy format: plain list of rows
         return data
             .map(
               (row) => row is Map
@@ -1078,6 +1108,19 @@ class TfApiClient {
       talker.error('getPostList $fid failed', e);
       return [];
     }
+  }
+
+  Future<Map<String, dynamic>> searchForum(String query, {int? forumId, int offset = 0, int limit = 30}) async {
+    final baseUrl = await getBaseUrl();
+    final uri = Uri.parse('$baseUrl/forum/search').replace(queryParameters: {
+      'query': query,
+      'offset': '$offset',
+      'limit': '$limit',
+      if (forumId != null) 'fid': '$forumId',
+    });
+    final response = await _getRequest(uri.toString());
+    if (response.statusCode < 200 || response.statusCode >= 300) throw Exception('Forum search failed');
+    return Map<String, dynamic>.from(jsonDecode(response.body) as Map);
   }
 
   Future<ForumPost?> getPost(int fid, int pid) async {
@@ -1222,7 +1265,6 @@ class TfApiClient {
 
   // --- forum members ---
 
-  // Helper to detect boolean responses from server (ends with True/False)
   bool _isBoolResponse(String? result) {
     if (result == null) return false;
     return result.endsWith('True') || result.endsWith('False');
@@ -1240,7 +1282,7 @@ class TfApiClient {
       password: password,
     );
     if (result == null) return [];
-    if (_isBoolResponse(result)) return []; // access denied or boolean response
+    if (_isBoolResponse(result)) return [];
     try {
       final list = jsonDecode(result) as List;
       return list
@@ -1340,7 +1382,6 @@ class TfApiClient {
     return _parseBool(result);
   }
 
-  /// Returns list of [fid, role] pairs.
   Future<List<Map<String, int>>> getMyMemberships(
     int uid,
     String password,
@@ -1377,7 +1418,7 @@ class TfApiClient {
       {
         'forum_name': forumName,
         'introduction': introduction,
-        'request_id': ?requestId,
+        if (requestId != null) 'request_id': requestId,
       },
       uid: uid,
       password: password,
@@ -1592,7 +1633,6 @@ class TfApiClient {
     }
   }
 
-  /// Unified message send — returns {mid, status: 'sent'} or null.
   Future<Map<String, dynamic>?> sendMessage(
     int uid,
     String password, {
@@ -1657,6 +1697,80 @@ class TfApiClient {
     return utf8.decode(response.bodyBytes, allowMalformed: true);
   }
 
+  Future<Map<String, dynamic>> getStickerMarket({int offset = 0, int limit = 20, String query = '', String order = 'usage'}) async {
+    final baseUrl = await getBaseUrl();
+    final uri = Uri.parse('$baseUrl/sticker/market').replace(queryParameters: {'offset': '$offset', 'limit': '$limit', 'order': order, if (query.isNotEmpty) 'query': query});
+    final response = await _getRequest(uri.toString());
+    if (response.statusCode < 200 || response.statusCode >= 300) throw Exception('Failed to load sticker market');
+    return Map<String, dynamic>.from(jsonDecode(response.body) as Map);
+  }
+
+  Future<StickerPack?> getStickerPack(String id) async {
+    final baseUrl = await getBaseUrl();
+    final response = await _getRequest('$baseUrl/sticker/pack/${Uri.encodeComponent(id)}');
+    if (response.statusCode < 200 || response.statusCode >= 300) return null;
+    return StickerPack.fromMap(Map<String, dynamic>.from(jsonDecode(response.body) as Map));
+  }
+
+  Future<StickerItem?> lookupSticker(String identifier) async {
+    final baseUrl = await getBaseUrl();
+    final response = await _getRequest('$baseUrl/sticker/lookup/${Uri.encodeComponent(identifier)}');
+    if (response.statusCode < 200 || response.statusCode >= 300) return null;
+    return StickerItem.fromMap(Map<String, dynamic>.from(jsonDecode(response.body) as Map));
+  }
+
+  Future<List<OwnedStickerPack>> getMyStickerPacks(int uid, String password) async {
+    final raw = await secretPost('/sticker/mine', {}, uid: uid, password: password);
+    final decoded = jsonDecode(raw ?? '[]');
+    if (decoded is! List) return [];
+    return decoded.whereType<Map>().map((item) => OwnedStickerPack.fromMap(Map<String, dynamic>.from(item))).toList();
+  }
+
+  Future<List<StickerPack>> getCreatedStickerPacks(int uid, String password) async {
+    final raw = await secretPost('/sticker/created', {}, uid: uid, password: password);
+    final decoded = jsonDecode(raw ?? '{}');
+    final list = decoded is Map ? decoded['items'] : null;
+    return (list as List? ?? const []).whereType<Map>().map((item) => StickerPack.fromMap(Map<String, dynamic>.from(item))).toList();
+  }
+
+  Future<Map<String, dynamic>?> createStickerPack(int uid, String password, {required String name, required String prefix, String description = ''}) async {
+    return _parseJsonMap(await secretPost('/sticker/pack/create', {'name': name, 'prefix': prefix, 'description': description}, uid: uid, password: password));
+  }
+
+  Future<Map<String, dynamic>?> createStickerItem(int uid, String password, {required String packId, required String slug, String? name, required String fileHash, int size = 0, int mode = 0}) async {
+    return _parseJsonMap(await secretPost('/sticker/item/create', {'pack_id': packId, 'slug': slug, 'name': name, 'file_hash': fileHash, 'size': size, 'mode': mode}, uid: uid, password: password));
+  }
+
+  Future<bool> setStickerOwnership(int uid, String password, String packId, bool owned) async {
+    final value = _parseJsonMap(await secretPost('/sticker/ownership', {'pack_id': packId, 'owned': owned}, uid: uid, password: password));
+    return value?['success'] == true;
+  }
+
+  Future<bool> reorderStickerOwnership(int uid, String password, List<String> packIds) async {
+    final value = _parseJsonMap(await secretPost('/sticker/ownership/reorder', {'pack_ids': packIds}, uid: uid, password: password));
+    return value?['success'] == true;
+  }
+
+  Future<bool> updateStickerPack(int uid, String password, String packId, {String? name, String? prefix, String? description}) async {
+    final result = _parseJsonMap(await secretPost('/sticker/pack/update', {'pack_id': packId, if (name != null) 'name': name, if (prefix != null) 'prefix': prefix, if (description != null) 'description': description}, uid: uid, password: password));
+    return result?['success'] == true;
+  }
+
+  Future<bool> deleteStickerPack(int uid, String password, String packId) async {
+    final result = _parseJsonMap(await secretPost('/sticker/pack/delete', {'pack_id': packId}, uid: uid, password: password));
+    return result?['success'] == true;
+  }
+
+  Future<bool> deleteStickerItem(int uid, String password, String packId, String stickerId) async {
+    final result = _parseJsonMap(await secretPost('/sticker/item/delete', {'pack_id': packId, 'sticker_id': stickerId}, uid: uid, password: password));
+    return result?['success'] == true;
+  }
+
+  Future<bool> reorderStickerItems(int uid, String password, String packId, List<String> stickerIds) async {
+    final result = _parseJsonMap(await secretPost('/sticker/item/reorder', {'pack_id': packId, 'sticker_ids': stickerIds}, uid: uid, password: password));
+    return result?['success'] == true;
+  }
+
   Future<FileAttachment?> getFileMetadata(String hash) async {
     try {
       final url = await getFileUrl(hash);
@@ -1688,7 +1802,6 @@ class TfApiClient {
     }
   }
 
-  /// Fetch the chat room list with last message and partner profile.
   Future<List<TfChatListItem>> queryChatList(int uid, String password) async {
     final result = await secretPost(
       '/chat/list',
@@ -1732,7 +1845,6 @@ class TfApiClient {
     return _parseBool(result);
   }
 
-  /// Fetch paginated message history. Pass [groupId] for group chats.
   Future<List<ChatMessage>> queryMessageHistory(
     int uid,
     String password,

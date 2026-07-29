@@ -7,6 +7,7 @@ import '../models/forum_model.dart';
 import '../models/user_profile.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/markdown_renderer.dart';
+import '../widgets/sticker_text_renderer.dart';
 import '../models/settings_service.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
@@ -18,6 +19,7 @@ import '../services/draft_service.dart';
 import '../widgets/app_alert_dialog.dart';
 
 const double _kPostDetailMaxWidth = 680;
+final _stickerTestPattern = RegExp(r':[A-Za-z0-9_]+\+[A-Za-z0-9_-]+:');
 
 class _CommentData {
   final ForumComment comment;
@@ -400,7 +402,9 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
           ),
         ],
         const SizedBox(height: 12),
-        if (enableMarkdown)
+        if (_stickerTestPattern.hasMatch(post.content))
+          StickerTextRenderer(text: post.content, style: Theme.of(context).textTheme.bodyLarge)
+        else if (enableMarkdown)
           MarkdownRenderer(data: post.content)
         else
           Text(post.content, style: Theme.of(context).textTheme.bodyLarge),
@@ -506,7 +510,9 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  if (enableMarkdown)
+                  if (_stickerTestPattern.hasMatch(comment.content))
+                    StickerTextRenderer(text: comment.content, style: Theme.of(context).textTheme.bodyMedium)
+                  else if (enableMarkdown)
                     MarkdownRenderer(data: comment.content)
                   else
                     Text(

@@ -198,6 +198,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
       await AuthState.instance.refreshProfile();
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -206,7 +207,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-      if (allOk) context.pop();
+      if (allOk && mounted) context.pop();
     } catch (e) {
       talker.error('_saveProfile failed', e);
       if (mounted) {
@@ -321,16 +322,14 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   const SizedBox(height: 16),
 
                   // Username (readonly)
-                  TextField(
+                  TextFormField(
                     decoration: InputDecoration(
                       labelText: l10n.profileEditUsername,
                       helperText: l10n.profileEditUsernameCannotChange,
                       prefixIcon: const Icon(Symbols.person),
                       prefixText: '@',
                     ),
-                    controller: TextEditingController(
-                      text: _currentUser!.username,
-                    ),
+                    initialValue: _currentUser!.username,
                     readOnly: true,
                   ),
 
@@ -356,7 +355,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       prefixIcon: const Icon(Symbols.chat_bubble),
                     ),
                     controller: _bioController,
-                    maxLength: 100,
                   ),
 
                   const SizedBox(height: 16),
@@ -371,7 +369,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     ),
                     controller: _introductionController,
                     maxLines: 6,
-                    maxLength: 500,
                   ),
 
                   const SizedBox(height: 24),

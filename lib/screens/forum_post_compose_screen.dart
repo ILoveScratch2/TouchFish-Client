@@ -14,6 +14,7 @@ import '../utils/talker.dart';
 import '../models/file_attachment.dart';
 import '../services/draft_service.dart';
 import '../widgets/file_attachment_view.dart';
+import '../widgets/stickers/sticker_picker.dart';
 
 class ForumPostComposeSheet extends StatefulWidget {
   final String forumId;
@@ -258,7 +259,8 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                                   ),
                                 ),
                                 validator: (value) {
-                                  if (value == null || value.isEmpty) {
+                                  if (_contentController.text.trim().isEmpty &&
+                                      (value == null || value.trim().isEmpty)) {
                                     return l10n.forumPostTitleRequired;
                                   }
                                   return null;
@@ -406,6 +408,11 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                         icon: const Icon(Icons.link, size: 20),
                         tooltip: l10n.forumMdLink,
                       ),
+                      IconButton(
+                        onPressed: _openStickerPanel,
+                        icon: const Icon(Icons.sticky_note_2_outlined, size: 20),
+                        tooltip: l10n.stickerMarketTitle,
+                      ),
                     ],
                   ),
                 ),
@@ -421,6 +428,35 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
           ),
         ),
       ),
+    );
+  }
+
+  void _openStickerPanel() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.5,
+          child: StickerPickerPanel(
+            onPick: (pack, sticker) {
+              _insertText(':${pack.prefix}+${sticker.slug}:');
+              Navigator.pop(context);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _insertText(String value) {
+    final sel = _contentController.selection;
+    final start = sel.start < 0 ? _contentController.text.length : sel.start;
+    final end = sel.end < 0 ? _contentController.text.length : sel.end;
+    _contentController.value = _contentController.value.copyWith(
+      text: _contentController.text.replaceRange(start, end, value),
+      selection: TextSelection.collapsed(offset: start + value.length),
     );
   }
 
@@ -522,7 +558,9 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
     if (_isUploadingAttachment) return;
-    if (_contentController.text.trim().isEmpty) {
+    final hasContent = _contentController.text.trim().isNotEmpty;
+    final hasTitle = widget.isReply || _titleController.text.trim().isNotEmpty;
+    if (!hasContent && !hasTitle) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.forumPostContentRequired)));

@@ -658,6 +658,18 @@ class AppLocalizationsZh extends AppLocalizations {
       '每条消息的最大字符数（最小值为 1）。';
 
   @override
+  String get adminServerFieldMaxStickerPacks => '每用户贴图包上限';
+
+  @override
+  String get adminServerFieldMaxStickersPerPack => '每贴图包贴图上限';
+
+  @override
+  String get adminServerFieldMaxStickerSize => '贴图最大大小（字节，-1 不限）';
+
+  @override
+  String get adminServerFieldDailyStickerPackLimit => '每日创建贴图包上限';
+
+  @override
   String get adminServerFieldApiPort => 'API 端口';
 
   @override
@@ -1308,8 +1320,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutFontLicense => '字体许可';
 
   @override
-  String get aboutFontLicenseDialogTitle =>
-      'HarmonyOS Sans Fonts License Agreement';
+  String get aboutFontLicenseDialogTitle => '字体许可';
 
   @override
   String get aboutFontLicenseDescription =>
@@ -2587,5 +2598,95 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get settingsAutoLoadStickersTitle => '自动加载贴图和表情';
+
+  @override
+  String get settingsAutoLoadStickersDesc => '自动下载并缓存贴图。关闭后需手动点击贴图才会加载。';
+
+  @override
+  String get settingsClearStickerCache => '清除贴图缓存';
+
+  @override
+  String get settingsClearStickerCacheDescription => '删除本地缓存的贴图文件。';
+
+  @override
   String get settingsClearLocalMessages => '清除';
+
+  @override
+  String get stickerMarketTitle => '贴图';
+
+  @override
+  String get stickerSortByDate => '按时间排序';
+
+  @override
+  String get stickerSortByUsage => '按热度排序';
+
+  @override
+  String get stickerMarketTab => '贴图市场';
+
+  @override
+  String get stickerOwnedTab => '已收藏';
+
+  @override
+  String get stickerSearchHint => '搜索贴图包';
+
+  @override
+  String get stickerRemovePack => '移除贴图包';
+
+  @override
+  String get stickerAddPack => '添加贴图包';
+
+  @override
+  String get stickerMyPacks => '我的贴图包';
+
+  @override
+  String get stickerCreatePack => '创建贴图包';
+
+  @override
+  String get stickerPackName => '名称';
+
+  @override
+  String get stickerPackPrefix => '前缀';
+
+  @override
+  String get stickerPackDescription => '简介';
+
+  @override
+  String get stickerPackCreate => '创建';
+
+  @override
+  String get stickerAddSticker => '添加贴图';
+
+  @override
+  String get stickerSlugLabel => '代码';
+
+  @override
+  String get stickerAdd => '添加';
+
+  @override
+  String get stickerDeletePack => '删除贴图包';
+
+  @override
+  String get forumSearchTitle => '搜索论坛';
+
+  @override
+  String get forumSearchPostsTitle => '搜索帖子';
+
+  @override
+  String get forumSearchHint => '搜索论坛或帖子';
+
+  @override
+  String get forumSearchCurrentForumHint => '搜索当前论坛帖子';
+
+  @override
+  String get forumSearchForumsHeader => '论坛';
+
+  @override
+  String get forumSearchPostsHeader => '帖子';
+
+  @override
+  String get stickerNoPacks => '暂无已收藏贴图包';
+
+  @override
+  String get commonUnknown => '未知';
 }

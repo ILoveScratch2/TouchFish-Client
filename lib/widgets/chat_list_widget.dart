@@ -135,9 +135,11 @@ class ChatListWidget extends StatelessWidget {
       return l10n.chatYesterday;
     } else if (difference.inDays < 7) {
       // 一周内显示星期
-      return DateFormat.E(
-        Localizations.localeOf(context).toString(),
-      ).format(time);
+      final locale = Localizations.localeOf(context);
+      final dateLocale = locale.languageCode == 'och'
+          ? 'zh'
+          : locale.toString();
+      return DateFormat.E(dateLocale).format(time);
     } else {
       // 超过一周显示日期
       return DateFormat('MM/dd').format(time);

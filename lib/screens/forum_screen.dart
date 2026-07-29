@@ -234,6 +234,11 @@ class _ForumScreenState extends State<ForumScreen> {
           title: Text(l10n.forumTitle),
           actions: [
             IconButton(
+              tooltip: l10n.forumSearchTitle,
+              onPressed: () => context.push('/forum/search'),
+              icon: const Icon(Icons.search),
+            ),
+            IconButton(
               tooltip: l10n.notificationTabNotifications,
               onPressed: _showNotifications,
               icon: _notificationService.forumUnreadCount > 0

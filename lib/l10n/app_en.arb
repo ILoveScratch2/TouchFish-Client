@@ -265,6 +265,10 @@
   "adminServerFieldMaxFileSize": "Max File Size",
   "adminServerFieldMaxMessageLength": "Max Message Length",
   "adminServerFieldMaxMessageLengthDescription": "Maximum characters per message (minimum 1).",
+  "adminServerFieldMaxStickerPacks": "Sticker packs per user",
+  "adminServerFieldMaxStickersPerPack": "Stickers per pack",
+  "adminServerFieldMaxStickerSize": "Max sticker size (bytes, -1 unlimited)",
+  "adminServerFieldDailyStickerPackLimit": "Daily pack creation limit",
   "adminServerFieldApiPort": "API Port",
   "adminServerFieldTcpPort": "TCP Port",
   "adminServerFieldEmailActivation": "Email Activation",
@@ -1094,5 +1098,38 @@
       "size": {"type": "String"}
     }
   },
-  "settingsClearLocalMessages": "Clear"
+  "settingsAutoLoadStickersTitle": "Auto-load stickers",
+  "settingsAutoLoadStickersDesc": "Download and cache sticker images automatically. When off, tap a sticker to load it.",
+  "settingsClearStickerCache": "Clear sticker cache",
+  "settingsClearStickerCacheDescription": "Delete locally cached sticker images.",
+  "settingsClearLocalMessages": "Clear",
+
+  "stickerMarketTitle": "Stickers",
+  "stickerSortByDate": "Sort by date",
+  "stickerSortByUsage": "Sort by popularity",
+  "stickerMarketTab": "Market",
+  "stickerOwnedTab": "Owned",
+  "stickerSearchHint": "Search sticker packs",
+  "stickerRemovePack": "Remove pack",
+  "stickerAddPack": "Add pack",
+  "stickerMyPacks": "My sticker packs",
+  "stickerCreatePack": "Create sticker pack",
+  "stickerPackName": "Name",
+  "stickerPackPrefix": "Prefix",
+  "stickerPackDescription": "Description",
+  "stickerPackCreate": "Create",
+  "stickerAddSticker": "Add sticker",
+  "stickerSlugLabel": "Code",
+  "stickerAdd": "Add",
+  "stickerDeletePack": "Delete pack",
+
+  "forumSearchTitle": "Search forums",
+  "forumSearchPostsTitle": "Search posts",
+  "forumSearchHint": "Search forums or posts",
+  "forumSearchCurrentForumHint": "Search posts in this forum",
+  "forumSearchForumsHeader": "Forums",
+  "forumSearchPostsHeader": "Posts",
+
+  "stickerNoPacks": "No sticker packs",
+  "commonUnknown": "Unknown"
 }
