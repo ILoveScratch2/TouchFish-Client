@@ -32,6 +32,9 @@ class MessageBubble extends HookWidget {
   final ValueChanged<int>? onQuoteTap;
   final bool showAvatar;
   final bool canRecall;
+  final bool isPinned;
+  final bool canPin;
+  final VoidCallback? onPinToggle;
 
   const MessageBubble({
     super.key,
@@ -42,6 +45,9 @@ class MessageBubble extends HookWidget {
     this.onQuoteTap,
     this.showAvatar = true,
     this.canRecall = false,
+    this.isPinned = false,
+    this.canPin = false,
+    this.onPinToggle,
   });
 
   @override
@@ -60,6 +66,9 @@ class MessageBubble extends HookWidget {
       onQuoteTap: onQuoteTap,
       showAvatar: showAvatar,
       canRecall: canRecall,
+      isPinned: isPinned,
+      canPin: canPin,
+      onPinToggle: onPinToggle,
     );
   }
 }
@@ -73,6 +82,9 @@ class _MessageBubbleContent extends StatefulWidget {
   final ValueChanged<int>? onQuoteTap;
   final bool showAvatar;
   final bool canRecall;
+  final bool isPinned;
+  final bool canPin;
+  final VoidCallback? onPinToggle;
 
   const _MessageBubbleContent({
     required this.message,
@@ -83,6 +95,9 @@ class _MessageBubbleContent extends StatefulWidget {
     this.onQuoteTap,
     required this.showAvatar,
     required this.canRecall,
+    this.isPinned = false,
+    this.canPin = false,
+    this.onPinToggle,
   });
 
   @override
@@ -164,6 +179,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
     if (!widget.message.isDeleted && widget.message.mid != null) {
       width += 64;
     }
+    if (widget.canPin) width += 32;
     if (widget.canRecall) width += 41;
     return width;
   }
@@ -221,6 +237,9 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
         onForward: widget.onForward,
         onRecall: widget.onRecall,
         canRecall: widget.canRecall,
+        isPinned: widget.isPinned,
+        canPin: widget.canPin,
+        onPinToggle: widget.onPinToggle,
       ),
     );
   }
@@ -269,17 +288,35 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
               title: Text(l10n.messageActionRecall),
             ),
           ),
+        if (widget.canPin)
+          PopupMenuItem(
+            value: 'pin',
+            child: ListTile(
+              dense: true,
+              leading: Icon(
+                Symbols.push_pin,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: Text(
+                widget.isPinned
+                    ? l10n.messageActionUnpin
+                    : l10n.messageActionPin,
+              ),
+            ),
+          ),
       ],
     );
     if (selected == 'reply') widget.onReply?.call(widget.message);
     if (selected == 'forward') widget.onForward?.call(widget.message);
     if (selected == 'recall') widget.onRecall?.call(widget.message);
+    if (selected == 'pin') widget.onPinToggle?.call();
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
     final textColor = widget.message.isMe
         ? colorScheme.onPrimaryContainer
         : colorScheme.onSurfaceVariant;
@@ -325,6 +362,30 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                           : CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (widget.isPinned)
+                          Padding(
+                            padding: EdgeInsets.only(
+                              left: widget.message.isMe ? 0 : 40,
+                              bottom: 2,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Symbols.push_pin,
+                                  size: 12,
+                                  color: textColor.withValues(alpha: 0.6),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  l10n.pinnedMessageLabel,
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: textColor.withValues(alpha: 0.6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         if (!widget.message.isMe && widget.showAvatar)
                           Padding(
                             padding: const EdgeInsets.only(left: 40, bottom: 4),
@@ -442,6 +503,9 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
       onRecall: widget.canRecall
           ? () => widget.onRecall?.call(widget.message)
           : null,
+      isPinned: widget.isPinned,
+      canPin: widget.canPin,
+      onPinToggle: widget.onPinToggle,
     );
   }
 
@@ -872,11 +936,17 @@ class _MessageHoverActionMenu extends StatelessWidget {
   final VoidCallback? onReply;
   final VoidCallback? onForward;
   final VoidCallback? onRecall;
+  final bool isPinned;
+  final bool canPin;
+  final VoidCallback? onPinToggle;
 
   const _MessageHoverActionMenu({
     required this.onReply,
     required this.onForward,
     this.onRecall,
+    this.isPinned = false,
+    this.canPin = false,
+    this.onPinToggle,
   });
 
   @override
@@ -918,6 +988,30 @@ class _MessageHoverActionMenu extends StatelessWidget {
                 padding: EdgeInsets.zero,
               ),
             ),
+          if (canPin) ...[
+            Container(
+              width: 1,
+              height: 24,
+              color: Theme.of(context).colorScheme.outlineVariant,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+            ),
+            SizedBox.square(
+              dimension: 32,
+              child: IconButton(
+                icon: Icon(
+                  Symbols.push_pin,
+                  size: 16,
+                  color: isPinned
+                      ? Theme.of(context).colorScheme.error
+                      : null,
+                ),
+                onPressed: onPinToggle,
+                tooltip:
+                    isPinned ? l10n.messageActionUnpin : l10n.messageActionPin,
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ],
           if (onRecall != null) ...[
             Container(
               width: 1,
@@ -947,6 +1041,9 @@ class _MessageActionSheet extends StatelessWidget {
   final ValueChanged<ChatMessage>? onForward;
   final ValueChanged<ChatMessage>? onRecall;
   final bool canRecall;
+  final bool isPinned;
+  final bool canPin;
+  final VoidCallback? onPinToggle;
 
   const _MessageActionSheet({
     required this.message,
@@ -954,6 +1051,9 @@ class _MessageActionSheet extends StatelessWidget {
     this.onForward,
     this.onRecall,
     required this.canRecall,
+    this.isPinned = false,
+    this.canPin = false,
+    this.onPinToggle,
   });
 
   @override
@@ -981,6 +1081,18 @@ class _MessageActionSheet extends StatelessWidget {
               onTap: () {
                 Navigator.pop(context);
                 onForward?.call(message);
+              },
+            ),
+          ],
+          if (canPin) ...[
+            const Divider(height: 17),
+            _ActionListTile(
+              icon: Symbols.push_pin,
+              label:
+                  isPinned ? l10n.messageActionUnpin : l10n.messageActionPin,
+              onTap: () {
+                Navigator.pop(context);
+                onPinToggle?.call();
               },
             ),
           ],

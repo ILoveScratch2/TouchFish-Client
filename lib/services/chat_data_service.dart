@@ -745,6 +745,10 @@ class ChatDataService extends ChangeNotifier {
       loadContactsAndRooms();
       return;
     }
+    if (eventType == 'messages.pinned' || eventType == 'messages.unpinned') {
+      notifyListeners();
+      return;
+    }
     if (eventType != 'message.plain' &&
         eventType != 'message.file') {
       return;

@@ -1023,6 +1023,34 @@ class AppLocalizationsOch extends AppLocalizations {
   String get messageActionRecall => '撤回';
 
   @override
+  String get messageActionPin => '置頂';
+
+  @override
+  String get messageActionUnpin => '取消置頂';
+
+  @override
+  String get pinnedMessageLabel => '已置頂';
+
+  @override
+  String get pinnedMessagesTitle => '置頂訊息';
+
+  @override
+  String get noPinnedMessages => '暫無置頂訊息';
+
+  @override
+  String get viewAllPinned => '查看全部';
+
+  @override
+  String pinnedMessageCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 條置頂訊息',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get messageRecallConfirmTitle => '撤回消息乎？';
 
   @override

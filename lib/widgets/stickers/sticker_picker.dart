@@ -107,6 +107,7 @@ class _StickerPickerPanelState extends State<StickerPickerPanel> {
             itemBuilder: (_, index) {
               final sticker = pack.stickers[index];
               return StickerTile(
+                key: ValueKey(sticker.fileHash),
                 sticker: sticker,
                 onTap: () => widget.onPick(pack, sticker),
                 onLongPress: widget.onLongPress == null

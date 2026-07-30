@@ -39,6 +39,7 @@ class StickerTextRenderer extends StatelessWidget {
       spans.add(WidgetSpan(
         alignment: PlaceholderAlignment.middle,
         child: _InlineSticker(
+          key: ValueKey(identifier),
           identifier: identifier,
           size: stickerSize,
           fallback: match.group(0)!,
@@ -61,6 +62,7 @@ class _InlineSticker extends StatefulWidget {
   final String fallback;
   final TextStyle? style;
   const _InlineSticker({
+    super.key,
     required this.identifier,
     required this.size,
     required this.fallback,
@@ -71,6 +73,7 @@ class _InlineSticker extends StatefulWidget {
 }
 
 class _InlineStickerState extends State<_InlineSticker> {
+  static final Map<String, StickerItem?> _lookupCache = {};
   StickerItem? _item;
   bool _loading = true;
 
@@ -81,8 +84,15 @@ class _InlineStickerState extends State<_InlineSticker> {
   }
 
   Future<void> _lookup() async {
+    // 做干净的奥赛
+    if (_lookupCache.containsKey(widget.identifier)) {
+      _item = _lookupCache[widget.identifier];
+      _loading = false;
+      return;
+    }
     try {
       final item = await TfApiClient.instance.lookupSticker(widget.identifier);
+      _lookupCache[widget.identifier] = item;
       if (mounted) setState(() { _item = item; _loading = false; });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
@@ -168,7 +178,11 @@ class _InlineStickerState extends State<_InlineSticker> {
       child: SizedBox(
         width: widget.size,
         height: widget.size,
-        child: StickerImage(hash: item.fileHash, fileType: item.fileType),
+        child: StickerImage(
+          key: ValueKey('${item.fileHash}_${item.fileType}'),
+          hash: item.fileHash,
+          fileType: item.fileType,
+        ),
       ),
     );
   }

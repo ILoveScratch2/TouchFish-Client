@@ -2086,6 +2086,48 @@ abstract class AppLocalizations {
   /// **'Recall'**
   String get messageActionRecall;
 
+  /// No description provided for @messageActionPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin'**
+  String get messageActionPin;
+
+  /// No description provided for @messageActionUnpin.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin'**
+  String get messageActionUnpin;
+
+  /// No description provided for @pinnedMessageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned'**
+  String get pinnedMessageLabel;
+
+  /// No description provided for @pinnedMessagesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned Messages'**
+  String get pinnedMessagesTitle;
+
+  /// No description provided for @noPinnedMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'No pinned messages'**
+  String get noPinnedMessages;
+
+  /// No description provided for @viewAllPinned.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get viewAllPinned;
+
+  /// No description provided for @pinnedMessageCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 pinned message} other{{count} pinned messages}}'**
+  String pinnedMessageCount(num count);
+
   /// No description provided for @messageRecallConfirmTitle.
   ///
   /// In en, this message translates to:

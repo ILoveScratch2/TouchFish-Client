@@ -12,7 +12,7 @@ class StickerCache {
 
   Future<Directory> get _directory async {
     if (_cacheDir != null) return _cacheDir!;
-    final base = await getTemporaryDirectory();
+    final base = await getApplicationDocumentsDirectory();
     _cacheDir = Directory('${base.path}${Platform.pathSeparator}sticker_cache');
     if (!await _cacheDir!.exists()) {
       await _cacheDir!.create(recursive: true);

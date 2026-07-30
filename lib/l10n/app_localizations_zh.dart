@@ -1024,6 +1024,34 @@ class AppLocalizationsZh extends AppLocalizations {
   String get messageActionRecall => '撤回';
 
   @override
+  String get messageActionPin => '置顶';
+
+  @override
+  String get messageActionUnpin => '取消置顶';
+
+  @override
+  String get pinnedMessageLabel => '已置顶';
+
+  @override
+  String get pinnedMessagesTitle => '置顶消息';
+
+  @override
+  String get noPinnedMessages => '暂无置顶消息';
+
+  @override
+  String get viewAllPinned => '查看全部';
+
+  @override
+  String pinnedMessageCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 条置顶消息',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get messageRecallConfirmTitle => '撤回消息？';
 
   @override

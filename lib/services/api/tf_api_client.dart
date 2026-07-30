@@ -2011,6 +2011,59 @@ class TfApiClient {
     return _parseBool(result);
   }
 
+  Future<bool> pinMessage(
+    int uid,
+    String password,
+    int gid,
+    int mid,
+  ) async {
+    final result = await secretPost(
+      '/group/pin_message',
+      {'gid': gid, 'mid': mid},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<bool> unpinMessage(
+    int uid,
+    String password,
+    int gid,
+    int pinId,
+  ) async {
+    final result = await secretPost(
+      '/group/unpin_message',
+      {'gid': gid, 'pin_id': pinId},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  Future<List<PinnedMessage>> getPinnedMessages(
+    int uid,
+    String password,
+    int gid,
+  ) async {
+    final result = await secretPost(
+      '/group/pinned_messages',
+      {'gid': gid},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return <PinnedMessage>[];
+    try {
+      final list = jsonDecode(result) as List<dynamic>;
+      return list
+          .map((e) => PinnedMessage.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      talker.error('getPinnedMessages parse failed', e);
+      return <PinnedMessage>[];
+    }
+  }
+
   Future<Map<String, dynamic>?> joinGroup(
     int uid,
     String password,

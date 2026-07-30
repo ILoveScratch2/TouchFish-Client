@@ -564,3 +564,29 @@ QuotedMessagePreview? _quotePreview(dynamic raw, int? fallbackMid) {
   }
   return null;
 }
+
+class PinnedMessage {
+  final int pinId;
+  final int messageId;
+  final int groupId;
+  final int pinnedByUid;
+  final double createdAt;
+
+  const PinnedMessage({
+    required this.pinId,
+    required this.messageId,
+    required this.groupId,
+    required this.pinnedByUid,
+    required this.createdAt,
+  });
+
+  factory PinnedMessage.fromJson(Map<String, dynamic> json) {
+    return PinnedMessage(
+      pinId: (json['pin_id'] as num).toInt(),
+      messageId: (json['message_id'] as num).toInt(),
+      groupId: (json['group_id'] as num).toInt(),
+      pinnedByUid: (json['pinned_by_uid'] as num).toInt(),
+      createdAt: (json['created_at'] as num).toDouble(),
+    );
+  }
+}

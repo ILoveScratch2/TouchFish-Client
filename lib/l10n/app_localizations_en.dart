@@ -1073,6 +1073,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageActionRecall => 'Recall';
 
   @override
+  String get messageActionPin => 'Pin';
+
+  @override
+  String get messageActionUnpin => 'Unpin';
+
+  @override
+  String get pinnedMessageLabel => 'Pinned';
+
+  @override
+  String get pinnedMessagesTitle => 'Pinned Messages';
+
+  @override
+  String get noPinnedMessages => 'No pinned messages';
+
+  @override
+  String get viewAllPinned => 'View all';
+
+  @override
+  String pinnedMessageCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pinned messages',
+      one: '1 pinned message',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get messageRecallConfirmTitle => 'Recall message?';
 
   @override

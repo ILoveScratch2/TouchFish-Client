@@ -33,6 +33,10 @@ class StickerImage extends StatefulWidget {
 }
 
 class _StickerImageState extends State<StickerImage> {
+  static int _activeDownloads = 0;
+  static const int _maxConcurrentDownloads = 2;
+  static final List<Completer<void>> _downloadQueue = [];
+
   Future<_StickerPayload>? _payload;
   bool _loading = false;
 
@@ -55,6 +59,24 @@ class _StickerImageState extends State<StickerImage> {
     }
   }
 
+  static Future<void> _acquireDownloadSlot() async {
+    if (_activeDownloads < _maxConcurrentDownloads) {
+      _activeDownloads++;
+      return;
+    }
+    final completer = Completer<void>();
+    _downloadQueue.add(completer);
+    await completer.future;
+  }
+
+  static void _releaseDownloadSlot() {
+    _activeDownloads--;
+    if (_downloadQueue.isNotEmpty) {
+      _activeDownloads++;
+      _downloadQueue.removeAt(0).complete();
+    }
+  }
+
   Future<_StickerPayload> _load() async {
     // Check disk cache first
     final cached = await StickerCache.instance.get(widget.hash);
@@ -63,15 +85,20 @@ class _StickerImageState extends State<StickerImage> {
       return _StickerPayload(bytes, detectFileType(bytes));
     }
 
-    final url = await TfApiClient.instance.getFileUrl(widget.hash);
-    final response =
-        await http.get(Uri.parse(url)).timeout(const Duration(seconds: 10));
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Sticker unavailable');
+    await _acquireDownloadSlot();
+    try {
+      final url = await TfApiClient.instance.getFileUrl(widget.hash);
+      final response =
+          await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('Sticker unavailable');
+      }
+      final bytes = response.bodyBytes;
+      unawaited(StickerCache.instance.put(widget.hash, bytes));
+      return _StickerPayload(bytes, detectFileType(bytes));
+    } finally {
+      _releaseDownloadSlot();
     }
-    final bytes = response.bodyBytes;
-    unawaited(StickerCache.instance.put(widget.hash, bytes));
-    return _StickerPayload(bytes, detectFileType(bytes));
   }
 
   void _tapToLoad() {
