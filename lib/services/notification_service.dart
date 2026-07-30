@@ -186,32 +186,23 @@ class NotificationService extends ChangeNotifier {
       List<NotificationInfo> fetched;
       final shouldProcessAsHistorical =
           _isInitialLoad || _isFirstFetchForSession;
-      if (_isInitialLoad) {
-        talker.info(
-          'NotificationService: initial load (queryAll) for uid=$uid',
-        );
-        fetched = await TfApiClient.instance.queryAllNotifications(
-          uid,
-          password,
-        );
-      } else {
-        fetched = await TfApiClient.instance.queryNotificationsAfter(
-          uid,
-          password,
-          _lastFetchTime,
-        );
+      // Always use time-based fetch to avoid pulling every notification ever.
+      // If no previous fetch time is recorded, look back 7 days.
+      var since = _lastFetchTime;
+      if (since <= 0) {
+        since = (DateTime.now().millisecondsSinceEpoch / 1000) - 7 * 86400;
       }
+      fetched = await TfApiClient.instance.queryNotificationsAfter(
+        uid,
+        password,
+        since,
+      );
 
       if (_activeUid != uid || _activeBaseUrl != baseUrl) return;
 
       talker.info(
-        'NotificationService: fetched ${fetched.length} notifications (isInitialLoad=$_isInitialLoad, lastFetchTime=$_lastFetchTime)',
+        'NotificationService: fetched ${fetched.length} notifications (lastFetchTime=$_lastFetchTime)',
       );
-      for (final n in fetched) {
-        talker.info(
-          '  notif: event=${n.event}, senderRaw=${n.senderRaw}, senderUid=${n.senderUid}, content=${n.content}',
-        );
-      }
 
       if (fetched.isNotEmpty) {
         _isInitialLoad = false;
