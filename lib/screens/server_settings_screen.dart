@@ -301,37 +301,89 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     return value ? 'true' : 'false';
   }
 
+  Widget _sectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _numberField({
+    required TextEditingController controller,
+    required String labelText,
+    required String? helperText,
+    required IconData icon,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: TextField(
+        controller: controller,
+        keyboardType: const TextInputType.numberWithOptions(signed: true),
+        decoration: InputDecoration(
+          labelText: labelText,
+          helperText: helperText,
+          prefixIcon: Icon(icon),
+          border: const OutlineInputBorder(),
+          isDense: true,
+        ),
+      ),
+    );
+  }
+
   Widget _buildFormCard(BuildContext context, AppLocalizations l10n) {
     return Card(
       margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.adminServerSettings,
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.adminServerSettings,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.adminServerSettingsDescription,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.adminServerSettingsDescription,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
+          ),
+          const Divider(height: 1),
+          // General
+          _sectionHeader(context, l10n.adminServerSectionGeneral),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: TextField(
               controller: _serverNameController,
               decoration: InputDecoration(
                 labelText: l10n.adminServerFieldServerName,
                 prefixIcon: const Icon(Icons.dns_outlined),
+                border: const OutlineInputBorder(),
+                isDense: true,
               ),
             ),
-            const SizedBox(height: 16),
-            SwitchListTile.adaptive(
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               value: _captcha,
               title: Text(l10n.adminServerFieldCaptcha),
@@ -342,98 +394,88 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                       setState(() => _captcha = value);
                     },
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _fileLastTimeController,
-              keyboardType: const TextInputType.numberWithOptions(signed: true),
-              decoration: InputDecoration(
-                labelText: l10n.adminServerFieldFileLastTime,
-                helperText: l10n.adminServerFileLastTimeDescription,
-                prefixIcon: const Icon(Icons.schedule_outlined),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _groupsLimitController,
-              keyboardType: const TextInputType.numberWithOptions(signed: true),
-              decoration: InputDecoration(
-                labelText: l10n.adminServerFieldGroupsLimit,
-                helperText: l10n.adminServerUnlimitedHint,
-                prefixIcon: const Icon(Icons.groups_outlined),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _singleGroupMaxPeopleController,
-              keyboardType: const TextInputType.numberWithOptions(signed: true),
-              decoration: InputDecoration(
-                labelText: l10n.adminServerFieldSingleGroupMaxPeople,
-                helperText: l10n.adminServerUnlimitedHint,
-                prefixIcon: const Icon(Icons.group_outlined),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _maxFileSizeController,
-              keyboardType: const TextInputType.numberWithOptions(signed: true),
-              decoration: InputDecoration(
-                labelText: l10n.adminServerFieldMaxFileSize,
-                helperText: l10n.adminServerUnlimitedHint,
-                prefixIcon: const Icon(Icons.folder_open_outlined),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _maxMessageLengthController,
-              keyboardType: const TextInputType.numberWithOptions(signed: true),
-              decoration: InputDecoration(
-                labelText: l10n.adminServerFieldMaxMessageLength,
-                helperText: l10n.adminServerFieldMaxMessageLengthDescription,
-                prefixIcon: const Icon(Icons.message_outlined),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _maxStickerPacksController,
-              keyboardType: const TextInputType.numberWithOptions(signed: true),
-              decoration: InputDecoration(
-                labelText: l10n.adminServerFieldMaxStickerPacks,
-                helperText: l10n.adminServerUnlimitedHint,
-                prefixIcon: const Icon(Icons.collections_outlined),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _maxStickersPerPackController,
-              keyboardType: const TextInputType.numberWithOptions(signed: true),
-              decoration: InputDecoration(
-                labelText: l10n.adminServerFieldMaxStickersPerPack,
-                helperText: l10n.adminServerUnlimitedHint,
-                prefixIcon: const Icon(Icons.emoji_emotions_outlined),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _dailyStickerPackLimitController,
-              keyboardType: const TextInputType.numberWithOptions(signed: true),
-              decoration: InputDecoration(
-                labelText: l10n.adminServerFieldDailyStickerPackLimit,
-                helperText: l10n.adminServerUnlimitedHint,
-                prefixIcon: const Icon(Icons.today_outlined),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _maxStickerSizeController,
-              keyboardType: const TextInputType.numberWithOptions(signed: true),
-              decoration: InputDecoration(
-                labelText: l10n.adminServerFieldMaxStickerSize,
-                helperText: l10n.adminServerUnlimitedHint,
-                prefixIcon: const Icon(Icons.storage_outlined),
-              ),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 4),
+          const Divider(height: 1),
+          // Messages
+          _sectionHeader(context, l10n.adminServerSectionMessages),
+          const SizedBox(height: 12),
+          _numberField(
+            controller: _maxMessageLengthController,
+            labelText: l10n.adminServerFieldMaxMessageLength,
+            helperText: l10n.adminServerFieldMaxMessageLengthDescription,
+            icon: Icons.message_outlined,
+          ),
+          const SizedBox(height: 20),
+          const Divider(height: 1),
+          // Files
+          _sectionHeader(context, l10n.adminServerSectionFiles),
+          const SizedBox(height: 12),
+          _numberField(
+            controller: _fileLastTimeController,
+            labelText: l10n.adminServerFieldFileLastTime,
+            helperText: l10n.adminServerFileLastTimeDescription,
+            icon: Icons.schedule_outlined,
+          ),
+          const SizedBox(height: 12),
+          _numberField(
+            controller: _maxFileSizeController,
+            labelText: l10n.adminServerFieldMaxFileSize,
+            helperText: l10n.adminServerUnlimitedHint,
+            icon: Icons.folder_open_outlined,
+          ),
+          const SizedBox(height: 20),
+          const Divider(height: 1),
+          // Groups
+          _sectionHeader(context, l10n.adminServerSectionGroups),
+          const SizedBox(height: 12),
+          _numberField(
+            controller: _groupsLimitController,
+            labelText: l10n.adminServerFieldGroupsLimit,
+            helperText: l10n.adminServerUnlimitedHint,
+            icon: Icons.groups_outlined,
+          ),
+          const SizedBox(height: 12),
+          _numberField(
+            controller: _singleGroupMaxPeopleController,
+            labelText: l10n.adminServerFieldSingleGroupMaxPeople,
+            helperText: l10n.adminServerUnlimitedHint,
+            icon: Icons.group_outlined,
+          ),
+          const SizedBox(height: 20),
+          const Divider(height: 1),
+          // Stickers
+          _sectionHeader(context, l10n.adminServerSectionStickers),
+          const SizedBox(height: 12),
+          _numberField(
+            controller: _maxStickerPacksController,
+            labelText: l10n.adminServerFieldMaxStickerPacks,
+            helperText: l10n.adminServerUnlimitedHint,
+            icon: Icons.collections_outlined,
+          ),
+          const SizedBox(height: 12),
+          _numberField(
+            controller: _maxStickersPerPackController,
+            labelText: l10n.adminServerFieldMaxStickersPerPack,
+            helperText: l10n.adminServerUnlimitedHint,
+            icon: Icons.emoji_emotions_outlined,
+          ),
+          const SizedBox(height: 12),
+          _numberField(
+            controller: _dailyStickerPackLimitController,
+            labelText: l10n.adminServerFieldDailyStickerPackLimit,
+            helperText: l10n.adminServerUnlimitedHint,
+            icon: Icons.today_outlined,
+          ),
+          const SizedBox(height: 12),
+          _numberField(
+            controller: _maxStickerSizeController,
+            labelText: l10n.adminServerFieldMaxStickerSize,
+            helperText: l10n.adminServerUnlimitedHint,
+            icon: Icons.storage_outlined,
+          ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }

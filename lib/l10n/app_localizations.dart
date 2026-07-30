@@ -1378,6 +1378,36 @@ abstract class AppLocalizations {
   /// **'Maximum characters per message (minimum 1).'**
   String get adminServerFieldMaxMessageLengthDescription;
 
+  /// No description provided for @adminServerSectionGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get adminServerSectionGeneral;
+
+  /// No description provided for @adminServerSectionMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get adminServerSectionMessages;
+
+  /// No description provided for @adminServerSectionFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get adminServerSectionFiles;
+
+  /// No description provided for @adminServerSectionGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups'**
+  String get adminServerSectionGroups;
+
+  /// No description provided for @adminServerSectionStickers.
+  ///
+  /// In en, this message translates to:
+  /// **'Stickers'**
+  String get adminServerSectionStickers;
+
   /// No description provided for @adminServerFieldMaxStickerPacks.
   ///
   /// In en, this message translates to:

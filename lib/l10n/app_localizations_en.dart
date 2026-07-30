@@ -699,6 +699,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'Maximum characters per message (minimum 1).';
 
   @override
+  String get adminServerSectionGeneral => 'General';
+
+  @override
+  String get adminServerSectionMessages => 'Messages';
+
+  @override
+  String get adminServerSectionFiles => 'Files';
+
+  @override
+  String get adminServerSectionGroups => 'Groups';
+
+  @override
+  String get adminServerSectionStickers => 'Stickers';
+
+  @override
   String get adminServerFieldMaxStickerPacks => 'Sticker packs per user';
 
   @override

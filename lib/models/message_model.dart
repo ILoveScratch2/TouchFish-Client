@@ -242,6 +242,17 @@ class ChatMessage {
         ...?notification.fileMetadata,
         'file_hash': fileHash,
       });
+      MessageType msgType;
+      final mime = attachment.mimeType ?? '';
+      if (mime.startsWith('image/')) {
+        msgType = MessageType.image;
+      } else if (mime.startsWith('video/')) {
+        msgType = MessageType.video;
+      } else if (mime.startsWith('audio/')) {
+        msgType = MessageType.audio;
+      } else {
+        msgType = MessageType.file;
+      }
       return ChatMessage(
         id: id,
         mid: serverMid,
@@ -252,7 +263,7 @@ class ChatMessage {
         isMe: isMe,
         senderName: resolvedName,
         senderAvatar: senderAvatar,
-        type: MessageType.file,
+        type: msgType,
         media: MessageMedia(
           path: fileHash,
           fileName: attachment.fileName,

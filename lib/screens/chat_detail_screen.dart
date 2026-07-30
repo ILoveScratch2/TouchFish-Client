@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as path;
 import 'package:file_picker/file_picker.dart';
+import 'package:mime/mime.dart' show lookupMimeType;
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
 import '../widgets/message_bubble.dart';
@@ -970,9 +971,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         MessageMedia(
           path: '$baseUrl/file/get_file/$hash',
           fileName: fileName,
-        fileSize: fileSize,
-        bytes: bytes,
-        fileHash: hash,
+          fileSize: fileSize,
+          mimeType: lookupMimeType(fileName),
+          bytes: bytes,
+          fileHash: hash,
         ),
       );
 

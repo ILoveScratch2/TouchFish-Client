@@ -657,6 +657,21 @@ class AppLocalizationsOch extends AppLocalizations {
       '每條消息最多可輸之字數（至少為 1）。';
 
   @override
+  String get adminServerSectionGeneral => '常規';
+
+  @override
+  String get adminServerSectionMessages => '消息';
+
+  @override
+  String get adminServerSectionFiles => '文件';
+
+  @override
+  String get adminServerSectionGroups => '羣組';
+
+  @override
+  String get adminServerSectionStickers => '貼圖';
+
+  @override
   String get adminServerFieldMaxStickerPacks => '每用戶貼圖包之限';
 
   @override

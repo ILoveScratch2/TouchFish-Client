@@ -658,6 +658,21 @@ class AppLocalizationsZh extends AppLocalizations {
       '每条消息的最大字符数（最小值为 1）。';
 
   @override
+  String get adminServerSectionGeneral => '常规';
+
+  @override
+  String get adminServerSectionMessages => '消息';
+
+  @override
+  String get adminServerSectionFiles => '文件';
+
+  @override
+  String get adminServerSectionGroups => '群组';
+
+  @override
+  String get adminServerSectionStickers => '贴图';
+
+  @override
   String get adminServerFieldMaxStickerPacks => '每用户贴图包上限';
 
   @override
