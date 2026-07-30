@@ -59,14 +59,26 @@ class FileAttachment {
   bool get isPdf =>
       resolvedMimeType == 'application/pdf' ||
       fileName.toLowerCase().endsWith('.pdf');
-  bool get isText =>
-      resolvedMimeType.startsWith('text/') ||
-      const {
-        'application/json',
-        'application/xml',
-        'application/javascript',
-      }.contains(resolvedMimeType) ||
-      fileName.toLowerCase().endsWith('.log');
+  static const _textExtensions = {
+    '.txt', '.log', '.md', '.markdown', '.csv', '.tsv',
+    '.json', '.xml', '.yaml', '.yml', '.toml', '.ini',
+    '.cfg', '.conf', '.properties', '.env',
+    '.html', '.htm', '.css', '.js', '.ts', '.jsx', '.tsx',
+    '.dart', '.py', '.rb', '.go', '.rs', '.c', '.cpp', '.h',
+    '.java', '.kt', '.swift', '.sh', '.bat', '.ps1',
+    '.sql', '.r', '.m', '.lua', '.php', '.pl', '.scala',
+    '.gradle', '.cmake', '.makefile',
+  };
+
+  bool get isText {
+    if (resolvedMimeType.startsWith('text/')) return true;
+    if (fileName.contains('.')) {
+      if (_textExtensions.contains(fileName.substring(fileName.lastIndexOf('.')).toLowerCase())) {
+        return true;
+      }
+    }
+    return false;
+  }
   bool get isPreviewable => isImage || isVideo || isAudio || isText || isPdf;
 
   static int? _asInt(dynamic value) {
