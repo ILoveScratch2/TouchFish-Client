@@ -1006,6 +1006,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           'web_upload_${DateTime.now().millisecondsSinceEpoch}_$fileName';
       fileSize = platformFile.bytes?.length ?? 0;
       bytes = platformFile.bytes;
+    } else if (platformFile.bytes != null) {
+      // 从剪贴板粘贴：文件内容已在内存中（bytes），没有磁盘路径。
+      fileName = platformFile.name;
+      filePath =
+          'clipboard_${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      fileSize = platformFile.bytes!.length;
+      bytes = platformFile.bytes;
     } else {
       filePath = platformFile.path!;
       fileName = path.basename(filePath);

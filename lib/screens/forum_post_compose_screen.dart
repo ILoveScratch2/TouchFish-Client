@@ -2,7 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:super_clipboard/super_clipboard.dart';
+import '../services/clipboard_attachment_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mime/mime.dart';
 import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
@@ -69,6 +72,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
   bool _isSubmitting = false;
   bool _isUploadingAttachment = false;
   final List<FileAttachment> _attachments = [];
+  late final FocusNode _clipboardFocusNode;
   Timer? _draftTimer;
   bool _didSubmit = false;
 
@@ -82,6 +86,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     if (widget.initialContent != null) {
       _contentController.text = widget.initialContent!;
     }
+    _clipboardFocusNode = FocusNode(onKeyEvent: _handleForumKeyEvent);
     _titleController.addListener(_scheduleDraftSave);
     _contentController.addListener(_scheduleDraftSave);
     if (widget.onContentChanged != null) {
@@ -169,6 +174,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     if (widget.onContentChanged != null) {
       _contentController.removeListener(_reportContentChange);
     }
+    _clipboardFocusNode.dispose();
     _titleController.dispose();
     _contentController.dispose();
     super.dispose();
@@ -270,6 +276,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                             if (!widget.isReply) const SizedBox(height: 4),
                             // Content field
                             MentionTextField(
+                              focusNode: _clipboardFocusNode,
                               controller: _contentController,
                               mentionUsers: _mentionUsers,
                               style: Theme.of(context).textTheme.bodyLarge,
@@ -488,6 +495,110 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
       text: text.replaceRange(lineStart, lineStart, prefix),
       selection: TextSelection.collapsed(offset: sel.start + prefix.length),
     );
+  }
+
+  KeyEventResult _handleForumKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey != LogicalKeyboardKey.keyV) {
+      return KeyEventResult.ignored;
+    }
+    final keyboard = HardwareKeyboard.instance;
+    final controlOrMeta = keyboard.isControlPressed || keyboard.isMetaPressed;
+    if (!controlOrMeta ||
+        keyboard.isShiftPressed ||
+        keyboard.isAltPressed) {
+      return KeyEventResult.ignored;
+    }
+    // Ctrl+V detected with no modifiers besides Ctrl/Meta.
+    _handleClipboardPasteForForum();
+    return KeyEventResult.handled;
+  }
+
+  Future<void> _handleClipboardPasteForForum() async {
+    final service = ClipboardAttachmentService.instance;
+    final files = await service.checkAndReadFiles();
+    if (files.isEmpty) {
+      // Clipboard only has text – insert it manually.
+      final clipboard = SystemClipboard.instance;
+      if (clipboard != null) {
+        try {
+          final reader = await clipboard.read();
+          final text = await reader.readValue(Formats.plainText);
+          if (text != null && text.isNotEmpty && mounted) {
+            final value = _contentController.value;
+            final selection = value.selection;
+            final start =
+                selection.isValid ? selection.start : value.text.length;
+            final end =
+                selection.isValid ? selection.end : value.text.length;
+            _contentController.value = value.copyWith(
+              text: value.text.replaceRange(start, end, text),
+              selection: TextSelection.collapsed(offset: start + text.length),
+              composing: TextRange.empty,
+            );
+          }
+        } catch (_) {}
+      }
+      return;
+    }
+    await _uploadClipboardFiles(files);
+  }
+
+  Future<void> _uploadClipboardFiles(
+      List<ClipboardFileData> files) async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+    setState(() => _isUploadingAttachment = true);
+    try {
+      for (final file in files) {
+        final maxSize = await TfApiClient.instance.getMaxFileSize();
+        if (maxSize != null && file.bytes.length > maxSize) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)!
+                      .storageFileTooLarge((maxSize / (1024 * 1024)).round()),
+                ),
+              ),
+            );
+          }
+          continue;
+        }
+        final uploaded = await TfApiClient.instance.uploadFile(
+          uid,
+          password,
+          file.fileName,
+          base64Encode(file.bytes),
+        );
+        final hash =
+            (uploaded?['hash'] ?? uploaded?['file_hash'])?.toString();
+        if (hash == null || hash.isEmpty || !mounted) continue;
+        setState(() {
+          _attachments.add(
+            FileAttachment(
+              hash: hash,
+              fileName: file.fileName,
+              fileSize: file.fileSize,
+              mimeType: lookupMimeType(file.fileName),
+            ),
+          );
+        });
+        _scheduleDraftSave();
+      }
+    } catch (error, stackTrace) {
+      talker.error('Forum clipboard upload failed', error, stackTrace);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.forumAttachmentFailed),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingAttachment = false);
+    }
   }
 
   Future<void> _pickAttachments() async {

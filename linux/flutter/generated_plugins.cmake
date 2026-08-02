@@ -5,17 +5,20 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   disk_space_2
   file_selector_linux
+  irondash_engine_context
   media_kit_libs_linux
   media_kit_video
   open_file_linux
   screen_retriever_linux
   sqlite3_flutter_libs
+  super_native_extensions
   url_launcher_linux
   volume_controller
   window_manager
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  jni
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

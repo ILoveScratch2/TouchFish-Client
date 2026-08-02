@@ -87,4 +87,73 @@ void main() {
     );
     controller.dispose();
   });
+
+  testWidgets('Ctrl+V with enableClipboardUpload = true is handled', (
+    tester,
+  ) async {
+    final controller = TextEditingController();
+    var sends = 0;
+    await pumpInput(tester, controller, () => sends++);
+
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    final handled = await tester.sendKeyEvent(LogicalKeyboardKey.keyV);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+
+    expect(handled, true);
+    expect(sends, 0);
+    controller.dispose();
+  });
+
+  testWidgets('Ctrl+V with enableClipboardUpload = false is ignored', (
+    tester,
+  ) async {
+    final controller = TextEditingController();
+    var sends = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ChatInputBar(
+            controller: controller,
+            onSend: () => sends++,
+            enableClipboardUpload: false,
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byType(TextField));
+    await tester.pump();
+
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    final handled = await tester.sendKeyEvent(LogicalKeyboardKey.keyV);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+
+    expect(handled, true);
+    controller.dispose();
+  });
+
+  testWidgets('Ctrl+Shift+V is not treated as clipboard paste', (
+    tester,
+  ) async {
+    final controller = TextEditingController();
+    var sends = 0;
+    await pumpInput(tester, controller, () => sends++);
+
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    final handled = await tester.sendKeyEvent(LogicalKeyboardKey.keyV);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+
+    expect(handled, false);
+    expect(sends, 0);
+    controller.dispose();
+  });
 }

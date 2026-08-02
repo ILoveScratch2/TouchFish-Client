@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:super_clipboard/super_clipboard.dart';
+import '../services/clipboard_attachment_service.dart';
 import 'stickers/sticker_picker.dart';
 import '../l10n/app_localizations.dart';
 import '../models/message_model.dart';
@@ -20,6 +22,9 @@ class ChatInputBar extends StatefulWidget {
   final ChatMessage? actionMessage;
   final bool actionIsForward;
   final VoidCallback? onClearAction;
+  /// When true (default), Ctrl+V / Cmd+V will automatically detect and upload
+  /// files from the clipboard instead of pasting text.
+  final bool enableClipboardUpload;
 
   const ChatInputBar({
     super.key,
@@ -30,6 +35,7 @@ class ChatInputBar extends StatefulWidget {
     this.actionMessage,
     this.actionIsForward = false,
     this.onClearAction,
+    this.enableClipboardUpload = true,
   });
 
   @override
@@ -57,9 +63,22 @@ class _ChatInputBarState extends State<ChatInputBar>
   }
 
   KeyEventResult _handleInputKeyEvent(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent ||
-        (event.logicalKey != LogicalKeyboardKey.enter &&
-            event.logicalKey != LogicalKeyboardKey.numpadEnter)) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+    final keyboard = HardwareKeyboard.instance;
+    final controlOrMeta = keyboard.isControlPressed || keyboard.isMetaPressed;
+    if (event.logicalKey == LogicalKeyboardKey.keyV &&
+        controlOrMeta &&
+        !keyboard.isShiftPressed &&
+        !keyboard.isAltPressed) {
+      if (widget.enableClipboardUpload && widget.onFilePicked != null) {
+        _handleClipboardPaste();
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey != LogicalKeyboardKey.enter &&
+        event.logicalKey != LogicalKeyboardKey.numpadEnter) {
       return KeyEventResult.ignored;
     }
 
@@ -68,8 +87,6 @@ class _ChatInputBarState extends State<ChatInputBar>
       return KeyEventResult.ignored;
     }
 
-    final keyboard = HardwareKeyboard.instance;
-    final controlOrMeta = keyboard.isControlPressed || keyboard.isMetaPressed;
     final sendMode = SettingsService.instance.getValue<String>(
       'sendMode',
       'enter',
@@ -90,6 +107,56 @@ class _ChatInputBarState extends State<ChatInputBar>
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
+  }
+
+  Future<void> _handleClipboardPaste() async {
+    final service = ClipboardAttachmentService.instance;
+    final files = await service.checkAndReadFiles();
+
+    if (files.isNotEmpty) {
+      for (final file in files) {
+        final header = file.bytes;
+        final detected = detectFileType(header, fallbackName: file.fileName);
+        final messageType = switch (detected) {
+          DetectedFileType.png ||
+          DetectedFileType.jpg ||
+          DetectedFileType.gif ||
+          DetectedFileType.bmp ||
+          DetectedFileType.svg ||
+          DetectedFileType.tgs => MessageType.image,
+          DetectedFileType.unknown =>
+            _messageTypeFromExtension(file.fileName),
+        };
+
+        final platformFile = PlatformFile(
+          name: file.fileName,
+          size: file.fileSize,
+          bytes: file.bytes,
+        );
+        widget.onFilePicked?.call(platformFile, messageType);
+      }
+    } else {
+      final clipboard = SystemClipboard.instance;
+      if (clipboard != null) {
+        try {
+          final reader = await clipboard.read();
+          final text = await reader.readValue(Formats.plainText);
+          if (text != null && text.isNotEmpty && mounted) {
+            final value = widget.controller.value;
+            final selection = value.selection;
+            final start =
+                selection.isValid ? selection.start : value.text.length;
+            final end =
+                selection.isValid ? selection.end : value.text.length;
+            widget.controller.value = value.copyWith(
+              text: value.text.replaceRange(start, end, text),
+              selection: TextSelection.collapsed(offset: start + text.length),
+              composing: TextRange.empty,
+            );
+          }
+        } catch (_) {}
+      }
+    }
   }
 
   void _insertNewline() {

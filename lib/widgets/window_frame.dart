@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -70,6 +70,7 @@ class _WindowFrameState extends State<WindowFrame>
   }
 
   Future<void> _saveWindowSize() async {
+    if (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux) return;
     try {
       final isMinimized = await windowManager.isMinimized();
       if (isMinimized) return;

@@ -1,0 +1,799 @@
+Launching lib\main.dart on Windows in debug mode...
+Building Windows application...                                   199.3s
+√ Built build\windows\x64\runner\Debug\touchfish_client.exe
+P ATTACH
+package:media_kit_libs_windows_video registered.
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:29:45 458ms | TouchFish Client started![0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m│ [debug] | 15:29:47 144ms | Route: null -> /[0m
+[38;5;255m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+Syncing files to device Windows...                              
+media_kit: NativeReferenceHolder: Allocated 2204489494496
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:29:51 125ms | ChatDataService.loadContactsAndRooms: calling /chat/list for uid=0[0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:29:51 631ms | ChatWsService connecting to ws://touchfish.xin:21474[0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:29:51 800ms | NotificationService: fetched 0 notifications (lastFetchTime=1785654485.5871742)[0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:29:52 221ms | ChatDataService.loadContactsAndRooms: got 13 items from server[0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:29:52 244ms | ChatDataService.loadContactsAndRooms: loaded 13 rooms, 9 contacts[0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:29:52 979ms | ChatWsService authenticated over WS[0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+Syncing files to device Windows...                                  5.7s
+
+Flutter run key commands.
+r Hot reload. 
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on Windows is available at: http://127.0.0.1:56186/rDXTcO2TRMI=/
+The Flutter DevTools debugger and profiler on Windows is available at: http://127.0.0.1:56186/rDXTcO2TRMI=/devtools/?uri=ws://127.0.0.1:56186/rDXTcO2TRMI=/ws
+[38;5;255m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m│ [debug] | 15:30:18 971ms | Route: / -> /chat/G1[0m
+[38;5;255m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:30:24 280ms | NotificationService: fetched 0 notifications (lastFetchTime=1785654485.5871742)[0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;3m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;3m│ [warning] | 15:30:28 305ms | getFileMetadata de90d291b42e4f5a76ab9cfb6486a8785ab77ced11846e5e3f712f2e7768bdf7 failed[0m
+[38;5;3m│ ClientException: Connection closed before full header was received, uri=http://touchfish.xin:7001/file/get_file/de90d291b42e4f5a76ab9cfb6486a8785ab77ced11846e5e3f712f2e7768bdf7[0m
+[38;5;3m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:30:51 426ms | NotificationService: fetched 0 notifications (lastFetchTime=1785654485.5871742)[0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m│ [error] | 15:31:14 247ms | Unhandled Flutter framework error [rendering library] (during layout)[0m
+[38;5;1m│ A RenderFlex overflowed by 9.0 pixels on the right.[0m
+[38;5;1m│ StackTrace: #0      logFlutterErrorDetails (package:touchfish_client/utils/talker.dart:36:33)[0m
+[38;5;1m│ #1      registerTalkerErrorHandlers.<anonymous closure> (package:touchfish_client/utils/talker.dart:10:5)[0m
+[38;5;1m│ #2      FlutterError.reportError (package:flutter/src/foundation/assertions.dart:1203:14)[0m
+[38;5;1m│ #3      DebugOverflowIndicatorMixin._reportOverflow (package:flutter/src/rendering/debug_overflow_indicator.dart:259:18)[0m
+[38;5;1m│ #4      DebugOverflowIndicatorMixin.paintOverflowIndicator (package:flutter/src/rendering/debug_overflow_indicator.dart:329:7)[0m
+[38;5;1m│ #5      RenderFlex.paint.<anonymous closure> (package:flutter/src/rendering/flex.dart:1364:7)[0m
+[38;5;1m│ #6      RenderFlex.paint (package:flutter/src/rendering/flex.dart:1372:6)[0m
+[38;5;1m│ #7      RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #8      PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #9      RenderShiftedBox.paint (package:flutter/src/rendering/shifted_box.dart:81:15)[0m
+[38;5;1m│ #10     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #11     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #12     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #13     RenderDecoratedBox.paint (package:flutter/src/rendering/proxy_box.dart:2444:11)[0m
+[38;5;1m│ #14     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #15     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #16     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #17     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #18     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #19     _RenderTheaterMixin.paint (package:flutter/src/widgets/overlay.dart:1119:15)[0m
+[38;5;1m│ #20     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #21     PaintingContext.pushClipRect (package:flutter/src/rendering/object.dart:585:7)[0m
+[38;5;1m│ #22     _RenderTheater.paint (package:flutter/src/widgets/overlay.dart:1466:38)[0m
+[38;5;1m│ #23     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #24     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #25     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #26     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #27     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #28     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #29     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #30     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #31     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #32     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #33     PaintingContext.pushClipRRect (package:flutter/src/rendering/object.dart:632:7)[0m
+[38;5;1m│ #34     RenderClipRRect.paint (package:flutter/src/rendering/proxy_box.dart:1681:25)[0m
+[38;5;1m│ #35     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #36     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #37     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #38     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #39     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #40     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #41     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #42     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #43     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #44     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #45     _RenderColoredBox.paint (package:flutter/src/widgets/basic.dart:8443:15)[0m
+[38;5;1m│ #46     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #47     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #48     _RenderLayoutBuilder.paint (package:flutter/src/widgets/layout_builder.dart:471:15)[0m
+[38;5;1m│ #49     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #50     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #51     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #52     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #53     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #54     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #55     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #56     PaintingContext._repaintCompositedChild (package:flutter/src/rendering/object.dart:176:11)[0m
+[38;5;1m│ #57     PaintingContext.repaintCompositedChild (package:flutter/src/rendering/object.dart:121:5)[0m
+[38;5;1m│ #58     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1322:31)[0m
+[38;5;1m│ #59     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1332:15)[0m
+[38;5;1m│ #60     RendererBinding.drawFrame (package:flutter/src/rendering/binding.dart:631:23)[0m
+[38;5;1m│ #61     WidgetsBinding.drawFrame (package:flutter/src/widgets/binding.dart:1264:13)[0m
+[38;5;1m│ #62     RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:495:5)[0m
+[38;5;1m│ #63     SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1434:15)[0m
+[38;5;1m│ #64     SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1347:9)[0m
+[38;5;1m│ #65     SchedulerBinding._handleDrawFrame (package:flutter/src/scheduler/binding.dart:1200:5)[0m
+[38;5;1m│ #66     _rootRun (dart:async/zone.dart:1525:13)[0m
+[38;5;1m│ #67     _CustomZone.run (dart:async/zone.dart:1422:19)[0m
+[38;5;1m│ #68     _CustomZone.runGuarded (dart:async/zone.dart:1321:7)[0m
+[38;5;1m│ #69     _invoke (dart:ui/hooks.dart:358:10)[0m
+[38;5;1m│ #70     PlatformDispatcher._drawFrame (dart:ui/platform_dispatcher.dart:444:5)[0m
+[38;5;1m│ #71     _drawFrame (dart:ui/hooks.dart:328:31)[0m
+[38;5;1m│ }[0m
+[38;5;1m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m│ [error] | 15:31:15 563ms | Unhandled Flutter framework error [rendering library] (during layout)[0m
+[38;5;1m│ A RenderFlex overflowed by 9.0 pixels on the right.[0m
+[38;5;1m│ StackTrace: #0      logFlutterErrorDetails (package:touchfish_client/utils/talker.dart:36:33)[0m
+[38;5;1m│ #1      registerTalkerErrorHandlers.<anonymous closure> (package:touchfish_client/utils/talker.dart:10:5)[0m
+[38;5;1m│ #2      FlutterError.reportError (package:flutter/src/foundation/assertions.dart:1203:14)[0m
+[38;5;1m│ #3      DebugOverflowIndicatorMixin._reportOverflow (package:flutter/src/rendering/debug_overflow_indicator.dart:259:18)[0m
+[38;5;1m│ #4      DebugOverflowIndicatorMixin.paintOverflowIndicator (package:flutter/src/rendering/debug_overflow_indicator.dart:329:7)[0m
+[38;5;1m│ #5      RenderFlex.paint.<anonymous closure> (package:flutter/src/rendering/flex.dart:1364:7)[0m
+[38;5;1m│ #6      RenderFlex.paint (package:flutter/src/rendering/flex.dart:1372:6)[0m
+[38;5;1m│ #7      RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #8      PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #9      RenderShiftedBox.paint (package:flutter/src/rendering/shifted_box.dart:81:15)[0m
+[38;5;1m│ #10     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #11     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #12     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #13     RenderDecoratedBox.paint (package:flutter/src/rendering/proxy_box.dart:2444:11)[0m
+[38;5;1m│ #14     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #15     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #16     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #17     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #18     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #19     _RenderTheaterMixin.paint (package:flutter/src/widgets/overlay.dart:1119:15)[0m
+[38;5;1m│ #20     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #21     PaintingContext.pushClipRect (package:flutter/src/rendering/object.dart:585:7)[0m
+[38;5;1m│ #22     _RenderTheater.paint (package:flutter/src/widgets/overlay.dart:1466:38)[0m
+[38;5;1m│ #23     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #24     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #25     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #26     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #27     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #28     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #29     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #30     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #31     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #32     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #33     PaintingContext.pushClipRRect (package:flutter/src/rendering/object.dart:632:7)[0m
+[38;5;1m│ #34     RenderClipRRect.paint (package:flutter/src/rendering/proxy_box.dart:1681:25)[0m
+[38;5;1m│ #35     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #36     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #37     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #38     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #39     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #40     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #41     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #42     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #43     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #44     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #45     _RenderColoredBox.paint (package:flutter/src/widgets/basic.dart:8443:15)[0m
+[38;5;1m│ #46     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #47     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #48     _RenderLayoutBuilder.paint (package:flutter/src/widgets/layout_builder.dart:471:15)[0m
+[38;5;1m│ #49     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #50     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #51     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #52     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #53     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #54     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #55     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #56     PaintingContext._repaintCompositedChild (package:flutter/src/rendering/object.dart:176:11)[0m
+[38;5;1m│ #57     PaintingContext.repaintCompositedChild (package:flutter/src/rendering/object.dart:121:5)[0m
+[38;5;1m│ #58     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1322:31)[0m
+[38;5;1m│ #59     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1332:15)[0m
+[38;5;1m│ #60     RendererBinding.drawFrame (package:flutter/src/rendering/binding.dart:631:23)[0m
+[38;5;1m│ #61     WidgetsBinding.drawFrame (package:flutter/src/widgets/binding.dart:1264:13)[0m
+[38;5;1m│ #62     RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:495:5)[0m
+[38;5;1m│ #63     SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1434:15)[0m
+[38;5;1m│ #64     SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1347:9)[0m
+[38;5;1m│ #65     SchedulerBinding._handleDrawFrame (package:flutter/src/scheduler/binding.dart:1200:5)[0m
+[38;5;1m│ #66     _rootRun (dart:async/zone.dart:1525:13)[0m
+[38;5;1m│ #67     _CustomZone.run (dart:async/zone.dart:1422:19)[0m
+[38;5;1m│ #68     _CustomZone.runGuarded (dart:async/zone.dart:1321:7)[0m
+[38;5;1m│ #69     _invoke (dart:ui/hooks.dart:358:10)[0m
+[38;5;1m│ #70     PlatformDispatcher._drawFrame (dart:ui/platform_dispatcher.dart:444:5)[0m
+[38;5;1m│ #71     _drawFrame (dart:ui/hooks.dart:328:31)[0m
+[38;5;1m│ }[0m
+[38;5;1m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m│ [error] | 15:31:17 102ms | Unhandled Flutter framework error [rendering library] (during layout)[0m
+[38;5;1m│ A RenderFlex overflowed by 9.0 pixels on the right.[0m
+[38;5;1m│ StackTrace: #0      logFlutterErrorDetails (package:touchfish_client/utils/talker.dart:36:33)[0m
+[38;5;1m│ #1      registerTalkerErrorHandlers.<anonymous closure> (package:touchfish_client/utils/talker.dart:10:5)[0m
+[38;5;1m│ #2      FlutterError.reportError (package:flutter/src/foundation/assertions.dart:1203:14)[0m
+[38;5;1m│ #3      DebugOverflowIndicatorMixin._reportOverflow (package:flutter/src/rendering/debug_overflow_indicator.dart:259:18)[0m
+[38;5;1m│ #4      DebugOverflowIndicatorMixin.paintOverflowIndicator (package:flutter/src/rendering/debug_overflow_indicator.dart:329:7)[0m
+[38;5;1m│ #5      RenderFlex.paint.<anonymous closure> (package:flutter/src/rendering/flex.dart:1364:7)[0m
+[38;5;1m│ #6      RenderFlex.paint (package:flutter/src/rendering/flex.dart:1372:6)[0m
+[38;5;1m│ #7      RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #8      PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #9      RenderShiftedBox.paint (package:flutter/src/rendering/shifted_box.dart:81:15)[0m
+[38;5;1m│ #10     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #11     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #12     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #13     RenderDecoratedBox.paint (package:flutter/src/rendering/proxy_box.dart:2444:11)[0m
+[38;5;1m│ #14     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #15     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #16     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #17     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #18     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #19     _RenderTheaterMixin.paint (package:flutter/src/widgets/overlay.dart:1119:15)[0m
+[38;5;1m│ #20     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #21     PaintingContext.pushClipRect (package:flutter/src/rendering/object.dart:585:7)[0m
+[38;5;1m│ #22     _RenderTheater.paint (package:flutter/src/widgets/overlay.dart:1466:38)[0m
+[38;5;1m│ #23     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #24     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #25     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #26     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #27     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #28     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #29     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #30     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #31     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #32     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #33     PaintingContext.pushClipRRect (package:flutter/src/rendering/object.dart:632:7)[0m
+[38;5;1m│ #34     RenderClipRRect.paint (package:flutter/src/rendering/proxy_box.dart:1681:25)[0m
+[38;5;1m│ #35     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #36     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #37     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #38     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #39     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #40     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #41     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #42     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #43     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #44     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #45     _RenderColoredBox.paint (package:flutter/src/widgets/basic.dart:8443:15)[0m
+[38;5;1m│ #46     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #47     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #48     _RenderLayoutBuilder.paint (package:flutter/src/widgets/layout_builder.dart:471:15)[0m
+[38;5;1m│ #49     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #50     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #51     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #52     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #53     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #54     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #55     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #56     PaintingContext._repaintCompositedChild (package:flutter/src/rendering/object.dart:176:11)[0m
+[38;5;1m│ #57     PaintingContext.repaintCompositedChild (package:flutter/src/rendering/object.dart:121:5)[0m
+[38;5;1m│ #58     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1322:31)[0m
+[38;5;1m│ #59     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1332:15)[0m
+[38;5;1m│ #60     RendererBinding.drawFrame (package:flutter/src/rendering/binding.dart:631:23)[0m
+[38;5;1m│ #61     WidgetsBinding.drawFrame (package:flutter/src/widgets/binding.dart:1264:13)[0m
+[38;5;1m│ #62     RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:495:5)[0m
+[38;5;1m│ #63     SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1434:15)[0m
+[38;5;1m│ #64     SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1347:9)[0m
+[38;5;1m│ #65     SchedulerBinding._handleDrawFrame (package:flutter/src/scheduler/binding.dart:1200:5)[0m
+[38;5;1m│ #66     _rootRun (dart:async/zone.dart:1525:13)[0m
+[38;5;1m│ #67     _CustomZone.run (dart:async/zone.dart:1422:19)[0m
+[38;5;1m│ #68     _CustomZone.runGuarded (dart:async/zone.dart:1321:7)[0m
+[38;5;1m│ #69     _invoke (dart:ui/hooks.dart:358:10)[0m
+[38;5;1m│ #70     PlatformDispatcher._drawFrame (dart:ui/platform_dispatcher.dart:444:5)[0m
+[38;5;1m│ #71     _drawFrame (dart:ui/hooks.dart:328:31)[0m
+[38;5;1m│ }[0m
+[38;5;1m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:31:21 447ms | NotificationService: fetched 0 notifications (lastFetchTime=1785654485.5871742)[0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m│ [debug] | 15:31:39 549ms | Route: /chat/G1 -> /chat/G2[0m
+[38;5;255m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m│ [error] | 15:31:50 5ms | Unhandled Flutter framework error [rendering library] (during layout)[0m
+[38;5;1m│ A RenderFlex overflowed by 9.0 pixels on the right.[0m
+[38;5;1m│ StackTrace: #0      logFlutterErrorDetails (package:touchfish_client/utils/talker.dart:36:33)[0m
+[38;5;1m│ #1      registerTalkerErrorHandlers.<anonymous closure> (package:touchfish_client/utils/talker.dart:10:5)[0m
+[38;5;1m│ #2      FlutterError.reportError (package:flutter/src/foundation/assertions.dart:1203:14)[0m
+[38;5;1m│ #3      DebugOverflowIndicatorMixin._reportOverflow (package:flutter/src/rendering/debug_overflow_indicator.dart:259:18)[0m
+[38;5;1m│ #4      DebugOverflowIndicatorMixin.paintOverflowIndicator (package:flutter/src/rendering/debug_overflow_indicator.dart:329:7)[0m
+[38;5;1m│ #5      RenderFlex.paint.<anonymous closure> (package:flutter/src/rendering/flex.dart:1364:7)[0m
+[38;5;1m│ #6      RenderFlex.paint (package:flutter/src/rendering/flex.dart:1372:6)[0m
+[38;5;1m│ #7      RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #8      PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #9      RenderShiftedBox.paint (package:flutter/src/rendering/shifted_box.dart:81:15)[0m
+[38;5;1m│ #10     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #11     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #12     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #13     RenderDecoratedBox.paint (package:flutter/src/rendering/proxy_box.dart:2444:11)[0m
+[38;5;1m│ #14     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #15     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #16     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #17     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #18     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #19     _RenderTheaterMixin.paint (package:flutter/src/widgets/overlay.dart:1119:15)[0m
+[38;5;1m│ #20     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #21     PaintingContext.pushClipRect (package:flutter/src/rendering/object.dart:585:7)[0m
+[38;5;1m│ #22     _RenderTheater.paint (package:flutter/src/widgets/overlay.dart:1466:38)[0m
+[38;5;1m│ #23     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #24     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #25     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #26     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #27     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #28     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #29     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #30     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #31     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #32     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #33     PaintingContext.pushClipRRect (package:flutter/src/rendering/object.dart:632:7)[0m
+[38;5;1m│ #34     RenderClipRRect.paint (package:flutter/src/rendering/proxy_box.dart:1681:25)[0m
+[38;5;1m│ #35     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #36     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #37     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #38     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #39     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #40     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #41     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #42     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #43     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #44     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #45     _RenderColoredBox.paint (package:flutter/src/widgets/basic.dart:8443:15)[0m
+[38;5;1m│ #46     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #47     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #48     _RenderLayoutBuilder.paint (package:flutter/src/widgets/layout_builder.dart:471:15)[0m
+[38;5;1m│ #49     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #50     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #51     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #52     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #53     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #54     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #55     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #56     PaintingContext._repaintCompositedChild (package:flutter/src/rendering/object.dart:176:11)[0m
+[38;5;1m│ #57     PaintingContext.repaintCompositedChild (package:flutter/src/rendering/object.dart:121:5)[0m
+[38;5;1m│ #58     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1322:31)[0m
+[38;5;1m│ #59     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1332:15)[0m
+[38;5;1m│ #60     RendererBinding.drawFrame (package:flutter/src/rendering/binding.dart:631:23)[0m
+[38;5;1m│ #61     WidgetsBinding.drawFrame (package:flutter/src/widgets/binding.dart:1264:13)[0m
+[38;5;1m│ #62     RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:495:5)[0m
+[38;5;1m│ #63     SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1434:15)[0m
+[38;5;1m│ #64     SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1347:9)[0m
+[38;5;1m│ #65     SchedulerBinding._handleDrawFrame (package:flutter/src/scheduler/binding.dart:1200:5)[0m
+[38;5;1m│ #66     _rootRun (dart:async/zone.dart:1525:13)[0m
+[38;5;1m│ #67     _CustomZone.run (dart:async/zone.dart:1422:19)[0m
+[38;5;1m│ #68     _CustomZone.runGuarded (dart:async/zone.dart:1321:7)[0m
+[38;5;1m│ #69     _invoke (dart:ui/hooks.dart:358:10)[0m
+[38;5;1m│ #70     PlatformDispatcher._drawFrame (dart:ui/platform_dispatcher.dart:444:5)[0m
+[38;5;1m│ #71     _drawFrame (dart:ui/hooks.dart:328:31)[0m
+[38;5;1m│ }[0m
+[38;5;1m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m│ [error] | 15:31:51 108ms | secretPost /notification/query_after failed[0m
+[38;5;1m│ ClientException: Connection closed before full header was received, uri=http://touchfish.xin:7001/notification/query_after[0m
+[38;5;1m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:31:51 109ms | NotificationService: fetched 0 notifications (lastFetchTime=1785654485.5871742)[0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m│ [error] | 15:32:13 298ms | Unhandled Flutter framework error [rendering library] (during layout)[0m
+[38;5;1m│ A RenderFlex overflowed by 9.0 pixels on the right.[0m
+[38;5;1m│ StackTrace: #0      logFlutterErrorDetails (package:touchfish_client/utils/talker.dart:36:33)[0m
+[38;5;1m│ #1      registerTalkerErrorHandlers.<anonymous closure> (package:touchfish_client/utils/talker.dart:10:5)[0m
+[38;5;1m│ #2      FlutterError.reportError (package:flutter/src/foundation/assertions.dart:1203:14)[0m
+[38;5;1m│ #3      DebugOverflowIndicatorMixin._reportOverflow (package:flutter/src/rendering/debug_overflow_indicator.dart:259:18)[0m
+[38;5;1m│ #4      DebugOverflowIndicatorMixin.paintOverflowIndicator (package:flutter/src/rendering/debug_overflow_indicator.dart:329:7)[0m
+[38;5;1m│ #5      RenderFlex.paint.<anonymous closure> (package:flutter/src/rendering/flex.dart:1364:7)[0m
+[38;5;1m│ #6      RenderFlex.paint (package:flutter/src/rendering/flex.dart:1372:6)[0m
+[38;5;1m│ #7      RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #8      PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #9      RenderShiftedBox.paint (package:flutter/src/rendering/shifted_box.dart:81:15)[0m
+[38;5;1m│ #10     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #11     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #12     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #13     RenderDecoratedBox.paint (package:flutter/src/rendering/proxy_box.dart:2444:11)[0m
+[38;5;1m│ #14     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #15     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #16     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #17     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #18     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #19     _RenderTheaterMixin.paint (package:flutter/src/widgets/overlay.dart:1119:15)[0m
+[38;5;1m│ #20     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #21     PaintingContext.pushClipRect (package:flutter/src/rendering/object.dart:585:7)[0m
+[38;5;1m│ #22     _RenderTheater.paint (package:flutter/src/widgets/overlay.dart:1466:38)[0m
+[38;5;1m│ #23     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #24     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #25     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #26     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #27     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #28     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #29     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #30     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #31     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #32     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #33     PaintingContext.pushClipRRect (package:flutter/src/rendering/object.dart:632:7)[0m
+[38;5;1m│ #34     RenderClipRRect.paint (package:flutter/src/rendering/proxy_box.dart:1681:25)[0m
+[38;5;1m│ #35     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #36     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #37     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #38     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #39     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #40     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #41     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #42     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #43     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #44     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #45     _RenderColoredBox.paint (package:flutter/src/widgets/basic.dart:8443:15)[0m
+[38;5;1m│ #46     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #47     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #48     _RenderLayoutBuilder.paint (package:flutter/src/widgets/layout_builder.dart:471:15)[0m
+[38;5;1m│ #49     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #50     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #51     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #52     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #53     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #54     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #55     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #56     PaintingContext._repaintCompositedChild (package:flutter/src/rendering/object.dart:176:11)[0m
+[38;5;1m│ #57     PaintingContext.repaintCompositedChild (package:flutter/src/rendering/object.dart:121:5)[0m
+[38;5;1m│ #58     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1322:31)[0m
+[38;5;1m│ #59     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1332:15)[0m
+[38;5;1m│ #60     RendererBinding.drawFrame (package:flutter/src/rendering/binding.dart:631:23)[0m
+[38;5;1m│ #61     WidgetsBinding.drawFrame (package:flutter/src/widgets/binding.dart:1264:13)[0m
+[38;5;1m│ #62     RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:495:5)[0m
+[38;5;1m│ #63     SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1434:15)[0m
+[38;5;1m│ #64     SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1347:9)[0m
+[38;5;1m│ #65     SchedulerBinding._handleDrawFrame (package:flutter/src/scheduler/binding.dart:1200:5)[0m
+[38;5;1m│ #66     _rootRun (dart:async/zone.dart:1525:13)[0m
+[38;5;1m│ #67     _CustomZone.run (dart:async/zone.dart:1422:19)[0m
+[38;5;1m│ #68     _CustomZone.runGuarded (dart:async/zone.dart:1321:7)[0m
+[38;5;1m│ #69     _invoke (dart:ui/hooks.dart:358:10)[0m
+[38;5;1m│ #70     PlatformDispatcher._drawFrame (dart:ui/platform_dispatcher.dart:444:5)[0m
+[38;5;1m│ #71     _drawFrame (dart:ui/hooks.dart:328:31)[0m
+[38;5;1m│ }[0m
+[38;5;1m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m│ [error] | 15:32:19 592ms | Unhandled Flutter framework error [rendering library] (during layout)[0m
+[38;5;1m│ A RenderFlex overflowed by 9.0 pixels on the right.[0m
+[38;5;1m│ StackTrace: #0      logFlutterErrorDetails (package:touchfish_client/utils/talker.dart:36:33)[0m
+[38;5;1m│ #1      registerTalkerErrorHandlers.<anonymous closure> (package:touchfish_client/utils/talker.dart:10:5)[0m
+[38;5;1m│ #2      FlutterError.reportError (package:flutter/src/foundation/assertions.dart:1203:14)[0m
+[38;5;1m│ #3      DebugOverflowIndicatorMixin._reportOverflow (package:flutter/src/rendering/debug_overflow_indicator.dart:259:18)[0m
+[38;5;1m│ #4      DebugOverflowIndicatorMixin.paintOverflowIndicator (package:flutter/src/rendering/debug_overflow_indicator.dart:329:7)[0m
+[38;5;1m│ #5      RenderFlex.paint.<anonymous closure> (package:flutter/src/rendering/flex.dart:1364:7)[0m
+[38;5;1m│ #6      RenderFlex.paint (package:flutter/src/rendering/flex.dart:1372:6)[0m
+[38;5;1m│ #7      RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #8      PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #9      RenderShiftedBox.paint (package:flutter/src/rendering/shifted_box.dart:81:15)[0m
+[38;5;1m│ #10     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #11     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #12     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #13     RenderDecoratedBox.paint (package:flutter/src/rendering/proxy_box.dart:2444:11)[0m
+[38;5;1m│ #14     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #15     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #16     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #17     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #18     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #19     _RenderTheaterMixin.paint (package:flutter/src/widgets/overlay.dart:1119:15)[0m
+[38;5;1m│ #20     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #21     PaintingContext.pushClipRect (package:flutter/src/rendering/object.dart:585:7)[0m
+[38;5;1m│ #22     _RenderTheater.paint (package:flutter/src/widgets/overlay.dart:1466:38)[0m
+[38;5;1m│ #23     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #24     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #25     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #26     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #27     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #28     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #29     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #30     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #31     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #32     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #33     PaintingContext.pushClipRRect (package:flutter/src/rendering/object.dart:632:7)[0m
+[38;5;1m│ #34     RenderClipRRect.paint (package:flutter/src/rendering/proxy_box.dart:1681:25)[0m
+[38;5;1m│ #35     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #36     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #37     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #38     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #39     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #40     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #41     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #42     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #43     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #44     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #45     _RenderColoredBox.paint (package:flutter/src/widgets/basic.dart:8443:15)[0m
+[38;5;1m│ #46     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #47     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #48     _RenderLayoutBuilder.paint (package:flutter/src/widgets/layout_builder.dart:471:15)[0m
+[38;5;1m│ #49     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #50     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #51     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #52     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #53     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #54     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #55     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #56     PaintingContext._repaintCompositedChild (package:flutter/src/rendering/object.dart:176:11)[0m
+[38;5;1m│ #57     PaintingContext.repaintCompositedChild (package:flutter/src/rendering/object.dart:121:5)[0m
+[38;5;1m│ #58     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1322:31)[0m
+[38;5;1m│ #59     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1332:15)[0m
+[38;5;1m│ #60     RendererBinding.drawFrame (package:flutter/src/rendering/binding.dart:631:23)[0m
+[38;5;1m│ #61     WidgetsBinding.drawFrame (package:flutter/src/widgets/binding.dart:1264:13)[0m
+[38;5;1m│ #62     RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:495:5)[0m
+[38;5;1m│ #63     SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1434:15)[0m
+[38;5;1m│ #64     SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1347:9)[0m
+[38;5;1m│ #65     SchedulerBinding._handleDrawFrame (package:flutter/src/scheduler/binding.dart:1200:5)[0m
+[38;5;1m│ #66     _rootRun (dart:async/zone.dart:1525:13)[0m
+[38;5;1m│ #67     _CustomZone.run (dart:async/zone.dart:1422:19)[0m
+[38;5;1m│ #68     _CustomZone.runGuarded (dart:async/zone.dart:1321:7)[0m
+[38;5;1m│ #69     _invoke (dart:ui/hooks.dart:358:10)[0m
+[38;5;1m│ #70     PlatformDispatcher._drawFrame (dart:ui/platform_dispatcher.dart:444:5)[0m
+[38;5;1m│ #71     _drawFrame (dart:ui/hooks.dart:328:31)[0m
+[38;5;1m│ }[0m
+[38;5;1m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m│ [error] | 15:32:21 368ms | Unhandled Flutter framework error [rendering library] (during layout)[0m
+[38;5;1m│ A RenderFlex overflowed by 9.0 pixels on the right.[0m
+[38;5;1m│ StackTrace: #0      logFlutterErrorDetails (package:touchfish_client/utils/talker.dart:36:33)[0m
+[38;5;1m│ #1      registerTalkerErrorHandlers.<anonymous closure> (package:touchfish_client/utils/talker.dart:10:5)[0m
+[38;5;1m│ #2      FlutterError.reportError (package:flutter/src/foundation/assertions.dart:1203:14)[0m
+[38;5;1m│ #3      DebugOverflowIndicatorMixin._reportOverflow (package:flutter/src/rendering/debug_overflow_indicator.dart:259:18)[0m
+[38;5;1m│ #4      DebugOverflowIndicatorMixin.paintOverflowIndicator (package:flutter/src/rendering/debug_overflow_indicator.dart:329:7)[0m
+[38;5;1m│ #5      RenderFlex.paint.<anonymous closure> (package:flutter/src/rendering/flex.dart:1364:7)[0m
+[38;5;1m│ #6      RenderFlex.paint (package:flutter/src/rendering/flex.dart:1372:6)[0m
+[38;5;1m│ #7      RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #8      PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #9      RenderShiftedBox.paint (package:flutter/src/rendering/shifted_box.dart:81:15)[0m
+[38;5;1m│ #10     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #11     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #12     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #13     RenderDecoratedBox.paint (package:flutter/src/rendering/proxy_box.dart:2444:11)[0m
+[38;5;1m│ #14     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #15     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #16     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #17     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #18     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #19     _RenderTheaterMixin.paint (package:flutter/src/widgets/overlay.dart:1119:15)[0m
+[38;5;1m│ #20     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #21     PaintingContext.pushClipRect (package:flutter/src/rendering/object.dart:585:7)[0m
+[38;5;1m│ #22     _RenderTheater.paint (package:flutter/src/widgets/overlay.dart:1466:38)[0m
+[38;5;1m│ #23     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #24     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #25     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #26     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #27     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #28     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #29     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #30     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #31     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #32     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #33     PaintingContext.pushClipRRect (package:flutter/src/rendering/object.dart:632:7)[0m
+[38;5;1m│ #34     RenderClipRRect.paint (package:flutter/src/rendering/proxy_box.dart:1681:25)[0m
+[38;5;1m│ #35     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #36     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #37     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #38     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #39     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #40     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #41     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #42     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #43     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #44     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #45     _RenderColoredBox.paint (package:flutter/src/widgets/basic.dart:8443:15)[0m
+[38;5;1m│ #46     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #47     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #48     _RenderLayoutBuilder.paint (package:flutter/src/widgets/layout_builder.dart:471:15)[0m
+[38;5;1m│ #49     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #50     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #51     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #52     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #53     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #54     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #55     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #56     PaintingContext._repaintCompositedChild (package:flutter/src/rendering/object.dart:176:11)[0m
+[38;5;1m│ #57     PaintingContext.repaintCompositedChild (package:flutter/src/rendering/object.dart:121:5)[0m
+[38;5;1m│ #58     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1322:31)[0m
+[38;5;1m│ #59     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1332:15)[0m
+[38;5;1m│ #60     RendererBinding.drawFrame (package:flutter/src/rendering/binding.dart:631:23)[0m
+[38;5;1m│ #61     WidgetsBinding.drawFrame (package:flutter/src/widgets/binding.dart:1264:13)[0m
+[38;5;1m│ #62     RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:495:5)[0m
+[38;5;1m│ #63     SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1434:15)[0m
+[38;5;1m│ #64     SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1347:9)[0m
+[38;5;1m│ #65     SchedulerBinding._handleDrawFrame (package:flutter/src/scheduler/binding.dart:1200:5)[0m
+[38;5;1m│ #66     _rootRun (dart:async/zone.dart:1525:13)[0m
+[38;5;1m│ #67     _CustomZone.run (dart:async/zone.dart:1422:19)[0m
+[38;5;1m│ #68     _CustomZone.runGuarded (dart:async/zone.dart:1321:7)[0m
+[38;5;1m│ #69     _invoke (dart:ui/hooks.dart:358:10)[0m
+[38;5;1m│ #70     PlatformDispatcher._drawFrame (dart:ui/platform_dispatcher.dart:444:5)[0m
+[38;5;1m│ #71     _drawFrame (dart:ui/hooks.dart:328:31)[0m
+[38;5;1m│ }[0m
+[38;5;1m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:32:21 469ms | NotificationService: fetched 2 notifications (lastFetchTime=1785654485.5871742)[0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m│ [debug] | 15:32:32 984ms | Route: /chat/G2 -> /forum[0m
+[38;5;255m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:32:51 366ms | NotificationService: fetched 0 notifications (lastFetchTime=1785655936.634394)[0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m│ [debug] | 15:33:21 128ms | Route: /forum -> /admin[0m
+[38;5;255m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:33:21 372ms | NotificationService: fetched 0 notifications (lastFetchTime=1785655936.634394)[0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m│ [debug] | 15:33:23 776ms | Route: /admin -> /account[0m
+[38;5;255m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:33:24 541ms | NotificationService: fetched 0 notifications (lastFetchTime=1785655936.634394)[0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m│ [debug] | 15:33:36 613ms | Route: /account -> /chat[0m
+[38;5;255m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m│ [debug] | 15:33:37 964ms | Route: /chat -> /chat/G2[0m
+[38;5;255m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m│ [error] | 15:33:40 912ms | Unhandled Flutter framework error [rendering library] (during layout)[0m
+[38;5;1m│ A RenderFlex overflowed by 9.0 pixels on the right.[0m
+[38;5;1m│ StackTrace: #0      logFlutterErrorDetails (package:touchfish_client/utils/talker.dart:36:33)[0m
+[38;5;1m│ #1      registerTalkerErrorHandlers.<anonymous closure> (package:touchfish_client/utils/talker.dart:10:5)[0m
+[38;5;1m│ #2      FlutterError.reportError (package:flutter/src/foundation/assertions.dart:1203:14)[0m
+[38;5;1m│ #3      DebugOverflowIndicatorMixin._reportOverflow (package:flutter/src/rendering/debug_overflow_indicator.dart:259:18)[0m
+[38;5;1m│ #4      DebugOverflowIndicatorMixin.paintOverflowIndicator (package:flutter/src/rendering/debug_overflow_indicator.dart:329:7)[0m
+[38;5;1m│ #5      RenderFlex.paint.<anonymous closure> (package:flutter/src/rendering/flex.dart:1364:7)[0m
+[38;5;1m│ #6      RenderFlex.paint (package:flutter/src/rendering/flex.dart:1372:6)[0m
+[38;5;1m│ #7      RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #8      PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #9      RenderShiftedBox.paint (package:flutter/src/rendering/shifted_box.dart:81:15)[0m
+[38;5;1m│ #10     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #11     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #12     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #13     RenderDecoratedBox.paint (package:flutter/src/rendering/proxy_box.dart:2444:11)[0m
+[38;5;1m│ #14     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #15     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #16     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #17     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #18     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #19     _RenderTheaterMixin.paint (package:flutter/src/widgets/overlay.dart:1119:15)[0m
+[38;5;1m│ #20     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #21     PaintingContext.pushClipRect (package:flutter/src/rendering/object.dart:585:7)[0m
+[38;5;1m│ #22     _RenderTheater.paint (package:flutter/src/widgets/overlay.dart:1466:38)[0m
+[38;5;1m│ #23     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #24     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #25     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #26     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #27     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #28     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #29     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #30     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #31     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #32     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #33     PaintingContext.pushClipRRect (package:flutter/src/rendering/object.dart:632:7)[0m
+[38;5;1m│ #34     RenderClipRRect.paint (package:flutter/src/rendering/proxy_box.dart:1681:25)[0m
+[38;5;1m│ #35     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #36     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #37     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #38     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #39     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #40     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #41     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #42     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #43     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #44     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #45     _RenderColoredBox.paint (package:flutter/src/widgets/basic.dart:8443:15)[0m
+[38;5;1m│ #46     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #47     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #48     _RenderLayoutBuilder.paint (package:flutter/src/widgets/layout_builder.dart:471:15)[0m
+[38;5;1m│ #49     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #50     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #51     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #52     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #53     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #54     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #55     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #56     PaintingContext._repaintCompositedChild (package:flutter/src/rendering/object.dart:176:11)[0m
+[38;5;1m│ #57     PaintingContext.repaintCompositedChild (package:flutter/src/rendering/object.dart:121:5)[0m
+[38;5;1m│ #58     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1322:31)[0m
+[38;5;1m│ #59     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1332:15)[0m
+[38;5;1m│ #60     RendererBinding.drawFrame (package:flutter/src/rendering/binding.dart:631:23)[0m
+[38;5;1m│ #61     WidgetsBinding.drawFrame (package:flutter/src/widgets/binding.dart:1264:13)[0m
+[38;5;1m│ #62     RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:495:5)[0m
+[38;5;1m│ #63     SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1434:15)[0m
+[38;5;1m│ #64     SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1347:9)[0m
+[38;5;1m│ #65     SchedulerBinding._handleDrawFrame (package:flutter/src/scheduler/binding.dart:1200:5)[0m
+[38;5;1m│ #66     _rootRun (dart:async/zone.dart:1525:13)[0m
+[38;5;1m│ #67     _CustomZone.run (dart:async/zone.dart:1422:19)[0m
+[38;5;1m│ #68     _CustomZone.runGuarded (dart:async/zone.dart:1321:7)[0m
+[38;5;1m│ #69     _invoke (dart:ui/hooks.dart:358:10)[0m
+[38;5;1m│ #70     PlatformDispatcher._drawFrame (dart:ui/platform_dispatcher.dart:444:5)[0m
+[38;5;1m│ #71     _drawFrame (dart:ui/hooks.dart:328:31)[0m
+[38;5;1m│ }[0m
+[38;5;1m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:33:54 277ms | NotificationService: fetched 1 notifications (lastFetchTime=1785655936.634394)[0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;1m│ [error] | 15:33:58 802ms | Unhandled Flutter framework error [rendering library] (during layout)[0m
+[38;5;1m│ A RenderFlex overflowed by 9.0 pixels on the right.[0m
+[38;5;1m│ StackTrace: #0      logFlutterErrorDetails (package:touchfish_client/utils/talker.dart:36:33)[0m
+[38;5;1m│ #1      registerTalkerErrorHandlers.<anonymous closure> (package:touchfish_client/utils/talker.dart:10:5)[0m
+[38;5;1m│ #2      FlutterError.reportError (package:flutter/src/foundation/assertions.dart:1203:14)[0m
+[38;5;1m│ #3      DebugOverflowIndicatorMixin._reportOverflow (package:flutter/src/rendering/debug_overflow_indicator.dart:259:18)[0m
+[38;5;1m│ #4      DebugOverflowIndicatorMixin.paintOverflowIndicator (package:flutter/src/rendering/debug_overflow_indicator.dart:329:7)[0m
+[38;5;1m│ #5      RenderFlex.paint.<anonymous closure> (package:flutter/src/rendering/flex.dart:1364:7)[0m
+[38;5;1m│ #6      RenderFlex.paint (package:flutter/src/rendering/flex.dart:1372:6)[0m
+[38;5;1m│ #7      RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #8      PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #9      RenderShiftedBox.paint (package:flutter/src/rendering/shifted_box.dart:81:15)[0m
+[38;5;1m│ #10     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #11     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #12     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #13     RenderDecoratedBox.paint (package:flutter/src/rendering/proxy_box.dart:2444:11)[0m
+[38;5;1m│ #14     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #15     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #16     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #17     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #18     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #19     _RenderTheaterMixin.paint (package:flutter/src/widgets/overlay.dart:1119:15)[0m
+[38;5;1m│ #20     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #21     PaintingContext.pushClipRect (package:flutter/src/rendering/object.dart:585:7)[0m
+[38;5;1m│ #22     _RenderTheater.paint (package:flutter/src/widgets/overlay.dart:1466:38)[0m
+[38;5;1m│ #23     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #24     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #25     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #26     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #27     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #28     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #29     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #30     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #31     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #32     PaintingContext.pushLayer (package:flutter/src/rendering/object.dart:518:12)[0m
+[38;5;1m│ #33     PaintingContext.pushClipRRect (package:flutter/src/rendering/object.dart:632:7)[0m
+[38;5;1m│ #34     RenderClipRRect.paint (package:flutter/src/rendering/proxy_box.dart:1681:25)[0m
+[38;5;1m│ #35     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #36     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #37     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #38     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #39     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #40     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #41     RenderBoxContainerDefaultsMixin.defaultPaint (package:flutter/src/rendering/box.dart:3367:15)[0m
+[38;5;1m│ #42     RenderFlex.paint (package:flutter/src/rendering/flex.dart:1317:7)[0m
+[38;5;1m│ #43     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #44     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #45     _RenderColoredBox.paint (package:flutter/src/widgets/basic.dart:8443:15)[0m
+[38;5;1m│ #46     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #47     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #48     _RenderLayoutBuilder.paint (package:flutter/src/widgets/layout_builder.dart:471:15)[0m
+[38;5;1m│ #49     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #50     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #51     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #52     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #53     PaintingContext.paintChild (package:flutter/src/rendering/object.dart:261:13)[0m
+[38;5;1m│ #54     RenderProxyBoxMixin.paint (package:flutter/src/rendering/proxy_box.dart:140:13)[0m
+[38;5;1m│ #55     RenderObject._paintWithContext (package:flutter/src/rendering/object.dart:3436:7)[0m
+[38;5;1m│ #56     PaintingContext._repaintCompositedChild (package:flutter/src/rendering/object.dart:176:11)[0m
+[38;5;1m│ #57     PaintingContext.repaintCompositedChild (package:flutter/src/rendering/object.dart:121:5)[0m
+[38;5;1m│ #58     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1322:31)[0m
+[38;5;1m│ #59     PipelineOwner.flushPaint (package:flutter/src/rendering/object.dart:1332:15)[0m
+[38;5;1m│ #60     RendererBinding.drawFrame (package:flutter/src/rendering/binding.dart:631:23)[0m
+[38;5;1m│ #61     WidgetsBinding.drawFrame (package:flutter/src/widgets/binding.dart:1264:13)[0m
+[38;5;1m│ #62     RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:495:5)[0m
+[38;5;1m│ #63     SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1434:15)[0m
+[38;5;1m│ #64     SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1347:9)[0m
+[38;5;1m│ #65     SchedulerBinding._handleDrawFrame (package:flutter/src/scheduler/binding.dart:1200:5)[0m
+[38;5;1m│ #66     _rootRun (dart:async/zone.dart:1525:13)[0m
+[38;5;1m│ #67     _CustomZone.run (dart:async/zone.dart:1422:19)[0m
+[38;5;1m│ #68     _CustomZone.runGuarded (dart:async/zone.dart:1321:7)[0m
+[38;5;1m│ #69     _invoke (dart:ui/hooks.dart:358:10)[0m
+[38;5;1m│ #70     PlatformDispatcher._drawFrame (dart:ui/platform_dispatcher.dart:444:5)[0m
+[38;5;1m│ #71     _drawFrame (dart:ui/hooks.dart:328:31)[0m
+[38;5;1m│ }[0m
+[38;5;1m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;255m│ [debug] | 15:34:03 263ms | Route: /chat/G2 -> /forum[0m
+[38;5;255m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[38;5;4m│ [info] | 15:34:24 291ms | NotificationService: fetched 1 notifications (lastFetchTime=1785656020.797385)[0m
+[38;5;4m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+Lost connection to device.
