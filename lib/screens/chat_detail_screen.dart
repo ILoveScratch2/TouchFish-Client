@@ -1578,7 +1578,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   void _onEssenceNotifChanged(){if(_currentRoom?.type==ChatType.group)unawaited(_fetchEssenceMessages());}
-  void _onWsEssenceEvent(ChatWsEvent e){if(e.type!="NOTIFICATION.NEW"||e.notification==null)return;final i=e.notification!["info"]as Map<String,dynamic>?;if(i==null)return;final ev=i["event"]as String?;if(ev=="group.essence.add"||ev=="group.essence.remove"){final g=(i["meta"]?["gid"]as num?)?.toInt();if(g==int.tryParse(_contactUid.substring(1)))unawaited(_fetchEssenceMessages());}}
+  // void _onWsEssenceEvent(ChatWsEvent e){if(e.type!="NOTIFICATION.NEW"||e.notification==null)return;final i=e.notification!["info"]as Map<String,dynamic>?;if(i==null)return;final ev=i["event"]as String?;if(ev=="group.essence.add"||ev=="group.essence.remove"){final g=(i["meta"]?["gid"]as num?)?.toInt();if(g==int.tryParse(_contactUid.substring(1)))unawaited(_fetchEssenceMessages());}}
   Widget _buildEssenceBar() {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
