@@ -70,7 +70,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final GlobalKey _pinnedBarKey = GlobalKey();
   List<int> _essenceMids=[];
   bool _fetchingEssence=false;
-  StreamSubscription<ChatWsEvent>? _wsEssenceSub;
   bool _fetchingPins=false;
 
   String get _contactUid {
@@ -222,7 +221,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
     _ackErrorSub?.cancel();
     _ackErrorSub = ChatDataService.instance.ackErrorStream.listen(_onAckError);
-    _wsEssenceSub = ChatWsService.instance.eventStream.listen(_onWsEssenceEvent);
     NotificationService.instance.addListener(_onEssenceNotifChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
