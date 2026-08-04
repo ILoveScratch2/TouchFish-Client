@@ -2128,6 +2128,30 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 pinned message} other{{count} pinned messages}}'**
   String pinnedMessageCount(num count);
 
+  /// No description provided for @essenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 essence} other{{count} essences}}'**
+  String essenceLabel(num count);
+
+  /// No description provided for @essenceName.
+  ///
+  /// In en, this message translates to:
+  /// **'Essence'**
+  String get essenceName;
+
+  /// No description provided for @essenceAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to essence'**
+  String get essenceAdd;
+
+  /// No description provided for @essenceRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from essence'**
+  String get essenceRemove;
+
   /// No description provided for @messageRecallConfirmTitle.
   ///
   /// In en, this message translates to:

@@ -1625,7 +1625,8 @@ class TfApiClient {
     );
     if (result == null) return null;
     try {
-      final list = jsonDecode(result) as List<dynamic>;
+      final map = jsonDecode(result) as Map<String, dynamic>;
+      final list = map["essence"] as List<dynamic>;
       return list.map((e) => (e as num).toInt()).toList();
     } catch (e) {
       talker.error('getFriendList parse failed', e);
@@ -2061,6 +2062,32 @@ class TfApiClient {
     } catch (e) {
       talker.error('getPinnedMessages parse failed', e);
       return <PinnedMessage>[];
+    }
+  }
+
+  Future<bool> addEssence(int uid, String password, int gid, int mid) async {
+    final result = await secretPost("/group/add_essence",
+      {"gid": gid, "mid": mid}, uid: uid, password: password);
+    return _parseBool(result);
+  }
+
+  Future<bool> removeEssence(int uid, String password, int gid, int mid) async {
+    final result = await secretPost("/group/remove_essence",
+      {"gid": gid, "mid": mid}, uid: uid, password: password);
+    return _parseBool(result);
+  }
+
+  Future<List<int>?> queryEssence(int uid, String password, int gid) async {
+    final result = await secretPost("group/query_essence",
+      {"gid": gid}, uid: uid, password: password);
+    if (result == null) return null;
+    try {
+      final map = jsonDecode(result) as Map<String, dynamic>;
+      final list = map["essence"] as List<dynamic>;
+      return list.map((e) => (e as num).toInt()).toList();
+    } catch (e) {
+      talker.error("getEssenceList failed", e);
+      return null;
     }
   }
 

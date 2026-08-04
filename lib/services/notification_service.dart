@@ -234,6 +234,9 @@ class NotificationService extends ChangeNotifier {
               }
               ChatDataService.instance.loadContactsAndRooms();
             }
+            if (n.event == "group.essence.add" || n.event == "group.essence.remove") {
+              ChatDataService.instance.notifyListeners();
+            }
           }
         }
         _allNotifications.sort((a, b) => b.timeStamp.compareTo(a.timeStamp));
@@ -288,6 +291,13 @@ class NotificationService extends ChangeNotifier {
           (n) => n.identityKey == notification.identityKey,
         )) {
       return;
+    }
+    if (notification.event == "group.essence.add" || notification.event == "group.essence.remove") {
+      final gid = notification.groupEventGid;
+      if (gid != null) {
+        final level = ChatDataService.instance.roomNotifyLevel("G$gid");
+        if (level != 0) return;
+      }
     }
     _allNotifications.add(notification);
     _allNotifications.sort((a, b) => b.timeStamp.compareTo(a.timeStamp));

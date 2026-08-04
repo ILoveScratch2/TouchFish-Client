@@ -1051,6 +1051,25 @@ class AppLocalizationsOch extends AppLocalizations {
   }
 
   @override
+  String essenceLabel(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 條精華訊息',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get essenceName => '精華';
+
+  @override
+  String get essenceAdd => '取其精華';
+
+  @override
+  String get essenceRemove => '去其糟粕';
+
+  @override
   String get messageRecallConfirmTitle => '撤回消息乎？';
 
   @override

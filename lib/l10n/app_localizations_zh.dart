@@ -1052,6 +1052,25 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String essenceLabel(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 条精华消息',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get essenceName => '精华';
+
+  @override
+  String get essenceAdd => '设为精华';
+
+  @override
+  String get essenceRemove => '移除精华';
+
+  @override
   String get messageRecallConfirmTitle => '撤回消息？';
 
   @override

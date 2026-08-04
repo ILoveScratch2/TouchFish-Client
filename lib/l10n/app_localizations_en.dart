@@ -1102,6 +1102,26 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String essenceLabel(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count essences',
+      one: '1 essence',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get essenceName => 'Essence';
+
+  @override
+  String get essenceAdd => 'Add to essence';
+
+  @override
+  String get essenceRemove => 'Remove from essence';
+
+  @override
   String get messageRecallConfirmTitle => 'Recall message?';
 
   @override

@@ -22,6 +22,7 @@ import '../services/api/tf_api_client.dart';
 import '../services/chat_ws_service.dart';
 import '../services/chat_data_service.dart';
 import '../services/draft_service.dart';
+import '../services/notification_service.dart';
 import '../utils/talker.dart';
 import 'chat_room_settings_screen.dart';
 import '../widgets/pinned_messages_sheet.dart';
@@ -67,7 +68,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   PageController? _pinPageController;
   int _pinCurrentPage = 0;
   final GlobalKey _pinnedBarKey = GlobalKey();
-  bool _fetchingPins = false;
+  List<int> _essenceMids=[];
+  bool _fetchingEssence=false;
+  StreamSubscription<ChatWsEvent>? _wsEssenceSub;
+  bool _fetchingPins=false;
 
   String get _contactUid {
     final id = widget.roomId;
@@ -139,6 +143,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _pendingWsTimers.clear();
     _detachRealtimeListeners();
     _ackErrorSub?.cancel();
+    NotificationService.instance.removeListener(_onEssenceNotifChanged);
     _draftTimer?.cancel();
     unawaited(_saveDraft());
     _messageController.dispose();
@@ -217,6 +222,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
     _ackErrorSub?.cancel();
     _ackErrorSub = ChatDataService.instance.ackErrorStream.listen(_onAckError);
+    _wsEssenceSub = ChatWsService.instance.eventStream.listen(_onWsEssenceEvent);
+    NotificationService.instance.addListener(_onEssenceNotifChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -456,6 +463,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
     if (_currentRoom?.type == ChatType.group) {
       unawaited(_fetchPinnedMessages());
+      unawaited(_fetchEssenceMessages());
     }
   }
 
@@ -470,6 +478,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _pinPageController?.dispose();
     _pinPageController = null;
     _fetchingPins = false;
+    unawaited(_fetchEssenceMessages());
     if (profile != null && _contactUid.startsWith('U')) {
       _mentionUsers.add(
         MentionUser(
@@ -661,6 +670,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
   }
 
+  Future<void> _fetchEssenceMessages() async {
+    if(_fetchingEssence)return;final uid=AuthState.instance.uid;final pw=AuthState.instance.password;final gid=int.tryParse(_contactUid.substring(1));if(uid==null||pw==null||gid==null)return;_fetchingEssence=true;try{final mids=await TfApiClient.instance.queryEssence(uid,pw,gid);if(mounted)setState(()=>_essenceMids=mids??[]);}catch(_){}finally{_fetchingEssence=false;}}
   Future<void> _fetchPinnedMessages() async {
     if (_fetchingPins) return;
     final uid = AuthState.instance.uid;
@@ -688,6 +699,29 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       // server eror 不能一直 retry 啦
     } finally {
       _fetchingPins = false;
+    }
+  }
+
+  Future<void> _toggleEssence(ChatMessage message) async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final gid = int.tryParse(_contactUid.substring(1));
+    final mid = message.mid;
+    if (uid == null || password == null || gid == null || mid == null) return;
+    if (_essenceMids.contains(mid)) {
+      final ok = await TfApiClient.instance.removeEssence(uid, password, gid, mid);
+      if (ok && mounted) {
+        setState(() {
+          _essenceMids.remove(mid);
+        });
+      }
+    } else {
+      final ok = await TfApiClient.instance.addEssence(uid, password, gid, mid);
+      if (ok && mounted) {
+        setState(() {
+          unawaited(_fetchEssenceMessages());
+        });
+      }
     }
   }
 
@@ -727,6 +761,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       }
     }
   }
+
 
   void _sendMessage() {
     unawaited(_sendMessageAsync());
@@ -1544,6 +1579,27 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
+  void _onEssenceNotifChanged(){if(_currentRoom?.type==ChatType.group)unawaited(_fetchEssenceMessages());}
+  void _onWsEssenceEvent(ChatWsEvent e){if(e.type!="NOTIFICATION.NEW"||e.notification==null)return;final i=e.notification!["info"]as Map<String,dynamic>?;if(i==null)return;final ev=i["event"]as String?;if(ev=="group.essence.add"||ev=="group.essence.remove"){final g=(i["meta"]?["gid"]as num?)?.toInt();if(g==int.tryParse(_contactUid.substring(1)))unawaited(_fetchEssenceMessages());}}
+  Widget _buildEssenceBar() {
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+    return Material(
+      color: cs.surfaceContainerHigh,
+      child: InkWell(
+        onTap: () {},
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Row(children: [
+            Icon(Symbols.auto_awesome, size: 16, color: cs.primary),
+            const SizedBox(width: 6),
+            Text(l10n.essenceLabel(_essenceMids.length),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500, color: cs.primary)),
+          ]),
+        ),
+      ),
+    );
+  }
   void _showPinnedMessagesSheet() {
     final canUnpin = _canModerateGroup;
     showModalBottomSheet(
@@ -1659,6 +1715,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             if (_currentRoom!.type == ChatType.group &&
                 _pinnedMessages.isNotEmpty)
               _buildPinnedMessagesBar(),
+            if (_currentRoom!.type == ChatType.group && _essenceMids.isNotEmpty)
+              _buildEssenceBar(),
             if (_currentRoom!.type == ChatType.group &&
                 _groupEnterHint.isNotEmpty &&
                 _showGroupEnterHint)
@@ -1789,6 +1847,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                         onQuoteTap: _scrollToQuotedMessage,
                                         showAvatar: showAvatar,
                                         canRecall: _canRecall(message),
+                                        isEssence: message.mid != null &&
+                                          _essenceMids.contains(message.mid),
                                         isPinned: message.mid != null &&
                                             _pinnedMessages.any((p) => p.messageId == message.mid),
                                         canPin: _currentRoom?.type == ChatType.group &&
@@ -1798,6 +1858,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                         onPinToggle: message.mid != null
                                             ? () => _togglePin(message)
                                             : null,
+                                        onEssenceToggle: message.mid != null
+                                            ? () => _toggleEssence(message)
+                                            : null
                                       ),
                                     ),
                                   );

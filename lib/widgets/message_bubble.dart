@@ -33,8 +33,10 @@ class MessageBubble extends HookWidget {
   final bool showAvatar;
   final bool canRecall;
   final bool isPinned;
+  final bool isEssence;
   final bool canPin;
   final VoidCallback? onPinToggle;
+  final VoidCallback? onEssenceToggle;
 
   const MessageBubble({
     super.key,
@@ -46,12 +48,15 @@ class MessageBubble extends HookWidget {
     this.showAvatar = true,
     this.canRecall = false,
     this.isPinned = false,
+    this.isEssence = false,
     this.canPin = false,
     this.onPinToggle,
+    this.onEssenceToggle,
   });
 
   @override
   Widget build(BuildContext context) {
+    // print("msg: $message, ispinned: $isPinned, isessence: $isEssence");
     final cachedBytes = useMemoized<Uint8List?>(() {
       final media = message.media;
       return media?.bytes != null ? Uint8List.fromList(media!.bytes!) : null;
@@ -67,8 +72,10 @@ class MessageBubble extends HookWidget {
       showAvatar: showAvatar,
       canRecall: canRecall,
       isPinned: isPinned,
+      isEssence: isEssence,
       canPin: canPin,
       onPinToggle: onPinToggle,
+      onEssenceToggle: onEssenceToggle,
     );
   }
 }
@@ -83,8 +90,10 @@ class _MessageBubbleContent extends StatefulWidget {
   final bool showAvatar;
   final bool canRecall;
   final bool isPinned;
+  final bool isEssence;
   final bool canPin;
   final VoidCallback? onPinToggle;
+  final VoidCallback? onEssenceToggle;
 
   const _MessageBubbleContent({
     required this.message,
@@ -96,8 +105,10 @@ class _MessageBubbleContent extends StatefulWidget {
     required this.showAvatar,
     required this.canRecall,
     this.isPinned = false,
+    this.isEssence = false,
     this.canPin = false,
     this.onPinToggle,
+    this.onEssenceToggle,
   });
 
   @override
@@ -179,7 +190,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
     if (!widget.message.isDeleted && widget.message.mid != null) {
       width += 64;
     }
-    if (widget.canPin) width += 32;
+    if (widget.canPin) width += 64;
     if (widget.canRecall) width += 41;
     return width;
   }
@@ -238,8 +249,10 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
         onRecall: widget.onRecall,
         canRecall: widget.canRecall,
         isPinned: widget.isPinned,
+        isEssence: widget.isEssence,
         canPin: widget.canPin,
         onPinToggle: widget.onPinToggle,
+        onEssenceToggle: widget.onEssenceToggle,
       ),
     );
   }
@@ -304,12 +317,30 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
               ),
             ),
           ),
+        // 这个是 xsfx 手写的注释（，显然一个消息能被置顶就可以被设为精华
+        if (widget.canPin)
+          PopupMenuItem(
+            value : 'essence',
+            child : ListTile(
+              dense: true,
+              leading : Icon(
+                Symbols.auto_awesome,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title : Text(
+                widget.isEssence 
+                  ? l10n.essenceRemove
+                  : l10n.essenceAdd,
+              )
+            )
+          )
       ],
     );
     if (selected == 'reply') widget.onReply?.call(widget.message);
     if (selected == 'forward') widget.onForward?.call(widget.message);
     if (selected == 'recall') widget.onRecall?.call(widget.message);
     if (selected == 'pin') widget.onPinToggle?.call();
+    if (selected == 'essence') widget.onEssenceToggle?.call();
   }
 
   @override
@@ -379,6 +410,30 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                                 const SizedBox(width: 4),
                                 Text(
                                   l10n.pinnedMessageLabel,
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: textColor.withValues(alpha: 0.6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (widget.isEssence)
+                          Padding(
+                            padding: EdgeInsets.only(
+                              left: widget.message.isMe ? 0 : 40,
+                              bottom: 2,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Symbols.auto_awesome,
+                                  size: 12,
+                                  color: textColor.withValues(alpha: 0.6),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  l10n.essenceName,
                                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                     color: textColor.withValues(alpha: 0.6),
                                   ),
@@ -504,8 +559,10 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
           ? () => widget.onRecall?.call(widget.message)
           : null,
       isPinned: widget.isPinned,
+      isEssence: widget.isEssence,
       canPin: widget.canPin,
       onPinToggle: widget.onPinToggle,
+      onEssenceToggle: widget.onEssenceToggle,
     );
   }
 
@@ -937,16 +994,20 @@ class _MessageHoverActionMenu extends StatelessWidget {
   final VoidCallback? onForward;
   final VoidCallback? onRecall;
   final bool isPinned;
+  final bool isEssence;
   final bool canPin;
   final VoidCallback? onPinToggle;
+  final VoidCallback? onEssenceToggle;
 
   const _MessageHoverActionMenu({
     required this.onReply,
     required this.onForward,
     this.onRecall,
     this.isPinned = false,
+    this.isEssence = false,
     this.canPin = false,
     this.onPinToggle,
+    this.onEssenceToggle,
   });
 
   @override
@@ -1012,6 +1073,30 @@ class _MessageHoverActionMenu extends StatelessWidget {
               ),
             ),
           ],
+          if (canPin) ...[
+            Container(
+              width: 1,
+              height: 24,
+              color: Theme.of(context).colorScheme.outlineVariant,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+            ),
+            SizedBox.square(
+              dimension: 32,
+              child: IconButton(
+                icon: Icon(
+                  Symbols.auto_awesome,
+                  size: 16,
+                  color: isEssence
+                      ? Theme.of(context).colorScheme.error
+                      : null,
+                ),
+                onPressed: onEssenceToggle,
+                tooltip:
+                    isEssence ? l10n.essenceRemove : l10n.essenceAdd,
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ],
           if (onRecall != null) ...[
             Container(
               width: 1,
@@ -1042,8 +1127,10 @@ class _MessageActionSheet extends StatelessWidget {
   final ValueChanged<ChatMessage>? onRecall;
   final bool canRecall;
   final bool isPinned;
+  final bool isEssence;
   final bool canPin;
   final VoidCallback? onPinToggle;
+  final VoidCallback? onEssenceToggle;
 
   const _MessageActionSheet({
     required this.message,
@@ -1052,8 +1139,10 @@ class _MessageActionSheet extends StatelessWidget {
     this.onRecall,
     required this.canRecall,
     this.isPinned = false,
+    this.isEssence = false,
     this.canPin = false,
     this.onPinToggle,
+    this.onEssenceToggle,
   });
 
   @override
