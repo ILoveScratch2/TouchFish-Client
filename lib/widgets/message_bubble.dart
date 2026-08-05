@@ -188,7 +188,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
   double get _hoverMenuWidth {
     var width = 0.0;
     if (!widget.message.isDeleted && widget.message.mid != null) {
-      width += 64;
+      width += 96;
     }
     if (widget.canPin) width += 64;
     if (widget.canRecall) width += 41;

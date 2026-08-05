@@ -25,6 +25,7 @@ import '../services/draft_service.dart';
 import '../services/notification_service.dart';
 import '../utils/talker.dart';
 import 'chat_room_settings_screen.dart';
+import 'group_essence_screen.dart';
 import '../widgets/pinned_messages_sheet.dart';
 
 class ChatDetailScreen extends StatefulWidget {
@@ -1635,7 +1636,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    if (_currentRoom == null) {
+    final gid = int.tryParse(_contactUid.substring(1));
+    if (_currentRoom == null || gid == null || _currentRoom?.name == null) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.chatDetailLoading)),
         body: const Center(child: CircularProgressIndicator()),
@@ -1644,6 +1646,40 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
     final colorScheme = Theme.of(context).colorScheme;
     final isWide = MediaQuery.of(context).size.width >= 600;
+    final ttmp = _currentRoom!.name;
+    final essenceButton = IconButton(
+            icon: const Icon(Icons.auto_awesome),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                  GroupEssenceScreen(gid: gid, groupName: ttmp),
+                ),
+              );
+            },
+          );
+    final settingButton = IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      ChatRoomSettingsScreen(chatRoom: _currentRoom!),
+                ),
+              );
+              if (mounted && _currentRoom?.type == ChatType.group) {
+                unawaited(_loadMentionUsers());
+              }
+            },
+          );
+    List<IconButton> actiontmp = [];
+    if (_currentRoom?.type == ChatType.group) {
+      actiontmp = [essenceButton, settingButton];
+    } else {
+      actiontmp = [settingButton];
+    }
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -1683,23 +1719,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      ChatRoomSettingsScreen(chatRoom: _currentRoom!),
-                ),
-              );
-              if (mounted && _currentRoom?.type == ChatType.group) {
-                unawaited(_loadMentionUsers());
-              }
-            },
-          ),
-        ],
+        actions: actiontmp,
       ),
       body: SafeArea(
         child: Column(
