@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as path;
@@ -65,14 +64,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   int _roomGeneration = 0;
   List<PinnedMessage> _pinnedMessages = [];
   final Map<int, ChatMessage?> _pinnedMessageContents = {};
-  bool _pinnedBarCollapsed = false;
-  PageController? _pinPageController;
   int _pinCurrentPage = 0;
   final GlobalKey _pinnedBarKey = GlobalKey();
   List<int> _essenceMids = [];
+  bool _essenceEnabled = true;
   String? _fetchingEssenceRoomId;
   StreamSubscription<int>? _essenceSub;
-  bool _fetchingPins=false;
+  bool _fetchingPins = false;
 
   String get _contactUid {
     final id = widget.roomId;
@@ -129,6 +127,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _replyingTo = null;
     _canModerateGroup = false;
     _essenceMids = [];
+    _essenceEnabled = true;
     _fetchingEssenceRoomId = null;
     _suppressDraftSave = true;
     _messageController.clear();
@@ -151,7 +150,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     unawaited(_saveDraft());
     _messageController.dispose();
     _scrollController.dispose();
-    _pinPageController?.dispose();
     super.dispose();
   }
 
@@ -286,13 +284,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
     if (_isAtBottom) _followBottom = true;
 
+    _updatePinnedPageFromScroll();
+
     if (_isLoadingMessages || _isLoadingOlder || !_hasMoreMessages) return;
     final position = _scrollController.position;
     if (position.maxScrollExtent > 0 &&
         position.pixels > position.maxScrollExtent - 50) {
       _loadOlder();
     }
-    _updatePinnedPageFromScroll();
   }
 
   void _updatePinnedPageFromScroll() {
@@ -300,18 +299,21 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final position = _scrollController.position;
     if (position.maxScrollExtent <= 0 || _messages.length <= 1) return;
 
-    // 这很复杂
+    // reverse:true 列表中 index=0 为最新消息，pixels=0 为底部（最新），pixels=max 为顶部（最旧）。
+    // 因此消息在滚动坐标中的近似位置与其列表 index 同向，而不是反向。
+    //
+    // 策略：
+    //   前方 pin（itemPosition >= pixels，尚未滑过）→ 取最新（msgIndex 最小）显示
+    //   后方 pin（itemPosition < pixels，已滑过） → 取最旧（msgIndex 最大）显示
+    //   优先显示前方最新 pin；全部已滑过则停在最旧 pin
     final total = _messages.length;
     final extentPerItem = position.maxScrollExtent / (total - 1);
     final viewportTop = position.pixels;
 
-    // 最新
-    int? abovePage;
-    int aboveMsgIndex = total; // smaller = newer
-
-    // 回退最老
-    int? belowPage;
-    int belowMsgIndex = -1; // larger = older
+    int? aheadPage; // 前方 pin 中 msgIndex 最小的（最新）
+    int aheadMsgIndex = total;
+    int? behindPage; // 后方 pin 中 msgIndex 最大的（最旧）
+    int behindMsgIndex = -1;
 
     for (int i = 0; i < _pinnedMessages.length; i++) {
       final msgIndex = _messages.indexWhere(
@@ -319,32 +321,26 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       );
       if (msgIndex < 0) continue;
 
-      final visualIndex = total - 1 - msgIndex;
-      final itemPosition = visualIndex * extentPerItem;
+      final itemPosition = msgIndex * extentPerItem;
 
-      if (itemPosition < viewportTop) {
-        // e
-        if (msgIndex < aboveMsgIndex) {
-          aboveMsgIndex = msgIndex;
-          abovePage = i;
+      if (itemPosition >= viewportTop) {
+        // 前方（尚未滑过）→ 取最新
+        if (msgIndex < aheadMsgIndex) {
+          aheadMsgIndex = msgIndex;
+          aheadPage = i;
         }
       } else {
-        // e
-        if (msgIndex > belowMsgIndex) {
-          belowMsgIndex = msgIndex;
-          belowPage = i;
+        // 后方（已滑过）→ 取最旧
+        if (msgIndex > behindMsgIndex) {
+          behindMsgIndex = msgIndex;
+          behindPage = i;
         }
       }
     }
 
-    final page = abovePage ?? belowPage ?? (_pinnedMessages.length - 1);
+    final page = aheadPage ?? behindPage ?? 0;
     if (page != _pinCurrentPage && mounted) {
       setState(() => _pinCurrentPage = page);
-      _pinPageController?.animateToPage(
-        page,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-      );
     }
   }
 
@@ -479,10 +475,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _mentionUsers.clear();
     _pinnedMessages.clear();
     _pinnedMessageContents.clear();
-    _pinnedBarCollapsed = false;
     _pinCurrentPage = 0;
-    _pinPageController?.dispose();
-    _pinPageController = null;
     _fetchingPins = false;
     if (profile != null && _contactUid.startsWith('U')) {
       _mentionUsers.add(
@@ -686,9 +679,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
     _fetchingEssenceRoomId = roomId;
     try {
-      final mids = await TfApiClient.instance.queryEssence(uid, password, gid);
-      if (mounted && roomId == _contactUid && mids != null) {
-        setState(() => _essenceMids = mids);
+      final result = await TfApiClient.instance.queryEssence(
+        uid,
+        password,
+        gid,
+      );
+      if (mounted && roomId == _contactUid && result != null) {
+        setState(() {
+          _essenceMids = result.mids;
+          _essenceEnabled = result.essenceEnabled;
+        });
       }
     } finally {
       if (_fetchingEssenceRoomId == roomId) {
@@ -696,6 +696,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       }
     }
   }
+
   Future<void> _fetchPinnedMessages() async {
     if (_fetchingPins) return;
     final uid = AuthState.instance.uid;
@@ -711,13 +712,25 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         gid,
       );
       if (!mounted) return;
+      final currentMessageId =
+          _pinnedMessages.isNotEmpty &&
+              _pinCurrentPage >= 0 &&
+              _pinCurrentPage < _pinnedMessages.length
+          ? _pinnedMessages[_pinCurrentPage].messageId
+          : null;
       setState(() {
         _pinnedMessages = pins;
         if (pins.isNotEmpty) {
-          _pinCurrentPage = pins.length - 1;
-          _pinPageController?.dispose();
-          _pinPageController = PageController(initialPage: pins.length - 1);
+          final retainedPage = currentMessageId == null
+              ? -1
+              : pins.indexWhere((pin) => pin.messageId == currentMessageId);
+          _pinCurrentPage = retainedPage >= 0 ? retainedPage : pins.length - 1;
+        } else {
+          _pinCurrentPage = 0;
         }
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _updatePinnedPageFromScroll();
       });
     } catch (_) {
       // server eror 不能一直 retry 啦
@@ -733,7 +746,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final mid = message.mid;
     if (uid == null || password == null || gid == null || mid == null) return;
     if (_essenceMids.contains(mid)) {
-      final ok = await TfApiClient.instance.removeEssence(uid, password, gid, mid);
+      final ok = await TfApiClient.instance.removeEssence(
+        uid,
+        password,
+        gid,
+        mid,
+      );
       if (ok && mounted && _contactUid == 'G$gid') {
         setState(() {
           _essenceMids.remove(mid);
@@ -786,18 +804,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         });
       }
     } else {
-      final ok = await TfApiClient.instance.pinMessage(
-        uid,
-        password,
-        gid,
-        mid,
-      );
+      final ok = await TfApiClient.instance.pinMessage(uid, password, gid, mid);
       if (ok && mounted) {
         unawaited(_fetchPinnedMessages());
       }
     }
   }
-
 
   void _sendMessage() {
     unawaited(_sendMessageAsync());
@@ -1080,8 +1092,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     } else if (platformFile.bytes != null) {
       // 从剪贴板粘贴：文件内容已在内存中（bytes），没有磁盘路径。
       fileName = platformFile.name;
-      filePath =
-          'clipboard_${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      filePath = 'clipboard_${DateTime.now().millisecondsSinceEpoch}_$fileName';
       fileSize = platformFile.bytes!.length;
       bytes = platformFile.bytes;
     } else {
@@ -1133,11 +1144,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
 
     final clientMid = 'c${DateTime.now().microsecondsSinceEpoch}';
-      final media = MessageMedia(
-        path: filePath,
-        fileName: fileName,
-        fileSize: fileSize,
-        bytes: bytes,
+    final media = MessageMedia(
+      path: filePath,
+      fileName: fileName,
+      fileSize: fileSize,
+      bytes: bytes,
     );
     final userMessage = ChatMessage(
       id: clientMid,
@@ -1354,12 +1365,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   Widget _buildPinnedMessagesBar() {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     final pins = _pinnedMessages;
     if (pins.isEmpty) return const SizedBox.shrink();
 
-    _pinPageController ??= PageController(initialPage: pins.length - 1);
+    final currentIndex = _pinCurrentPage.clamp(0, pins.length - 1);
+    final currentPin = pins[currentIndex];
 
     return Column(
       key: _pinnedBarKey,
@@ -1367,76 +1378,63 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       children: [
         Material(
           color: colorScheme.surfaceContainerHigh,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              InkWell(
-                onTap: () => setState(
-                  () => _pinnedBarCollapsed = !_pinnedBarCollapsed,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Symbols.push_pin,
-                        size: 15,
-                        color: colorScheme.primary,
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          l10n.pinnedMessageCount(pins.length),
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (pins.length > 1) ...[
-                        const SizedBox(width: 4),
-                        _buildPageIndicator(),
-                        const SizedBox(width: 2),
-                        IconButton(
-                          icon: const Icon(Symbols.list, size: 16),
-                          onPressed: () => _showPinnedMessagesSheet(),
-                          tooltip: l10n.viewAllPinned,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 24,
-                            minHeight: 24,
-                          ),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ],
-                      Icon(
-                        _pinnedBarCollapsed
-                            ? Icons.keyboard_arrow_down
-                            : Icons.keyboard_arrow_up,
-                        size: 18,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ],
+          child: InkWell(
+            onTap: () {
+              ChatMessage? cachedMsg =
+                  _pinnedMessageContents[currentPin.messageId];
+              cachedMsg ??= _messages.cast<ChatMessage?>().firstWhere(
+                (m) => m?.mid == currentPin.messageId,
+                orElse: () => null,
+              );
+              _scrollToQuotedMessage(cachedMsg?.mid ?? currentPin.messageId);
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Telegram-style left accent bar
+                  Container(
+                    width: 3,
+                    height: 38,
+                    margin: const EdgeInsets.only(left: 12, right: 10),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
+                  // Content area with animated pin switch
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      child: _buildCurrentPinContent(
+                        key: ValueKey(currentPin.messageId),
+                        pin: currentPin,
+                        pageLabel: pins.length > 1
+                            ? ' · ${currentIndex + 1}/${pins.length}'
+                            : null,
+                        l10n: l10n,
+                        colorScheme: colorScheme,
+                      ),
+                    ),
+                  ),
+                  // View-all button (only when multiple pins)
+                  if (pins.length > 1)
+                    IconButton(
+                      icon: const Icon(Symbols.list, size: 18),
+                      onPressed: _showPinnedMessagesSheet,
+                      tooltip: l10n.viewAllPinned,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  const SizedBox(width: 4),
+                ],
               ),
-              if (!_pinnedBarCollapsed)
-                SizedBox(
-                  height: 42,
-                  child: PageView.builder(
-                    controller: _pinPageController,
-                    scrollDirection: Axis.vertical,
-                    itemCount: pins.length,
-                    onPageChanged: (page) => setState(() => _pinCurrentPage = page),
-                    itemBuilder: (context, index) {
-                      final pin = pins[index];
-                      return _buildPinnedMessagePreview(pin);
-                    },
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
         Divider(
@@ -1447,34 +1445,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
-  Widget _buildPageIndicator() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(
-        _pinnedMessages.length.clamp(0, 3),
-        (index) {
-          final isActive = index == _pinCurrentPage;
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            margin: const EdgeInsets.symmetric(horizontal: 1.5),
-            width: isActive ? 10 : 4,
-            height: 4,
-            decoration: BoxDecoration(
-              color: isActive
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildPinnedMessagePreview(PinnedMessage pin) {
+  Widget _buildCurrentPinContent({
+    required Key key,
+    required PinnedMessage pin,
+    required String? pageLabel,
+    required AppLocalizations l10n,
+    required ColorScheme colorScheme,
+  }) {
     final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
 
     ChatMessage? cachedMsg = _pinnedMessageContents[pin.messageId];
     if (cachedMsg == null) {
@@ -1482,136 +1460,107 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         (m) => m?.mid == pin.messageId,
         orElse: () => null,
       );
-      if (cachedMsg != null) {
-        _pinnedMessageContents[pin.messageId] = cachedMsg;
-      }
+      if (cachedMsg != null) _pinnedMessageContents[pin.messageId] = cachedMsg;
     }
 
-    final senderName = cachedMsg?.senderName ??
-        (cachedMsg?.isMe == true
-            ? (AuthState.instance.currentUser?.username ?? '')
-            : ChatDataService.instance
-                .getUser('U${cachedMsg?.senderUid ?? ''}')
-                ?.username);
+    final senderName = cachedMsg?.senderName?.trim().isNotEmpty == true
+        ? cachedMsg!.senderName!
+        : cachedMsg?.isMe == true
+        ? (AuthState.instance.currentUser?.username ?? '')
+        : ChatDataService.instance
+              .getUser('U${cachedMsg?.senderUid ?? ''}')
+              ?.username;
+
     final content = cachedMsg?.text ?? '';
     final hasAttachment = cachedMsg?.media != null;
 
-    String formatTimestamp(DateTime dt) {
-      final now = DateTime.now();
-      if (now.difference(dt).inDays > 365) {
-        return DateFormat('yyyy/MM/dd HH:mm').format(dt);
-      } else if (now.difference(dt).inDays > 0) {
-        return DateFormat('MM/dd HH:mm').format(dt);
-      }
-      return DateFormat('HH:mm').format(dt);
-    }
-
-    final timestamp = cachedMsg != null
-        ? formatTimestamp(cachedMsg.timestamp)
-        : '';
-
-    return InkWell(
-      onTap: () {
-        final mid = cachedMsg?.mid ?? pin.messageId;
-        _scrollToQuotedMessage(mid);
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        child: cachedMsg == null
-            ? Row(
-                children: [
-                  SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 1.5,
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Loading...',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ],
-              )
-            : Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    radius: 14,
-                    backgroundColor: colorScheme.primaryContainer,
-                    backgroundImage: cachedMsg.senderAvatar != null
-                        ? NetworkImage(cachedMsg.senderAvatar!)
-                        : null,
-                    child: cachedMsg.senderAvatar == null
-                        ? Icon(Icons.person, size: 14, color: colorScheme.onPrimaryContainer)
-                        : null,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          children: [
-                            if (senderName != null && senderName.isNotEmpty)
-                              Flexible(
-                                child: Text(
-                                  senderName,
-                                  style: textTheme.labelMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            if (timestamp.isNotEmpty) ...[
-                              const SizedBox(width: 6),
-                              Text(
-                                timestamp,
-                                style: textTheme.labelSmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 1),
-                        if (content.isNotEmpty)
-                          Text(
-                            content,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: textTheme.bodySmall,
-                          )
-                        else if (hasAttachment)
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Symbols.attach_file,
-                                size: 14,
-                                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                cachedMsg.media!.fileName ?? 'Attachment',
-                                style: textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
+    return Column(
+      key: key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Top line: label + page indicator
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Symbols.push_pin, size: 11, color: colorScheme.primary),
+            const SizedBox(width: 3),
+            Text(
+              l10n.pinnedMessageLabel,
+              style: textTheme.labelSmall?.copyWith(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w600,
               ),
-      ),
+            ),
+            if (pageLabel != null)
+              Text(
+                pageLabel,
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        // Bottom line: sender + preview
+        if (cachedMsg == null)
+          Text(
+            '...',
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+            ),
+          )
+        else
+          Row(
+            children: [
+              if (senderName != null && senderName.isNotEmpty)
+                Text(
+                  '$senderName: ',
+                  style: textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              Expanded(
+                child: content.isNotEmpty
+                    ? Text(
+                        content,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodySmall,
+                      )
+                    : hasAttachment
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Symbols.attach_file,
+                            size: 12,
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.6,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Flexible(
+                            child: Text(
+                              cachedMsg.media?.fileName ?? 'Attachment',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.6,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+      ],
     );
   }
 
@@ -1643,16 +1592,24 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         onTap: _openEssenceScreen,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: Row(children: [
-            Icon(Symbols.auto_awesome, size: 16, color: cs.primary),
-            const SizedBox(width: 6),
-            Text(l10n.essenceLabel(_essenceMids.length),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500, color: cs.primary)),
-          ]),
+          child: Row(
+            children: [
+              Icon(Symbols.auto_awesome, size: 16, color: cs.primary),
+              const SizedBox(width: 6),
+              Text(
+                l10n.essenceLabel(_essenceMids.length),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: cs.primary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+
   void _showPinnedMessagesSheet() {
     final canUnpin = _canModerateGroup;
     showModalBottomSheet(
@@ -1700,26 +1657,26 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final isWide = MediaQuery.of(context).size.width >= 600;
     final essenceButton = IconButton(
-            icon: const Icon(Icons.auto_awesome),
-            onPressed: _openEssenceScreen,
-          );
+      icon: const Icon(Icons.auto_awesome),
+      onPressed: _openEssenceScreen,
+    );
     final settingButton = IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      ChatRoomSettingsScreen(chatRoom: _currentRoom!),
-                ),
-              );
-              if (mounted && _currentRoom?.type == ChatType.group) {
-                unawaited(_loadMentionUsers());
-              }
-            },
-          );
+      icon: const Icon(Icons.more_vert),
+      onPressed: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChatRoomSettingsScreen(chatRoom: _currentRoom!),
+          ),
+        );
+        if (mounted && _currentRoom?.type == ChatType.group) {
+          unawaited(_loadMentionUsers());
+          unawaited(_fetchEssenceMessages());
+        }
+      },
+    );
     List<IconButton> actiontmp = [];
-    if (_currentRoom?.type == ChatType.group) {
+    if (_currentRoom?.type == ChatType.group && _essenceEnabled) {
       actiontmp = [essenceButton, settingButton];
     } else {
       actiontmp = [settingButton];
@@ -1777,7 +1734,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             if (_currentRoom!.type == ChatType.group &&
                 _pinnedMessages.isNotEmpty)
               _buildPinnedMessagesBar(),
-            if (_currentRoom!.type == ChatType.group && _essenceMids.isNotEmpty)
+            if (_currentRoom!.type == ChatType.group &&
+                _essenceMids.isNotEmpty &&
+                _essenceEnabled)
               _buildEssenceBar(),
             if (_currentRoom!.type == ChatType.group &&
                 _groupEnterHint.isNotEmpty &&
@@ -1909,20 +1868,32 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                         onQuoteTap: _scrollToQuotedMessage,
                                         showAvatar: showAvatar,
                                         canRecall: _canRecall(message),
-                                        isEssence: message.mid != null &&
-                                          _essenceMids.contains(message.mid),
-                                        isPinned: message.mid != null &&
-                                            _pinnedMessages.any((p) => p.messageId == message.mid),
-                                        canPin: _currentRoom?.type == ChatType.group &&
+                                        isEssence:
+                                            message.mid != null &&
+                                            _essenceMids.contains(
+                                              message.mid,
+                                            ) &&
+                                            _essenceEnabled,
+                                        isPinned:
+                                            message.mid != null &&
+                                            _pinnedMessages.any(
+                                              (p) => p.messageId == message.mid,
+                                            ),
+                                        canPin:
+                                            _currentRoom?.type ==
+                                                ChatType.group &&
                                             _canModerateGroup &&
                                             message.mid != null &&
                                             !message.isDeleted,
+                                        essenceEnabled: _essenceEnabled,
                                         onPinToggle: message.mid != null
                                             ? () => _togglePin(message)
                                             : null,
-                                        onEssenceToggle: message.mid != null
+                                        onEssenceToggle:
+                                            message.mid != null &&
+                                                _essenceEnabled
                                             ? () => _toggleEssence(message)
-                                            : null
+                                            : null,
                                       ),
                                     ),
                                   );
