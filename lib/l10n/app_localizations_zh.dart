@@ -700,6 +700,53 @@ class AppLocalizationsZh extends AppLocalizations {
   String get adminServerUnlimitedHint => '输入 -1 表示不限制。';
 
   @override
+  String get adminServerSectionAdvanced => '高级配置';
+
+  @override
+  String get adminServerSectionEmailService => '邮箱验证服务';
+
+  @override
+  String get adminServerEmailDescription => '开启后，新用户注册需要填写邮箱并通过验证码激活账号。';
+
+  @override
+  String get adminServerEmailEnableDescription => '注册时向用户邮箱发送验证码。';
+
+  @override
+  String get adminServerFieldSmtpHost => 'SMTP 服务器地址';
+
+  @override
+  String get adminServerSmtpHostDescription => '留空时按邮箱域名自动检测。';
+
+  @override
+  String get adminServerFieldSmtpPort => 'SMTP 端口';
+
+  @override
+  String get adminServerFieldSmtpUseSsl => '使用 SSL 直连';
+
+  @override
+  String get adminServerSmtpUseSslDescription =>
+      '开启为 SSL 直连（默认 465），关闭为 STARTTLS（默认 587）。';
+
+  @override
+  String get adminServerFieldEmailPassword => '邮箱密码或授权码';
+
+  @override
+  String get adminServerSectionReverseProxy => '反向代理';
+
+  @override
+  String get adminServerReverseProxyDescription =>
+      '服务器运行在 Nginx 等反向代理后方时开启，以正确识别客户端 IP 和 HTTPS。';
+
+  @override
+  String get adminServerFieldReverseProxy => '启用反向代理';
+
+  @override
+  String get adminServerFieldProxyCount => '信任的代理层数';
+
+  @override
+  String get adminServerEmailPasswordRequired => '启用邮箱验证需要填写验证邮箱和邮箱密码。';
+
+  @override
   String get adminPendingForums => '待审论坛';
 
   @override

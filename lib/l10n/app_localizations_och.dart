@@ -699,6 +699,53 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminServerUnlimitedHint => '輸 -1 以示無限。';
 
   @override
+  String get adminServerSectionAdvanced => '高級配置';
+
+  @override
+  String get adminServerSectionEmailService => '郵箱驗證服務';
+
+  @override
+  String get adminServerEmailDescription => '開啟後，新用戶註冊須填郵箱，並以驗證碼啟用帳號。';
+
+  @override
+  String get adminServerEmailEnableDescription => '註冊時向用戶郵箱發驗證碼。';
+
+  @override
+  String get adminServerFieldSmtpHost => 'SMTP 服器址';
+
+  @override
+  String get adminServerSmtpHostDescription => '留空則按郵箱域名自動測。';
+
+  @override
+  String get adminServerFieldSmtpPort => 'SMTP 端口';
+
+  @override
+  String get adminServerFieldSmtpUseSsl => '用 SSL 直連';
+
+  @override
+  String get adminServerSmtpUseSslDescription =>
+      '開則 SSL 直連（默 465），閉則 STARTTLS（默 587）。';
+
+  @override
+  String get adminServerFieldEmailPassword => '郵箱密碼或授權碼';
+
+  @override
+  String get adminServerSectionReverseProxy => '反向代理';
+
+  @override
+  String get adminServerReverseProxyDescription =>
+      '服器居 Nginx 等反向代理之後時啟之，以正識客戶端 IP 與 HTTPS。';
+
+  @override
+  String get adminServerFieldReverseProxy => '啟反向代理';
+
+  @override
+  String get adminServerFieldProxyCount => '信代理之層數';
+
+  @override
+  String get adminServerEmailPasswordRequired => '啟郵箱驗證須填驗證郵箱與郵箱密碼。';
+
+  @override
   String get adminPendingForums => '待審論壇';
 
   @override

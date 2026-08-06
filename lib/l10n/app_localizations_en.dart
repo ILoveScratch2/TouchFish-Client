@@ -743,6 +743,57 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminServerUnlimitedHint => 'Use -1 for unlimited.';
 
   @override
+  String get adminServerSectionAdvanced => 'Advanced Configuration';
+
+  @override
+  String get adminServerSectionEmailService => 'Email Verification Service';
+
+  @override
+  String get adminServerEmailDescription =>
+      'When enabled, new users must provide an email and activate their account with a verification code.';
+
+  @override
+  String get adminServerEmailEnableDescription =>
+      'Send a verification code to the user\'s email during registration.';
+
+  @override
+  String get adminServerFieldSmtpHost => 'SMTP Server Address';
+
+  @override
+  String get adminServerSmtpHostDescription =>
+      'Leave empty to auto-detect from the email domain.';
+
+  @override
+  String get adminServerFieldSmtpPort => 'SMTP Port';
+
+  @override
+  String get adminServerFieldSmtpUseSsl => 'Use Direct SSL';
+
+  @override
+  String get adminServerSmtpUseSslDescription =>
+      'On = direct SSL (default 465), off = STARTTLS (default 587).';
+
+  @override
+  String get adminServerFieldEmailPassword => 'Email Password or App Password';
+
+  @override
+  String get adminServerSectionReverseProxy => 'Reverse Proxy';
+
+  @override
+  String get adminServerReverseProxyDescription =>
+      'Enable when the server runs behind a reverse proxy (e.g. Nginx) so client IPs and HTTPS are detected correctly.';
+
+  @override
+  String get adminServerFieldReverseProxy => 'Enable Reverse Proxy';
+
+  @override
+  String get adminServerFieldProxyCount => 'Trusted Proxy Count';
+
+  @override
+  String get adminServerEmailPasswordRequired =>
+      'Enabling email verification requires a verification email and an email password.';
+
+  @override
   String get adminPendingForums => 'Pending Forums';
 
   @override

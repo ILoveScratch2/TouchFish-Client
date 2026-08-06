@@ -1462,6 +1462,96 @@ abstract class AppLocalizations {
   /// **'Use -1 for unlimited.'**
   String get adminServerUnlimitedHint;
 
+  /// No description provided for @adminServerSectionAdvanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced Configuration'**
+  String get adminServerSectionAdvanced;
+
+  /// No description provided for @adminServerSectionEmailService.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Verification Service'**
+  String get adminServerSectionEmailService;
+
+  /// No description provided for @adminServerEmailDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, new users must provide an email and activate their account with a verification code.'**
+  String get adminServerEmailDescription;
+
+  /// No description provided for @adminServerEmailEnableDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a verification code to the user\'s email during registration.'**
+  String get adminServerEmailEnableDescription;
+
+  /// No description provided for @adminServerFieldSmtpHost.
+  ///
+  /// In en, this message translates to:
+  /// **'SMTP Server Address'**
+  String get adminServerFieldSmtpHost;
+
+  /// No description provided for @adminServerSmtpHostDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to auto-detect from the email domain.'**
+  String get adminServerSmtpHostDescription;
+
+  /// No description provided for @adminServerFieldSmtpPort.
+  ///
+  /// In en, this message translates to:
+  /// **'SMTP Port'**
+  String get adminServerFieldSmtpPort;
+
+  /// No description provided for @adminServerFieldSmtpUseSsl.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Direct SSL'**
+  String get adminServerFieldSmtpUseSsl;
+
+  /// No description provided for @adminServerSmtpUseSslDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'On = direct SSL (default 465), off = STARTTLS (default 587).'**
+  String get adminServerSmtpUseSslDescription;
+
+  /// No description provided for @adminServerFieldEmailPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Password or App Password'**
+  String get adminServerFieldEmailPassword;
+
+  /// No description provided for @adminServerSectionReverseProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverse Proxy'**
+  String get adminServerSectionReverseProxy;
+
+  /// No description provided for @adminServerReverseProxyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable when the server runs behind a reverse proxy (e.g. Nginx) so client IPs and HTTPS are detected correctly.'**
+  String get adminServerReverseProxyDescription;
+
+  /// No description provided for @adminServerFieldReverseProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Reverse Proxy'**
+  String get adminServerFieldReverseProxy;
+
+  /// No description provided for @adminServerFieldProxyCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Trusted Proxy Count'**
+  String get adminServerFieldProxyCount;
+
+  /// No description provided for @adminServerEmailPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabling email verification requires a verification email and an email password.'**
+  String get adminServerEmailPasswordRequired;
+
   /// No description provided for @adminPendingForums.
   ///
   /// In en, this message translates to:

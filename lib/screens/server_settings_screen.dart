@@ -26,9 +26,17 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   final _maxStickersPerPackController = TextEditingController();
   final _dailyStickerPackLimitController = TextEditingController();
   final _maxStickerSizeController = TextEditingController();
+  final _smtpHostController = TextEditingController();
+  final _smtpPortController = TextEditingController();
+  final _verifyEmailController = TextEditingController();
+  final _emailPasswordController = TextEditingController();
+  final _proxyCountController = TextEditingController();
 
   TfServerConfig? _settings;
   bool _captcha = false;
+  bool _emailEnabled = false;
+  bool _smtpUseSsl = true;
+  bool _reverseProxyEnabled = false;
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -50,6 +58,11 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     _maxStickersPerPackController.dispose();
     _dailyStickerPackLimitController.dispose();
     _maxStickerSizeController.dispose();
+    _smtpHostController.dispose();
+    _smtpPortController.dispose();
+    _verifyEmailController.dispose();
+    _emailPasswordController.dispose();
+    _proxyCountController.dispose();
     super.dispose();
   }
 
@@ -74,6 +87,14 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         settings.dailyStickerPackCreationLimit.toString();
     _maxStickerSizeController.text = settings.maxStickerSize.toString();
     _captcha = settings.captcha;
+    _emailEnabled = settings.emailActivate;
+    _smtpHostController.text = settings.smtpHost ?? '';
+    _smtpPortController.text = (settings.smtpPort ?? 465).toString();
+    _smtpUseSsl = settings.smtpUseSsl ?? true;
+    _reverseProxyEnabled = settings.reverseProxyEnabled ?? false;
+    _proxyCountController.text = (settings.proxyCount ?? 1).toString();
+    _verifyEmailController.text = settings.verifyEmail ?? '';
+    _emailPasswordController.clear();
   }
 
   Future<void> _loadSettings({bool showError = false}) async {
@@ -216,6 +237,14 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       minimum: 1,
       allowUnlimited: true,
     );
+    final smtpPort = _parseIntegerField(
+      _smtpPortController.text,
+      minimum: 1,
+    );
+    final proxyCount = _parseIntegerField(
+      _proxyCountController.text,
+      minimum: 0,
+    );
 
     if (serverName.isEmpty ||
         fileLastTime == null ||
@@ -226,7 +255,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         maxStickerPacks == null ||
         maxStickersPerPack == null ||
         dailyStickerPackLimit == null ||
-        maxStickerSize == null) {
+        maxStickerSize == null ||
+        smtpPort == null ||
+        (_reverseProxyEnabled && proxyCount == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.adminServerSettingsInvalidInput),
@@ -239,9 +270,65 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     setState(() => _isSaving = true);
 
     try {
+      final uid = AuthState.instance.uid!;
+      final password = AuthState.instance.password!;
+      final wasEmailEnabled = _settings?.emailActivate ?? false;
+      final verifyEmail = _verifyEmailController.text.trim();
+      final emailPassword = _emailPasswordController.text;
+
+      // 邮箱验证开关变化或邮箱信息更新时调用 change_email_verify
+      if (_emailEnabled != wasEmailEnabled ||
+          (_emailEnabled && emailPassword.isNotEmpty)) {
+        if (_emailEnabled) {
+          if (verifyEmail.isEmpty || emailPassword.isEmpty) {
+            setState(() => _isSaving = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(l10n.adminServerEmailPasswordRequired),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            return;
+          }
+          final emailOk = await TfApiClient.instance.changeEmailVerify(
+            uid,
+            password,
+            changeTo: true,
+            verifyEmail: verifyEmail,
+            emailPassword: emailPassword,
+          );
+          if (!emailOk) {
+            setState(() => _isSaving = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(l10n.adminServerSettingsSaveFailed),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            return;
+          }
+        } else {
+          final emailOk = await TfApiClient.instance.changeEmailVerify(
+            uid,
+            password,
+            changeTo: false,
+          );
+          if (!emailOk) {
+            setState(() => _isSaving = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(l10n.adminServerSettingsSaveFailed),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            return;
+          }
+        }
+      }
+
       final updated = await TfApiClient.instance.updateServerSettings(
-        AuthState.instance.uid!,
-        AuthState.instance.password!,
+        uid,
+        password,
         serverName: serverName,
         captcha: _captcha,
         fileLastTime: fileLastTime,
@@ -253,6 +340,11 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         maxStickersPerPack: maxStickersPerPack,
         dailyStickerPackCreationLimit: dailyStickerPackLimit,
         maxStickerSize: maxStickerSize,
+        smtpHost: _smtpHostController.text.trim(),
+        smtpPort: smtpPort,
+        smtpUseSsl: _smtpUseSsl,
+        reverseProxyEnabled: _reverseProxyEnabled,
+        proxyCount: _reverseProxyEnabled ? proxyCount : 1,
       );
 
       if (!mounted) {
@@ -295,10 +387,6 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         ),
       );
     }
-  }
-
-  String _formatBool(BuildContext context, bool value) {
-    return value ? 'true' : 'false';
   }
 
   Widget _sectionHeader(BuildContext context, String title) {
@@ -495,6 +583,177 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     );
   }
 
+  Widget _buildAdvancedCardHeader(
+    BuildContext context,
+    String title,
+    String description,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            description,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmailServiceCard(BuildContext context, AppLocalizations l10n) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildAdvancedCardHeader(
+            context,
+            l10n.adminServerSectionEmailService,
+            l10n.adminServerEmailDescription,
+          ),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: _emailEnabled,
+              title: Text(l10n.adminServerFieldEmailActivation),
+              subtitle: Text(l10n.adminServerEmailEnableDescription),
+              onChanged: _isSaving
+                  ? null
+                  : (value) {
+                      setState(() => _emailEnabled = value);
+                    },
+            ),
+          ),
+          const SizedBox(height: 4),
+          if (_emailEnabled) ...[
+            const Divider(height: 1),
+            _sectionHeader(context, l10n.adminServerSectionEmailService),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: TextField(
+                controller: _smtpHostController,
+                decoration: InputDecoration(
+                  labelText: l10n.adminServerFieldSmtpHost,
+                  helperText: l10n.adminServerSmtpHostDescription,
+                  prefixIcon: const Icon(Icons.dns_outlined),
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _numberField(
+              controller: _smtpPortController,
+              labelText: l10n.adminServerFieldSmtpPort,
+              helperText: l10n.adminServerSmtpUseSslDescription,
+              icon: Icons.settings_ethernet_outlined,
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                value: _smtpUseSsl,
+                title: Text(l10n.adminServerFieldSmtpUseSsl),
+                subtitle: Text(l10n.adminServerSmtpUseSslDescription),
+                onChanged: _isSaving
+                    ? null
+                    : (value) {
+                        setState(() => _smtpUseSsl = value);
+                      },
+              ),
+            ),
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: TextField(
+                controller: _verifyEmailController,
+                decoration: InputDecoration(
+                  labelText: l10n.adminServerFieldVerifyEmail,
+                  prefixIcon: const Icon(Icons.alternate_email_outlined),
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: TextField(
+                controller: _emailPasswordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: l10n.adminServerFieldEmailPassword,
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReverseProxyCard(BuildContext context, AppLocalizations l10n) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildAdvancedCardHeader(
+            context,
+            l10n.adminServerSectionReverseProxy,
+            l10n.adminServerReverseProxyDescription,
+          ),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: _reverseProxyEnabled,
+              title: Text(l10n.adminServerFieldReverseProxy),
+              subtitle: Text(l10n.adminServerReverseProxyDescription),
+              onChanged: _isSaving
+                  ? null
+                  : (value) {
+                      setState(() => _reverseProxyEnabled = value);
+                    },
+            ),
+          ),
+          const SizedBox(height: 4),
+          if (_reverseProxyEnabled) ...[
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            _numberField(
+              controller: _proxyCountController,
+              labelText: l10n.adminServerFieldProxyCount,
+              helperText: null,
+              icon: Icons.hub_outlined,
+            ),
+            const SizedBox(height: 20),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildReadOnlyInfoCard(BuildContext context, AppLocalizations l10n) {
     final settings = _settings;
     if (settings == null) {
@@ -533,20 +792,6 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               icon: Icons.settings_ethernet_outlined,
               title: l10n.adminServerFieldTcpPort,
               value: settings.portTcp.toString(),
-            ),
-            _buildInfoTile(
-              context,
-              icon: Icons.mark_email_unread_outlined,
-              title: l10n.adminServerFieldEmailActivation,
-              value: _formatBool(context, settings.emailActivate),
-            ),
-            _buildInfoTile(
-              context,
-              icon: Icons.alternate_email_outlined,
-              title: l10n.adminServerFieldVerifyEmail,
-              value: settings.verifyEmail?.trim().isNotEmpty == true
-                  ? settings.verifyEmail!
-                  : '-',
             ),
           ],
         ),
@@ -591,6 +836,10 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildFormCard(context, l10n),
+              const SizedBox(height: 16),
+              _buildEmailServiceCard(context, l10n),
+              const SizedBox(height: 16),
+              _buildReverseProxyCard(context, l10n),
               const SizedBox(height: 16),
               _buildReadOnlyInfoCard(context, l10n),
               const SizedBox(height: 24),
