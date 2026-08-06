@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pointycastle/export.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'tf_crypto.dart';
@@ -287,6 +288,25 @@ class TfApiClient {
   RSAPublicKey? _cachedPubKey;
   String? _cachedBaseUrl;
   TfServerConfig? _cachedServerConfig;
+  String? _cachedAppVersion;
+
+  Future<String> _appVersion() async {
+    if (_cachedAppVersion != null) return _cachedAppVersion!;
+    try {
+      final info = await PackageInfo.fromPlatform();
+      _cachedAppVersion = info.version;
+    } catch (e) {
+      talker.warning('Failed to load package info', e);
+      _cachedAppVersion = AppConstants.defaultVersion;
+    }
+    return _cachedAppVersion!;
+  }
+
+  Future<String> _officialUserAgent() async =>
+      'TouchFish-Client/${await _appVersion()} (official, dart:io)';
+
+  Future<String> _debugUserAgent() async =>
+      'TouchFish-Client-API-Debug/${await _appVersion()}';
 
   void _handleConnectivityFailure() {
     final statusService = ServerConnectionStatusService.instance;
@@ -300,9 +320,17 @@ class TfApiClient {
   Future<http.Response> _getRequest(
     String url, {
     Duration timeout = _defaultTimeout,
+    Map<String, String>? headers,
+    String? userAgent,
   }) async {
     try {
-      final response = await _http.get(Uri.parse(url)).timeout(timeout);
+      final response = await _http.get(
+        Uri.parse(url),
+        headers: {
+          if (headers != null) ...headers,
+          'User-Agent': userAgent ?? await _officialUserAgent(),
+        },
+      ).timeout(timeout);
       ServerConnectionStatusService.instance.reportReachable();
       return response;
     } on TimeoutException {
@@ -322,10 +350,18 @@ class TfApiClient {
     Map<String, String>? headers,
     Object? body,
     Duration timeout = _defaultTimeout,
+    String? userAgent,
   }) async {
     try {
       final response = await _http
-          .post(Uri.parse(url), headers: headers, body: body)
+          .post(
+            Uri.parse(url),
+            headers: {
+              if (headers != null) ...headers,
+              'User-Agent': userAgent ?? await _officialUserAgent(),
+            },
+            body: body,
+          )
           .timeout(timeout);
       ServerConnectionStatusService.instance.reportReachable();
       return response;
@@ -359,7 +395,10 @@ class TfApiClient {
     Duration timeout = _probeTimeout,
   }) async {
     try {
-      final response = await _http.get(Uri.parse(url)).timeout(timeout);
+      final response = await _http.get(
+        Uri.parse(url),
+        headers: {'User-Agent': await _officialUserAgent()},
+      ).timeout(timeout);
       return response.statusCode == 200;
     } catch (_) {
       return false;
@@ -611,6 +650,7 @@ class TfApiClient {
           final response = await _getRequest(
             requestUrl,
             timeout: _secretPostTimeout,
+            userAgent: await _debugUserAgent(),
           );
           return TfDebugRequestResult(
             method: method,
@@ -629,6 +669,7 @@ class TfApiClient {
               headers: {'Content-Type': 'application/json'},
               body: requestPayload,
               timeout: _secretPostTimeout,
+              userAgent: await _debugUserAgent(),
             );
 
             return TfDebugRequestResult(
@@ -652,6 +693,7 @@ class TfApiClient {
             headers: {'Content-Type': 'application/json'},
             body: preparedRequest.requestBody,
             timeout: _secretPostTimeout,
+            userAgent: await _debugUserAgent(),
           );
 
           String? decodedResponseBody;
@@ -1826,7 +1868,10 @@ class TfApiClient {
     try {
       final url = await getFileUrl(hash);
       final response = await _http
-          .head(Uri.parse(url))
+          .head(
+            Uri.parse(url),
+            headers: {'User-Agent': await _officialUserAgent()},
+          )
           .timeout(_defaultTimeout);
       if (response.statusCode < 200 || response.statusCode >= 400) return null;
       final disposition = response.headers['content-disposition'] ?? '';
