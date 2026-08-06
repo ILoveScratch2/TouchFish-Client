@@ -36,11 +36,49 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   bool _isMember = false;
   List<ForumMember> _members = const [];
   final Map<String, UserProfile?> _profileCache = {};
+  final ScrollController _scrollController = ScrollController();
+  bool _showBackToBottom = false;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadData();
+  }
+
+  bool get _isNearBottom {
+    if (!_scrollController.hasClients) return true;
+    final pos = _scrollController.position;
+    return pos.pixels >= pos.maxScrollExtent - 100;
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final showBackToBottom = !_isNearBottom;
+    if (_showBackToBottom != showBackToBottom && mounted) {
+      setState(() => _showBackToBottom = showBackToBottom);
+    }
+  }
+
+  void _scrollToBottom({bool animated = true}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      if (animated) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -156,9 +194,24 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     final isWide = MediaQuery.of(context).size.width >= 600;
 
     return Scaffold(
-      body: isWide
-          ? _buildWideLayout(context, forum, l10n, colorScheme)
-          : _buildNarrowLayout(context, forum, l10n, colorScheme),
+      body: Stack(
+        children: [
+          isWide
+              ? _buildWideLayout(context, forum, l10n, colorScheme)
+              : _buildNarrowLayout(context, forum, l10n, colorScheme),
+          if (_showBackToBottom)
+            Positioned(
+              right: 12,
+              bottom: 84,
+              child: FloatingActionButton.small(
+                heroTag: 'forum-detail-back-to-bottom',
+                tooltip: l10n.chatBackToBottom,
+                onPressed: _scrollToBottom,
+                child: const Icon(Icons.arrow_downward),
+              ),
+            ),
+        ],
+      ),
       floatingActionButton: AuthState.instance.isLoggedIn
           ? FloatingActionButton(
               onPressed: () => _openComposePost(context),
@@ -186,6 +239,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 Flexible(
                   flex: 3,
                   child: CustomScrollView(
+                    controller: _scrollController,
                     slivers: [
                       if (_pinnedPosts.isNotEmpty)
                         SliverToBoxAdapter(
@@ -278,6 +332,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     ColorScheme colorScheme,
   ) {
     return CustomScrollView(
+      controller: _scrollController,
       slivers: [
         SliverAppBar(
           expandedHeight: 180,

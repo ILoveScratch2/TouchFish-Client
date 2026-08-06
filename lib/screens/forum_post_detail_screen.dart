@@ -55,16 +55,47 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   final _scrollController = ScrollController();
   final List<MentionUser> _mentionUsers = [];
   Timer? _draftTimer;
+  bool _showBackToBottom = false;
 
   String get _commentDraftId => '${widget.forumId}/${widget.postId}';
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadData();
     _loadMentionUsers();
     _commentController.addListener(_scheduleCommentDraftSave);
     unawaited(_restoreCommentDraft());
+  }
+
+  bool get _isNearBottom {
+    if (!_scrollController.hasClients) return true;
+    final pos = _scrollController.position;
+    return pos.pixels >= pos.maxScrollExtent - 100;
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final showBackToBottom = !_isNearBottom;
+    if (_showBackToBottom != showBackToBottom && mounted) {
+      setState(() => _showBackToBottom = showBackToBottom);
+    }
+  }
+
+  void _scrollToBottom({bool animated = true}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      if (animated) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
+    });
   }
 
   void _scheduleCommentDraftSave() {
@@ -331,6 +362,17 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
               ),
             ),
           ),
+          if (_showBackToBottom)
+            Positioned(
+              bottom: bottomPadding + 88,
+              right: 4,
+              child: FloatingActionButton.small(
+                heroTag: 'forum-post-back-to-bottom',
+                tooltip: l10n.chatBackToBottom,
+                onPressed: _scrollToBottom,
+                child: const Icon(Icons.arrow_downward),
+              ),
+            ),
         ],
       ),
     );
