@@ -101,6 +101,11 @@ class TfServerConfig {
   final int maxStickersPerPack;
   final int dailyStickerPackCreationLimit;
   final int maxStickerSize;
+  final String? smtpHost;
+  final int? smtpPort;
+  final bool? smtpUseSsl;
+  final bool? reverseProxyEnabled;
+  final int? proxyCount;
 
   const TfServerConfig({
     required this.captcha,
@@ -124,6 +129,11 @@ class TfServerConfig {
     this.maxStickersPerPack = 24,
     this.dailyStickerPackCreationLimit = -1,
     this.maxStickerSize = -1,
+    this.smtpHost,
+    this.smtpPort,
+    this.smtpUseSsl,
+    this.reverseProxyEnabled,
+    this.proxyCount,
   });
 
   static int _parseIntValue(dynamic value, int fallback) {
@@ -177,6 +187,11 @@ class TfServerConfig {
       maxStickersPerPack: _parseIntValue(json['max_stickers_per_pack'], 24),
       dailyStickerPackCreationLimit: _parseIntValue(json['daily_sticker_pack_creation_limit'], -1),
       maxStickerSize: _parseIntValue(json['max_sticker_size'], -1),
+      smtpHost: json['smtp_host'] as String?,
+      smtpPort: _parseOptionalIntValue(json['smtp_port']),
+      smtpUseSsl: json['smtp_use_ssl'] as bool?,
+      reverseProxyEnabled: json['reverse_proxy_enabled'] as bool?,
+      proxyCount: _parseOptionalIntValue(json['proxy_count']),
     );
   }
 }
@@ -742,6 +757,11 @@ class TfApiClient {
     int? maxStickersPerPack,
     int? dailyStickerPackCreationLimit,
     int? maxStickerSize,
+    String? smtpHost,
+    int? smtpPort,
+    bool? smtpUseSsl,
+    bool? reverseProxyEnabled,
+    int? proxyCount,
   }) async {
     final result = await secretPost(
       '/auth/server_settings/update',
@@ -761,6 +781,12 @@ class TfApiClient {
           'daily_sticker_pack_creation_limit': dailyStickerPackCreationLimit,
         if (maxStickerSize != null)
           'max_sticker_size': maxStickerSize,
+        if (smtpHost != null) 'smtp_host': smtpHost,
+        if (smtpPort != null) 'smtp_port': smtpPort,
+        if (smtpUseSsl != null) 'smtp_use_ssl': smtpUseSsl,
+        if (reverseProxyEnabled != null)
+          'reverse_proxy_enabled': reverseProxyEnabled,
+        if (proxyCount != null) 'proxy_count': proxyCount,
       },
       uid: uid,
       password: password,
@@ -772,6 +798,26 @@ class TfApiClient {
     }
 
     return TfServerConfig.fromJson(data);
+  }
+
+  Future<bool> changeEmailVerify(
+    int uid,
+    String password, {
+    required bool changeTo,
+    String? verifyEmail,
+    String? emailPassword,
+  }) async {
+    final result = await secretPost(
+      '/auth/change_email_verify',
+      {
+        'change_to': changeTo,
+        if (verifyEmail != null) 'verify_email': verifyEmail,
+        if (emailPassword != null) 'email_password': emailPassword,
+      },
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
   }
 
   // captcha
