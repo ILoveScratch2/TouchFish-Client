@@ -2470,6 +2470,15 @@ class AppLocalizationsOch extends AppLocalizations {
   String get groupRequireReviewDesc => '加入或邀請需羣主審核';
 
   @override
+  String get groupFeaturesSection => '羣功能';
+
+  @override
+  String get groupEssenceFeature => '精華訊息';
+
+  @override
+  String get groupEssenceFeatureDesc => '允許管理員標記精華訊息';
+
+  @override
   String get groupTransferOwner => '轉讓羣主';
 
   @override

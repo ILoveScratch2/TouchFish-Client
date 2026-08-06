@@ -36,6 +36,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
   String? _groupAvatarUrl;
   String? _baseUrl;
   int _avatarVersion = 0;
+  final Set<String> _updatingSettings = {};
 
   int get _uid => AuthState.instance.uid ?? 0;
   String get _password => AuthState.instance.password ?? '';
@@ -189,13 +190,32 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
   }
 
   Future<void> _toggleSetting(String key, bool value) async {
-    await TfApiClient.instance.updateGroupSettings(
-      _uid,
-      _password,
-      widget.gid,
-      {key: value},
-    );
-    _load();
+    if (_updatingSettings.contains(key)) return;
+    final previousValue = _settings?[key];
+    setState(() {
+      _updatingSettings.add(key);
+      _settings?[key] = value;
+    });
+
+    var ok = false;
+    try {
+      ok = await TfApiClient.instance.updateGroupSettings(
+        _uid,
+        _password,
+        widget.gid,
+        {key: value},
+      );
+    } catch (_) {
+      ok = false;
+    }
+    if (!mounted) return;
+    setState(() {
+      _updatingSettings.remove(key);
+      if (!ok) _settings?[key] = previousValue;
+    });
+    if (!ok) {
+      _showSnack(AppLocalizations.of(context)!.commonFailedOperation);
+    }
   }
 
   Future<void> _editEnterHint(AppLocalizations l10n) async {
@@ -416,6 +436,9 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
                   _buildSection(l10n.groupSettingsSection),
                   ..._buildSettingsTiles(l10n),
                   const Divider(),
+                  _buildSection(l10n.groupFeaturesSection),
+                  ..._buildFeatureTiles(l10n),
+                  const Divider(),
                 ],
                 Row(
                   children: [
@@ -491,13 +514,31 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
         value: settings['allow_direct_join'] == true,
         title: Text(l10n.groupAllowDirectJoin),
         subtitle: Text(l10n.groupAllowDirectJoinDesc),
-        onChanged: (v) => _toggleSetting('allow_direct_join', v),
+        onChanged: _updatingSettings.contains('allow_direct_join')
+            ? null
+            : (v) => _toggleSetting('allow_direct_join', v),
       ),
       SwitchListTile.adaptive(
         value: settings['require_review'] == true,
         title: Text(l10n.groupRequireReview),
         subtitle: Text(l10n.groupRequireReviewDesc),
-        onChanged: (v) => _toggleSetting('require_review', v),
+        onChanged: _updatingSettings.contains('require_review')
+            ? null
+            : (v) => _toggleSetting('require_review', v),
+      ),
+    ];
+  }
+
+  List<Widget> _buildFeatureTiles(AppLocalizations l10n) {
+    final settings = _settings ?? {};
+    return [
+      SwitchListTile.adaptive(
+        value: settings['essence_enabled'] != false,
+        title: Text(l10n.groupEssenceFeature),
+        subtitle: Text(l10n.groupEssenceFeatureDesc),
+        onChanged: _updatingSettings.contains('essence_enabled')
+            ? null
+            : (v) => _toggleSetting('essence_enabled', v),
       ),
     ];
   }

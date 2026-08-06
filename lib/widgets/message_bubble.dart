@@ -35,6 +35,7 @@ class MessageBubble extends HookWidget {
   final bool isPinned;
   final bool isEssence;
   final bool canPin;
+  final bool essenceEnabled;
   final VoidCallback? onPinToggle;
   final VoidCallback? onEssenceToggle;
 
@@ -50,6 +51,7 @@ class MessageBubble extends HookWidget {
     this.isPinned = false,
     this.isEssence = false,
     this.canPin = false,
+    this.essenceEnabled = true,
     this.onPinToggle,
     this.onEssenceToggle,
   });
@@ -74,6 +76,7 @@ class MessageBubble extends HookWidget {
       isPinned: isPinned,
       isEssence: isEssence,
       canPin: canPin,
+      essenceEnabled: essenceEnabled,
       onPinToggle: onPinToggle,
       onEssenceToggle: onEssenceToggle,
     );
@@ -92,6 +95,7 @@ class _MessageBubbleContent extends StatefulWidget {
   final bool isPinned;
   final bool isEssence;
   final bool canPin;
+  final bool essenceEnabled;
   final VoidCallback? onPinToggle;
   final VoidCallback? onEssenceToggle;
 
@@ -107,6 +111,7 @@ class _MessageBubbleContent extends StatefulWidget {
     this.isPinned = false,
     this.isEssence = false,
     this.canPin = false,
+    this.essenceEnabled = true,
     this.onPinToggle,
     this.onEssenceToggle,
   });
@@ -318,7 +323,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
             ),
           ),
         // 这个是 xsfx 手写的注释（，显然一个消息能被置顶就可以被设为精华
-        if (widget.canPin)
+        if (widget.canPin && widget.essenceEnabled)
           PopupMenuItem(
             value : 'essence',
             child : ListTile(
@@ -417,7 +422,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                               ],
                             ),
                           ),
-                        if (widget.isEssence)
+                        if (widget.isEssence && widget.essenceEnabled)
                           Padding(
                             padding: EdgeInsets.only(
                               left: widget.message.isMe ? 0 : 40,

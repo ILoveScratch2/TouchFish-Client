@@ -4816,6 +4816,24 @@ abstract class AppLocalizations {
   /// **'Join requests require owner approval'**
   String get groupRequireReviewDesc;
 
+  /// No description provided for @groupFeaturesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Features'**
+  String get groupFeaturesSection;
+
+  /// No description provided for @groupEssenceFeature.
+  ///
+  /// In en, this message translates to:
+  /// **'Essence Messages'**
+  String get groupEssenceFeature;
+
+  /// No description provided for @groupEssenceFeatureDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow admins to mark essence messages'**
+  String get groupEssenceFeatureDesc;
+
   /// No description provided for @groupTransferOwner.
   ///
   /// In en, this message translates to:

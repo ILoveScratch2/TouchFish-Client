@@ -2472,6 +2472,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get groupRequireReviewDesc => '加入或邀请需群主审核';
 
   @override
+  String get groupFeaturesSection => '群功能';
+
+  @override
+  String get groupEssenceFeature => '精华消息';
+
+  @override
+  String get groupEssenceFeatureDesc => '允许管理员标记精华消息';
+
+  @override
   String get groupTransferOwner => '转让群主';
 
   @override
