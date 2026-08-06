@@ -70,7 +70,10 @@ class _WindowFrameState extends State<WindowFrame>
   }
 
   Future<void> _saveWindowSize() async {
-    if (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux) return;
+    if (kIsWeb ||
+        (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux)) {
+      return;
+    }
     try {
       final isMinimized = await windowManager.isMinimized();
       if (isMinimized) return;

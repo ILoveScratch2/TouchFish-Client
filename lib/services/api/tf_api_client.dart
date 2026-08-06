@@ -150,7 +150,7 @@ class TfServerConfig {
       captcha: json['captcha'] as bool? ?? false,
       emailActivate: json['email_activate'] as bool? ?? false,
       portApi: _parseIntValue(json['port_api'], 7001),
-      portTcp: _parseIntValue(json['port_tcp'], 1145),
+      portTcp: _parseIntValue(json['port_tcp'], AppConstants.defaultTcpPort),
       serverName: json['server_name'] as String? ?? 'TouchFish',
       fileLastTime: _parseOptionalIntValue(json['file_last_time']),
       groupsLimit: _parseOptionalIntValue(json['groups_limit']),
@@ -1625,8 +1625,7 @@ class TfApiClient {
     );
     if (result == null) return null;
     try {
-      final map = jsonDecode(result) as Map<String, dynamic>;
-      final list = map["essence"] as List<dynamic>;
+      final list = jsonDecode(result) as List<dynamic>;
       return list.map((e) => (e as num).toInt()).toList();
     } catch (e) {
       talker.error('getFriendList parse failed', e);

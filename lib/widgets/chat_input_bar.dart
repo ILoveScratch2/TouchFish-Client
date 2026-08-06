@@ -73,8 +73,9 @@ class _ChatInputBarState extends State<ChatInputBar>
         !keyboard.isAltPressed) {
       if (widget.enableClipboardUpload && widget.onFilePicked != null) {
         _handleClipboardPaste();
+        return KeyEventResult.handled;
       }
-      return KeyEventResult.handled;
+      return KeyEventResult.ignored;
     }
 
     if (event.logicalKey != LogicalKeyboardKey.enter &&

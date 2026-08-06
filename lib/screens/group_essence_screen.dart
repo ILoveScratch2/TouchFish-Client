@@ -34,6 +34,7 @@ class _GroupEssenceScreenState extends State<GroupEssenceScreen> {
   final Map<int, ChatMessage?> _messages = {};
   bool _isLoading = true;
   bool _isAdmin = false;
+  bool _loadFailed = false;
 
   int get _uid => AuthState.instance.uid ?? 0;
   String get _password => AuthState.instance.password ?? '';
@@ -61,9 +62,20 @@ class _GroupEssenceScreenState extends State<GroupEssenceScreen> {
         password,
         widget.gid,
       );
-      final cached = await ChatDataService.instance.getSearchableMessages(
-        'G${widget.gid}',
-      );
+      if (mids == null) throw StateError('Failed to load essence messages');
+      final roomId = 'G${widget.gid}';
+      final chatData = ChatDataService.instance;
+      var page = await chatData.refreshMessagesForContact(roomId);
+      var cached = chatData.getMessages(roomId);
+      final wanted = mids.toSet();
+      for (var attempt = 0;
+          wanted.any((mid) => !cached.any((message) => message.mid == mid)) &&
+              page.hasMore &&
+              attempt < 100;
+          attempt++) {
+        page = await chatData.loadOlderMessages(roomId);
+        cached = chatData.getMessages(roomId);
+      }
       final byMid = <int, ChatMessage>{};
       for (final message in cached) {
         final mid = message.mid;
@@ -72,15 +84,19 @@ class _GroupEssenceScreenState extends State<GroupEssenceScreen> {
       final isAdmin = await _checkAdmin(uid, password);
       if (!mounted) return;
       setState(() {
-        _essenceMids = mids ?? [];
+        _essenceMids = mids;
         _messages
           ..clear()
           ..addEntries(_essenceMids.map((mid) => MapEntry(mid, byMid[mid])));
         _isAdmin = isAdmin;
         _isLoading = false;
+        _loadFailed = false;
       });
     } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() {
+        _isLoading = false;
+        _loadFailed = true;
+      });
     }
   }
 
@@ -132,6 +148,14 @@ class _GroupEssenceScreenState extends State<GroupEssenceScreen> {
       appBar: AppBar(title: Text(widget.groupName)),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
+          : _loadFailed
+              ? Center(
+                  child: FilledButton.icon(
+                    onPressed: _load,
+                    icon: const Icon(Icons.refresh),
+                    label: Text(AppLocalizations.of(context)!.retry),
+                  ),
+                )
           : _essenceMids.isEmpty
               ? _buildEmpty(context)
               : _buildList(context),

@@ -328,7 +328,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                 color: Theme.of(context).colorScheme.primary,
               ),
               title : Text(
-                widget.isEssence 
+                widget.isEssence
                   ? l10n.essenceRemove
                   : l10n.essenceAdd,
               )
@@ -1182,6 +1182,17 @@ class _MessageActionSheet extends StatelessWidget {
               onTap: () {
                 Navigator.pop(context);
                 onPinToggle?.call();
+              },
+            ),
+          ],
+          if (canPin) ...[
+            const Divider(height: 17),
+            _ActionListTile(
+              icon: Symbols.auto_awesome,
+              label: isEssence ? l10n.essenceRemove : l10n.essenceAdd,
+              onTap: () {
+                Navigator.pop(context);
+                onEssenceToggle?.call();
               },
             ),
           ],

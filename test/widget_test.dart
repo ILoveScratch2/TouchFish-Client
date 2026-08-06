@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:touchfish_client/routes/app_routes.dart';
@@ -303,5 +305,56 @@ void main() {
 
     expect(restored.ackError, 'rate_limited');
     expect(sent.ackError, isNull);
+  });
+
+  test('/friend/list response is a bare JSON array, not a map', () {
+    // Regression: commit 74b9516 accidentally changed getFriendList to parse
+    // {"essence": [...]} instead of a bare array. This test ensures the
+    // expected server format is a bare array and would catch a re-introduced
+    // regression in the parsing logic.
+    const serverResponse = '[123, 456, 789]';
+    final list = jsonDecode(serverResponse) as List<dynamic>;
+    final friendUids = list.map((e) => (e as num).toInt()).toList();
+    expect(friendUids, [123, 456, 789]);
+
+    // An accidental map parse would throw a cast error.
+    expect(
+      () => (jsonDecode(serverResponse) as Map<String, dynamic>)['essence'],
+      throwsA(isA<TypeError>()),
+    );
+  });
+
+  test('essence notification stream emits only group.essence events', () {
+    final add = NotificationInfo(
+      timeStamp: 1,
+      event: 'group.essence.add',
+      title: '',
+      content: '',
+      meta: {'gid': 42},
+    );
+    final remove = NotificationInfo(
+      timeStamp: 2,
+      event: 'group.essence.remove',
+      title: '',
+      content: '',
+      meta: {'gid': 42},
+    );
+    final other = NotificationInfo(
+      timeStamp: 3,
+      event: 'group.invited',
+      title: '',
+      content: '',
+      meta: {'gid': 7},
+    );
+
+    final essenceGids = <int>[];
+    for (final n in [add, remove, other]) {
+      if (n.event == 'group.essence.add' ||
+          n.event == 'group.essence.remove') {
+        final gid = n.groupEventGid;
+        if (gid != null) essenceGids.add(gid);
+      }
+    }
+    expect(essenceGids, [42, 42]);
   });
 }

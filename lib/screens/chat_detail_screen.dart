@@ -69,8 +69,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   PageController? _pinPageController;
   int _pinCurrentPage = 0;
   final GlobalKey _pinnedBarKey = GlobalKey();
-  List<int> _essenceMids=[];
-  bool _fetchingEssence=false;
+  List<int> _essenceMids = [];
+  String? _fetchingEssenceRoomId;
+  StreamSubscription<int>? _essenceSub;
   bool _fetchingPins=false;
 
   String get _contactUid {
@@ -127,6 +128,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _showBackToBottom = false;
     _replyingTo = null;
     _canModerateGroup = false;
+    _essenceMids = [];
+    _fetchingEssenceRoomId = null;
     _suppressDraftSave = true;
     _messageController.clear();
     _suppressDraftSave = false;
@@ -143,7 +146,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _pendingWsTimers.clear();
     _detachRealtimeListeners();
     _ackErrorSub?.cancel();
-    NotificationService.instance.removeListener(_onEssenceNotifChanged);
+    _essenceSub?.cancel();
     _draftTimer?.cancel();
     unawaited(_saveDraft());
     _messageController.dispose();
@@ -202,6 +205,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (_realtimeListenersAttached) return;
     ChatWsService.instance.addListener(_onWsStateChanged);
     ChatDataService.instance.addListener(_onChatDataChanged);
+    _essenceSub = NotificationService.instance.essenceChanges.listen(
+      _onEssenceChanged,
+    );
     _realtimeListenersAttached = true;
   }
 
@@ -209,6 +215,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (!_realtimeListenersAttached) return;
     ChatWsService.instance.removeListener(_onWsStateChanged);
     ChatDataService.instance.removeListener(_onChatDataChanged);
+    _essenceSub?.cancel();
+    _essenceSub = null;
     _realtimeListenersAttached = false;
   }
 
@@ -222,7 +230,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
     _ackErrorSub?.cancel();
     _ackErrorSub = ChatDataService.instance.ackErrorStream.listen(_onAckError);
-    NotificationService.instance.addListener(_onEssenceNotifChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -477,7 +484,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _pinPageController?.dispose();
     _pinPageController = null;
     _fetchingPins = false;
-    unawaited(_fetchEssenceMessages());
     if (profile != null && _contactUid.startsWith('U')) {
       _mentionUsers.add(
         MentionUser(
@@ -533,6 +539,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       });
     } else if (_contactUid.startsWith('G')) {
       unawaited(_loadMentionUsers());
+      unawaited(_fetchEssenceMessages());
     }
   }
 
@@ -670,7 +677,25 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   Future<void> _fetchEssenceMessages() async {
-    if(_fetchingEssence)return;final uid=AuthState.instance.uid;final pw=AuthState.instance.password;final gid=int.tryParse(_contactUid.substring(1));if(uid==null||pw==null||gid==null)return;_fetchingEssence=true;try{final mids=await TfApiClient.instance.queryEssence(uid,pw,gid);if(mounted)setState(()=>_essenceMids=mids??[]);}catch(_){}finally{_fetchingEssence=false;}}
+    final roomId = _contactUid;
+    if (!roomId.startsWith('G') || _fetchingEssenceRoomId == roomId) return;
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final gid = int.tryParse(roomId.substring(1));
+    if (uid == null || password == null || gid == null) return;
+
+    _fetchingEssenceRoomId = roomId;
+    try {
+      final mids = await TfApiClient.instance.queryEssence(uid, password, gid);
+      if (mounted && roomId == _contactUid && mids != null) {
+        setState(() => _essenceMids = mids);
+      }
+    } finally {
+      if (_fetchingEssenceRoomId == roomId) {
+        _fetchingEssenceRoomId = null;
+      }
+    }
+  }
   Future<void> _fetchPinnedMessages() async {
     if (_fetchingPins) return;
     final uid = AuthState.instance.uid;
@@ -709,19 +734,31 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (uid == null || password == null || gid == null || mid == null) return;
     if (_essenceMids.contains(mid)) {
       final ok = await TfApiClient.instance.removeEssence(uid, password, gid, mid);
-      if (ok && mounted) {
+      if (ok && mounted && _contactUid == 'G$gid') {
         setState(() {
           _essenceMids.remove(mid);
         });
+      } else if (!ok && mounted) {
+        _showEssenceOperationFailed();
       }
     } else {
       final ok = await TfApiClient.instance.addEssence(uid, password, gid, mid);
-      if (ok && mounted) {
+      if (ok && mounted && _contactUid == 'G$gid') {
         setState(() {
-          unawaited(_fetchEssenceMessages());
+          if (!_essenceMids.contains(mid)) _essenceMids.add(mid);
         });
+      } else if (!ok && mounted) {
+        _showEssenceOperationFailed();
       }
     }
+  }
+
+  void _showEssenceOperationFailed() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.commonFailedOperation),
+      ),
+    );
   }
 
   Future<void> _togglePin(ChatMessage message) async {
@@ -1578,15 +1615,32 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
-  void _onEssenceNotifChanged(){if(_currentRoom?.type==ChatType.group)unawaited(_fetchEssenceMessages());}
-  // void _onWsEssenceEvent(ChatWsEvent e){if(e.type!="NOTIFICATION.NEW"||e.notification==null)return;final i=e.notification!["info"]as Map<String,dynamic>?;if(i==null)return;final ev=i["event"]as String?;if(ev=="group.essence.add"||ev=="group.essence.remove"){final g=(i["meta"]?["gid"]as num?)?.toInt();if(g==int.tryParse(_contactUid.substring(1)))unawaited(_fetchEssenceMessages());}}
+  void _onEssenceChanged(int gid) {
+    if (_contactUid == 'G$gid') unawaited(_fetchEssenceMessages());
+  }
+
+  Future<void> _openEssenceScreen() async {
+    final room = _currentRoom;
+    final gid = int.tryParse(_contactUid.substring(1));
+    if (room?.type != ChatType.group || gid == null) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GroupEssenceScreen(gid: gid, groupName: room!.name),
+      ),
+    );
+    if (mounted && _contactUid == 'G$gid') {
+      unawaited(_fetchEssenceMessages());
+    }
+  }
+
   Widget _buildEssenceBar() {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
     return Material(
       color: cs.surfaceContainerHigh,
       child: InkWell(
-        onTap: () {},
+        onTap: _openEssenceScreen,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(children: [
@@ -1636,8 +1690,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    final gid = int.tryParse(_contactUid.substring(1));
-    if (_currentRoom == null || gid == null || _currentRoom?.name == null) {
+    if (_currentRoom == null) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.chatDetailLoading)),
         body: const Center(child: CircularProgressIndicator()),
@@ -1646,18 +1699,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
     final colorScheme = Theme.of(context).colorScheme;
     final isWide = MediaQuery.of(context).size.width >= 600;
-    final ttmp = _currentRoom!.name;
     final essenceButton = IconButton(
             icon: const Icon(Icons.auto_awesome),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                  GroupEssenceScreen(gid: gid, groupName: ttmp),
-                ),
-              );
-            },
+            onPressed: _openEssenceScreen,
           );
     final settingButton = IconButton(
             icon: const Icon(Icons.more_vert),

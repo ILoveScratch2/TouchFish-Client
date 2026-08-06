@@ -586,4 +586,80 @@ void main() {
     await tester.pumpAndSettle();
     expect(recalled?.mid, 9);
   });
+
+  testWidgets('long press menu shows essence action when canPin is true', (
+    tester,
+  ) async {
+    bool essenceToggled = false;
+    final message = ChatMessage(
+      id: '10',
+      mid: 10,
+      text: 'Essence target',
+      timestamp: DateTime(2026),
+      isMe: false,
+      senderUid: 2,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: MessageBubble(
+            message: message,
+            canPin: true,
+            isEssence: false,
+            onEssenceToggle: () => essenceToggled = true,
+          ),
+        ),
+      ),
+    );
+    await tester.longPress(find.text('Essence target'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add to essence'), findsOneWidget);
+    await tester.tap(find.text('Add to essence'));
+    await tester.pumpAndSettle();
+    expect(essenceToggled, isTrue);
+  });
+
+  testWidgets('long press menu shows remove essence when isEssence is true', (
+    tester,
+  ) async {
+    final message = ChatMessage(
+      id: '11',
+      mid: 11,
+      text: 'Already essence',
+      timestamp: DateTime(2026),
+      isMe: false,
+      senderUid: 2,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: MessageBubble(
+            message: message,
+            canPin: true,
+            isEssence: true,
+            onEssenceToggle: () {},
+          ),
+        ),
+      ),
+    );
+    await tester.longPress(find.text('Already essence'));
+    await tester.pumpAndSettle();
+    expect(find.text('Remove from essence'), findsOneWidget);
+  });
 }

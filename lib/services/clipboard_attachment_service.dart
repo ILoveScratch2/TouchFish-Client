@@ -44,12 +44,14 @@ class ClipboardAttachmentService {
     }
   }
 
-  /// Returns `true` when the clipboard currently holds at least one file
-  /// reference (a file URI, as opposed to plain text or an image blob).
+  /// Returns `true` when at least one clipboard item contains file data.
   Future<bool> hasFiles() async {
     final reader = await _readClipboard();
     if (reader == null) return false;
-    return reader.canProvide(Formats.fileUri);
+    return reader.items.any(
+      (item) => item.canProvide(Formats.fileUri) ||
+          item.getFormats(Formats.standardFormats).whereType<FileFormat>().isNotEmpty,
+    );
   }
 
 
@@ -61,11 +63,11 @@ class ClipboardAttachmentService {
 
     final results = <ClipboardFileData>[];
 
-    if (reader.canProvide(Formats.fileUri)) {
+    for (final item in reader.items) {
       if (!kIsWeb && (Platform.isWindows ||
           Platform.isLinux ||
-          Platform.isMacOS)) {
-        final uri = await reader.readValue(Formats.fileUri);
+          Platform.isMacOS) && item.canProvide(Formats.fileUri)) {
+        final uri = await item.readValue(Formats.fileUri);
         if (uri != null) {
           try {
             final file = File.fromUri(uri);
@@ -79,26 +81,21 @@ class ClipboardAttachmentService {
                 fileSize: stat.size,
                 bytes: bytes,
               ));
+              continue;
             }
           } catch (e) {
             talker.warning(
               'ClipboardAttachmentService: failed to read file $uri', e);
           }
         }
-      } else {
-        await _readViaGetFile(reader, results);
-        return results;
       }
-    }
-
-    if (results.isEmpty) {
-      await _readViaGetFile(reader, results);
+      await _readViaGetFile(item, results);
     }
     return results;
   }
 
   Future<void> _readViaGetFile(
-    ClipboardReader reader, List<ClipboardFileData> results,
+    DataReader reader, List<ClipboardFileData> results,
   ) async {
     final fileFormats = reader
         .getFormats(Formats.standardFormats)
@@ -129,7 +126,6 @@ class ClipboardAttachmentService {
           if (!completer.isCompleted) completer.complete();
         });
         await completer.future;
-        if (results.isNotEmpty) break;
       } catch (e) {
         talker.warning('ClipboardAttachmentService: getFile failed', e);
       }
@@ -138,7 +134,6 @@ class ClipboardAttachmentService {
 
   Future<List<ClipboardFileData>> checkAndReadFiles() async {
     if (!isAvailable) return [];
-    if (!(await hasFiles())) return [];
     return readClipboardFiles();
   }
 }

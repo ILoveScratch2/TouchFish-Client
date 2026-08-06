@@ -25,6 +25,8 @@ class NotificationService extends ChangeNotifier {
   final List<NotificationInfo> _allNotifications = [];
   final Set<int> _handledFriendSenders = {};
   final Set<String> _handledInviteKeys = {};
+  final StreamController<int> _essenceChanges =
+      StreamController<int>.broadcast();
   Timer? _pollTimer;
   StreamSubscription<ChatWsEvent>? _wsSubscription;
   bool _isLoading = false;
@@ -80,6 +82,8 @@ class NotificationService extends ChangeNotifier {
       .length;
   int get forumUnreadCount =>
       forumNotifications.where((n) => n.timeStamp > _lastReadForumTime).length;
+
+  Stream<int> get essenceChanges => _essenceChanges.stream;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -211,6 +215,11 @@ class NotificationService extends ChangeNotifier {
             .toSet();
         for (final n in fetched) {
           if (existingKeys.add(n.identityKey)) {
+            if (n.event == 'group.essence.add' ||
+                n.event == 'group.essence.remove') {
+              final gid = n.groupEventGid;
+              if (gid != null) _essenceChanges.add(gid);
+            }
             _allNotifications.add(n);
             if (n.isMessageEvent && n.senderUid != null) {
               ChatDataService.instance.processPolledMessage(
@@ -233,9 +242,6 @@ class NotificationService extends ChangeNotifier {
                 unawaited(ChatDataService.instance.removeRoom('G$gid'));
               }
               ChatDataService.instance.loadContactsAndRooms();
-            }
-            if (n.event == "group.essence.add" || n.event == "group.essence.remove") {
-              ChatDataService.instance.notifyListeners();
             }
           }
         }
@@ -292,12 +298,18 @@ class NotificationService extends ChangeNotifier {
         )) {
       return;
     }
-    if (notification.event == "group.essence.add" || notification.event == "group.essence.remove") {
+    if (notification.event == 'group.essence.add' ||
+        notification.event == 'group.essence.remove') {
       final gid = notification.groupEventGid;
-      if (gid != null) {
-        final level = ChatDataService.instance.roomNotifyLevel("G$gid");
-        if (level != 0) return;
-      }
+      if (gid != null) _essenceChanges.add(gid);
+    }
+    if ((notification.event == 'group.essence.add' ||
+            notification.event == 'group.essence.remove') &&
+        notification.groupEventGid != null &&
+        ChatDataService.instance
+                .roomNotifyLevel('G${notification.groupEventGid}') !=
+            0) {
+      return;
     }
     _allNotifications.add(notification);
     _allNotifications.sort((a, b) => b.timeStamp.compareTo(a.timeStamp));
