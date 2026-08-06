@@ -57,12 +57,13 @@ class _GroupEssenceScreenState extends State<GroupEssenceScreen> {
     final uid = _uid;
     final password = _password;
     try {
-      final mids = await TfApiClient.instance.queryEssence(
+      final result = await TfApiClient.instance.queryEssence(
         uid,
         password,
         widget.gid,
       );
-      if (mids == null) throw StateError('Failed to load essence messages');
+      if (result == null) throw StateError('Failed to load essence messages');
+      final mids = result.mids;
       final roomId = 'G${widget.gid}';
       final chatData = ChatDataService.instance;
       var page = await chatData.refreshMessagesForContact(roomId);

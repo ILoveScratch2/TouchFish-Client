@@ -2572,6 +2572,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupRequireReviewDesc => 'Join requests require owner approval';
 
   @override
+  String get groupFeaturesSection => 'Group Features';
+
+  @override
+  String get groupEssenceFeature => 'Essence Messages';
+
+  @override
+  String get groupEssenceFeatureDesc => 'Allow admins to mark essence messages';
+
+  @override
   String get groupTransferOwner => 'Transfer Ownership';
 
   @override

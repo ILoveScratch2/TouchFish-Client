@@ -19,8 +19,13 @@ import '../server_connection_status_service.dart';
 import '../../widgets/server_selector.dart';
 import '../../utils/talker.dart';
 
-class TfChatListItem {
-  final String roomId;
+class EssenceResult {
+  final List<int> mids;
+  final bool essenceEnabled;
+  const EssenceResult({required this.mids, required this.essenceEnabled});
+}
+
+class TfChatListItem {  final String roomId;
   final String roomType;
   final int partnerUid;
   final String username;
@@ -2076,16 +2081,18 @@ class TfApiClient {
     return _parseBool(result);
   }
 
-  Future<List<int>?> queryEssence(int uid, String password, int gid) async {
+  Future<EssenceResult?> queryEssence(int uid, String password, int gid) async {
     final result = await secretPost("group/query_essence",
       {"gid": gid}, uid: uid, password: password);
     if (result == null) return null;
     try {
       final map = jsonDecode(result) as Map<String, dynamic>;
       final list = map["essence"] as List<dynamic>;
-      return list.map((e) => (e as num).toInt()).toList();
+      final mids = list.map((e) => (e as num).toInt()).toList();
+      final essenceEnabled = map["essence_enabled"] as bool? ?? true;
+      return EssenceResult(mids: mids, essenceEnabled: essenceEnabled);
     } catch (e) {
-      talker.error("getEssenceList failed", e);
+      talker.error("queryEssence failed", e);
       return null;
     }
   }
