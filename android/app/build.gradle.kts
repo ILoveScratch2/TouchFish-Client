@@ -36,6 +36,13 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // flutter_local_notifications 通过字符串 "ic_notification" 动态查找
+            // smallIcon 资源（getIdentifier），R8/资源收缩器无法识别这种动态引用，
+            // 会将其从 release APK 中移除，导致通知初始化抛出
+            // "The resource ic_notification could not be found" 异常。
+            // 因此必须关闭 release 构建的资源收缩。
+            isShrinkResources = false
+            isMinifyEnabled = false
         }
     }
 }
