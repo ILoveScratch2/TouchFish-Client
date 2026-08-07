@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -49,6 +48,7 @@ class AppNotificationService extends ChangeNotifier
   GoRouter? _router;
   AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
   bool _initialized = false;
+  bool _observersRegistered = false;
   bool _localNotificationsReady = false;
   bool _permissionRequested = false;
 
@@ -58,8 +58,12 @@ class AppNotificationService extends ChangeNotifier
     _router = router;
     if (_initialized) return;
     _initialized = true;
-    WidgetsBinding.instance.addObserver(this);
-    SettingsService.instance.addListener(_onSettingsChanged);
+    // 观察者只注册一次，避免初始化失败重试时重复注册导致回调重复触发。
+    if (!_observersRegistered) {
+      _observersRegistered = true;
+      WidgetsBinding.instance.addObserver(this);
+      SettingsService.instance.addListener(_onSettingsChanged);
+    }
     if (kIsWeb) return;
 
     const darwinSettings = DarwinInitializationSettings(
@@ -101,6 +105,10 @@ class AppNotificationService extends ChangeNotifier
         error,
         stackTrace,
       );
+      // 初始化失败时重置标志，允许后续通过设置变更等时机重试。
+      // 例如 release 构建中 smallIcon 资源被资源收缩器移除时，
+      // 初始化会抛出 invalid_icon 异常，若不重置则通知功能永久失效。
+      _initialized = false;
     }
   }
 
@@ -360,6 +368,14 @@ class AppNotificationService extends ChangeNotifier
   void _onSettingsChanged() {
     if (!SettingsService.instance.getValue<bool>('inAppNotifications', true)) {
       clear();
+    }
+    if (!_localNotificationsReady &&
+        SettingsService.instance.getValue<bool>('systemNotifications', true)) {
+      // 通知系统尚未就绪（例如初始化曾失败），利用设置变更时机重试初始化。
+      final router = _router;
+      if (router != null) {
+        unawaited(initialize(router));
+      }
     }
     unawaited(_requestPermissionIfEnabled());
   }
