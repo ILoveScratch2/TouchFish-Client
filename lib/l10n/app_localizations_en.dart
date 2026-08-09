@@ -2921,4 +2921,67 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonUnknown => 'Unknown';
+
+  @override
+  String get groupSearchTitle => 'Search Groups';
+
+  @override
+  String get groupSearchHint => 'Search Group';
+
+  @override
+  String get groupSearchTooltip => 'Search Groups';
+
+  @override
+  String get groupSearchStartHint => 'Start searching for groups';
+
+  @override
+  String get groupSearchNotFound => 'No groups found';
+
+  @override
+  String get groupProfileTitle => 'Group Profile';
+
+  @override
+  String get groupProfileIntroduction => 'Group Introduction';
+
+  @override
+  String get groupProfileEnterHint => 'Join Hint';
+
+  @override
+  String get groupProfileGroupId => 'Group ID';
+
+  @override
+  String get groupProfileGroupIdCopied => 'Group ID copied';
+
+  @override
+  String groupProfileMembers(int count) {
+    return 'Members: $count';
+  }
+
+  @override
+  String get groupProfileRequireReview => 'Admin approval required';
+
+  @override
+  String get groupProfileRequireReviewNo => 'No admin approval required';
+
+  @override
+  String get groupProfileJoin => 'Join Group';
+
+  @override
+  String get groupProfileJoinSuccess => 'Joined the group';
+
+  @override
+  String get groupProfileJoinPending =>
+      'Application submitted, pending admin approval';
+
+  @override
+  String get groupProfileJoinFailed => 'Failed to join the group';
+
+  @override
+  String get groupProfileAlreadyMember => 'Already a member';
+
+  @override
+  String get groupProfileNotFound => 'Group not found';
+
+  @override
+  String get groupProfileCreator => 'Group Creator';
 }

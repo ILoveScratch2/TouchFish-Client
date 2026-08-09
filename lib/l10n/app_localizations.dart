@@ -5469,6 +5469,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown'**
   String get commonUnknown;
+
+  /// No description provided for @groupSearchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Groups'**
+  String get groupSearchTitle;
+
+  /// No description provided for @groupSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Group'**
+  String get groupSearchHint;
+
+  /// No description provided for @groupSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Groups'**
+  String get groupSearchTooltip;
+
+  /// No description provided for @groupSearchStartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Start searching for groups'**
+  String get groupSearchStartHint;
+
+  /// No description provided for @groupSearchNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No groups found'**
+  String get groupSearchNotFound;
+
+  /// No description provided for @groupProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Profile'**
+  String get groupProfileTitle;
+
+  /// No description provided for @groupProfileIntroduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Introduction'**
+  String get groupProfileIntroduction;
+
+  /// No description provided for @groupProfileEnterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Hint'**
+  String get groupProfileEnterHint;
+
+  /// No description provided for @groupProfileGroupId.
+  ///
+  /// In en, this message translates to:
+  /// **'Group ID'**
+  String get groupProfileGroupId;
+
+  /// No description provided for @groupProfileGroupIdCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Group ID copied'**
+  String get groupProfileGroupIdCopied;
+
+  /// No description provided for @groupProfileMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Members: {count}'**
+  String groupProfileMembers(int count);
+
+  /// No description provided for @groupProfileRequireReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin approval required'**
+  String get groupProfileRequireReview;
+
+  /// No description provided for @groupProfileRequireReviewNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No admin approval required'**
+  String get groupProfileRequireReviewNo;
+
+  /// No description provided for @groupProfileJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Group'**
+  String get groupProfileJoin;
+
+  /// No description provided for @groupProfileJoinSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Joined the group'**
+  String get groupProfileJoinSuccess;
+
+  /// No description provided for @groupProfileJoinPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Application submitted, pending admin approval'**
+  String get groupProfileJoinPending;
+
+  /// No description provided for @groupProfileJoinFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to join the group'**
+  String get groupProfileJoinFailed;
+
+  /// No description provided for @groupProfileAlreadyMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Already a member'**
+  String get groupProfileAlreadyMember;
+
+  /// No description provided for @groupProfileNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Group not found'**
+  String get groupProfileNotFound;
+
+  /// No description provided for @groupProfileCreator.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Creator'**
+  String get groupProfileCreator;
 }
 
 class _AppLocalizationsDelegate

@@ -1130,5 +1130,32 @@
   "forumSearchPostsHeader": "帖子",
 
   "stickerNoPacks": "暂无已收藏贴图包",
-  "commonUnknown": "未知"
+  "commonUnknown": "未知",
+
+  "groupSearchTitle": "搜索群聊",
+  "groupSearchHint": "搜索群聊",
+  "groupSearchTooltip": "搜索群聊",
+  "groupSearchStartHint": "请开始搜索群聊",
+  "groupSearchNotFound": "未找到群聊",
+
+  "groupProfileTitle": "群聊详情",
+  "groupProfileIntroduction": "群聊介绍",
+  "groupProfileEnterHint": "入群提示",
+  "groupProfileGroupId": "群聊 ID",
+  "groupProfileGroupIdCopied": "群聊 ID 已复制",
+  "groupProfileMembers": "群成员数量：{count}",
+  "@groupProfileMembers": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "groupProfileRequireReview": "需要群管理员通过申请",
+  "groupProfileRequireReviewNo": "无需群管理员通过申请",
+  "groupProfileJoin": "加入群聊",
+  "groupProfileJoinSuccess": "已加入群聊",
+  "groupProfileJoinPending": "已提交入群申请，等待管理员审核",
+  "groupProfileJoinFailed": "加入群聊失败",
+  "groupProfileAlreadyMember": "已在群中",
+  "groupProfileNotFound": "群聊未找到",
+  "groupProfileCreator": "群主"
 }

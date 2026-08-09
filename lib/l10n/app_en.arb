@@ -1167,5 +1167,32 @@
   "forumSearchPostsHeader": "Posts",
 
   "stickerNoPacks": "No sticker packs",
-  "commonUnknown": "Unknown"
+  "commonUnknown": "Unknown",
+
+  "groupSearchTitle": "Search Groups",
+  "groupSearchHint": "Search Group",
+  "groupSearchTooltip": "Search Groups",
+  "groupSearchStartHint": "Start searching for groups",
+  "groupSearchNotFound": "No groups found",
+
+  "groupProfileTitle": "Group Profile",
+  "groupProfileIntroduction": "Group Introduction",
+  "groupProfileEnterHint": "Join Hint",
+  "groupProfileGroupId": "Group ID",
+  "groupProfileGroupIdCopied": "Group ID copied",
+  "groupProfileMembers": "Members: {count}",
+  "@groupProfileMembers": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "groupProfileRequireReview": "Admin approval required",
+  "groupProfileRequireReviewNo": "No admin approval required",
+  "groupProfileJoin": "Join Group",
+  "groupProfileJoinSuccess": "Joined the group",
+  "groupProfileJoinPending": "Application submitted, pending admin approval",
+  "groupProfileJoinFailed": "Failed to join the group",
+  "groupProfileAlreadyMember": "Already a member",
+  "groupProfileNotFound": "Group not found",
+  "groupProfileCreator": "Group Creator"
 }

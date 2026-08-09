@@ -13,6 +13,7 @@ import '../widgets/contact_list_widget.dart';
 import '../widgets/invite_sheet.dart';
 import '../widgets/text_entry_dialog.dart';
 import '../services/notification_service.dart';
+import '../routes/app_routes.dart';
 import 'chat_detail_screen.dart';
 import 'group_create_screen.dart';
 
@@ -378,7 +379,18 @@ class _ChatListScreenState extends State<ChatListScreen>
                     ),
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: _buildInviteButton(context, l10n),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.search),
+                            tooltip: l10n.groupSearchTooltip,
+                            onPressed: () =>
+                                context.push(AppRoutes.groupSearch),
+                          ),
+                          _buildInviteButton(context, l10n),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -634,7 +646,17 @@ class _ChatListScreenState extends State<ChatListScreen>
                 ),
                 IconTheme(
                   data: IconThemeData(color: appbarFeColor),
-                  child: _buildInviteButton(context, l10n),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.search),
+                        tooltip: l10n.groupSearchTooltip,
+                        onPressed: () => context.push(AppRoutes.groupSearch),
+                      ),
+                      _buildInviteButton(context, l10n),
+                    ],
+                  ),
                 ),
               ],
             ),
