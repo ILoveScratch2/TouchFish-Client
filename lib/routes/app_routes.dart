@@ -26,6 +26,8 @@ import '../screens/server_settings_screen.dart';
 import '../screens/account_management_screen.dart';
 import '../screens/sticker_screens.dart';
 import '../screens/forum_search_screen.dart';
+import '../screens/group_search_screen.dart';
+import '../screens/group_profile_screen.dart';
 import '../services/auth_state.dart';
 import '../widgets/window_frame.dart';
 import '../utils/talker.dart';
@@ -41,6 +43,8 @@ class AppRoutes {
   static const String forumDetail = '/forum/:forumId';
   static const String forumPostDetail = '/forum/:forumId/post/:postId';
   static const String forumSearch = '/forum/search';
+  static const String groupSearch = '/group/search';
+  static const String groupProfile = '/group/:gid';
   static const String account = '/account';
   static const String admin = '/admin';
   static const String adminPendingForums = '/admin/pending-forums';
@@ -242,6 +246,27 @@ class AppRoutes {
             GoRoute(
               path: forumSearch,
               builder: (context, state) => const ForumSearchScreen(),
+            ),
+            GoRoute(
+              path: groupSearch,
+              builder: (context, state) => const GroupSearchScreen(),
+            ),
+            GoRoute(
+              path: groupProfile,
+              builder: (context, state) {
+                final gid = state.pathParameters['gid']!;
+                final args = state.extra;
+                final Map<String, dynamic>? initialData = args is Map
+                    ? args['initialData'] as Map<String, dynamic>?
+                    : null;
+                final String? groupName =
+                    args is Map ? args['groupName'] as String? : null;
+                return GroupProfileScreen(
+                  gid: gid,
+                  initialData: initialData,
+                  initialGroupName: groupName,
+                );
+              },
             ),
             GoRoute(
               path: '/forum/:forumId',

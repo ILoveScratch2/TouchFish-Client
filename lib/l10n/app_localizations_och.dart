@@ -2805,4 +2805,66 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get commonUnknown => '未知';
+
+  @override
+  String get groupSearchTitle => '尋群';
+
+  @override
+  String get groupSearchHint => '尋群';
+
+  @override
+  String get groupSearchTooltip => '尋群';
+
+  @override
+  String get groupSearchStartHint => '請始尋群';
+
+  @override
+  String get groupSearchNotFound => '未尋得群';
+
+  @override
+  String get groupProfileTitle => '群聊之詳';
+
+  @override
+  String get groupProfileIntroduction => '群聊之介';
+
+  @override
+  String get groupProfileEnterHint => '入群之示';
+
+  @override
+  String get groupProfileGroupId => '群聊之號';
+
+  @override
+  String get groupProfileGroupIdCopied => '群聊之號已錄';
+
+  @override
+  String groupProfileMembers(int count) {
+    return '群員之數：$count';
+  }
+
+  @override
+  String get groupProfileRequireReview => '須群管審核乃入';
+
+  @override
+  String get groupProfileRequireReviewNo => '毋須群管審核即入';
+
+  @override
+  String get groupProfileJoin => '入群';
+
+  @override
+  String get groupProfileJoinSuccess => '已入群矣';
+
+  @override
+  String get groupProfileJoinPending => '申請已投，候群管審核';
+
+  @override
+  String get groupProfileJoinFailed => '入群敗';
+
+  @override
+  String get groupProfileAlreadyMember => '已在群中矣';
+
+  @override
+  String get groupProfileNotFound => '群不存';
+
+  @override
+  String get groupProfileCreator => '群主';
 }

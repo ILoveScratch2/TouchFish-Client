@@ -2807,4 +2807,66 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get commonUnknown => '未知';
+
+  @override
+  String get groupSearchTitle => '搜索群聊';
+
+  @override
+  String get groupSearchHint => '搜索群聊';
+
+  @override
+  String get groupSearchTooltip => '搜索群聊';
+
+  @override
+  String get groupSearchStartHint => '请开始搜索群聊';
+
+  @override
+  String get groupSearchNotFound => '未找到群聊';
+
+  @override
+  String get groupProfileTitle => '群聊详情';
+
+  @override
+  String get groupProfileIntroduction => '群聊介绍';
+
+  @override
+  String get groupProfileEnterHint => '入群提示';
+
+  @override
+  String get groupProfileGroupId => '群聊 ID';
+
+  @override
+  String get groupProfileGroupIdCopied => '群聊 ID 已复制';
+
+  @override
+  String groupProfileMembers(int count) {
+    return '群成员数量：$count';
+  }
+
+  @override
+  String get groupProfileRequireReview => '需要群管理员通过申请';
+
+  @override
+  String get groupProfileRequireReviewNo => '无需群管理员通过申请';
+
+  @override
+  String get groupProfileJoin => '加入群聊';
+
+  @override
+  String get groupProfileJoinSuccess => '已加入群聊';
+
+  @override
+  String get groupProfileJoinPending => '已提交入群申请，等待管理员审核';
+
+  @override
+  String get groupProfileJoinFailed => '加入群聊失败';
+
+  @override
+  String get groupProfileAlreadyMember => '已在群中';
+
+  @override
+  String get groupProfileNotFound => '群聊未找到';
+
+  @override
+  String get groupProfileCreator => '群主';
 }

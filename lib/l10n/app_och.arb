@@ -1129,5 +1129,32 @@
   "forumSearchPostsHeader": "帖子",
 
   "stickerNoPacks": "暫無已藏貼圖包",
-  "commonUnknown": "未知"
+  "commonUnknown": "未知",
+
+  "groupSearchTitle": "尋群",
+  "groupSearchHint": "尋群",
+  "groupSearchTooltip": "尋群",
+  "groupSearchStartHint": "請始尋群",
+  "groupSearchNotFound": "未尋得群",
+
+  "groupProfileTitle": "群聊之詳",
+  "groupProfileIntroduction": "群聊之介",
+  "groupProfileEnterHint": "入群之示",
+  "groupProfileGroupId": "群聊之號",
+  "groupProfileGroupIdCopied": "群聊之號已錄",
+  "groupProfileMembers": "群員之數：{count}",
+  "@groupProfileMembers": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "groupProfileRequireReview": "須群管審核乃入",
+  "groupProfileRequireReviewNo": "毋須群管審核即入",
+  "groupProfileJoin": "入群",
+  "groupProfileJoinSuccess": "已入群矣",
+  "groupProfileJoinPending": "申請已投，候群管審核",
+  "groupProfileJoinFailed": "入群敗",
+  "groupProfileAlreadyMember": "已在群中矣",
+  "groupProfileNotFound": "群不存",
+  "groupProfileCreator": "群主"
 }

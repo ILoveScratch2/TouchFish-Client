@@ -1568,6 +1568,18 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (_contactUid == 'G$gid') unawaited(_fetchEssenceMessages());
   }
 
+  void _openGroupProfile() {
+    final room = _currentRoom;
+    if (room?.type != ChatType.group || !_contactUid.startsWith('G')) return;
+    final gid = _contactUid.substring(1);
+    context.push(
+      AppRoutes.groupProfile.replaceFirst(':gid', gid),
+      extra: <String, dynamic>{
+        'groupName': room!.name,
+      },
+    );
+  }
+
   Future<void> _openEssenceScreen() async {
     final room = _currentRoom;
     final gid = int.tryParse(_contactUid.substring(1));
@@ -1696,7 +1708,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         surfaceTintColor: Colors.transparent,
         title: Row(
           children: [
-            _buildAvatar(colorScheme),
+            InkWell(
+              onTap: _currentRoom!.type == ChatType.group
+                  ? _openGroupProfile
+                  : null,
+              customBorder: const CircleBorder(),
+              child: _buildAvatar(colorScheme),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

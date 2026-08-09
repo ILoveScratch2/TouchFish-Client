@@ -1979,6 +1979,37 @@ class TfApiClient {
 
   // --- group management ---
 
+  Future<List<Map<String, dynamic>>> searchGroup(String groupname) async {
+    final baseUrl = await getBaseUrl();
+    final uri = Uri.parse('$baseUrl/group/groupname_search/$groupname');
+    final response = await _getRequest(uri.toString());
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Group search failed');
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+
+    if (decoded == null || decoded is! List) {
+      return [];
+    }
+
+    return decoded.map<Map<String, dynamic>>((item) {
+      final List<dynamic> raw = item as List<dynamic>;
+      final Map<String, dynamic> group = {
+        'gid': raw[0],
+        'creater': raw[1],
+        'groupname': raw[2],
+        'members' : (jsonDecode(raw[3]) as List).cast<int>(),
+        'require_review': raw[4],
+        'enter_hint': raw[5],
+        'introduction': raw[6],
+        'allow_direct_join': raw[7],
+      };
+      return group;
+    }).toList();
+  }
+
   Future<int?> createGroup(
     int uid,
     String password, {
