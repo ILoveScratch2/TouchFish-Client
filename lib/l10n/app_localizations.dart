@@ -874,6 +874,18 @@ abstract class AppLocalizations {
   /// **'Render Markdown and LaTeX formatted text'**
   String get settingsEnableMarkdownDesc;
 
+  /// No description provided for @settingsCloseToTrayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimize to Tray on Close'**
+  String get settingsCloseToTrayTitle;
+
+  /// No description provided for @settingsCloseToTrayDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep running in the background when the window is closed instead of quitting (desktop only)'**
+  String get settingsCloseToTrayDesc;
+
   /// No description provided for @settingsSystemNotificationsTitle.
   ///
   /// In en, this message translates to:

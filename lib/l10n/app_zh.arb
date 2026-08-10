@@ -146,6 +146,9 @@
   "settingsEnableMarkdownTitle": "渲染Markdown/LaTeX内容",
   "settingsEnableMarkdownDesc": "将可渲染的Markdown/LaTeX文本进行渲染",
   
+  "settingsCloseToTrayTitle": "关闭时最小化到托盘",
+  "settingsCloseToTrayDesc": "关闭窗口时在后台继续运行，而不是退出应用（仅桌面平台）",
+  
   "settingsSystemNotificationsTitle": "系统通知",
   "settingsSystemNotificationsDesc": "使用操作系统通知进行消息通知",
   

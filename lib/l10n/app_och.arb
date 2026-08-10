@@ -146,6 +146,9 @@
   "settingsEnableMarkdownTitle": "染 Markdown/LaTeX 內容",
   "settingsEnableMarkdownDesc": "將可染之 Markdown/LaTeX 文予以渲染",
 
+  "settingsCloseToTrayTitle": "闔窗退隱於託盤",
+  "settingsCloseToTrayDesc": "闔窗後仍於後臺運行，不離應用（惟桌面平臺）",
+
   "settingsSystemNotificationsTitle": "系統通知",
   "settingsSystemNotificationsDesc": "藉作業系統通知以達消息之知",
 
