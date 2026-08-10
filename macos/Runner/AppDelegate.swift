@@ -23,15 +23,4 @@ class AppDelegate: FlutterAppDelegate {
     }
     return true
   }
-
-  override func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-    // When the user clicks the Dock icon, show the main window again.
-    if !flag {
-      for window in NSApp.windows {
-        window.makeKeyAndOrderFront(self)
-      }
-      NSApp.activate(ignoringOtherApps: true)
-    }
-    return true
-  }
 }
