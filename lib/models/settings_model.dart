@@ -191,6 +191,14 @@ class SettingsData {
       icon: Icons.notifications_active,
       items: [
         SettingItem(
+          key: 'closeToTray',
+          titleKey: 'settingsCloseToTrayTitle',
+          descriptionKey: 'settingsCloseToTrayDesc',
+          type: SettingType.switchSetting,
+          defaultValue: true,
+          icon: Icons.system_update_alt,
+        ),
+        SettingItem(
           key: 'systemNotifications',
           titleKey: 'settingsSystemNotificationsTitle',
           descriptionKey: 'settingsSystemNotificationsDesc',

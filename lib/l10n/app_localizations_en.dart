@@ -423,6 +423,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Render Markdown and LaTeX formatted text';
 
   @override
+  String get settingsCloseToTrayTitle => 'Minimize to Tray on Close';
+
+  @override
+  String get settingsCloseToTrayDesc =>
+      'Keep running in the background when the window is closed instead of quitting (desktop only)';
+
+  @override
   String get settingsSystemNotificationsTitle => 'System Notifications';
 
   @override

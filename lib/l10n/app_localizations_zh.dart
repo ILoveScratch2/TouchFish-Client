@@ -401,6 +401,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsEnableMarkdownDesc => '将可渲染的Markdown/LaTeX文本进行渲染';
 
   @override
+  String get settingsCloseToTrayTitle => '关闭时最小化到托盘';
+
+  @override
+  String get settingsCloseToTrayDesc => '关闭窗口时在后台继续运行，而不是退出应用（仅桌面平台）';
+
+  @override
   String get settingsSystemNotificationsTitle => '系统通知';
 
   @override

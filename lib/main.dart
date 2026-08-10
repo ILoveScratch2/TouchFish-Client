@@ -18,6 +18,7 @@ import 'services/auth_state.dart';
 import 'services/app_notification_service.dart';
 import 'services/chat_data_service.dart';
 import 'services/chat_ws_service.dart';
+import 'services/desktop_app_lifecycle_service.dart';
 import 'services/forum_pending_service.dart';
 import 'services/notification_service.dart';
 import 'services/server_connection_status_service.dart';
@@ -42,6 +43,10 @@ Future<void> main() async {
 
     if (isDesktop) {
       await windowManager.ensureInitialized();
+      // Only registers window/tray listeners now. The native window has not
+      // been created yet, so the tray icon must be set up after the window
+      // is ready (see waitUntilReadyToShow below).
+      await DesktopAppLifecycleService.instance.initialize();
     }
 
     final prefs = await SharedPreferences.getInstance();
@@ -89,6 +94,10 @@ Future<void> main() async {
         await windowManager.setOpacity(windowOpacity);
         await windowManager.show();
         await windowManager.focus();
+        // Native window is fully created here — set up the tray icon and
+        // intercept close events now that a valid HWND exists.
+        await DesktopAppLifecycleService.instance.afterWindowReady();
+        await DesktopAppLifecycleService.instance.restoreWindowState();
       });
     }
 

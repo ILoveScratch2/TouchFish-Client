@@ -400,6 +400,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsEnableMarkdownDesc => '將可染之 Markdown/LaTeX 文予以渲染';
 
   @override
+  String get settingsCloseToTrayTitle => '闔窗退隱於託盤';
+
+  @override
+  String get settingsCloseToTrayDesc => '闔窗後仍於後臺運行，不離應用（惟桌面平臺）';
+
+  @override
   String get settingsSystemNotificationsTitle => '系統通知';
 
   @override

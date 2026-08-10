@@ -1,9 +1,6 @@
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:window_manager/window_manager.dart';
-import '../utils/talker.dart';
 import 'custom_title_bar.dart';
 import '../constants/app_constants.dart';
 
@@ -22,74 +19,7 @@ class WindowFrame extends StatefulWidget {
   State<WindowFrame> createState() => _WindowFrameState();
 }
 
-class _WindowFrameState extends State<WindowFrame>
-    with WidgetsBindingObserver, WindowListener {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    final isDesktop =
-        !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
-    if (isDesktop) {
-      windowManager.addListener(this);
-    }
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    final isDesktop =
-        !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
-    if (isDesktop) {
-      windowManager.removeListener(this);
-    }
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
-      _saveWindowSize();
-    }
-  }
-
-  @override
-  void onWindowClose() async {
-    await _saveWindowSize();
-  }
-
-  @override
-  void onWindowResized() async {
-    await _saveWindowSize();
-  }
-
-  @override
-  void onWindowMoved() async {
-    await _saveWindowSize();
-  }
-
-  Future<void> _saveWindowSize() async {
-    if (kIsWeb ||
-        (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux)) {
-      return;
-    }
-    try {
-      final isMinimized = await windowManager.isMinimized();
-      if (isMinimized) return;
-      final isMaximized = await windowManager.isMaximized();
-      if (isMaximized) return;
-      final bounds = await windowManager.getBounds();
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble('window_width', bounds.width);
-      await prefs.setDouble('window_height', bounds.height);
-      await prefs.setDouble('window_x', bounds.left);
-      await prefs.setDouble('window_y', bounds.top);
-    } catch (e) {
-      talker.error('Windows size save error', e);
-    }
-  }
-
+class _WindowFrameState extends State<WindowFrame> {
   @override
   Widget build(BuildContext context) {
     final isDesktop =

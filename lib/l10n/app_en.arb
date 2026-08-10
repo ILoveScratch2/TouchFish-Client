@@ -160,6 +160,9 @@
   "settingsEnableMarkdownTitle": "Render Markdown/LaTeX",
   "settingsEnableMarkdownDesc": "Render Markdown and LaTeX formatted text",
   
+  "settingsCloseToTrayTitle": "Minimize to Tray on Close",
+  "settingsCloseToTrayDesc": "Keep running in the background when the window is closed instead of quitting (desktop only)",
+  
   "settingsSystemNotificationsTitle": "System Notifications",
   "settingsSystemNotificationsDesc": "Use system notifications for messages",
   
