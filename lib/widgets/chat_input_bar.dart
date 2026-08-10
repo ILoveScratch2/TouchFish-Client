@@ -124,7 +124,8 @@ class _ChatInputBarState extends State<ChatInputBar>
           DetectedFileType.gif ||
           DetectedFileType.bmp ||
           DetectedFileType.svg ||
-          DetectedFileType.tgs => MessageType.image,
+          DetectedFileType.tgs ||
+          DetectedFileType.webp => MessageType.image,
           DetectedFileType.unknown =>
             _messageTypeFromExtension(file.fileName),
         };
@@ -680,7 +681,8 @@ class _ChatInputBarState extends State<ChatInputBar>
               DetectedFileType.gif ||
               DetectedFileType.bmp ||
               DetectedFileType.svg ||
-              DetectedFileType.tgs => MessageType.image,
+              DetectedFileType.tgs ||
+              DetectedFileType.webp => MessageType.image,
               DetectedFileType.unknown => _messageTypeFromExtension(file.name),
             };
 
