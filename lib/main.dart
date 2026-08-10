@@ -20,6 +20,7 @@ import 'services/chat_data_service.dart';
 import 'services/chat_ws_service.dart';
 import 'services/desktop_app_lifecycle_service.dart';
 import 'services/forum_pending_service.dart';
+import 'services/single_instance_service.dart';
 import 'services/notification_service.dart';
 import 'services/server_connection_status_service.dart';
 import 'utils/talker.dart';
@@ -38,6 +39,19 @@ Future<void> main() async {
 
     final isDesktop =
         !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+
+    // Enforce a single running instance. If another instance is already
+    // running, signal it to show its window and exit this process before any
+    // Flutter window is created.
+    if (isDesktop) {
+      final isPrimary =
+          await SingleInstanceService.instance.tryAcquireSingleInstance();
+      if (!isPrimary) {
+        talker.info('Exiting secondary TouchFish instance.');
+        exit(0);
+      }
+    }
+
     final startupRecovery = await _performStartupRecovery(isDesktop: isDesktop);
     await SettingsService.instance.init();
 
@@ -47,6 +61,11 @@ Future<void> main() async {
       // been created yet, so the tray icon must be set up after the window
       // is ready (see waitUntilReadyToShow below).
       await DesktopAppLifecycleService.instance.initialize();
+      // When a second instance is launched, the primary instance shows its
+      // main window (from hidden tray state if necessary).
+      SingleInstanceService.instance.onShowWindowRequested = () {
+        unawaited(DesktopAppLifecycleService.instance.showWindow());
+      };
     }
 
     final prefs = await SharedPreferences.getInstance();

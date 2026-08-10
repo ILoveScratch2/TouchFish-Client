@@ -245,6 +245,9 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
     // bringAppToFront=true makes TrackPopupMenu work even when the window
     // is hidden to the tray.
     if (Platform.isWindows) {
+      // bringAppToFront is required so TrackPopupMenu still works while the
+      // main window is hidden to the tray.
+      // ignore: deprecated_member_use
       unawaited(trayManager.popUpContextMenu(bringAppToFront: true));
     }
   }
