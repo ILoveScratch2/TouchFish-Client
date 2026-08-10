@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:super_clipboard/super_clipboard.dart';
 
+import '../utils/file_type_detector.dart';
 import '../utils/talker.dart';
 
 /// Represents a file read from the clipboard ready for upload.
@@ -74,10 +75,11 @@ class ClipboardAttachmentService {
             if (await file.exists()) {
               final bytes = await file.readAsBytes();
               final stat = await file.stat();
+              final rawName = uri.pathSegments.isNotEmpty
+                  ? uri.pathSegments.last
+                  : 'clipboard_file';
               results.add(ClipboardFileData(
-                fileName: uri.pathSegments.isNotEmpty
-                    ? uri.pathSegments.last
-                    : 'clipboard_file',
+                fileName: ensureFileExtension(rawName, bytes),
                 fileSize: stat.size,
                 bytes: bytes,
               ));
@@ -110,9 +112,9 @@ class ClipboardAttachmentService {
           try {
             final bytes = await file.readAll();
             if (bytes.isNotEmpty) {
+              final rawName = file.fileName ?? 'clipboard_file';
               results.add(ClipboardFileData(
-                fileName: file.fileName ??
-                    'clipboard_file',
+                fileName: ensureFileExtension(rawName, bytes),
                 fileSize: file.fileSize ?? bytes.length,
                 bytes: bytes,
               ));

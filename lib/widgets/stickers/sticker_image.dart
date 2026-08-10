@@ -149,6 +149,7 @@ class _StickerImageState extends State<StickerImage> {
           case DetectedFileType.jpg:
           case DetectedFileType.gif:
           case DetectedFileType.bmp:
+          case DetectedFileType.webp:
           case DetectedFileType.unknown:
             return Image.memory(
               payload.bytes,
