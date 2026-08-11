@@ -149,6 +149,10 @@
   "settingsCloseToTrayTitle": "闔窗退隱於託盤",
   "settingsCloseToTrayDesc": "闔窗後仍於後臺運行，不離應用（惟桌面平臺）",
 
+  "trayShowApp": "啟 TouchFish",
+  "trayHideWindow": "隱窗",
+  "trayQuit": "退",
+
   "settingsSystemNotificationsTitle": "系統通知",
   "settingsSystemNotificationsDesc": "藉作業系統通知以達消息之知",
 
@@ -1159,5 +1163,22 @@
   "groupProfileJoinFailed": "入群敗",
   "groupProfileAlreadyMember": "已在群中矣",
   "groupProfileNotFound": "群不存",
-  "groupProfileCreator": "群主"
+  "groupProfileCreator": "群主",
+
+  "forwardSearchTitle": "轉發",
+  "forwardSearchHint": "請尋用戶與群聊",
+  "forwardSearchNotFound": "未尋得合意之項",
+  "forwardConfirmTitle": "確認轉發此訊息？",
+  "forwardConfirmContent": "將此訊息轉發予 {name}？",
+  "@forwardConfirmContent": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "forwardWhereTitle": "轉發後欲往何處？",
+  "forwardGoToTarget": "至轉發之位",
+  "forwardStay": "留於原位",
+  "forwardSending": "轉發中...",
+  "forwardSuccess": "轉發已成",
+  "forwardFailed": "轉發敗"
 }

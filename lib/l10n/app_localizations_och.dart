@@ -406,6 +406,15 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsCloseToTrayDesc => '闔窗後仍於後臺運行，不離應用（惟桌面平臺）';
 
   @override
+  String get trayShowApp => '啟 TouchFish';
+
+  @override
+  String get trayHideWindow => '隱窗';
+
+  @override
+  String get trayQuit => '退';
+
+  @override
   String get settingsSystemNotificationsTitle => '系統通知';
 
   @override
@@ -2873,4 +2882,39 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get groupProfileCreator => '群主';
+
+  @override
+  String get forwardSearchTitle => '轉發';
+
+  @override
+  String get forwardSearchHint => '請尋用戶與群聊';
+
+  @override
+  String get forwardSearchNotFound => '未尋得合意之項';
+
+  @override
+  String get forwardConfirmTitle => '確認轉發此訊息？';
+
+  @override
+  String forwardConfirmContent(String name) {
+    return '將此訊息轉發予 $name？';
+  }
+
+  @override
+  String get forwardWhereTitle => '轉發後欲往何處？';
+
+  @override
+  String get forwardGoToTarget => '至轉發之位';
+
+  @override
+  String get forwardStay => '留於原位';
+
+  @override
+  String get forwardSending => '轉發中...';
+
+  @override
+  String get forwardSuccess => '轉發已成';
+
+  @override
+  String get forwardFailed => '轉發敗';
 }

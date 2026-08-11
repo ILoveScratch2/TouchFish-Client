@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../l10n/app_localizations.dart';
+import '../models/app_state.dart';
 import '../models/settings_service.dart';
 import '../utils/talker.dart';
 
@@ -76,6 +79,17 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
   }
 
   Future<void> _setupTray() async {
+    // Resolve localized menu labels. The tray is set up before runApp(), so
+    // there is no BuildContext available; use lookupAppLocalizations with the
+    // current app locale instead.
+    final locale = AppState.instance.locale;
+    AppLocalizations l10n;
+    if (locale != null) {
+      l10n = lookupAppLocalizations(locale);
+    } else {
+      l10n = lookupAppLocalizations(Locale('zh'));
+    }
+
     try {
       // Windows only supports .ico via LoadImage, while macOS/Linux work
       // well with PNG. Use the platform-appropriate icon file.
@@ -87,18 +101,18 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
           items: [
             MenuItem(
               key: 'show',
-              label: '打开 TouchFish',
+              label: l10n.trayShowApp,
               onClick: (_) => showWindow(),
             ),
             MenuItem(
               key: 'hide',
-              label: '隐藏窗口',
+              label: l10n.trayHideWindow,
               onClick: (_) => hideWindow(),
             ),
             MenuItem.separator(),
             MenuItem(
               key: 'quit',
-              label: '退出',
+              label: l10n.trayQuit,
               onClick: (_) => quit(),
             ),
           ],

@@ -163,6 +163,10 @@
   "settingsCloseToTrayTitle": "Minimize to Tray on Close",
   "settingsCloseToTrayDesc": "Keep running in the background when the window is closed instead of quitting (desktop only)",
   
+  "trayShowApp": "Open TouchFish",
+  "trayHideWindow": "Hide Window",
+  "trayQuit": "Quit",
+  
   "settingsSystemNotificationsTitle": "System Notifications",
   "settingsSystemNotificationsDesc": "Use system notifications for messages",
   
@@ -1197,5 +1201,22 @@
   "groupProfileJoinFailed": "Failed to join the group",
   "groupProfileAlreadyMember": "Already a member",
   "groupProfileNotFound": "Group not found",
-  "groupProfileCreator": "Group Creator"
+  "groupProfileCreator": "Group Creator",
+
+  "forwardSearchTitle": "Forward",
+  "forwardSearchHint": "Search users and groups",
+  "forwardSearchNotFound": "No results found",
+  "forwardConfirmTitle": "Forward this message?",
+  "forwardConfirmContent": "Forward this message to {name}?",
+  "@forwardConfirmContent": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "forwardWhereTitle": "Where to go after forwarding?",
+  "forwardGoToTarget": "Go to this chat",
+  "forwardStay": "Stay in current chat",
+  "forwardSending": "Forwarding...",
+  "forwardSuccess": "Forwarded",
+  "forwardFailed": "Forward failed"
 }

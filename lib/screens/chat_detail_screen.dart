@@ -601,10 +601,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   void _startForward(ChatMessage message) {
     if (message.mid == null || message.isDeleted) return;
-    setState(() {
-      _forwardingTo = message;
-      _replyingTo = null;
-    });
+    // 打开转发选择屏幕（右键转发 / 悬浮转发按钮都会触发）
+    context.push(AppRoutes.forward, extra: message);
   }
 
   bool _canRecall(ChatMessage message) {
@@ -1855,11 +1853,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                       milliseconds: 120,
                                     ),
                                     confirmDismiss: (_) async {
-                                      if (message.isMe) {
-                                        _startForward(message);
-                                      } else {
-                                        _startReply(message);
-                                      }
+                                      _startReply(message);
                                       return false;
                                     },
                                     background: Align(
@@ -1869,9 +1863,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                           right: 24,
                                         ),
                                         child: Icon(
-                                          message.isMe
-                                              ? Icons.forward
-                                              : Icons.reply,
+                                          Icons.reply,
                                           color: colorScheme.primary,
                                         ),
                                       ),
