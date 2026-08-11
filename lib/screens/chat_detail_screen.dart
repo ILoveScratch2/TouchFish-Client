@@ -71,6 +71,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   String? _fetchingEssenceRoomId;
   StreamSubscription<int>? _essenceSub;
   bool _fetchingPins = false;
+  bool _isJumpingToMessage = false;
 
   String get _contactUid {
     final id = widget.roomId;
@@ -120,6 +121,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _isLoadingOlder = false;
     _isLoadingMessages = false;
     _hasMoreMessages = true;
+    _isJumpingToMessage = false;
     _groupEnterHint = '';
     _showGroupEnterHint = true;
     _followBottom = true;
@@ -286,7 +288,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
     _updatePinnedPageFromScroll();
 
-    if (_isLoadingMessages || _isLoadingOlder || !_hasMoreMessages) return;
+    // 跳转过程中禁用自动加载更早消息，避免打断跳转
+    if (_isJumpingToMessage ||
+        _isLoadingMessages ||
+        _isLoadingOlder ||
+        !_hasMoreMessages) {
+      return;
+    }
     final position = _scrollController.position;
     if (position.maxScrollExtent > 0 &&
         position.pixels > position.maxScrollExtent - 50) {
@@ -358,7 +366,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   bool _onScrollMetricsChanged(ScrollMetricsNotification notification) {
-    if (_followBottom) _scrollToBottom(animated: false);
+    // 跳转过程中忽略“跟随底部”自动回底，防止把跳转顶回底部
+    if (_followBottom && !_isJumpingToMessage) {
+      _scrollToBottom(animated: false);
+    }
     return false;
   }
 
@@ -447,6 +458,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   void _onChatDataChanged() {
     if (!mounted) return;
+    // 跳转过程中完全忽略实时数据变动，避免：
+    //  1) 新消息触发 _scrollToBottom 把跳转顶回底部
+    //  2) 列表被替换导致按 index 的分段跳转失效
+    if (_isJumpingToMessage) return;
     _refreshRoom();
     final cached = ChatDataService.instance.getMessages(_contactUid);
     final previousLastId = _messages.isNotEmpty ? _messages.last.id : null;
@@ -1334,6 +1349,201 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
+  int _indexOfMessage(ChatMessage target) {
+    final mid = target.mid;
+    if (mid != null) {
+      final byMid = _messages.indexWhere((m) => m.mid == mid);
+      if (byMid >= 0) return byMid;
+    }
+    final byId = _messages.indexWhere((m) => m.id == target.id);
+    if (byId >= 0) return byId;
+    final clientMid = target.clientMid;
+    if (clientMid != null) {
+      final byClientMid = _messages.indexWhere(
+        (m) => m.clientMid == clientMid,
+      );
+      if (byClientMid >= 0) return byClientMid;
+    }
+    return -1;
+  }
+
+  void _scrollToMessageIndex(int index) {
+    if (index < 0 || index >= _messages.length) return;
+    _followBottom = false;
+    final message = _messages[index];
+    final mid = message.mid;
+
+    // 目标上下文已就绪：瞬时精确对齐（无动画）
+    final targetContext = mid != null ? _messageKeys[mid]?.currentContext : null;
+    if (targetContext != null) {
+      Scrollable.ensureVisible(
+        targetContext,
+        duration: Duration.zero,
+        alignment: 0.35,
+      );
+      return;
+    }
+
+    // 目标不在视口内：分段瞬时逼近。
+    // 一次性 jumpTo 很远会让 ListView.builder 在单帧内布局海量 item 而冻结，
+    // 因此每次只跳约 5 个视口高度，等一帧布局完成后再继续，直到接近目标。
+    _isJumpingToMessage = true;
+    _jumpStepToMessage(index: index, mid: mid);
+  }
+
+  void _jumpStepToMessage({required int index, int? mid}) {
+    if (!mounted || index >= _messages.length) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || index >= _messages.length) return;
+      if (!_scrollController.hasClients) {
+        _jumpStepToMessage(index: index, mid: mid);
+        return;
+      }
+
+      // 目标已被构建出来：瞬时精确对齐，跳转完成
+      final context = mid != null ? _messageKeys[mid]?.currentContext : null;
+      if (context != null) {
+        Scrollable.ensureVisible(
+          context,
+          duration: Duration.zero,
+          alignment: 0.35,
+        );
+        _isJumpingToMessage = false;
+        return;
+      }
+
+      final position = _scrollController.position;
+      // reverse:true 列表：index=0 为最新（底部），index 越大越旧（越靠上）
+      final reverseIndex = _messages.length - 1 - index;
+      final fraction = _messages.length <= 1
+          ? 0.0
+          : reverseIndex / (_messages.length - 1);
+      final targetOffset = position.maxScrollExtent * fraction;
+      final currentOffset = position.pixels;
+      final distance = (targetOffset - currentOffset).abs();
+      final maxStep = position.viewportDimension * 5.0;
+
+      if (distance <= maxStep || targetOffset <= 0) {
+        // 已接近目标（或目标就在顶部）：跳最后一段，再精确对齐一次
+        position.jumpTo(
+          targetOffset.clamp(
+            position.minScrollExtent,
+            position.maxScrollExtent,
+          ),
+        );
+        _jumpFinalAlign(index: index, mid: mid);
+        return;
+      }
+
+      // 向前推进一段（不超过 maxStep），等待布局后继续
+      final nextOffset = targetOffset > currentOffset
+          ? currentOffset + maxStep
+          : currentOffset - maxStep;
+      position.jumpTo(
+        nextOffset.clamp(position.minScrollExtent, position.maxScrollExtent),
+      );
+      _jumpStepToMessage(index: index, mid: mid);
+    });
+  }
+
+  void _jumpFinalAlign({required int index, int? mid}) {
+    if (!mounted || index >= _messages.length) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || index >= _messages.length) return;
+      _isJumpingToMessage = false;
+      final context = mid != null ? _messageKeys[mid]?.currentContext : null;
+      if (context != null) {
+        Scrollable.ensureVisible(
+          context,
+          duration: Duration.zero,
+          alignment: 0.35,
+        );
+      }
+    });
+  }
+
+  void _showJumpMessageNotFound() {
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.chatSearchMessagesNoResults),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _jumpToMessage(ChatMessage target) async {
+    _followBottom = false;
+    final roomId = _contactUid;
+    final roomGeneration = _roomGeneration;
+
+    // 1. 目标消息已经在当前加载的列表里，直接定位
+    var index = _indexOfMessage(target);
+    if (index >= 0) {
+      _scrollToMessageIndex(index);
+      return;
+    }
+
+    final targetMid = target.mid;
+    if (targetMid == null || target.isDeleted) {
+      _showJumpMessageNotFound();
+      return;
+    }
+
+    // 翻页加载期间也进入“跳转中”状态，防止实时消息插入/替换列表打断跳转
+    _isJumpingToMessage = true;
+
+    // 2. 目标不在当前列表，往前翻页加载直到找到或没有更多
+    var exhausted = false;
+    var locatedInList = false;
+    const maxPages = 30;
+    try {
+      for (var pageCount = 0; pageCount < maxPages; pageCount++) {
+        if (!mounted || roomGeneration != _roomGeneration) return;
+        // 已有加载在进行中（如上滑自动翻页），跳过本次跳转避免并发冲突
+        if (_isLoadingMessages || _isLoadingOlder || !_hasMoreMessages) {
+          exhausted = true;
+          break;
+        }
+
+        setState(() => _isLoadingOlder = true);
+        final page = await ChatDataService.instance.loadOlderMessages(roomId);
+        if (!mounted ||
+            roomGeneration != _roomGeneration ||
+            roomId != _contactUid) {
+          return;
+        }
+        final msgs = ChatDataService.instance.getMessages(roomId);
+        setState(() {
+          _messages
+            ..clear()
+            ..addAll(msgs);
+          _isLoadingOlder = false;
+          _hasMoreMessages = page.hasMore;
+        });
+
+        index = _indexOfMessage(target);
+        if (index >= 0) {
+          locatedInList = true;
+          _scrollToMessageIndex(index);
+          return;
+        }
+        if (!page.hasMore || msgs.isEmpty) {
+          exhausted = true;
+          break;
+        }
+      }
+    } finally {
+      // 如果目标已在列表中被定位并交给分段滚动处理，
+      // 则保持 _isJumpingToMessage = true，由 _jumpFinalAlign 在完成后复位；
+      // 否则（未找到/被中断）在此复位。
+      if (mounted && !locatedInList) _isJumpingToMessage = false;
+    }
+
+    if (mounted && exhausted) _showJumpMessageNotFound();
+  }
+
   Widget _buildAvatar(ColorScheme colorScheme) {
     final avatarUrl = _currentRoom!.avatar;
     if (avatarUrl == null || _avatarLoadFailed) {
@@ -1673,12 +1883,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final settingButton = IconButton(
       icon: const Icon(Icons.more_vert),
       onPressed: () async {
-        await Navigator.push(
+        final result = await Navigator.push<ChatMessage>(
           context,
           MaterialPageRoute(
             builder: (_) => ChatRoomSettingsScreen(chatRoom: _currentRoom!),
           ),
         );
+        if (result != null && mounted) {
+          unawaited(_jumpToMessage(result));
+        }
         if (mounted && _currentRoom?.type == ChatType.group) {
           unawaited(_loadMentionUsers());
           unawaited(_fetchEssenceMessages());

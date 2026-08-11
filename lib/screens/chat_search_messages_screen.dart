@@ -178,8 +178,8 @@ class _ChatSearchMessagesScreenState extends State<ChatSearchMessagesScreen> {
                               ?.copyWith(color: colorScheme.onSurfaceVariant),
                         ),
                         onTap: () {
-                          // 应该导航到对应消息的位置，但这里并没有
-                          Navigator.pop(context);
+                          // 返回对话界面并跳转到该消息的位置
+                          Navigator.pop(context, message);
                         },
                       );
                     },

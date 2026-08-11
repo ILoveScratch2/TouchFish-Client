@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../models/chat_model.dart';
+import '../models/message_model.dart';
 import '../services/chat_data_service.dart';
 import '../widgets/sheet_scaffold.dart';
 import 'chat_search_messages_screen.dart';
@@ -176,14 +177,18 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                 trailing: const Icon(Symbols.chevron_right),
                 title: Text(l10n.chatSearchMessages),
                 subtitle: Text(l10n.chatSearchMessagesDescription),
-                onTap: () {
-                  Navigator.push(
+                onTap: () async {
+                  final selected = await Navigator.push<ChatMessage>(
                     context,
                     MaterialPageRoute(
                       builder: (context) =>
                           ChatSearchMessagesScreen(roomId: widget.chatRoom.id),
                     ),
                   );
+                  if (selected != null && context.mounted) {
+                    // 选中搜索结果后逐层返回，把消息带回 ChatDetailScreen
+                    Navigator.pop(context, selected);
+                  }
                 },
               ),
             ]),
