@@ -1391,12 +1391,18 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _jumpStepToMessage(index: index, mid: mid);
   }
 
-  void _jumpStepToMessage({required int index, int? mid}) {
+  void _jumpStepToMessage({required int index, int? mid, int retry = 0}) {
     if (!mounted || index >= _messages.length) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || index >= _messages.length) return;
       if (!_scrollController.hasClients) {
-        _jumpStepToMessage(index: index, mid: mid);
+        // 列表尚未挂载（如跳转期间房间被切换）：最多等待 60 帧，
+        // 避免列表永远没有客户端时无限空转。
+        if (retry < 60) {
+          _jumpStepToMessage(index: index, mid: mid, retry: retry + 1);
+        } else {
+          _isJumpingToMessage = false;
+        }
         return;
       }
 
@@ -1496,19 +1502,45 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
     // 2. 目标不在当前列表，往前翻页加载直到找到或没有更多
     var exhausted = false;
+    var aborted = false;
     var locatedInList = false;
     const maxPages = 30;
     try {
       for (var pageCount = 0; pageCount < maxPages; pageCount++) {
         if (!mounted || roomGeneration != _roomGeneration) return;
-        // 已有加载在进行中（如上滑自动翻页），跳过本次跳转避免并发冲突
-        if (_isLoadingMessages || _isLoadingOlder || !_hasMoreMessages) {
+        // 已有加载在进行中（如上滑自动翻页）：等待其完成而不是直接放弃，
+        // 否则目标明明存在也会被误报为"未找到"。
+        if (_isLoadingMessages || _isLoadingOlder) {
+          final settled = await _waitForOngoingMessageLoad();
+          if (!mounted || roomGeneration != _roomGeneration) return;
+          final indexNow = _indexOfMessage(target);
+          if (indexNow >= 0) {
+            locatedInList = true;
+            _scrollToMessageIndex(indexNow);
+            return;
+          }
+          if (!settled) {
+            // 加载迟迟不结束（如网络卡住）：放弃本次跳转，也不报"未找到"
+            aborted = true;
+            break;
+          }
+          continue;
+        }
+        if (!_hasMoreMessages) {
           exhausted = true;
           break;
         }
 
         setState(() => _isLoadingOlder = true);
-        final page = await ChatDataService.instance.loadOlderMessages(roomId);
+        MessageHistoryPage page;
+        try {
+          page = await ChatDataService.instance.loadOlderMessages(roomId);
+        } catch (error, stackTrace) {
+          talker.error('Jump-to-message: load older failed', error, stackTrace);
+          if (mounted) setState(() => _isLoadingOlder = false);
+          exhausted = true;
+          break;
+        }
         if (!mounted ||
             roomGeneration != _roomGeneration ||
             roomId != _contactUid) {
@@ -1541,7 +1573,20 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       if (mounted && !locatedInList) _isJumpingToMessage = false;
     }
 
-    if (mounted && exhausted) _showJumpMessageNotFound();
+    if (mounted && exhausted && !aborted) _showJumpMessageNotFound();
+  }
+
+  /// 等待并发中的消息加载（自动翻页等）结束，最多等 [timeout]。
+  /// 正常结束返回 true；超时返回 false（调用方应放弃跳转）。
+  Future<bool> _waitForOngoingMessageLoad({
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    final deadline = DateTime.now().add(timeout);
+    while (mounted && (_isLoadingMessages || _isLoadingOlder)) {
+      if (DateTime.now().isAfter(deadline)) return false;
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    return !_isLoadingMessages && !_isLoadingOlder;
   }
 
   Widget _buildAvatar(ColorScheme colorScheme) {

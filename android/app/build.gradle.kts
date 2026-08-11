@@ -40,9 +40,8 @@ android {
             // smallIcon 资源（getIdentifier），R8/资源收缩器无法识别这种动态引用，
             // 会将其从 release APK 中移除，导致通知初始化抛出
             // "The resource ic_notification could not be found" 异常。
-            // 因此必须关闭 release 构建的资源收缩。
-            isShrinkResources = false
-            isMinifyEnabled = false
+            // 修复方式：在 res/xml/keep.xml 中用 tools:keep 保留该资源，
+            // 而不是关闭整个 release 的资源/代码收缩（那会让 APK 显著变大）。
         }
     }
 }

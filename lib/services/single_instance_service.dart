@@ -75,10 +75,13 @@ class SingleInstanceService {
       _isPrimary = true;
       talker.info('TouchFish single-instance listener started on port $_port.');
     } catch (error, stackTrace) {
-      // Binding failed unexpectedly — still continue as primary so the app
-      // works, but the single-instance guarantee may be degraded.
+      // Binding failed unexpectedly — the most common cause is that another
+      // application already occupies port 47832. Still continue as primary so
+      // the app works, but the single-instance guarantee may be degraded.
       talker.error(
-        'Failed to bind single-instance listener: $error',
+        'Failed to bind single-instance listener on port $_port '
+        '(possibly taken by another application, single-instance guarantee '
+        'is degraded): $error',
         error,
         stackTrace,
       );

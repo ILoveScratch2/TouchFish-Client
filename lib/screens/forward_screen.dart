@@ -171,18 +171,12 @@ class _ForwardScreenState extends State<ForwardScreen> {
 
     setState(() => _sending = true);
     try {
-      final content = switch (widget.message.type) {
-        MessageType.file => widget.message.text,
-        MessageType.image => '[IMAGE]',
-        MessageType.video => '[VIDEO]',
-        MessageType.audio => '[AUDIO]',
-        MessageType.text => widget.message.text,
-      };
-      final contentType = widget.message.type == MessageType.file
-          ? 'file'
-          : widget.message.media != null
-          ? 'file'
-          : 'plain';
+      // 与聊天页内联转发（chat_detail_screen 的 _sendMessageAsync）保持一致的
+      // 协议参数：原文内容、plain/file 类型、原文件 hash，并带上 forwarded
+      // 让服务端识别为转发消息。
+      final content = widget.message.text;
+      final contentType =
+          widget.message.type == MessageType.file ? 'file' : 'plain';
 
       final result = await TfApiClient.instance.sendMessage(
         uid,
@@ -191,7 +185,7 @@ class _ForwardScreenState extends State<ForwardScreen> {
         content: content,
         contentType: contentType,
         fileHash: widget.message.media?.fileHash,
-        // forwarded: mid,
+        forwarded: mid,
       );
       if (!mounted) return false;
       if (result != null) {

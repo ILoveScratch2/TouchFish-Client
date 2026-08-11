@@ -111,12 +111,16 @@ Future<void> main() async {
 
         await windowManager.setMinimumSize(minSize);
         await windowManager.setOpacity(windowOpacity);
-        await windowManager.show();
-        await windowManager.focus();
         // Native window is fully created here — set up the tray icon and
         // intercept close events now that a valid HWND exists.
         await DesktopAppLifecycleService.instance.afterWindowReady();
         await DesktopAppLifecycleService.instance.restoreWindowState();
+        // 上次退出时窗口隐藏在托盘里：本次启动直接驻留托盘，不显示窗口
+        // （可通过托盘菜单或再次启动唤出）。
+        if (!DesktopAppLifecycleService.instance.wasHiddenInTray) {
+          await windowManager.show();
+          await windowManager.focus();
+        }
       });
     }
 
