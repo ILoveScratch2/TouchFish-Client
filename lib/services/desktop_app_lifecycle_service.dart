@@ -31,6 +31,7 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
   bool _isQuitting = false;
 
   /// Whether the window was hidden to the tray during the previous session.
+  /// Used on startup to decide whether the window should be shown at all.
   bool get wasHiddenInTray => _wasHiddenInTray;
   bool _wasHiddenInTray = false;
 
@@ -65,7 +66,6 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
     }
     await _setupTray();
     await windowManager.setPreventClose(true);
-    await _restoreMaximizedStateIfNeeded();
   }
 
   /// Restores the persisted window state (maximized) after the window is
@@ -179,6 +179,9 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
     } else {
       // Closing should still quit if close-to-tray is disabled.
       _isQuitting = true;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(keyWasInTray, false);
+      _wasHiddenInTray = false;
       await windowManager.destroy();
     }
   }
@@ -230,13 +233,6 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
         talker.debug('Could not restore maximized window state: $error');
       }
     }
-  }
-
-  /// Whether the app should immediately show the window because it was
-  /// hidden to the tray during the previous session.
-  static Future<bool> shouldRestoreFromTray() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(keyWasInTray) ?? false;
   }
 
   // ---- TrayListener ----

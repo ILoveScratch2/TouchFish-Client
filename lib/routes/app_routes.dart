@@ -28,6 +28,7 @@ import '../screens/sticker_screens.dart';
 import '../screens/forum_search_screen.dart';
 import '../screens/group_search_screen.dart';
 import '../screens/group_profile_screen.dart';
+import '../l10n/app_localizations.dart';
 import '../screens/forward_screen.dart';
 import '../models/message_model.dart';
 import '../services/auth_state.dart';
@@ -259,7 +260,15 @@ class AppRoutes {
               builder: (context, state) {
                 final args = state.extra;
                 final message = args is ChatMessage ? args : null;
-                return ForwardScreen(message: message!);
+                if (message == null) {
+                  // 缺少转发目标消息时直接回退，避免强解包崩溃
+                  return Scaffold(
+                    body: Center(
+                      child: Text(AppLocalizations.of(context)!.forwardFailed),
+                    ),
+                  );
+                }
+                return ForwardScreen(message: message);
               },
             ),
             GoRoute(

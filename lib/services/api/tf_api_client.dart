@@ -1981,7 +1981,10 @@ class TfApiClient {
 
   Future<List<Map<String, dynamic>>> searchGroup(String groupname) async {
     final baseUrl = await getBaseUrl();
-    final uri = Uri.parse('$baseUrl/group/groupname_search/$groupname');
+    // 群名可能包含中文/特殊字符，必须编码后再拼进路径，否则 Uri.parse
+    // 会抛异常或请求错误。
+    final encoded = Uri.encodeComponent(groupname);
+    final uri = Uri.parse('$baseUrl/group/groupname_search/$encoded');
     final response = await _getRequest(uri.toString());
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -1994,20 +1997,37 @@ class TfApiClient {
       return [];
     }
 
-    return decoded.map<Map<String, dynamic>>((item) {
-      final List<dynamic> raw = item as List<dynamic>;
-      final Map<String, dynamic> group = {
+    final groups = <Map<String, dynamic>>[];
+    for (final item in decoded) {
+      if (item is! List || item.length < 8) {
+        // 服务端结构异常时跳过该项，避免整屏搜索崩溃
+        continue;
+      }
+      final List<dynamic> raw = item;
+      List<dynamic> members = const [];
+      try {
+        final rawMembers = raw[3];
+        if (rawMembers is String && rawMembers.isNotEmpty) {
+          final parsed = jsonDecode(rawMembers);
+          if (parsed is List) members = parsed;
+        } else if (rawMembers is List) {
+          members = rawMembers;
+        }
+      } catch (_) {
+        members = const [];
+      }
+      groups.add(<String, dynamic>{
         'gid': raw[0],
         'creater': raw[1],
         'groupname': raw[2],
-        'members' : (jsonDecode(raw[3]) as List).cast<int>(),
+        'members': members.map((m) => m is num ? m.toInt() : m).toList(),
         'require_review': raw[4],
         'enter_hint': raw[5],
         'introduction': raw[6],
         'allow_direct_join': raw[7],
-      };
-      return group;
-    }).toList();
+      });
+    }
+    return groups;
   }
 
   Future<int?> createGroup(
