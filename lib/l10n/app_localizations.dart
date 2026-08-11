@@ -886,6 +886,24 @@ abstract class AppLocalizations {
   /// **'Keep running in the background when the window is closed instead of quitting (desktop only)'**
   String get settingsCloseToTrayDesc;
 
+  /// No description provided for @trayShowApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Open TouchFish'**
+  String get trayShowApp;
+
+  /// No description provided for @trayHideWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Window'**
+  String get trayHideWindow;
+
+  /// No description provided for @trayQuit.
+  ///
+  /// In en, this message translates to:
+  /// **'Quit'**
+  String get trayQuit;
+
   /// No description provided for @settingsSystemNotificationsTitle.
   ///
   /// In en, this message translates to:
@@ -5601,6 +5619,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Group Creator'**
   String get groupProfileCreator;
+
+  /// No description provided for @forwardSearchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward'**
+  String get forwardSearchTitle;
+
+  /// No description provided for @forwardSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search users and groups'**
+  String get forwardSearchHint;
+
+  /// No description provided for @forwardSearchNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No results found'**
+  String get forwardSearchNotFound;
+
+  /// No description provided for @forwardConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward this message?'**
+  String get forwardConfirmTitle;
+
+  /// No description provided for @forwardConfirmContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward this message to {name}?'**
+  String forwardConfirmContent(String name);
+
+  /// No description provided for @forwardWhereTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where to go after forwarding?'**
+  String get forwardWhereTitle;
+
+  /// No description provided for @forwardGoToTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to this chat'**
+  String get forwardGoToTarget;
+
+  /// No description provided for @forwardStay.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay in current chat'**
+  String get forwardStay;
+
+  /// No description provided for @forwardSending.
+  ///
+  /// In en, this message translates to:
+  /// **'Forwarding...'**
+  String get forwardSending;
+
+  /// No description provided for @forwardSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Forwarded'**
+  String get forwardSuccess;
+
+  /// No description provided for @forwardFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward failed'**
+  String get forwardFailed;
 }
 
 class _AppLocalizationsDelegate

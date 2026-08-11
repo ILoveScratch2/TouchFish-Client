@@ -407,6 +407,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsCloseToTrayDesc => '关闭窗口时在后台继续运行，而不是退出应用（仅桌面平台）';
 
   @override
+  String get trayShowApp => '打开 TouchFish';
+
+  @override
+  String get trayHideWindow => '隐藏窗口';
+
+  @override
+  String get trayQuit => '退出';
+
+  @override
   String get settingsSystemNotificationsTitle => '系统通知';
 
   @override
@@ -2875,4 +2884,39 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get groupProfileCreator => '群主';
+
+  @override
+  String get forwardSearchTitle => '转发';
+
+  @override
+  String get forwardSearchHint => '请搜索用户和群聊';
+
+  @override
+  String get forwardSearchNotFound => '未搜索到符合项';
+
+  @override
+  String get forwardConfirmTitle => '确认转发这条消息？';
+
+  @override
+  String forwardConfirmContent(String name) {
+    return '将这条消息转发给 $name？';
+  }
+
+  @override
+  String get forwardWhereTitle => '转发后到达哪里？';
+
+  @override
+  String get forwardGoToTarget => '到达转发位置的聊天框';
+
+  @override
+  String get forwardStay => '停留在原位置的聊天框';
+
+  @override
+  String get forwardSending => '正在转发...';
+
+  @override
+  String get forwardSuccess => '转发成功';
+
+  @override
+  String get forwardFailed => '转发失败';
 }

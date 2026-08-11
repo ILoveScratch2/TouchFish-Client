@@ -430,6 +430,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Keep running in the background when the window is closed instead of quitting (desktop only)';
 
   @override
+  String get trayShowApp => 'Open TouchFish';
+
+  @override
+  String get trayHideWindow => 'Hide Window';
+
+  @override
+  String get trayQuit => 'Quit';
+
+  @override
   String get settingsSystemNotificationsTitle => 'System Notifications';
 
   @override
@@ -2991,4 +3000,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupProfileCreator => 'Group Creator';
+
+  @override
+  String get forwardSearchTitle => 'Forward';
+
+  @override
+  String get forwardSearchHint => 'Search users and groups';
+
+  @override
+  String get forwardSearchNotFound => 'No results found';
+
+  @override
+  String get forwardConfirmTitle => 'Forward this message?';
+
+  @override
+  String forwardConfirmContent(String name) {
+    return 'Forward this message to $name?';
+  }
+
+  @override
+  String get forwardWhereTitle => 'Where to go after forwarding?';
+
+  @override
+  String get forwardGoToTarget => 'Go to this chat';
+
+  @override
+  String get forwardStay => 'Stay in current chat';
+
+  @override
+  String get forwardSending => 'Forwarding...';
+
+  @override
+  String get forwardSuccess => 'Forwarded';
+
+  @override
+  String get forwardFailed => 'Forward failed';
 }

@@ -149,6 +149,10 @@
   "settingsCloseToTrayTitle": "关闭时最小化到托盘",
   "settingsCloseToTrayDesc": "关闭窗口时在后台继续运行，而不是退出应用（仅桌面平台）",
   
+  "trayShowApp": "打开 TouchFish",
+  "trayHideWindow": "隐藏窗口",
+  "trayQuit": "退出",
+  
   "settingsSystemNotificationsTitle": "系统通知",
   "settingsSystemNotificationsDesc": "使用操作系统通知进行消息通知",
   
@@ -1160,5 +1164,22 @@
   "groupProfileJoinFailed": "加入群聊失败",
   "groupProfileAlreadyMember": "已在群中",
   "groupProfileNotFound": "群聊未找到",
-  "groupProfileCreator": "群主"
+  "groupProfileCreator": "群主",
+
+  "forwardSearchTitle": "转发",
+  "forwardSearchHint": "请搜索用户和群聊",
+  "forwardSearchNotFound": "未搜索到符合项",
+  "forwardConfirmTitle": "确认转发这条消息？",
+  "forwardConfirmContent": "将这条消息转发给 {name}？",
+  "@forwardConfirmContent": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "forwardWhereTitle": "转发后到达哪里？",
+  "forwardGoToTarget": "到达转发位置的聊天框",
+  "forwardStay": "停留在原位置的聊天框",
+  "forwardSending": "正在转发...",
+  "forwardSuccess": "转发成功",
+  "forwardFailed": "转发失败"
 }

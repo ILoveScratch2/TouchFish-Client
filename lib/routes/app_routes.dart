@@ -28,6 +28,8 @@ import '../screens/sticker_screens.dart';
 import '../screens/forum_search_screen.dart';
 import '../screens/group_search_screen.dart';
 import '../screens/group_profile_screen.dart';
+import '../screens/forward_screen.dart';
+import '../models/message_model.dart';
 import '../services/auth_state.dart';
 import '../widgets/window_frame.dart';
 import '../utils/talker.dart';
@@ -45,6 +47,7 @@ class AppRoutes {
   static const String forumSearch = '/forum/search';
   static const String groupSearch = '/group/search';
   static const String groupProfile = '/group/:gid';
+  static const String forward = '/forward';
   static const String account = '/account';
   static const String admin = '/admin';
   static const String adminPendingForums = '/admin/pending-forums';
@@ -250,6 +253,14 @@ class AppRoutes {
             GoRoute(
               path: groupSearch,
               builder: (context, state) => const GroupSearchScreen(),
+            ),
+            GoRoute(
+              path: forward,
+              builder: (context, state) {
+                final args = state.extra;
+                final message = args is ChatMessage ? args : null;
+                return ForwardScreen(message: message!);
+              },
             ),
             GoRoute(
               path: groupProfile,
