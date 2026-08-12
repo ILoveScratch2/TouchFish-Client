@@ -521,7 +521,6 @@ class ChatDataService extends ChangeNotifier {
           AuthState.instance.uid != uid) {
         return;
       }
-      final existingRooms = {for (final room in _rooms) room.id: room};
       talker.info(
         'ChatDataService.loadContactsAndRooms: calling /chat/list for uid=$uid',
       );
@@ -541,6 +540,10 @@ class ChatDataService extends ChangeNotifier {
         return;
       }
 
+      // 在 await（queryChatList/getBaseUrl）之后构建房间映射：
+      // await 期间轮询恢复的历史消息会实时累计未读（_addToCacheSilent），
+      // 若在 await 前取快照，重建列表时会把这些未读清零。
+      final existingRooms = {for (final room in _rooms) room.id: room};
       final nextRooms = <ChatRoom>[];
       final nextContacts = <Contact>[];
 
@@ -817,18 +820,43 @@ class ChatDataService extends ChangeNotifier {
       _evictCacheIfNeeded();
       _localStore.appendMessage(roomId, msg);
     }
+
+    // 历史恢复的消息同样参照 _addToCache 的通知判定累计未读角标，
+    // 这样在另一平台离线期间的私聊/群聊消息会在聊天列表右侧
+    // 显示红色数字角标，而不是弹横幅轰炸。
+    // 消息已存在（例如轮询与 WS 同时收到同一消息）时不重复累计，
+    // 但始终更新房间的最后一条消息。
+    final uid = AuthState.instance.uid;
+    final username = AuthState.instance.currentUser?.username ?? '';
+    final shouldCountUnread =
+        !msg.isMe &&
+        !exists &&
+        (msg.shouldAlert ??
+            (uid != null &&
+                shouldNotifyMessage(
+                  notifyLevel: roomNotifyLevel(roomId),
+                  message: msg.text,
+                  currentUid: uid,
+                  currentUsername: username,
+                )));
+
     if (!_rooms.any((r) => r.id == roomId)) {
-      _addNewRoom(roomId, msg, unreadCount: 0);
+      _addNewRoom(roomId, msg, unreadCount: shouldCountUnread ? 1 : 0);
     } else {
       final idx = _rooms.indexWhere((r) => r.id == roomId);
       final lastTime = _rooms[idx].lastMessageTime;
+      var updated = _rooms[idx];
       if (lastTime == null || msg.timestamp.isAfter(lastTime)) {
-        _rooms[idx] = _rooms[idx].copyWith(
+        updated = updated.copyWith(
           lastMessage: msg.text,
           lastMessageTime: msg.timestamp,
           lastMessageMid: msg.mid,
         );
       }
+      if (shouldCountUnread) {
+        updated = updated.copyWith(unreadCount: updated.unreadCount + 1);
+      }
+      _rooms[idx] = updated;
     }
     _sortRooms();
     notifyListeners();

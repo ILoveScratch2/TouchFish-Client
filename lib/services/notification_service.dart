@@ -277,6 +277,13 @@ class NotificationService extends ChangeNotifier {
 
   void startPolling({Duration interval = const Duration(seconds: 30)}) {
     _pollTimer?.cancel();
+    // 首次启动/登录时会在短时间内恢复历史通知（可能较多），
+    // 抑制应用内横幅一段时间，只累计各栏目角标，避免集中轰炸。
+    if (_isFirstFetchForSession || _isInitialLoad) {
+      AppNotificationService.instance.suppressInAppBanners(
+        const Duration(seconds: 10),
+      );
+    }
     _wsSubscription ??= ChatWsService.instance.eventStream.listen(_onWsEvent);
     fetchNotifications();
     _pollTimer = Timer.periodic(interval, (_) => fetchNotifications());

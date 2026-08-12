@@ -135,6 +135,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _messageController.clear();
     _suppressDraftSave = false;
     unawaited(_restoreDraft(_contactUid));
+    // 进入/切换聊天时立即清除该房间的未读计数：
+    //   - 聊天列表中该会话右侧的角标消失
+    //   - 导航栏/侧边栏右上角的总计数（totalUnreadCount 动态求和）相应减去
+    // _markVisibleMessagesRead 仍负责后续新消息到达且可见时再清零并发送已读回执。
+    ChatDataService.instance.clearUnread(_contactUid);
     _loadChatRoom();
     _startRealMessaging();
   }
