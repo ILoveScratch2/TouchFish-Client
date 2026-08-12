@@ -185,7 +185,7 @@ class _ForwardScreenState extends State<ForwardScreen> {
         content: content,
         contentType: contentType,
         fileHash: widget.message.media?.fileHash,
-        forwarded: mid,
+        // forwarded: mid,
       );
       if (!mounted) return false;
       if (result != null) {
