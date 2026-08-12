@@ -51,8 +51,21 @@ class AppNotificationService extends ChangeNotifier
   bool _observersRegistered = false;
   bool _localNotificationsReady = false;
   bool _permissionRequested = false;
+  bool _suppressInAppBanners = false;
+  Timer? _bannerSuppressionTimer;
 
   List<AppNotificationItem> get items => List.unmodifiable(_items);
+
+  /// 抑制应用内横幅一段时间（例如应用刚启动/登录恢复历史通知时），
+  /// 期间新到达的事件只累计到各栏目的角标，不弹横幅轰炸用户；
+  /// 窗口结束后恢复正常横幅提醒。
+  void suppressInAppBanners(Duration duration) {
+    _suppressInAppBanners = true;
+    _bannerSuppressionTimer?.cancel();
+    _bannerSuppressionTimer = Timer(duration, () {
+      _suppressInAppBanners = false;
+    });
+  }
 
   Future<void> initialize(GoRouter router) async {
     _router = router;
@@ -121,6 +134,10 @@ class AppNotificationService extends ChangeNotifier
     final settings = SettingsService.instance;
     if (!_isNotificationTypeEnabled(notification)) return;
     if (await _shouldShowInApp()) {
+      // 应用刚启动/登录恢复历史通知的抑制窗口内不弹横幅，
+      // 事件只累计到各栏目角标，避免集中轰炸；
+      // 正常使用过程中照常显示应用内横幅。
+      if (_suppressInAppBanners) return;
       if (!settings.getValue<bool>('inAppNotifications', true)) return;
       if (settings.getValue<bool>('notificationSound', true)) {
         unawaited(SystemSound.play(SystemSoundType.alert));
