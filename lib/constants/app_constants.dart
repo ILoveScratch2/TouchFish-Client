@@ -12,7 +12,7 @@ class AppConstants {
   static const String githubRepoUrl =
       'https://github.com/ILoveScratch2/TouchFish-Client';
   static const String githubServerRepoUrl =
-      'https://github.com/2044-space-elevator/TouchFish';
+      'https://github.com/2044-space-elevator/TouchFishServer';
   static const String licenseUrl =
       'https://github.com/ILoveScratch2/TouchFish-Client/blob/main/LICENSE';
 
