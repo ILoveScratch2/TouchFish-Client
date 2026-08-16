@@ -90,8 +90,86 @@ class LocalMessageStore {
     final legacyServer = '${uri.host}_${uri.port}';
     await _importSharedDatabase(db, dir, server, legacyServer);
     await _importLegacyFiles(db, server, legacyServer);
+    await _migrateSyncPoints(db);
     _databases[_dbKey(server, uid)] = db;
     return db;
+  }
+
+  /// 迁移!
+  /// 旧版本 payload 没有 room_seq，无法直接得知服务端序号。为每个房间计算
+  /// 本地最大 mid，作为 last_mid 同步点（服务端 mid 与 room_seq 同序），
+  /// 升级后只补拉升级期间的新消息，避免全量重拉。
+  Future<void> _migrateSyncPoints(Database db) async {
+    final migrated = db.select('SELECT value FROM metadata WHERE key = ?', [
+      'sync_points_migrated',
+    ]);
+    if (migrated.isNotEmpty) return;
+    db.execute('BEGIN IMMEDIATE');
+    try {
+      final rows = db.select(
+        'SELECT room_id, payload FROM messages '
+        'WHERE server_key = ? AND uid = ?',
+        [_requireScope().server, _requireScope().uid],
+      );
+      final maxMidByRoom = <String, int>{};
+      for (final row in rows) {
+        try {
+          final json =
+              jsonDecode(row['payload'] as String) as Map<String, dynamic>;
+          final mid = (json['mid'] as num?)?.toInt();
+          if (mid == null || mid <= 0) continue;
+          final room = row['room_id'] as String;
+          final current = maxMidByRoom[room];
+          if (current == null || mid > current) maxMidByRoom[room] = mid;
+        } catch (_) {}
+      }
+      for (final entry in maxMidByRoom.entries) {
+        db.execute(
+          'INSERT OR REPLACE INTO metadata(key, value) VALUES (?, ?)',
+          ['sync_mid:${entry.key}', '${entry.value}'],
+        );
+      }
+      db.execute('INSERT OR REPLACE INTO metadata(key, value) VALUES (?, ?)', [
+        'sync_points_migrated',
+        '1',
+      ]);
+      db.execute('COMMIT');
+      talker.info(
+        'LocalMessageStore: migrated ${maxMidByRoom.length} room sync points',
+      );
+    } catch (_) {
+      db.execute('ROLLBACK');
+      rethrow;
+    }
+  }
+
+  Future<int?> getRoomSyncMid(String roomId) async {
+    final scope = _requireScope();
+    final db = await _db(scope.server, scope.uid);
+    final rows = db.select('SELECT value FROM metadata WHERE key = ?', [
+      'sync_mid:$roomId',
+    ]);
+    if (rows.isEmpty) return null;
+    return int.tryParse(rows.first['value'] as String? ?? '');
+  }
+
+  Future<int?> getRoomSyncSeq(String roomId) async {
+    final scope = _requireScope();
+    final db = await _db(scope.server, scope.uid);
+    final rows = db.select('SELECT value FROM metadata WHERE key = ?', [
+      'sync_seq:$roomId',
+    ]);
+    if (rows.isEmpty) return null;
+    return int.tryParse(rows.first['value'] as String? ?? '');
+  }
+
+  Future<void> saveRoomSyncPoint(String roomId, int seq) async {
+    final scope = _requireScope();
+    final db = await _db(scope.server, scope.uid);
+    db.execute('INSERT OR REPLACE INTO metadata(key, value) VALUES (?, ?)', [
+      'sync_seq:$roomId',
+      '$seq',
+    ]);
   }
 
   Future<void> _importSharedDatabase(

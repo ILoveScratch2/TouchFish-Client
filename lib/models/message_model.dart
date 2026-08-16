@@ -136,6 +136,7 @@ class ChatMessage {
   final bool isDeleted;
   final DateTime? deletedAt;
   final int? deletedBy;
+  final int? roomSeq;
 
   ChatMessage({
     required this.id,
@@ -161,6 +162,7 @@ class ChatMessage {
     this.isDeleted = false,
     this.deletedAt,
     this.deletedBy,
+    this.roomSeq,
   });
 
   ChatMessage copyWith({
@@ -188,6 +190,7 @@ class ChatMessage {
     bool? isDeleted,
     DateTime? deletedAt,
     int? deletedBy,
+    int? roomSeq,
     bool clearMedia = false,
   }) {
     return ChatMessage(
@@ -214,6 +217,124 @@ class ChatMessage {
       isDeleted: isDeleted ?? this.isDeleted,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
+      roomSeq: roomSeq ?? this.roomSeq,
+    );
+  }
+
+  /// 解析服务端 MESSAGE.NEW 推送 / /message/sync 返回的单条消息。
+  ///
+  /// 载荷 == 旧的 notification.info：event/title/content/sender/mid/
+  /// client_mid/room_id/group_id/room_seq/quote_preview/forwarded/
+  /// forward_preview/file/mentioned_uids/mentions_me/should_alert。
+  factory ChatMessage.fromServerMessage(
+    Map<String, dynamic> json, {
+    required int myUid,
+    String? senderName,
+    String? senderAvatar,
+  }) {
+    final event = (json['event'] as String?) ?? 'message.plain';
+    final content = (json['content'] as String?) ?? '';
+    final clientMid = json['client_mid'] as String?;
+    final mid = _asInt(json['mid']);
+    final roomSeq = _asInt(json['room_seq']);
+    final rawSender = json['sender']?.toString();
+    final senderUid = _parseSenderUid(rawSender);
+    final isMe = senderUid == myUid;
+    final dt = _serverDateTime(
+      json['title']?.toString() ??
+          json['send_time']?.toString() ??
+          json['time_stamp']?.toString(),
+    );
+    final id = mid?.toString() ?? dt.millisecondsSinceEpoch.toString();
+    final suid = senderUid;
+    final resolvedName = isMe ? null : (senderName ?? 'User $suid');
+    final quoteMid = _asInt(json['quote']);
+    final quoteRaw =
+        json['quote_preview'] ??
+        json['reply_preview'] ??
+        json['quoted_message'] ??
+        (json['quote'] is Map ? json['quote'] : null);
+    final quotePreview = _quotePreview(quoteRaw, quoteMid);
+    final forwardedMid = _asInt(json['forwarded']);
+    final forwardPreview = _quotePreview(
+      json['forward_preview'] ?? json['forwarded_message'],
+      forwardedMid,
+    );
+    final mentionedUids =
+        (json['mentioned_uids'] as List<dynamic>? ?? const [])
+            .whereType<num>()
+            .map((uid) => uid.toInt())
+            .toList();
+
+    if (event == 'message.file') {
+      final fileHash = json['file_hash']?.toString() ?? content;
+      final attachment = FileAttachment.fromMap({
+        if (json['file'] is Map) ...Map<String, dynamic>.from(json['file'] as Map),
+        'file_hash': fileHash,
+      });
+      MessageType msgType;
+      final mime = attachment.mimeType ?? '';
+      if (mime.startsWith('image/')) {
+        msgType = MessageType.image;
+      } else if (mime.startsWith('video/')) {
+        msgType = MessageType.video;
+      } else if (mime.startsWith('audio/')) {
+        msgType = MessageType.audio;
+      } else {
+        msgType = MessageType.file;
+      }
+      return ChatMessage(
+        id: id,
+        mid: mid,
+        clientMid: clientMid,
+        senderUid: suid,
+        text: '[FILE]',
+        timestamp: dt,
+        isMe: isMe,
+        senderName: resolvedName,
+        senderAvatar: senderAvatar,
+        type: msgType,
+        media: MessageMedia(
+          path: fileHash,
+          fileName: attachment.fileName,
+          fileSize: attachment.fileSize,
+          mimeType: attachment.mimeType,
+          fileHash: fileHash,
+        ),
+        mentionedUids: mentionedUids,
+        mentionsMe: json['mentions_me'] as bool? ?? false,
+        shouldAlert: json['should_alert'] as bool?,
+        quoteMid: quotePreview?.mid,
+        quotePreview: quotePreview,
+        forwardedMid: forwardedMid,
+        forwardPreview: forwardPreview,
+        roomSeq: roomSeq,
+      );
+    }
+
+    final deleted = json['deleted'] == true || json['deleted_at'] != null;
+    return ChatMessage(
+      id: id,
+      mid: mid,
+      clientMid: clientMid,
+      senderUid: suid,
+      text: content,
+      timestamp: dt,
+      isMe: isMe,
+      senderName: resolvedName,
+      senderAvatar: senderAvatar,
+      type: MessageType.text,
+      mentionedUids: mentionedUids,
+      mentionsMe: json['mentions_me'] as bool? ?? false,
+      shouldAlert: json['should_alert'] as bool?,
+      quoteMid: quotePreview?.mid,
+      quotePreview: quotePreview,
+      forwardedMid: forwardedMid,
+      forwardPreview: forwardPreview,
+      isDeleted: deleted,
+      deletedAt: _dateTimeFromServer(json['deleted_at']),
+      deletedBy: _asInt(json['deleted_by']),
+      roomSeq: roomSeq,
     );
   }
 
@@ -341,6 +462,7 @@ class ChatMessage {
     final mentionedUids = (json['mentioned_uids'] as List<dynamic>? ?? const [])
         .map((uid) => (uid as num).toInt())
         .toList();
+    final roomSeq = _asInt(json['room_seq']);
 
     final isMe = senderUid == myUid;
     final dt = DateTime.fromMillisecondsSinceEpoch((sendTime * 1000).toInt());
@@ -362,6 +484,7 @@ class ChatMessage {
         quotePreview: quotePreview,
         forwardedMid: forwardedMid,
         forwardPreview: forwardPreview,
+        roomSeq: roomSeq,
       );
     }
 
@@ -399,6 +522,7 @@ class ChatMessage {
         quotePreview: quotePreview,
         forwardedMid: forwardedMid,
         forwardPreview: forwardPreview,
+        roomSeq: roomSeq,
       );
     }
 
@@ -417,6 +541,7 @@ class ChatMessage {
       quotePreview: quotePreview,
       forwardedMid: forwardedMid,
       forwardPreview: forwardPreview,
+      roomSeq: roomSeq,
     );
   }
 
@@ -444,6 +569,7 @@ class ChatMessage {
       'isDeleted': isDeleted,
       if (deletedAt != null) 'deletedAt': deletedAt!.millisecondsSinceEpoch,
       'deletedBy': deletedBy,
+      'roomSeq': roomSeq,
       if (media != null)
         'media': {
           'path': media!.path,
@@ -523,6 +649,7 @@ class ChatMessage {
             )
           : null,
       deletedBy: _asInt(json['deletedBy']),
+      roomSeq: _asInt(json['roomSeq']),
     );
   }
 
@@ -539,6 +666,25 @@ class ChatMessage {
 int? _asInt(dynamic value) {
   if (value is num) return value.toInt();
   return int.tryParse(value?.toString() ?? '');
+}
+
+/// 解析 sender 4example:"U123" -> 123，"G456U123" -> 123。
+int? _parseSenderUid(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  if (raw.startsWith('U')) return _asInt(raw.substring(1));
+  final idx = raw.lastIndexOf('U');
+  if (idx >= 0) return _asInt(raw.substring(idx + 1));
+  return _asInt(raw);
+}
+
+DateTime _serverDateTime(String? raw) {
+  if (raw == null) return DateTime.fromMillisecondsSinceEpoch(0);
+  final value = double.tryParse(raw);
+  if (value != null) {
+    final ms = value > 100000000000 ? value : value * 1000;
+    return DateTime.fromMillisecondsSinceEpoch(ms.toInt());
+  }
+  return DateTime.tryParse(raw) ?? DateTime.fromMillisecondsSinceEpoch(0);
 }
 
 DateTime? _dateTimeFromServer(dynamic value) {

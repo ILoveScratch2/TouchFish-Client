@@ -10,6 +10,11 @@ import 'chat_ws_service.dart';
 import 'app_notification_service.dart';
 import '../utils/talker.dart';
 
+/// 通知中心服务（仅系统事件）。
+///
+/// 消息不再经由此通道！！！！！！！！！！：消息实时 MESSAGE.NEW，断线补拉
+/// /message/sync。通知的已读状态由服务端维护（read_at），未读数与
+/// 标记已读均调用服务端 API，多端同步。
 class NotificationService extends ChangeNotifier {
   static NotificationService? _instance;
   static NotificationService get instance =>
@@ -17,10 +22,6 @@ class NotificationService extends ChangeNotifier {
   NotificationService._();
 
   static const _keyLastFetchTime = 'notif_last_fetch_time';
-  static const _keyLastReadAnnouncement = 'notif_last_read_announcement';
-  static const _keyLastReadFriend = 'notif_last_read_friend';
-  static const _keyLastReadInvite = 'notif_last_read_invite';
-  static const _keyLastReadForum = 'notif_last_read_forum';
 
   final List<NotificationInfo> _allNotifications = [];
   final Set<int> _handledFriendSenders = {};
@@ -34,18 +35,17 @@ class NotificationService extends ChangeNotifier {
   bool _isFirstFetchForSession = true;
   String? _error;
   double _lastFetchTime = 0;
-  double _lastReadAnnouncementTime = 0;
-  double _lastReadFriendTime = 0;
-  double _lastReadInviteTime = 0;
-  double _lastReadForumTime = 0;
+  int _unreadCount = 0;
   int? _activeUid;
   String? _activeBaseUrl;
 
   List<NotificationInfo> get allNotifications =>
       List.unmodifiable(_allNotifications);
 
-  List<NotificationInfo> get nonMessageNotifications =>
-      _allNotifications.where((n) => !n.isMessageEvent).toList();
+  /// 系统事件通知（new api通知表只存系统事件，消息不再混入）让我们感谢 xsfx的恩情还不完
+  List<NotificationInfo> get nonMessageNotifications => allNotifications;
+
+  int get unreadCount => _unreadCount;
 
   List<NotificationInfo> get friendNotifications => _allNotifications
       .where(
@@ -67,21 +67,17 @@ class NotificationService extends ChangeNotifier {
   List<NotificationInfo> get forumNotifications =>
       _allNotifications.where((n) => n.isForumEvent).toList();
 
-  int get announcementUnreadCount => _allNotifications
-      .where(
-        (n) => n.isAnnouncementEvent && n.timeStamp > _lastReadAnnouncementTime,
-      )
-      .length;
+  int get announcementUnreadCount =>
+      categoryUnreadCount(announcementNotifications);
 
-  int get friendUnreadCount => _allNotifications
-      .where((n) => n.isFriendEvent && n.timeStamp > _lastReadFriendTime)
-      .length;
+  int get friendUnreadCount => categoryUnreadCount(friendNotifications);
 
-  int get inviteUnreadCount => inviteNotifications
-      .where((n) => n.timeStamp > _lastReadInviteTime)
-      .length;
-  int get forumUnreadCount =>
-      forumNotifications.where((n) => n.timeStamp > _lastReadForumTime).length;
+  int get inviteUnreadCount => categoryUnreadCount(inviteNotifications);
+  int get forumUnreadCount => categoryUnreadCount(forumNotifications);
+
+  @visibleForTesting
+  static int categoryUnreadCount(Iterable<NotificationInfo> notifications) =>
+      notifications.where((notification) => notification.readAt == null).length;
 
   Stream<int> get essenceChanges => _essenceChanges.stream;
 
@@ -98,38 +94,12 @@ class NotificationService extends ChangeNotifier {
     return '$baseKey:${uri.scheme}://${uri.host}:${uri.port}:$uid';
   }
 
-  Future<bool> _loadReadTimestamps(String baseUrl, int uid) async {
+  Future<void> _loadFetchTime(String baseUrl, int uid) async {
     final prefs = await SharedPreferences.getInstance();
-    final lastFetchTime =
+    _lastFetchTime =
         prefs.getDouble(scopedPreferenceKey(_keyLastFetchTime, baseUrl, uid)) ??
         0;
-    final lastReadAnnouncementTime =
-        prefs.getDouble(
-          scopedPreferenceKey(_keyLastReadAnnouncement, baseUrl, uid),
-        ) ??
-        0;
-    final lastReadFriendTime =
-        prefs.getDouble(
-          scopedPreferenceKey(_keyLastReadFriend, baseUrl, uid),
-        ) ??
-        0;
-    final lastReadInviteTime =
-        prefs.getDouble(
-          scopedPreferenceKey(_keyLastReadInvite, baseUrl, uid),
-        ) ??
-        0;
-    final lastReadForumTime =
-        prefs.getDouble(scopedPreferenceKey(_keyLastReadForum, baseUrl, uid)) ??
-        0;
-    if (_activeUid != uid || _activeBaseUrl != baseUrl) return false;
-
-    _lastFetchTime = lastFetchTime;
-    _lastReadAnnouncementTime = lastReadAnnouncementTime;
-    _lastReadFriendTime = lastReadFriendTime;
-    _lastReadInviteTime = lastReadInviteTime;
-    _lastReadForumTime = lastReadForumTime;
     _isInitialLoad = _lastFetchTime == 0;
-    return true;
   }
 
   Future<void> _saveFetchTime(double fetchTime, String baseUrl, int uid) async {
@@ -140,29 +110,6 @@ class NotificationService extends ChangeNotifier {
     await prefs.setDouble(
       scopedPreferenceKey(_keyLastFetchTime, baseUrl, uid),
       _lastFetchTime,
-    );
-  }
-
-  Future<void> _saveReadTimestamps() async {
-    final uid = _activeUid;
-    final baseUrl = _activeBaseUrl;
-    if (uid == null || baseUrl == null) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(
-      scopedPreferenceKey(_keyLastReadAnnouncement, baseUrl, uid),
-      _lastReadAnnouncementTime,
-    );
-    await prefs.setDouble(
-      scopedPreferenceKey(_keyLastReadFriend, baseUrl, uid),
-      _lastReadFriendTime,
-    );
-    await prefs.setDouble(
-      scopedPreferenceKey(_keyLastReadInvite, baseUrl, uid),
-      _lastReadInviteTime,
-    );
-    await prefs.setDouble(
-      scopedPreferenceKey(_keyLastReadForum, baseUrl, uid),
-      _lastReadForumTime,
     );
   }
 
@@ -180,23 +127,17 @@ class NotificationService extends ChangeNotifier {
       _handledInviteKeys.clear();
       _lastFetchTime = 0;
       _isFirstFetchForSession = true;
-      if (!await _loadReadTimestamps(baseUrl, uid)) return;
+      await _loadFetchTime(baseUrl, uid);
     }
 
     _isLoading = true;
     _error = null;
 
     try {
-      List<NotificationInfo> fetched;
-      final shouldProcessAsHistorical =
-          _isInitialLoad || _isFirstFetchForSession;
-      // Always use time-based fetch to avoid pulling every notification ever.
-      // If no previous fetch time is recorded, look back 7 days.
-      var since = _lastFetchTime;
-      if (since <= 0) {
-        since = (DateTime.now().millisecondsSinceEpoch / 1000) - 7 * 86400;
-      }
-      fetched = await TfApiClient.instance.queryNotificationsAfter(
+      final since = _lastFetchTime > 0
+          ? _lastFetchTime
+          : (DateTime.now().millisecondsSinceEpoch / 1000) - 7 * 86400;
+      final fetched = await TfApiClient.instance.queryNotificationsAfter(
         uid,
         password,
         since,
@@ -205,7 +146,7 @@ class NotificationService extends ChangeNotifier {
       if (_activeUid != uid || _activeBaseUrl != baseUrl) return;
 
       talker.info(
-        'NotificationService: fetched ${fetched.length} notifications (lastFetchTime=$_lastFetchTime)',
+        'NotificationService: fetched ${fetched.length} notifications',
       );
 
       if (fetched.isNotEmpty) {
@@ -221,12 +162,7 @@ class NotificationService extends ChangeNotifier {
               if (gid != null) _essenceChanges.add(gid);
             }
             _allNotifications.add(n);
-            if (n.isMessageEvent && n.senderUid != null) {
-              ChatDataService.instance.processPolledMessage(
-                n,
-                isHistorical: shouldProcessAsHistorical,
-              );
-            } else if (n.event == 'friend.accepted' && n.senderUid != null) {
+            if (n.event == 'friend.accepted' && n.senderUid != null) {
               ChatDataService.instance.addFriendToContacts(n.senderUid!);
             } else if (n.event == 'group.invited' ||
                 n.event == 'group.join.approved' ||
@@ -257,6 +193,7 @@ class NotificationService extends ChangeNotifier {
             : currentMax,
       );
       await _saveFetchTime(newestFetchTime, baseUrl, uid);
+      await _refreshUnreadCount();
       _error = null;
     } catch (e) {
       talker.error('NotificationService.fetchNotifications failed', e);
@@ -265,6 +202,24 @@ class NotificationService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> _refreshUnreadCount() async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+    final baseUrl = await TfApiClient.instance.getBaseUrl();
+    final count = await TfApiClient.instance.unreadNotificationCount(
+      uid,
+      password,
+    );
+    if (AuthState.instance.uid != uid ||
+        AuthState.instance.password != password ||
+        _activeUid != uid ||
+        _activeBaseUrl != baseUrl) {
+      return;
+    }
+    _unreadCount = count;
   }
 
   Future<void> forceRefresh() async {
@@ -299,10 +254,9 @@ class NotificationService extends ChangeNotifier {
   void _onWsEvent(ChatWsEvent event) {
     if (event.type != 'NOTIFICATION.NEW' || event.notification == null) return;
     final notification = NotificationInfo.fromServerJson(event.notification!);
-    if (notification.isMessageEvent ||
-        _allNotifications.any(
-          (n) => n.identityKey == notification.identityKey,
-        )) {
+    if (_allNotifications.any(
+      (n) => n.identityKey == notification.identityKey,
+    )) {
       return;
     }
     if (notification.event == 'group.essence.add' ||
@@ -313,14 +267,16 @@ class NotificationService extends ChangeNotifier {
     if ((notification.event == 'group.essence.add' ||
             notification.event == 'group.essence.remove') &&
         notification.groupEventGid != null &&
-        ChatDataService.instance
-                .roomNotifyLevel('G${notification.groupEventGid}') !=
+        ChatDataService.instance.roomNotifyLevel(
+              'G${notification.groupEventGid}',
+            ) !=
             0) {
       return;
     }
     _allNotifications.add(notification);
     _allNotifications.sort((a, b) => b.timeStamp.compareTo(a.timeStamp));
     unawaited(_presentNotification(notification));
+    _unreadCount++;
     notifyListeners();
   }
 
@@ -330,61 +286,87 @@ class NotificationService extends ChangeNotifier {
     if (avatar != null && avatar.startsWith('/')) {
       try {
         final baseUrl = await TfApiClient.instance.getBaseUrl();
-        appNotification = appNotification.copyWith(avatarUrl: '$baseUrl$avatar');
+        appNotification = appNotification.copyWith(
+          avatarUrl: '$baseUrl$avatar',
+        );
       } catch (_) {}
     }
     await AppNotificationService.instance.present(appNotification);
   }
 
-  void markAnnouncementRead() {
-    final notifications = announcementNotifications;
-    if (notifications.isNotEmpty) {
-      _lastReadAnnouncementTime = notifications.fold<double>(
-        _lastReadAnnouncementTime,
-        (latest, notification) =>
-            notification.timeStamp > latest ? notification.timeStamp : latest,
-      );
-      _saveReadTimestamps();
-      notifyListeners();
+  Future<bool> _markCategoryRead(List<NotificationInfo> notifications) async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final ids = unreadNotificationIds(notifications);
+    if (uid == null || password == null || ids.isEmpty) {
+      return false;
     }
-  }
+    final baseUrl = await TfApiClient.instance.getBaseUrl();
+    if (_activeUid != uid || _activeBaseUrl != baseUrl) return false;
 
-  void markFriendRead() {
-    final notifications = friendNotifications;
-    if (notifications.isNotEmpty) {
-      _lastReadFriendTime = notifications.fold<double>(
-        _lastReadFriendTime,
-        (latest, notification) =>
-            notification.timeStamp > latest ? notification.timeStamp : latest,
-      );
-      _saveReadTimestamps();
-      notifyListeners();
+    final success = await TfApiClient.instance.markNotificationsRead(
+      uid,
+      password,
+      ids: ids,
+    );
+    if (!success) return false;
+
+    if (AuthState.instance.uid != uid ||
+        AuthState.instance.password != password ||
+        _activeUid != uid ||
+        _activeBaseUrl != baseUrl ||
+        await TfApiClient.instance.getBaseUrl() != baseUrl) {
+      return true;
     }
+
+    final updated = applyReadAtByIds(
+      _allNotifications,
+      ids,
+      DateTime.now().millisecondsSinceEpoch / 1000,
+    );
+    _unreadCount = _unreadCount >= updated ? _unreadCount - updated : 0;
+    notifyListeners();
+    await _refreshUnreadCount();
+    notifyListeners();
+    return true;
   }
 
-  void markInviteRead() {
-    final notifications = inviteNotifications;
-    if (notifications.isEmpty) return;
-    _lastReadInviteTime = notifications.fold<double>(
-      _lastReadInviteTime,
-      (latest, notification) =>
-          notification.timeStamp > latest ? notification.timeStamp : latest,
-    );
-    _saveReadTimestamps();
-    notifyListeners();
+  @visibleForTesting
+  static List<int> unreadNotificationIds(
+    Iterable<NotificationInfo> notifications,
+  ) => notifications
+      .where(
+        (notification) => notification.readAt == null && notification.id > 0,
+      )
+      .map((notification) => notification.id)
+      .toList();
+
+  @visibleForTesting
+  static int applyReadAtByIds(
+    List<NotificationInfo> notifications,
+    Iterable<int> ids,
+    double readAt,
+  ) {
+    final idSet = ids.toSet();
+    var updated = 0;
+    for (var index = 0; index < notifications.length; index++) {
+      final notification = notifications[index];
+      if (notification.readAt == null && idSet.contains(notification.id)) {
+        notifications[index] = notification.withReadAt(readAt);
+        updated++;
+      }
+    }
+    return updated;
   }
 
-  void markForumRead() {
-    final notifications = forumNotifications;
-    if (notifications.isEmpty) return;
-    _lastReadForumTime = notifications.fold<double>(
-      _lastReadForumTime,
-      (latest, notification) =>
-          notification.timeStamp > latest ? notification.timeStamp : latest,
-    );
-    _saveReadTimestamps();
-    notifyListeners();
-  }
+  Future<bool> markAnnouncementRead() =>
+      _markCategoryRead(announcementNotifications);
+
+  Future<bool> markFriendRead() => _markCategoryRead(friendNotifications);
+
+  Future<bool> markInviteRead() => _markCategoryRead(inviteNotifications);
+
+  Future<bool> markForumRead() => _markCategoryRead(forumNotifications);
 
   Future<bool> handleGroupJoinRequest(
     NotificationInfo notification,
@@ -422,6 +404,7 @@ class NotificationService extends ChangeNotifier {
       _allNotifications.clear();
       _handledFriendSenders.clear();
       _handledInviteKeys.clear();
+      _unreadCount = 0;
       notifyListeners();
     }
     return success;
@@ -459,13 +442,15 @@ class NotificationService extends ChangeNotifier {
         _handledFriendSenders.add(notification.senderUid!);
       }
       _allNotifications.remove(notification);
-      unawaited(
-        TfApiClient.instance.deleteNotificationsBefore(
-          uid,
-          password,
-          notification.timeStamp + 0.001,
-        ),
-      );
+      if (notification.id > 0) {
+        unawaited(
+          TfApiClient.instance.markNotificationsRead(
+            uid,
+            password,
+            ids: [notification.id],
+          ),
+        );
+      }
       notifyListeners();
       if (stat == 'allow' && notification.senderUid != null) {
         talker.info(

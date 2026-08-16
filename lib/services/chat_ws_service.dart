@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -31,16 +32,23 @@ class ChatWsService extends ChangeNotifier {
   Timer? _reconnectTimer;
   Timer? _pingTimer;
   StreamSubscription? _subscription;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   bool _intentionalClose = false;
   bool _tryingConnectionCandidates = false;
-  int _reconnectAttempts = 0;
-  static const _maxReconnectAttempts = 10;
 
-  Completer<bool>? _authCompleter;
+  // 曼巴精神！永不言弃！
+  static const int _maxReconnectsPerMinute = 5;
+  static const Duration _baseReconnectDelay = Duration(milliseconds: 500);
+  static const Duration _maxReconnectDelay = Duration(seconds: 30);
+  static const Duration _rateLimitWindow = Duration(minutes: 1);
+  int _reconnectCount = 0;
+  DateTime? _reconnectWindowStart;
 
   final StreamController<ChatWsEvent> _eventController =
       StreamController<ChatWsEvent>.broadcast();
   Stream<ChatWsEvent> get eventStream => _eventController.stream;
+
+  Completer<bool>? _authCompleter;
 
   /// Connect to WebSocket, perform RSA+AES handshake, authenticate.
   Future<bool> connect() async {
@@ -48,12 +56,19 @@ class ChatWsService extends ChangeNotifier {
     final password = AuthState.instance.password;
     if (uid == null || password == null) return false;
 
+    if (!await _hasNetworkConnectivity()) {
+      talker.info('ChatWsService connect refused: no network connectivity');
+      _setState(ChatWsState.disconnected);
+      _scheduleReconnect();
+      return false;
+    }
+
     if (_state == ChatWsState.authenticated && _authenticatedUid == uid) {
       return true;
     }
     if (_state == ChatWsState.connecting) return false;
     if (_state != ChatWsState.disconnected || _authenticatedUid != null) {
-      await disconnect();
+      _teardownForReconnect();
     }
 
     _intentionalClose = false;
@@ -153,8 +168,10 @@ class ChatWsService extends ChangeNotifier {
 
       _authenticatedUid = uid;
       _setState(ChatWsState.authenticated);
-      _reconnectAttempts = 0;
+      _reconnectCount = 0;
+      _reconnectWindowStart = null;
       _startPing();
+      _ensureConnectivityWatch();
       talker.info(
         'ChatWsService authenticated over ${uri.scheme.toUpperCase()}',
       );
@@ -256,6 +273,20 @@ class ChatWsService extends ChangeNotifier {
       return;
     }
 
+    if (type == 'MESSAGE.NEW' || type == 'MESSAGE.RECALLED') {
+      final message = data['message'] as Map<String, dynamic>?;
+      if (message != null) {
+        _eventController.add(
+          ChatWsEvent(
+            type: type,
+            notification: message,
+            timeStamp: DateTime.now().millisecondsSinceEpoch / 1000.0,
+          ),
+        );
+      }
+      return;
+    }
+
     // Forward other typed events (message.ack, message.read, typing.*)
     _eventController.add(
       ChatWsEvent(
@@ -340,17 +371,75 @@ class ChatWsService extends ChangeNotifier {
     _setState(ChatWsState.disconnected);
   }
 
+  Future<bool> _hasNetworkConnectivity() async {
+    try {
+      final results = await Connectivity().checkConnectivity();
+      return results.any((r) => r != ConnectivityResult.none);
+    } catch (_) {
+      return true;
+    }
+  }
+
+  void _ensureConnectivityWatch() {
+    _connectivitySubscription ??= Connectivity()
+        .onConnectivityChanged
+        .listen((results) {
+      final hasNetwork = results.any((r) => r != ConnectivityResult.none);
+      if (!hasNetwork) {
+        talker.info('ChatWsService: network lost, pausing reconnect');
+        _reconnectTimer?.cancel();
+        _reconnectTimer = null;
+        _setState(ChatWsState.disconnected);
+      } else if (_state != ChatWsState.authenticated && !_intentionalClose) {
+        talker.info('ChatWsService: network restored, reconnecting');
+        _scheduleReconnect();
+      }
+    });
+  }
+
   void _scheduleReconnect() {
-    _disconnectCleanup();
     if (_intentionalClose) return;
-    if (_reconnectAttempts >= _maxReconnectAttempts) return;
-    _reconnectAttempts++;
-    final delay = Duration(seconds: min(_reconnectAttempts * 2, 30));
+    _disconnectCleanup();
+
+    final now = DateTime.now();
+    if (_reconnectWindowStart == null ||
+        now.difference(_reconnectWindowStart!) >= _rateLimitWindow) {
+      _reconnectWindowStart = now;
+      _reconnectCount = 0;
+    }
+    _reconnectCount++;
+
+    if (_reconnectCount > _maxReconnectsPerMinute) {
+      talker.warning(
+        'ChatWsService reconnect limit reached '
+        '($_maxReconnectsPerMinute/min), retrying in 30s',
+      );
+      _reconnectTimer?.cancel();
+      _reconnectTimer = Timer(const Duration(seconds: 30), () {
+        if (_intentionalClose) return;
+        _reconnectWindowStart = null;
+        _reconnectCount = 0;
+        connect();
+      });
+      return;
+    }
+
+    final backoffMs = (_baseReconnectDelay.inMilliseconds *
+            (1 << (_reconnectCount - 1)))
+        .clamp(
+          _baseReconnectDelay.inMilliseconds,
+          _maxReconnectDelay.inMilliseconds,
+        );
+    final jitter = Random().nextInt(200) - 100;
+    final delayMs = (backoffMs + jitter).clamp(
+      100,
+      _maxReconnectDelay.inMilliseconds,
+    );
     talker.info(
-      'ChatWsService reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts)',
+      'ChatWsService reconnecting in ${delayMs}ms (attempt $_reconnectCount)',
     );
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(delay, () {
+    _reconnectTimer = Timer(Duration(milliseconds: delayMs), () {
       if (!_intentionalClose) connect();
     });
   }
@@ -479,6 +568,14 @@ class ChatWsService extends ChangeNotifier {
 
   Future<void> disconnect() async {
     _intentionalClose = true;
+    _reconnectTimer?.cancel();
+    _connectivitySubscription?.cancel();
+    _connectivitySubscription = null;
+    _disconnectCleanup();
+  }
+
+  /// 仅清理连接资源，不标记主动关闭。
+  void _teardownForReconnect() {
     _reconnectTimer?.cancel();
     _disconnectCleanup();
   }
