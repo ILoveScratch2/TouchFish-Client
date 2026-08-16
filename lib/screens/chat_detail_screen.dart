@@ -44,6 +44,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final List<ChatMessage> _messages = [];
   final Map<int, GlobalKey> _messageKeys = {};
   final Map<String, Timer> _pendingWsTimers = {};
+  /// clientMids that already went through the REST fallback, to avoid
+  /// re-sending the same message twice.
+  final Set<String> _restFallbackAttempted = {};
   ChatRoom? _currentRoom;
   final List<MentionUser> _mentionUsers = [];
   bool _isInitialized = false;
@@ -116,6 +119,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       timer.cancel();
     }
     _pendingWsTimers.clear();
+    _restFallbackAttempted.clear();
     _messageKeys.clear();
     _messages.clear();
     _currentRoom = null;
@@ -187,6 +191,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       timer.cancel();
     }
     _pendingWsTimers.clear();
+    _restFallbackAttempted.clear();
     if (MessageSyncService.instance.activeRoomId == _contactUid) {
       MessageSyncService.instance.activeRoomId = null;
     }
@@ -226,10 +231,33 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   Future<void> _saveDraftForRoom(String roomId) => DraftService.instance
       .saveDraft('chat', roomId, {'text': _messageController.text});
 
-  void _onAckError(String error) {
+  void _onAckError(({String clientMid, String error}) info) {
     if (!mounted) return;
+
+    // WS ack rejected the message. Some servers reject the WS `message.file`
+    // ownership check even though the file is owned by the sender (REST
+    // `/message/send` works). For file/media messages, retry immediately via
+    // REST using the same client_mid — the server dedups, so no duplicates.
+    // The failure snackbar is only shown if the REST retry also fails.
+    final msgs = ChatDataService.instance.getMessages(_contactUid);
+    final idx = msgs.indexWhere((m) => m.clientMid == info.clientMid);
+    if (idx != -1 && msgs[idx].media != null) {
+      final media = msgs[idx].media!;
+      unawaited(
+        _wsAckFallback(
+          clientMid: info.clientMid,
+          content: media.fileHash ?? media.path,
+          contentType: 'file',
+          fileHash: media.fileHash,
+          quoteMid: msgs[idx].quoteMid ?? -1,
+          forwardedMid: -1,
+        ),
+      );
+      return;
+    }
+
     final l10n = AppLocalizations.of(context)!;
-    final msg = switch (error) {
+    final msg = switch (info.error) {
       'banned' => l10n.chatSendFailedBanned,
       'rate_limited' => l10n.chatSendFailedRateLimited,
       'not_friends' => l10n.chatSendFailedNotFriends,
@@ -1047,9 +1075,18 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }) async {
     _pendingWsTimers.remove(clientMid);
     if (!mounted) return;
+    // Only one REST attempt per client mid (guards the WS ack-fail retry
+    // racing with the 15s fallback timer).
+    if (!_restFallbackAttempted.add(clientMid)) return;
+
     final msgs = ChatDataService.instance.getMessages(_contactUid);
     final idx = msgs.indexWhere((m) => m.clientMid == clientMid);
-    if (idx == -1 || msgs[idx].status != MessageStatus.pending) return;
+    if (idx == -1 || msgs[idx].status == MessageStatus.sent) return;
+    // Text messages rejected by the WS ack (banned / not_friends / ...) should
+    // not be re-sent automatically; only file/media messages get the REST retry.
+    if (msgs[idx].status == MessageStatus.failed && msgs[idx].media == null) {
+      return;
+    }
 
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
@@ -1076,6 +1113,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       );
     } else {
       _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.chatSendFailed),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
