@@ -74,9 +74,10 @@ class ChatDataService extends ChangeNotifier {
   static ChatDataService get instance => _instance ??= ChatDataService._();
   ChatDataService._();
 
-  final StreamController<String> _ackErrorController =
-      StreamController<String>.broadcast();
-  Stream<String> get ackErrorStream => _ackErrorController.stream;
+  final StreamController<({String clientMid, String error})> _ackErrorController =
+      StreamController<({String clientMid, String error})>.broadcast();
+  Stream<({String clientMid, String error})> get ackErrorStream =>
+      _ackErrorController.stream;
   List<ChatRoom> _rooms = [];
   List<Contact> _contacts = [];
   final Map<String, List<ChatMessage>> _messageCache = {};
@@ -694,7 +695,7 @@ class ChatDataService extends ChangeNotifier {
           }
         }
         if (status == MessageStatus.failed && error != null) {
-          _ackErrorController.add(error);
+          _ackErrorController.add((clientMid: clientMid, error: error));
         }
         notifyListeners();
         return;
