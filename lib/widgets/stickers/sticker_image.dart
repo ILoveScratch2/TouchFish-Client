@@ -87,7 +87,7 @@ class _StickerImageState extends State<StickerImage> {
 
     await _acquireDownloadSlot();
     try {
-      final url = await TfApiClient.instance.getFileUrl(widget.hash);
+      final url = await TfApiClient.instance.getStickerUrl(widget.hash);
       final response =
           await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
       if (response.statusCode < 200 || response.statusCode >= 300) {
