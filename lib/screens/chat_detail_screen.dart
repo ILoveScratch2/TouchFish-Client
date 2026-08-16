@@ -21,6 +21,8 @@ import '../services/api/tf_api_client.dart';
 import '../services/chat_ws_service.dart';
 import '../services/chat_data_service.dart';
 import '../services/draft_service.dart';
+import '../services/local_message_store.dart';
+import '../services/message_sync_service.dart';
 import '../services/notification_service.dart';
 import '../utils/talker.dart';
 import 'chat_room_settings_screen.dart';
@@ -142,6 +144,41 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     ChatDataService.instance.clearUnread(_contactUid);
     _loadChatRoom();
     _startRealMessaging();
+    _initMessageSync();
+  }
+
+  /// 进入/切换聊天时：注册为同步活跃房间，触发增量补
+  void _initMessageSync() {
+    final roomId = _contactUid;
+    MessageSyncService.instance.activeRoomId = roomId;
+    unawaited(_syncRoomIfNeeded(roomId));
+  }
+
+  Future<void> _syncRoomIfNeeded(String roomId) async {
+    final syncService = MessageSyncService.instance;
+    if (syncService.lastSeqOf(roomId) != null) {
+      await syncService.resyncAfterReconnect();
+      return;
+    }
+    // 无序号基线：用本地迁移的 last_mid 或房间列表 last_mid 建立同步点后再补拉
+    final syncMid =
+        await LocalMessageStore.instance.getRoomSyncMid(roomId) ??
+        ChatDataService.instance.rooms
+            .where((room) => room.id == roomId)
+            .map((room) => room.lastMessageMid)
+            .firstWhere((mid) => mid != null, orElse: () => null);
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+    try {
+      if (syncMid != null && syncMid > 0) {
+        await syncService.syncRoomFromMid(roomId, syncMid);
+      } else {
+        await syncService.establishBaseline(roomId);
+      }
+    } catch (e, stack) {
+      talker.error('ChatDetailScreen sync init failed for $roomId', e, stack);
+    }
   }
 
   @override
@@ -150,6 +187,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       timer.cancel();
     }
     _pendingWsTimers.clear();
+    if (MessageSyncService.instance.activeRoomId == _contactUid) {
+      MessageSyncService.instance.activeRoomId = null;
+    }
     _detachRealtimeListeners();
     _ackErrorSub?.cancel();
     _essenceSub?.cancel();
@@ -1364,9 +1404,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (byId >= 0) return byId;
     final clientMid = target.clientMid;
     if (clientMid != null) {
-      final byClientMid = _messages.indexWhere(
-        (m) => m.clientMid == clientMid,
-      );
+      final byClientMid = _messages.indexWhere((m) => m.clientMid == clientMid);
       if (byClientMid >= 0) return byClientMid;
     }
     return -1;
@@ -1379,7 +1417,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final mid = message.mid;
 
     // 目标上下文已就绪：瞬时精确对齐（无动画）
-    final targetContext = mid != null ? _messageKeys[mid]?.currentContext : null;
+    final targetContext = mid != null
+        ? _messageKeys[mid]?.currentContext
+        : null;
     if (targetContext != null) {
       Scrollable.ensureVisible(
         targetContext,
@@ -1832,9 +1872,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final gid = _contactUid.substring(1);
     context.push(
       AppRoutes.groupProfile.replaceFirst(':gid', gid),
-      extra: <String, dynamic>{
-        'groupName': room!.name,
-      },
+      extra: <String, dynamic>{'groupName': room!.name},
     );
   }
 

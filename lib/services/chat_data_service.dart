@@ -14,6 +14,7 @@ import 'app_notification_service.dart';
 import 'auth_state.dart';
 import 'chat_ws_service.dart';
 import 'local_message_store.dart';
+import 'message_sync_service.dart';
 
 class ChatRoomPreference {
   final bool isPinned;
@@ -404,7 +405,51 @@ class ChatDataService extends ChangeNotifier {
     _contacts.clear();
     _initializedUid = uid;
     _wsSubscription = ChatWsService.instance.eventStream.listen(_onWsEvent);
+    ChatWsService.instance.addListener(_onWsStateChanged);
     await loadContactsAndRooms();
+    await _restoreSyncBaselines();
+  }
+
+  void _onWsStateChanged() {
+    if (ChatWsService.instance.isAuthenticated) {
+      unawaited(_restoreMessagesAfterReconnect());
+    }
+  }
+
+  Future<void> _restoreMessagesAfterReconnect() async {
+    final uid = AuthState.instance.uid;
+    final generation = _generation;
+    await loadContactsAndRooms();
+    if (_generation != generation || AuthState.instance.uid != uid) return;
+    await _restoreSyncBaselines();
+  }
+
+  /// 恢复/建立每房间同步基线（优先 seq，其次迁移的 last_mid，再退回房间列表 last_mid）。
+  Future<void> _restoreSyncBaselines() async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+    final generation = _generation;
+    final syncService = MessageSyncService.instance;
+    final rooms = List<ChatRoom>.from(_rooms);
+    for (final room in rooms) {
+      if (_generation != generation || AuthState.instance.uid != uid) return;
+      final seq = await LocalMessageStore.instance.getRoomSyncSeq(room.id);
+      if (seq != null && seq > 0) {
+        syncService.registerRoomSeq(room.id, seq);
+        continue;
+      }
+      final mid =
+          await LocalMessageStore.instance.getRoomSyncMid(room.id) ??
+          room.lastMessageMid;
+      if (mid != null && mid > 0) {
+        await syncService.syncRoomFromMid(room.id, mid);
+      } else {
+        await syncService.establishBaseline(room.id);
+      }
+    }
+    if (_generation != generation || AuthState.instance.uid != uid) return;
+    await syncService.resyncAfterReconnect(rooms.map((room) => room.id));
   }
 
   Future<void> reset() async {
@@ -412,6 +457,8 @@ class ChatDataService extends ChangeNotifier {
     await _wsSubscription?.cancel();
     if (_generation != generation) return;
     _wsSubscription = null;
+    ChatWsService.instance.removeListener(_onWsStateChanged);
+    MessageSyncService.instance.clear();
     _initializedUid = null;
     _roomPreferencesUid = null;
     _roomPreferencesScope = null;
@@ -696,7 +743,7 @@ class ChatDataService extends ChangeNotifier {
       return;
     }
 
-    if (event.type == 'message.recalled' || event.type == 'message.recall') {
+    if (event.type == 'MESSAGE.RECALLED') {
       final data = event.notification;
       final mid =
           (data?['mid'] as num?)?.toInt() ??
@@ -704,9 +751,52 @@ class ChatDataService extends ChangeNotifier {
       if (mid != null) {
         markMessageRecalled(
           mid,
+          deletedAt: _notificationDateTime(data?['deleted_at']),
           deletedBy: (data?['deleted_by'] as num?)?.toInt(),
         );
       }
+      return;
+    }
+
+    if (event.type == 'MESSAGE.NEW') {
+      final data = event.notification;
+      if (data == null) return;
+      final uid = AuthState.instance.uid;
+      if (uid == null) return;
+      final info = NotificationInfo.fromServerMessageInfo(data);
+      final eventType = info.event;
+
+      if (eventType == 'message.recalled' || eventType == 'message.recall') {
+        final mid = info.recalledMid;
+        if (mid != null) {
+          markMessageRecalled(
+            mid,
+            deletedAt: info.deletedAt,
+            deletedBy: info.deletedBy,
+          );
+        }
+        return;
+      }
+
+      if (eventType != 'message.plain' && eventType != 'message.file') {
+        return;
+      }
+
+      final senderUid = info.senderUid;
+      if (senderUid == null) return;
+      if (senderUid == uid && info.groupId == null && info.roomId == null) {
+        return;
+      }
+
+      final roomId = _roomIdForNotification(info, uid);
+      final msg = ChatMessage.fromServerMessage(
+        data,
+        myUid: uid,
+        senderName: _senderNameFor(senderUid),
+        senderAvatar: _senderAvatarFor(senderUid),
+      );
+      MessageSyncService.instance.observeMessage(roomId, msg);
+      _addToCache(roomId, msg);
       return;
     }
 
@@ -714,18 +804,6 @@ class ChatDataService extends ChangeNotifier {
 
     final info = NotificationInfo.fromServerJson(event.notification!);
     final eventType = info.event;
-
-    if (eventType == 'message.recalled' || eventType == 'message.recall') {
-      final mid = info.recalledMid;
-      if (mid != null) {
-        markMessageRecalled(
-          mid,
-          deletedAt: info.deletedAt,
-          deletedBy: info.deletedBy,
-        );
-      }
-      return;
-    }
 
     if (eventType == 'friend.accepted') {
       final suid = info.senderUid;
@@ -752,64 +830,37 @@ class ChatDataService extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    if (eventType != 'message.plain' &&
-        eventType != 'message.file') {
-      return;
-    }
-
-    final uid = AuthState.instance.uid;
-    if (uid == null) return;
-    final senderUid = info.senderUid;
-    if (senderUid == null) return;
-    if (senderUid == uid && info.groupId == null && info.roomId == null) return;
-
-    final roomId = _roomIdForNotification(info, uid);
-    final msg = ChatMessage.fromNotification(
-      notification: info,
-      myUid: uid,
-      senderName: _senderNameFor(senderUid),
-      senderAvatar: _senderAvatarFor(senderUid),
-    );
-    _addToCache(roomId, msg);
   }
 
-  void processPolledMessage(
-    NotificationInfo info, {
+  /// 处理 /message/sync 补拉到的消息（静默合并：不发横幅、只累计未读角标）。
+  void processSyncedMessages(
+    String roomId,
+    List<ChatMessage> messages, {
     bool isHistorical = false,
   }) {
-    if (info.event == 'message.recalled' || info.event == 'message.recall') {
-      final mid = info.recalledMid;
-      if (mid != null) {
-        markMessageRecalled(
-          mid,
-          roomId: info.roomId,
-          deletedAt: info.deletedAt,
-          deletedBy: info.deletedBy,
-        );
+    if (messages.isEmpty) return;
+    for (final msg in messages) {
+      if (msg.isDeleted) {
+        if (msg.mid != null) {
+          markMessageRecalled(
+            msg.mid!,
+            roomId: roomId,
+            deletedAt: msg.deletedAt,
+            deletedBy: msg.deletedBy,
+          );
+        }
+        continue;
       }
-      return;
+      _addToCacheSilent(roomId, msg, countUnread: !isHistorical);
     }
-    final uid = AuthState.instance.uid;
-    if (uid == null) return;
-    final senderUid = info.senderUid;
-    if (senderUid == null) return;
-    if (senderUid == uid && info.groupId == null && info.roomId == null) return;
-
-    final roomId = _roomIdForNotification(info, uid);
-    final msg = ChatMessage.fromNotification(
-      notification: info,
-      myUid: uid,
-      senderName: _senderNameFor(senderUid),
-      senderAvatar: _senderAvatarFor(senderUid),
-    );
-    if (isHistorical) {
-      _addToCacheSilent(roomId, msg);
-    } else {
-      _addToCache(roomId, msg);
-    }
+    notifyListeners();
   }
 
-  void _addToCacheSilent(String roomId, ChatMessage msg) {
+  void _addToCacheSilent(
+    String roomId,
+    ChatMessage msg, {
+    bool countUnread = true,
+  }) {
     final cached = _messageCache[roomId] ?? [];
     final exists = _containsMessage(cached, msg);
     if (!exists) {
@@ -829,6 +880,7 @@ class ChatDataService extends ChangeNotifier {
     final uid = AuthState.instance.uid;
     final username = AuthState.instance.currentUser?.username ?? '';
     final shouldCountUnread =
+        countUnread &&
         !msg.isMe &&
         !exists &&
         (msg.shouldAlert ??
@@ -973,6 +1025,17 @@ class ChatDataService extends ChangeNotifier {
     return int.tryParse(roomId);
   }
 
+  static DateTime? _notificationDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is num) {
+      final number = value.toDouble();
+      return DateTime.fromMillisecondsSinceEpoch(
+        (number > 100000000000 ? number : number * 1000).toInt(),
+      );
+    }
+    return DateTime.tryParse(value.toString());
+  }
+
   void _fetchProfileForRoom(String roomId, {String? messageRoomId}) {
     if (_userCache[roomId] != null) return;
     final puid = _parseUid(roomId);
@@ -1091,9 +1154,13 @@ class ChatDataService extends ChangeNotifier {
     int? deletedBy,
   }) {
     var changed = false;
+    var cachedTargetFound = false;
     for (final id in _messageCache.keys.toList()) {
       final messages = _messageCache[id];
       if (messages == null) continue;
+      if (messages.any((message) => message.mid == mid)) {
+        cachedTargetFound = true;
+      }
       final updated = applyRecallToMessages(
         messages,
         mid,
@@ -1112,6 +1179,9 @@ class ChatDataService extends ChangeNotifier {
       unawaited(_localStore.saveMessages(id, updated));
       changed = true;
     }
+    if (roomId != null && !cachedTargetFound) {
+      unawaited(_persistRecallToLocalStore(roomId, mid, deletedAt, deletedBy));
+    }
     if (roomId != null) {
       final roomIndex = _rooms.indexWhere((room) => room.id == roomId);
       if (roomIndex >= 0 && _rooms[roomIndex].lastMessageMid == mid) {
@@ -1120,6 +1190,32 @@ class ChatDataService extends ChangeNotifier {
       }
     }
     if (changed) notifyListeners();
+  }
+
+  Future<void> _persistRecallToLocalStore(
+    String roomId,
+    int mid,
+    DateTime? deletedAt,
+    int? deletedBy,
+  ) async {
+    try {
+      final messages = await _localStore.loadMessages(roomId);
+      final updated = applyRecallToMessages(
+        messages,
+        mid,
+        deletedAt: deletedAt,
+        deletedBy: deletedBy,
+      );
+      if (!identical(updated, messages)) {
+        await _localStore.saveMessages(roomId, updated);
+      }
+    } catch (e, stack) {
+      talker.error(
+        'ChatDataService persist recall failed for $roomId',
+        e,
+        stack,
+      );
+    }
   }
 
   static List<ChatMessage> applyRecallToMessages(

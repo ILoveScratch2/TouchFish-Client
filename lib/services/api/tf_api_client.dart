@@ -26,7 +26,14 @@ class EssenceResult {
   const EssenceResult({required this.mids, required this.essenceEnabled});
 }
 
-class TfChatListItem {  final String roomId;
+typedef MessageSyncResult = ({
+  List<ChatMessage> messages,
+  int currentSeq,
+  bool hasMore,
+});
+
+class TfChatListItem {
+  final String roomId;
   final String roomType;
   final int partnerUid;
   final String username;
@@ -184,9 +191,15 @@ class TfServerConfig {
       defaultAssetUrls: defaultAssetUrls,
       minUsernameLength: _parseIntValue(json['min_username_length'], 4),
       minPasswordLength: _parseIntValue(json['min_password_length'], 1),
-      maxStickerPacksPerUser: _parseIntValue(json['max_sticker_packs_per_user'], 24),
+      maxStickerPacksPerUser: _parseIntValue(
+        json['max_sticker_packs_per_user'],
+        24,
+      ),
       maxStickersPerPack: _parseIntValue(json['max_stickers_per_pack'], 24),
-      dailyStickerPackCreationLimit: _parseIntValue(json['daily_sticker_pack_creation_limit'], -1),
+      dailyStickerPackCreationLimit: _parseIntValue(
+        json['daily_sticker_pack_creation_limit'],
+        -1,
+      ),
       maxStickerSize: _parseIntValue(json['max_sticker_size'], -1),
       smtpHost: json['smtp_host'] as String?,
       smtpPort: _parseOptionalIntValue(json['smtp_port']),
@@ -324,13 +337,15 @@ class TfApiClient {
     String? userAgent,
   }) async {
     try {
-      final response = await _http.get(
-        Uri.parse(url),
-        headers: {
-          if (headers != null) ...headers,
-          'User-Agent': userAgent ?? await _officialUserAgent(),
-        },
-      ).timeout(timeout);
+      final response = await _http
+          .get(
+            Uri.parse(url),
+            headers: {
+              if (headers != null) ...headers,
+              'User-Agent': userAgent ?? await _officialUserAgent(),
+            },
+          )
+          .timeout(timeout);
       ServerConnectionStatusService.instance.reportReachable();
       return response;
     } on TimeoutException {
@@ -395,10 +410,12 @@ class TfApiClient {
     Duration timeout = _probeTimeout,
   }) async {
     try {
-      final response = await _http.get(
-        Uri.parse(url),
-        headers: {'User-Agent': await _officialUserAgent()},
-      ).timeout(timeout);
+      final response = await _http
+          .get(
+            Uri.parse(url),
+            headers: {'User-Agent': await _officialUserAgent()},
+          )
+          .timeout(timeout);
       return response.statusCode == 200;
     } catch (_) {
       return false;
@@ -821,8 +838,7 @@ class TfApiClient {
           'max_stickers_per_pack': maxStickersPerPack,
         if (dailyStickerPackCreationLimit != null)
           'daily_sticker_pack_creation_limit': dailyStickerPackCreationLimit,
-        if (maxStickerSize != null)
-          'max_sticker_size': maxStickerSize,
+        if (maxStickerSize != null) 'max_sticker_size': maxStickerSize,
         if (smtpHost != null) 'smtp_host': smtpHost,
         if (smtpPort != null) 'smtp_port': smtpPort,
         if (smtpUseSsl != null) 'smtp_use_ssl': smtpUseSsl,
@@ -1203,16 +1219,24 @@ class TfApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> searchForum(String query, {int? forumId, int offset = 0, int limit = 30}) async {
+  Future<Map<String, dynamic>> searchForum(
+    String query, {
+    int? forumId,
+    int offset = 0,
+    int limit = 30,
+  }) async {
     final baseUrl = await getBaseUrl();
-    final uri = Uri.parse('$baseUrl/forum/search').replace(queryParameters: {
-      'query': query,
-      'offset': '$offset',
-      'limit': '$limit',
-      if (forumId != null) 'fid': '$forumId',
-    });
+    final uri = Uri.parse('$baseUrl/forum/search').replace(
+      queryParameters: {
+        'query': query,
+        'offset': '$offset',
+        'limit': '$limit',
+        if (forumId != null) 'fid': '$forumId',
+      },
+    );
     final response = await _getRequest(uri.toString());
-    if (response.statusCode < 200 || response.statusCode >= 300) throw Exception('Forum search failed');
+    if (response.statusCode < 200 || response.statusCode >= 300)
+      throw Exception('Forum search failed');
     return Map<String, dynamic>.from(jsonDecode(response.body) as Map);
   }
 
@@ -1674,6 +1698,165 @@ class TfApiClient {
     return _parseBool(result);
   }
 
+  /// 分页查询系统通知（kind=0），返回 {items, total, has_more}。
+  Future<({List<NotificationInfo> items, int total, bool hasMore})>
+  queryNotificationPage(
+    int uid,
+    String password, {
+    int offset = 0,
+    int take = 50,
+  }) async {
+    final result = await secretPost(
+      '/notification/list',
+      {'offset': offset, 'take': take},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) {
+      return (items: const <NotificationInfo>[], total: 0, hasMore: false);
+    }
+    try {
+      final data = jsonDecode(result) as Map<String, dynamic>;
+      final list = (data['items'] as List<dynamic>? ?? const [])
+          .map(
+            (e) => NotificationInfo.fromServerJson(e as Map<String, dynamic>),
+          )
+          .toList();
+      return (
+        items: list,
+        total: (data['total'] as num?)?.toInt() ?? 0,
+        hasMore: data['has_more'] as bool? ?? false,
+      );
+    } catch (e) {
+      talker.error('queryNotificationPage parse failed', e);
+      return (items: const <NotificationInfo>[], total: 0, hasMore: false);
+    }
+  }
+
+  /// 服务端未读通知数（不含消息事件）。
+  Future<int> unreadNotificationCount(int uid, String password) async {
+    final result = await secretPost(
+      '/notification/unread_count',
+      {},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return 0;
+    try {
+      return (jsonDecode(result) as Map<String, dynamic>)['count'] as int? ?? 0;
+    } catch (e) {
+      talker.error('unreadNotificationCount parse failed', e);
+      return 0;
+    }
+  }
+
+  /// 将指定时间戳及之前的通知标为已读；传 [ids] 时按 id 单条标记。
+  Future<bool> markNotificationsRead(
+    int uid,
+    String password, {
+    double? timeStamp,
+    List<int>? ids,
+  }) async {
+    final result = await secretPost(
+      '/notification/mark_read',
+      {
+        if (timeStamp != null) 'time_stamp': timeStamp,
+        if (ids != null) 'ids': ids,
+      },
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return false;
+    try {
+      final data = jsonDecode(result) as Map<String, dynamic>;
+      return data['success'] as bool? ?? false;
+    } catch (e) {
+      talker.error('markNotificationsRead parse failed', e);
+      return false;
+    }
+  }
+
+  Future<bool> markAllNotificationsRead(int uid, String password) async {
+    final result = await secretPost(
+      '/notification/mark_all_read',
+      {},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return false;
+    try {
+      final data = jsonDecode(result) as Map<String, dynamic>;
+      return data['success'] as bool? ?? false;
+    } catch (e) {
+      talker.error('markAllNotificationsRead parse failed', e);
+      return false;
+    }
+  }
+
+  /// 增量同步某房间消息（含缺口补拉）。
+  ///
+  /// [lastSeq] 优先；迁移期可用 [lastMid]。返回 (messages, currentSeq, hasMore)。
+  Future<MessageSyncResult> syncMessages(
+    int uid,
+    String password,
+    String roomId, {
+    int lastSeq = 0,
+    int? lastMid,
+    List<int> missingSequences = const [],
+    List<Map<String, int>> missingSequenceRanges = const [],
+    int limit = 100,
+    bool throwOnFailure = false,
+  }) async {
+    final result = await secretPost(
+      '/message/sync',
+      {
+        'room_id': roomId,
+        'last_seq': lastSeq,
+        if (lastMid != null) 'last_mid': lastMid,
+        if (missingSequences.isNotEmpty) 'missing_sequences': missingSequences,
+        if (missingSequenceRanges.isNotEmpty)
+          'missing_sequence_ranges': missingSequenceRanges,
+        'limit': limit,
+      },
+      uid: uid,
+      password: password,
+    );
+    if (result == null) {
+      if (throwOnFailure) {
+        throw StateError('Message sync request failed for $roomId');
+      }
+      return (
+        messages: const <ChatMessage>[],
+        currentSeq: lastSeq,
+        hasMore: false,
+      );
+    }
+    try {
+      final data = jsonDecode(result) as Map<String, dynamic>;
+      final list = (data['messages'] as List<dynamic>? ?? const [])
+          .map(
+            (e) => ChatMessage.fromMessageRecord(
+              Map<String, dynamic>.from(e as Map),
+              uid,
+            ),
+          )
+          .toList();
+      return (
+        messages: list,
+        currentSeq: (data['current_seq'] as num?)?.toInt() ?? lastSeq,
+        hasMore: data['has_more'] as bool? ?? false,
+      );
+    } catch (e) {
+      talker.error('syncMessages parse failed', e);
+      if (throwOnFailure) rethrow;
+      return (
+        messages: const <ChatMessage>[],
+        currentSeq: lastSeq,
+        hasMore: false,
+      );
+    }
+  }
+
   // friend
 
   Future<bool> addFriend(
@@ -1795,77 +1978,235 @@ class TfApiClient {
     return utf8.decode(response.bodyBytes, allowMalformed: true);
   }
 
-  Future<Map<String, dynamic>> getStickerMarket({int offset = 0, int limit = 20, String query = '', String order = 'usage'}) async {
+  Future<Map<String, dynamic>> getStickerMarket({
+    int offset = 0,
+    int limit = 20,
+    String query = '',
+    String order = 'usage',
+  }) async {
     final baseUrl = await getBaseUrl();
-    final uri = Uri.parse('$baseUrl/sticker/market').replace(queryParameters: {'offset': '$offset', 'limit': '$limit', 'order': order, if (query.isNotEmpty) 'query': query});
+    final uri = Uri.parse('$baseUrl/sticker/market').replace(
+      queryParameters: {
+        'offset': '$offset',
+        'limit': '$limit',
+        'order': order,
+        if (query.isNotEmpty) 'query': query,
+      },
+    );
     final response = await _getRequest(uri.toString());
-    if (response.statusCode < 200 || response.statusCode >= 300) throw Exception('Failed to load sticker market');
+    if (response.statusCode < 200 || response.statusCode >= 300)
+      throw Exception('Failed to load sticker market');
     return Map<String, dynamic>.from(jsonDecode(response.body) as Map);
   }
 
   Future<StickerPack?> getStickerPack(String id) async {
     final baseUrl = await getBaseUrl();
-    final response = await _getRequest('$baseUrl/sticker/pack/${Uri.encodeComponent(id)}');
+    final response = await _getRequest(
+      '$baseUrl/sticker/pack/${Uri.encodeComponent(id)}',
+    );
     if (response.statusCode < 200 || response.statusCode >= 300) return null;
-    return StickerPack.fromMap(Map<String, dynamic>.from(jsonDecode(response.body) as Map));
+    return StickerPack.fromMap(
+      Map<String, dynamic>.from(jsonDecode(response.body) as Map),
+    );
   }
 
   Future<StickerItem?> lookupSticker(String identifier) async {
     final baseUrl = await getBaseUrl();
-    final response = await _getRequest('$baseUrl/sticker/lookup/${Uri.encodeComponent(identifier)}');
+    final response = await _getRequest(
+      '$baseUrl/sticker/lookup/${Uri.encodeComponent(identifier)}',
+    );
     if (response.statusCode < 200 || response.statusCode >= 300) return null;
-    return StickerItem.fromMap(Map<String, dynamic>.from(jsonDecode(response.body) as Map));
+    return StickerItem.fromMap(
+      Map<String, dynamic>.from(jsonDecode(response.body) as Map),
+    );
   }
 
-  Future<List<OwnedStickerPack>> getMyStickerPacks(int uid, String password) async {
-    final raw = await secretPost('/sticker/mine', {}, uid: uid, password: password);
+  Future<List<OwnedStickerPack>> getMyStickerPacks(
+    int uid,
+    String password,
+  ) async {
+    final raw = await secretPost(
+      '/sticker/mine',
+      {},
+      uid: uid,
+      password: password,
+    );
     final decoded = jsonDecode(raw ?? '[]');
     if (decoded is! List) return [];
-    return decoded.whereType<Map>().map((item) => OwnedStickerPack.fromMap(Map<String, dynamic>.from(item))).toList();
+    return decoded
+        .whereType<Map>()
+        .map(
+          (item) => OwnedStickerPack.fromMap(Map<String, dynamic>.from(item)),
+        )
+        .toList();
   }
 
-  Future<List<StickerPack>> getCreatedStickerPacks(int uid, String password) async {
-    final raw = await secretPost('/sticker/created', {}, uid: uid, password: password);
+  Future<List<StickerPack>> getCreatedStickerPacks(
+    int uid,
+    String password,
+  ) async {
+    final raw = await secretPost(
+      '/sticker/created',
+      {},
+      uid: uid,
+      password: password,
+    );
     final decoded = jsonDecode(raw ?? '{}');
     final list = decoded is Map ? decoded['items'] : null;
-    return (list as List? ?? const []).whereType<Map>().map((item) => StickerPack.fromMap(Map<String, dynamic>.from(item))).toList();
+    return (list as List? ?? const [])
+        .whereType<Map>()
+        .map((item) => StickerPack.fromMap(Map<String, dynamic>.from(item)))
+        .toList();
   }
 
-  Future<Map<String, dynamic>?> createStickerPack(int uid, String password, {required String name, required String prefix, String description = ''}) async {
-    return _parseJsonMap(await secretPost('/sticker/pack/create', {'name': name, 'prefix': prefix, 'description': description}, uid: uid, password: password));
+  Future<Map<String, dynamic>?> createStickerPack(
+    int uid,
+    String password, {
+    required String name,
+    required String prefix,
+    String description = '',
+  }) async {
+    return _parseJsonMap(
+      await secretPost(
+        '/sticker/pack/create',
+        {'name': name, 'prefix': prefix, 'description': description},
+        uid: uid,
+        password: password,
+      ),
+    );
   }
 
-  Future<Map<String, dynamic>?> createStickerItem(int uid, String password, {required String packId, required String slug, String? name, required String fileHash, int size = 0, int mode = 0}) async {
-    return _parseJsonMap(await secretPost('/sticker/item/create', {'pack_id': packId, 'slug': slug, 'name': name, 'file_hash': fileHash, 'size': size, 'mode': mode}, uid: uid, password: password));
+  Future<Map<String, dynamic>?> createStickerItem(
+    int uid,
+    String password, {
+    required String packId,
+    required String slug,
+    String? name,
+    required String fileHash,
+    int size = 0,
+    int mode = 0,
+  }) async {
+    return _parseJsonMap(
+      await secretPost(
+        '/sticker/item/create',
+        {
+          'pack_id': packId,
+          'slug': slug,
+          'name': name,
+          'file_hash': fileHash,
+          'size': size,
+          'mode': mode,
+        },
+        uid: uid,
+        password: password,
+      ),
+    );
   }
 
-  Future<bool> setStickerOwnership(int uid, String password, String packId, bool owned) async {
-    final value = _parseJsonMap(await secretPost('/sticker/ownership', {'pack_id': packId, 'owned': owned}, uid: uid, password: password));
+  Future<bool> setStickerOwnership(
+    int uid,
+    String password,
+    String packId,
+    bool owned,
+  ) async {
+    final value = _parseJsonMap(
+      await secretPost(
+        '/sticker/ownership',
+        {'pack_id': packId, 'owned': owned},
+        uid: uid,
+        password: password,
+      ),
+    );
     return value?['success'] == true;
   }
 
-  Future<bool> reorderStickerOwnership(int uid, String password, List<String> packIds) async {
-    final value = _parseJsonMap(await secretPost('/sticker/ownership/reorder', {'pack_ids': packIds}, uid: uid, password: password));
+  Future<bool> reorderStickerOwnership(
+    int uid,
+    String password,
+    List<String> packIds,
+  ) async {
+    final value = _parseJsonMap(
+      await secretPost(
+        '/sticker/ownership/reorder',
+        {'pack_ids': packIds},
+        uid: uid,
+        password: password,
+      ),
+    );
     return value?['success'] == true;
   }
 
-  Future<bool> updateStickerPack(int uid, String password, String packId, {String? name, String? prefix, String? description}) async {
-    final result = _parseJsonMap(await secretPost('/sticker/pack/update', {'pack_id': packId, if (name != null) 'name': name, if (prefix != null) 'prefix': prefix, if (description != null) 'description': description}, uid: uid, password: password));
+  Future<bool> updateStickerPack(
+    int uid,
+    String password,
+    String packId, {
+    String? name,
+    String? prefix,
+    String? description,
+  }) async {
+    final result = _parseJsonMap(
+      await secretPost(
+        '/sticker/pack/update',
+        {
+          'pack_id': packId,
+          if (name != null) 'name': name,
+          if (prefix != null) 'prefix': prefix,
+          if (description != null) 'description': description,
+        },
+        uid: uid,
+        password: password,
+      ),
+    );
     return result?['success'] == true;
   }
 
-  Future<bool> deleteStickerPack(int uid, String password, String packId) async {
-    final result = _parseJsonMap(await secretPost('/sticker/pack/delete', {'pack_id': packId}, uid: uid, password: password));
+  Future<bool> deleteStickerPack(
+    int uid,
+    String password,
+    String packId,
+  ) async {
+    final result = _parseJsonMap(
+      await secretPost(
+        '/sticker/pack/delete',
+        {'pack_id': packId},
+        uid: uid,
+        password: password,
+      ),
+    );
     return result?['success'] == true;
   }
 
-  Future<bool> deleteStickerItem(int uid, String password, String packId, String stickerId) async {
-    final result = _parseJsonMap(await secretPost('/sticker/item/delete', {'pack_id': packId, 'sticker_id': stickerId}, uid: uid, password: password));
+  Future<bool> deleteStickerItem(
+    int uid,
+    String password,
+    String packId,
+    String stickerId,
+  ) async {
+    final result = _parseJsonMap(
+      await secretPost(
+        '/sticker/item/delete',
+        {'pack_id': packId, 'sticker_id': stickerId},
+        uid: uid,
+        password: password,
+      ),
+    );
     return result?['success'] == true;
   }
 
-  Future<bool> reorderStickerItems(int uid, String password, String packId, List<String> stickerIds) async {
-    final result = _parseJsonMap(await secretPost('/sticker/item/reorder', {'pack_id': packId, 'sticker_ids': stickerIds}, uid: uid, password: password));
+  Future<bool> reorderStickerItems(
+    int uid,
+    String password,
+    String packId,
+    List<String> stickerIds,
+  ) async {
+    final result = _parseJsonMap(
+      await secretPost(
+        '/sticker/item/reorder',
+        {'pack_id': packId, 'sticker_ids': stickerIds},
+        uid: uid,
+        password: password,
+      ),
+    );
     return result?['success'] == true;
   }
 
@@ -2209,12 +2550,7 @@ class TfApiClient {
     return _parseBool(result);
   }
 
-  Future<bool> pinMessage(
-    int uid,
-    String password,
-    int gid,
-    int mid,
-  ) async {
+  Future<bool> pinMessage(int uid, String password, int gid, int mid) async {
     final result = await secretPost(
       '/group/pin_message',
       {'gid': gid, 'mid': mid},
@@ -2263,20 +2599,32 @@ class TfApiClient {
   }
 
   Future<bool> addEssence(int uid, String password, int gid, int mid) async {
-    final result = await secretPost("/group/add_essence",
-      {"gid": gid, "mid": mid}, uid: uid, password: password);
+    final result = await secretPost(
+      "/group/add_essence",
+      {"gid": gid, "mid": mid},
+      uid: uid,
+      password: password,
+    );
     return _parseBool(result);
   }
 
   Future<bool> removeEssence(int uid, String password, int gid, int mid) async {
-    final result = await secretPost("/group/remove_essence",
-      {"gid": gid, "mid": mid}, uid: uid, password: password);
+    final result = await secretPost(
+      "/group/remove_essence",
+      {"gid": gid, "mid": mid},
+      uid: uid,
+      password: password,
+    );
     return _parseBool(result);
   }
 
   Future<EssenceResult?> queryEssence(int uid, String password, int gid) async {
-    final result = await secretPost("group/query_essence",
-      {"gid": gid}, uid: uid, password: password);
+    final result = await secretPost(
+      "group/query_essence",
+      {"gid": gid},
+      uid: uid,
+      password: password,
+    );
     if (result == null) return null;
     try {
       final map = jsonDecode(result) as Map<String, dynamic>;

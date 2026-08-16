@@ -132,6 +132,26 @@ class LocalMessageStore {
 
   Future<String?> databasePath() async => null;
 
+  Future<int?> getRoomSyncMid(String roomId) async {
+    final scope = _requireScope();
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('touchfish_sync_mid/$scope/$roomId');
+    return raw == null ? null : int.tryParse(raw);
+  }
+
+  Future<int?> getRoomSyncSeq(String roomId) async {
+    final scope = _requireScope();
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('touchfish_sync_seq/$scope/$roomId');
+    return raw == null ? null : int.tryParse(raw);
+  }
+
+  Future<void> saveRoomSyncPoint(String roomId, int seq) async {
+    final scope = _requireScope();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('touchfish_sync_seq/$scope/$roomId', '$seq');
+  }
+
   Future<void> clearDatabase() async {
     final scope = _requireScope();
     final prefs = await SharedPreferences.getInstance();
