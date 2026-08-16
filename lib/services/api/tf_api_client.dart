@@ -1984,10 +1984,56 @@ class TfApiClient {
 
   // --- group management ---
 
+  Future<List<Map<String, dynamic>>> infoGroup(int groupid) async {
+    final baseUrl = await getBaseUrl();
+    final encoded = Uri.encodeComponent(groupid.toString());
+    final uri = Uri.parse('$baseUrl/group/group_info/$encoded');
+    final response = await _getRequest(uri.toString());
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Group search failed');
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+
+    if (decoded == null || decoded is! List) {
+      return [];
+    }
+
+    final groups = <Map<String, dynamic>>[];
+    final dynamic item = decoded;
+    if (item is! List || item.length < 8) {
+      // 服务端结构异常时跳过该项，避免整屏搜索崩溃
+      return [];
+    }
+    final List<dynamic> raw = item;
+    List<dynamic> members = const [];
+    try {
+      final rawMembers = raw[3];
+      if (rawMembers is String && rawMembers.isNotEmpty) {
+        final parsed = jsonDecode(rawMembers);
+        if (parsed is List) members = parsed;
+      } else if (rawMembers is List) {
+        members = rawMembers;
+      }
+    } catch (_) {
+      members = const [];
+    }
+    groups.add(<String, dynamic>{
+      'gid': raw[0],
+      'creater': raw[1],
+      'groupname': raw[2],
+      'members': members.map((m) => m is num ? m.toInt() : m).toList(),
+      'require_review': raw[4],
+      'enter_hint': raw[5],
+      'introduction': raw[6],
+      'allow_direct_join': raw[7],
+    });
+    return groups;
+  }
+
   Future<List<Map<String, dynamic>>> searchGroup(String groupname) async {
     final baseUrl = await getBaseUrl();
-    // 群名可能包含中文/特殊字符，必须编码后再拼进路径，否则 Uri.parse
-    // 会抛异常或请求错误。
     final encoded = Uri.encodeComponent(groupname);
     final uri = Uri.parse('$baseUrl/group/groupname_search/$encoded');
     final response = await _getRequest(uri.toString());
