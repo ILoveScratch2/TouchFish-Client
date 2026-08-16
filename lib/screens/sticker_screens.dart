@@ -743,7 +743,7 @@ class _StickerPackEditorScreenState extends State<StickerPackEditorScreen> {
     if (accepted != true || slugText.isEmpty) return;
     setState(() => _busy = true);
     try {
-      final uploaded = await TfApiClient.instance.uploadFile(
+      final uploaded = await TfApiClient.instance.uploadSticker(
         uid,
         password,
         file.name,

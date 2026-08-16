@@ -1779,6 +1779,11 @@ class TfApiClient {
     return '$baseUrl/file/get_file/${Uri.encodeComponent(hash)}';
   }
 
+  Future<String> getStickerUrl(String hash) async {
+    final baseUrl = await getBaseUrl();
+    return '$baseUrl/sticker/get/${Uri.encodeComponent(hash)}';
+  }
+
   Future<String> getTextFile(String url) async {
     final response = await _getRequest(url);
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -2421,6 +2426,28 @@ class TfApiClient {
   ) async {
     final result = await secretPost(
       '/file/upload_file',
+      {'filename': fileName, 'file_b64': fileBase64},
+      uid: uid,
+      password: password,
+    );
+
+    final data = _parseJsonMap(result);
+    if (data == null) return null;
+
+    final success = data['success'];
+    if (success is bool && !success) return null;
+
+    return data;
+  }
+
+  Future<Map<String, dynamic>?> uploadSticker(
+    int uid,
+    String password,
+    String fileName,
+    String fileBase64,
+  ) async {
+    final result = await secretPost(
+      '/sticker/upload',
       {'filename': fileName, 'file_b64': fileBase64},
       uid: uid,
       password: password,
