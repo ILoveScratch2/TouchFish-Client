@@ -67,7 +67,13 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
       _hasSearched = true;
     });
     try {
-      final results = await TfApiClient.instance.searchGroup(keyword);
+      List<Map<String, dynamic>> results;
+      try {
+        int number = int.parse(keyword);
+        results = await TfApiClient.instance.infoGroup(number);
+      } on FormatException {
+        results = await TfApiClient.instance.searchGroup(keyword);
+      }
       if (!mounted) return;
       setState(() {
         _results = results
