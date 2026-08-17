@@ -995,6 +995,31 @@
   "chatFunctionTabEmojiHint": "表情選擇器即將推出",
   "chatFunctionTabSpecialHint": "特別消息即將推出",
   "chatFunctionPickFile": "選擇文件",
+  "chatInputPickServerFile": "從服務器選擇",
+  "chatSyncHistory": "正在同步聊天記錄...",
+  "chatSyncHistoryProgress": "正在同步歷史消息：第 {round} 輪，共 {count} 條",
+  "@chatSyncHistoryProgress": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "round": {
+        "type": "int"
+      }
+    }
+  },
+  "chatSyncComplete": "同步完成：共 {count} 條消息",
+  "@chatSyncComplete": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "serverFilePickerSearch": "搜索文件...",
+  "serverFilePickerEmpty": "尚無上傳過的文件",
+  "serverFilePickerNoMatch": "無匹配的文件",
+  "serverFilePickerError": "加載文件失敗",
   "chatSendFailed": "發送失敗",
   "chatCreateGroup": "創建羣組",
   "chatAddFriend": "添加好友",
@@ -1083,6 +1108,15 @@
   "settingsMediaProxy": "媒體代理",
   "settingsMediaProxyDescription": "於本機運行 HTTP 代理以緩存並流式播放媒體，提供更流暢之播放體驗",
   "settingsMediaProxyUnsupported": "當前平台不支持此功能",
+  "settingsForceExplicitSyncTitle": "進入聊天時強制顯式同步",
+  "settingsForceExplicitSyncDesc": "打開聊天時始終顯示同步指示器並拉取更新（原行為）",
+  "settingsExplicitSyncCooldownTitle": "顯式同步間隔",
+  "settingsExplicitSyncCooldownDesc": "距上次進入聊天觸發的同步超過該時間後，下次進入將再次顯示同步指示器",
+  "settingsSeconds10": "10 秒",
+  "settingsSeconds30": "30 秒",
+  "settingsSeconds60": "1 分鐘",
+  "settingsSeconds120": "2 分鐘",
+  "settingsSeconds300": "5 分鐘",
 
   "settingsStorageUsed": "已用空間",
   "settingsStorageFree": "可用空間",

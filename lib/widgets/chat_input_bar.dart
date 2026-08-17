@@ -7,6 +7,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 import '../services/clipboard_attachment_service.dart';
+import 'server_file_picker_sheet.dart';
 import 'stickers/sticker_picker.dart';
 import '../l10n/app_localizations.dart';
 import '../models/message_model.dart';
@@ -18,6 +19,10 @@ class ChatInputBar extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
   final Function(PlatformFile file, MessageType type)? onFilePicked;
+
+  /// 选择服务端已上传的文件直接发送（免二次上传）。
+  final Future<void> Function(Map<String, dynamic> serverFile, MessageType type)?
+      onServerFilePicked;
   final List<MentionUser> mentionUsers;
   final ChatMessage? actionMessage;
   final bool actionIsForward;
@@ -31,6 +36,7 @@ class ChatInputBar extends StatefulWidget {
     required this.controller,
     required this.onSend,
     this.onFilePicked,
+    this.onServerFilePicked,
     this.mentionUsers = const [],
     this.actionMessage,
     this.actionIsForward = false,
@@ -533,8 +539,33 @@ class _ChatInputBarState extends State<ChatInputBar>
               label: Text(l10n.chatFunctionPickFile),
             ),
           ),
+          if (widget.onServerFilePicked != null) ...[
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _handleServerFilePick,
+              icon: const Icon(Symbols.cloud_done, size: 18),
+              label: Text(l10n.chatInputPickServerFile),
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  MessageType _messageTypeFromServerFile(Map<String, dynamic> file) {
+    final mime = (file['mime_type'] as String? ?? '').toLowerCase();
+    if (mime.startsWith('image/')) return MessageType.image;
+    if (mime.startsWith('video/')) return MessageType.video;
+    if (mime.startsWith('audio/')) return MessageType.audio;
+    return _messageTypeFromExtension(file['file_name'] as String? ?? '');
+  }
+
+  Future<void> _handleServerFilePick() async {
+    final file = await showServerFilePicker(context);
+    if (file == null || !mounted || widget.onServerFilePicked == null) return;
+    await widget.onServerFilePicked!(
+      file,
+      _messageTypeFromServerFile(file),
     );
   }
 

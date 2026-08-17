@@ -53,6 +53,8 @@ class _MainScreenState extends State<MainScreen> {
 
   int get _adminBadgeCount => _forumPendingService.pendingCount;
 
+  int get _forumBadgeCount => _notificationService.forumUnreadCount;
+
   int _getCurrentIndex(
     BuildContext context,
     List<_NavDestinationConfig> destinations,
@@ -316,6 +318,7 @@ class _MainScreenState extends State<MainScreen> {
   int _badgeCountFor(String route) {
     if (route == AppRoutes.chat) return _chatBadgeCount;
     if (route == AppRoutes.announcement) return _announcementBadgeCount;
+    if (route == AppRoutes.forum) return _forumBadgeCount;
     if (route == AppRoutes.admin) return _adminBadgeCount;
     return 0;
   }

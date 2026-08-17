@@ -1332,6 +1332,24 @@ class _SettingsScreenState extends State<SettingsScreen>
         return kIsWeb
             ? l10n.settingsMediaProxyUnsupported
             : l10n.settingsMediaProxyDescription;
+      case 'settingsForceExplicitSyncTitle':
+        return l10n.settingsForceExplicitSyncTitle;
+      case 'settingsForceExplicitSyncDesc':
+        return l10n.settingsForceExplicitSyncDesc;
+      case 'settingsExplicitSyncCooldownTitle':
+        return l10n.settingsExplicitSyncCooldownTitle;
+      case 'settingsExplicitSyncCooldownDesc':
+        return l10n.settingsExplicitSyncCooldownDesc;
+      case 'settingsSeconds10':
+        return l10n.settingsSeconds10;
+      case 'settingsSeconds30':
+        return l10n.settingsSeconds30;
+      case 'settingsSeconds60':
+        return l10n.settingsSeconds60;
+      case 'settingsSeconds120':
+        return l10n.settingsSeconds120;
+      case 'settingsSeconds300':
+        return l10n.settingsSeconds300;
       case 'settingsChatNotificationsTitle':
         return l10n.settingsChatNotificationsTitle;
       case 'settingsChatNotificationsDesc':

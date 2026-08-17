@@ -2570,6 +2570,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatFunctionPickFile => 'Pick File';
 
   @override
+  String get chatInputPickServerFile => 'Pick from Server';
+
+  @override
+  String get chatSyncHistory => 'Syncing chat history...';
+
+  @override
+  String chatSyncHistoryProgress(int count, int round) {
+    return 'Syncing history: $count messages in round $round';
+  }
+
+  @override
+  String chatSyncComplete(int count) {
+    return 'Sync complete: $count messages';
+  }
+
+  @override
+  String get serverFilePickerSearch => 'Search files...';
+
+  @override
+  String get serverFilePickerEmpty => 'No uploaded files yet';
+
+  @override
+  String get serverFilePickerNoMatch => 'No matching files';
+
+  @override
+  String get serverFilePickerError => 'Failed to load files';
+
+  @override
   String get chatSendFailed => 'Send failed';
 
   @override
@@ -2797,6 +2825,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMediaProxyUnsupported => 'Not supported on this platform';
+
+  @override
+  String get settingsForceExplicitSyncTitle =>
+      'Force explicit sync on chat entry';
+
+  @override
+  String get settingsForceExplicitSyncDesc =>
+      'Always fetch updates with the sync indicator when opening a chat (original behavior)';
+
+  @override
+  String get settingsExplicitSyncCooldownTitle => 'Explicit sync interval';
+
+  @override
+  String get settingsExplicitSyncCooldownDesc =>
+      'Time since the last entry-triggered sync before opening a chat shows the sync indicator again';
+
+  @override
+  String get settingsSeconds10 => '10 seconds';
+
+  @override
+  String get settingsSeconds30 => '30 seconds';
+
+  @override
+  String get settingsSeconds60 => '1 minute';
+
+  @override
+  String get settingsSeconds120 => '2 minutes';
+
+  @override
+  String get settingsSeconds300 => '5 minutes';
 
   @override
   String get settingsStorageUsed => 'Storage used';

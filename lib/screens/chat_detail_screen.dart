@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:material_symbols_icons/symbols.dart';
@@ -11,7 +12,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:mime/mime.dart' show lookupMimeType;
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
+import '../models/settings_service.dart';
 import '../widgets/message_bubble.dart';
+import '../widgets/media/image_lightbox.dart';
 import '../widgets/chat_input_bar.dart';
 import '../routes/app_routes.dart';
 import '../l10n/app_localizations.dart';
@@ -28,6 +31,7 @@ import '../utils/talker.dart';
 import 'chat_room_settings_screen.dart';
 import 'group_essence_screen.dart';
 import '../widgets/pinned_messages_sheet.dart';
+import '../widgets/sync_indicator.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   final String roomId;
@@ -42,8 +46,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
+
+  /// 当前聊天按时间序的图片画廊条目（灯箱多图用）。消息超过 [_galleryCap] 时
+  /// 清空并退化为单图模式，限制重建开销。
+  final List<LightboxImageItem> _imageEntries = [];
+  final Map<String, int> _imageIndexById = {};
+  static const int _galleryCap = 3000;
+
   final Map<int, GlobalKey> _messageKeys = {};
   final Map<String, Timer> _pendingWsTimers = {};
+
   /// clientMids that already went through the REST fallback, to avoid
   /// re-sending the same message twice.
   final Set<String> _restFallbackAttempted = {};
@@ -122,6 +134,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _restFallbackAttempted.clear();
     _messageKeys.clear();
     _messages.clear();
+    _rebuildImageEntries();
     _currentRoom = null;
     _avatarLoadFailed = false;
     _isLoadingOlder = false;
@@ -161,7 +174,22 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   Future<void> _syncRoomIfNeeded(String roomId) async {
     final syncService = MessageSyncService.instance;
     if (syncService.lastSeqOf(roomId) != null) {
-      await syncService.resyncAfterReconnect();
+      final settings = SettingsService.instance;
+      final forceExplicit = settings.getValue<bool>('forceExplicitSync', false);。
+      final cooldownSeconds =
+          int.tryParse(
+            settings.getValue<String>('explicitSyncCooldownSeconds', '30'),
+          ) ??
+          30;
+      final cooldown = Duration(seconds: cooldownSeconds);
+      if (forceExplicit ||
+          syncService.hasPendingGapsFor(roomId) ||
+          !syncService.isWithinSyncCooldown(roomId, cooldown)) {
+        syncService.recordEntrySync(roomId);
+        await syncService.resyncAfterReconnect();
+      } else {
+        await syncService.silentSyncRoom(roomId);
+      }
       return;
     }
     // 无序号基线：用本地迁移的 last_mid 或房间列表 last_mid 建立同步点后再补拉
@@ -293,6 +321,29 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _realtimeListenersAttached = false;
   }
 
+  bool get _isRoomSyncing =>
+      MessageSyncService.instance.isSyncingFor(_contactUid);
+
+  String? get _syncHint {
+    final sync = MessageSyncService.instance;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) return null;
+    if (_isRoomSyncing) {
+      final count = sync.syncedCountFor(_contactUid);
+      if (count > 0) {
+        return l10n.chatSyncHistoryProgress(
+          count,
+          sync.batchRoundFor(_contactUid),
+        );
+      }
+      return l10n.chatSyncHistory;
+    }
+    if (sync.syncJustCompletedFor(_contactUid)) {
+      return l10n.chatSyncComplete(sync.syncedCountFor(_contactUid));
+    }
+    return null;
+  }
+
   void _startRealMessaging() {
     if (!AuthState.instance.isLoggedIn) return;
 
@@ -327,6 +378,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final chatData = ChatDataService.instance;
     final roomId = _contactUid;
     final roomGeneration = _roomGeneration;
+
+    // 先同步展示本地缓存，切房间立即有内容，网络刷新在后台完成。
+    final cached = chatData.getMessages(roomId);
+    if (cached.isNotEmpty && _messages.isEmpty) {
+      setState(() {
+        _messages.addAll(cached);
+        _rebuildImageEntries();
+      });
+      _followBottom = true;
+    }
     setState(() => _isLoadingMessages = true);
 
     final page = await chatData.refreshMessagesForContact(roomId);
@@ -340,6 +401,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     setState(() {
       _messages.clear();
       _messages.addAll(chatData.getMessages(roomId));
+      _rebuildImageEntries();
       _isLoadingMessages = false;
       _hasMoreMessages = page.hasMore;
     });
@@ -463,6 +525,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     setState(() {
       _messages.clear();
       _messages.addAll(chatData.getMessages(roomId));
+      _rebuildImageEntries();
       _isLoadingOlder = false;
       _hasMoreMessages = page.hasMore;
     });
@@ -541,10 +604,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final countChanged = cached.length != _messages.length;
     final lastIdChanged = cached.isNotEmpty && cached.last.id != previousLastId;
     final wasNearBottom = _isNearBottom;
-    setState(() {
-      _messages.clear();
-      _messages.addAll(cached);
-    });
+    // 未读角标、房间列表等无关通知不重建消息列表（ChatMessage 不可变，
+    // 引用逐一相同说明缓存内容没变）。
+    if (countChanged || lastIdChanged || !_sameMessageRefs(cached)) {
+      setState(() {
+        _messages.clear();
+        _messages.addAll(cached);
+        _rebuildImageEntries();
+      });
+    }
     if ((countChanged || lastIdChanged) && wasNearBottom) {
       _scrollToBottom();
     }
@@ -555,6 +623,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       unawaited(_fetchPinnedMessages());
       unawaited(_fetchEssenceMessages());
     }
+  }
+
+  bool _sameMessageRefs(List<ChatMessage> cached) {
+    if (cached.length != _messages.length) return false;
+    for (var i = 0; i < cached.length; i++) {
+      if (!identical(cached[i], _messages[i])) return false;
+    }
+    return true;
   }
 
   void _loadChatRoom() {
@@ -960,6 +1036,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
     setState(() {
       _messages.add(userMessage);
+      _rebuildImageEntries();
       _replyingTo = null;
       _forwardingTo = null;
     });
@@ -1153,6 +1230,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           status: status ?? _messages[idx].status,
         );
       }
+      _rebuildImageEntries();
     });
   }
 
@@ -1170,7 +1248,32 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       if (idx != -1) {
         _messages[idx] = _messages[idx].copyWith(media: media);
       }
+      _rebuildImageEntries();
     });
+  }
+
+  /// 根据当前 [_messages] 重建图片画廊条目与下标映射。
+  ///
+  /// 在 [_messages] 任何结构变更（含 id 变化）后调用；O(n)，n 为消息数。
+  void _rebuildImageEntries() {
+    _imageEntries.clear();
+    _imageIndexById.clear();
+    if (_messages.length > _galleryCap) return;
+    for (final message in _messages) {
+      final media = message.media;
+      if (message.type == MessageType.image && media != null) {
+        _imageEntries.add(
+          LightboxImageItem(
+            messageId: message.id,
+            media: media,
+            bytes: media.bytes != null
+                ? Uint8List.fromList(media.bytes!)
+                : null,
+          ),
+        );
+        _imageIndexById[message.id] = _imageEntries.length - 1;
+      }
+    }
   }
 
   Future<void> _sendMediaMessage(
@@ -1283,6 +1386,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
     setState(() {
       _messages.add(userMessage);
+      _rebuildImageEntries();
       _replyingTo = null;
     });
     ChatDataService.instance.addSentMessage(_contactUid, userMessage);
@@ -1315,87 +1419,180 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         ),
       );
 
-      bool wsSent = false;
-      if (_wsConnected) {
-        if (_contactUid.startsWith('G')) {
-          final gid = int.tryParse(_contactUid.substring(1));
-          if (gid != null) {
-            wsSent = await ChatWsService.instance.sendGroupFileMessage(
-              gid,
-              hash,
-              clientMid: clientMid,
-              quote: quoteMid,
-            );
-          }
-        } else {
-          final peerUid = int.tryParse(_contactUid.substring(1));
-          if (peerUid != null) {
-            wsSent = await ChatWsService.instance.sendFileMessage(
-              peerUid.toString(),
-              hash,
-              clientMid: clientMid,
-              quote: quoteMid,
-            );
-          }
-        }
-      }
-
-      if (!wsSent) {
-        final recipient = _contactUid;
-        final result = await TfApiClient.instance.sendMessage(
-          uid,
-          password,
-          recipient: recipient,
-          content: hash,
-          contentType: 'file',
-          clientMid: clientMid,
-          fileHash: hash,
-          quote: quoteMid,
-        );
-        if (result != null) {
-          final mid = (result['mid'] as num?)?.toInt();
-          _updateMessageStatus(clientMid, mid: mid, status: MessageStatus.sent);
-        } else {
-          _updateMessageStatus(clientMid, status: MessageStatus.failed);
-          if (mounted) {
-            final l10n = AppLocalizations.of(context)!;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.chatSendFailed),
-                behavior: SnackBarBehavior.floating,
-                duration: const Duration(seconds: 2),
-              ),
-            );
-          }
-        }
-      } else {
-        // REST 再试一次
-        _pendingWsTimers[clientMid]?.cancel();
-        _pendingWsTimers[clientMid] = Timer(
-          const Duration(seconds: 15),
-          () => _wsAckFallback(
-            clientMid: clientMid,
-            content: hash,
-            contentType: 'file',
-            fileHash: hash,
-            quoteMid: quoteMid,
-            forwardedMid: -1,
-          ),
-        );
-      }
+      await _dispatchFileSend(
+        clientMid: clientMid,
+        hash: hash,
+        quoteMid: quoteMid,
+      );
     } catch (e) {
       talker.error('ChatDetail file send failed', e);
       _updateMessageStatus(clientMid, status: MessageStatus.failed);
-      if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.chatSendFailed),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+      _showSendFailedSnackBar();
+    }
+  }
+
+  /// 按 hash 发送文件消息（WS 优先，失败走 REST，WS 发送后 15s 未收到 ack 再补 REST）。
+  ///
+  /// 上传直发（[_sendMediaMessage]）与服务器已有文件直发（[_sendServerFile]）共用。
+  Future<void> _dispatchFileSend({
+    required String clientMid,
+    required String hash,
+    required int quoteMid,
+  }) async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+
+    bool wsSent = false;
+    if (_wsConnected) {
+      if (_contactUid.startsWith('G')) {
+        final gid = int.tryParse(_contactUid.substring(1));
+        if (gid != null) {
+          wsSent = await ChatWsService.instance.sendGroupFileMessage(
+            gid,
+            hash,
+            clientMid: clientMid,
+            quote: quoteMid,
+          );
+        }
+      } else {
+        final peerUid = int.tryParse(_contactUid.substring(1));
+        if (peerUid != null) {
+          wsSent = await ChatWsService.instance.sendFileMessage(
+            peerUid.toString(),
+            hash,
+            clientMid: clientMid,
+            quote: quoteMid,
+          );
+        }
       }
+    }
+
+    if (!wsSent) {
+      final recipient = _contactUid;
+      final result = await TfApiClient.instance.sendMessage(
+        uid,
+        password,
+        recipient: recipient,
+        content: hash,
+        contentType: 'file',
+        clientMid: clientMid,
+        fileHash: hash,
+        quote: quoteMid,
+      );
+      if (result != null) {
+        final mid = (result['mid'] as num?)?.toInt();
+        _updateMessageStatus(clientMid, mid: mid, status: MessageStatus.sent);
+      } else {
+        _updateMessageStatus(clientMid, status: MessageStatus.failed);
+        _showSendFailedSnackBar();
+      }
+    } else {
+      // REST 再试一次
+      _pendingWsTimers[clientMid]?.cancel();
+      _pendingWsTimers[clientMid] = Timer(
+        const Duration(seconds: 15),
+        () => _wsAckFallback(
+          clientMid: clientMid,
+          content: hash,
+          contentType: 'file',
+          fileHash: hash,
+          quoteMid: quoteMid,
+          forwardedMid: -1,
+        ),
+      );
+    }
+  }
+
+  void _showSendFailedSnackBar() {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.chatSendFailed),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// 发送服务端已存在的文件（来自 /file/get_user_files），免二次上传。
+  Future<void> _sendServerFile(
+    Map<String, dynamic> file,
+    MessageType type,
+  ) async {
+    final uid = AuthState.instance.uid;
+    if (uid == null) return;
+    final hash = file['hash'] as String? ?? '';
+    if (hash.isEmpty) return;
+    final fileName = file['file_name'] as String? ?? hash;
+    final fileSize = (file['size'] as num?)?.toInt() ?? 0;
+    final mimeType = file['mime_type'] as String?;
+    final downloadUrl = file['download_url'] as String?;
+
+    final replyTarget = _replyingTo;
+    final quoteMid = replyTarget?.mid ?? -1;
+    final clientMid = 'c${DateTime.now().microsecondsSinceEpoch}';
+    final baseUrl = await TfApiClient.instance.getBaseUrl();
+    final messageText = switch (type) {
+      MessageType.image => '[IMAGE]',
+      MessageType.video => '[VIDEO]',
+      MessageType.audio => '[AUDIO]',
+      MessageType.file => '[FILE] $fileName',
+      _ => fileName,
+    };
+
+    final userMessage = ChatMessage(
+      id: clientMid,
+      clientMid: clientMid,
+      senderUid: uid,
+      text: messageText,
+      timestamp: DateTime.now(),
+      isMe: true,
+      type: type,
+      media: MessageMedia(
+        path: downloadUrl ?? '$baseUrl/file/get_file/$hash',
+        fileName: fileName,
+        fileSize: fileSize,
+        mimeType: mimeType,
+        fileHash: hash,
+      ),
+      status: MessageStatus.pending,
+      quoteMid: quoteMid >= 0 ? quoteMid : null,
+      quotePreview: replyTarget == null
+          ? null
+          : QuotedMessagePreview(
+              mid: replyTarget.mid,
+              senderUid: replyTarget.senderUid,
+              senderName: replyTarget.isMe
+                  ? AuthState.instance.currentUser?.username
+                  : replyTarget.senderName,
+              content: replyTarget.text,
+              contentType: replyTarget.type == MessageType.file
+                  ? 'file'
+                  : 'plain',
+            ),
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _messages.add(userMessage);
+      _rebuildImageEntries();
+      _replyingTo = null;
+    });
+    ChatDataService.instance.addSentMessage(_contactUid, userMessage);
+    _scrollToBottom();
+
+    try {
+      await _dispatchFileSend(
+        clientMid: clientMid,
+        hash: hash,
+        quoteMid: quoteMid,
+      );
+    } catch (e) {
+      talker.error('ChatDetail server file send failed', e);
+      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      _showSendFailedSnackBar();
     }
   }
 
@@ -2089,6 +2286,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            // 只重建指示器自身，不触发整页 setState（同步分页会多次通知进度）。
+            ListenableBuilder(
+              listenable: MessageSyncService.instance,
+              builder: (context, _) =>
+                  SyncIndicator(isSyncing: _isRoomSyncing, hint: _syncHint),
+            ),
             if (_isLoadingMessages || _isLoadingOlder)
               LinearProgressIndicator(
                 minHeight: 2,
@@ -2225,6 +2428,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                         onRecall: _recallMessage,
                                         onQuoteTap: _scrollToQuotedMessage,
                                         showAvatar: showAvatar,
+                                        galleryItems: _imageEntries.isEmpty
+                                            ? null
+                                            : _imageEntries,
+                                        galleryIndex:
+                                            _imageIndexById[message.id] ?? 0,
                                         canRecall: _canRecall(message),
                                         isEssence:
                                             message.mid != null &&
@@ -2288,6 +2496,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               controller: _messageController,
               onSend: _sendMessage,
               onFilePicked: _sendMediaMessage,
+              onServerFilePicked: _sendServerFile,
               mentionUsers: _mentionUsers,
               actionMessage: _replyingTo ?? _forwardingTo,
               actionIsForward: _forwardingTo != null,

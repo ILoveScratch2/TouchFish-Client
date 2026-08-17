@@ -996,6 +996,31 @@
   "chatFunctionTabEmojiHint": "表情选择器即将推出",
   "chatFunctionTabSpecialHint": "特别消息即将推出",
   "chatFunctionPickFile": "选择文件",
+  "chatInputPickServerFile": "从服务器选择",
+  "chatSyncHistory": "正在同步聊天记录...",
+  "chatSyncHistoryProgress": "正在同步历史消息：第 {round} 轮，共 {count} 条",
+  "@chatSyncHistoryProgress": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "round": {
+        "type": "int"
+      }
+    }
+  },
+  "chatSyncComplete": "同步完成：共 {count} 条消息",
+  "@chatSyncComplete": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "serverFilePickerSearch": "搜索文件...",
+  "serverFilePickerEmpty": "还没有上传过的文件",
+  "serverFilePickerNoMatch": "没有匹配的文件",
+  "serverFilePickerError": "加载文件失败",
   "chatSendFailed": "发送失败",
   "chatCreateGroup": "创建群组",
   "chatAddFriend": "添加好友",
@@ -1084,6 +1109,15 @@
   "settingsMediaProxy": "媒体代理",
   "settingsMediaProxyDescription": "在本机运行 HTTP 代理以缓存和流式播放媒体文件，提供更流畅的播放体验",
   "settingsMediaProxyUnsupported": "当前平台不支持此功能",
+  "settingsForceExplicitSyncTitle": "进入聊天时强制显式同步",
+  "settingsForceExplicitSyncDesc": "打开聊天时始终显示同步指示器并拉取更新（原行为）",
+  "settingsExplicitSyncCooldownTitle": "显式同步间隔",
+  "settingsExplicitSyncCooldownDesc": "距上次进入聊天触发的同步超过该时间后，下次进入将再次显示同步指示器",
+  "settingsSeconds10": "10 秒",
+  "settingsSeconds30": "30 秒",
+  "settingsSeconds60": "1 分钟",
+  "settingsSeconds120": "2 分钟",
+  "settingsSeconds300": "5 分钟",
 
   "settingsStorageUsed": "已用空间",
   "settingsStorageFree": "可用空间",

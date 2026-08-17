@@ -1033,6 +1033,31 @@
   "chatFunctionTabEmojiHint": "Emoji picker coming soon",
   "chatFunctionTabSpecialHint": "Special messages coming soon",
   "chatFunctionPickFile": "Pick File",
+  "chatInputPickServerFile": "Pick from Server",
+  "chatSyncHistory": "Syncing chat history...",
+  "chatSyncHistoryProgress": "Syncing history: {count} messages in round {round}",
+  "@chatSyncHistoryProgress": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "round": {
+        "type": "int"
+      }
+    }
+  },
+  "chatSyncComplete": "Sync complete: {count} messages",
+  "@chatSyncComplete": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "serverFilePickerSearch": "Search files...",
+  "serverFilePickerEmpty": "No uploaded files yet",
+  "serverFilePickerNoMatch": "No matching files",
+  "serverFilePickerError": "Failed to load files",
   "chatSendFailed": "Send failed",
   "chatCreateGroup": "Create Group",
   "chatAddFriend": "Add Friend",
@@ -1121,6 +1146,15 @@
   "settingsMediaProxy": "Media Proxy",
   "settingsMediaProxyDescription": "Runs a local HTTP proxy to cache and stream media files for smoother playback",
   "settingsMediaProxyUnsupported": "Not supported on this platform",
+  "settingsForceExplicitSyncTitle": "Force explicit sync on chat entry",
+  "settingsForceExplicitSyncDesc": "Always fetch updates with the sync indicator when opening a chat (original behavior)",
+  "settingsExplicitSyncCooldownTitle": "Explicit sync interval",
+  "settingsExplicitSyncCooldownDesc": "Time since the last entry-triggered sync before opening a chat shows the sync indicator again",
+  "settingsSeconds10": "10 seconds",
+  "settingsSeconds30": "30 seconds",
+  "settingsSeconds60": "1 minute",
+  "settingsSeconds120": "2 minutes",
+  "settingsSeconds300": "5 minutes",
 
   "settingsStorageUsed": "Storage used",
   "settingsStorageFree": "Free",

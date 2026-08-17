@@ -39,6 +39,12 @@ class MessageBubble extends HookWidget {
   final VoidCallback? onPinToggle;
   final VoidCallback? onEssenceToggle;
 
+  /// 当前聊天的图片画廊条目（按时间序）；为 null 时灯箱单图模式。
+  final List<LightboxImageItem>? galleryItems;
+
+  /// 本条消息在画廊中的下标。
+  final int galleryIndex;
+
   const MessageBubble({
     super.key,
     required this.message,
@@ -54,6 +60,8 @@ class MessageBubble extends HookWidget {
     this.essenceEnabled = true,
     this.onPinToggle,
     this.onEssenceToggle,
+    this.galleryItems,
+    this.galleryIndex = 0,
   });
 
   @override
@@ -79,6 +87,8 @@ class MessageBubble extends HookWidget {
       essenceEnabled: essenceEnabled,
       onPinToggle: onPinToggle,
       onEssenceToggle: onEssenceToggle,
+      galleryItems: galleryItems,
+      galleryIndex: galleryIndex,
     );
   }
 }
@@ -98,6 +108,8 @@ class _MessageBubbleContent extends StatefulWidget {
   final bool essenceEnabled;
   final VoidCallback? onPinToggle;
   final VoidCallback? onEssenceToggle;
+  final List<LightboxImageItem>? galleryItems;
+  final int galleryIndex;
 
   const _MessageBubbleContent({
     required this.message,
@@ -114,6 +126,8 @@ class _MessageBubbleContent extends StatefulWidget {
     this.essenceEnabled = true,
     this.onPinToggle,
     this.onEssenceToggle,
+    this.galleryItems,
+    this.galleryIndex = 0,
   });
 
   @override
@@ -889,6 +903,8 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                 imageBytes: widget.cachedBytes,
                 heroTag: 'image_${widget.message.id}',
                 exifData: exifData,
+                items: widget.galleryItems,
+                initialIndex: widget.galleryIndex,
               ),
             ),
           );
@@ -989,6 +1005,8 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
         ),
         sourceUrl: sourceUrl,
         bytes: widget.cachedBytes,
+        galleryItems: widget.galleryItems,
+        galleryIndex: widget.galleryIndex,
       ),
     );
   }
