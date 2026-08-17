@@ -5,7 +5,6 @@ import 'dart:typed_data';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../utils/talker.dart';
@@ -338,15 +337,10 @@ class ChatWsService extends ChangeNotifier {
   }
 
   Future<String> _resolveHost() async {
-    final prefs = await SharedPreferences.getInstance();
-    final serversJson = prefs.getStringList('serversV2');
-    final selectedIndex = prefs.getInt('selectedServerIndex') ?? 0;
-    if (serversJson != null && serversJson.isNotEmpty) {
-      final idx = selectedIndex.clamp(0, serversJson.length - 1);
-      final info = jsonDecode(serversJson[idx]) as Map<String, dynamic>;
-      return info['address'] as String? ?? '127.0.0.1';
-    }
-    return '127.0.0.1';
+    // Delegate to TfApiClient so the WebSocket host resolution matches the
+    // HTTP API host resolution. This is important on mobile where 127.0.0.1
+    // points to the device itself, not the development machine.
+    return TfApiClient.instance.resolveServerHost();
   }
 
   void _startPing() {
