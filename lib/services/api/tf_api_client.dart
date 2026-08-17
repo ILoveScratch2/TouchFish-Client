@@ -491,6 +491,21 @@ class TfApiClient {
     return int.tryParse(raw) ?? AppConstants.defaultTcpPort;
   }
 
+  /// Resolve the host used for WebSocket connections.
+  ///
+  /// Mirrors [_resolveBaseUrlFor]: falls back to
+  /// [AppConstants.defaultServerAddress] when no server is selected or the
+  /// configured address is empty. This keeps WS host resolution consistent
+  /// with HTTP API host resolution (important on mobile where `127.0.0.1`
+  /// points to the device itself, not the development machine).
+  Future<String> resolveServerHost() async {
+    final serverInfo = await _loadSelectedServer();
+    if (serverInfo != null && serverInfo.address.isNotEmpty) {
+      return serverInfo.address;
+    }
+    return AppConstants.defaultServerAddress;
+  }
+
   Future<bool> shouldTryWss() async {
     final serverInfo = await _loadSelectedServer();
     return serverInfo?.tryWss ?? AppConstants.defaultTryWss;

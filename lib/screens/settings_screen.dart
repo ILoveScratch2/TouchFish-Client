@@ -535,6 +535,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                               hintText: '',
                               initialItem: value,
                               items: fonts,
+                              overlayHeight: 320,
                               decoration: CustomDropdownDecoration(
                                 closedBorderRadius: BorderRadius.circular(8),
                                 expandedBorderRadius: BorderRadius.circular(8),
@@ -559,7 +560,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 16,
-                                          vertical: 12,
+                                          vertical: 4,
                                         ),
                                         decoration: BoxDecoration(
                                           color: isSelected
@@ -576,6 +577,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                                                     item == _customFontSentinel)
                                                 ? null
                                                 : item,
+                                            height: 1.4,
                                             color: isSelected
                                                 ? Theme.of(context)
                                                       .colorScheme
