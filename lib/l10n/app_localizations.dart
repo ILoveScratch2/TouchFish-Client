@@ -4252,6 +4252,36 @@ abstract class AppLocalizations {
   /// **'Failed to create announcement'**
   String get announcementCreateFailed;
 
+  /// No description provided for @announcementEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Announcement'**
+  String get announcementEdit;
+
+  /// No description provided for @announcementEditHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit announcement content...'**
+  String get announcementEditHint;
+
+  /// No description provided for @announcementEditSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcement updated'**
+  String get announcementEditSuccess;
+
+  /// No description provided for @announcementEditFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update announcement'**
+  String get announcementEditFailed;
+
+  /// No description provided for @announcementEditEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Content cannot be empty'**
+  String get announcementEditEmpty;
+
   /// No description provided for @announcementDeleteConfirm.
   ///
   /// In en, this message translates to:

@@ -1624,6 +1624,21 @@ class TfApiClient {
     return _parseBool(result);
   }
 
+  Future<bool> editAnnouncement(
+    int uid,
+    String password,
+    String timeStamp,
+    String content,
+  ) async {
+    final result = await secretPost(
+      '/announcement/edit_announcement',
+      {'time_stamp': timeStamp, 'content': content},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
   Future<bool> deleteAnnouncement(
     int uid,
     String password,
