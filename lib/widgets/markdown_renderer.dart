@@ -150,6 +150,39 @@ class MarkdownRenderer extends HookWidget {
               fontSize: 14,
             ),
             decoration: codeBlockDecoration,
+            builder: (code, language) => Container(
+              decoration: codeBlockDecoration,
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.all(16),
+              width: double.infinity,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 14,
+                      color: isDark ? const Color(0xffd6d6d6) : const Color(0xff24292f),
+                    ),
+                    children: highLightSpans(
+                      code,
+                      language: language.isEmpty ? null : language,
+                      theme: isDark ? a11yDarkTheme : a11yLightTheme,
+                      textStyle: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 14,
+                        color: isDark ? const Color(0xffd6d6d6) : const Color(0xff24292f),
+                      ),
+                      styleNotMatched: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 14,
+                        color: isDark ? const Color(0xffd6d6d6) : const Color(0xff24292f),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
           TableConfig(
             wrapper: (child) => SingleChildScrollView(

@@ -2254,6 +2254,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get announcementCreateFailed => 'Failed to create announcement';
 
   @override
+  String get announcementEdit => 'Edit Announcement';
+
+  @override
+  String get announcementEditHint => 'Edit announcement content...';
+
+  @override
+  String get announcementEditSuccess => 'Announcement updated';
+
+  @override
+  String get announcementEditFailed => 'Failed to update announcement';
+
+  @override
+  String get announcementEditEmpty => 'Content cannot be empty';
+
+  @override
   String get announcementDeleteConfirm => 'Delete this announcement?';
 
   @override

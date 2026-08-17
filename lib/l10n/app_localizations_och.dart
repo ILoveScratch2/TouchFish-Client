@@ -2156,6 +2156,21 @@ class AppLocalizationsOch extends AppLocalizations {
   String get announcementCreateFailed => '發公告未成';
 
   @override
+  String get announcementEdit => '改公告';
+
+  @override
+  String get announcementEditHint => '改公告之內容…';
+
+  @override
+  String get announcementEditSuccess => '公告已更';
+
+  @override
+  String get announcementEditFailed => '改公告未成';
+
+  @override
+  String get announcementEditEmpty => '內容不可空';
+
+  @override
   String get announcementDeleteConfirm => '確欲刪除此公告乎？';
 
   @override

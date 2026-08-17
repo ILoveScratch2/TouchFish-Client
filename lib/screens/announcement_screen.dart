@@ -6,6 +6,7 @@ import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/notification_service.dart';
 import '../utils/talker.dart';
+import '../widgets/markdown_renderer.dart';
 
 class AnnouncementScreen extends StatefulWidget {
   const AnnouncementScreen({super.key});
@@ -135,6 +136,68 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
               success
                   ? l10n.announcementCreateSuccess
                   : l10n.announcementCreateFailed,
+            ),
+          ),
+        );
+        if (success) _load();
+      }
+    }
+  }
+
+  Future<void> _showEditDialog(Announcement a) async {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController(text: a.content);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.announcementEdit),
+        content: TextField(
+          controller: controller,
+          maxLines: 5,
+          decoration: InputDecoration(
+            hintText: l10n.announcementEditHint,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.confirm),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    final content = controller.text.trim();
+    if (mounted) {
+      if (content.isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.announcementEditEmpty)));
+        return;
+      }
+      final uid = AuthState.instance.uid;
+      final password = AuthState.instance.password;
+      if (uid == null || password == null) return;
+      final success = await TfApiClient.instance.editAnnouncement(
+        uid,
+        password,
+        a.timeStamp,
+        content,
+      );
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? l10n.announcementEditSuccess
+                  : l10n.announcementEditFailed,
             ),
           ),
         );
@@ -289,6 +352,7 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
         itemBuilder: (context, index) => _AnnouncementCard(
           announcement: list[index],
           isAdmin: _isAdmin,
+          onEdit: () => _showEditDialog(list[index]),
           onDelete: () => _confirmDelete(list[index]),
         ),
       ),
@@ -387,11 +451,13 @@ class _AnnouncementNotificationSheet extends StatelessWidget {
 class _AnnouncementCard extends StatelessWidget {
   final Announcement announcement;
   final bool isAdmin;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _AnnouncementCard({
     required this.announcement,
     required this.isAdmin,
+    required this.onEdit,
     required this.onDelete,
   });
 
@@ -404,42 +470,55 @@ class _AnnouncementCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onLongPress: isAdmin ? onDelete : null,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.campaign_outlined,
-                    size: 24,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.campaign_outlined,
+                  size: 24,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  senderLabel,
+                  style: theme.textTheme.titleSmall?.copyWith(
                     color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(width: 10),
-                  Text(
-                    senderLabel,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                ),
+                const Spacer(),
+                if (isAdmin) ...[
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    tooltip: '编辑公告',
+                    iconSize: 18,
+                    onPressed: onEdit,
                   ),
-                  const Spacer(),
-                  Text(
-                    timeLabel,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                  IconButton(
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: theme.colorScheme.error,
                     ),
+                    tooltip: '删除公告',
+                    iconSize: 18,
+                    onPressed: onDelete,
                   ),
                 ],
-              ),
-              const SizedBox(height: 12),
-              Text(announcement.content, style: theme.textTheme.bodyLarge),
-            ],
-          ),
+                Text(
+                  timeLabel,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            MarkdownRenderer(data: announcement.content),
+          ],
         ),
       ),
     );

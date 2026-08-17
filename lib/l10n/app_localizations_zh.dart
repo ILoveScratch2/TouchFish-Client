@@ -2158,6 +2158,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get announcementCreateFailed => '发布公告失败';
 
   @override
+  String get announcementEdit => '编辑公告';
+
+  @override
+  String get announcementEditHint => '编辑公告内容...';
+
+  @override
+  String get announcementEditSuccess => '公告已更新';
+
+  @override
+  String get announcementEditFailed => '更新公告失败';
+
+  @override
+  String get announcementEditEmpty => '内容不能为空';
+
+  @override
   String get announcementDeleteConfirm => '确认删除此公告？';
 
   @override
