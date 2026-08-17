@@ -2467,6 +2467,34 @@ class AppLocalizationsOch extends AppLocalizations {
   String get chatFunctionPickFile => '選擇文件';
 
   @override
+  String get chatInputPickServerFile => '從服務器選擇';
+
+  @override
+  String get chatSyncHistory => '正在同步聊天記錄...';
+
+  @override
+  String chatSyncHistoryProgress(int count, int round) {
+    return '正在同步歷史消息：第 $round 輪，共 $count 條';
+  }
+
+  @override
+  String chatSyncComplete(int count) {
+    return '同步完成：共 $count 條消息';
+  }
+
+  @override
+  String get serverFilePickerSearch => '搜索文件...';
+
+  @override
+  String get serverFilePickerEmpty => '尚無上傳過的文件';
+
+  @override
+  String get serverFilePickerNoMatch => '無匹配的文件';
+
+  @override
+  String get serverFilePickerError => '加載文件失敗';
+
+  @override
   String get chatSendFailed => '發送失敗';
 
   @override
@@ -2685,6 +2713,34 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get settingsMediaProxyUnsupported => '當前平台不支持此功能';
+
+  @override
+  String get settingsForceExplicitSyncTitle => '進入聊天時強制顯式同步';
+
+  @override
+  String get settingsForceExplicitSyncDesc => '打開聊天時始終顯示同步指示器並拉取更新（原行為）';
+
+  @override
+  String get settingsExplicitSyncCooldownTitle => '顯式同步間隔';
+
+  @override
+  String get settingsExplicitSyncCooldownDesc =>
+      '距上次進入聊天觸發的同步超過該時間後，下次進入將再次顯示同步指示器';
+
+  @override
+  String get settingsSeconds10 => '10 秒';
+
+  @override
+  String get settingsSeconds30 => '30 秒';
+
+  @override
+  String get settingsSeconds60 => '1 分鐘';
+
+  @override
+  String get settingsSeconds120 => '2 分鐘';
+
+  @override
+  String get settingsSeconds300 => '5 分鐘';
 
   @override
   String get settingsStorageUsed => '已用空間';

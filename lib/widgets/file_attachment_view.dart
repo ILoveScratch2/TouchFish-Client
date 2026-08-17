@@ -22,6 +22,10 @@ class FileAttachmentView extends StatefulWidget {
   final bool allowAutomaticPreview;
   final bool compact;
 
+  /// 多图灯箱画廊条目（由聊天详情页收集）；为 null 时单图模式。
+  final List<LightboxImageItem>? galleryItems;
+  final int galleryIndex;
+
   const FileAttachmentView({
     super.key,
     required this.attachment,
@@ -29,6 +33,8 @@ class FileAttachmentView extends StatefulWidget {
     this.bytes,
     this.allowAutomaticPreview = true,
     this.compact = false,
+    this.galleryItems,
+    this.galleryIndex = 0,
   });
 
   @override
@@ -166,6 +172,8 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
             attachment: _attachment,
             urlFuture: _urlFuture,
             bytes: widget.bytes,
+            galleryItems: widget.galleryItems,
+            galleryIndex: widget.galleryIndex,
           ),
         ),
       ),
@@ -180,6 +188,8 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
         urlFuture: _urlFuture,
         bytes: widget.bytes,
         onDownload: _download,
+        galleryItems: widget.galleryItems,
+        galleryIndex: widget.galleryIndex,
       );
     }
 
@@ -239,12 +249,16 @@ class _AttachmentPreview extends StatelessWidget {
   final Future<String> urlFuture;
   final Uint8List? bytes;
   final VoidCallback? onDownload;
+  final List<LightboxImageItem>? galleryItems;
+  final int galleryIndex;
 
   const _AttachmentPreview({
     required this.attachment,
     required this.urlFuture,
     this.bytes,
     this.onDownload,
+    this.galleryItems,
+    this.galleryIndex = 0,
   });
 
   @override
@@ -271,6 +285,8 @@ class _AttachmentPreview extends StatelessWidget {
                   imagePath: url,
                   imageBytes: bytes,
                   heroTag: 'attachment_${attachment.hash}',
+                  items: galleryItems,
+                  initialIndex: galleryIndex,
                 ),
               ),
             ),

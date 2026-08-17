@@ -38,7 +38,7 @@ typedef MessageSyncFetcher =
 /// 消息增量同步服务
 ///
 /// 补拉的消息静默合并，不然就会把wyf消息轰炸死
-class MessageSyncService {
+class MessageSyncService extends ChangeNotifier {
   MessageSyncService._({
     MessageSyncFetcher? fetchMessages,
     int? Function()? uidProvider,
@@ -97,7 +97,121 @@ class MessageSyncService {
   final Map<String, Set<int>> _forgottenMissing = {};
   final Map<String, Timer> _retryTimers = {};
 
+  // 同步进度状态（供 UI 展示顶部的加载提示）。
+  // 同一房间的缺口同步与增量同步可能连续执行，用引用计数避免中间闪烁。
+  final Map<String, int> _activeSyncs = {};
+  final Map<String, int> _visibleSyncs = {};
+  final Map<String, int> _syncedCount = {};
+  final Map<String, int> _batchRound = {};
+  final Map<String, DateTime> _completedAt = {};
+  final Map<String, Timer> _phaseTimers = {};
+
+  /// 同步会话进行中缓冲的补拉消息，结束时一次性合并，
+  /// 避免分页的每一批都触发一次 ChatDataService 通知（整列表重建）。
+  final Map<String, List<ChatMessage>> _pendingSynced = {};
+
+  /// 每个房间最近一次"手动进入聊天触发的显式同步"时间与静默拉取的连续失败次数。
+  /// 静默补拉与启动/重连同步不计入；进入聊天时：冷却期内静默补拉（无指示器），
+  /// 超时/有缺口/强制开关才可见同步。
+  final Map<String, DateTime> _lastSyncAt = {};
+  final Map<String, int> _silentFailures = {};
+
+  static const Duration _entrySyncCooldown = Duration(seconds: 30);
+  static const int _maxSilentFailures = 3;
+
   String? activeRoomId;
+
+  /// 仅可见同步（显示指示器）计为 syncing；静默补拉不打扰 UI。
+  bool isSyncingFor(String roomId) => _visibleSyncs.containsKey(roomId);
+
+  int syncedCountFor(String roomId) => _syncedCount[roomId] ?? 0;
+
+  int batchRoundFor(String roomId) => _batchRound[roomId] ?? 0;
+
+  /// 同步刚结束（1.5s 内的"同步完成"状态，UI 用于显示完成提示）。
+  bool syncJustCompletedFor(String roomId) => _completedAt.containsKey(roomId);
+
+  /// 该房间是否有待补的 seq 缺口（即"聊天有更新"）。
+  bool hasPendingGapsFor(String roomId) =>
+      _queuedMissing[roomId]?.isNotEmpty ?? false;
+
+  /// 距上次"手动进入聊天触发的显式同步"是否还在冷却期内。
+  bool isWithinSyncCooldown(
+    String roomId, [
+    Duration cooldown = _entrySyncCooldown,
+  ]) {
+    final last = _lastSyncAt[roomId];
+    if (last == null) return false;
+    return DateTime.now().difference(last) < cooldown;
+  }
+
+  /// 记录手动进入聊天触发的显式同步时间（刷新冷却期）。
+  void recordEntrySync(String roomId) {
+    _lastSyncAt[roomId] = DateTime.now();
+  }
+
+  /// 冷却期内的后台静默增量补拉：不显示指示器、失败静默，
+  /// 连续失败 [_maxSilentFailures] 次后暂时放弃，直到有缺口或距上次成功拉取超时。
+  Future<void> silentSyncRoom(String roomId) async {
+    if (_syncingRooms.contains(roomId) || _latestSeq[roomId] == null) return;
+    if ((_silentFailures[roomId] ?? 0) >= _maxSilentFailures) return;
+    final ok = await _syncRoomIncremental(roomId, silent: true);
+    if (ok) {
+      _silentFailures.remove(roomId);
+    } else {
+      _silentFailures[roomId] = (_silentFailures[roomId] ?? 0) + 1;
+    }
+  }
+
+  void _beginSync(String roomId, {bool visible = true}) {
+    _activeSyncs[roomId] = (_activeSyncs[roomId] ?? 0) + 1;
+    if (visible) {
+      _visibleSyncs[roomId] = (_visibleSyncs[roomId] ?? 0) + 1;
+      _syncedCount[roomId] = 0;
+      _batchRound[roomId] = 0;
+      _completedAt.remove(roomId);
+      _phaseTimers[roomId]?.cancel();
+      _phaseTimers.remove(roomId);
+    }
+    notifyListeners();
+  }
+
+  void _endSync(String roomId, {bool visible = true}) {
+    final count = (_activeSyncs[roomId] ?? 1) - 1;
+    if (count <= 0) {
+      _activeSyncs.remove(roomId);
+      _flushPendingSynced(roomId);
+    } else {
+      _activeSyncs[roomId] = count;
+    }
+    if (visible) {
+      final visibleCount = (_visibleSyncs[roomId] ?? 1) - 1;
+      if (visibleCount <= 0) {
+        _visibleSyncs.remove(roomId);
+        _completedAt[roomId] = DateTime.now();
+        _phaseTimers[roomId] = Timer(const Duration(milliseconds: 1500), () {
+          _completedAt.remove(roomId);
+          notifyListeners();
+        });
+      } else {
+        _visibleSyncs[roomId] = visibleCount;
+      }
+    }
+    notifyListeners();
+  }
+
+  void _flushPendingSynced(String roomId) {
+    final pending = _pendingSynced.remove(roomId);
+    if (pending == null || pending.isEmpty) return;
+    ChatDataService.instance.processSyncedMessages(roomId, pending);
+  }
+
+  void _recordSyncBatch(String roomId, int messageCount) {
+    if (!_visibleSyncs.containsKey(roomId)) return;
+    _syncedCount[roomId] = (_syncedCount[roomId] ?? 0) + messageCount;
+    _batchRound[roomId] = (_batchRound[roomId] ?? 0) + 1;
+    notifyListeners();
+  }
 
   void registerRoomSeq(String roomId, int? roomSeq) {
     if (roomSeq == null || roomSeq <= 0) return;
@@ -131,6 +245,19 @@ class MessageSyncService {
       timer.cancel();
     }
     _retryTimers.clear();
+    _activeSyncs.clear();
+    _syncedCount.clear();
+    _batchRound.clear();
+    _completedAt.clear();
+    for (final timer in _phaseTimers.values) {
+      timer.cancel();
+    }
+    _phaseTimers.clear();
+    _pendingSynced.clear();
+    _visibleSyncs.clear();
+    _lastSyncAt.clear();
+    _silentFailures.clear();
+    notifyListeners();
   }
 
   void observeMessage(String roomId, ChatMessage message) {
@@ -187,6 +314,7 @@ class MessageSyncService {
     if (uid == null || password == null) return;
 
     _syncingRooms.add(roomId);
+    _beginSync(roomId);
     try {
       while (true) {
         final batch = _queuedMissing[roomId];
@@ -215,6 +343,7 @@ class MessageSyncService {
             );
             if (result.messages.isNotEmpty) {
               _processMessages(roomId, result.messages);
+              _recordSyncBatch(roomId, result.messages.length);
             }
             var madeProgress = false;
             for (final message in result.messages) {
@@ -273,6 +402,7 @@ class MessageSyncService {
       //
       // 被吃了的不可能再入队，可安全清理，避免集合无界增长。
       _pruneForgotten(roomId);
+      _endSync(roomId);
     }
   }
 
@@ -285,23 +415,29 @@ class MessageSyncService {
     if (forgotten.isEmpty) _forgottenMissing.remove(roomId);
   }
 
-  Future<void> _syncRoomIncremental(String roomId, {int? lastMid}) async {
-    if (_syncingRooms.contains(roomId)) return;
+  Future<bool> _syncRoomIncremental(
+    String roomId, {
+    int? lastMid,
+    bool silent = false,
+  }) async {
+    if (_syncingRooms.contains(roomId)) return false;
     final uid = _uidProvider();
     final password = _passwordProvider();
-    if (uid == null || password == null) return;
+    if (uid == null || password == null) return false;
 
     final baseline = _latestSeq[roomId];
     if (baseline == null && lastMid == null) {
       talker.info(
         'MessageSyncService: skip incremental sync for $roomId (no baseline)',
       );
-      return;
+      return false;
     }
 
     _syncingRooms.add(roomId);
+    _beginSync(roomId, visible: !silent);
     var cursor = baseline ?? 0;
     var requestLastMid = lastMid;
+    var ok = false;
     try {
       var hasMore = true;
       while (hasMore) {
@@ -320,6 +456,7 @@ class MessageSyncService {
 
         if (result.messages.isNotEmpty) {
           _processMessages(roomId, result.messages);
+          _recordSyncBatch(roomId, result.messages.length);
           for (final message in result.messages) {
             final seq = message.roomSeq;
             if (seq != null) cursor = max(cursor, seq);
@@ -340,6 +477,7 @@ class MessageSyncService {
         registerRoomSeq(roomId, cursor);
         await _saveSyncPoint(roomId, cursor);
       }
+      ok = true;
     } catch (e, stack) {
       talker.error(
         'MessageSyncService incremental sync failed for $roomId',
@@ -348,7 +486,9 @@ class MessageSyncService {
       );
     } finally {
       _syncingRooms.remove(roomId);
+      _endSync(roomId, visible: !silent);
     }
+    return ok;
   }
 
   /// 没有任何本地同步点的新房间，以服务端当前序号建立空基线。
@@ -357,6 +497,7 @@ class MessageSyncService {
     final uid = _uidProvider();
     final password = _passwordProvider();
     if (uid == null || password == null) return;
+    _beginSync(roomId);
     try {
       final result = await _fetchMessages(
         MessageSyncRequest(
@@ -372,13 +513,15 @@ class MessageSyncService {
       }
     } catch (e, stack) {
       talker.error('MessageSyncService baseline failed for $roomId', e, stack);
+    } finally {
+      _endSync(roomId);
     }
   }
 
-  Future<MessageSyncResult> _fetchMessages(MessageSyncRequest request) {
+  Future<MessageSyncResult> _fetchMessages(MessageSyncRequest request) async {
     final override = _fetchMessagesOverride;
     if (override != null) return override(request);
-    return TfApiClient.instance.syncMessages(
+    final result = await TfApiClient.instance.syncMessages(
       request.uid,
       request.password,
       request.roomId,
@@ -389,15 +532,22 @@ class MessageSyncService {
       limit: request.limit,
       throwOnFailure: true,
     );
+    // 任何成功拉取都解除静默放弃；冷却期只由 recordEntrySync 刷新。
+    _silentFailures.remove(request.roomId);
+    return result;
   }
 
   void _processMessages(String roomId, List<ChatMessage> messages) {
     final override = _processMessagesOverride;
     if (override != null) {
       override(roomId, messages);
-    } else {
-      ChatDataService.instance.processSyncedMessages(roomId, messages);
+      return;
     }
+    if (_activeSyncs.containsKey(roomId)) {
+      _pendingSynced.putIfAbsent(roomId, () => []).addAll(messages);
+      return;
+    }
+    ChatDataService.instance.processSyncedMessages(roomId, messages);
   }
 
   Future<void> _saveSyncPoint(String roomId, int seq) {

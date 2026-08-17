@@ -4810,6 +4810,54 @@ abstract class AppLocalizations {
   /// **'Pick File'**
   String get chatFunctionPickFile;
 
+  /// No description provided for @chatInputPickServerFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick from Server'**
+  String get chatInputPickServerFile;
+
+  /// No description provided for @chatSyncHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing chat history...'**
+  String get chatSyncHistory;
+
+  /// No description provided for @chatSyncHistoryProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing history: {count} messages in round {round}'**
+  String chatSyncHistoryProgress(int count, int round);
+
+  /// No description provided for @chatSyncComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync complete: {count} messages'**
+  String chatSyncComplete(int count);
+
+  /// No description provided for @serverFilePickerSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search files...'**
+  String get serverFilePickerSearch;
+
+  /// No description provided for @serverFilePickerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No uploaded files yet'**
+  String get serverFilePickerEmpty;
+
+  /// No description provided for @serverFilePickerNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching files'**
+  String get serverFilePickerNoMatch;
+
+  /// No description provided for @serverFilePickerError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load files'**
+  String get serverFilePickerError;
+
   /// No description provided for @chatSendFailed.
   ///
   /// In en, this message translates to:
@@ -5235,6 +5283,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not supported on this platform'**
   String get settingsMediaProxyUnsupported;
+
+  /// No description provided for @settingsForceExplicitSyncTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Force explicit sync on chat entry'**
+  String get settingsForceExplicitSyncTitle;
+
+  /// No description provided for @settingsForceExplicitSyncDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Always fetch updates with the sync indicator when opening a chat (original behavior)'**
+  String get settingsForceExplicitSyncDesc;
+
+  /// No description provided for @settingsExplicitSyncCooldownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Explicit sync interval'**
+  String get settingsExplicitSyncCooldownTitle;
+
+  /// No description provided for @settingsExplicitSyncCooldownDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Time since the last entry-triggered sync before opening a chat shows the sync indicator again'**
+  String get settingsExplicitSyncCooldownDesc;
+
+  /// No description provided for @settingsSeconds10.
+  ///
+  /// In en, this message translates to:
+  /// **'10 seconds'**
+  String get settingsSeconds10;
+
+  /// No description provided for @settingsSeconds30.
+  ///
+  /// In en, this message translates to:
+  /// **'30 seconds'**
+  String get settingsSeconds30;
+
+  /// No description provided for @settingsSeconds60.
+  ///
+  /// In en, this message translates to:
+  /// **'1 minute'**
+  String get settingsSeconds60;
+
+  /// No description provided for @settingsSeconds120.
+  ///
+  /// In en, this message translates to:
+  /// **'2 minutes'**
+  String get settingsSeconds120;
+
+  /// No description provided for @settingsSeconds300.
+  ///
+  /// In en, this message translates to:
+  /// **'5 minutes'**
+  String get settingsSeconds300;
 
   /// No description provided for @settingsStorageUsed.
   ///
