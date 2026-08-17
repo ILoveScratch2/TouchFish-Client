@@ -1154,6 +1154,7 @@ class ChatDataService extends ChangeNotifier {
     DateTime? deletedAt,
     int? deletedBy,
   }) {
+    _forgetRecalledSeqFromSync(mid);
     var changed = false;
     var cachedTargetFound = false;
     for (final id in _messageCache.keys.toList()) {
@@ -1191,6 +1192,21 @@ class ChatDataService extends ChangeNotifier {
       }
     }
     if (changed) notifyListeners();
+  }
+
+  /// 被撤回消息的原位 seq 被吃了，就不要 retry 了
+  void _forgetRecalledSeqFromSync(int mid) {
+    for (final entry in _messageCache.entries) {
+      for (final message in entry.value) {
+        if (message.mid == mid && message.roomSeq != null) {
+          MessageSyncService.instance.forgetMissingSeq(
+            entry.key,
+            message.roomSeq!,
+          );
+          return;
+        }
+      }
+    }
   }
 
   Future<void> _persistRecallToLocalStore(

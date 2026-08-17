@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:touchfish_client/models/message_model.dart';
@@ -217,6 +219,174 @@ void main() {
 
       expect(requestSizes, [100, 100, 50]);
       expect(service.queuedMissingForTesting('U4'), isEmpty);
+    });
+  });
+
+  group('recalled message phantom seq handling', () {
+    test('forgotten seqs are removed from the queue and never requested', () async {
+      final requested = <int>[];
+      final service = MessageSyncService.forTesting(
+        fetchMessages: (request) async {
+          requested.addAll(request.missingSequences);
+          return (
+            messages: request.missingSequences.map(_messageWithSeq).toList(),
+            currentSeq: 3,
+            hasMore: false,
+          );
+        },
+        processMessages: (_, __) {},
+      );
+      addTearDown(service.clear);
+      service.queueMissingForTesting('U7', [2, 3]);
+      service.forgetMissingSeq('U7', 2);
+
+      await service.syncMissingForTesting('U7');
+
+      expect(requested, [3]);
+      expect(service.queuedMissingForTesting('U7'), isEmpty);
+    });
+
+    test('observeMessage does not re-queue a forgotten seq', () async {
+      final gate = Completer<void>();
+      final requests = <MessageSyncRequest>[];
+      final service = MessageSyncService.forTesting(
+        fetchMessages: (request) async {
+          requests.add(request);
+          await gate.future;
+          return (
+            messages: [_messageWithSeq(3)],
+            currentSeq: 3,
+            hasMore: false,
+          );
+        },
+        processMessages: (_, __) {},
+      );
+      addTearDown(() {
+        gate.complete();
+        service.clear();
+      });
+      service.registerRoomSeq('U5', 1);
+      service.forgetMissingSeq('U5', 2);
+
+      service.observeMessage('U5', _messageWithSeq(4));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(requests.single.missingSequences, [3]);
+      expect(requests.single.missingSequenceRanges, isEmpty);
+    });
+
+    test('forget during in-flight batch drops the seq instead of re-queueing',
+        () async {
+      final gate = Completer<void>();
+      final service = MessageSyncService.forTesting(
+        fetchMessages: (_) async {
+          await gate.future;
+          return (
+            messages: [_messageWithSeq(3)],
+            currentSeq: 3,
+            hasMore: false,
+          );
+        },
+        processMessages: (_, __) {},
+      );
+      addTearDown(service.clear);
+      service.queueMissingForTesting('U6', [2, 3]);
+
+      final syncFuture = service.syncMissingForTesting('U6');
+      service.forgetMissingSeq('U6', 2);
+      gate.complete();
+      await syncFuture;
+
+      expect(service.queuedMissingForTesting('U6'), isEmpty);
+    });
+  });
+
+  group('current_seq permanent-gap drop rule', () {
+    test('seqs below currentSeq that are not returned are dropped', () async {
+      final service = MessageSyncService.forTesting(
+        fetchMessages: (_) async {
+          return (
+            messages: [_messageWithSeq(3)],
+            currentSeq: 9,
+            hasMore: false,
+          );
+        },
+        processMessages: (_, __) {},
+      );
+      addTearDown(service.clear);
+      service.queueMissingForTesting('U8', [2, 3]);
+
+      await service.syncMissingForTesting('U8');
+
+      expect(service.queuedMissingForTesting('U8'), isEmpty);
+    });
+
+    test('empty response with higher currentSeq drops all queued seqs',
+        () async {
+      final service = MessageSyncService.forTesting(
+        fetchMessages: (_) async {
+          return (messages: <ChatMessage>[], currentSeq: 9, hasMore: false);
+        },
+        processMessages: (_, __) {},
+      );
+      addTearDown(service.clear);
+      service.queueMissingForTesting('U9', [5]);
+
+      await service.syncMissingForTesting('U9');
+
+      expect(service.queuedMissingForTesting('U9'), isEmpty);
+    });
+
+    test('dropped seqs are not re-queued by later observeMessage', () async {
+      var call = 0;
+      final requests = <MessageSyncRequest>[];
+      final gate = Completer<void>();
+      final service = MessageSyncService.forTesting(
+        fetchMessages: (request) async {
+          call++;
+          if (call == 1) {
+            return (messages: <ChatMessage>[], currentSeq: 9, hasMore: false);
+          }
+          requests.add(request);
+          await gate.future;
+          return (messages: <ChatMessage>[], currentSeq: 12, hasMore: false);
+        },
+        processMessages: (_, __) {},
+      );
+      addTearDown(() {
+        gate.complete();
+        service.clear();
+      });
+      service.registerRoomSeq('U10', 4);
+      service.queueMissingForTesting('U10', [5]);
+
+      await service.syncMissingForTesting('U10');
+      expect(service.queuedMissingForTesting('U10'), isEmpty);
+
+      service.observeMessage('U10', _messageWithSeq(12));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(requests, hasLength(1));
+      expect(requests.single.missingSequences, isEmpty);
+      expect(requests.single.missingSequenceRanges, [
+        {'start_seq': 6, 'end_seq': 11},
+      ]);
+    });
+
+    test('seqs at or above currentSeq are kept (fallback safety)', () async {
+      final service = MessageSyncService.forTesting(
+        fetchMessages: (_) async {
+          return (messages: <ChatMessage>[], currentSeq: 1, hasMore: false);
+        },
+        processMessages: (_, __) {},
+      );
+      addTearDown(service.clear);
+      service.registerRoomSeq('U11', 1);
+      service.queueMissingForTesting('U11', [2]);
+
+      await service.syncMissingForTesting('U11');
+
+      expect(service.queuedMissingForTesting('U11'), {2});
     });
   });
 
