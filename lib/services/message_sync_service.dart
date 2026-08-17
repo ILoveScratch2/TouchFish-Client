@@ -94,6 +94,7 @@ class MessageSyncService {
   final Set<String> _syncingRooms = {};
   final Map<String, Set<int>> _queuedMissing = {};
   final Map<String, Set<int>> _inFlightMissing = {};
+  final Map<String, Set<int>> _forgottenMissing = {};
   final Map<String, Timer> _retryTimers = {};
 
   String? activeRoomId;
@@ -108,10 +109,23 @@ class MessageSyncService {
 
   int? lastSeqOf(String roomId) => _latestSeq[roomId];
 
+  /// 撤回消息到达时，把被撤回消息的原位 seq 从缺口队列移除。
+  ///
+  /// 撤回会把该行挪到序列末尾成为 MICROSOFT GRAVEYARD，原位号永远补不到，留在队列里
+  /// 会无限重试（卡死wyf）。记录到 [_forgottenMissing] 以防
+  /// [observeMessage] 再次检测到同一缺口或在途批次完成后把它回队。
+  void forgetMissingSeq(String roomId, int seq) {
+    if (seq <= 0) return;
+    _queuedMissing[roomId]?.remove(seq);
+    _inFlightMissing[roomId]?.remove(seq);
+    _forgottenMissing.putIfAbsent(roomId, () => {}).add(seq);
+  }
+
   void clear() {
     _latestSeq.clear();
     _queuedMissing.clear();
     _inFlightMissing.clear();
+    _forgottenMissing.clear();
     _syncingRooms.clear();
     for (final timer in _retryTimers.values) {
       timer.cancel();
@@ -132,8 +146,11 @@ class MessageSyncService {
 
     if (seq > latest + 1) {
       final missing = _queuedMissing.putIfAbsent(roomId, () => {});
+      final forgotten = _forgottenMissing[roomId];
       for (var value = latest + 1; value < seq; value++) {
-        missing.add(value);
+        if (forgotten == null || !forgotten.contains(value)) {
+          missing.add(value);
+        }
       }
       unawaited(_syncMissing(roomId));
     }
@@ -207,12 +224,24 @@ class MessageSyncService {
                 madeProgress = remaining.remove(seq) || madeProgress;
               }
             }
+            // 服务端 seq 空间只增不减（u must follow it！），
+            final gone = remaining
+                .where((seq) => seq < result.currentSeq)
+                .toSet();
+            if (gone.isNotEmpty) {
+              talker.info(
+                'MessageSyncService: dropped permanently missing seqs '
+                '$gone in $roomId',
+              );
+              remaining.removeAll(gone);
+              _forgottenMissing.putIfAbsent(roomId, () => {}).addAll(gone);
+            }
             hasMore = result.hasMore;
             if (remaining.isNotEmpty && !hasMore) {
               retry = true;
               break;
             }
-            if (hasMore && !madeProgress) {
+            if (hasMore && !madeProgress && remaining.isNotEmpty) {
               throw StateError('Gap sync did not advance for $roomId');
             }
             if (hasMore) await Future<void>.delayed(_pageDelay);
@@ -228,6 +257,10 @@ class MessageSyncService {
           _inFlightMissing.putIfAbsent(roomId, () => {}).removeAll(requested);
         }
         if (retry) {
+          final forgotten = _forgottenMissing[roomId];
+          if (forgotten != null && forgotten.isNotEmpty) {
+            remaining.removeAll(forgotten);
+          }
           _queuedMissing.putIfAbsent(roomId, () => {}).addAll(remaining);
           _scheduleRetry(roomId);
           break;
@@ -235,7 +268,21 @@ class MessageSyncService {
       }
     } finally {
       _syncingRooms.remove(roomId);
+      // bulk action processing complete!
+      // ——GitHub Notifications
+      //
+      // 被吃了的不可能再入队，可安全清理，避免集合无界增长。
+      _pruneForgotten(roomId);
     }
+  }
+
+  void _pruneForgotten(String roomId) {
+    final forgotten = _forgottenMissing[roomId];
+    if (forgotten == null || forgotten.isEmpty) return;
+    final watermark = _latestSeq[roomId];
+    if (watermark == null) return;
+    forgotten.removeWhere((seq) => seq <= watermark);
+    if (forgotten.isEmpty) _forgottenMissing.remove(roomId);
   }
 
   Future<void> _syncRoomIncremental(String roomId, {int? lastMid}) async {
