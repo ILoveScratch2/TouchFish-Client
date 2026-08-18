@@ -79,20 +79,49 @@ class AppRoutes {
     licenses,
   };
 
+  static const List<String> _sectionOrder = [
+    main,
+    chat,
+    announcement,
+    forum,
+    account,
+    admin,
+    adminPendingForums,
+    adminDefaultAssets,
+    adminServerSettings,
+    adminAccountManagement,
+  ];
+
+  static int? _lastMainSectionIndex;
+
+  static int _sectionIndexOf(String path) {
+    for (var i = 0; i < _sectionOrder.length; i++) {
+      final route = _sectionOrder[i];
+      if (path == route || path.startsWith('$route/')) return i;
+    }
+    return -1;
+  }
+
   static Page<void> _mainSectionPage(
     BuildContext context,
     GoRouterState state,
     Widget child,
   ) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final currentIndex = _sectionIndexOf(state.uri.path);
+    final lastIndex = _lastMainSectionIndex;
+    final isForward = lastIndex == null || currentIndex >= lastIndex;
+    if (currentIndex >= 0) {
+      _lastMainSectionIndex = currentIndex;
+    }
     return CustomTransitionPage<void>(
       key: state.pageKey,
       transitionDuration: reduceMotion
           ? Duration.zero
-          : const Duration(milliseconds: 420),
+          : const Duration(milliseconds: 500),
       reverseTransitionDuration: reduceMotion
           ? Duration.zero
-          : const Duration(milliseconds: 240),
+          : const Duration(milliseconds: 500),
       child: child,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         if (reduceMotion) return child;
@@ -100,15 +129,18 @@ class AppRoutes {
         final curved = CurvedAnimation(
           parent: animation,
           curve: Curves.easeOutCubic,
-          reverseCurve: Curves.easeInCubic,
+          reverseCurve: Curves.easeOutCubic,
         );
+        final offset = isWide
+            ? Offset(0, isForward ? 0.06 : -0.06)
+            : Offset(isForward ? 0.08 : -0.08, 0);
         return ColoredBox(
           color: Theme.of(context).colorScheme.surface,
           child: FadeTransition(
             opacity: curved,
             child: SlideTransition(
               position: Tween<Offset>(
-                begin: isWide ? const Offset(0, 0.06) : const Offset(0.08, 0),
+                begin: offset,
                 end: Offset.zero,
               ).animate(curved),
               child: child,

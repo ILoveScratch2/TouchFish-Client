@@ -2887,6 +2887,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMediaCache => 'Media Proxy Cache';
 
   @override
+  String get settingsFlutterCache => 'Flutter Cache';
+
+  @override
+  String get settingsClearAllCache => 'Clear all caches';
+
+  @override
   String get settingsClearCache => 'Clear';
 
   @override

@@ -5392,6 +5392,18 @@ abstract class AppLocalizations {
   /// **'Media Proxy Cache'**
   String get settingsMediaCache;
 
+  /// No description provided for @settingsFlutterCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Flutter Cache'**
+  String get settingsFlutterCache;
+
+  /// No description provided for @settingsClearAllCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all caches'**
+  String get settingsClearAllCache;
+
   /// No description provided for @settingsClearCache.
   ///
   /// In en, this message translates to:

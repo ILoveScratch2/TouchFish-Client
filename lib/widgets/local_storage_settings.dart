@@ -5,6 +5,7 @@ import 'package:open_file/open_file.dart';
 
 import '../l10n/app_localizations.dart';
 import '../screens/storage_management_screen.dart';
+import '../services/cache_service.dart';
 import '../services/chat_data_service.dart';
 import '../services/local_message_store.dart';
 import '../services/media_proxy_service.dart';
@@ -25,6 +26,7 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
   int _databaseBytes = 0;
   int _mediaCacheBytes = 0;
   int _stickerCacheBytes = 0;
+  int _flutterCacheBytes = 0;
   String? _databasePath;
   bool _loading = true;
   bool _working = false;
@@ -53,6 +55,7 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
       _databasePath = await LocalMessageStore.instance.databasePath();
       _mediaCacheBytes = await MediaProxyService.instance.cacheSize();
       _stickerCacheBytes = await StickerCache.instance.sizeBytes;
+      _flutterCacheBytes = await CacheService.instance.getFlutterCacheSize();
     } catch (_) {
     }
     if (mounted) setState(() => _loading = false);
@@ -90,6 +93,44 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
     setState(() {
       _working = false;
       _mediaCacheBytes = 0;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.settingsCacheCleared),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _clearFlutterCache() async {
+    setState(() => _working = true);
+    await CacheService.instance.clearFlutterCache();
+    if (!mounted) return;
+    setState(() {
+      _working = false;
+      _flutterCacheBytes = 0;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.settingsCacheCleared),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _clearAllCaches() async {
+    setState(() => _working = true);
+    await Future.wait([
+      CacheService.instance.clearFlutterCache(),
+      MediaProxyService.instance.clearCache(),
+      StickerCache.instance.clear(),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _working = false;
+      _flutterCacheBytes = 0;
+      _mediaCacheBytes = 0;
+      _stickerCacheBytes = 0;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -290,12 +331,40 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 24),
           minLeadingWidth: 48,
+          leading: const Icon(Icons.auto_awesome_outlined),
+          title: Text(l10n.settingsFlutterCache),
+          subtitle: Text(_formatBytes(_flutterCacheBytes)),
+          trailing: TextButton(
+            onPressed: _working ? null : _clearFlutterCache,
+            child: Text(l10n.settingsClearCache),
+          ),
+        ),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+          minLeadingWidth: 48,
           leading: const Icon(Icons.sticky_note_2_outlined),
           title: Text(l10n.settingsClearStickerCache),
           subtitle: Text(_formatBytes(_stickerCacheBytes)),
           trailing: TextButton(
             onPressed: _working ? null : _clearStickerCache,
             child: Text(l10n.settingsClearCache),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _working ? null : _clearAllCaches,
+              icon: _working
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.delete_outline),
+              label: Text(l10n.settingsClearAllCache),
+            ),
           ),
         ),
         const Divider(height: 24),
