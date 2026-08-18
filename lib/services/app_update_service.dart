@@ -197,24 +197,27 @@ class AppUpdateService {
     return '$downloadBaseUrl/${Uri.encodeComponent(version)}/$fileName';
   }
 
+  /// 计算下载文件的完整保存路径（用于下载前的界面展示）。
+  static Future<String> downloadPathFor(String downloadUrl) async {
+    final fileName = downloadUrl.split('/').last;
+    var directory = await getApplicationSupportDirectory();
+    // On Android, save to a user-accessible public location so the APK is
+    // reachable from the file manager even after this app is uninstalled.
+    if (!kIsWeb && Platform.isAndroid) {
+      final external = await getExternalStorageDirectory();
+      if (external != null) {
+        directory = Directory(
+          '${external.path}${Platform.pathSeparator}TouchFish',
+        );
+      }
+    }
+    await directory.create(recursive: true);
+    return '${directory.path}${Platform.pathSeparator}$fileName';
+  }
+
   Future<String?> downloadUpdate(String downloadUrl) async {
     try {
-      final fileName = downloadUrl.split('/').last;
-      var directory = await getApplicationSupportDirectory();
-      // On Android, save to a user-accessible public location so the APK is
-      // reachable from the file manager even after this app is uninstalled.
-      if (!kIsWeb && Platform.isAndroid) {
-        final external = await getExternalStorageDirectory();
-        if (external != null) {
-          directory = Directory(
-            '${external.path}${Platform.pathSeparator}TouchFish',
-          );
-        }
-      }
-      await directory.create(recursive: true);
-      final target = File(
-        '${directory.path}${Platform.pathSeparator}$fileName',
-      );
+      final target = File(await downloadPathFor(downloadUrl));
       final response = await http
           .get(Uri.parse(downloadUrl))
           .timeout(const Duration(minutes: 60));

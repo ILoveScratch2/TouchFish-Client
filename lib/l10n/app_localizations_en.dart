@@ -3151,5 +3151,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Android updates require uninstalling the current app first. Please uninstall before installing the new APK.';
 
   @override
+  String updateUninstallMessageWithPath(String apkPath) {
+    return 'Android updates require uninstalling the current app first.\nThe APK will be saved to:\n$apkPath\n\nPlease uninstall before installing the new APK.';
+  }
+
+  @override
   String get updateUninstallConfirm => 'Uninstall';
 }

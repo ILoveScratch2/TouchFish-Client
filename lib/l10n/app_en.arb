@@ -1277,5 +1277,13 @@
   "updateDownloadFailedMessage": "Update download failed. Please check your network and try again.",
   "updateUninstallTitle": "Uninstall old version first",
   "updateUninstallMessage": "Android updates require uninstalling the current app first. Please uninstall before installing the new APK.",
+  "updateUninstallMessageWithPath": "Android updates require uninstalling the current app first.\nThe APK will be saved to:\n{apkPath}\n\nPlease uninstall before installing the new APK.",
+  "@updateUninstallMessageWithPath": {
+    "placeholders": {
+      "apkPath": {
+        "type": "String"
+      }
+    }
+  },
   "updateUninstallConfirm": "Uninstall"
 }

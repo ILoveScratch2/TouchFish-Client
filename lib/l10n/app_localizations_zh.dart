@@ -3030,5 +3030,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get updateUninstallMessage => '安卓端更新需要先卸载当前应用，请先卸载后再安装新的 APK。';
 
   @override
+  String updateUninstallMessageWithPath(String apkPath) {
+    return '安卓端更新需要先卸载当前应用。\nAPK 将保存到：\n$apkPath\n\n请先卸载后再安装新的 APK。';
+  }
+
+  @override
   String get updateUninstallConfirm => '去卸载';
 }
