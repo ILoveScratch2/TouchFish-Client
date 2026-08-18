@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:open_file/open_file.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -59,6 +60,10 @@ class AppUpdateService {
       'http://touchfish.xin/tfv5/tfc_changelog.html';
   static const String downloadBaseUrl =
       'https://v4.gh-proxy.com/https://github.com/ILoveScratch2/TouchFish-Client/releases/download';
+
+  static const MethodChannel _channel = MethodChannel(
+    'touchfish/background_notification',
+  );
 
   bool _checked = false;
 
@@ -197,27 +202,35 @@ class AppUpdateService {
     return '$downloadBaseUrl/${Uri.encodeComponent(version)}/$fileName';
   }
 
-  /// 计算下载文件的完整保存路径（用于下载前的界面展示）。
+  /// 计算下载文件最终的完整保存路径（用于下载前的界面展示）。
+  ///
+  /// Android 上返回公共 Downloads 目录下的路径（应用文件之外）。实际写入
+  /// 由 [downloadUpdate] 通过 MediaStore 通道完成。
   static Future<String> downloadPathFor(String downloadUrl) async {
     final fileName = downloadUrl.split('/').last;
-    Directory directory;
     if (!kIsWeb && Platform.isAndroid) {
-      // Android：保存到公共 Download 目录（应用文件之外）。
-      // 注意不能用 getDownloadsDirectory() —— 它在 Android 10+ 返回
-      // app 专属目录（卸载即删）。这里固定使用公共 /Download/TouchFish，
-      // 配合 Manifest 中的 MANAGE_EXTERNAL_STORAGE / WRITE_EXTERNAL_STORAGE，
-      // 即使卸载 TouchFish 后 APK 仍然保留，方便用户随时安装。
-      directory = Directory('/storage/emulated/0/Download/TouchFish');
-    } else {
-      directory = await getApplicationSupportDirectory();
+      return '/storage/emulated/0/Download/$fileName';
     }
+    final directory = await getApplicationSupportDirectory();
     await directory.create(recursive: true);
     return '${directory.path}${Platform.pathSeparator}$fileName';
   }
 
+  /// 下载更新文件，返回最终保存路径；失败返回 null。
+  ///
+  /// Android：
+  /// 1. 先下载到应用缓存目录（一定可写，避免分区存储限制）。
+  /// 2. 通过 MethodChannel 调用系统 MediaStore 写入公共 Downloads 目录
+  ///    （API 29+ 免存储权限；API <= 28 直接写公共路径）。
+  /// 3. 成功返回公共路径；通道不可用时回退到缓存路径，保证功能不中断。
   Future<String?> downloadUpdate(String downloadUrl) async {
+    final fileName = downloadUrl.split('/').last;
+    final tempDir = await getTemporaryDirectory();
+    final tempFile = File(
+      '${tempDir.path}${Platform.pathSeparator}$fileName',
+    );
+
     try {
-      final target = File(await downloadPathFor(downloadUrl));
       final response = await http
           .get(Uri.parse(downloadUrl))
           .timeout(const Duration(minutes: 60));
@@ -225,12 +238,40 @@ class AppUpdateService {
         talker.warning('Update download failed: HTTP ${response.statusCode}');
         return null;
       }
-      await target.writeAsBytes(response.bodyBytes, flush: true);
-      return target.path;
+      await tempFile.writeAsBytes(response.bodyBytes, flush: true);
     } catch (error, stackTrace) {
       talker.error('Update download failed', error, stackTrace);
       return null;
     }
+
+    // 非 Android：缓存目录即最终目标。
+    if (kIsWeb || !Platform.isAndroid) {
+      return tempFile.path;
+    }
+
+    // Android：通过 MediaStore 写入公共 Downloads。
+    try {
+      final saved = await _channel.invokeMethod<String>(
+        'saveFileToDownloads',
+        {'srcPath': tempFile.path, 'displayName': fileName},
+      );
+      if (saved != null && saved.isNotEmpty) {
+        try {
+          await tempFile.delete();
+        } catch (_) {}
+        talker.info('Update saved to public Downloads: $saved');
+        return saved;
+      }
+    } catch (error, stackTrace) {
+      talker.error(
+        'Failed to save update via MediaStore, falling back to cache',
+        error,
+        stackTrace,
+      );
+    }
+
+    // 通道失败时兜底返回缓存路径（功能不中断）。
+    return tempFile.path;
   }
 
   Future<void> revealFile(String filePath) async {
