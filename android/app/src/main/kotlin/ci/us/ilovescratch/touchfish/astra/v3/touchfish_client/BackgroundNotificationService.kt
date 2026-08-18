@@ -90,7 +90,6 @@ class BackgroundNotificationService : Service() {
             .setContentTitle("TouchFish")
             .setSmallIcon(R.drawable.ic_notification)
             .setOngoing(true)
-            .setShowBadge(false)
             .setPriority(Notification.PRIORITY_MIN)
             .build()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
