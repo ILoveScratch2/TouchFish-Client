@@ -67,7 +67,7 @@ class MainActivity : FlutterActivity() {
             }
             val resolver = contentResolver
             val collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-            val uri: Uri? = resolver.insert(collection, values)
+            val uri = resolver.insert(collection, values)
                 ?: throw IllegalStateException("MediaStore insert failed")
             try {
                 resolver.openOutputStream(uri)?.use { out ->
