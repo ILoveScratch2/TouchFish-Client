@@ -10,8 +10,12 @@ import '../services/chat_data_service.dart';
 import '../services/local_message_store.dart';
 import '../services/media_proxy_service.dart';
 import '../utils/sticker_cache.dart';
-import 'app_alert_dialog.dart';
 import 'sheet_scaffold.dart';
+import 'database_reset_sheet.dart';
+import '../services/database_backup_service.dart';
+import '../services/snackbar_service.dart';
+import '../services/api/tf_api_client.dart';
+import '../services/auth_state.dart';
 
 class LocalStorageSettings extends StatefulWidget {
   const LocalStorageSettings({super.key});
@@ -142,30 +146,25 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
 
   Future<void> _resetMessages() async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showTouchFishErrorDialog<bool>(
-      context,
-      title: l10n.settingsResetLocalMessages,
-      message: l10n.settingsResetLocalMessagesConfirm,
-      icon: Icons.delete_sweep_outlined,
-      selectableMessage: false,
-      actions: [
-        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
-        TouchFishDialogAction<bool>(
-          label: l10n.settingsResetLocalMessages,
-          result: true,
-          isPrimary: true,
-          isDestructive: true,
-        ),
-      ],
-    );
-    if (confirmed != true || !mounted) return;
-    setState(() => _working = true);
-    await ChatDataService.instance.clearLocalMessageDatabase();
+    final stats = await LocalMessageStore.instance.roomStats();
     if (!mounted) return;
-    setState(() {
-      _working = false;
-      _databaseBytes = 0;
-    });
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => DatabaseResetSheet(
+        rooms: stats.length,
+        messages: stats.values.fold(0, (sum, stat) => sum + stat.messages),
+        size: _formatBytes(_databaseBytes),
+        onConfirmed: () async {
+          Navigator.pop(sheetContext);
+          setState(() => _working = true);
+          await ChatDataService.instance.clearLocalMessageDatabase();
+          if (!mounted) return;
+          setState(() { _working = false; _databaseBytes = 0; });
+          TouchFishSnackbarService.instance.show(l10n.settingsCacheCleared);
+        },
+      ),
+    );
   }
 
   Future<void> _showChatStorage() async {
@@ -296,6 +295,20 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 24),
           minLeadingWidth: 48,
+          leading: const Icon(Icons.file_upload_outlined),
+          title: Text(l10n.settingsDatabaseExport),
+          onTap: _exportDatabase,
+        ),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+          minLeadingWidth: 48,
+          leading: const Icon(Icons.file_download_outlined),
+          title: Text(l10n.settingsDatabaseImport),
+          onTap: _importDatabase,
+        ),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+          minLeadingWidth: 48,
           leading: const Icon(Icons.cloud_outlined),
           title: Text(l10n.settingsCloudFiles),
           subtitle: Text(l10n.settingsCloudFilesDescription),
@@ -405,5 +418,34 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
         const SizedBox(height: 20),
       ],
     );
+  }
+
+  Future<void> _exportDatabase() async {
+    final saved = await DatabaseBackupService.instance.exportMessages(
+      server: await TfApiClient.instance.getBaseUrl(),
+      uid: AuthState.instance.uid ?? 0,
+    );
+    if (saved) TouchFishSnackbarService.instance.show(AppLocalizations.of(context)!.settingsDatabaseExportSuccess);
+  }
+
+  Future<void> _importDatabase() async {
+    final serverController = TextEditingController(text: await TfApiClient.instance.getBaseUrl());
+    final server = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(AppLocalizations.of(context)!.settingsDatabaseImport),
+        content: TextField(controller: serverController, decoration: const InputDecoration(labelText: 'Server URL')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(AppLocalizations.of(context)!.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, serverController.text.trim()), child: Text(AppLocalizations.of(context)!.confirm)),
+        ],
+      ),
+    );
+    serverController.dispose();
+    if (server == null || server.isEmpty) return;
+    final count = await DatabaseBackupService.instance.importMessages(server: server, uid: AuthState.instance.uid ?? 0);
+    if (!mounted || count == null) return;
+    await _load();
+    TouchFishSnackbarService.instance.show(AppLocalizations.of(context)!.settingsDatabaseImportSuccess(count));
   }
 }

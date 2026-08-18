@@ -2804,6 +2804,107 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsCacheCleared => '缓存已清除';
 
   @override
+  String get settingsEnableAnimationsTitle => '界面动画';
+
+  @override
+  String get settingsEnableAnimationsDesc => '启用页面和界面动画';
+
+  @override
+  String get settingsWeakNetworkTitle => '弱网模式';
+
+  @override
+  String get settingsWeakNetworkDesc => '网络不稳定时使用定时同步';
+
+  @override
+  String get settingsDataSavingTitle => '省流量模式';
+
+  @override
+  String get settingsDataSavingDesc => '点击后才加载媒体内容';
+
+  @override
+  String get settingsIpOverrideTitle => 'IP 覆盖模式';
+
+  @override
+  String get settingsIpOverrideDesc => '连接指定 IP，同时保留原域名用于 TLS';
+
+  @override
+  String get settingsIpOverrideOff => '关闭';
+
+  @override
+  String get settingsIpOverrideMixed => '指定域名';
+
+  @override
+  String get settingsIpOverrideComplete => '全部连接';
+
+  @override
+  String get settingsIpOverrideDomainsTitle => '覆盖域名';
+
+  @override
+  String get settingsIpOverrideDomainsDesc => '每行一个域名';
+
+  @override
+  String get settingsIpOverrideEntriesTitle => '覆盖 IP';
+
+  @override
+  String get settingsIpOverrideEntriesDesc => '每行一个 IP 或 IP:端口';
+
+  @override
+  String get settingsIpOverrideNoEntry => '尚未配置覆盖 IP';
+
+  @override
+  String get settingsConnectionStatusTitle => '连接状态';
+
+  @override
+  String get settingsConnectionStatusDesc => '查看连接状态并运行自检';
+
+  @override
+  String get settingsConnectivitySelfCheckTitle => '连通性自检';
+
+  @override
+  String get settingsConnectivitySelfCheckDesc => '测试服务器和已配置的 IP 节点';
+
+  @override
+  String get settingsConnectivityFailed => '连接失败';
+
+  @override
+  String get chatSearchAllMessages => '搜索所有聊天';
+
+  @override
+  String get chatExportTitle => '导出聊天记录';
+
+  @override
+  String get chatExportJson => '导出 JSON';
+
+  @override
+  String get chatExportCsv => '导出 CSV';
+
+  @override
+  String get chatExportSuccess => '聊天记录已导出';
+
+  @override
+  String get settingsResetStatsRooms => '房间数';
+
+  @override
+  String get settingsResetStatsMessages => '消息数';
+
+  @override
+  String get settingsResetStatsSize => '数据库大小';
+
+  @override
+  String get settingsDatabaseExport => '导出本地数据库';
+
+  @override
+  String get settingsDatabaseImport => '导入本地数据库';
+
+  @override
+  String get settingsDatabaseExportSuccess => '本地数据库已导出';
+
+  @override
+  String settingsDatabaseImportSuccess(int count) {
+    return '已导入 $count 条消息';
+  }
+
+  @override
   String get settingsLocalDatabase => '本地数据库';
 
   @override

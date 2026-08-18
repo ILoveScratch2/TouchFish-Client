@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'data_saving_image.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -591,17 +592,12 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
       backgroundColor: colorScheme.primaryContainer,
       child: senderAvatar != null
           ? ClipOval(
-              child: Image.network(
-                senderAvatar,
-                width: 32,
-                height: 32,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => Icon(
-                  Icons.person,
-                  size: 18,
-                  color: colorScheme.onPrimaryContainer,
-                ),
-              ),
+               child: DataSavingImage(
+                 url: senderAvatar,
+                 width: 32,
+                 height: 32,
+                 fit: BoxFit.cover,
+               ),
             )
           : Icon(Icons.person, size: 18, color: colorScheme.onPrimaryContainer),
     );
