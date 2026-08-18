@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/app_notification.dart';
+import '../models/notification_level.dart';
 import '../models/settings_service.dart';
 import '../utils/notification_avatar_attachment.dart';
 import '../utils/talker.dart';
@@ -36,6 +38,41 @@ class AppNotificationItem {
   );
 }
 
+/// 通知分级状态。
+///
+/// 用于在应用内维护每个联系人的最新一条待展示消息，
+/// 以及联系人总数与消息总数（一级通知/二级通知需要）。
+class NotificationLevelState {
+  /// senderKey -> 最近一条消息通知
+  final Map<String, AppNotification> latestBySender = {};
+
+  /// senderKey -> 消息条数（重复消息不计）
+  final Map<String, int> countBySender = {};
+
+  /// 有未读消息的联系人数
+  int get senderCount => latestBySender.length;
+
+  /// 消息总条数
+  int get messageCount =>
+      countBySender.values.fold(0, (sum, count) => sum + count);
+
+  void add(AppNotification notification) {
+    final senderKey = notification.senderKey;
+    if (senderKey == null || senderKey.isEmpty) return;
+    if (countBySender.containsKey(senderKey)) {
+      countBySender[senderKey] = countBySender[senderKey]! + 1;
+    } else {
+      countBySender[senderKey] = 1;
+    }
+    latestBySender[senderKey] = notification;
+  }
+
+  void clear() {
+    latestBySender.clear();
+    countBySender.clear();
+  }
+}
+
 class AppNotificationService extends ChangeNotifier
     with WidgetsBindingObserver {
   static final AppNotificationService instance = AppNotificationService._();
@@ -45,6 +82,7 @@ class AppNotificationService extends ChangeNotifier
       FlutterLocalNotificationsPlugin();
   final Map<String, Timer> _timers = {};
   final List<AppNotificationItem> _items = [];
+  final NotificationLevelState _levelState = NotificationLevelState();
   GoRouter? _router;
   AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
   bool _initialized = false;
@@ -55,6 +93,27 @@ class AppNotificationService extends ChangeNotifier
   Timer? _bannerSuppressionTimer;
 
   List<AppNotificationItem> get items => List.unmodifiable(_items);
+
+  /// 当前生效的通知分级。
+  ///
+  /// 分级只影响横幅展示逻辑，通知中心数据不变。
+  /// 仅 Android 支持分级；其他平台始终为 [NotificationLevel.full]（原行为）。
+  NotificationLevel get notificationLevel {
+    if (!kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.android &&
+        Platform.isAndroid) {
+      return NotificationLevel.fromSetting(
+        SettingsService.instance.getValue<String>('notificationLevel', '2'),
+      );
+    }
+    return NotificationLevel.full;
+  }
+
+  /// 当前是否仅在收集聊天通知（一级/二级），
+  /// 非聊天通知（公告/论坛/系统事件）应始终以完整方式展示。
+  bool _isChatNotification(AppNotification notification) =>
+      notification.topic == 'message.private' ||
+      notification.topic == 'message.group';
 
   /// 抑制应用内横幅一段时间（例如应用刚启动/登录恢复历史通知时），
   /// 期间新到达的事件只累计到各栏目的角标，不弹横幅轰炸用户；
@@ -133,24 +192,164 @@ class AppNotificationService extends ChangeNotifier
   Future<void> present(AppNotification notification) async {
     final settings = SettingsService.instance;
     if (!_isNotificationTypeEnabled(notification)) return;
+
+    final level = notificationLevel;
+    final isChat = _isChatNotification(notification);
+    final isAggregating = isChat &&
+        level != NotificationLevel.full;
+
+    // 非三级/非聊天通知：始终以完整方式走原逻辑
+    if (!isAggregating) {
+      await _presentOne(notification);
+      return;
+    }
+
+    // 三级以外的前台/后台：聊天通知按分级聚合展示
+    if (isAggregating) {
+      _levelState.add(notification);
+      if (await _shouldShowInApp()) {
+        if (_suppressInAppBanners) return;
+        if (!settings.getValue<bool>('inAppNotifications', true)) return;
+        _playNotificationFeedback();
+        _rebuildAggregatedBanners();
+      } else {
+        if (!settings.getValue<bool>('systemNotifications', true)) return;
+        await _showAggregatedSystemNotification();
+      }
+    }
+  }
+
+  Future<void> _presentOne(AppNotification notification) async {
+    final settings = SettingsService.instance;
     if (await _shouldShowInApp()) {
-      // 应用刚启动/登录恢复历史通知的抑制窗口内不弹横幅，
-      // 事件只累计到各栏目角标，避免集中轰炸；
-      // 正常使用过程中照常显示应用内横幅。
       if (_suppressInAppBanners) return;
       if (!settings.getValue<bool>('inAppNotifications', true)) return;
-      if (settings.getValue<bool>('notificationSound', true)) {
-        unawaited(SystemSound.play(SystemSoundType.alert));
-      }
-      if (!kIsWeb && settings.getValue<bool>('notifyWithHaptic', true)) {
-        unawaited(HapticFeedback.lightImpact());
-      }
+      _playNotificationFeedback();
       add(notification);
       return;
     }
 
     if (!settings.getValue<bool>('systemNotifications', true)) return;
     await _showSystemNotification(notification);
+  }
+
+  void _playNotificationFeedback() {
+    final settings = SettingsService.instance;
+    if (settings.getValue<bool>('notificationSound', true)) {
+      unawaited(SystemSound.play(SystemSoundType.alert));
+    }
+    if (!kIsWeb && settings.getValue<bool>('notifyWithHaptic', true)) {
+      unawaited(HapticFeedback.lightImpact());
+    }
+  }
+
+  /// 根据当前通知分级重建聚合后的应用内横幅列表。
+  ///
+  /// 一级：只保留一条汇总横幅（始终最多一条）。
+  /// 二级：每个联系人保留一条，显示该联系人的最后一条消息。
+  void _rebuildAggregatedBanners() {
+    final level = notificationLevel;
+    final newItems = <AppNotificationItem>[];
+    final newTimers = <String, Timer>{};
+
+    // 一级：只显示一条汇总横幅。
+    if (level == NotificationLevel.minimal) {
+      if (_levelState.senderCount > 0) {
+        final summary = _buildSummaryNotification();
+        newItems.add(
+          AppNotificationItem(
+            notification: summary,
+            index: 0,
+            duration: appNotificationBaseDuration,
+          ),
+        );
+        newTimers[summary.id] = Timer(
+          appNotificationBaseDuration,
+          () => dismiss(summary.id),
+        );
+      }
+    } else {
+      // 二级：每个联系人一条横幅。
+      final entries = _levelState.latestBySender.entries.toList();
+      for (var i = 0; i < entries.length; i++) {
+        final notification = entries[i].value;
+        final item = AppNotificationItem(
+          notification: notification,
+          index: i,
+          duration:
+              appNotificationBaseDuration + Duration(seconds: i),
+        );
+        newItems.add(item);
+        newTimers[notification.id] = Timer(
+          item.duration,
+          () => dismiss(notification.id),
+        );
+      }
+    }
+
+    // 清除旧 items 的 timer
+    for (final timer in _timers.values) {
+      timer.cancel();
+    }
+    _items
+      ..clear()
+      ..addAll(newItems);
+    _timers
+      ..clear()
+      ..addAll(newTimers);
+    notifyListeners();
+  }
+
+  AppNotification _buildSummaryNotification() {
+    final contacts = _levelState.senderCount;
+    final messages = _levelState.messageCount;
+    return AppNotification(
+      id: 'level_summary',
+      title: 'TouchFish Messages',
+      body: '$contacts contacts · $messages messages',
+      route: '/chat',
+      topic: 'message.summary',
+      subtitle: 'New chat messages',
+    );
+  }
+
+  /// 聚合模式下的系统通知：将聚合状态直接显示为一条系统通知。
+  Future<void> _showAggregatedSystemNotification() async {
+    if (_levelState.senderCount == 0) return;
+    final level = notificationLevel;
+    final summary = _buildSummaryNotification();
+    final lastEntry = _levelState.latestBySender.entries.last;
+    final notification = lastEntry.value;
+
+    final body = level == NotificationLevel.minimal
+        ? '${summary.body}\n${notification.body}'
+        : notification.body;
+
+    final androidDetails = AndroidNotificationDetails(
+      'touchfish_notifications',
+      'TouchFish notifications',
+      channelDescription: 'Messages and activity from TouchFish',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: SettingsService.instance.getValue<bool>(
+        'notificationSound',
+        true,
+      ),
+    );
+
+    final details = NotificationDetails(android: androidDetails);
+
+    try {
+      await _localNotifications.show(
+        _stableId('level_aggregate'),
+        notification.title,
+        body,
+        details,
+        payload: notification.route,
+      );
+    } catch (error, stackTrace) {
+      talker.error('Failed to show aggregated system notification', error, stackTrace);
+    }
   }
 
   Future<bool> _shouldShowInApp() async {
@@ -203,6 +402,7 @@ class AppNotificationService extends ChangeNotifier
     if (notification.topic == 'message.group') {
       return settings.getValue<bool>('groupChat', true);
     }
+    if (notification.topic == 'message.summary') return true;
     return true;
   }
 
@@ -246,6 +446,7 @@ class AppNotificationService extends ChangeNotifier
     }
     _timers.clear();
     _items.clear();
+    _levelState.clear();
     notifyListeners();
   }
 
@@ -386,6 +587,9 @@ class AppNotificationService extends ChangeNotifier
     if (!SettingsService.instance.getValue<bool>('inAppNotifications', true)) {
       clear();
     }
+    // 分级设置变更时清空聚合并重建横幅
+    _levelState.clear();
+    _rebuildAggregatedBanners();
     if (!_localNotificationsReady &&
         SettingsService.instance.getValue<bool>('systemNotifications', true)) {
       // 通知系统尚未就绪（例如初始化曾失败），利用设置变更时机重试初始化。

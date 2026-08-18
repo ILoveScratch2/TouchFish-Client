@@ -446,6 +446,28 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use system notifications for messages';
 
   @override
+  String get settingsNotificationLevelTitle => 'Notification Level';
+
+  @override
+  String get settingsNotificationLevelDesc =>
+      'Choose how banner notifications are displayed. Notification list is unaffected';
+
+  @override
+  String get settingsNotificationLevelMinimal => 'Level 1: Summary only';
+
+  @override
+  String get settingsNotificationLevelPerSender =>
+      'Level 2: Per sender (default)';
+
+  @override
+  String get settingsNotificationLevelFull => 'Level 3: Show all';
+
+  @override
+  String notificationLevelSummary(int contacts, int messages) {
+    return '$contacts contacts sent $messages messages';
+  }
+
+  @override
   String get settingsInAppNotificationsTitle => 'In-App Notifications';
 
   @override

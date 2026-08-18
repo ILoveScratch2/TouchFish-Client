@@ -400,7 +400,13 @@ class _TouchFishAppState extends State<TouchFishApp> {
       unawaited(ChatWsService.instance.connect());
       NotificationService.instance.startPolling();
       ForumPendingService.instance.startPolling();
+      _startAndroidBackgroundServiceIfNeeded();
     }
+  }
+
+  void _startAndroidBackgroundServiceIfNeeded() {
+    if (kIsWeb || !Platform.isAndroid) return;
+    unawaited(BackgroundPermissionService.instance.startBackgroundService());
   }
 
   @override
