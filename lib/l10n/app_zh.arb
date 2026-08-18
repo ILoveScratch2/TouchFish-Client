@@ -155,7 +155,25 @@
   
   "settingsSystemNotificationsTitle": "系统通知",
   "settingsSystemNotificationsDesc": "使用操作系统通知进行消息通知",
-  
+
+  "settingsNotificationLevelTitle": "通知分级",
+  "settingsNotificationLevelDesc": "选择横幅通知的显示方式，通知列表不受影响",
+  "settingsNotificationLevelMinimal": "一级：仅汇总",
+  "settingsNotificationLevelPerSender": "二级：按联系人（默认）",
+  "settingsNotificationLevelFull": "三级：全部展示",
+
+  "notificationLevelSummary": "{contacts} 个联系人发来 {messages} 条消息",
+  "@notificationLevelSummary": {
+    "placeholders": {
+      "contacts": {
+        "type": "int"
+      },
+      "messages": {
+        "type": "int"
+      }
+    }
+  },
+
   "settingsInAppNotificationsTitle": "应用内通知",
   "settingsInAppNotificationsDesc": "在应用内进行消息通知",
   

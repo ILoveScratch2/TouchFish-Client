@@ -207,6 +207,28 @@ class SettingsData {
           icon: Icons.notifications,
         ),
         SettingItem(
+          key: 'notificationLevel',
+          titleKey: 'settingsNotificationLevelTitle',
+          descriptionKey: 'settingsNotificationLevelDesc',
+          type: SettingType.dropdown,
+          defaultValue: '2',
+          icon: Icons.notifications_paused,
+          options: [
+            SettingOption(
+              value: '1',
+              labelKey: 'settingsNotificationLevelMinimal',
+            ),
+            SettingOption(
+              value: '2',
+              labelKey: 'settingsNotificationLevelPerSender',
+            ),
+            SettingOption(
+              value: '3',
+              labelKey: 'settingsNotificationLevelFull',
+            ),
+          ],
+        ),
+        SettingItem(
           key: 'inAppNotifications',
           titleKey: 'settingsInAppNotificationsTitle',
           descriptionKey: 'settingsInAppNotificationsDesc',

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 import 'dart:io';
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
@@ -232,9 +232,18 @@ class _SettingsScreenState extends State<SettingsScreen>
     final categoryData = SettingsData.categories.firstWhere(
       (c) => c.category == category,
     );
+    // 通知分级仅 Android 平台可用；其他平台隐藏该设置项（保持原行为）。
+    final isAndroid =
+        !kIsWeb &&
+        Platform.isAndroid &&
+        defaultTargetPlatform == TargetPlatform.android;
+    final visibleItems = categoryData.items.where((item) {
+      if (item.key == 'notificationLevel') return isAndroid;
+      return true;
+    }).toList();
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-      itemCount: categoryData.items.length + 1,
+      itemCount: visibleItems.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {
           return Padding(
@@ -247,7 +256,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             ),
           );
         }
-        return _buildSettingItem(context, categoryData.items[index - 1]);
+        return _buildSettingItem(context, visibleItems[index - 1]);
       },
     );
   }
@@ -264,7 +273,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         }
         if (item.key == 'language' ||
             item.key == 'themeColor' ||
-            item.key == 'explicitSyncCooldownSeconds') {
+            item.key == 'explicitSyncCooldownSeconds' ||
+            item.key == 'notificationLevel') {
           return _buildCustomDropdownSetting(context, l10n, item);
         }
         if (item.key == 'theme') {
@@ -1360,6 +1370,16 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsPrivateChatTitle;
       case 'settingsGroupChatTitle':
         return l10n.settingsGroupChatTitle;
+      case 'settingsNotificationLevelTitle':
+        return l10n.settingsNotificationLevelTitle;
+      case 'settingsNotificationLevelDesc':
+        return l10n.settingsNotificationLevelDesc;
+      case 'settingsNotificationLevelMinimal':
+        return l10n.settingsNotificationLevelMinimal;
+      case 'settingsNotificationLevelPerSender':
+        return l10n.settingsNotificationLevelPerSender;
+      case 'settingsNotificationLevelFull':
+        return l10n.settingsNotificationLevelFull;
       case 'settingsSaveChatDraftsTitle':
         return l10n.settingsSaveChatDraftsTitle;
       case 'settingsSaveChatDraftsDesc':

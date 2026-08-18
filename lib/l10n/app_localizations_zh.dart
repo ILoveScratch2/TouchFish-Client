@@ -422,6 +422,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSystemNotificationsDesc => '使用操作系统通知进行消息通知';
 
   @override
+  String get settingsNotificationLevelTitle => '通知分级';
+
+  @override
+  String get settingsNotificationLevelDesc => '选择横幅通知的显示方式，通知列表不受影响';
+
+  @override
+  String get settingsNotificationLevelMinimal => '一级：仅汇总';
+
+  @override
+  String get settingsNotificationLevelPerSender => '二级：按联系人（默认）';
+
+  @override
+  String get settingsNotificationLevelFull => '三级：全部展示';
+
+  @override
+  String notificationLevelSummary(int contacts, int messages) {
+    return '$contacts 个联系人发来 $messages 条消息';
+  }
+
+  @override
   String get settingsInAppNotificationsTitle => '应用内通知';
 
   @override

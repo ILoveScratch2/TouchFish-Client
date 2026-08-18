@@ -8,6 +8,7 @@ class AppNotification {
   final String? avatarUrl;
   final String route;
   final String topic;
+  final String? senderKey;
 
   const AppNotification({
     required this.id,
@@ -17,6 +18,7 @@ class AppNotification {
     required this.topic,
     this.subtitle,
     this.avatarUrl,
+    this.senderKey,
   });
 
   factory AppNotification.fromNotificationInfo(NotificationInfo notification) {
@@ -30,6 +32,7 @@ class AppNotification {
           notification.meta['avatar'] as String?,
       route: routeFor(notification),
       topic: notification.event,
+      senderKey: notification.senderRaw,
     );
   }
 
@@ -41,6 +44,7 @@ class AppNotification {
     topic: topic,
     subtitle: subtitle,
     avatarUrl: avatarUrl ?? this.avatarUrl,
+    senderKey: senderKey,
   );
 
   static String routeFor(NotificationInfo notification) {

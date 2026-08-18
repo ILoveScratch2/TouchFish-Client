@@ -169,7 +169,25 @@
   
   "settingsSystemNotificationsTitle": "System Notifications",
   "settingsSystemNotificationsDesc": "Use system notifications for messages",
-  
+
+  "settingsNotificationLevelTitle": "Notification Level",
+  "settingsNotificationLevelDesc": "Choose how banner notifications are displayed. Notification list is unaffected",
+  "settingsNotificationLevelMinimal": "Level 1: Summary only",
+  "settingsNotificationLevelPerSender": "Level 2: Per sender (default)",
+  "settingsNotificationLevelFull": "Level 3: Show all",
+
+  "notificationLevelSummary": "{contacts} contacts sent {messages} messages",
+  "@notificationLevelSummary": {
+    "placeholders": {
+      "contacts": {
+        "type": "int"
+      },
+      "messages": {
+        "type": "int"
+      }
+    }
+  },
+
   "settingsInAppNotificationsTitle": "In-App Notifications",
   "settingsInAppNotificationsDesc": "Show notifications within the application",
   

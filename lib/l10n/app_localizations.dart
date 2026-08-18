@@ -916,6 +916,42 @@ abstract class AppLocalizations {
   /// **'Use system notifications for messages'**
   String get settingsSystemNotificationsDesc;
 
+  /// No description provided for @settingsNotificationLevelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Level'**
+  String get settingsNotificationLevelTitle;
+
+  /// No description provided for @settingsNotificationLevelDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how banner notifications are displayed. Notification list is unaffected'**
+  String get settingsNotificationLevelDesc;
+
+  /// No description provided for @settingsNotificationLevelMinimal.
+  ///
+  /// In en, this message translates to:
+  /// **'Level 1: Summary only'**
+  String get settingsNotificationLevelMinimal;
+
+  /// No description provided for @settingsNotificationLevelPerSender.
+  ///
+  /// In en, this message translates to:
+  /// **'Level 2: Per sender (default)'**
+  String get settingsNotificationLevelPerSender;
+
+  /// No description provided for @settingsNotificationLevelFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Level 3: Show all'**
+  String get settingsNotificationLevelFull;
+
+  /// No description provided for @notificationLevelSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{contacts} contacts sent {messages} messages'**
+  String notificationLevelSummary(int contacts, int messages);
+
   /// No description provided for @settingsInAppNotificationsTitle.
   ///
   /// In en, this message translates to:
