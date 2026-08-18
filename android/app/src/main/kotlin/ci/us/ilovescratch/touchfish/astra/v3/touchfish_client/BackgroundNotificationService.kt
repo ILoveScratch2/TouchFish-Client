@@ -106,7 +106,7 @@ class BackgroundNotificationService : Service() {
         if (uid <= 0 || pwd.isNullOrEmpty()) return
         val server = prefs.getString(KEY_SERVER, null) ?: return
         val port = prefs.getInt(KEY_PORT, 8080)
-        val level = prefs.getString(KEY_LEVEL, "2")
+        val level = prefs.getString(KEY_LEVEL, "2") ?: "2"
         val since = prefs.getLong(KEY_LAST_FETCH, 0L)
 
         Thread {
