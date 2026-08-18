@@ -2988,4 +2988,45 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get forwardFailed => '轉發敗';
+
+  @override
+  String get updateAvailableTitle => '發現新版本';
+
+  @override
+  String updateAvailableMessage(String currentVersion, String remoteVersion) {
+    return '現行版本：$currentVersion\n新版本：$remoteVersion\n即時更新否？';
+  }
+
+  @override
+  String get updateNow => '即時更新';
+
+  @override
+  String get updateLater => '稍後';
+
+  @override
+  String get updateDownloading => '正在下載更新...';
+
+  @override
+  String get updateChangelogTitle => '更新之誌';
+
+  @override
+  String get updateDownloadedTitle => '下載已成';
+
+  @override
+  String get updateExtractHint => '更新包已下載。請自行解壓並更替應用程式以完成更新。';
+
+  @override
+  String get updateDownloadFailedTitle => '下載敗';
+
+  @override
+  String get updateDownloadFailedMessage => '更新下載敗，請查網絡後再試。';
+
+  @override
+  String get updateUninstallTitle => '須先卸載舊版本';
+
+  @override
+  String get updateUninstallMessage => '安卓端更新須先卸載現有應用，請卸載後再安裝新 APK。';
+
+  @override
+  String get updateUninstallConfirm => '去卸載';
 }

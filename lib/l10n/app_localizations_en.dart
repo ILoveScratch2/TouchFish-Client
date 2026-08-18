@@ -3108,4 +3108,48 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forwardFailed => 'Forward failed';
+
+  @override
+  String get updateAvailableTitle => 'New version available';
+
+  @override
+  String updateAvailableMessage(String currentVersion, String remoteVersion) {
+    return 'Current version: $currentVersion\nLatest version: $remoteVersion\nUpdate now?';
+  }
+
+  @override
+  String get updateNow => 'Update now';
+
+  @override
+  String get updateLater => 'Later';
+
+  @override
+  String get updateDownloading => 'Downloading update...';
+
+  @override
+  String get updateChangelogTitle => 'Changelog';
+
+  @override
+  String get updateDownloadedTitle => 'Download complete';
+
+  @override
+  String get updateExtractHint =>
+      'Update downloaded. Please extract the archive manually and replace the app to complete the update.';
+
+  @override
+  String get updateDownloadFailedTitle => 'Download failed';
+
+  @override
+  String get updateDownloadFailedMessage =>
+      'Update download failed. Please check your network and try again.';
+
+  @override
+  String get updateUninstallTitle => 'Uninstall old version first';
+
+  @override
+  String get updateUninstallMessage =>
+      'Android updates require uninstalling the current app first. Please uninstall before installing the new APK.';
+
+  @override
+  String get updateUninstallConfirm => 'Uninstall';
 }

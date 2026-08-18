@@ -5817,6 +5817,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Forward failed'**
   String get forwardFailed;
+
+  /// No description provided for @updateAvailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New version available'**
+  String get updateAvailableTitle;
+
+  /// No description provided for @updateAvailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Current version: {currentVersion}\nLatest version: {remoteVersion}\nUpdate now?'**
+  String updateAvailableMessage(String currentVersion, String remoteVersion);
+
+  /// No description provided for @updateNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Update now'**
+  String get updateNow;
+
+  /// No description provided for @updateLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get updateLater;
+
+  /// No description provided for @updateDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading update...'**
+  String get updateDownloading;
+
+  /// No description provided for @updateChangelogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Changelog'**
+  String get updateChangelogTitle;
+
+  /// No description provided for @updateDownloadedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Download complete'**
+  String get updateDownloadedTitle;
+
+  /// No description provided for @updateExtractHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Update downloaded. Please extract the archive manually and replace the app to complete the update.'**
+  String get updateExtractHint;
+
+  /// No description provided for @updateDownloadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed'**
+  String get updateDownloadFailedTitle;
+
+  /// No description provided for @updateDownloadFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Update download failed. Please check your network and try again.'**
+  String get updateDownloadFailedMessage;
+
+  /// No description provided for @updateUninstallTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Uninstall old version first'**
+  String get updateUninstallTitle;
+
+  /// No description provided for @updateUninstallMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Android updates require uninstalling the current app first. Please uninstall before installing the new APK.'**
+  String get updateUninstallMessage;
+
+  /// No description provided for @updateUninstallConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Uninstall'**
+  String get updateUninstallConfirm;
 }
 
 class _AppLocalizationsDelegate
