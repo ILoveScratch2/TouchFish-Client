@@ -175,7 +175,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final syncService = MessageSyncService.instance;
     if (syncService.lastSeqOf(roomId) != null) {
       final settings = SettingsService.instance;
-      final forceExplicit = settings.getValue<bool>('forceExplicitSync', false);。
+      final forceExplicit = settings.getValue<bool>('forceExplicitSync', false);
       final cooldownSeconds =
           int.tryParse(
             settings.getValue<String>('explicitSyncCooldownSeconds', '30'),
@@ -1527,13 +1527,22 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (hash.isEmpty) return;
     final fileName = file['file_name'] as String? ?? hash;
     final fileSize = (file['size'] as num?)?.toInt() ?? 0;
-    final mimeType = file['mime_type'] as String?;
+    final rawMime = file['mime_type'] as String?;
+    final mimeType =
+        (rawMime == null || rawMime == 'application/octet-stream')
+        ? null
+        : rawMime;
     final downloadUrl = file['download_url'] as String?;
 
     final replyTarget = _replyingTo;
     final quoteMid = replyTarget?.mid ?? -1;
     final clientMid = 'c${DateTime.now().microsecondsSinceEpoch}';
     final baseUrl = await TfApiClient.instance.getBaseUrl();
+    // 服务端返回的 download_url 是相对路径，补全为绝对地址，
+    // 与上传直发（_sendMediaMessage）保持一致。
+    final mediaPath = (downloadUrl != null && downloadUrl.startsWith('http'))
+        ? downloadUrl
+        : '$baseUrl/file/get_file/$hash';
     final messageText = switch (type) {
       MessageType.image => '[IMAGE]',
       MessageType.video => '[VIDEO]',
@@ -1551,7 +1560,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       isMe: true,
       type: type,
       media: MessageMedia(
-        path: downloadUrl ?? '$baseUrl/file/get_file/$hash',
+        path: mediaPath,
         fileName: fileName,
         fileSize: fileSize,
         mimeType: mimeType,
