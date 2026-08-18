@@ -6124,29 +6124,17 @@ abstract class AppLocalizations {
   /// **'Update download failed. Please check your network and try again.'**
   String get updateDownloadFailedMessage;
 
-  /// No description provided for @updateUninstallTitle.
+  /// No description provided for @updateDownloadStartTitle.
   ///
   /// In en, this message translates to:
-  /// **'Uninstall old version first'**
-  String get updateUninstallTitle;
+  /// **'Start update download'**
+  String get updateDownloadStartTitle;
 
-  /// No description provided for @updateUninstallMessage.
+  /// No description provided for @updateApkSaveHint.
   ///
   /// In en, this message translates to:
-  /// **'Android updates require uninstalling the current app first. Please uninstall before installing the new APK.'**
-  String get updateUninstallMessage;
-
-  /// No description provided for @updateUninstallMessageWithPath.
-  ///
-  /// In en, this message translates to:
-  /// **'Android updates require uninstalling the current app first.\nThe APK will be saved to:\n{apkPath}\n\nPlease uninstall before installing the new APK.'**
-  String updateUninstallMessageWithPath(String apkPath);
-
-  /// No description provided for @updateUninstallConfirm.
-  ///
-  /// In en, this message translates to:
-  /// **'Uninstall'**
-  String get updateUninstallConfirm;
+  /// **'The APK will be saved to:\n{apkPath}'**
+  String updateApkSaveHint(String apkPath);
 }
 
 class _AppLocalizationsDelegate
