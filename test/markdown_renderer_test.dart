@@ -4,7 +4,48 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:touchfish_client/l10n/app_localizations.dart';
 import 'package:touchfish_client/widgets/markdown_renderer.dart';
 
+Widget _wrap(String data) {
+  return MaterialApp(
+    locale: const Locale('en'),
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
+    theme: ThemeData(useMaterial3: true),
+    home: Scaffold(
+      body: MarkdownRenderer(data: data),
+    ),
+  );
+}
+
 void main() {
+  testWidgets('empty block formula does not crash', (tester) async {
+    // 空块公式：$$$$ 和 $$ $$ 不应抛 RangeError / 渲染崩溃
+    await tester.pumpWidget(_wrap(r'before $$$$ after'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(_wrap(r'before $$ $$ after'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('block formula renders as display style', (tester) async {
+    const formula = r'''
+before
+$$
+\int^{\infty}_{-\infty}e^{-x^2}\mathrm{d}x
+$$
+after
+''';
+    await tester.pumpWidget(_wrap(formula));
+    await tester.pumpAndSettle();
+    // 块公式不应抛异常
+    expect(tester.takeException(), isNull);
+  });
   for (final selectable in [false, true]) {
     testWidgets(
       'task lists render without negative padding when selectable is $selectable',
