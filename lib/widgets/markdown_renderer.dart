@@ -14,6 +14,30 @@ import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
 
+/// 等宽字体族：优先 Consolas，依次回退至各平台常见等宽字体。
+const String _codeFontFamily = 'Consolas';
+const List<String> _codeFontFamilyFallback = [
+  'Menlo',
+  'Monaco',
+  'Courier New',
+  'Courier',
+  'DejaVu Sans Mono',
+  'Liberation Mono',
+  'Noto Sans Mono',
+  'Droid Sans Mono',
+  'Source Code Pro',
+  'Fira Code',
+  'JetBrains Mono',
+  'monospace',
+];
+
+TextStyle _codeTextStyle({double fontSize = 14, Color? color}) => TextStyle(
+  fontFamily: _codeFontFamily,
+  fontFamilyFallback: _codeFontFamilyFallback,
+  fontSize: fontSize,
+  color: color,
+);
+
 class MarkdownRenderer extends HookWidget {
   final String data;
   final bool selectable;
@@ -72,28 +96,26 @@ class MarkdownRenderer extends HookWidget {
       selectable: selectable,
       config: config.copy(
         configs: [
+          CodeConfig(
+            style: _codeTextStyle(
+              fontSize: 13,
+              color: isDark ? const Color(0xffe0e0e0) : const Color(0xff283237),
+            ).copyWith(
+              backgroundColor: isDark
+                  ? const Color(0x33ffffff)
+                  : const Color(0x33eff1f3),
+            ),
+          ),
           isDark
               ? PreConfig.darkConfig.copy(
-                  textStyle: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 14,
-                  ),
-                  styleNotMatched: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 14,
-                  ),
+                  textStyle: _codeTextStyle(),
+                  styleNotMatched: _codeTextStyle(),
                   decoration: codeBlockDecoration,
                 )
               : PreConfig(
                   theme: a11yLightTheme,
-                  textStyle: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 14,
-                  ),
-                  styleNotMatched: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 14,
-                  ),
+                  textStyle: _codeTextStyle(),
+                  styleNotMatched: _codeTextStyle(),
                   decoration: codeBlockDecoration,
                 ),
           PConfig(
@@ -144,11 +166,8 @@ class MarkdownRenderer extends HookWidget {
           ),
           PreConfig(
             theme: isDark ? a11yDarkTheme : a11yLightTheme,
-            textStyle: const TextStyle(fontFamily: 'monospace', fontSize: 14),
-            styleNotMatched: const TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 14,
-            ),
+            textStyle: _codeTextStyle(),
+            styleNotMatched: _codeTextStyle(),
             decoration: codeBlockDecoration,
             builder: (code, language) => Container(
               decoration: codeBlockDecoration,
@@ -159,25 +178,23 @@ class MarkdownRenderer extends HookWidget {
                 scrollDirection: Axis.horizontal,
                 child: RichText(
                   text: TextSpan(
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 14,
-                      color: isDark ? const Color(0xffd6d6d6) : const Color(0xff24292f),
+                    style: _codeTextStyle(
+                      color: isDark
+                          ? const Color(0xffd6d6d6)
+                          : const Color(0xff24292f),
                     ),
                     children: highLightSpans(
                       code,
-                      language: language.isEmpty ? null : language,
+                      // 与 markdown_widget 原行为一致：未指定语言时默认按 dart 高亮，
+                      // 传 null 会导致 highlight 完全不做语法着色。
+                      language: language.isEmpty ? 'dart' : language,
                       theme: isDark ? a11yDarkTheme : a11yLightTheme,
-                      textStyle: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 14,
-                        color: isDark ? const Color(0xffd6d6d6) : const Color(0xff24292f),
-                      ),
-                      styleNotMatched: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 14,
-                        color: isDark ? const Color(0xffd6d6d6) : const Color(0xff24292f),
-                      ),
+                      // 注意：textStyle / styleNotMatched 不能带 color。
+                      // highLightSpans 内部做 nodeStyle.merge(textStyle)，
+                      // textStyle 里的 color 会覆盖每个语法 token 的高亮颜色，
+                      // 导致所有代码变成单色、看起来没有语法高亮。
+                      textStyle: _codeTextStyle(),
+                      styleNotMatched: _codeTextStyle(),
                     ),
                   ),
                 ),
@@ -540,7 +557,11 @@ const String _latexTag = 'latex';
 class LatexSyntax extends markdown.InlineSyntax {
   final bool isDark;
 
-  LatexSyntax(this.isDark) : super(r'(\$\$[\s\S]+\$\$)|(\$.+?\$)');
+  // 块公式允许空内容（*?），行内公式内容至少 1 个非 $ 非换行字符。
+  // 避免 "$$$$"（空块公式）被行内分支误匹配成 "$$$" 导致
+  // substring(2, 1) 抛 RangeError。
+  LatexSyntax(this.isDark)
+      : super(r'(\$\$[\s\S]*?\$\$)|(\$[^$\n]+\$)');
 
   @override
   bool onMatch(markdown.InlineParser parser, Match match) {
@@ -550,14 +571,15 @@ class LatexSyntax extends markdown.InlineSyntax {
     const blockSyntax = r'$$';
     const inlineSyntax = r'$';
 
+    // 防御：确保 substring 范围合法，空公式（$$$$）得到 content=''。
     if (matchValue.startsWith(blockSyntax) &&
         matchValue.endsWith(blockSyntax) &&
-        matchValue != blockSyntax) {
+        matchValue.length >= 4) {
       content = matchValue.substring(2, matchValue.length - 2);
       isInline = false;
     } else if (matchValue.startsWith(inlineSyntax) &&
         matchValue.endsWith(inlineSyntax) &&
-        matchValue != inlineSyntax) {
+        matchValue.length > 2) {
       content = matchValue.substring(1, matchValue.length - 1);
     }
 
@@ -584,13 +606,18 @@ class LatexNode extends SpanNode {
     final isDark = attributes['isDark'] == 'true';
     final style = parentStyle ?? config.p.textStyle;
 
-    if (content.isEmpty) {
+    // 空内容或纯空白（如 "$$$$"、"$$ $$"）直接显示原文，避免
+    // flutter_math 对空字符串渲染出巨大空白/崩溃。
+    if (content.trim().isEmpty) {
       return TextSpan(style: style, text: textContent);
     }
 
+    // 行内公式（$...$）用 MathStyle.text —— 小符号、行内嵌。
+    // 块公式（$$...$$）用 MathStyle.display —— 积分/求和/极限等大符号正常放大，
+    // 上下标（\int^{\infty}_{-\infty}）置于符号正上方/正下方。
     final latex = Math.tex(
       content,
-      mathStyle: MathStyle.text,
+      mathStyle: isInline ? MathStyle.text : MathStyle.display,
       textStyle: style.copyWith(color: isDark ? Colors.white : Colors.black),
       textScaleFactor: 1,
       onErrorFallback: (error) {
@@ -604,7 +631,7 @@ class LatexNode extends SpanNode {
           ? latex
           : SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
               child: Center(child: latex),
             ),
     );
