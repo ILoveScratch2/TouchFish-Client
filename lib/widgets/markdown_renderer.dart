@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'data_saving_image.dart';
 import 'package:flutter_highlight/themes/a11y-dark.dart';
 import 'package:flutter_highlight/themes/a11y-light.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -713,38 +714,9 @@ class _MarkdownRemoteImage extends StatelessWidget {
         borderRadius: const BorderRadius.all(Radius.circular(8)),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 360),
-          child: Image.network(
-            uri.toString(),
+          child: DataSavingImage(
+            url: uri.toString(),
             fit: BoxFit.contain,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) {
-                return child;
-              }
-
-              return Container(
-                constraints: const BoxConstraints(minHeight: 120),
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                alignment: Alignment.center,
-                child: CircularProgressIndicator(
-                  value: loadingProgress.expectedTotalBytes == null
-                      ? null
-                      : loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!,
-                ),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                constraints: const BoxConstraints(minHeight: 120),
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.broken_image_outlined,
-                  size: 48,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              );
-            },
           ),
         ),
       ),

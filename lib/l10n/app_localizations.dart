@@ -5452,6 +5452,204 @@ abstract class AppLocalizations {
   /// **'Cache cleared'**
   String get settingsCacheCleared;
 
+  /// No description provided for @settingsEnableAnimationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Animations'**
+  String get settingsEnableAnimationsTitle;
+
+  /// No description provided for @settingsEnableAnimationsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable page and interface animations'**
+  String get settingsEnableAnimationsDesc;
+
+  /// No description provided for @settingsWeakNetworkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Weak network mode'**
+  String get settingsWeakNetworkTitle;
+
+  /// No description provided for @settingsWeakNetworkDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Use periodic synchronization when the connection is unstable'**
+  String get settingsWeakNetworkDesc;
+
+  /// No description provided for @settingsDataSavingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Data saving mode'**
+  String get settingsDataSavingTitle;
+
+  /// No description provided for @settingsDataSavingDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Load media only after you tap it'**
+  String get settingsDataSavingDesc;
+
+  /// No description provided for @settingsIpOverrideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'IP override mode'**
+  String get settingsIpOverrideTitle;
+
+  /// No description provided for @settingsIpOverrideDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to configured IPs while keeping the original host for TLS'**
+  String get settingsIpOverrideDesc;
+
+  /// No description provided for @settingsIpOverrideOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get settingsIpOverrideOff;
+
+  /// No description provided for @settingsIpOverrideMixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected domains'**
+  String get settingsIpOverrideMixed;
+
+  /// No description provided for @settingsIpOverrideComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'All connections'**
+  String get settingsIpOverrideComplete;
+
+  /// No description provided for @settingsIpOverrideDomainsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Override domains'**
+  String get settingsIpOverrideDomainsTitle;
+
+  /// No description provided for @settingsIpOverrideDomainsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'One domain per line'**
+  String get settingsIpOverrideDomainsDesc;
+
+  /// No description provided for @settingsIpOverrideEntriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Override IPs'**
+  String get settingsIpOverrideEntriesTitle;
+
+  /// No description provided for @settingsIpOverrideEntriesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'One IP or IP:port per line'**
+  String get settingsIpOverrideEntriesDesc;
+
+  /// No description provided for @settingsIpOverrideNoEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'No override IP configured'**
+  String get settingsIpOverrideNoEntry;
+
+  /// No description provided for @settingsConnectionStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection status'**
+  String get settingsConnectionStatusTitle;
+
+  /// No description provided for @settingsConnectionStatusDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'View connection status and run a self-check'**
+  String get settingsConnectionStatusDesc;
+
+  /// No description provided for @settingsConnectivitySelfCheckTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connectivity self-check'**
+  String get settingsConnectivitySelfCheckTitle;
+
+  /// No description provided for @settingsConnectivitySelfCheckDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Test server and configured IP endpoints'**
+  String get settingsConnectivitySelfCheckDesc;
+
+  /// No description provided for @settingsConnectivityFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed'**
+  String get settingsConnectivityFailed;
+
+  /// No description provided for @chatSearchAllMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Search all chats'**
+  String get chatSearchAllMessages;
+
+  /// No description provided for @chatExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export chat history'**
+  String get chatExportTitle;
+
+  /// No description provided for @chatExportJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Export JSON'**
+  String get chatExportJson;
+
+  /// No description provided for @chatExportCsv.
+  ///
+  /// In en, this message translates to:
+  /// **'Export CSV'**
+  String get chatExportCsv;
+
+  /// No description provided for @chatExportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat history exported'**
+  String get chatExportSuccess;
+
+  /// No description provided for @settingsResetStatsRooms.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooms'**
+  String get settingsResetStatsRooms;
+
+  /// No description provided for @settingsResetStatsMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get settingsResetStatsMessages;
+
+  /// No description provided for @settingsResetStatsSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Database size'**
+  String get settingsResetStatsSize;
+
+  /// No description provided for @settingsDatabaseExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export local database'**
+  String get settingsDatabaseExport;
+
+  /// No description provided for @settingsDatabaseImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import local database'**
+  String get settingsDatabaseImport;
+
+  /// No description provided for @settingsDatabaseExportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Local database exported'**
+  String get settingsDatabaseExportSuccess;
+
+  /// No description provided for @settingsDatabaseImportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {count} messages'**
+  String settingsDatabaseImportSuccess(int count);
+
   /// No description provided for @settingsLocalDatabase.
   ///
   /// In en, this message translates to:

@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import '../models/message_model.dart';
+import '../models/local_message_search_result.dart';
 import '../utils/talker.dart';
 
 class LocalMessageStore {
@@ -31,6 +32,8 @@ class LocalMessageStore {
   }
 
   void clearScope() => _scope = null;
+
+  ({String server, int uid})? get currentScope => _scope;
 
   ({String server, int uid}) _requireScope() {
     final scope = _scope;
@@ -432,6 +435,54 @@ class LocalMessageStore {
     return await file.exists() ? file.length() : 0;
   }
 
+  Future<Map<String, dynamic>> exportSnapshot() async {
+    final scope = _requireScope();
+    final db = await _db(scope.server, scope.uid);
+    final rows = db.select(
+      'SELECT room_id, message_key, timestamp, payload FROM messages WHERE server_key = ? AND uid = ? ORDER BY timestamp ASC',
+      [scope.server, scope.uid],
+    );
+    return {
+      'server': scope.server,
+      'uid': scope.uid,
+      'messages': rows.map((row) => {
+        'roomId': row['room_id'],
+        'messageKey': row['message_key'],
+        'timestamp': row['timestamp'],
+        'payload': jsonDecode(row['payload'] as String),
+      }).toList(),
+    };
+  }
+
+  Future<int> importSnapshot(Map<String, dynamic> snapshot) async {
+    final scope = _requireScope();
+    final db = await _db(scope.server, scope.uid);
+    final messages = snapshot['messages'];
+    if (messages is! List) return 0;
+    var count = 0;
+    db.execute('BEGIN IMMEDIATE');
+    try {
+      for (final raw in messages.whereType<Map>()) {
+        final roomId = raw['roomId']?.toString();
+        final messageKey = raw['messageKey']?.toString();
+        final payload = raw['payload'];
+        if (roomId == null || messageKey == null || payload is! Map) continue;
+        db.execute('''INSERT OR REPLACE INTO messages
+          (server_key, uid, room_id, message_key, timestamp, payload)
+          VALUES (?, ?, ?, ?, ?, ?)''', [
+          scope.server, scope.uid, roomId, messageKey,
+          (raw['timestamp'] as num?)?.toInt() ?? 0, jsonEncode(payload),
+        ]);
+        count++;
+      }
+      db.execute('COMMIT');
+    } catch (_) {
+      db.execute('ROLLBACK');
+      rethrow;
+    }
+    return count;
+  }
+
   Future<String?> databasePath() async {
     final scope = _requireScope();
     final db = await _db(scope.server, scope.uid);
@@ -446,5 +497,37 @@ class LocalMessageStore {
       scope.server,
       scope.uid,
     ]);
+  }
+
+  Future<List<ChatMessage>> loadAllMessages(String roomId) async {
+    return loadMessages(roomId);
+  }
+
+  Future<List<LocalMessageSearchResult>> searchAllRooms(
+    String query, {
+    int limit = 200,
+  }) async {
+    final scope = _requireScope();
+    final db = await _db(scope.server, scope.uid);
+    final needle = '%${query.trim().toLowerCase()}%';
+    final rows = db.select(
+      '''SELECT room_id, payload FROM messages
+         WHERE server_key = ? AND uid = ? AND lower(payload) LIKE ?
+         ORDER BY timestamp DESC LIMIT ?''',
+      [scope.server, scope.uid, needle, limit],
+    );
+    final results = <LocalMessageSearchResult>[];
+    for (final row in rows) {
+      try {
+        results.add(LocalMessageSearchResult(
+          roomId: row['room_id'] as String,
+          message: ChatMessage.fromJson(
+            jsonDecode(row['payload'] as String) as Map<String, dynamic>,
+            activeUid: scope.uid,
+          ),
+        ));
+      } catch (_) {}
+    }
+    return results;
   }
 }

@@ -86,6 +86,9 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
     if (_previewRequested) return true;
     if (widget.compact) return false;
     if (!widget.allowAutomaticPreview) return false;
+    if (SettingsService.instance.getValue<bool>('dataSavingMode', false)) {
+      return false;
+    }
     final limitMiB = SettingsService.instance.getValue<int>(
       'automaticPreviewMaxMiB',
       10,

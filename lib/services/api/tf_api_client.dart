@@ -296,7 +296,13 @@ class TfApiClient {
   static TfApiClient get instance => _instance ??= TfApiClient._();
   TfApiClient._();
 
-  final _http = http.Client();
+  http.Client _http = http.Client();
+
+  void rebuildHttpClient() {
+    _http.close();
+    _http = http.Client();
+    invalidateCache();
+  }
 
   RSAPublicKey? _cachedPubKey;
   String? _cachedBaseUrl;

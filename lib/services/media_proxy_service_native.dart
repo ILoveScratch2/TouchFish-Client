@@ -14,13 +14,18 @@ class MediaProxyService {
 
   static const _maxCacheBytes = 2 * 1024 * 1024 * 1024;
   HttpServer? _server;
-  final HttpClient _client = HttpClient();
+  HttpClient _client = HttpClient();
   Future<void>? _starting;
   final Map<String, _ChunkCache> _chunkCaches = {};
   final Map<String, Future<void>> _writeChains = {};
 
   bool get isSupported => true;
   bool get isRunning => _server != null;
+
+  void rebuildHttpClient() {
+    _client.close(force: true);
+    _client = HttpClient();
+  }
 
   Future<String> resolveUrl(String remoteUrl) async {
     if (!SettingsService.instance.getValue<bool>('mediaProxyEnabled', true)) {

@@ -9,4 +9,5 @@ class MediaProxyService {
   Future<void> stop() async {}
   Future<void> clearCache() async {}
   Future<int> cacheSize() async => 0;
+  void rebuildHttpClient() {}
 }

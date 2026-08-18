@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/chat_model.dart';
 import '../models/app_notification.dart';
 import '../models/message_model.dart';
+import '../models/local_message_search_result.dart';
 import '../models/notification_model.dart';
 import '../models/user_profile.dart';
 import '../utils/talker.dart';
@@ -132,6 +133,13 @@ class ChatDataService extends ChangeNotifier {
     merged.sort(_compareMessages);
     if (merged.isNotEmpty) return merged;
     return (await refreshMessagesForContact(roomId)).messages;
+  }
+
+  Future<List<LocalMessageSearchResult>> searchAllRoomsMessages(
+    String query, {
+    int limit = 200,
+  }) {
+    return _localStore.searchAllRooms(query, limit: limit);
   }
 
   void setMessages(String roomId, List<ChatMessage> msgs) {
