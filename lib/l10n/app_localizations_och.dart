@@ -3028,5 +3028,10 @@ class AppLocalizationsOch extends AppLocalizations {
   String get updateUninstallMessage => '安卓端更新須先卸載現有應用，請卸載後再安裝新 APK。';
 
   @override
+  String updateUninstallMessageWithPath(String apkPath) {
+    return '安卓端更新須先卸載現有應用。\nAPK 將存於：\n$apkPath\n\n請先卸載後再安裝新 APK。';
+  }
+
+  @override
   String get updateUninstallConfirm => '去卸載';
 }

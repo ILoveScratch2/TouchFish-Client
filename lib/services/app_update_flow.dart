@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
+import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/markdown_renderer.dart';
 import 'app_update_service.dart';
@@ -150,36 +151,110 @@ class AppUpdateFlow {
     }
 
     if (!kIsWeb && Platform.isAndroid) {
-      await _runDownloadThenExit(context, downloadUrl, onComplete: () async {
-        final path = await service.downloadUpdate(downloadUrl);
-        return path;
-      }, afterDownload: (path) async {
-        if (!context.mounted) return;
-        final l10n = AppLocalizations.of(context);
-        final confirmed = await showTouchFishInfoDialog<bool>(
-          context,
-          title: l10n?.updateUninstallTitle,
-          message: l10n?.updateUninstallMessage ?? 'Please uninstall the old version first.',
-          actions: [
-            TouchFishDialogAction(
-              label: l10n?.commonCancel ?? 'Cancel',
-              result: false,
-            ),
-            TouchFishDialogAction(
-              label: l10n?.updateUninstallConfirm ?? 'Uninstall',
-              result: true,
-              isPrimary: true,
-            ),
-          ],
-        );
-        if (confirmed != true || !context.mounted) return;
-        await service.revealFile(path!);
-        exit(0);
-      });
+      await _performAndroidUpdateFlow(context, downloadUrl);
       return;
     }
 
     await launchUrl(Uri.parse(downloadUrl));
+  }
+
+  /// Android 更新流程：
+  /// 1. 先弹「需要先卸载」确认框，并在框内展示 APK 保存位置；
+  /// 2. 用户确认后才开始下载；
+  /// 3. 下载完成后进程不自杀，打开文件管理器跳转到 APK 所在位置。
+  Future<void> _performAndroidUpdateFlow(
+    BuildContext context,
+    String downloadUrl,
+  ) async {
+    final service = AppUpdateService.instance;
+    final l10n = AppLocalizations.of(context);
+    if (!context.mounted) return;
+
+    // 预计算 APK 保存路径（供确认框展示）。
+    final String apkPath;
+    try {
+      apkPath = await AppUpdateService.downloadPathFor(downloadUrl);
+    } catch (error, stackTrace) {
+      talker.error('Failed to compute APK path', error, stackTrace);
+      if (context.mounted) {
+        await showTouchFishErrorDialog<void>(
+          context,
+          title: l10n?.updateDownloadFailedTitle,
+          message: l10n?.updateDownloadFailedMessage ??
+              'Update download failed. Please check your network and try again.',
+        );
+      }
+      return;
+    }
+    if (!context.mounted) return;
+
+    // 第一步：确认「先卸载」的提示框，同时展示 APK 将保存的位置。
+    final confirmed = await showTouchFishInfoDialog<bool>(
+      context,
+      title: l10n?.updateUninstallTitle,
+      message: l10n?.updateUninstallMessageWithPath(apkPath) ??
+          'Please uninstall the current app first.\nAPK will be saved to: $apkPath',
+      actions: [
+        TouchFishDialogAction(
+          label: l10n?.commonCancel ?? 'Cancel',
+          result: false,
+        ),
+        TouchFishDialogAction(
+          label: l10n?.updateUninstallConfirm ?? 'Uninstall',
+          result: true,
+          isPrimary: true,
+        ),
+      ],
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    // 第二步：用户确认后开始下载（显示下载中对话框）。
+    String? path;
+    final l10nDownload = AppLocalizations.of(context);
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(strokeWidth: 3),
+            ),
+            const SizedBox(width: 16),
+            Flexible(
+              child: Text(
+                l10nDownload?.updateDownloading ?? 'Downloading update...',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    path = await service.downloadUpdate(downloadUrl);
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+
+    if (path == null) {
+      if (context.mounted) {
+        final l10nError = AppLocalizations.of(context);
+        await showTouchFishErrorDialog<void>(
+          context,
+          title: l10nError?.updateDownloadFailedTitle,
+          message: l10nError?.updateDownloadFailedMessage ??
+              'Update download failed. Please check your network and try again.',
+        );
+      }
+      return;
+    }
+
+    // 第三步：下载完成，打开文件管理器跳转到 APK 所在位置。
+    // 注意：Android 端进程不自杀退出，由用户自行卸载后安装。
+    if (context.mounted) {
+      await service.revealFile(path);
+    }
   }
 
   Future<void> _runDownloadThenExit(
