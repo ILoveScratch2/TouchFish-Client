@@ -2899,6 +2899,112 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCacheCleared => 'Cache cleared';
 
   @override
+  String get settingsEnableAnimationsTitle => 'Animations';
+
+  @override
+  String get settingsEnableAnimationsDesc =>
+      'Enable page and interface animations';
+
+  @override
+  String get settingsWeakNetworkTitle => 'Weak network mode';
+
+  @override
+  String get settingsWeakNetworkDesc =>
+      'Use periodic synchronization when the connection is unstable';
+
+  @override
+  String get settingsDataSavingTitle => 'Data saving mode';
+
+  @override
+  String get settingsDataSavingDesc => 'Load media only after you tap it';
+
+  @override
+  String get settingsIpOverrideTitle => 'IP override mode';
+
+  @override
+  String get settingsIpOverrideDesc =>
+      'Connect to configured IPs while keeping the original host for TLS';
+
+  @override
+  String get settingsIpOverrideOff => 'Off';
+
+  @override
+  String get settingsIpOverrideMixed => 'Selected domains';
+
+  @override
+  String get settingsIpOverrideComplete => 'All connections';
+
+  @override
+  String get settingsIpOverrideDomainsTitle => 'Override domains';
+
+  @override
+  String get settingsIpOverrideDomainsDesc => 'One domain per line';
+
+  @override
+  String get settingsIpOverrideEntriesTitle => 'Override IPs';
+
+  @override
+  String get settingsIpOverrideEntriesDesc => 'One IP or IP:port per line';
+
+  @override
+  String get settingsIpOverrideNoEntry => 'No override IP configured';
+
+  @override
+  String get settingsConnectionStatusTitle => 'Connection status';
+
+  @override
+  String get settingsConnectionStatusDesc =>
+      'View connection status and run a self-check';
+
+  @override
+  String get settingsConnectivitySelfCheckTitle => 'Connectivity self-check';
+
+  @override
+  String get settingsConnectivitySelfCheckDesc =>
+      'Test server and configured IP endpoints';
+
+  @override
+  String get settingsConnectivityFailed => 'Connection failed';
+
+  @override
+  String get chatSearchAllMessages => 'Search all chats';
+
+  @override
+  String get chatExportTitle => 'Export chat history';
+
+  @override
+  String get chatExportJson => 'Export JSON';
+
+  @override
+  String get chatExportCsv => 'Export CSV';
+
+  @override
+  String get chatExportSuccess => 'Chat history exported';
+
+  @override
+  String get settingsResetStatsRooms => 'Rooms';
+
+  @override
+  String get settingsResetStatsMessages => 'Messages';
+
+  @override
+  String get settingsResetStatsSize => 'Database size';
+
+  @override
+  String get settingsDatabaseExport => 'Export local database';
+
+  @override
+  String get settingsDatabaseImport => 'Import local database';
+
+  @override
+  String get settingsDatabaseExportSuccess => 'Local database exported';
+
+  @override
+  String settingsDatabaseImportSuccess(int count) {
+    return 'Imported $count messages';
+  }
+
+  @override
   String get settingsLocalDatabase => 'Local Database';
 
   @override

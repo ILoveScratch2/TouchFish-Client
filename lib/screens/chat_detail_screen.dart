@@ -89,6 +89,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   StreamSubscription<int>? _essenceSub;
   bool _fetchingPins = false;
   bool _isJumpingToMessage = false;
+  Timer? _weakNetworkTimer;
 
   String get _contactUid {
     final id = widget.roomId;
@@ -162,6 +163,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _loadChatRoom();
     _startRealMessaging();
     _initMessageSync();
+    _weakNetworkTimer?.cancel();
+    if (SettingsService.instance.getValue<bool>('weakNetworkMode', false)) {
+      _weakNetworkTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+        unawaited(MessageSyncService.instance.resyncAfterReconnect([_contactUid]));
+      });
+    }
   }
 
   /// 进入/切换聊天时：注册为同步活跃房间，触发增量补
@@ -227,6 +234,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _ackErrorSub?.cancel();
     _essenceSub?.cancel();
     _draftTimer?.cancel();
+    _weakNetworkTimer?.cancel();
     unawaited(_saveDraft());
     _messageController.dispose();
     _scrollController.dispose();

@@ -26,11 +26,13 @@ import 'services/forum_pending_service.dart';
 import 'services/single_instance_service.dart';
 import 'services/notification_service.dart';
 import 'services/server_connection_status_service.dart';
+import 'services/ip_override_service.dart';
 import 'utils/talker.dart';
 import 'widgets/app_alert_dialog.dart';
 import 'widgets/notification_overlay.dart';
 import 'widgets/custom_title_bar.dart';
 import 'widgets/server_connection_banner.dart';
+import 'widgets/snackbar_overlay.dart';
 import 'utils/web_splash_stub.dart'
     if (dart.library.js) 'utils/web_splash_web.dart';
 
@@ -57,6 +59,8 @@ Future<void> main() async {
 
     final startupRecovery = await _performStartupRecovery(isDesktop: isDesktop);
     await SettingsService.instance.init();
+    await IpOverrideService.instance.ensureDefaultDomain();
+    await IpOverrideService.instance.refreshGlobal();
 
     if (isDesktop) {
       await windowManager.ensureInitialized();
@@ -712,9 +716,14 @@ class _TouchFishAppState extends State<TouchFishApp> {
               child ?? const SizedBox.shrink(),
             );
             if (hasBackgroundImage && !kIsWeb) {
-              return _buildSavedSessionRestoreOverlay(
-                context,
-                Container(
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  disableAnimations: !_appState.animationsEnabled,
+                ),
+                child: TouchFishSnackbarOverlay(
+                  child: _buildSavedSessionRestoreOverlay(
+                    context,
+                    Container(
                   color: Theme.of(context).colorScheme.surface,
                   child: Container(
                     decoration: BoxDecoration(
@@ -730,10 +739,20 @@ class _TouchFishAppState extends State<TouchFishApp> {
                     ),
                     child: content,
                   ),
+                    ),
+                  ),
                 ),
               );
             }
-            return _buildSavedSessionRestoreOverlay(context, content);
+            final animationsEnabled = _appState.animationsEnabled;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                disableAnimations: !animationsEnabled,
+              ),
+              child: TouchFishSnackbarOverlay(
+                child: _buildSavedSessionRestoreOverlay(context, content),
+              ),
+            );
           },
         );
       },

@@ -7,6 +7,10 @@ import '../models/message_model.dart';
 import '../services/chat_data_service.dart';
 import '../widgets/sheet_scaffold.dart';
 import 'chat_search_messages_screen.dart';
+import 'global_chat_search_screen.dart';
+import '../services/chat_export_service.dart';
+import '../services/local_message_store.dart';
+import '../services/snackbar_service.dart';
 import 'group_management_screen.dart';
 
 class ChatRoomSettingsScreen extends StatefulWidget {
@@ -191,11 +195,48 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                   }
                 },
               ),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                leading: const Icon(Symbols.search_check),
+                trailing: const Icon(Symbols.chevron_right),
+                title: Text(l10n.chatSearchAllMessages),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const GlobalChatSearchScreen()),
+                ),
+              ),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                leading: const Icon(Symbols.download),
+                trailing: const Icon(Symbols.chevron_right),
+                title: Text(l10n.chatExportTitle),
+                onTap: _exportChat,
+              ),
             ]),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _exportChat() async {
+    final l10n = AppLocalizations.of(context)!;
+    final messages = await LocalMessageStore.instance.loadAllMessages(widget.chatRoom.id);
+    if (!mounted) return;
+    final format = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(leading: const Icon(Symbols.data_object), title: Text(l10n.chatExportJson), onTap: () => Navigator.pop(context, 'json')),
+          ListTile(leading: const Icon(Symbols.table_rows), title: Text(l10n.chatExportCsv), onTap: () => Navigator.pop(context, 'csv')),
+        ]),
+      ),
+    );
+    if (format == null) return;
+    final saved = format == 'json'
+        ? await ChatExportService.exportJson(widget.chatRoom.id, messages)
+        : await ChatExportService.exportCsv(widget.chatRoom.id, messages);
+    if (saved) TouchFishSnackbarService.instance.show(l10n.chatExportSuccess);
   }
 
   String _getNotifyLevelText() {

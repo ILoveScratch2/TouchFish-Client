@@ -18,6 +18,9 @@ import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/local_storage_settings.dart';
 import '../services/media_proxy_service.dart';
+import '../services/ip_override_service.dart';
+import '../services/server_connection_status_service.dart';
+import 'connectivity_self_check_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -264,7 +267,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         }
         if (item.key == 'language' ||
             item.key == 'themeColor' ||
-            item.key == 'explicitSyncCooldownSeconds') {
+            item.key == 'explicitSyncCooldownSeconds' ||
+            item.key == 'ipOverrideMode') {
           return _buildCustomDropdownSetting(context, l10n, item);
         }
         if (item.key == 'theme') {
@@ -304,6 +308,12 @@ class _SettingsScreenState extends State<SettingsScreen>
         }
         if (item.key == 'localStorage') {
           return const LocalStorageSettings();
+        }
+        if (item.key == 'ipOverrideDomains' || item.key == 'ipOverrideEntries') {
+          return _buildIpOverrideEditor(context, l10n, item);
+        }
+        if (item.key == 'connectionStatus') {
+          return _buildConnectionStatusPreview(context, l10n, item);
         }
         return const SizedBox.shrink();
     }
@@ -379,13 +389,20 @@ class _SettingsScreenState extends State<SettingsScreen>
                           context,
                         ).colorScheme.surface,
                       ),
-                      onChanged: (newValue) {
+                      onChanged: (newValue) async {
                         if (newValue != null) {
                           final option = item.options!.firstWhere(
                             (o) =>
                                 _getSettingTitle(l10n, o.labelKey) == newValue,
                           );
-                          _settingsService.setValue(item.key, option.value);
+                            await _settingsService.setValue(item.key, option.value);
+                           if (item.key == 'ipOverrideMode') {
+                             await IpOverrideService.instance.setMode(
+                               IpOverrideMode.values.firstWhere(
+                                 (mode) => mode.name == option.value,
+                               ),
+                             );
+                           }
                         }
                       },
                     ),
@@ -1021,6 +1038,11 @@ class _SettingsScreenState extends State<SettingsScreen>
             // Navigate based on setting key
             if (item.key == 'aboutApp') {
               context.push('/about');
+            } else if (item.key == 'connectivitySelfCheck') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ConnectivitySelfCheckScreen()),
+              );
             }
           },
         ),
@@ -1200,6 +1222,104 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
   }
 
+  Widget _buildIpOverrideEditor(
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingItem item,
+  ) {
+    final service = IpOverrideService.instance;
+    return ListenableBuilder(
+      listenable: service,
+      builder: (context, _) {
+        final value = item.key == 'ipOverrideDomains'
+            ? service.domains.join(', ')
+            : service.entries.map((entry) => '${entry.ip}${entry.port == null ? '' : ':${entry.port}'}').join(', ');
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Card(
+            child: ListTile(
+              leading: Icon(item.icon),
+              title: Text(_getSettingTitle(l10n, item.titleKey)),
+              subtitle: Text(value.isEmpty ? _getSettingTitle(l10n, item.descriptionKey!) : value),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                if (item.key == 'ipOverrideDomains') {
+                  final controller = TextEditingController(text: service.domains.join('\n'));
+                  final result = await showDialog<String>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: Text(_getSettingTitle(l10n, item.titleKey)),
+                      content: TextField(
+                        controller: controller,
+                        maxLines: 6,
+                        decoration: InputDecoration(hintText: _getSettingTitle(l10n, item.descriptionKey!)),
+                      ),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(l10n.cancel)),
+                        FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text), child: Text(l10n.confirm)),
+                      ],
+                    ),
+                  );
+                  controller.dispose();
+                  if (result != null) {
+                    await service.setDomains(result.split(RegExp(r'[\n,]')).map((v) => v.trim()).where((v) => v.isNotEmpty).toList());
+                  }
+                } else {
+                  final controller = TextEditingController(text: service.entries.map((entry) => '${entry.ip}${entry.port == null ? '' : ':${entry.port}'}').join('\n'));
+                  final result = await showDialog<String>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: Text(_getSettingTitle(l10n, item.titleKey)),
+                      content: TextField(controller: controller, maxLines: 6, decoration: InputDecoration(hintText: '1.2.3.4:443')),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(l10n.cancel)),
+                        FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text), child: Text(l10n.confirm)),
+                      ],
+                    ),
+                  );
+                  controller.dispose();
+                  if (result != null) {
+                    final entries = result.split(RegExp(r'[\n,]')).map((value) {
+                      final parts = value.trim().split(':');
+                      final port = parts.length > 1 ? int.tryParse(parts.last) : null;
+                      return IpOverrideEntry(ip: parts.first, port: port);
+                    }).where((entry) => entry.ip.isNotEmpty).toList();
+                    await service.setEntries(entries);
+                  }
+                }
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildConnectionStatusPreview(
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingItem item,
+  ) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([IpOverrideService.instance, ServerConnectionStatusService.instance]),
+      builder: (context, _) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Card(
+          child: ListTile(
+            leading: const Icon(Icons.network_check),
+            title: Text(_getSettingTitle(l10n, item.titleKey)),
+            subtitle: Text('${ServerConnectionStatusService.instance.phase.name} · ${IpOverrideService.instance.mode.name} · ${IpOverrideService.instance.entries.isEmpty ? l10n.settingsIpOverrideNoEntry : IpOverrideService.instance.entries.first.ip}'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ConnectivitySelfCheckScreen()),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Text(
@@ -1311,6 +1431,44 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsCustomThemeTitle;
       case 'settingsCustomThemeDesc':
         return l10n.settingsCustomThemeDesc;
+      case 'settingsEnableAnimationsTitle':
+        return l10n.settingsEnableAnimationsTitle;
+      case 'settingsEnableAnimationsDesc':
+        return l10n.settingsEnableAnimationsDesc;
+      case 'settingsWeakNetworkTitle':
+        return l10n.settingsWeakNetworkTitle;
+      case 'settingsWeakNetworkDesc':
+        return l10n.settingsWeakNetworkDesc;
+      case 'settingsDataSavingTitle':
+        return l10n.settingsDataSavingTitle;
+      case 'settingsDataSavingDesc':
+        return l10n.settingsDataSavingDesc;
+      case 'settingsIpOverrideTitle':
+        return l10n.settingsIpOverrideTitle;
+      case 'settingsIpOverrideDesc':
+        return l10n.settingsIpOverrideDesc;
+      case 'settingsIpOverrideOff':
+        return l10n.settingsIpOverrideOff;
+      case 'settingsIpOverrideMixed':
+        return l10n.settingsIpOverrideMixed;
+      case 'settingsIpOverrideComplete':
+        return l10n.settingsIpOverrideComplete;
+      case 'settingsIpOverrideDomainsTitle':
+        return l10n.settingsIpOverrideDomainsTitle;
+      case 'settingsIpOverrideDomainsDesc':
+        return l10n.settingsIpOverrideDomainsDesc;
+      case 'settingsIpOverrideEntriesTitle':
+        return l10n.settingsIpOverrideEntriesTitle;
+      case 'settingsIpOverrideEntriesDesc':
+        return l10n.settingsIpOverrideEntriesDesc;
+      case 'settingsConnectionStatusTitle':
+        return l10n.settingsConnectionStatusTitle;
+      case 'settingsConnectionStatusDesc':
+        return l10n.settingsConnectionStatusDesc;
+      case 'settingsConnectivitySelfCheckTitle':
+        return l10n.settingsConnectivitySelfCheckTitle;
+      case 'settingsConnectivitySelfCheckDesc':
+        return l10n.settingsConnectivitySelfCheckDesc;
       // Notifications
       case 'settingsSystemNotificationsTitle':
         return l10n.settingsSystemNotificationsTitle;

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/message_model.dart';
+import '../models/local_message_search_result.dart';
 
 class LocalMessageStore {
   static LocalMessageStore? _instance;
@@ -14,6 +15,8 @@ class LocalMessageStore {
   }
 
   void clearScope() => _scope = null;
+
+  String? get currentScope => _scope;
 
   String _requireScope() {
     final scope = _scope;
@@ -130,6 +133,35 @@ class LocalMessageStore {
     return stats.values.fold<int>(0, (sum, value) => sum + value.bytes);
   }
 
+  Future<Map<String, dynamic>> exportSnapshot() async {
+    final scope = _requireScope();
+    final prefs = await SharedPreferences.getInstance();
+    final prefix = 'touchfish_messages/$scope/';
+    final messages = <Map<String, dynamic>>[];
+    for (final key in prefs.getKeys().where((key) => key.startsWith(prefix))) {
+      final roomId = key.substring(prefix.length);
+      for (final message in await _loadMessages(prefs, scope, roomId)) {
+        messages.add({'roomId': roomId, 'messageKey': _messageKey(message), 'timestamp': message.timestamp.millisecondsSinceEpoch, 'payload': message.toJson()});
+      }
+    }
+    return {'server': scope, 'messages': messages};
+  }
+
+  Future<int> importSnapshot(Map<String, dynamic> snapshot) async {
+    final messages = snapshot['messages'];
+    if (messages is! List) return 0;
+    var count = 0;
+    for (final raw in messages.whereType<Map>()) {
+      final roomId = raw['roomId']?.toString();
+      final payload = raw['payload'];
+      if (roomId == null || payload is! Map) continue;
+      final message = ChatMessage.fromJson(Map<String, dynamic>.from(payload), activeUid: _scopeUid(_requireScope()));
+      await saveMessages(roomId, [message]);
+      count++;
+    }
+    return count;
+  }
+
   Future<String?> databasePath() async => null;
 
   Future<int?> getRoomSyncMid(String roomId) async {
@@ -159,5 +191,30 @@ class LocalMessageStore {
     for (final key in prefs.getKeys().where((key) => key.startsWith(prefix))) {
       await prefs.remove(key);
     }
+  }
+
+  Future<List<ChatMessage>> loadAllMessages(String roomId) async {
+    return loadMessages(roomId);
+  }
+
+  Future<List<LocalMessageSearchResult>> searchAllRooms(
+    String query, {
+    int limit = 200,
+  }) async {
+    final scope = _requireScope();
+    final prefs = await SharedPreferences.getInstance();
+    final prefix = 'touchfish_messages/$scope/';
+    final normalized = query.trim().toLowerCase();
+    final results = <LocalMessageSearchResult>[];
+    for (final key in prefs.getKeys().where((key) => key.startsWith(prefix))) {
+      final roomId = key.substring(prefix.length);
+      for (final message in await _loadMessages(prefs, scope, roomId)) {
+        if (message.text.toLowerCase().contains(normalized)) {
+          results.add(LocalMessageSearchResult(roomId: roomId, message: message));
+        }
+      }
+    }
+    results.sort((a, b) => b.message.timestamp.compareTo(a.message.timestamp));
+    return results.take(limit).toList();
   }
 }
