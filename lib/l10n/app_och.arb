@@ -1127,6 +1127,8 @@
   "settingsCloudFilesDescription": "管理上傳至服務器之文件",
   "settingsAppCache": "應用緩存",
   "settingsMediaCache": "媒體代理緩存",
+  "settingsFlutterCache": "Flutter 緩存",
+  "settingsClearAllCache": "清除全部緩存",
   "settingsClearCache": "清除",
   "settingsCacheCleared": "緩存已清除",
   "settingsLocalDatabase": "本地數據庫",

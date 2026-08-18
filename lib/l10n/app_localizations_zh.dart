@@ -2772,6 +2772,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsMediaCache => '媒体代理缓存';
 
   @override
+  String get settingsFlutterCache => 'Flutter 缓存';
+
+  @override
+  String get settingsClearAllCache => '清除全部缓存';
+
+  @override
   String get settingsClearCache => '清除';
 
   @override

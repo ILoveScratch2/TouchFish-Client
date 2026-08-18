@@ -2770,6 +2770,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsMediaCache => '媒體代理緩存';
 
   @override
+  String get settingsFlutterCache => 'Flutter 緩存';
+
+  @override
+  String get settingsClearAllCache => '清除全部緩存';
+
+  @override
   String get settingsClearCache => '清除';
 
   @override

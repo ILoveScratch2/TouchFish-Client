@@ -1128,6 +1128,8 @@
   "settingsCloudFilesDescription": "管理上传到服务器的文件",
   "settingsAppCache": "应用缓存",
   "settingsMediaCache": "媒体代理缓存",
+  "settingsFlutterCache": "Flutter 缓存",
+  "settingsClearAllCache": "清除全部缓存",
   "settingsClearCache": "清除",
   "settingsCacheCleared": "缓存已清除",
   "settingsLocalDatabase": "本地数据库",

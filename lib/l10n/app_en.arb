@@ -1165,6 +1165,8 @@
   "settingsCloudFilesDescription": "Manage files uploaded to the server",
   "settingsAppCache": "App Cache",
   "settingsMediaCache": "Media Proxy Cache",
+  "settingsFlutterCache": "Flutter Cache",
+  "settingsClearAllCache": "Clear all caches",
   "settingsClearCache": "Clear",
   "settingsCacheCleared": "Cache cleared",
   "settingsLocalDatabase": "Local Database",
