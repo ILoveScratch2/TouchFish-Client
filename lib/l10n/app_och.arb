@@ -1219,5 +1219,19 @@
   "forwardStay": "留於原位",
   "forwardSending": "轉發中...",
   "forwardSuccess": "轉發已成",
-  "forwardFailed": "轉發敗"
+  "forwardFailed": "轉發敗",
+
+  "updateAvailableTitle": "發現新版本",
+  "updateAvailableMessage": "現行版本：{currentVersion}\n新版本：{remoteVersion}\n即時更新否？",
+  "updateNow": "即時更新",
+  "updateLater": "稍後",
+  "updateDownloading": "正在下載更新...",
+  "updateChangelogTitle": "更新之誌",
+  "updateDownloadedTitle": "下載已成",
+  "updateExtractHint": "更新包已下載。請自行解壓並更替應用程式以完成更新。",
+  "updateDownloadFailedTitle": "下載敗",
+  "updateDownloadFailedMessage": "更新下載敗，請查網絡後再試。",
+  "updateUninstallTitle": "須先卸載舊版本",
+  "updateUninstallMessage": "安卓端更新須先卸載現有應用，請卸載後再安裝新 APK。",
+  "updateUninstallConfirm": "去卸載"
 }

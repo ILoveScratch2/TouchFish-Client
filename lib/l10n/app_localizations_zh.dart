@@ -2990,4 +2990,45 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get forwardFailed => '转发失败';
+
+  @override
+  String get updateAvailableTitle => '发现新版本';
+
+  @override
+  String updateAvailableMessage(String currentVersion, String remoteVersion) {
+    return '当前版本：$currentVersion\n最新版本：$remoteVersion\n是否立即更新？';
+  }
+
+  @override
+  String get updateNow => '立即更新';
+
+  @override
+  String get updateLater => '稍后';
+
+  @override
+  String get updateDownloading => '正在下载更新...';
+
+  @override
+  String get updateChangelogTitle => '更新日志';
+
+  @override
+  String get updateDownloadedTitle => '下载完成';
+
+  @override
+  String get updateExtractHint => '更新包已下载。请手动解压并替换应用后完成更新。';
+
+  @override
+  String get updateDownloadFailedTitle => '下载失败';
+
+  @override
+  String get updateDownloadFailedMessage => '更新下载失败，请检查网络后重试。';
+
+  @override
+  String get updateUninstallTitle => '需要先卸载旧版本';
+
+  @override
+  String get updateUninstallMessage => '安卓端更新需要先卸载当前应用，请先卸载后再安装新的 APK。';
+
+  @override
+  String get updateUninstallConfirm => '去卸载';
 }

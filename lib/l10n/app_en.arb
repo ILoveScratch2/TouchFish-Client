@@ -1257,5 +1257,25 @@
   "forwardStay": "Stay in current chat",
   "forwardSending": "Forwarding...",
   "forwardSuccess": "Forwarded",
-  "forwardFailed": "Forward failed"
+  "forwardFailed": "Forward failed",
+
+  "updateAvailableTitle": "New version available",
+  "updateAvailableMessage": "Current version: {currentVersion}\nLatest version: {remoteVersion}\nUpdate now?",
+  "@updateAvailableMessage": {
+    "placeholders": {
+      "currentVersion": {"type": "String"},
+      "remoteVersion": {"type": "String"}
+    }
+  },
+  "updateNow": "Update now",
+  "updateLater": "Later",
+  "updateDownloading": "Downloading update...",
+  "updateChangelogTitle": "Changelog",
+  "updateDownloadedTitle": "Download complete",
+  "updateExtractHint": "Update downloaded. Please extract the archive manually and replace the app to complete the update.",
+  "updateDownloadFailedTitle": "Download failed",
+  "updateDownloadFailedMessage": "Update download failed. Please check your network and try again.",
+  "updateUninstallTitle": "Uninstall old version first",
+  "updateUninstallMessage": "Android updates require uninstalling the current app first. Please uninstall before installing the new APK.",
+  "updateUninstallConfirm": "Uninstall"
 }

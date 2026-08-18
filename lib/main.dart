@@ -18,6 +18,9 @@ import 'services/auth_state.dart';
 import 'services/app_notification_service.dart';
 import 'services/chat_data_service.dart';
 import 'services/chat_ws_service.dart';
+import 'services/app_update_service.dart';
+import 'services/app_update_flow.dart';
+import 'services/background_permission_service.dart';
 import 'services/desktop_app_lifecycle_service.dart';
 import 'services/forum_pending_service.dart';
 import 'services/single_instance_service.dart';
@@ -365,7 +368,30 @@ class _TouchFishAppState extends State<TouchFishApp> {
       if (!mounted) return;
       _startSavedSessionRestoreIfNeeded();
       _startNotificationPollingIfLoggedIn();
+      unawaited(_runStartupChecks());
     });
+  }
+
+  Future<void> _runStartupChecks() async {
+    // Android: request background (battery-optimization) permission.
+    if (!kIsWeb && Platform.isAndroid) {
+      unawaited(
+        BackgroundPermissionService.instance.requestBackgroundPermissions(),
+      );
+    }
+
+    // Non-web: check for updates once per launch.
+    if (!kIsWeb) {
+      final result = await AppUpdateService.instance.checkForUpdate();
+      if (!mounted || !result.hasUpdate) return;
+      final navigatorContext = _router.routerDelegate.navigatorKey.currentContext;
+      if (navigatorContext == null || !navigatorContext.mounted) return;
+      await AppUpdateFlow.instance.promptIfNeeded(
+        navigatorContext,
+        remoteVersion: result.remoteVersion,
+        currentVersion: result.currentVersion,
+      );
+    }
   }
 
   void _startNotificationPollingIfLoggedIn() {
