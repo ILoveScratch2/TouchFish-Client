@@ -1292,15 +1292,13 @@
   "updateExtractHint": "更新包已下载。请手动解压并替换应用后完成更新。",
   "updateDownloadFailedTitle": "下载失败",
   "updateDownloadFailedMessage": "更新下载失败，请检查网络后重试。",
-  "updateUninstallTitle": "需要先卸载旧版本",
-  "updateUninstallMessage": "安卓端更新需要先卸载当前应用，请先卸载后再安装新的 APK。",
-  "updateUninstallMessageWithPath": "安卓端更新需要先卸载当前应用。\nAPK 将保存到：\n{apkPath}\n\n请先卸载后再安装新的 APK。",
-  "@updateUninstallMessageWithPath": {
+  "updateDownloadStartTitle": "开始下载更新",
+  "updateApkSaveHint": "APK 将保存到以下位置：\n{apkPath}",
+  "@updateApkSaveHint": {
     "placeholders": {
       "apkPath": {
         "type": "String"
       }
     }
-  },
-  "updateUninstallConfirm": "去卸载"
+  }
 }

@@ -159,9 +159,9 @@ class AppUpdateFlow {
   }
 
   /// Android 更新流程：
-  /// 1. 先弹「需要先卸载」确认框，并在框内展示 APK 保存位置；
+  /// 1. 先弹确认框，展示 APK 将保存的位置；
   /// 2. 用户确认后才开始下载；
-  /// 3. 下载完成后进程不自杀，打开文件管理器跳转到 APK 所在位置。
+  /// 3. 下载完成后直接运行 APK（触发系统安装器），进程不自杀。
   Future<void> _performAndroidUpdateFlow(
     BuildContext context,
     String downloadUrl,
@@ -188,19 +188,19 @@ class AppUpdateFlow {
     }
     if (!context.mounted) return;
 
-    // 第一步：确认「先卸载」的提示框，同时展示 APK 将保存的位置。
+    // 第一步：确认下载提示框，展示 APK 将保存的位置。
     final confirmed = await showTouchFishInfoDialog<bool>(
       context,
-      title: l10n?.updateUninstallTitle,
-      message: l10n?.updateUninstallMessageWithPath(apkPath) ??
-          'Please uninstall the current app first.\nAPK will be saved to: $apkPath',
+      title: l10n?.updateDownloadStartTitle ?? 'Start download',
+      message: l10n?.updateApkSaveHint(apkPath) ??
+          'The APK will be downloaded to:\n$apkPath',
       actions: [
         TouchFishDialogAction(
-          label: l10n?.commonCancel ?? 'Cancel',
+          label: l10n?.updateLater ?? 'Later',
           result: false,
         ),
         TouchFishDialogAction(
-          label: l10n?.updateUninstallConfirm ?? 'Uninstall',
+          label: l10n?.updateNow ?? 'Download now',
           result: true,
           isPrimary: true,
         ),
@@ -250,8 +250,8 @@ class AppUpdateFlow {
       return;
     }
 
-    // 第三步：下载完成，打开文件管理器跳转到 APK 所在位置。
-    // 注意：Android 端进程不自杀退出，由用户自行卸载后安装。
+    // 第三步：下载完成，直接打开 APK 触发系统安装器。
+    // 注意：Android 端进程不自杀退出。
     if (context.mounted) {
       await service.revealFile(path);
     }

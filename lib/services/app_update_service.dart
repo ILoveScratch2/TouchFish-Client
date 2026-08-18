@@ -200,16 +200,16 @@ class AppUpdateService {
   /// 计算下载文件的完整保存路径（用于下载前的界面展示）。
   static Future<String> downloadPathFor(String downloadUrl) async {
     final fileName = downloadUrl.split('/').last;
-    var directory = await getApplicationSupportDirectory();
-    // On Android, save to a user-accessible public location so the APK is
-    // reachable from the file manager even after this app is uninstalled.
+    Directory directory;
     if (!kIsWeb && Platform.isAndroid) {
-      final external = await getExternalStorageDirectory();
-      if (external != null) {
-        directory = Directory(
-          '${external.path}${Platform.pathSeparator}TouchFish',
-        );
-      }
+      // Android：保存到公共 Download 目录（应用文件之外）。
+      // 注意不能用 getDownloadsDirectory() —— 它在 Android 10+ 返回
+      // app 专属目录（卸载即删）。这里固定使用公共 /Download/TouchFish，
+      // 配合 Manifest 中的 MANAGE_EXTERNAL_STORAGE / WRITE_EXTERNAL_STORAGE，
+      // 即使卸载 TouchFish 后 APK 仍然保留，方便用户随时安装。
+      directory = Directory('/storage/emulated/0/Download/TouchFish');
+    } else {
+      directory = await getApplicationSupportDirectory();
     }
     await directory.create(recursive: true);
     return '${directory.path}${Platform.pathSeparator}$fileName';

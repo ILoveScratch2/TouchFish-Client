@@ -40,12 +40,19 @@ class BackgroundNotificationService : Service() {
         fun start(context: Context) {
             if (running.get()) return
             val i = Intent(context, BackgroundNotificationService::class.java).setAction(ACTION_START)
-            context.startService(i)
+            // Android 8.0+ 禁止纯后台 startService；使用 startForegroundService，
+            // onStartCommand 中会在 5 秒内调用 startForeground。开机自启（BOOT_COMPLETED）
+            // 与前台应用场景均满足前台服务启动豁免。
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(i)
+            } else {
+                context.startService(i)
+            }
         }
 
         fun stop(context: Context) {
             val i = Intent(context, BackgroundNotificationService::class.java).setAction(ACTION_STOP)
-            context.startService(i)
+            context.stopService(i)
         }
     }
 
@@ -81,10 +88,10 @@ class BackgroundNotificationService : Service() {
     private fun startForegroundCompat() {
         val n = Notification.Builder(this, CHANNEL_ID)
             .setContentTitle("TouchFish")
-            .setContentText("Background notification active")
             .setSmallIcon(R.drawable.ic_notification)
             .setOngoing(true)
-            .setPriority(Notification.PRIORITY_LOW)
+            .setShowBadge(false)
+            .setPriority(Notification.PRIORITY_MIN)
             .build()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(SERVICE_NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
@@ -94,8 +101,9 @@ class BackgroundNotificationService : Service() {
     }
 
     private fun createChannel() {
-        val ch = NotificationChannel(CHANNEL_ID, "TouchFish Background", NotificationManager.IMPORTANCE_LOW)
+        val ch = NotificationChannel(CHANNEL_ID, "TouchFish Background", NotificationManager.IMPORTANCE_MIN)
         ch.description = "TouchFish background message notifications"
+        ch.setShowBadge(false)
         getSystemService(NotificationManager::class.java).createNotificationChannel(ch)
     }
 
@@ -146,7 +154,14 @@ class BackgroundNotificationService : Service() {
         if (isAppForeground()) return
         val mgr = getSystemService(NotificationManager::class.java)
         when (level) {
-            "1" -> mgr.notify(9001, simpleNotif("TouchFish", "${messages.size} new messages").build())
+            "1" -> {
+                // 一级通知：聚合统计联系人数与消息数，如「3 个联系人发来了 5 条消息」。
+                val senders = messages.map { extractSender(it) }.toSet()
+                mgr.notify(
+                    9001,
+                    simpleNotif("TouchFish", "${senders.size} 个联系人发来了 ${messages.size} 条消息").build()
+                )
+            }
             "2" -> {
                 val seen = HashSet<String>()
                 for (m in messages.reversed()) {

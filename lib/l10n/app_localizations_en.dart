@@ -3278,17 +3278,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Update download failed. Please check your network and try again.';
 
   @override
-  String get updateUninstallTitle => 'Uninstall old version first';
+  String get updateDownloadStartTitle => 'Start update download';
 
   @override
-  String get updateUninstallMessage =>
-      'Android updates require uninstalling the current app first. Please uninstall before installing the new APK.';
-
-  @override
-  String updateUninstallMessageWithPath(String apkPath) {
-    return 'Android updates require uninstalling the current app first.\nThe APK will be saved to:\n$apkPath\n\nPlease uninstall before installing the new APK.';
+  String updateApkSaveHint(String apkPath) {
+    return 'The APK will be saved to:\n$apkPath';
   }
-
-  @override
-  String get updateUninstallConfirm => 'Uninstall';
 }

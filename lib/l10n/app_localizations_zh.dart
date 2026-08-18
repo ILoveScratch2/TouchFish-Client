@@ -3151,16 +3151,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get updateDownloadFailedMessage => '更新下载失败，请检查网络后重试。';
 
   @override
-  String get updateUninstallTitle => '需要先卸载旧版本';
+  String get updateDownloadStartTitle => '开始下载更新';
 
   @override
-  String get updateUninstallMessage => '安卓端更新需要先卸载当前应用，请先卸载后再安装新的 APK。';
-
-  @override
-  String updateUninstallMessageWithPath(String apkPath) {
-    return '安卓端更新需要先卸载当前应用。\nAPK 将保存到：\n$apkPath\n\n请先卸载后再安装新的 APK。';
+  String updateApkSaveHint(String apkPath) {
+    return 'APK 将保存到以下位置：\n$apkPath';
   }
-
-  @override
-  String get updateUninstallConfirm => '去卸载';
 }

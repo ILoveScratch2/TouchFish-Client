@@ -1267,15 +1267,13 @@
   "updateExtractHint": "更新包已下載。請自行解壓並更替應用程式以完成更新。",
   "updateDownloadFailedTitle": "下載敗",
   "updateDownloadFailedMessage": "更新下載敗，請查網絡後再試。",
-  "updateUninstallTitle": "須先卸載舊版本",
-  "updateUninstallMessage": "安卓端更新須先卸載現有應用，請卸載後再安裝新 APK。",
-  "updateUninstallMessageWithPath": "安卓端更新須先卸載現有應用。\nAPK 將存於：\n{apkPath}\n\n請先卸載後再安裝新 APK。",
-  "@updateUninstallMessageWithPath": {
+  "updateDownloadStartTitle": "始下載更新",
+  "updateApkSaveHint": "APK 將存於：\n{apkPath}",
+  "@updateApkSaveHint": {
     "placeholders": {
       "apkPath": {
         "type": "String"
       }
     }
-  },
-  "updateUninstallConfirm": "去卸載"
+  }
 }
