@@ -683,6 +683,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get adminServerFieldSingleGroupMaxPeople => '单群最大人数';
 
   @override
+  String get adminServerFieldDefaultJoinTargets => '默认好友和群组';
+
+  @override
+  String get adminServerFieldDefaultJoinTargetsDescription =>
+      '新用户会自动与 U 目标成为好友并加入 G 目标。多个值可用空格、逗号或换行分隔，例如：U1 U2 G1。';
+
+  @override
   String get adminServerFieldMaxFileSize => '最大文件大小';
 
   @override

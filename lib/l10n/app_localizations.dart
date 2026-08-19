@@ -1426,6 +1426,12 @@ abstract class AppLocalizations {
   /// **'Single Group Max Members'**
   String get adminServerFieldSingleGroupMaxPeople;
 
+  /// Default friends and groups assigned to newly created users.
+  String get adminServerFieldDefaultJoinTargets;
+
+  /// Input format description for default friends and groups.
+  String get adminServerFieldDefaultJoinTargetsDescription;
+
   /// No description provided for @adminServerFieldMaxFileSize.
   ///
   /// In en, this message translates to:

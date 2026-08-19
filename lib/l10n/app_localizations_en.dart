@@ -727,6 +727,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminServerFieldSingleGroupMaxPeople => 'Single Group Max Members';
 
   @override
+  String get adminServerFieldDefaultJoinTargets => 'Default Friends and Groups';
+
+  @override
+  String get adminServerFieldDefaultJoinTargetsDescription =>
+      'New users automatically become friends with U targets and join G targets. Separate multiple values with spaces, commas, or new lines, for example: U1 U2 G1.';
+
+  @override
   String get adminServerFieldMaxFileSize => 'Max File Size';
 
   @override

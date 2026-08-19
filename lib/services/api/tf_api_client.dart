@@ -114,6 +114,7 @@ class TfServerConfig {
   final bool? smtpUseSsl;
   final bool? reverseProxyEnabled;
   final int? proxyCount;
+  final List<String> defaultJoinTargets;
 
   const TfServerConfig({
     required this.captcha,
@@ -142,6 +143,7 @@ class TfServerConfig {
     this.smtpUseSsl,
     this.reverseProxyEnabled,
     this.proxyCount,
+    this.defaultJoinTargets = const [],
   });
 
   static int _parseIntValue(dynamic value, int fallback) {
@@ -206,6 +208,9 @@ class TfServerConfig {
       smtpUseSsl: json['smtp_use_ssl'] as bool?,
       reverseProxyEnabled: json['reverse_proxy_enabled'] as bool?,
       proxyCount: _parseOptionalIntValue(json['proxy_count']),
+      defaultJoinTargets: (json['default_join_targets'] as List<dynamic>? ?? const [])
+          .map((value) => value.toString())
+          .toList(),
     );
   }
 }
@@ -842,6 +847,7 @@ class TfApiClient {
     bool? smtpUseSsl,
     bool? reverseProxyEnabled,
     int? proxyCount,
+    List<String>? defaultJoinTargets,
   }) async {
     final result = await secretPost(
       '/auth/server_settings/update',
@@ -866,6 +872,8 @@ class TfApiClient {
         if (reverseProxyEnabled != null)
           'reverse_proxy_enabled': reverseProxyEnabled,
         if (proxyCount != null) 'proxy_count': proxyCount,
+        if (defaultJoinTargets != null)
+          'default_join_targets': defaultJoinTargets,
       },
       uid: uid,
       password: password,

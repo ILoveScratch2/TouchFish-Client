@@ -255,6 +255,8 @@
   "adminServerFileLastTimeDescription": "其值須大於等於零。",
   "adminServerFieldGroupsLimit": "群數之限",
   "adminServerFieldSingleGroupMaxPeople": "單群至多人數",
+  "adminServerFieldDefaultJoinTargets": "默認好友及羣組",
+  "adminServerFieldDefaultJoinTargetsDescription": "新用戶會自動與 U 目標成為好友並加入 G 目標。多值可用空格、逗號或換行分隔，例如：U1 U2 G1。",
   "adminServerFieldMaxFileSize": "文件至大之量",
   "adminServerFieldMaxMessageLength": "消息至大長度",
   "adminServerFieldMaxMessageLengthDescription": "每條消息最多可輸之字數（至少為 1）。",
