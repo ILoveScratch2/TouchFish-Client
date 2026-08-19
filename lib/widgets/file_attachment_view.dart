@@ -120,6 +120,7 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
     try {
       final result = await downloadFile(await _url(), _attachment.fileName);
       if (!mounted) return;
+      if (result.cancelled) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

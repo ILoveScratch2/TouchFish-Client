@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:touchfish_client/models/app_notification.dart';
 import 'package:touchfish_client/models/notification_model.dart';
@@ -123,6 +124,46 @@ void main() {
     expect(tester.takeException(), isNull);
     AppNotificationService.instance.clear();
     await tester.pump();
+  });
+
+  testWidgets('opening a chat notification replaces the forum route', (
+    tester,
+  ) async {
+    final router = GoRouter(
+      initialLocation: '/forum',
+      routes: [
+        GoRoute(
+          path: '/forum',
+          builder: (context, state) => const Text('Forum'),
+        ),
+        GoRoute(
+          path: '/chat/:roomId',
+          builder: (context, state) => Text(
+            'Chat ${state.pathParameters['roomId']}',
+          ),
+        ),
+      ],
+    );
+    addTearDown(() {
+      AppNotificationService.instance.attachRouterForTesting(null);
+      router.dispose();
+    });
+    AppNotificationService.instance.attachRouterForTesting(router);
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    AppNotificationService.instance.open(
+      const AppNotification(
+        id: 'forum-to-chat',
+        title: 'Message',
+        body: 'Body',
+        route: '/chat/U1',
+        topic: 'message.private',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Chat U1'), findsOneWidget);
+    expect(router.canPop(), isFalse);
   });
 
   test('notification test actions honor global and chat settings', () async {
