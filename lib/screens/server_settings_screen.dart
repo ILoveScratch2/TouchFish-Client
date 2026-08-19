@@ -31,6 +31,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   final _verifyEmailController = TextEditingController();
   final _emailPasswordController = TextEditingController();
   final _proxyCountController = TextEditingController();
+  final _defaultJoinTargetsController = TextEditingController();
 
   TfServerConfig? _settings;
   bool _captcha = false;
@@ -63,6 +64,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     _verifyEmailController.dispose();
     _emailPasswordController.dispose();
     _proxyCountController.dispose();
+    _defaultJoinTargetsController.dispose();
     super.dispose();
   }
 
@@ -95,6 +97,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     _proxyCountController.text = (settings.proxyCount ?? 1).toString();
     _verifyEmailController.text = settings.verifyEmail ?? '';
     _emailPasswordController.clear();
+    _defaultJoinTargetsController.text = settings.defaultJoinTargets.join(' ');
   }
 
   Future<void> _loadSettings({bool showError = false}) async {
@@ -245,6 +248,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       _proxyCountController.text,
       minimum: 0,
     );
+    final defaultJoinTargets = _parseDefaultJoinTargets(
+      _defaultJoinTargetsController.text,
+    );
 
     if (serverName.isEmpty ||
         fileLastTime == null ||
@@ -257,6 +263,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         dailyStickerPackLimit == null ||
         maxStickerSize == null ||
         smtpPort == null ||
+        defaultJoinTargets == null ||
         (_reverseProxyEnabled && proxyCount == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -345,6 +352,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         smtpUseSsl: _smtpUseSsl,
         reverseProxyEnabled: _reverseProxyEnabled,
         proxyCount: _reverseProxyEnabled ? proxyCount : 1,
+        defaultJoinTargets: defaultJoinTargets,
       );
 
       if (!mounted) {
@@ -387,6 +395,17 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         ),
       );
     }
+  }
+
+  List<String>? _parseDefaultJoinTargets(String raw) {
+    final targets = <String>[];
+    for (final part in raw.split(RegExp(r'[\s,]+'))) {
+      final target = part.trim().toUpperCase();
+      if (target.isEmpty) continue;
+      if (!RegExp(r'^[UG][1-9][0-9]*$').hasMatch(target)) return null;
+      if (!targets.contains(target)) targets.add(target);
+    }
+    return targets;
   }
 
   Widget _sectionHeader(BuildContext context, String title) {
@@ -529,6 +548,23 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
             labelText: l10n.adminServerFieldSingleGroupMaxPeople,
             helperText: l10n.adminServerUnlimitedHint,
             icon: Icons.group_outlined,
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: TextField(
+              controller: _defaultJoinTargetsController,
+              minLines: 2,
+              maxLines: 4,
+              textCapitalization: TextCapitalization.characters,
+              decoration: InputDecoration(
+                labelText: l10n.adminServerFieldDefaultJoinTargets,
+                helperText: l10n.adminServerFieldDefaultJoinTargetsDescription,
+                prefixIcon: const Icon(Icons.person_add_alt_1_outlined),
+                border: const OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
+            ),
           ),
           const SizedBox(height: 20),
           const Divider(height: 1),

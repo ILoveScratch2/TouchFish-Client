@@ -684,6 +684,13 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminServerFieldSingleGroupMaxPeople => '單群至多人數';
 
   @override
+  String get adminServerFieldDefaultJoinTargets => '默認好友及羣組';
+
+  @override
+  String get adminServerFieldDefaultJoinTargetsDescription =>
+      '新用戶會自動與 U 目標成為好友並加入 G 目標。多值可用空格、逗號或換行分隔，例如：U1 U2 G1。';
+
+  @override
   String get adminServerFieldMaxFileSize => '文件至大之量';
 
   @override
