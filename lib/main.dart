@@ -373,8 +373,10 @@ class _TouchFishAppState extends State<TouchFishApp> {
     _wasLoggedIn = AuthState.instance.isLoggedIn;
     AuthState.instance.sessionListenable.addListener(_onAuthStateChanged);
     unawaited(AppNotificationService.instance.initialize(_router));
+    BackgroundPermissionService.instance.installNotificationRouteHandler();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      unawaited(_openPendingNotificationRoute());
       _startSavedSessionRestoreIfNeeded();
       _startNotificationPollingIfLoggedIn();
       unawaited(_runStartupChecks());
@@ -415,7 +417,22 @@ class _TouchFishAppState extends State<TouchFishApp> {
 
   void _startAndroidBackgroundServiceIfNeeded() {
     if (kIsWeb || !Platform.isAndroid) return;
-    unawaited(BackgroundPermissionService.instance.startBackgroundService());
+    unawaited(_configureAndStartAndroidBackgroundService());
+  }
+
+  Future<void> _openPendingNotificationRoute() async {
+    final route = await BackgroundPermissionService.instance
+        .takePendingNotificationRoute();
+    if (route != null && route.startsWith('/')) {
+      AppNotificationService.instance.openRoute(route, replace: true);
+    }
+  }
+
+  Future<void> _configureAndStartAndroidBackgroundService() async {
+    final configured = await BackgroundPermissionService.instance
+        .syncBackgroundServiceConfig();
+    if (!configured) return;
+    await BackgroundPermissionService.instance.startBackgroundService();
   }
 
   @override
@@ -439,7 +456,13 @@ class _TouchFishAppState extends State<TouchFishApp> {
       AppNotificationService.instance.clear();
       unawaited(ChatWsService.instance.disconnect());
       unawaited(ChatDataService.instance.reset());
+      unawaited(_stopAndroidBackgroundService());
     }
+  }
+
+  Future<void> _stopAndroidBackgroundService() async {
+    await BackgroundPermissionService.instance.stopBackgroundService();
+    await BackgroundPermissionService.instance.clearBackgroundServiceConfig();
   }
 
   void _startSavedSessionRestoreIfNeeded() {

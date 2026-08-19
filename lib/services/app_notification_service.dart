@@ -14,8 +14,26 @@ import '../models/notification_level.dart';
 import '../models/settings_service.dart';
 import '../utils/notification_avatar_attachment.dart';
 import '../utils/talker.dart';
+import 'inline_reply_service.dart';
 
 const appNotificationBaseDuration = Duration(seconds: 5);
+
+const androidInlineReplyActions = [
+  AndroidNotificationAction(
+    'reply',
+    '回复',
+    inputs: [AndroidNotificationActionInput(label: '输入回复')],
+    allowGeneratedReplies: true,
+    cancelNotification: false,
+    semanticAction: SemanticAction.reply,
+  ),
+];
+
+@pragma('vm:entry-point')
+void onNotificationActionBackground(NotificationResponse response) {
+  WidgetsFlutterBinding.ensureInitialized();
+  unawaited(InlineReplyService.handle(response));
+}
 
 class AppNotificationItem {
   final AppNotification notification;
@@ -165,6 +183,8 @@ class AppNotificationService extends ChangeNotifier
       await _localNotifications.initialize(
         settings,
         onDidReceiveNotificationResponse: _onNotificationResponse,
+        onDidReceiveBackgroundNotificationResponse:
+            onNotificationActionBackground,
       );
       _localNotificationsReady = true;
       await _requestPermissionIfEnabled();
@@ -173,7 +193,10 @@ class AppNotificationService extends ChangeNotifier
       final payload = launchDetails?.notificationResponse?.payload;
       if (launchDetails?.didNotificationLaunchApp == true && payload != null) {
         WidgetsBinding.instance.addPostFrameCallback(
-          (_) => openRoute(payload, replace: true),
+          (_) => openRoute(
+            AppNotification.parsePayload(payload).route,
+            replace: true,
+          ),
         );
       }
     } catch (error, stackTrace) {
@@ -340,6 +363,10 @@ class AppNotificationService extends ChangeNotifier
         'notificationSound',
         true,
       ),
+      actions:
+          level == NotificationLevel.perSender && notification.canReply
+              ? androidInlineReplyActions
+              : null,
     );
 
     final details = NotificationDetails(android: androidDetails);
@@ -350,7 +377,7 @@ class AppNotificationService extends ChangeNotifier
         notification.title,
         body,
         details,
-        payload: notification.route,
+        payload: notification.payload,
       );
     } catch (error, stackTrace) {
       talker.error('Failed to show aggregated system notification', error, stackTrace);
@@ -535,6 +562,9 @@ class AppNotificationService extends ChangeNotifier
         priority: androidDetails.priority,
         playSound: playSound,
         largeIcon: senderAvatar,
+        actions: notification.canReply
+            ? androidInlineReplyActions
+            : null,
       ),
       iOS: DarwinNotificationDetails(
         presentAlert: true,
@@ -566,7 +596,7 @@ class AppNotificationService extends ChangeNotifier
         notification.title,
         notification.body,
         details,
-        payload: notification.route,
+        payload: notification.payload,
       );
       return true;
     } catch (error, stackTrace) {
@@ -584,8 +614,12 @@ class AppNotificationService extends ChangeNotifier
   }
 
   void _onNotificationResponse(NotificationResponse response) {
+    if (response.actionId == 'reply') {
+      unawaited(InlineReplyService.handle(response));
+      return;
+    }
     final payload = response.payload;
-    if (payload != null) openRoute(payload);
+    if (payload != null) openRoute(AppNotification.parsePayload(payload).route);
   }
 
   void _onSettingsChanged() {

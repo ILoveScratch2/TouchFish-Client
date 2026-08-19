@@ -126,6 +126,27 @@ void main() {
     await tester.pump();
   });
 
+  test('message notification payload preserves its reply room', () {
+    final appNotification = AppNotification.fromNotificationInfo(
+      notification(
+        event: 'message.plain',
+        roomId: 'G8',
+        senderRaw: 'G8U12',
+      ),
+    );
+
+    expect(appNotification.roomId, 'G8');
+    expect(appNotification.canReply, isTrue);
+    expect(AppNotification.parsePayload(appNotification.payload).route, '/chat/G8');
+    expect(AppNotification.parsePayload(appNotification.payload).roomId, 'G8');
+  });
+
+  test('legacy route-only notification payload remains supported', () {
+    final parsed = AppNotification.parsePayload('/chat/U12');
+    expect(parsed.route, '/chat/U12');
+    expect(parsed.roomId, isNull);
+  });
+
   testWidgets('opening a chat notification replaces the forum route', (
     tester,
   ) async {
