@@ -12,6 +12,7 @@ import java.io.File
 class MainActivity : FlutterActivity() {
     private val channelName = "touchfish/background_notification"
     private var channel: MethodChannel? = null
+    private var pendingNotificationRoute: String? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -19,12 +20,31 @@ class MainActivity : FlutterActivity() {
         channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
         channel?.setMethodCallHandler { call, result ->
             when (call.method) {
+                "takePendingNotificationRoute" -> {
+                    result.success(pendingNotificationRoute)
+                    pendingNotificationRoute = null
+                }
                 "startBackgroundService" -> {
                     BackgroundNotificationService.start(this)
                     result.success(true)
                 }
                 "stopBackgroundService" -> {
                     BackgroundNotificationService.stop(this)
+                    result.success(true)
+                }
+                "configureBackgroundService" -> {
+                    val uid = call.argument<Number>("uid")?.toLong()
+                    val password = call.argument<String>("password")
+                    val baseUrl = call.argument<String>("baseUrl")
+                    if (uid == null || uid <= 0 || password.isNullOrEmpty() || baseUrl.isNullOrEmpty()) {
+                        result.error("BAD_ARG", "uid, password and baseUrl required", null)
+                    } else {
+                        NativeNotificationConfig.save(this, uid, password, baseUrl)
+                        result.success(true)
+                    }
+                }
+                "clearBackgroundServiceConfig" -> {
+                    NativeNotificationConfig.clear(this)
                     result.success(true)
                 }
                 "saveFileToDownloads" -> {
@@ -44,6 +64,21 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        dispatchNotificationIntent(intent)
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        dispatchNotificationIntent(intent)
+    }
+
+    private fun dispatchNotificationIntent(intent: android.content.Intent?) {
+        val data = intent?.data ?: return
+        if (data.scheme != "touchfish" || data.path?.startsWith("/chat/") != true) return
+        val route = data.path ?: return
+        pendingNotificationRoute = route
+        channel?.invokeMethod("openNotificationRoute", route)
     }
 
     /**
@@ -90,11 +125,6 @@ class MainActivity : FlutterActivity() {
         val dest = File(dir, displayName)
         src.copyTo(dest, overwrite = true)
         return dest.absolutePath
-    }
-
-    override fun onStop() {
-        super.onStop()
-        BackgroundNotificationService.setAppForeground(false)
     }
 
     override fun onStart() {

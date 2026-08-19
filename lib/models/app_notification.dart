@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'notification_model.dart';
 
 class AppNotification {
@@ -9,6 +11,7 @@ class AppNotification {
   final String route;
   final String topic;
   final String? senderKey;
+  final String? roomId;
 
   const AppNotification({
     required this.id,
@@ -19,6 +22,7 @@ class AppNotification {
     this.subtitle,
     this.avatarUrl,
     this.senderKey,
+    this.roomId,
   });
 
   factory AppNotification.fromNotificationInfo(NotificationInfo notification) {
@@ -33,8 +37,17 @@ class AppNotification {
       route: routeFor(notification),
       topic: notification.event,
       senderKey: notification.senderRaw,
+      roomId: roomIdFor(notification),
     );
   }
+
+  bool get canReply =>
+      roomId != null && topic.startsWith('message.') && topic != 'message.summary';
+
+  String get payload => jsonEncode({
+    'route': route,
+    if (roomId != null) 'room_id': roomId,
+  });
 
   AppNotification copyWith({String? avatarUrl}) => AppNotification(
     id: id,
@@ -45,7 +58,33 @@ class AppNotification {
     subtitle: subtitle,
     avatarUrl: avatarUrl ?? this.avatarUrl,
     senderKey: senderKey,
+    roomId: roomId,
   );
+
+  static ({String route, String? roomId}) parsePayload(String payload) {
+    try {
+      final decoded = jsonDecode(payload);
+      if (decoded is Map) {
+        final route = decoded['route'];
+        final roomId = decoded['room_id'];
+        if (route is String) {
+          return (
+            route: route,
+            roomId: roomId is String && roomId.isNotEmpty ? roomId : null,
+          );
+        }
+      }
+    } catch (_) {}
+    return (route: payload, roomId: null);
+  }
+
+  static String? roomIdFor(NotificationInfo notification) {
+    if (!notification.isMessageEvent) return null;
+    if (notification.roomId?.isNotEmpty == true) return notification.roomId;
+    if (notification.groupId != null) return 'G${notification.groupId}';
+    if (notification.senderUid != null) return 'U${notification.senderUid}';
+    return null;
+  }
 
   static String routeFor(NotificationInfo notification) {
     final actionUri = notification.meta['action_uri'];
@@ -58,13 +97,7 @@ class AppNotification {
     }
 
     if (notification.isMessageEvent) {
-      final roomId = notification.roomId?.isNotEmpty == true
-          ? notification.roomId!
-          : notification.groupId != null
-          ? 'G${notification.groupId}'
-          : notification.senderUid != null
-          ? 'U${notification.senderUid}'
-          : null;
+      final roomId = roomIdFor(notification);
       if (roomId != null) return '/chat/$roomId';
     }
     if (notification.isAnnouncementEvent) return '/announcement';

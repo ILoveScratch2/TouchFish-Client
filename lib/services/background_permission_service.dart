@@ -5,6 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../utils/talker.dart';
+import 'api/tf_api_client.dart';
+import 'auth_state.dart';
+import 'app_notification_service.dart';
 
 /// Manages Android permissions that let the app keep running in the
 /// background (battery-optimization exemption) and the foreground
@@ -19,8 +22,31 @@ class BackgroundPermissionService {
     'touchfish/background_notification',
   );
 
+  static bool _routeHandlerInstalled = false;
+
   bool _requested = false;
   bool _serviceStarted = false;
+
+  void installNotificationRouteHandler() {
+    if (_routeHandlerInstalled) return;
+    _routeHandlerInstalled = true;
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'openNotificationRoute' && call.arguments is String) {
+        AppNotificationService.instance.openRoute(call.arguments as String);
+      }
+      return null;
+    });
+  }
+
+  Future<String?> takePendingNotificationRoute() async {
+    if (kIsWeb || !Platform.isAndroid) return null;
+    try {
+      return await _channel.invokeMethod<String>('takePendingNotificationRoute');
+    } catch (error, stackTrace) {
+      talker.error('Failed to read pending notification route', error, stackTrace);
+      return null;
+    }
+  }
 
   /// Requests battery-optimization exemption on Android so the app is
   /// less likely to be killed while running in the background.
@@ -64,6 +90,29 @@ class BackgroundPermissionService {
     }
   }
 
+  Future<bool> syncBackgroundServiceConfig() async {
+    if (kIsWeb || !Platform.isAndroid) return false;
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return false;
+    try {
+      final baseUrl = await TfApiClient.instance.getBaseUrl();
+      await _channel.invokeMethod('configureBackgroundService', {
+        'uid': uid,
+        'password': password,
+        'baseUrl': baseUrl,
+      });
+      return true;
+    } catch (error, stackTrace) {
+      talker.error(
+        'Failed to configure Android background notification service',
+        error,
+        stackTrace,
+      );
+      return false;
+    }
+  }
+
   /// Stops the Android background notification service.
   Future<void> stopBackgroundService() async {
     if (kIsWeb || !Platform.isAndroid) return;
@@ -74,6 +123,19 @@ class BackgroundPermissionService {
     } catch (error, stackTrace) {
       talker.error(
         'Failed to stop Android background notification service',
+        error,
+        stackTrace,
+      );
+    }
+  }
+
+  Future<void> clearBackgroundServiceConfig() async {
+    if (kIsWeb || !Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod('clearBackgroundServiceConfig');
+    } catch (error, stackTrace) {
+      talker.error(
+        'Failed to clear Android background notification configuration',
         error,
         stackTrace,
       );
