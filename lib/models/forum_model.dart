@@ -182,6 +182,10 @@ class ForumPost {
     this.attachments = const [],
   });
 
+  static int compareNewestFirst(ForumPost left, ForumPost right) {
+    return right.createdAt.compareTo(left.createdAt);
+  }
+
   factory ForumPost.fromJson(Map<String, dynamic> json) {
     final createdRaw = json['created_at'] ?? json['send_time'] ?? 0;
     final createdAt = createdRaw is num

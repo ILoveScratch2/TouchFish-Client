@@ -112,7 +112,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
       final allPosts = results[1] as List<ForumPost>;
       _pinnedPosts = allPosts.where((p) => p.isPinned).toList();
-      _posts = allPosts.where((p) => !p.isPinned).toList();
+      _posts = allPosts.where((p) => !p.isPinned).toList()
+        ..sort(ForumPost.compareNewestFirst);
       if (results.length > 2 && results[2] is List<Map<String, int>>) {
         final memberships = results[2] as List<Map<String, int>>;
         _isMember = memberships.any(

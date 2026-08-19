@@ -94,6 +94,11 @@ class AppNotificationService extends ChangeNotifier
 
   List<AppNotificationItem> get items => List.unmodifiable(_items);
 
+  @visibleForTesting
+  void attachRouterForTesting(GoRouter? router) {
+    _router = router;
+  }
+
   /// 当前生效的通知分级。
   ///
   /// 分级只影响横幅展示逻辑，通知中心数据不变。
@@ -452,7 +457,7 @@ class AppNotificationService extends ChangeNotifier
 
   void open(AppNotification notification) {
     dismiss(notification.id);
-    openRoute(notification.route);
+    openRoute(notification.route, replace: true);
   }
 
   void openRoute(String route, {bool replace = false}) {

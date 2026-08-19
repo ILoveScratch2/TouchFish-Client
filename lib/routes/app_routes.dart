@@ -188,7 +188,7 @@ class AppRoutes {
       initialLocation: isFirstLaunch
           ? welcome
           : (hasSavedSession ? main : login),
-      refreshListenable: AuthState.instance,
+      refreshListenable: AuthState.instance.sessionListenable,
       redirect: (context, state) {
         final auth = AuthState.instance;
         final restoringSavedSession =

@@ -197,6 +197,7 @@ class _ChatListScreenState extends State<ChatListScreen>
   late TabController _tabController;
   final ChatDataService _chatData = ChatDataService.instance;
   final NotificationService _notificationService = NotificationService.instance;
+  late bool _wasLoggedIn;
 
   List<ChatRoom> get _chatRooms => _chatData.rooms;
   List<Contact> get _contacts => _chatData.contacts;
@@ -215,7 +216,8 @@ class _ChatListScreenState extends State<ChatListScreen>
     });
     _chatData.addListener(_onDataChanged);
     _notificationService.addListener(_onDataChanged);
-    AuthState.instance.addListener(_onAuthChanged);
+    _wasLoggedIn = AuthState.instance.isLoggedIn;
+    AuthState.instance.sessionListenable.addListener(_onAuthChanged);
     _initRealData();
   }
 
@@ -224,7 +226,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     _tabController.dispose();
     _chatData.removeListener(_onDataChanged);
     _notificationService.removeListener(_onDataChanged);
-    AuthState.instance.removeListener(_onAuthChanged);
+    AuthState.instance.sessionListenable.removeListener(_onAuthChanged);
     super.dispose();
   }
 
@@ -236,8 +238,12 @@ class _ChatListScreenState extends State<ChatListScreen>
   }
 
   void _onAuthChanged() {
+    final isLoggedIn = AuthState.instance.isLoggedIn;
+    if (isLoggedIn == _wasLoggedIn) return;
+    _wasLoggedIn = isLoggedIn;
+
     if (mounted) setState(() {});
-    if (AuthState.instance.isLoggedIn) {
+    if (isLoggedIn) {
       _initRealData();
     } else {
       _chatData.reset();

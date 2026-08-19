@@ -355,18 +355,23 @@ class TouchFishApp extends StatefulWidget {
 
 class _TouchFishAppState extends State<TouchFishApp> {
   final _appState = AppState.instance;
-  late final _appListenable = Listenable.merge([_appState, AuthState.instance]);
+  late final _appListenable = Listenable.merge([
+    _appState,
+    AuthState.instance.sessionListenable,
+  ]);
   late final _router = AppRoutes.createRouter(
     isFirstLaunch: widget.isFirstLaunch,
     hasSavedSession: widget.hasSavedSession,
   );
   bool _didShowStartupResetNotice = false;
   bool _didStartSavedSessionRestore = false;
+  late bool _wasLoggedIn;
 
   @override
   void initState() {
     super.initState();
-    AuthState.instance.addListener(_onAuthStateChanged);
+    _wasLoggedIn = AuthState.instance.isLoggedIn;
+    AuthState.instance.sessionListenable.addListener(_onAuthStateChanged);
     unawaited(AppNotificationService.instance.initialize(_router));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -415,14 +420,18 @@ class _TouchFishAppState extends State<TouchFishApp> {
 
   @override
   void dispose() {
-    AuthState.instance.removeListener(_onAuthStateChanged);
+    AuthState.instance.sessionListenable.removeListener(_onAuthStateChanged);
     NotificationService.instance.stopPolling();
     ForumPendingService.instance.stopPolling();
     super.dispose();
   }
 
   void _onAuthStateChanged() {
-    if (AuthState.instance.isLoggedIn) {
+    final isLoggedIn = AuthState.instance.isLoggedIn;
+    if (isLoggedIn == _wasLoggedIn) return;
+    _wasLoggedIn = isLoggedIn;
+
+    if (isLoggedIn) {
       _startNotificationPollingIfLoggedIn();
     } else {
       NotificationService.instance.stopPolling();

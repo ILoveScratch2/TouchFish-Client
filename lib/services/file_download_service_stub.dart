@@ -1,9 +1,4 @@
-class FileDownloadResult {
-  final bool succeeded;
-  final String? savedPath;
-
-  const FileDownloadResult(this.succeeded, {this.savedPath});
-}
+import 'file_download_result.dart';
 
 Future<FileDownloadResult> downloadFile(String url, String fileName) async =>
-    const FileDownloadResult(false);
+    const FileDownloadResult(FileDownloadStatus.failed);

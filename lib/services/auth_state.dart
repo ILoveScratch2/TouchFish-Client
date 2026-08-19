@@ -7,6 +7,10 @@ import 'local_message_store.dart';
 
 enum SavedSessionRestoreStatus { idle, restoring, succeeded, failed }
 
+class _AuthSessionNotifier extends ChangeNotifier {
+  void changed() => notifyListeners();
+}
+
 class AuthState extends ChangeNotifier {
   static AuthState? _instance;
   static AuthState get instance => _instance ??= AuthState._();
@@ -21,6 +25,7 @@ class AuthState extends ChangeNotifier {
   SavedSessionRestoreStatus _savedSessionRestoreStatus =
       SavedSessionRestoreStatus.idle;
   int _avatarVersion = 0;
+  final _sessionNotifier = _AuthSessionNotifier();
 
   UserProfile? get currentUser => _currentUser;
   int? get uid => _uid;
@@ -33,6 +38,12 @@ class AuthState extends ChangeNotifier {
       _savedSessionRestoreStatus;
   bool get isLoggedIn => _currentUser != null && _uid != null;
   bool get isBanned => _currentUser?.stat == 'banned';
+  Listenable get sessionListenable => _sessionNotifier;
+
+  void _notifySessionChanged() {
+    _sessionNotifier.changed();
+    notifyListeners();
+  }
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
@@ -46,7 +57,7 @@ class AuthState extends ChangeNotifier {
     if (!hasStoredCredentials) return false;
 
     _savedSessionRestoreStatus = SavedSessionRestoreStatus.restoring;
-    notifyListeners();
+    _notifySessionChanged();
 
     final savedUid = _rememberedUid!;
     final savedPassword = _rememberedPassword!;
@@ -77,7 +88,7 @@ class AuthState extends ChangeNotifier {
           password: savedPassword,
         );
 
-        notifyListeners();
+        _notifySessionChanged();
         return true;
       } else {
         talker.warning(
@@ -92,7 +103,7 @@ class AuthState extends ChangeNotifier {
     _password = null;
     _currentUser = null;
     _savedSessionRestoreStatus = SavedSessionRestoreStatus.failed;
-    notifyListeners();
+    _notifySessionChanged();
     return false;
   }
 
@@ -102,7 +113,7 @@ class AuthState extends ChangeNotifier {
     }
 
     _savedSessionRestoreStatus = SavedSessionRestoreStatus.idle;
-    notifyListeners();
+    _notifySessionChanged();
   }
 
   Future<String?> login(String username, String password) async {
@@ -138,7 +149,7 @@ class AuthState extends ChangeNotifier {
         password: password,
       );
 
-      notifyListeners();
+      _notifySessionChanged();
       return null;
     } catch (e) {
       talker.error('AuthState.login failed', e);
@@ -154,7 +165,7 @@ class AuthState extends ChangeNotifier {
     _rememberedUsername = null;
     _rememberedPassword = null;
     _savedSessionRestoreStatus = SavedSessionRestoreStatus.idle;
-    notifyListeners();
+    _notifySessionChanged();
     LocalMessageStore.instance.clearScope();
     final prefs = await SharedPreferences.getInstance();
     await _clearStorage(prefs);
