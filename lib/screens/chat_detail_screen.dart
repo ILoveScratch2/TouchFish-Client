@@ -13,6 +13,7 @@ import 'package:mime/mime.dart' show lookupMimeType;
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
 import '../models/settings_service.dart';
+import '../models/user_profile.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/media/image_lightbox.dart';
 import '../widgets/chat_input_bar.dart';
@@ -732,6 +733,22 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           normalizedEnterHint,
         );
     final baseUrl = await TfApiClient.instance.getBaseUrl();
+    final chatData = ChatDataService.instance;
+    for (final raw in members) {
+      final member = Map<String, dynamic>.from(raw as Map);
+      final memberUid = (member['uid'] as num).toInt();
+      if (memberUid == uid) continue;
+      chatData.cacheUserProfile(
+        UserProfile(
+          uid: 'U$memberUid',
+          username: member['username'] as String? ?? 'User $memberUid',
+          email: '',
+          stat: 'user',
+          createTime: '0',
+          avatar: '$baseUrl/avatar/get_avatar/user/$memberUid',
+        ),
+      );
+    }
     final mentionUsers = members
         .map((raw) {
           final member = Map<String, dynamic>.from(raw as Map);
