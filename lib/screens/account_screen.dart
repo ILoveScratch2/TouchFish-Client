@@ -11,6 +11,7 @@ import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/notification_service.dart';
+import '../services/snackbar_service.dart';
 import '../widgets/app_alert_dialog.dart';
 import 'debug/debug_options_screen.dart';
 import 'storage_management_screen.dart';
@@ -92,12 +93,7 @@ class _AccountScreenState extends State<AccountScreen> {
       });
     } else {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.profileEditSaveFailed),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      TouchFishSnackbarService.instance.show(l10n.profileEditSaveFailed);
     }
   }
 

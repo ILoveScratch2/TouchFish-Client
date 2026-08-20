@@ -22,6 +22,7 @@ import '../l10n/app_localizations.dart';
 import '../widgets/mention_text_field.dart';
 import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
+import '../services/snackbar_service.dart';
 import '../services/chat_ws_service.dart';
 import '../services/chat_data_service.dart';
 import '../services/draft_service.dart';
@@ -51,7 +52,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   /// 当前聊天按时间序的图片画廊条目（灯箱多图用）。消息超过 [_galleryCap] 时
   /// 清空并退化为单图模式，限制重建开销。
   final List<LightboxImageItem> _imageEntries = [];
-  final Map<String, int> _imageIndexById = {};
+  final Map<ChatMessage, int> _imageIndexById = {};
   static const int _galleryCap = 3000;
 
   final Map<int, GlobalKey> _messageKeys = {};
@@ -167,7 +168,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _weakNetworkTimer?.cancel();
     if (SettingsService.instance.getValue<bool>('weakNetworkMode', false)) {
       _weakNetworkTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-        unawaited(MessageSyncService.instance.resyncAfterReconnect([_contactUid]));
+        unawaited(
+          MessageSyncService.instance.resyncAfterReconnect([_contactUid]),
+        );
       });
     }
   }
@@ -302,13 +305,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       'message_too_long' => l10n.chatSendFailedTooLong,
       _ => l10n.chatSendFailed,
     };
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    TouchFishSnackbarService.instance.show(msg);
   }
 
   void _attachRealtimeListeners() {
@@ -850,9 +847,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       );
       if (_replyingTo?.mid == mid) setState(() => _replyingTo = null);
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.messageRecallFailed)));
+      TouchFishSnackbarService.instance.show(l10n.messageRecallFailed);
     }
   }
 
@@ -959,10 +954,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   void _showEssenceOperationFailed() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.commonFailedOperation),
-      ),
+    TouchFishSnackbarService.instance.show(
+      AppLocalizations.of(context)!.commonFailedOperation,
     );
   }
 
@@ -1119,13 +1112,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           _restoreFailedDraft(text);
           if (mounted) {
             final l10n = AppLocalizations.of(context)!;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.chatSendFailed),
-                behavior: SnackBarBehavior.floating,
-                duration: const Duration(seconds: 2),
-              ),
-            );
+            TouchFishSnackbarService.instance.show(l10n.chatSendFailed);
           }
         }
       } else {
@@ -1149,13 +1136,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       _restoreFailedDraft(text);
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.chatSendFailed),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        TouchFishSnackbarService.instance.show(l10n.chatSendFailed);
       }
     }
   }
@@ -1217,13 +1198,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       _updateMessageStatus(clientMid, status: MessageStatus.failed);
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.chatSendFailed),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        TouchFishSnackbarService.instance.show(l10n.chatSendFailed);
       }
     }
   }
@@ -1296,7 +1271,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 : null,
           ),
         );
-        _imageIndexById[message.id] = _imageEntries.length - 1;
+        _imageIndexById[message] = _imageEntries.length - 1;
       }
     }
   }
@@ -1340,12 +1315,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (maxSize != null && fileSize > maxSize) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              l10n.storageFileTooLarge((maxSize / (1024 * 1024)).round()),
-            ),
-          ),
+        TouchFishSnackbarService.instance.show(
+          l10n.storageFileTooLarge((maxSize / (1024 * 1024)).round()),
         );
       }
       return;
@@ -1532,13 +1503,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void _showSendFailedSnackBar() {
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.chatSendFailed),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    TouchFishSnackbarService.instance.show(l10n.chatSendFailed);
   }
 
   /// 发送服务端已存在的文件（来自 /file/get_user_files），免二次上传。
@@ -1553,8 +1518,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final fileName = file['file_name'] as String? ?? hash;
     final fileSize = (file['size'] as num?)?.toInt() ?? 0;
     final rawMime = file['mime_type'] as String?;
-    final mimeType =
-        (rawMime == null || rawMime == 'application/octet-stream')
+    final mimeType = (rawMime == null || rawMime == 'application/octet-stream')
         ? null
         : rawMime;
     final downloadUrl = file['download_url'] as String?;
@@ -1793,13 +1757,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   void _showJumpMessageNotFound() {
     final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.chatSearchMessagesNoResults),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    TouchFishSnackbarService.instance.show(l10n.chatSearchMessagesNoResults);
   }
 
   Future<void> _jumpToMessage(ChatMessage target) async {
@@ -2466,7 +2424,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                             ? null
                                             : _imageEntries,
                                         galleryIndex:
-                                            _imageIndexById[message.id] ?? 0,
+                                            _imageIndexById[message] ?? 0,
                                         canRecall: _canRecall(message),
                                         isEssence:
                                             message.mid != null &&

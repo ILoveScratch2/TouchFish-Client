@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/app_alert_dialog.dart';
 import '../../services/chat_data_service.dart';
+import '../../services/snackbar_service.dart';
 import './api_test_screen.dart';
 import './markdown_test_screen.dart';
 import './notification_test_screen.dart';
@@ -63,12 +64,7 @@ class DebugOptionsScreen extends StatelessWidget {
 
   void _showDialogSelectionSnackBar(BuildContext context, String action) {
     final l10n = AppLocalizations.of(context)!;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text(l10n.debugDialogSelectedAction(action))),
-      );
+    TouchFishSnackbarService.instance.show(l10n.debugDialogSelectedAction(action));
   }
 
   Future<void> _clearMessageDatabase(BuildContext context) async {
@@ -89,9 +85,7 @@ class DebugOptionsScreen extends StatelessWidget {
     if (confirmed != true) return;
     await ChatDataService.instance.clearLocalMessageDatabase();
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.debugClearMessageDatabaseSuccess)),
-    );
+    TouchFishSnackbarService.instance.show(l10n.debugClearMessageDatabaseSuccess);
   }
 
   @override

@@ -3011,6 +3011,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatExportSuccess => 'Chat history exported';
 
   @override
+  String get chatExportEmpty => 'No messages to export';
+
+  @override
   String get settingsResetStatsRooms => 'Rooms';
 
   @override

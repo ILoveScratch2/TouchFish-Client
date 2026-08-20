@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
 import '../services/forum_pending_service.dart';
+import '../services/snackbar_service.dart';
 import 'admin_file_management_screen.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -42,12 +43,7 @@ class _AdminScreenState extends State<AdminScreen> {
     await _forumPendingService.refresh();
     if (showError && mounted && _forumPendingService.error != null) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.adminPendingForumsLoadFailed),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      TouchFishSnackbarService.instance.show(l10n.adminPendingForumsLoadFailed);
     }
   }
 

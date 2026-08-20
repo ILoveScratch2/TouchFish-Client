@@ -11,6 +11,7 @@ import '../widgets/sticker_text_renderer.dart';
 import '../models/settings_service.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/snackbar_service.dart';
 import 'forum_post_compose_screen.dart';
 import '../utils/talker.dart';
 import '../widgets/mention_text_field.dart';
@@ -686,27 +687,19 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
           _commentDraftId,
         );
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.forumCommentSuccess)));
+        TouchFishSnackbarService.instance.show(l10n.forumCommentSuccess);
         await _loadData();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.forumCommentFailed),
-            behavior: SnackBarBehavior.floating,
-          ),
+        TouchFishSnackbarService.instance.show(
+          l10n.forumCommentFailed,
         );
       }
     } catch (e) {
       talker.error('_submitComment failed', e);
       if (mounted) {
         setState(() => _isSendingComment = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.forumCommentFailed),
-            behavior: SnackBarBehavior.floating,
-          ),
+        TouchFishSnackbarService.instance.show(
+          l10n.forumCommentFailed,
         );
       }
     }
@@ -761,15 +754,11 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     );
     if (!mounted) return;
     if (success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.forumPostDeleteSuccess)));
+      TouchFishSnackbarService.instance.show(l10n.forumPostDeleteSuccess);
       _leavePost();
     } else {
       setState(() => _isDeletingPost = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.forumPostDeleteFailed)));
+      TouchFishSnackbarService.instance.show(l10n.forumPostDeleteFailed);
     }
   }
 
@@ -810,14 +799,10 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
         _commentDataList.removeWhere((item) => item.comment.id == comment.id);
       }
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success
-              ? l10n.forumCommentDeleteSuccess
-              : l10n.forumCommentDeleteFailed,
-        ),
-      ),
+    TouchFishSnackbarService.instance.show(
+      success
+          ? l10n.forumCommentDeleteSuccess
+          : l10n.forumCommentDeleteFailed,
     );
   }
 

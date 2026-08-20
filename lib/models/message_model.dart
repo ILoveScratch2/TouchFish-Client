@@ -245,7 +245,9 @@ class ChatMessage {
           json['send_time']?.toString() ??
           json['time_stamp']?.toString(),
     );
-    final id = mid?.toString() ?? dt.millisecondsSinceEpoch.toString();
+    final id =
+        mid?.toString() ??
+        '${dt.millisecondsSinceEpoch}-${senderUid ?? 0}-${clientMid ?? roomSeq?.toString() ?? ''}';
     final suid = senderUid;
     final resolvedName = isMe ? null : (senderName ?? 'User $suid');
     final quoteMid = _asInt(json['quote']);
@@ -260,16 +262,16 @@ class ChatMessage {
       json['forward_preview'] ?? json['forwarded_message'],
       forwardedMid,
     );
-    final mentionedUids =
-        (json['mentioned_uids'] as List<dynamic>? ?? const [])
-            .whereType<num>()
-            .map((uid) => uid.toInt())
-            .toList();
+    final mentionedUids = (json['mentioned_uids'] as List<dynamic>? ?? const [])
+        .whereType<num>()
+        .map((uid) => uid.toInt())
+        .toList();
 
     if (event == 'message.file') {
       final fileHash = json['file_hash']?.toString() ?? content;
       final attachment = FileAttachment.fromMap({
-        if (json['file'] is Map) ...Map<String, dynamic>.from(json['file'] as Map),
+        if (json['file'] is Map)
+          ...Map<String, dynamic>.from(json['file'] as Map),
         'file_hash': fileHash,
       });
       MessageType msgType;
@@ -470,7 +472,9 @@ class ChatMessage {
 
     if (deleted) {
       return ChatMessage(
-        id: mid?.toString() ?? sendTime.toString(),
+        id:
+            mid?.toString() ??
+            '${dt.millisecondsSinceEpoch}-$senderUid-${clientMid ?? roomSeq?.toString() ?? ''}',
         mid: mid,
         clientMid: clientMid,
         senderUid: senderUid,
@@ -501,7 +505,9 @@ class ChatMessage {
         'file_hash': fileHash,
       });
       return ChatMessage(
-        id: mid?.toString() ?? sendTime.toString(),
+        id:
+            mid?.toString() ??
+            '${dt.millisecondsSinceEpoch}-$senderUid-${clientMid ?? roomSeq?.toString() ?? ''}',
         mid: mid,
         clientMid: clientMid,
         senderUid: senderUid,
@@ -527,7 +533,9 @@ class ChatMessage {
     }
 
     return ChatMessage(
-      id: mid?.toString() ?? sendTime.toString(),
+      id:
+          mid?.toString() ??
+          '${dt.millisecondsSinceEpoch}-$senderUid-${clientMid ?? roomSeq?.toString() ?? ''}',
       mid: mid,
       clientMid: clientMid,
       senderUid: senderUid,
@@ -602,20 +610,20 @@ class ChatMessage {
     final type = rawType >= 0 && rawType < MessageType.values.length
         ? MessageType.values[rawType]
         : MessageType.text;
-    var senderUid = (json['senderUid'] as num?)?.toInt();
+    var senderUid = _asInt(json['senderUid']);
     final legacyIsMe = json['isMe'] as bool? ?? false;
     if (senderUid == null && activeUid != null && legacyIsMe) {
       senderUid = activeUid;
     }
     return ChatMessage(
       id: json['id'] as String? ?? '',
-      mid: (json['mid'] as num?)?.toInt(),
+      mid: _asInt(json['mid']),
       clientMid: json['clientMid'] as String?,
       senderUid: senderUid,
       status: status,
       text: json['text'] as String? ?? '',
       timestamp: DateTime.fromMillisecondsSinceEpoch(
-        (json['timestamp'] as int?) ?? 0,
+        (json['timestamp'] as num?)?.toInt() ?? 0,
       ),
       isMe: activeUid != null && senderUid != null
           ? senderUid == activeUid
@@ -626,7 +634,8 @@ class ChatMessage {
       media: media,
       ackError: json['ackError'] as String?,
       mentionedUids: (json['mentionedUids'] as List<dynamic>? ?? const [])
-          .map((uid) => (uid as num).toInt())
+          .whereType<num>()
+          .map((uid) => uid.toInt())
           .toList(),
       mentionsMe: json['mentionsMe'] as bool? ?? false,
       shouldAlert: json['shouldAlert'] as bool?,
@@ -643,11 +652,9 @@ class ChatMessage {
             )
           : null,
       isDeleted: json['isDeleted'] as bool? ?? false,
-      deletedAt: json['deletedAt'] is num
-          ? DateTime.fromMillisecondsSinceEpoch(
-              (json['deletedAt'] as num).toInt(),
-            )
-          : null,
+      deletedAt: _asInt(json['deletedAt']) == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(_asInt(json['deletedAt'])!),
       deletedBy: _asInt(json['deletedBy']),
       roomSeq: _asInt(json['roomSeq']),
     );

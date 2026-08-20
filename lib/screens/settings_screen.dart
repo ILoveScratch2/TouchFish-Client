@@ -14,6 +14,7 @@ import '../models/settings_model.dart';
 import '../models/settings_service.dart';
 import '../services/font_loader_service.dart';
 import '../services/draft_service.dart';
+import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/local_storage_settings.dart';
@@ -1720,12 +1721,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                     image.path,
                   );
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          l10n.settingsBackgroundImageSelectSuccess,
-                        ),
-                      ),
+                    TouchFishSnackbarService.instance.show(
+                      l10n.settingsBackgroundImageSelectSuccess,
                     );
                   }
                 }
@@ -1749,12 +1746,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                       onTap: () async {
                         await _settingsService.remove('backgroundImagePath');
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                l10n.settingsBackgroundImageClearSuccess,
-                              ),
-                            ),
+                          TouchFishSnackbarService.instance.show(
+                            l10n.settingsBackgroundImageClearSuccess,
                           );
                         }
                       },
@@ -1841,14 +1834,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         await _settingsService.setValue('themeColor', 'custom');
 
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(
-                  context,
-                )!.settingsBackgroundImageGenColorSuccess,
-              ),
-            ),
+          TouchFishSnackbarService.instance.show(
+            AppLocalizations.of(
+              context,
+            )!.settingsBackgroundImageGenColorSuccess,
           );
         }
       }
@@ -1856,12 +1845,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       talker.error('Failed to generate theme from image', e);
       if (context.mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              l10n.settingsBackgroundImageGenColorError(e.toString()),
-            ),
-          ),
+        TouchFishSnackbarService.instance.show(
+          l10n.settingsBackgroundImageGenColorError(e.toString()),
         );
       }
     }
@@ -1946,8 +1931,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                   if (confirmed == true) {
                     await _settingsService.remove('customColors');
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(l10n.settingsCustomThemeReset)),
+                      TouchFishSnackbarService.instance.show(
+                        l10n.settingsCustomThemeReset,
                       );
                     }
                   }

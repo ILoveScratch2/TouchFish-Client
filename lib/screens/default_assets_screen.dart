@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 
 class DefaultAssetsScreen extends StatefulWidget {
@@ -68,14 +69,8 @@ class _DefaultAssetsScreenState extends State<DefaultAssetsScreen> {
       });
 
       if (serverInfo == null && showError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.adminDefaultAssetsLoadFailed,
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        TouchFishSnackbarService.instance
+            .show(AppLocalizations.of(context)!.adminDefaultAssetsLoadFailed);
       }
     } catch (e, stackTrace) {
       talker.error('DefaultAssetsScreen._loadServerInfo failed', e, stackTrace);
@@ -88,14 +83,8 @@ class _DefaultAssetsScreenState extends State<DefaultAssetsScreen> {
         _isLoading = false;
       });
       if (showError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.adminDefaultAssetsLoadFailed,
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        TouchFishSnackbarService.instance
+            .show(AppLocalizations.of(context)!.adminDefaultAssetsLoadFailed);
       }
     }
   }
@@ -207,14 +196,8 @@ class _DefaultAssetsScreenState extends State<DefaultAssetsScreen> {
       setState(() => _uploadingAssetType = null);
 
       if (!success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              l10n.adminDefaultAssetUploadFailed(_assetLabel(l10n, assetType)),
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        TouchFishSnackbarService.instance
+            .show(l10n.adminDefaultAssetUploadFailed(_assetLabel(l10n, assetType)));
         return;
       }
 
@@ -227,28 +210,16 @@ class _DefaultAssetsScreenState extends State<DefaultAssetsScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n.adminDefaultAssetUploadSuccess(_assetLabel(l10n, assetType)),
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      TouchFishSnackbarService.instance
+          .show(l10n.adminDefaultAssetUploadSuccess(_assetLabel(l10n, assetType)));
     } catch (e, stackTrace) {
       talker.error('DefaultAssetsScreen._uploadAsset failed', e, stackTrace);
       if (!mounted) {
         return;
       }
       setState(() => _uploadingAssetType = null);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n.adminDefaultAssetUploadFailed(_assetLabel(l10n, assetType)),
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      TouchFishSnackbarService.instance
+          .show(l10n.adminDefaultAssetUploadFailed(_assetLabel(l10n, assetType)));
     }
   }
 

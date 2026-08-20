@@ -8,6 +8,7 @@ import '../models/message_model.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
+import '../services/snackbar_service.dart';
 
 /// 转发选择屏幕。
 ///
@@ -219,35 +220,17 @@ class _ForwardScreenState extends State<ForwardScreen> {
         );
         ChatDataService.instance.addSentMessage(target.roomId, userMessage);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.forwardSuccess),
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          TouchFishSnackbarService.instance.show(l10n.forwardSuccess);
         }
         return true;
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.forwardFailed),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        TouchFishSnackbarService.instance.show(l10n.forwardFailed);
       }
       return false;
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.forwardFailed),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        TouchFishSnackbarService.instance.show(l10n.forwardFailed);
       }
       return false;
     } finally {

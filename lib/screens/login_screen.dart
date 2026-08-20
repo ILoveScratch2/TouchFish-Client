@@ -5,6 +5,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
+import '../services/snackbar_service.dart';
 import '../widgets/server_selector.dart';
 import '../widgets/network_indicator.dart';
 import '../utils/talker.dart';
@@ -82,12 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     if (username.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.loginErrorEmptyFields),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      TouchFishSnackbarService.instance.show(l10n.loginErrorEmptyFields);
       return;
     }
 
@@ -105,9 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
         'networkError' => l10n.loginErrorNetwork,
         _ => l10n.loginErrorNetwork,
       };
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating),
-      );
+      TouchFishSnackbarService.instance.show(msg);
     }
   }
 

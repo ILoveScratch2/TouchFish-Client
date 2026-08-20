@@ -10,6 +10,7 @@ import '../widgets/account/profile_picture.dart';
 import '../services/api/tf_api_client.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
+import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 
 const double _kProfileMaxWidth = 680;
@@ -79,12 +80,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final myUid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (myUid == null || password == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.storageNotLoggedIn),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      TouchFishSnackbarService.instance.show(l10n.storageNotLoggedIn);
       return;
     }
 
@@ -100,16 +96,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         '',
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            ok
-                ? l10n.userProfileFriendRequestSent(target.username)
-                : l10n.userProfileFriendRequestFailed,
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      TouchFishSnackbarService.instance.show(
+          ok
+              ? l10n.userProfileFriendRequestSent(target.username)
+              : l10n.userProfileFriendRequestFailed,
+        );
     } finally {
       if (mounted) setState(() => _isAddingFriend = false);
     }
@@ -164,12 +155,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               IconButton(
                 icon: const Icon(Symbols.share),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Share ${profile.username}'),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
+                  TouchFishSnackbarService.instance.show('Share ${profile.username}');
                 },
               ),
             ],
@@ -320,12 +306,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               profile.uid,
               onTap: () {
                 Clipboard.setData(ClipboardData(text: profile.uid));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(l10n.userProfileUidCopied),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
+                TouchFishSnackbarService.instance.show(l10n.userProfileUidCopied);
               },
             ),
             const SizedBox(height: 12),
@@ -340,14 +321,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   ? null
                   : () {
                       Clipboard.setData(ClipboardData(text: profile.email));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            '${l10n.userProfileEmail} ${l10n.userProfileUidCopied}',
-                          ),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
+                      TouchFishSnackbarService.instance
+                          .show('${l10n.userProfileEmail} ${l10n.userProfileUidCopied}');
                     },
             ),
             const SizedBox(height: 12),

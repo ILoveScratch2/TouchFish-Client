@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 
 class GroupCreateScreen extends StatefulWidget {
@@ -37,12 +38,7 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.groupCreateNameEmpty),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        TouchFishSnackbarService.instance.show(l10n.groupCreateNameEmpty);
       }
       return;
     }
@@ -52,12 +48,7 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
       final maxLen = config.maxGroupNameLength;
       if (name.length < minLen || name.length > maxLen) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.groupCreateNameLength(minLen, maxLen)),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          TouchFishSnackbarService.instance.show(l10n.groupCreateNameLength(minLen, maxLen));
         }
         return;
       }
@@ -79,22 +70,12 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
         return;
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.groupCreateFailedLimit),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        TouchFishSnackbarService.instance.show(l10n.groupCreateFailedLimit);
       }
     } catch (e) {
       talker.error('GroupCreate failed', e);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${l10n.commonFailedOperation}: $e'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        TouchFishSnackbarService.instance.show('${l10n.commonFailedOperation}: $e');
       }
     }
     if (mounted) setState(() => _isCreating = false);

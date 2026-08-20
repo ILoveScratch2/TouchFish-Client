@@ -1426,10 +1426,16 @@ abstract class AppLocalizations {
   /// **'Single Group Max Members'**
   String get adminServerFieldSingleGroupMaxPeople;
 
-  /// Default friends and groups assigned to newly created users.
+  /// No description provided for @adminServerFieldDefaultJoinTargets.
+  ///
+  /// In en, this message translates to:
+  /// **'Default Friends and Groups'**
   String get adminServerFieldDefaultJoinTargets;
 
-  /// Input format description for default friends and groups.
+  /// No description provided for @adminServerFieldDefaultJoinTargetsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'New users automatically become friends with U targets and join G targets. Separate multiple values with spaces, commas, or new lines, for example: U1 U2 G1.'**
   String get adminServerFieldDefaultJoinTargetsDescription;
 
   /// No description provided for @adminServerFieldMaxFileSize.
@@ -5613,6 +5619,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Chat history exported'**
   String get chatExportSuccess;
+
+  /// No description provided for @chatExportEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages to export'**
+  String get chatExportEmpty;
 
   /// No description provided for @settingsResetStatsRooms.
   ///

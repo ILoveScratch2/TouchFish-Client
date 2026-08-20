@@ -2889,6 +2889,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatExportSuccess => '聊天记录已导出';
 
   @override
+  String get chatExportEmpty => '暂无消息可导出';
+
+  @override
   String get settingsResetStatsRooms => '房间数';
 
   @override

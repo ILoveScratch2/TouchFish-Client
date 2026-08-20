@@ -9,6 +9,7 @@ import '../widgets/sticker_text_renderer.dart';
 import '../models/settings_service.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/snackbar_service.dart';
 import 'forum_members_screen.dart';
 import 'forum_post_compose_screen.dart';
 import '../utils/talker.dart';
@@ -454,12 +455,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             if (uid == null || password == null || fid == null) return;
             final ok = await TfApiClient.instance.joinForum(uid, password, fid);
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    ok ? l10n.forumJoinSuccess : l10n.forumCreateFailed,
-                  ),
-                ),
+              TouchFishSnackbarService.instance.show(
+                ok ? l10n.forumJoinSuccess : l10n.forumCreateFailed,
               );
               if (ok) setState(() => _isMember = true);
             }
@@ -623,8 +620,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       introduction: introText,
     );
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(ok ? l10n.forumEdit : l10n.forumCreateFailed)),
+    TouchFishSnackbarService.instance.show(
+      ok ? l10n.forumEdit : l10n.forumCreateFailed,
     );
     if (ok) _refresh();
   }
@@ -633,9 +630,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
     final allPosts = [..._pinnedPosts, ..._posts];
     if (allPosts.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.forumNoPosts)));
+      TouchFishSnackbarService.instance.show(l10n.forumNoPosts);
       return;
     }
     final selectedPid = await showModalBottomSheet<String>(
@@ -713,8 +708,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
     final ok = await TfApiClient.instance.pinPost(uid, password, fid, pid);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(ok ? l10n.forumPinPost : l10n.forumCreateFailed)),
+    TouchFishSnackbarService.instance.show(
+      ok ? l10n.forumPinPost : l10n.forumCreateFailed,
     );
     if (ok) _refresh();
   }
@@ -838,16 +833,11 @@ class _ForumActionMenu extends StatelessWidget {
         if (!context.mounted) return;
         if (success) {
           context.pop();
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(l10n.forumDeleteSuccess)));
+          TouchFishSnackbarService.instance.show(l10n.forumDeleteSuccess);
           onRefresh();
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.forumDeleteFailed),
-              behavior: SnackBarBehavior.floating,
-            ),
+          TouchFishSnackbarService.instance.show(
+            l10n.forumDeleteFailed,
           );
         }
       }

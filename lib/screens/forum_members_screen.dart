@@ -6,6 +6,7 @@ import '../widgets/account/profile_picture.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/snackbar_service.dart';
 
 class ForumMemberListSheet extends StatefulWidget {
   final String forumId;
@@ -281,9 +282,7 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
                       );
                       if (mounted && ok) {
                         _fetchMembers();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(l10n.forumRemoveMember)),
-                        );
+                        TouchFishSnackbarService.instance.show(l10n.forumRemoveMember);
                       }
                     });
                   },
@@ -322,9 +321,7 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
       );
       if (mounted && ok) {
         _fetchMembers();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.forumMemberRole)));
+        TouchFishSnackbarService.instance.show(l10n.forumMemberRole);
       }
     }
   }

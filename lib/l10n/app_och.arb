@@ -1159,6 +1159,7 @@
   "chatExportJson": "導出 JSON",
   "chatExportCsv": "導出 CSV",
   "chatExportSuccess": "聊天記錄已導出",
+  "chatExportEmpty": "暫無消息可導出",
   "settingsResetStatsRooms": "房間數",
   "settingsResetStatsMessages": "消息數",
   "settingsResetStatsSize": "數據庫大小",

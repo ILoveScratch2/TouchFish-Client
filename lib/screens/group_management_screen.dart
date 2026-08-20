@@ -8,6 +8,7 @@ import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
+import '../services/snackbar_service.dart';
 import '../routes/app_routes.dart';
 import '../utils/talker.dart';
 import '../widgets/account/profile_picture.dart';
@@ -371,9 +372,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
 
   void _showSnack(String msg) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating),
-      );
+      TouchFishSnackbarService.instance.show(msg);
     }
   }
 

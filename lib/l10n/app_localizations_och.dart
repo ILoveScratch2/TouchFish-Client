@@ -2889,6 +2889,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get chatExportSuccess => '聊天記錄已導出';
 
   @override
+  String get chatExportEmpty => '暫無消息可導出';
+
+  @override
   String get settingsResetStatsRooms => '房間數';
 
   @override

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../models/notification_model.dart';
 import '../services/notification_service.dart';
+import '../services/snackbar_service.dart';
 
 class InviteSheet extends StatefulWidget {
   const InviteSheet({super.key});
@@ -71,9 +72,7 @@ class _InviteSheetState extends State<InviteSheet> {
   }
 
   void _showResult(bool success, String successText, String failureText) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(success ? successText : failureText)),
-    );
+    TouchFishSnackbarService.instance.show(success ? successText : failureText);
   }
 
   void _openGroup(int gid) {

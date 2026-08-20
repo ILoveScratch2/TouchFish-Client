@@ -11,6 +11,7 @@ import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/snackbar_service.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/mention_text_field.dart';
 import '../utils/talker.dart';
@@ -555,13 +556,9 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
         final maxSize = await TfApiClient.instance.getMaxFileSize();
         if (maxSize != null && file.bytes.length > maxSize) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(context)!
-                      .storageFileTooLarge((maxSize / (1024 * 1024)).round()),
-                ),
-              ),
+            TouchFishSnackbarService.instance.show(
+              AppLocalizations.of(context)!
+                  .storageFileTooLarge((maxSize / (1024 * 1024)).round()),
             );
           }
           continue;
@@ -590,10 +587,8 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     } catch (error, stackTrace) {
       talker.error('Forum clipboard upload failed', error, stackTrace);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.forumAttachmentFailed),
-          ),
+        TouchFishSnackbarService.instance.show(
+          AppLocalizations.of(context)!.forumAttachmentFailed,
         );
       }
     } finally {
@@ -619,14 +614,10 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
         final maxSize = await TfApiClient.instance.getMaxFileSize();
         if (maxSize != null && bytes.length > maxSize) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(
-                    context,
-                  )!.storageFileTooLarge((maxSize / (1024 * 1024)).round()),
-                ),
-              ),
+            TouchFishSnackbarService.instance.show(
+              AppLocalizations.of(
+                context,
+              )!.storageFileTooLarge((maxSize / (1024 * 1024)).round()),
             );
           }
           continue;
@@ -654,10 +645,8 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     } catch (error, stackTrace) {
       talker.error('Forum attachment upload failed', error, stackTrace);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.forumAttachmentFailed),
-          ),
+        TouchFishSnackbarService.instance.show(
+          AppLocalizations.of(context)!.forumAttachmentFailed,
         );
       }
     } finally {
@@ -672,9 +661,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     final hasContent = _contentController.text.trim().isNotEmpty;
     final hasTitle = widget.isReply || _titleController.text.trim().isNotEmpty;
     if (!hasContent && !hasTitle) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.forumPostContentRequired)));
+      TouchFishSnackbarService.instance.show(l10n.forumPostContentRequired);
       return;
     }
 
@@ -718,31 +705,23 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
         _didSubmit = true;
         await DraftService.instance.clearDraft(_draftType, _draftId);
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.isReply ? l10n.forumCommentSuccess : l10n.forumPostSuccess,
-            ),
-          ),
+        TouchFishSnackbarService.instance.show(
+          widget.isReply
+              ? l10n.forumCommentSuccess
+              : l10n.forumPostSuccess,
         );
         Navigator.pop(context, true);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.forumPostFailed),
-            behavior: SnackBarBehavior.floating,
-          ),
+        TouchFishSnackbarService.instance.show(
+          l10n.forumPostFailed,
         );
       }
     } catch (e) {
       talker.error('_submit post failed', e);
       if (mounted) {
         setState(() => _isSubmitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.forumPostFailed),
-            behavior: SnackBarBehavior.floating,
-          ),
+        TouchFishSnackbarService.instance.show(
+          l10n.forumPostFailed,
         );
       }
     }

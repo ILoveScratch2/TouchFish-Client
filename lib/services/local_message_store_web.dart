@@ -47,14 +47,18 @@ class LocalMessageStore {
   ) async {
     final raw = prefs.getString(_key(scope, roomId));
     if (raw == null) return [];
-    return (jsonDecode(raw) as List<dynamic>)
-        .map(
-          (e) => ChatMessage.fromJson(
+    final messages = <ChatMessage>[];
+    for (final e in jsonDecode(raw) as List<dynamic>) {
+      try {
+        messages.add(
+          ChatMessage.fromJson(
             Map<String, dynamic>.from(e as Map),
             activeUid: _scopeUid(scope),
           ),
-        )
-        .toList();
+        );
+      } catch (_) {}
+    }
+    return messages;
   }
 
   Future<List<ChatMessage>> loadMessages(
@@ -155,9 +159,14 @@ class LocalMessageStore {
       final roomId = raw['roomId']?.toString();
       final payload = raw['payload'];
       if (roomId == null || payload is! Map) continue;
-      final message = ChatMessage.fromJson(Map<String, dynamic>.from(payload), activeUid: _scopeUid(_requireScope()));
-      await saveMessages(roomId, [message]);
-      count++;
+      try {
+        final message = ChatMessage.fromJson(
+          Map<String, dynamic>.from(payload),
+          activeUid: _scopeUid(_requireScope()),
+        );
+        await saveMessages(roomId, [message]);
+        count++;
+      } catch (_) {}
     }
     return count;
   }

@@ -4,6 +4,7 @@ import 'package:smart_form_guard/smart_form_guard.dart';
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../services/api/tf_api_client.dart';
+import '../services/snackbar_service.dart';
 
 class RegisterStep2Screen extends StatefulWidget {
   final String username;
@@ -51,12 +52,7 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
       if (success) {
         context.go(AppRoutes.registerSuccess);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.registerErrorFailed),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        TouchFishSnackbarService.instance.show(l10n.registerErrorFailed);
       }
       return;
     }
@@ -77,12 +73,7 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
       );
       if (!mounted) return;
       if (profile == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.registerErrorFailed),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        TouchFishSnackbarService.instance.show(l10n.registerErrorFailed);
         return;
       }
       context.push(
@@ -90,12 +81,7 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
         extra: {'username': widget.username, 'uid': int.parse(profile.uid)},
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.registerErrorFailed),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      TouchFishSnackbarService.instance.show(l10n.registerErrorFailed);
     }
   }
 

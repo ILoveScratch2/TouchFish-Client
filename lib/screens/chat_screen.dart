@@ -13,6 +13,7 @@ import '../widgets/contact_list_widget.dart';
 import '../widgets/invite_sheet.dart';
 import '../widgets/text_entry_dialog.dart';
 import '../services/notification_service.dart';
+import '../services/snackbar_service.dart';
 import '../routes/app_routes.dart';
 import 'chat_detail_screen.dart';
 import 'group_create_screen.dart';
@@ -782,12 +783,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     if (!mounted) return;
     final targetUid = profile == null ? null : int.tryParse(profile.uid);
     if (targetUid == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.commonUserNotFound),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      TouchFishSnackbarService.instance.show(l10n.commonUserNotFound);
       return;
     }
     context.push('/user/$targetUid');

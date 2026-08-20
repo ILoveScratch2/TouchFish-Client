@@ -10,6 +10,7 @@ import '../models/file_attachment.dart';
 import '../models/settings_service.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/file_download_service.dart';
+import '../services/snackbar_service.dart';
 import 'media/audio_player.dart';
 import 'media/image_lightbox.dart';
 import 'media/video_viewer.dart';
@@ -121,22 +122,10 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
       final result = await downloadFile(await _url(), _attachment.fileName);
       if (!mounted) return;
       if (result.cancelled) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            result.succeeded
-                ? result.savedPath == null
-                      ? l10n.fileDownloadStarted
-                      : l10n.fileDownloadSaved(result.savedPath!)
-                : l10n.fileDownloadFailed,
-          ),
-        ),
-      );
+      TouchFishSnackbarService.instance.show(result.succeeded ? result.savedPath == null ? l10n.fileDownloadStarted : l10n.fileDownloadSaved(result.savedPath!) : l10n.fileDownloadFailed);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.fileDownloadFailed)));
+        TouchFishSnackbarService.instance.show(l10n.fileDownloadFailed);
       }
     } finally {
       if (mounted) setState(() => _downloading = false);
@@ -151,11 +140,7 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
         mode: LaunchMode.externalApplication,
       );
       if (!opened && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.filePreviewFailed),
-          ),
-        );
+        TouchFishSnackbarService.instance.show(AppLocalizations.of(context)!.filePreviewFailed);
       }
       return;
     }

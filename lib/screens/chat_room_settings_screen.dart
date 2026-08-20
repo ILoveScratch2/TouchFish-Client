@@ -119,7 +119,6 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                 value: _isPinned,
                 onChanged: (value) async {
                   final previous = _isPinned;
-                  final messenger = ScaffoldMessenger.of(context);
                   setState(() {
                     _isPinned = value;
                   });
@@ -130,18 +129,13 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                   if (!mounted) return;
                   if (!saved) {
                     setState(() => _isPinned = previous);
-                    messenger.showSnackBar(
-                      SnackBar(content: Text(l10n.commonFailedOperation)),
+                    TouchFishSnackbarService.instance.show(
+                      l10n.commonFailedOperation,
                     );
                     return;
                   }
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        value ? l10n.chatRoomPinned : l10n.chatRoomUnpinned,
-                      ),
-                      duration: const Duration(seconds: 2),
-                    ),
+                  TouchFishSnackbarService.instance.show(
+                    value ? l10n.chatRoomPinned : l10n.chatRoomUnpinned,
                   );
                 },
               ),
@@ -221,22 +215,36 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
 
   Future<void> _exportChat() async {
     final l10n = AppLocalizations.of(context)!;
-    final messages = await LocalMessageStore.instance.loadAllMessages(widget.chatRoom.id);
-    if (!mounted) return;
-    final format = await showModalBottomSheet<String>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          ListTile(leading: const Icon(Symbols.data_object), title: Text(l10n.chatExportJson), onTap: () => Navigator.pop(context, 'json')),
-          ListTile(leading: const Icon(Symbols.table_rows), title: Text(l10n.chatExportCsv), onTap: () => Navigator.pop(context, 'csv')),
-        ]),
-      ),
-    );
-    if (format == null) return;
-    final saved = format == 'json'
-        ? await ChatExportService.exportJson(widget.chatRoom.id, messages)
-        : await ChatExportService.exportCsv(widget.chatRoom.id, messages);
-    if (saved) TouchFishSnackbarService.instance.show(l10n.chatExportSuccess);
+    try {
+      final messages = await LocalMessageStore.instance.loadAllMessages(
+        widget.chatRoom.id,
+      );
+      if (!mounted) return;
+      if (messages.isEmpty) {
+        TouchFishSnackbarService.instance.show(l10n.chatExportEmpty);
+        return;
+      }
+      final format = await showModalBottomSheet<String>(
+        context: context,
+        builder: (context) => SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            ListTile(leading: const Icon(Symbols.data_object), title: Text(l10n.chatExportJson), onTap: () => Navigator.pop(context, 'json')),
+            ListTile(leading: const Icon(Symbols.table_rows), title: Text(l10n.chatExportCsv), onTap: () => Navigator.pop(context, 'csv')),
+          ]),
+        ),
+      );
+      if (format == null) return;
+      final saved = format == 'json'
+          ? await ChatExportService.exportJson(widget.chatRoom.id, messages)
+          : await ChatExportService.exportCsv(widget.chatRoom.id, messages);
+      if (!mounted) return;
+      if (saved) {
+        TouchFishSnackbarService.instance.show(l10n.chatExportSuccess);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      TouchFishSnackbarService.instance.show(l10n.commonFailedOperation);
+    }
   }
 
   String _getNotifyLevelText() {
@@ -263,10 +271,8 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
     );
     if (!mounted || saved) return;
     setState(() => _notifyLevel = previous);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.commonFailedOperation),
-      ),
+    TouchFishSnackbarService.instance.show(
+      AppLocalizations.of(context)!.commonFailedOperation,
     );
   }
 
@@ -362,7 +368,6 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                 child: TextButton.icon(
                   onPressed: () async {
                     final navigator = Navigator.of(context);
-                    final messenger = ScaffoldMessenger.of(context);
                     final alias = nameController.text.trim();
                     final description = descController.text.trim();
                     await _chatData.updateRoomPreference(
@@ -379,12 +384,7 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                       _chatDescription = description;
                     });
                     navigator.pop();
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: Text(l10n.chatRoomUpdated),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
+                    TouchFishSnackbarService.instance.show(l10n.chatRoomUpdated);
                   },
                   icon: const Icon(Symbols.save),
                   label: Text(l10n.save),
