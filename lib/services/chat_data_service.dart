@@ -862,6 +862,7 @@ class ChatDataService extends ChangeNotifier {
       }
       _addToCacheSilent(roomId, msg, countUnread: !isHistorical);
     }
+    _ensureSenderProfiles(messages, roomId);
     notifyListeners();
   }
 
@@ -1073,6 +1074,31 @@ class ChatDataService extends ChangeNotifier {
       );
       notifyListeners();
     });
+  }
+
+  /// 为一批消息中尚未缓存的发送者逐个抓取资料。
+  ///
+  /// 群聊历史/同步加载的消息发送者不在 /chat/list 的直接联系人里时，
+  /// _userCache 中并无其资料，导致昵称回退显示为 "User X"（见 _fillSenderInfo）。
+  /// 这里主动调用 _fetchProfileForRoom 补齐，资料返回后由 _fillMsgAvatars
+  /// 就地更新 [messageRoomId] 对应房间缓存里的消息昵称/头像。
+  void _ensureSenderProfiles(List<ChatMessage> messages, String roomId) {
+    final myUid = AuthState.instance.uid;
+    if (myUid == null) return;
+    final seen = <int>{};
+    for (final message in messages) {
+      final senderUid = message.senderUid;
+      if (senderUid == null ||
+          senderUid == myUid ||
+          senderUid == 0 ||
+          message.isMe ||
+          !seen.add(senderUid)) {
+        continue;
+      }
+      final senderRoomId = roomIdFromUid(senderUid);
+      if (_userCache[senderRoomId] != null) continue;
+      _fetchProfileForRoom(senderRoomId, messageRoomId: roomId);
+    }
   }
 
   void _updateRoomAndContacts(String roomId, String? username, String? avatar) {
@@ -1335,6 +1361,7 @@ class ChatDataService extends ChangeNotifier {
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
     }
+    _ensureSenderProfiles(visible, roomId);
     await _localStore.saveMessages(roomId, serverFilled);
     notifyListeners();
     return MessageHistoryPage(
@@ -1395,6 +1422,7 @@ class ChatDataService extends ChangeNotifier {
     _messageCache[roomId] = merged;
     _touchCacheRoom(roomId);
     await _localStore.saveMessages(roomId, olderFilled);
+    _ensureSenderProfiles(olderFilled, roomId);
     if (merged.length != cached.length) notifyListeners();
     return MessageHistoryPage(
       messages: merged,
