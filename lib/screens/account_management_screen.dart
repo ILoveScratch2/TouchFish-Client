@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
 
@@ -92,34 +93,23 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
       if (!mounted) return;
 
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              l10n.adminAccountRoleChangeSuccess(
-                user.username,
-                _statDisplayName(l10n, newStat),
-              ),
-            ),
-            behavior: SnackBarBehavior.floating,
+        TouchFishSnackbarService.instance.show(
+          l10n.adminAccountRoleChangeSuccess(
+            user.username,
+            _statDisplayName(l10n, newStat),
           ),
         );
         await _loadUsers(page: _currentPage);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_roleChangeFailedMessage(l10n)),
-            behavior: SnackBarBehavior.floating,
-          ),
+        TouchFishSnackbarService.instance.show(
+          _roleChangeFailedMessage(l10n),
         );
       }
     } catch (e) {
       talker.error('AccountManagementScreen: changeUserStat failed', e);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_roleChangeFailedMessage(l10n)),
-          behavior: SnackBarBehavior.floating,
-        ),
+      TouchFishSnackbarService.instance.show(
+        _roleChangeFailedMessage(l10n),
       );
     }
   }
@@ -170,41 +160,26 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
       if (!mounted) return;
 
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isBanned
-                  ? l10n.adminAccountUnbanSuccess(user.username)
-                  : l10n.adminAccountBanSuccess(user.username),
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
+        TouchFishSnackbarService.instance.show(
+          isBanned
+              ? l10n.adminAccountUnbanSuccess(user.username)
+              : l10n.adminAccountBanSuccess(user.username),
         );
         await _loadUsers(page: _currentPage);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isBanned
-                  ? l10n.adminAccountUnbanFailed
-                  : l10n.adminAccountBanFailed,
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
+        TouchFishSnackbarService.instance.show(
+          isBanned
+              ? l10n.adminAccountUnbanFailed
+              : l10n.adminAccountBanFailed,
         );
       }
     } catch (e) {
       talker.error('AccountManagementScreen: banUser failed', e);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isBanned
-                ? l10n.adminAccountUnbanFailed
-                : l10n.adminAccountBanFailed,
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
+      TouchFishSnackbarService.instance.show(
+        isBanned
+            ? l10n.adminAccountUnbanFailed
+            : l10n.adminAccountBanFailed,
       );
     }
   }
@@ -246,29 +221,20 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
       if (!mounted) return;
 
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.adminAccountDeleteSuccess(user.username)),
-            behavior: SnackBarBehavior.floating,
-          ),
+        TouchFishSnackbarService.instance.show(
+          l10n.adminAccountDeleteSuccess(user.username),
         );
         await _loadUsers(page: _currentPage);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.adminAccountDeleteFailed),
-            behavior: SnackBarBehavior.floating,
-          ),
+        TouchFishSnackbarService.instance.show(
+          l10n.adminAccountDeleteFailed,
         );
       }
     } catch (e) {
       talker.error('AccountManagementScreen: deleteUser failed', e);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.adminAccountDeleteFailed),
-          behavior: SnackBarBehavior.floating,
-        ),
+      TouchFishSnackbarService.instance.show(
+        l10n.adminAccountDeleteFailed,
       );
     }
   }
@@ -552,25 +518,17 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
         introduction: data.introduction,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? l10n.adminAccountCreateSuccess
-                : l10n.adminAccountCreateFailed,
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
+      TouchFishSnackbarService.instance.show(
+        success
+            ? l10n.adminAccountCreateSuccess
+            : l10n.adminAccountCreateFailed,
       );
       if (success) await _loadUsers(page: 1);
     } catch (e) {
       talker.error('AccountManagementScreen: create user failed', e);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.adminAccountCreateFailed),
-            behavior: SnackBarBehavior.floating,
-          ),
+        TouchFishSnackbarService.instance.show(
+          l10n.adminAccountCreateFailed,
         );
       }
     } finally {

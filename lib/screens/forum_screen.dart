@@ -9,6 +9,7 @@ import '../utils/talker.dart';
 import '../services/notification_service.dart';
 import '../widgets/forum_notification_sheet.dart';
 import '../services/draft_service.dart';
+import '../services/snackbar_service.dart';
 
 class ForumScreen extends StatefulWidget {
   const ForumScreen({super.key});
@@ -191,18 +192,11 @@ class _ForumScreenState extends State<ForumScreen> {
                         if (!dialogContext.mounted) return;
                         Navigator.pop(dialogContext, true);
                         if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(l10n.forumCreateSuccess)),
-                        );
+                        TouchFishSnackbarService.instance.show(l10n.forumCreateSuccess);
                         _loadForums();
                       } else {
                         setDialogState(() => isSubmitting = false);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(l10n.forumCreateFailed),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
+                        TouchFishSnackbarService.instance.show(l10n.forumCreateFailed);
                       }
                     },
               child: isSubmitting

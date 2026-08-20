@@ -9,6 +9,7 @@ import 'dart:math';
 import '../l10n/app_localizations.dart';
 import '../constants/app_constants.dart';
 import 'debug/debug_options_screen.dart';
+import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
 
@@ -363,9 +364,7 @@ class _AboutScreenState extends State<AboutScreen>
 
   void _copyToClipboard(String text, String message) {
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
-    );
+    TouchFishSnackbarService.instance.show(message);
   }
 
   Future<void> _showLicenseDialog(BuildContext context) async {
@@ -465,11 +464,8 @@ class _AboutScreenState extends State<AboutScreen>
                               Clipboard.setData(
                                 ClipboardData(text: licenseText),
                               );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(l10n.aboutCopiedToClipboard),
-                                  duration: const Duration(seconds: 2),
-                                ),
+                              TouchFishSnackbarService.instance.show(
+                                l10n.aboutCopiedToClipboard,
                               );
                             },
                             tooltip: l10n.aboutCopyToClipboard,
@@ -718,11 +714,8 @@ class _AboutScreenState extends State<AboutScreen>
                               Clipboard.setData(
                                 ClipboardData(text: licenseText),
                               );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(l10n.aboutCopiedToClipboard),
-                                  duration: const Duration(seconds: 2),
-                                ),
+                              TouchFishSnackbarService.instance.show(
+                                l10n.aboutCopiedToClipboard,
                               );
                             },
                             tooltip: l10n.aboutCopyToClipboard,

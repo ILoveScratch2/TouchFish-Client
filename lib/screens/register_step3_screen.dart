@@ -4,6 +4,7 @@ import 'package:smart_form_guard/smart_form_guard.dart';
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../services/api/tf_api_client.dart';
+import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 
 class RegisterStep3Screen extends StatefulWidget {
@@ -34,12 +35,7 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
     final l10n = AppLocalizations.of(context)!;
     final code = int.tryParse(_verificationCodeController.text.trim());
     if (code == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.registerErrorVerificationCodeInvalid),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      TouchFishSnackbarService.instance.show(l10n.registerErrorVerificationCodeInvalid);
       return;
     }
     setState(() => _isLoading = true);
@@ -53,23 +49,13 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
       if (success) {
         context.go(AppRoutes.registerSuccess);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.registerActivateFailed),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        TouchFishSnackbarService.instance.show(l10n.registerActivateFailed);
       }
     } catch (e) {
       talker.error('RegisterStep3: activate failed', e);
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.registerActivateFailed),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        TouchFishSnackbarService.instance.show(l10n.registerActivateFailed);
       }
     }
   }

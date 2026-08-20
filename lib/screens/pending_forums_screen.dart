@@ -5,6 +5,7 @@ import '../models/forum_model.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/forum_pending_service.dart';
+import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
 
@@ -104,31 +105,17 @@ class _PendingForumsScreenState extends State<PendingForumsScreen> {
       if (!mounted) return;
 
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.adminApproveForumSuccess(forum.forumName)),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        TouchFishSnackbarService.instance
+            .show(l10n.adminApproveForumSuccess(forum.forumName));
         await _loadPendingForums();
         ForumPendingService.instance.refresh();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.adminApproveForumFailed),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        TouchFishSnackbarService.instance.show(l10n.adminApproveForumFailed);
       }
     } catch (e) {
       talker.error('PendingForumsScreen: approveForum failed', e);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.adminApproveForumFailed),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      TouchFishSnackbarService.instance.show(l10n.adminApproveForumFailed);
     } finally {
       if (mounted) {
         setState(() => _processingQueueIds.remove(forum.queueId));
@@ -173,31 +160,17 @@ class _PendingForumsScreenState extends State<PendingForumsScreen> {
       if (!mounted) return;
 
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.adminRejectForumSuccess(forum.forumName)),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        TouchFishSnackbarService.instance
+            .show(l10n.adminRejectForumSuccess(forum.forumName));
         await _loadPendingForums();
         ForumPendingService.instance.refresh();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.adminRejectForumFailed),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        TouchFishSnackbarService.instance.show(l10n.adminRejectForumFailed);
       }
     } catch (e) {
       talker.error('PendingForumsScreen: rejectForum failed', e);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.adminRejectForumFailed),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      TouchFishSnackbarService.instance.show(l10n.adminRejectForumFailed);
     } finally {
       if (mounted) {
         setState(() => _processingQueueIds.remove(forum.queueId));

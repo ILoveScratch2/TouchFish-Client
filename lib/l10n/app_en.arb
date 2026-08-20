@@ -1215,6 +1215,7 @@
   "chatExportJson": "Export JSON",
   "chatExportCsv": "Export CSV",
   "chatExportSuccess": "Chat history exported",
+  "chatExportEmpty": "No messages to export",
   "settingsResetStatsRooms": "Rooms",
   "settingsResetStatsMessages": "Messages",
   "settingsResetStatsSize": "Database size",

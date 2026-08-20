@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
+import '../services/snackbar_service.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../l10n/app_localizations.dart';
 import '../models/file_attachment.dart';
@@ -120,20 +121,10 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
     );
     if (!mounted) return;
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.adminFileForceDeleted(fileName)),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      TouchFishSnackbarService.instance.show(l10n.adminFileForceDeleted(fileName));
       await _loadAllFiles();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.adminFileForceDeleteFailed),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      TouchFishSnackbarService.instance.show(l10n.adminFileForceDeleteFailed);
     }
   }
 

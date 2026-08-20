@@ -5,6 +5,7 @@ import '../models/notification_model.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/notification_service.dart';
+import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../widgets/markdown_renderer.dart';
 
@@ -116,9 +117,7 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
     final content = controller.text.trim();
     if (mounted) {
       if (content.isEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.announcementCreateEmpty)));
+        TouchFishSnackbarService.instance.show(l10n.announcementCreateEmpty);
         return;
       }
       final uid = AuthState.instance.uid;
@@ -130,15 +129,8 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
         content,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              success
-                  ? l10n.announcementCreateSuccess
-                  : l10n.announcementCreateFailed,
-            ),
-          ),
-        );
+        TouchFishSnackbarService.instance
+            .show(success ? l10n.announcementCreateSuccess : l10n.announcementCreateFailed);
         if (success) _load();
       }
     }
@@ -176,9 +168,7 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
     final content = controller.text.trim();
     if (mounted) {
       if (content.isEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.announcementEditEmpty)));
+        TouchFishSnackbarService.instance.show(l10n.announcementEditEmpty);
         return;
       }
       final uid = AuthState.instance.uid;
@@ -192,15 +182,8 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
       );
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              success
-                  ? l10n.announcementEditSuccess
-                  : l10n.announcementEditFailed,
-            ),
-          ),
-        );
+        TouchFishSnackbarService.instance
+            .show(success ? l10n.announcementEditSuccess : l10n.announcementEditFailed);
         if (success) _load();
       }
     }
@@ -240,15 +223,8 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
     );
     if (mounted) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? l10n.announcementDeleteSuccess
-                : l10n.announcementDeleteFailed,
-          ),
-        ),
-      );
+      TouchFishSnackbarService.instance
+          .show(success ? l10n.announcementDeleteSuccess : l10n.announcementDeleteFailed);
       if (success) _load();
     }
   }

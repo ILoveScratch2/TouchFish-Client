@@ -4,6 +4,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/app_notification.dart';
 import '../../models/settings_service.dart';
 import '../../services/app_notification_service.dart';
+import '../../services/snackbar_service.dart';
 
 class NotificationTestScreen extends StatelessWidget {
   const NotificationTestScreen({super.key});
@@ -119,13 +120,8 @@ class NotificationTestScreen extends StatelessWidget {
       notification,
     );
     if (!context.mounted || shown) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context)!.debugNotificationSystemUnavailable,
-        ),
-      ),
-    );
+    TouchFishSnackbarService.instance
+        .show(AppLocalizations.of(context)!.debugNotificationSystemUnavailable);
   }
 }
 

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/api/tf_api_client.dart';
 import '../../services/auth_state.dart';
+import '../../services/snackbar_service.dart';
 
 class ApiTestScreen extends StatefulWidget {
   const ApiTestScreen({super.key});
@@ -47,12 +48,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
   }
 
   void _showMessage(String message) {
-    final messenger = ScaffoldMessenger.of(context);
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-      );
+    TouchFishSnackbarService.instance.show(message);
   }
 
   Map<String, dynamic> _parseRequestBody(String source) {

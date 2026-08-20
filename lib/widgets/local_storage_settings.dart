@@ -82,12 +82,7 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
       _working = false;
       _stickerCacheBytes = 0;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.settingsCacheCleared),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    TouchFishSnackbarService.instance.show(AppLocalizations.of(context)!.settingsCacheCleared);
   }
 
   Future<void> _clearMediaCache() async {
@@ -98,12 +93,7 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
       _working = false;
       _mediaCacheBytes = 0;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.settingsCacheCleared),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    TouchFishSnackbarService.instance.show(AppLocalizations.of(context)!.settingsCacheCleared);
   }
 
   Future<void> _clearFlutterCache() async {
@@ -114,12 +104,7 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
       _working = false;
       _flutterCacheBytes = 0;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.settingsCacheCleared),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    TouchFishSnackbarService.instance.show(AppLocalizations.of(context)!.settingsCacheCleared);
   }
 
   Future<void> _clearAllCaches() async {
@@ -136,12 +121,7 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
       _mediaCacheBytes = 0;
       _stickerCacheBytes = 0;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.settingsCacheCleared),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    TouchFishSnackbarService.instance.show(AppLocalizations.of(context)!.settingsCacheCleared);
   }
 
   Future<void> _resetMessages() async {
@@ -421,31 +401,46 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
   }
 
   Future<void> _exportDatabase() async {
-    final saved = await DatabaseBackupService.instance.exportMessages(
-      server: await TfApiClient.instance.getBaseUrl(),
-      uid: AuthState.instance.uid ?? 0,
-    );
-    if (saved) TouchFishSnackbarService.instance.show(AppLocalizations.of(context)!.settingsDatabaseExportSuccess);
+    final l10n = AppLocalizations.of(context)!;
+    final uid = AuthState.instance.uid;
+    if (uid == null) {
+      TouchFishSnackbarService.instance.show(l10n.commonFailedOperation);
+      return;
+    }
+    try {
+      final server = await TfApiClient.instance.getBaseUrl();
+      final saved = await DatabaseBackupService.instance.exportMessages(
+        server: server,
+        uid: uid,
+      );
+      if (!mounted || !saved) return;
+      TouchFishSnackbarService.instance.show(
+        l10n.settingsDatabaseExportSuccess,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      TouchFishSnackbarService.instance.show(l10n.commonFailedOperation);
+    }
   }
 
   Future<void> _importDatabase() async {
-    final serverController = TextEditingController(text: await TfApiClient.instance.getBaseUrl());
-    final server = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.settingsDatabaseImport),
-        content: TextField(controller: serverController, decoration: const InputDecoration(labelText: 'Server URL')),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(AppLocalizations.of(context)!.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, serverController.text.trim()), child: Text(AppLocalizations.of(context)!.confirm)),
-        ],
-      ),
-    );
-    serverController.dispose();
-    if (server == null || server.isEmpty) return;
-    final count = await DatabaseBackupService.instance.importMessages(server: server, uid: AuthState.instance.uid ?? 0);
-    if (!mounted || count == null) return;
-    await _load();
-    TouchFishSnackbarService.instance.show(AppLocalizations.of(context)!.settingsDatabaseImportSuccess(count));
+    final l10n = AppLocalizations.of(context)!;
+    final uid = AuthState.instance.uid;
+    if (uid == null) {
+      TouchFishSnackbarService.instance.show(l10n.commonFailedOperation);
+      return;
+    }
+    try {
+      final count = await DatabaseBackupService.instance.importMessages();
+      if (!mounted || count == null) return;
+      await _load();
+      if (!mounted) return;
+      TouchFishSnackbarService.instance.show(
+        l10n.settingsDatabaseImportSuccess(count),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      TouchFishSnackbarService.instance.show(l10n.commonFailedOperation);
+    }
   }
 }

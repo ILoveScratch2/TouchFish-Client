@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
+import '../services/snackbar_service.dart';
 import '../oss_licenses.dart';
 
 class LicensesScreen extends StatefulWidget {
@@ -357,12 +358,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
                                 Clipboard.setData(
                                   ClipboardData(text: package.license!),
                                 );
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(l10n.licensesLicenseCopied),
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
+                                TouchFishSnackbarService.instance.show(l10n.licensesLicenseCopied);
                               },
                               tooltip: l10n.aboutCopyToClipboard,
                             ),

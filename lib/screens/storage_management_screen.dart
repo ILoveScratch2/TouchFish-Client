@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
+import '../services/snackbar_service.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../l10n/app_localizations.dart';
 import '../models/file_attachment.dart';
@@ -94,11 +95,8 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     if (bytes == null) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.storageCouldNotReadFile),
-          behavior: SnackBarBehavior.floating,
-        ),
+      TouchFishSnackbarService.instance.show(
+        l10n.storageCouldNotReadFile,
       );
       return;
     }
@@ -107,13 +105,8 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     if (maxSize != null && bytes.length > maxSize) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n.storageFileTooLarge((maxSize / (1024 * 1024)).round()),
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
+      TouchFishSnackbarService.instance.show(
+        l10n.storageFileTooLarge((maxSize / (1024 * 1024)).round()),
       );
       return;
     }
@@ -131,29 +124,20 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       if (response != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.storageUploaded(file.name)),
-            behavior: SnackBarBehavior.floating,
-          ),
+        TouchFishSnackbarService.instance.show(
+          l10n.storageUploaded(file.name),
         );
         await _loadData();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.storageUploadFailed),
-            behavior: SnackBarBehavior.floating,
-          ),
+        TouchFishSnackbarService.instance.show(
+          l10n.storageUploadFailed,
         );
       }
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${l10n.storageUploadError}: $e'),
-          behavior: SnackBarBehavior.floating,
-        ),
+      TouchFishSnackbarService.instance.show(
+        '${l10n.storageUploadError}: $e',
       );
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -187,19 +171,13 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     final ok = await TfApiClient.instance.deleteFile(uid, password, hash);
     if (!mounted) return;
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.storageDeleted(fileName)),
-          behavior: SnackBarBehavior.floating,
-        ),
+      TouchFishSnackbarService.instance.show(
+        l10n.storageDeleted(fileName),
       );
       await _loadData();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.storageDeleteFailed),
-          behavior: SnackBarBehavior.floating,
-        ),
+      TouchFishSnackbarService.instance.show(
+        l10n.storageDeleteFailed,
       );
     }
   }

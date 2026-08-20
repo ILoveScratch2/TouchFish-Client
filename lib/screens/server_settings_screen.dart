@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 
 class ServerSettingsScreen extends StatefulWidget {
@@ -133,13 +134,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           _isLoading = false;
         });
         if (showError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.adminServerSettingsLoadFailed,
-              ),
-              behavior: SnackBarBehavior.floating,
-            ),
+          TouchFishSnackbarService.instance.show(
+            AppLocalizations.of(context)!.adminServerSettingsLoadFailed,
           );
         }
         return;
@@ -160,13 +156,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         _isLoading = false;
       });
       if (showError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.adminServerSettingsLoadFailed,
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
+        TouchFishSnackbarService.instance.show(
+          AppLocalizations.of(context)!.adminServerSettingsLoadFailed,
         );
       }
     }
@@ -265,11 +256,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         smtpPort == null ||
         defaultJoinTargets == null ||
         (_reverseProxyEnabled && proxyCount == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.adminServerSettingsInvalidInput),
-          behavior: SnackBarBehavior.floating,
-        ),
+      TouchFishSnackbarService.instance.show(
+        l10n.adminServerSettingsInvalidInput,
       );
       return;
     }
@@ -289,11 +277,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         if (_emailEnabled) {
           if (verifyEmail.isEmpty || emailPassword.isEmpty) {
             setState(() => _isSaving = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.adminServerEmailPasswordRequired),
-                behavior: SnackBarBehavior.floating,
-              ),
+            TouchFishSnackbarService.instance.show(
+              l10n.adminServerEmailPasswordRequired,
             );
             return;
           }
@@ -306,11 +291,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           );
           if (!emailOk) {
             setState(() => _isSaving = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.adminServerSettingsSaveFailed),
-                behavior: SnackBarBehavior.floating,
-              ),
+            TouchFishSnackbarService.instance.show(
+              l10n.adminServerSettingsSaveFailed,
             );
             return;
           }
@@ -322,11 +304,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           );
           if (!emailOk) {
             setState(() => _isSaving = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.adminServerSettingsSaveFailed),
-                behavior: SnackBarBehavior.floating,
-              ),
+            TouchFishSnackbarService.instance.show(
+              l10n.adminServerSettingsSaveFailed,
             );
             return;
           }
@@ -361,11 +340,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
 
       if (updated == null) {
         setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.adminServerSettingsSaveFailed),
-            behavior: SnackBarBehavior.floating,
-          ),
+        TouchFishSnackbarService.instance.show(
+          l10n.adminServerSettingsSaveFailed,
         );
         return;
       }
@@ -376,11 +352,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         _isSaving = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.adminServerSettingsSaveSuccess),
-          behavior: SnackBarBehavior.floating,
-        ),
+      TouchFishSnackbarService.instance.show(
+        l10n.adminServerSettingsSaveSuccess,
       );
     } catch (e, stackTrace) {
       talker.error('ServerSettingsScreen._saveSettings failed', e, stackTrace);
@@ -388,11 +361,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         return;
       }
       setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.adminServerSettingsSaveFailed),
-          behavior: SnackBarBehavior.floating,
-        ),
+      TouchFishSnackbarService.instance.show(
+        l10n.adminServerSettingsSaveFailed,
       );
     }
   }

@@ -6,6 +6,7 @@ import '../models/message_model.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
+import '../services/snackbar_service.dart';
 
 /// 群精华消息列表页。
 ///
@@ -135,11 +136,8 @@ class _GroupEssenceScreenState extends State<GroupEssenceScreen> {
     if (ok) {
       await _load(showLoading: false);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.commonFailedOperation),
-        ),
-      );
+      TouchFishSnackbarService.instance
+          .show(AppLocalizations.of(context)!.commonFailedOperation);
     }
   }
 

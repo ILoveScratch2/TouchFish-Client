@@ -344,14 +344,23 @@ class LocalMessageStore {
         WHERE server_key = ? AND uid = ? AND room_id = ?$beforeClause
         ORDER BY timestamp DESC, message_key DESC$limitClause
         ''', parameters);
-      return rows.reversed
-          .map(
-            (row) => ChatMessage.fromJson(
+      final messages = <ChatMessage>[];
+      for (final row in rows.reversed) {
+        try {
+          messages.add(
+            ChatMessage.fromJson(
               jsonDecode(row['payload'] as String) as Map<String, dynamic>,
               activeUid: uid,
             ),
-          )
-          .toList();
+          );
+        } catch (error) {
+          talker.error(
+            'LocalMessageStore loadMessages: skip malformed message',
+            error,
+          );
+        }
+      }
+      return messages;
     } catch (e) {
       talker.error('LocalMessageStore loadMessages error', e);
       return [];
@@ -442,15 +451,26 @@ class LocalMessageStore {
       'SELECT room_id, message_key, timestamp, payload FROM messages WHERE server_key = ? AND uid = ? ORDER BY timestamp ASC',
       [scope.server, scope.uid],
     );
+    final exported = <Map<String, dynamic>>[];
+    for (final row in rows) {
+      try {
+        exported.add({
+          'roomId': row['room_id'],
+          'messageKey': row['message_key'],
+          'timestamp': row['timestamp'],
+          'payload': jsonDecode(row['payload'] as String),
+        });
+      } catch (error) {
+        talker.error(
+          'LocalMessageStore exportSnapshot: skip malformed message',
+          error,
+        );
+      }
+    }
     return {
       'server': scope.server,
       'uid': scope.uid,
-      'messages': rows.map((row) => {
-        'roomId': row['room_id'],
-        'messageKey': row['message_key'],
-        'timestamp': row['timestamp'],
-        'payload': jsonDecode(row['payload'] as String),
-      }).toList(),
+      'messages': exported,
     };
   }
 
@@ -467,11 +487,14 @@ class LocalMessageStore {
         final messageKey = raw['messageKey']?.toString();
         final payload = raw['payload'];
         if (roomId == null || messageKey == null || payload is! Map) continue;
+        final timestamp = raw['timestamp'] is num
+            ? (raw['timestamp'] as num).toInt()
+            : int.tryParse(raw['timestamp']?.toString() ?? '') ?? 0;
         db.execute('''INSERT OR REPLACE INTO messages
           (server_key, uid, room_id, message_key, timestamp, payload)
           VALUES (?, ?, ?, ?, ?, ?)''', [
           scope.server, scope.uid, roomId, messageKey,
-          (raw['timestamp'] as num?)?.toInt() ?? 0, jsonEncode(payload),
+          timestamp, jsonEncode(payload),
         ]);
         count++;
       }

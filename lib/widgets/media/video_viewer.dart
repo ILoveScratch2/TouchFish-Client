@@ -7,6 +7,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../services/media_proxy_service.dart';
+import '../../services/snackbar_service.dart';
 
 class VideoViewer extends StatefulWidget {
   final String videoPath;
@@ -320,12 +321,7 @@ class _VideoErrorWidget extends StatelessWidget {
                     OutlinedButton.icon(
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: errorMessage));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Error copied to clipboard'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
+                        TouchFishSnackbarService.instance.show('Error copied to clipboard');
                       },
                       icon: const Icon(Symbols.content_copy, size: 18),
                       label: const Text('Copy'),

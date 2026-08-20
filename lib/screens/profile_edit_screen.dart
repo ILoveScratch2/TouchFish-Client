@@ -9,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
 import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
+import '../services/snackbar_service.dart';
 import '../widgets/account/profile_picture.dart';
 import '../utils/talker.dart';
 
@@ -199,25 +200,14 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       await AuthState.instance.refreshProfile();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            allOk ? l10n.profileEditUpdated : l10n.profileEditSaveFailed,
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      TouchFishSnackbarService.instance
+          .show(allOk ? l10n.profileEditUpdated : l10n.profileEditSaveFailed);
       if (allOk && mounted) context.pop();
     } catch (e) {
       talker.error('_saveProfile failed', e);
       if (mounted) {
         setState(() => _isSubmitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.profileEditSaveFailed),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        TouchFishSnackbarService.instance.show(l10n.profileEditSaveFailed);
       }
     }
   }
