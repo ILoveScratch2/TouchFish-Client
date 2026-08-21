@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show compute, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:pointycastle/export.dart';
@@ -51,7 +51,7 @@ class LockService extends ChangeNotifier {
 
   Future<void> enableMasterPassword(String password) async {
     final salt = _randomBytes(16);
-    final hash = _derive(password, salt);
+    final hash = await _derivePassword(password, salt);
     _salt = _encode(salt);
     _hash = _encode(hash);
     await _prefs!.setString(_keySalt, _salt!);
@@ -62,7 +62,7 @@ class LockService extends ChangeNotifier {
 
   Future<bool> verifyPassword(String password) async {
     if (!isEnabled || _salt == null || _hash == null) return false;
-    final expected = _derive(password, _decode(_salt!));
+    final expected = await _derivePassword(password, _decode(_salt!));
     return _constantTimeEquals(expected, _decode(_hash!));
   }
 
@@ -165,11 +165,11 @@ class LockService extends ChangeNotifier {
     );
   }
 
-  Uint8List _derive(String password, Uint8List salt) {
-    final derivator = PBKDF2KeyDerivator(HMac(SHA256Digest(), 64))
-      ..init(Pbkdf2Parameters(salt, _iterations, 32));
-    return derivator.process(Uint8List.fromList(utf8.encode(password)));
-  }
+  Future<Uint8List> _derivePassword(String password, Uint8List salt) => compute(
+    _derivePasswordHash,
+    (password: password, salt: salt, iterations: _iterations),
+    debugLabel: 'TouchFish password derivation',
+  );
 
   Uint8List _randomBytes(int length) =>
       Uint8List.fromList(List.generate(length, (_) => Random.secure().nextInt(256)));
@@ -185,6 +185,18 @@ class LockService extends ChangeNotifier {
 
   String _encode(List<int> bytes) => base64Encode(bytes);
   Uint8List _decode(String value) => Uint8List.fromList(base64.decode(value));
+}
+
+typedef _PasswordDerivationInput = ({
+  String password,
+  Uint8List salt,
+  int iterations,
+});
+
+Uint8List _derivePasswordHash(_PasswordDerivationInput input) {
+  final derivator = PBKDF2KeyDerivator(HMac(SHA256Digest(), 64))
+    ..init(Pbkdf2Parameters(input.salt, input.iterations, 32));
+  return derivator.process(Uint8List.fromList(utf8.encode(input.password)));
 }
 
 class LockException implements Exception {

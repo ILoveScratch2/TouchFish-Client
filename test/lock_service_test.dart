@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -34,14 +36,33 @@ void main() {
     expect(restarted.isLocked, isTrue);
   });
 
-  test('verifyPassword accepts the correct password and rejects wrong ones',
-      () async {
+  test(
+    'verifyPassword accepts the correct password and rejects wrong ones',
+    () async {
+      final service = LockService.instance;
+      await service.init();
+      await service.enableMasterPassword('secret-1234');
+      expect(await service.verifyPassword('secret-1234'), isTrue);
+      expect(await service.verifyPassword('wrong'), isFalse);
+      expect(await service.verifyPassword(''), isFalse);
+    },
+  );
+
+  test('password verification does not block the event loop', () async {
     final service = LockService.instance;
     await service.init();
     await service.enableMasterPassword('secret-1234');
-    expect(await service.verifyPassword('secret-1234'), isTrue);
-    expect(await service.verifyPassword('wrong'), isFalse);
-    expect(await service.verifyPassword(''), isFalse);
+
+    var ticks = 0;
+    final timer = Timer.periodic(
+      const Duration(milliseconds: 10),
+      (_) => ticks++,
+    );
+    final verified = await service.verifyPassword('secret-1234');
+    timer.cancel();
+
+    expect(verified, isTrue);
+    expect(ticks, greaterThan(0));
   });
 
   test('lock and unlockWithPassword toggle the locked state', () async {
@@ -88,31 +109,30 @@ void main() {
     expect(await service.verifyPassword('old-password'), isTrue);
   });
 
-  test('disableMasterPassword requires the current password and clears state',
-      () async {
-    final service = LockService.instance;
-    await service.init();
-    await service.enableMasterPassword('secret-1234');
+  test(
+    'disableMasterPassword requires the current password and clears state',
+    () async {
+      final service = LockService.instance;
+      await service.init();
+      await service.enableMasterPassword('secret-1234');
 
-    await expectLater(
-      service.disableMasterPassword('wrong'),
-      throwsA(isA<LockException>()),
-    );
-    expect(service.isEnabled, isTrue);
+      await expectLater(
+        service.disableMasterPassword('wrong'),
+        throwsA(isA<LockException>()),
+      );
+      expect(service.isEnabled, isTrue);
 
-    await service.disableMasterPassword('secret-1234');
-    expect(service.isEnabled, isFalse);
-    expect(service.isLocked, isFalse);
-    expect(service.isBiometricEnabled, isFalse);
-  });
+      await service.disableMasterPassword('secret-1234');
+      expect(service.isEnabled, isFalse);
+      expect(service.isLocked, isFalse);
+      expect(service.isBiometricEnabled, isFalse);
+    },
+  );
 
   test('biometric enable requires a master password first', () async {
     final service = LockService.instance;
     await service.init();
-    await expectLater(
-      service.enableBiometric(),
-      throwsA(isA<LockException>()),
-    );
+    await expectLater(service.enableBiometric(), throwsA(isA<LockException>()));
   });
 
   test('biometric enable prompts once and persists on success', () async {
@@ -137,18 +157,14 @@ void main() {
     expect(restarted.isBiometricEnabled, isTrue);
   });
 
-  test('biometric enable does not persist when authentication fails',
-      () async {
+  test('biometric enable does not persist when authentication fails', () async {
     final service = LockService.instance;
     await service.init();
     await service.enableMasterPassword('secret-1234');
     service.biometricAvailabilityOverride = () async => true;
     service.biometricPrompt = (_) async => false;
 
-    await expectLater(
-      service.enableBiometric(),
-      throwsA(isA<LockException>()),
-    );
+    await expectLater(service.enableBiometric(), throwsA(isA<LockException>()));
     expect(service.isBiometricEnabled, isFalse);
   });
 
