@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'data_saving_image.dart';
+import 'optimized_image.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -912,15 +913,15 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
           borderRadius: BorderRadius.circular(12),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 300, maxHeight: 400),
-            child: widget.cachedBytes != null
-                ? Image.memory(
-                    widget.cachedBytes!,
-                    fit: BoxFit.cover,
-                    gaplessPlayback: true,
-                  )
-                : _isRemotePath(media.path)
-                ? Image.network(media.path, fit: BoxFit.cover)
-                : Image.file(File(media.path), fit: BoxFit.cover),
+            child: OptimizedImage(
+              provider: widget.cachedBytes != null
+                  ? MemoryImage(widget.cachedBytes!)
+                  : _isRemotePath(media.path)
+                  ? NetworkImage(media.path)
+                  : FileImage(File(media.path)),
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+            ),
           ),
         ),
       ),

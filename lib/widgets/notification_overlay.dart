@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../services/app_notification_service.dart';
+import 'optimized_image.dart';
 
 class AppNotificationOverlay extends StatelessWidget {
   const AppNotificationOverlay({super.key});
@@ -276,7 +277,12 @@ class _NotificationAvatar extends StatelessWidget {
     if (url?.isNotEmpty == true) {
       return CircleAvatar(
         radius: 14,
-        backgroundImage: NetworkImage(url!),
+        backgroundImage: resizedImageProvider(
+          NetworkImage(url!),
+          MediaQuery.of(context).devicePixelRatio,
+          width: 28,
+          height: 28,
+        ),
         onBackgroundImageError: (_, _) {},
       );
     }

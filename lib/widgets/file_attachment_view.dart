@@ -14,6 +14,7 @@ import '../services/snackbar_service.dart';
 import 'media/audio_player.dart';
 import 'media/image_lightbox.dart';
 import 'media/video_viewer.dart';
+import 'optimized_image.dart';
 import 'sheet_scaffold.dart';
 
 class FileAttachmentView extends StatefulWidget {
@@ -281,13 +282,15 @@ class _AttachmentPreview extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: bytes == null
-                  ? Image.network(
-                      url,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => _error(context),
-                    )
-                  : Image.memory(bytes!, fit: BoxFit.contain),
+              child: OptimizedImage(
+                provider: bytes == null
+                    ? NetworkImage(url)
+                    : MemoryImage(bytes!),
+                fit: BoxFit.contain,
+                errorBuilder: bytes == null
+                    ? (_, __, ___) => _error(context)
+                    : null,
+              ),
             ),
           );
         } else if (attachment.isVideo) {

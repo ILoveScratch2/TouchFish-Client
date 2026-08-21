@@ -5,6 +5,7 @@ import '../models/forum_model.dart';
 import '../models/user_profile.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/markdown_renderer.dart';
+import '../widgets/optimized_image.dart';
 import '../widgets/sticker_text_renderer.dart';
 import '../models/settings_service.dart';
 import '../services/api/tf_api_client.dart';
@@ -351,7 +352,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
               fit: StackFit.expand,
               children: [
                 if (forum.avatarUrl != null)
-                  Image.network(forum.avatarUrl!, fit: BoxFit.cover)
+                  OptimizedImage(
+                    provider: NetworkImage(forum.avatarUrl!),
+                    fit: BoxFit.cover,
+                  )
                 else ...[
                   ColoredBox(color: colorScheme.surfaceContainerHighest),
                   DecoratedBox(

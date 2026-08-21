@@ -7,6 +7,7 @@ import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
 import '../services/snackbar_service.dart';
+import '../widgets/optimized_image.dart';
 
 /// 群精华消息列表页。
 ///
@@ -271,7 +272,12 @@ class _EssenceMessageTile extends StatelessWidget {
             radius: 18,
             backgroundColor: colorScheme.primaryContainer,
             backgroundImage: senderAvatar != null
-                ? NetworkImage(senderAvatar)
+                ? resizedImageProvider(
+                    NetworkImage(senderAvatar),
+                    MediaQuery.of(context).devicePixelRatio,
+                    width: 36,
+                    height: 36,
+                  )
                 : null,
             child: senderAvatar == null
                 ? Icon(

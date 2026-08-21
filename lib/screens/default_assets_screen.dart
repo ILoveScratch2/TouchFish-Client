@@ -10,6 +10,7 @@ import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
+import '../widgets/optimized_image.dart';
 
 class DefaultAssetsScreen extends StatefulWidget {
   const DefaultAssetsScreen({super.key});
@@ -233,8 +234,8 @@ class _DefaultAssetsScreenState extends State<DefaultAssetsScreen> {
       );
     }
 
-    return Image.network(
-      assetUrl,
+    return OptimizedImage(
+      provider: NetworkImage(assetUrl),
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) {
         return Container(

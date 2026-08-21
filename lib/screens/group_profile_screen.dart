@@ -12,6 +12,7 @@ import '../services/snackbar_service.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
 import '../utils/talker.dart';
+import '../widgets/optimized_image.dart';
 
 const double _kProfileMaxWidth = 680;
 
@@ -334,7 +335,12 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
             radius: 72,
             backgroundColor: colorScheme.primaryContainer,
             backgroundImage: _groupAvatarUrl != null
-                ? NetworkImage(_groupAvatarUrl!)
+                ? resizedImageProvider(
+                    NetworkImage(_groupAvatarUrl!),
+                    MediaQuery.of(context).devicePixelRatio,
+                    width: 144,
+                    height: 144,
+                  )
                 : null,
             onBackgroundImageError: (_, _) {},
           ),

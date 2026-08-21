@@ -12,6 +12,7 @@ import '../widgets/chat_list_widget.dart';
 import '../widgets/contact_list_widget.dart';
 import '../widgets/invite_sheet.dart';
 import '../widgets/text_entry_dialog.dart';
+import '../widgets/optimized_image.dart';
 import '../services/notification_service.dart';
 import '../services/snackbar_service.dart';
 import '../routes/app_routes.dart';
@@ -527,7 +528,12 @@ class _ChatListScreenState extends State<ChatListScreen>
                     radius: 18,
                     backgroundColor: colorScheme.primaryContainer,
                     backgroundImage: room.avatar != null
-                        ? NetworkImage(room.avatar!)
+                        ? resizedImageProvider(
+                            NetworkImage(room.avatar!),
+                            MediaQuery.of(context).devicePixelRatio,
+                            width: 36,
+                            height: 36,
+                          )
                         : null,
                     child: room.avatar == null
                         ? Icon(
@@ -591,7 +597,12 @@ class _ChatListScreenState extends State<ChatListScreen>
                 radius: 18,
                 backgroundColor: colorScheme.primaryContainer,
                 backgroundImage: contact.avatar != null
-                    ? NetworkImage(contact.avatar!)
+                    ? resizedImageProvider(
+                        NetworkImage(contact.avatar!),
+                        MediaQuery.of(context).devicePixelRatio,
+                        width: 36,
+                        height: 36,
+                      )
                     : null,
                 child: contact.avatar == null
                     ? Icon(

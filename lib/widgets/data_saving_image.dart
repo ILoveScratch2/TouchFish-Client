@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/settings_service.dart';
+import 'optimized_image.dart';
 
 class DataSavingImage extends StatefulWidget {
   final String url;
@@ -31,6 +32,19 @@ class _DataSavingImageState extends State<DataSavingImage> {
         ),
       );
     }
-    return Image.network(widget.url, fit: widget.fit, width: widget.width, height: widget.height);
+    if (widget.width != null || widget.height != null) {
+      return Image(
+        image: resizedImageProvider(
+          NetworkImage(widget.url),
+          MediaQuery.of(context).devicePixelRatio,
+          width: widget.width,
+          height: widget.height,
+        ),
+        fit: widget.fit,
+        width: widget.width,
+        height: widget.height,
+      );
+    }
+    return OptimizedImage(provider: NetworkImage(widget.url), fit: widget.fit);
   }
 }

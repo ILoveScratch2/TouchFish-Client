@@ -7,6 +7,7 @@ import '../services/auth_state.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
+import '../widgets/optimized_image.dart';
 
 class AccountManagementScreen extends StatefulWidget {
   const AccountManagementScreen({super.key});
@@ -595,7 +596,12 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
                   radius: 22,
                   backgroundImage: user.avatar == null
                       ? null
-                      : NetworkImage(user.avatar!),
+                      : resizedImageProvider(
+                          NetworkImage(user.avatar!),
+                          MediaQuery.of(context).devicePixelRatio,
+                          width: 44,
+                          height: 44,
+                        ),
                   child: user.avatar == null
                       ? Text(user.username.characters.first.toUpperCase())
                       : null,

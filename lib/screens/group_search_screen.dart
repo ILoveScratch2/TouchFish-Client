@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../utils/talker.dart';
+import '../widgets/optimized_image.dart';
 
 /// 群聊搜索界面。
 ///
@@ -193,7 +194,14 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
           leading: CircleAvatar(
             radius: 24,
             backgroundColor: colorScheme.primaryContainer,
-            backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+            backgroundImage: avatarUrl != null
+                ? resizedImageProvider(
+                    NetworkImage(avatarUrl),
+                    MediaQuery.of(context).devicePixelRatio,
+                    width: 48,
+                    height: 48,
+                  )
+                : null,
             onBackgroundImageError: (_, _) {},
           ),
           title: Text(

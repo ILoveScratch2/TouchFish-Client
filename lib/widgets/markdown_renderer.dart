@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'data_saving_image.dart';
+import 'optimized_image.dart';
 import 'package:flutter_highlight/themes/a11y-dark.dart';
 import 'package:flutter_highlight/themes/a11y-light.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -412,7 +413,12 @@ class _MentionChipContent extends StatelessWidget {
               radius: 9,
               backgroundColor: chipColor.withValues(alpha: 0.35),
               backgroundImage: avatarUrl != null
-                  ? NetworkImage(avatarUrl)
+                  ? resizedImageProvider(
+                      NetworkImage(avatarUrl),
+                      MediaQuery.of(context).devicePixelRatio,
+                      width: 18,
+                      height: 18,
+                    )
                   : null,
               // Fallback: show '@' when no avatar is available.
               child: avatarUrl == null

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../models/chat_model.dart';
 import '../l10n/app_localizations.dart';
+import 'optimized_image.dart';
 
 class ChatListWidget extends StatelessWidget {
   final List<ChatRoom> chatRooms;
@@ -112,7 +113,14 @@ class ChatListWidget extends StatelessWidget {
 
     return CircleAvatar(
       backgroundColor: colorScheme.primaryContainer,
-      backgroundImage: room.avatar != null ? NetworkImage(room.avatar!) : null,
+      backgroundImage: room.avatar != null
+          ? resizedImageProvider(
+              NetworkImage(room.avatar!),
+              MediaQuery.of(context).devicePixelRatio,
+              width: 40,
+              height: 40,
+            )
+          : null,
       child: room.avatar == null
           ? Icon(
               room.type == ChatType.direct ? Icons.person : Icons.group,

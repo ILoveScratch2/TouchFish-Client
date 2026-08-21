@@ -33,6 +33,7 @@ import '../utils/talker.dart';
 import 'chat_room_settings_screen.dart';
 import 'group_essence_screen.dart';
 import '../widgets/pinned_messages_sheet.dart';
+import '../widgets/optimized_image.dart';
 import '../widgets/sync_indicator.dart';
 
 class ChatDetailScreen extends StatefulWidget {
@@ -58,8 +59,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final Map<int, GlobalKey> _messageKeys = {};
   final Map<String, Timer> _pendingWsTimers = {};
 
-  /// clientMids that already went through the REST fallback, to avoid
-  /// re-sending the same message twice.
   final Set<String> _restFallbackAttempted = {};
   ChatRoom? _currentRoom;
   final List<MentionUser> _mentionUsers = [];
@@ -203,7 +202,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       }
       return;
     }
-    // 无序号基线：用本地迁移的 last_mid 或房间列表 last_mid 建立同步点后再补拉
+    // 本地迁移的 last_mid 或房间列表 last_mid 建立同步点后再补拉
     final syncMid =
         await LocalMessageStore.instance.getRoomSyncMid(roomId) ??
         ChatDataService.instance.rooms
@@ -274,11 +273,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void _onAckError(({String clientMid, String error}) info) {
     if (!mounted) return;
 
-    // WS ack rejected the message. Some servers reject the WS `message.file`
-    // ownership check even though the file is owned by the sender (REST
-    // `/message/send` works). For file/media messages, retry immediately via
-    // REST using the same client_mid — the server dedups, so no duplicates.
-    // The failure snackbar is only shown if the REST retry also fails.
     final msgs = ChatDataService.instance.getMessages(_contactUid);
     final idx = msgs.indexWhere((m) => m.clientMid == info.clientMid);
     if (idx != -1 && msgs[idx].media != null) {
@@ -1914,7 +1908,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     return CircleAvatar(
       radius: 18,
       backgroundColor: colorScheme.primaryContainer,
-      backgroundImage: NetworkImage(avatarUrl),
+      backgroundImage: resizedImageProvider(
+        NetworkImage(avatarUrl),
+        MediaQuery.of(context).devicePixelRatio,
+        width: 36,
+        height: 36,
+      ),
       onBackgroundImageError: (_, error) {
         talker.warning(
           'Avatar load failed for ${_currentRoom!.id}: $avatarUrl',

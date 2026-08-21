@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../optimized_image.dart';
 
 class ProfilePictureWidget extends StatelessWidget {
   final String? avatarUrl;
@@ -19,7 +20,12 @@ class ProfilePictureWidget extends StatelessWidget {
     if (avatarUrl != null && avatarUrl!.isNotEmpty) {
       return CircleAvatar(
         radius: radius,
-        backgroundImage: NetworkImage(avatarUrl!),
+        backgroundImage: resizedImageProvider(
+          NetworkImage(avatarUrl!),
+          MediaQuery.of(context).devicePixelRatio,
+          width: radius * 2,
+          height: radius * 2,
+        ),
         backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       );
     }

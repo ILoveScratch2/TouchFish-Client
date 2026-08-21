@@ -12,6 +12,7 @@ import '../services/snackbar_service.dart';
 import '../routes/app_routes.dart';
 import '../utils/talker.dart';
 import '../widgets/account/profile_picture.dart';
+import '../widgets/optimized_image.dart';
 import '../widgets/text_entry_dialog.dart';
 
 class GroupManagementScreen extends StatefulWidget {
@@ -402,7 +403,12 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
                         radius: 48,
                         backgroundColor: cs.primaryContainer,
                         backgroundImage: _groupAvatarUrl != null
-                            ? NetworkImage(_groupAvatarUrl!)
+                            ? resizedImageProvider(
+                                NetworkImage(_groupAvatarUrl!),
+                                MediaQuery.of(context).devicePixelRatio,
+                                width: 96,
+                                height: 96,
+                              )
                             : null,
                         onBackgroundImageError: (_, __) {},
                         child: const Icon(
