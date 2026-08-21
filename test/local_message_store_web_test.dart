@@ -60,4 +60,42 @@ void main() {
       expect(stored.last.text, 'updated');
     },
   );
+
+  test('findMessageByMid locates a persisted message by server mid', () async {
+    final messages = [
+      for (var index = 0; index < 5; index++)
+        ChatMessage(
+          id: '$index',
+          mid: index,
+          text: 'message $index',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(index),
+          isMe: false,
+        ),
+    ];
+    await LocalMessageStore.instance.saveMessages('U2', messages);
+
+    final found = await LocalMessageStore.instance.findMessageByMid('U2', 3);
+
+    expect(found, isNotNull);
+    expect(found!.mid, 3);
+    expect(found.text, 'message 3');
+  });
+
+  test('findMessageByMid returns null for an unknown mid', () async {
+    final messages = [
+      ChatMessage(
+        id: '0',
+        mid: 0,
+        text: 'hello',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(0),
+        isMe: false,
+      ),
+    ];
+    await LocalMessageStore.instance.saveMessages('U2', messages);
+
+    final missing =
+        await LocalMessageStore.instance.findMessageByMid('U2', 42);
+
+    expect(missing, isNull);
+  });
 }

@@ -206,6 +206,16 @@ class LocalMessageStore {
     return loadMessages(roomId);
   }
 
+  Future<ChatMessage?> findMessageByMid(String roomId, int mid) async {
+    final scope = _requireScope();
+    final prefs = await SharedPreferences.getInstance();
+    final messages = await _loadMessages(prefs, scope, roomId);
+    for (final message in messages) {
+      if (message.mid == mid) return message;
+    }
+    return null;
+  }
+
   Future<List<LocalMessageSearchResult>> searchAllRooms(
     String query, {
     int limit = 200,

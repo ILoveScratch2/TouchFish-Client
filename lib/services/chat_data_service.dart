@@ -94,6 +94,7 @@ class ChatDataService extends ChangeNotifier {
   static const int _messagePageSize = 50;
   int? _roomPreferencesUid;
   String? _roomPreferencesScope;
+  final Set<String> _fetchingGroups = {};
 
   /// 从设置读取消息缓存的最大会话房间数（默认 50）
   int get _maxCachedRooms =>
@@ -133,6 +134,59 @@ class ChatDataService extends ChangeNotifier {
     merged.sort(_compareMessages);
     if (merged.isNotEmpty) return merged;
     return (await refreshMessagesForContact(roomId)).messages;
+  }
+
+  /// 按服务端消息 id（mid）定位消息，用于置顶消息等内容预览。
+  ///
+  /// 依次从内存缓存、本地库查找；仍缺失且 [allowServerFetch] 为 true 时，
+  /// 从服务端 /message/history 向前翻页（有界）补拉该消息，不影响当前可见列表。
+  Future<ChatMessage?> findMessageByMid(
+    String roomId,
+    int mid, {
+    bool allowServerFetch = true,
+  }) async {
+    for (final m in _messageCache[roomId] ?? const <ChatMessage>[]) {
+      if (m.mid == mid) return m;
+    }
+    final local = await _localStore.findMessageByMid(roomId, mid);
+    if (local != null || !allowServerFetch) return local;
+
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return null;
+    final generation = _generation;
+    final rk = roomKey(roomId);
+    var beforeMid = 0;
+    const maxPages = 20;
+    for (var pageCount = 0; pageCount < maxPages; pageCount++) {
+      if (_generation != generation || AuthState.instance.uid != uid) {
+        return null;
+      }
+      final page = await TfApiClient.instance.queryMessageHistory(
+        uid,
+        password,
+        rk > 0 ? rk : 0,
+        groupId: rk < 0 ? -rk : null,
+        beforeMid: beforeMid,
+        limit: _messagePageSize,
+      );
+      if (page.isEmpty) return null;
+      int? oldestMid;
+      for (final m in page) {
+        if (m.mid == mid) {
+          final filled = _fillSenderInfo([m]).first;
+          _ensureSenderProfiles([filled], roomId);
+          await _localStore.saveMessages(roomId, [filled]);
+          return filled;
+        }
+        if (m.mid != null && (oldestMid == null || m.mid! < oldestMid)) {
+          oldestMid = m.mid;
+        }
+      }
+      if (page.length < _messagePageSize || oldestMid == null) return null;
+      beforeMid = oldestMid;
+    }
+    return null;
   }
 
   Future<List<LocalMessageSearchResult>> searchAllRoomsMessages(
@@ -831,6 +885,8 @@ class ChatDataService extends ChangeNotifier {
               eventType == 'group.member.removed' ||
               eventType == 'group.deleted')) {
         unawaited(removeRoom('G$gid'));
+      } else if (gid != null) {
+        unawaited(ensureGroupInfo(gid));
       }
       loadContactsAndRooms();
       return;
@@ -920,6 +976,7 @@ class ChatDataService extends ChangeNotifier {
       }
       _rooms[idx] = updated;
     }
+    unawaited(_ensureGroupInfo(roomId));
     _sortRooms();
     notifyListeners();
   }
@@ -976,6 +1033,7 @@ class ChatDataService extends ChangeNotifier {
     } else {
       _addNewRoom(roomId, msg, unreadCount: shouldNotify ? 1 : 0);
     }
+    unawaited(_ensureGroupInfo(roomId));
     _sortRooms();
     notifyListeners();
     if (shouldNotify && _shouldSendNotification(roomId)) {
@@ -1074,6 +1132,49 @@ class ChatDataService extends ChangeNotifier {
       );
       notifyListeners();
     });
+  }
+
+  /// 为群聊房间补拉群资料（名称/头像）。
+  Future<void> ensureGroupInfo(int gid) =>
+      _ensureGroupInfo('G$gid');
+
+  Future<void> _ensureGroupInfo(String roomId) async {
+    if (!isGroupRoom(roomId)) return;
+    final cachedName = _userCache[roomId]?.username;
+    if (cachedName != null && cachedName.isNotEmpty) return;
+    final gid = _parseUid(roomId);
+    if (gid == null) return;
+    if (!_fetchingGroups.add(roomId)) return;
+
+    final generation = _generation;
+    final uid = AuthState.instance.uid;
+    try {
+      final groups = await TfApiClient.instance.infoGroup(gid);
+      if (groups.isEmpty ||
+          _generation != generation ||
+          AuthState.instance.uid != uid) {
+        return;
+      }
+      final groupName = (groups.first['groupname'] as String?) ?? '';
+      if (groupName.isEmpty) return;
+      final baseUrl = await TfApiClient.instance.getBaseUrl();
+      if (_generation != generation || AuthState.instance.uid != uid) return;
+      final avatarUrl = '$baseUrl/avatar/get_avatar/group/$gid';
+      _userCache[roomId] = UserProfile(
+        uid: roomId,
+        username: groupName,
+        email: '',
+        stat: 'group',
+        createTime: '0',
+        avatar: avatarUrl,
+      );
+      _updateRoomAndContacts(roomId, groupName, avatarUrl);
+      notifyListeners();
+    } catch (e, stack) {
+      talker.error('ChatDataService fetch group info failed for $roomId', e, stack);
+    } finally {
+      _fetchingGroups.remove(roomId);
+    }
   }
 
   /// 为一批消息中尚未缓存的发送者逐个抓取资料。
@@ -1182,6 +1283,7 @@ class ChatDataService extends ChangeNotifier {
         );
       }
     }
+    unawaited(_ensureGroupInfo(roomId));
     _sortRooms();
     notifyListeners();
   }
