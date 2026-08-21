@@ -578,6 +578,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           }
         });
       }
+    } else {
+      final gid = int.tryParse(_contactUid.substring(1));
+      if (gid != null) {
+        unawaited(ChatDataService.instance.ensureGroupInfo(gid));
+      }
     }
   }
 
@@ -701,6 +706,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         }
       });
     } else if (_contactUid.startsWith('G')) {
+      final gid = int.tryParse(_contactUid.substring(1));
+      if (gid != null) {
+        unawaited(ChatDataService.instance.ensureGroupInfo(gid));
+      }
       unawaited(_loadMentionUsers());
       unawaited(_fetchEssenceMessages());
     }
@@ -914,10 +923,29 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _updatePinnedPageFromScroll();
       });
+      unawaited(_resolvePinnedContents(pins));
     } catch (_) {
       // server eror 不能一直 retry 啦
     } finally {
       _fetchingPins = false;
+    }
+  }
+
+  Future<void> _resolvePinnedContents(List<PinnedMessage> pins) async {
+    for (final pin in pins) {
+      final messageId = pin.messageId;
+      if (_pinnedMessageContents.containsKey(messageId)) continue;
+      final msg = await ChatDataService.instance.findMessageByMid(
+        _contactUid,
+        messageId,
+      );
+      if (!mounted) return;
+      if (_pinnedMessageContents.containsKey(messageId) || msg == null) {
+        continue;
+      }
+      setState(() {
+        _pinnedMessageContents[messageId] = msg;
+      });
     }
   }
 

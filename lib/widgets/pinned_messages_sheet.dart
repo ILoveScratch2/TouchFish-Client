@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -6,7 +8,7 @@ import '../models/message_model.dart';
 import '../services/chat_data_service.dart';
 import 'sheet_scaffold.dart';
 
-class PinnedMessagesSheet extends StatelessWidget {
+class PinnedMessagesSheet extends StatefulWidget {
   final String roomId;
   final List<PinnedMessage> pins;
   final bool canUnpin;
@@ -23,9 +25,42 @@ class PinnedMessagesSheet extends StatelessWidget {
   });
 
   @override
+  State<PinnedMessagesSheet> createState() => _PinnedMessagesSheetState();
+}
+
+class _PinnedMessagesSheetState extends State<PinnedMessagesSheet> {
+  final Map<int, ChatMessage?> _contents = {};
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_seedAndResolve());
+  }
+
+  Future<void> _seedAndResolve() async {
+    for (final m in ChatDataService.instance.getMessages(widget.roomId)) {
+      final mid = m.mid;
+      if (mid != null) _contents[mid] = m;
+    }
+    for (final pin in widget.pins) {
+      final messageId = pin.messageId;
+      if (_contents.containsKey(messageId)) continue;
+      final msg = await ChatDataService.instance.findMessageByMid(
+        widget.roomId,
+        messageId,
+      );
+      if (!mounted) return;
+      if (_contents.containsKey(messageId) || msg == null) continue;
+      setState(() {
+        _contents[messageId] = msg;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final messages = ChatDataService.instance.getMessages(roomId);
+    final pins = widget.pins;
 
     return SheetScaffold(
       titleText: l10n.pinnedMessagesTitle,
@@ -58,10 +93,7 @@ class PinnedMessagesSheet extends StatelessWidget {
               itemCount: pins.length,
               itemBuilder: (context, index) {
                 final pin = pins[index];
-                final cachedMsg = messages.cast<ChatMessage?>().firstWhere(
-                  (m) => m?.mid == pin.messageId,
-                  orElse: () => null,
-                );
+                final cachedMsg = _contents[pin.messageId];
                 final pinnedByName = ChatDataService.instance
                     .getUser('U${pin.pinnedByUid}')
                     ?.username;
@@ -69,14 +101,14 @@ class PinnedMessagesSheet extends StatelessWidget {
                   pin: pin,
                   cachedMessage: cachedMsg,
                   pinnedByName: pinnedByName,
-                  onTap: onJumpToMessage != null
+                  onTap: widget.onJumpToMessage != null
                       ? () {
                           Navigator.pop(context);
-                          onJumpToMessage!(pin.messageId);
+                          widget.onJumpToMessage!(pin.messageId);
                         }
                       : null,
-                  onUnpin: canUnpin
-                      ? () => onUnpin?.call(pin.pinId)
+                  onUnpin: widget.canUnpin
+                      ? () => widget.onUnpin?.call(pin.pinId)
                       : null,
                 );
               },

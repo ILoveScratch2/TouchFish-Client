@@ -526,6 +526,29 @@ class LocalMessageStore {
     return loadMessages(roomId);
   }
 
+  /// 按服务端消息 id（mid）定位单条消息。
+  ///
+  /// 服务端消息的 message_key 固定为 "id:$mid"（见 [_key]），可直接走主键索引。
+  Future<ChatMessage?> findMessageByMid(String roomId, int mid) async {
+    final scope = _requireScope();
+    final db = await _db(scope.server, scope.uid);
+    try {
+      final rows = db.select(
+        'SELECT payload FROM messages '
+        'WHERE server_key = ? AND uid = ? AND room_id = ? AND message_key = ?',
+        [scope.server, scope.uid, roomId, 'id:$mid'],
+      );
+      if (rows.isEmpty) return null;
+      return ChatMessage.fromJson(
+        jsonDecode(rows.first['payload'] as String) as Map<String, dynamic>,
+        activeUid: scope.uid,
+      );
+    } catch (e) {
+      talker.error('LocalMessageStore findMessageByMid error', e);
+      return null;
+    }
+  }
+
   Future<List<LocalMessageSearchResult>> searchAllRooms(
     String query, {
     int limit = 200,
