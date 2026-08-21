@@ -33,6 +33,7 @@ import '../screens/forward_screen.dart';
 import '../models/message_model.dart';
 import '../services/auth_state.dart';
 import '../widgets/window_frame.dart';
+import '../widgets/lock_gate.dart';
 import '../utils/talker.dart';
 
 class AppRoutes {
@@ -202,7 +203,7 @@ class AppRoutes {
       routes: [
         ShellRoute(
           builder: (context, state, child) {
-            return WindowFrame(child: child);
+            return WindowFrame(child: LockGate(child: child));
           },
           routes: [
             GoRoute(

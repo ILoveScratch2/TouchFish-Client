@@ -225,6 +225,106 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsCategoryAbout => '关于';
 
   @override
+  String get settingsCategorySecurity => '安全';
+
+  @override
+  String get settingsSecurityMasterPasswordTitle => '主密码';
+
+  @override
+  String get settingsSecurityMasterPasswordDesc => '锁定应用需要输入主密码，仅锁定界面、不加密数据';
+
+  @override
+  String get settingsSecuritySetPassword => '设置主密码';
+
+  @override
+  String get settingsSecurityChangePassword => '修改主密码';
+
+  @override
+  String get settingsSecurityCurrentPassword => '当前主密码';
+
+  @override
+  String get settingsSecurityConfirmPassword => '确认主密码';
+
+  @override
+  String get settingsSecurityPasswordTooShort => '主密码至少需要 4 个字符';
+
+  @override
+  String get settingsSecurityPasswordMismatch => '两次输入的主密码不一致';
+
+  @override
+  String get settingsSecurityPasswordSet => '主密码已设置';
+
+  @override
+  String get settingsSecurityPasswordChanged => '主密码已修改';
+
+  @override
+  String get settingsSecurityPasswordDisabled => '主密码已关闭';
+
+  @override
+  String get settingsSecurityPasswordIncorrect => '主密码错误';
+
+  @override
+  String get settingsSecurityDisablePassword => '关闭主密码';
+
+  @override
+  String get settingsSecurityDisablePasswordConfirm =>
+      '确定要关闭主密码吗？关闭后将同时关闭生物识别解锁，应用不再锁定。';
+
+  @override
+  String get settingsSecurityBiometricTitle => '生物识别解锁';
+
+  @override
+  String get settingsSecurityBiometricDesc => '在支持的设备上使用指纹或面容解锁应用';
+
+  @override
+  String get settingsSecurityBiometricUnavailable => '当前设备不支持生物识别';
+
+  @override
+  String get settingsSecurityBiometricCancelled => '生物识别验证已取消';
+
+  @override
+  String get settingsSecurityBiometricFailed => '启用生物识别失败';
+
+  @override
+  String get settingsSecurityLockNowTitle => '立即锁定';
+
+  @override
+  String get settingsSecurityLockNowDesc => '立即锁定应用，需要主密码或生物识别才能解锁';
+
+  @override
+  String get lockTitle => 'TouchFish 已锁定';
+
+  @override
+  String get lockSubtitle => '输入主密码以解锁应用';
+
+  @override
+  String get lockPasswordLabel => '主密码';
+
+  @override
+  String get lockPasswordRequired => '请输入主密码';
+
+  @override
+  String get lockUnlock => '解锁';
+
+  @override
+  String get lockBiometricAction => '使用生物识别解锁';
+
+  @override
+  String get lockErrorInvalidPassword => '主密码错误';
+
+  @override
+  String get lockErrorBiometricUnavailable => '当前设备不支持生物识别';
+
+  @override
+  String get lockErrorBiometricCancelled => '生物识别验证已取消';
+
+  @override
+  String get lockErrorBiometricNotEnabled => '未启用生物识别解锁';
+
+  @override
+  String get lockErrorUnknown => '解锁失败，请重试';
+
+  @override
   String get settingsLanguageTitle => '语言';
 
   @override
@@ -414,6 +514,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get trayQuit => '退出';
+
+  @override
+  String get trayLock => '锁定';
 
   @override
   String get settingsSystemNotificationsTitle => '系统通知';
@@ -913,6 +1016,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get accountAppSettings => '应用设置';
+
+  @override
+  String get accountLockNow => '立即锁定';
 
   @override
   String get accountUpdateYourProfile => '编辑个人资料';

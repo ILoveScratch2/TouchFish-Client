@@ -27,6 +27,7 @@ import 'services/single_instance_service.dart';
 import 'services/notification_service.dart';
 import 'services/server_connection_status_service.dart';
 import 'services/ip_override_service.dart';
+import 'services/lock_service.dart';
 import 'utils/talker.dart';
 import 'widgets/app_alert_dialog.dart';
 import 'widgets/notification_overlay.dart';
@@ -59,6 +60,7 @@ Future<void> main() async {
 
     final startupRecovery = await _performStartupRecovery(isDesktop: isDesktop);
     await SettingsService.instance.init();
+    await LockService.instance.init();
     await IpOverrideService.instance.ensureDefaultDomain();
     await IpOverrideService.instance.refreshGlobal();
 

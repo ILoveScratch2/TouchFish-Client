@@ -10,13 +10,9 @@ import 'package:window_manager/window_manager.dart';
 import '../l10n/app_localizations.dart';
 import '../models/app_state.dart';
 import '../models/settings_service.dart';
+import '../services/lock_service.dart';
 import '../utils/talker.dart';
 
-/// Manages desktop-app lifecycle behaviors:
-/// - Keeps the app alive in the system tray when the window is closed.
-/// - Restores the hidden window when the tray icon is clicked or when the app
-///   is launched again.
-/// - Persists window bounds (size/position) across sessions.
 class DesktopAppLifecycleService with TrayListener, WindowListener {
   static final DesktopAppLifecycleService instance =
       DesktopAppLifecycleService._();
@@ -108,6 +104,11 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
               key: 'hide',
               label: l10n.trayHideWindow,
               onClick: (_) => hideWindow(),
+            ),
+            MenuItem(
+              key: 'lock',
+              label: l10n.trayLock,
+              onClick: (_) => LockService.instance.lock(),
             ),
             MenuItem.separator(),
             MenuItem(

@@ -21,6 +21,7 @@ import '../widgets/local_storage_settings.dart';
 import '../services/media_proxy_service.dart';
 import '../services/ip_override_service.dart';
 import '../services/server_connection_status_service.dart';
+import '../services/lock_service.dart';
 import 'connectivity_self_check_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -326,8 +327,218 @@ class _SettingsScreenState extends State<SettingsScreen>
         if (item.key == 'connectionStatus') {
           return _buildConnectionStatusPreview(context, l10n, item);
         }
+        if (item.key == 'masterPassword') {
+          return _buildMasterPasswordSetting(context, l10n);
+        }
+        if (item.key == 'biometricUnlock') {
+          return _buildBiometricSetting(context, l10n);
+        }
+        if (item.key == 'lockNow') {
+          return _buildLockNowSetting(context, l10n);
+        }
         return const SizedBox.shrink();
     }
+  }
+
+  Widget _buildMasterPasswordSetting(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return ListenableBuilder(
+      listenable: LockService.instance,
+      builder: (context, _) {
+        final enabled = LockService.instance.isEnabled;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.password),
+                  title: Text(l10n.settingsSecurityMasterPasswordTitle),
+                  subtitle: Text(l10n.settingsSecurityMasterPasswordDesc),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.lock_outline),
+                  title: Text(
+                    enabled
+                        ? l10n.settingsSecurityChangePassword
+                        : l10n.settingsSecuritySetPassword,
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _handlePasswordAction(context, change: enabled),
+                ),
+                if (enabled)
+                  ListTile(
+                    leading: const Icon(Icons.lock_open),
+                    title: Text(l10n.settingsSecurityDisablePassword),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _handleDisablePassword(context),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handlePasswordAction(
+    BuildContext context, {
+    required bool change,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showDialog<_SecurityPasswordResult>(
+      context: context,
+      builder: (_) => _SecurityPasswordDialog(
+        mode: change
+            ? _SecurityPasswordDialogMode.change
+            : _SecurityPasswordDialogMode.set,
+        l10n: l10n,
+      ),
+    );
+    if (result == null || !context.mounted) return;
+    try {
+      if (change) {
+        await LockService.instance.changeMasterPassword(
+          result.current!,
+          result.newPassword!,
+        );
+        if (context.mounted) {
+          TouchFishSnackbarService.instance.show(
+            l10n.settingsSecurityPasswordChanged,
+          );
+        }
+      } else {
+        await LockService.instance.enableMasterPassword(result.newPassword!);
+        if (context.mounted) {
+          TouchFishSnackbarService.instance.show(
+            l10n.settingsSecurityPasswordSet,
+          );
+        }
+      }
+    } on LockException {
+      if (context.mounted) {
+        TouchFishSnackbarService.instance.show(
+          l10n.settingsSecurityPasswordIncorrect,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDisablePassword(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showTouchFishErrorDialog<bool>(
+      context,
+      title: l10n.settingsSecurityDisablePassword,
+      message: l10n.settingsSecurityDisablePasswordConfirm,
+      icon: Icons.lock_open_rounded,
+      actions: [
+        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
+        TouchFishDialogAction<bool>(
+          label: l10n.settingsSecurityDisablePassword,
+          result: true,
+          isPrimary: true,
+          isDestructive: true,
+        ),
+      ],
+    );
+    if (confirmed != true || !context.mounted) return;
+    final result = await showDialog<_SecurityPasswordResult>(
+      context: context,
+      builder: (_) => _SecurityPasswordDialog(
+        mode: _SecurityPasswordDialogMode.disable,
+        l10n: l10n,
+      ),
+    );
+    if (result?.current == null || !context.mounted) return;
+    try {
+      await LockService.instance.disableMasterPassword(result!.current!);
+      if (context.mounted) {
+        TouchFishSnackbarService.instance.show(
+          l10n.settingsSecurityPasswordDisabled,
+        );
+      }
+    } on LockException {
+      if (context.mounted) {
+        TouchFishSnackbarService.instance.show(
+          l10n.settingsSecurityPasswordIncorrect,
+        );
+      }
+    }
+  }
+
+  Widget _buildBiometricSetting(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return ListenableBuilder(
+      listenable: LockService.instance,
+      builder: (context, _) {
+        final service = LockService.instance;
+        if (!service.isEnabled) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: SwitchListTile(
+              secondary: const Icon(Icons.fingerprint),
+              title: Text(l10n.settingsSecurityBiometricTitle),
+              subtitle: Text(l10n.settingsSecurityBiometricDesc),
+              value: service.isBiometricEnabled,
+              onChanged: (value) async {
+                try {
+                  if (value) {
+                    await service.enableBiometric();
+                  } else {
+                    await service.disableBiometric();
+                  }
+                } on LockException catch (error) {
+                  if (context.mounted) {
+                    TouchFishSnackbarService.instance.show(
+                      error.code == 'biometricUnavailable'
+                          ? l10n.settingsSecurityBiometricUnavailable
+                          : error.code == 'biometricCancelled'
+                          ? l10n.settingsSecurityBiometricCancelled
+                          : l10n.settingsSecurityBiometricFailed,
+                    );
+                  }
+                } catch (_) {
+                  if (context.mounted) {
+                    TouchFishSnackbarService.instance.show(
+                      l10n.settingsSecurityBiometricFailed,
+                    );
+                  }
+                }
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLockNowSetting(BuildContext context, AppLocalizations l10n) {
+    return ListenableBuilder(
+      listenable: LockService.instance,
+      builder: (context, _) {
+        final enabled = LockService.instance.isEnabled;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: ListTile(
+              enabled: enabled,
+              leading: const Icon(Icons.lock),
+              title: Text(l10n.settingsSecurityLockNowTitle),
+              subtitle: Text(l10n.settingsSecurityLockNowDesc),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => LockService.instance.lock(),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildCustomDropdownSetting(
@@ -1352,6 +1563,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsCategoryConnection;
       case 'settingsCategoryStorage':
         return l10n.settingsCategoryStorage;
+      case 'settingsCategorySecurity':
+        return l10n.settingsCategorySecurity;
       case 'settingsCategoryAbout':
         return l10n.settingsCategoryAbout;
       default:
@@ -1550,6 +1763,19 @@ class _SettingsScreenState extends State<SettingsScreen>
       // About
       case 'settingsAboutAppTitle':
         return l10n.settingsAboutAppTitle;
+      // Security
+      case 'settingsSecurityMasterPasswordTitle':
+        return l10n.settingsSecurityMasterPasswordTitle;
+      case 'settingsSecurityMasterPasswordDesc':
+        return l10n.settingsSecurityMasterPasswordDesc;
+      case 'settingsSecurityBiometricTitle':
+        return l10n.settingsSecurityBiometricTitle;
+      case 'settingsSecurityBiometricDesc':
+        return l10n.settingsSecurityBiometricDesc;
+      case 'settingsSecurityLockNowTitle':
+        return l10n.settingsSecurityLockNowTitle;
+      case 'settingsSecurityLockNowDesc':
+        return l10n.settingsSecurityLockNowDesc;
       default:
         return key;
     }
@@ -2036,6 +2262,159 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
         );
       },
+    );
+  }
+}
+
+enum _SecurityPasswordDialogMode { set, change, disable }
+
+class _SecurityPasswordResult {
+  const _SecurityPasswordResult({this.current, this.newPassword});
+  final String? current;
+  final String? newPassword;
+}
+
+class _SecurityPasswordDialog extends StatefulWidget {
+  const _SecurityPasswordDialog({required this.mode, required this.l10n});
+
+  final _SecurityPasswordDialogMode mode;
+  final AppLocalizations l10n;
+
+  @override
+  State<_SecurityPasswordDialog> createState() => _SecurityPasswordDialogState();
+}
+
+class _SecurityPasswordDialogState extends State<_SecurityPasswordDialog> {
+  final _current = TextEditingController();
+  final _newPassword = TextEditingController();
+  final _confirm = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _current.dispose();
+    _newPassword.dispose();
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  String get _title {
+    switch (widget.mode) {
+      case _SecurityPasswordDialogMode.set:
+        return widget.l10n.settingsSecuritySetPassword;
+      case _SecurityPasswordDialogMode.change:
+        return widget.l10n.settingsSecurityChangePassword;
+      case _SecurityPasswordDialogMode.disable:
+        return widget.l10n.settingsSecurityDisablePassword;
+    }
+  }
+
+  String get _actionLabel {
+    switch (widget.mode) {
+      case _SecurityPasswordDialogMode.set:
+        return widget.l10n.settingsSecuritySetPassword;
+      case _SecurityPasswordDialogMode.change:
+        return widget.l10n.settingsSecurityChangePassword;
+      case _SecurityPasswordDialogMode.disable:
+        return widget.l10n.settingsSecurityDisablePassword;
+    }
+  }
+
+  void _submit() {
+    final l10n = widget.l10n;
+    if (widget.mode != _SecurityPasswordDialogMode.set &&
+        _current.text.isEmpty) {
+      setState(() => _error = l10n.lockPasswordRequired);
+      return;
+    }
+    if (widget.mode != _SecurityPasswordDialogMode.disable) {
+      if (_newPassword.text.length < 4) {
+        setState(() => _error = l10n.settingsSecurityPasswordTooShort);
+        return;
+      }
+      if (_newPassword.text != _confirm.text) {
+        setState(() => _error = l10n.settingsSecurityPasswordMismatch);
+        return;
+      }
+    }
+    Navigator.pop(
+      context,
+      _SecurityPasswordResult(
+        current: widget.mode == _SecurityPasswordDialogMode.set
+            ? null
+            : _current.text,
+        newPassword: widget.mode == _SecurityPasswordDialogMode.disable
+            ? null
+            : _newPassword.text,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
+    final fields = <Widget>[];
+    if (widget.mode != _SecurityPasswordDialogMode.set) {
+      fields.add(
+        TextField(
+          controller: _current,
+          obscureText: true,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: l10n.settingsSecurityCurrentPassword,
+          ),
+          onSubmitted: (_) => _submit(),
+        ),
+      );
+    }
+    if (widget.mode != _SecurityPasswordDialogMode.disable) {
+      fields.add(
+        TextField(
+          controller: _newPassword,
+          obscureText: true,
+          autofocus: widget.mode == _SecurityPasswordDialogMode.set,
+          decoration: InputDecoration(labelText: l10n.lockPasswordLabel),
+          onSubmitted: (_) => _submit(),
+        ),
+      );
+      fields.add(
+        TextField(
+          controller: _confirm,
+          obscureText: true,
+          decoration: InputDecoration(
+            labelText: l10n.settingsSecurityConfirmPassword,
+          ),
+          onSubmitted: (_) => _submit(),
+        ),
+      );
+    }
+
+    return AlertDialog(
+      title: Text(_title),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final field in fields) ...[
+            field,
+            const SizedBox(height: 12),
+          ],
+          if (_error != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(onPressed: _submit, child: Text(_actionLabel)),
+      ],
     );
   }
 }

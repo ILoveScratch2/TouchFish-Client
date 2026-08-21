@@ -224,6 +224,106 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsCategoryAbout => '本';
 
   @override
+  String get settingsCategorySecurity => '安';
+
+  @override
+  String get settingsSecurityMasterPasswordTitle => '主密';
+
+  @override
+  String get settingsSecurityMasterPasswordDesc => '以主密鎖定應用；惟鎖其面，不加密其數';
+
+  @override
+  String get settingsSecuritySetPassword => '設主密';
+
+  @override
+  String get settingsSecurityChangePassword => '易主密';
+
+  @override
+  String get settingsSecurityCurrentPassword => '現主密';
+
+  @override
+  String get settingsSecurityConfirmPassword => '復主密';
+
+  @override
+  String get settingsSecurityPasswordTooShort => '主密至少四字';
+
+  @override
+  String get settingsSecurityPasswordMismatch => '兩次所入主密不符';
+
+  @override
+  String get settingsSecurityPasswordSet => '主密已設';
+
+  @override
+  String get settingsSecurityPasswordChanged => '主密已易';
+
+  @override
+  String get settingsSecurityPasswordDisabled => '主密已闔';
+
+  @override
+  String get settingsSecurityPasswordIncorrect => '主密有誤';
+
+  @override
+  String get settingsSecurityDisablePassword => '闔主密';
+
+  @override
+  String get settingsSecurityDisablePasswordConfirm =>
+      '果欲闔主密乎？闔之則並闔生物識別，應用不再鎖。';
+
+  @override
+  String get settingsSecurityBiometricTitle => '生物識別解鎖';
+
+  @override
+  String get settingsSecurityBiometricDesc => '於所支之器，以指紋或容貌解鎖應用';
+
+  @override
+  String get settingsSecurityBiometricUnavailable => '此器不支生物識別';
+
+  @override
+  String get settingsSecurityBiometricCancelled => '生物識別已止';
+
+  @override
+  String get settingsSecurityBiometricFailed => '啟生物識別未成';
+
+  @override
+  String get settingsSecurityLockNowTitle => '即時鎖定';
+
+  @override
+  String get settingsSecurityLockNowDesc => '即鎖應用，須以主密或生物識別方能啟';
+
+  @override
+  String get lockTitle => 'TouchFish 已鎖';
+
+  @override
+  String get lockSubtitle => '入主密以啟應用';
+
+  @override
+  String get lockPasswordLabel => '主密';
+
+  @override
+  String get lockPasswordRequired => '請入主密';
+
+  @override
+  String get lockUnlock => '啟';
+
+  @override
+  String get lockBiometricAction => '以生物識別啟';
+
+  @override
+  String get lockErrorInvalidPassword => '主密有誤';
+
+  @override
+  String get lockErrorBiometricUnavailable => '此器不支生物識別';
+
+  @override
+  String get lockErrorBiometricCancelled => '生物識別已止';
+
+  @override
+  String get lockErrorBiometricNotEnabled => '未啟生物識別解鎖';
+
+  @override
+  String get lockErrorUnknown => '解鎖未成，請再試';
+
+  @override
   String get settingsLanguageTitle => '語言';
 
   @override
@@ -413,6 +513,9 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get trayQuit => '退';
+
+  @override
+  String get trayLock => '鎖';
 
   @override
   String get settingsSystemNotificationsTitle => '系統通知';
@@ -914,6 +1017,9 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get accountAppSettings => '應用設置';
+
+  @override
+  String get accountLockNow => '即時鎖定';
 
   @override
   String get accountUpdateYourProfile => '纂個人資料';

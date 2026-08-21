@@ -12,6 +12,7 @@ import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/notification_service.dart';
 import '../services/snackbar_service.dart';
+import '../services/lock_service.dart';
 import '../widgets/app_alert_dialog.dart';
 import 'debug/debug_options_screen.dart';
 import 'storage_management_screen.dart';
@@ -430,6 +431,21 @@ class _AccountScreenState extends State<AccountScreen> {
         leading: const Icon(Symbols.settings, size: 24),
         title: Text(l10n.accountAppSettings),
         onTap: () => context.push(AppRoutes.settings),
+      ),
+      ListenableBuilder(
+        listenable: LockService.instance,
+        builder: (context, _) {
+          final enabled = LockService.instance.isEnabled;
+          return ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+            trailing: const Icon(Symbols.chevron_right),
+            dense: true,
+            enabled: enabled,
+            leading: const Icon(Symbols.lock, size: 24),
+            title: Text(l10n.accountLockNow),
+            onTap: () => LockService.instance.lock(),
+          );
+        },
       ),
       ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 24),

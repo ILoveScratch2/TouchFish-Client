@@ -526,6 +526,204 @@ abstract class AppLocalizations {
   /// **'About'**
   String get settingsCategoryAbout;
 
+  /// No description provided for @settingsCategorySecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get settingsCategorySecurity;
+
+  /// No description provided for @settingsSecurityMasterPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Master Password'**
+  String get settingsSecurityMasterPasswordTitle;
+
+  /// No description provided for @settingsSecurityMasterPasswordDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock the app with a master password. Only locks the UI, does not encrypt data'**
+  String get settingsSecurityMasterPasswordDesc;
+
+  /// No description provided for @settingsSecuritySetPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Master Password'**
+  String get settingsSecuritySetPassword;
+
+  /// No description provided for @settingsSecurityChangePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Master Password'**
+  String get settingsSecurityChangePassword;
+
+  /// No description provided for @settingsSecurityCurrentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Master Password'**
+  String get settingsSecurityCurrentPassword;
+
+  /// No description provided for @settingsSecurityConfirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Master Password'**
+  String get settingsSecurityConfirmPassword;
+
+  /// No description provided for @settingsSecurityPasswordTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Master password must be at least 4 characters'**
+  String get settingsSecurityPasswordTooShort;
+
+  /// No description provided for @settingsSecurityPasswordMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The two passwords do not match'**
+  String get settingsSecurityPasswordMismatch;
+
+  /// No description provided for @settingsSecurityPasswordSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Master password set'**
+  String get settingsSecurityPasswordSet;
+
+  /// No description provided for @settingsSecurityPasswordChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Master password changed'**
+  String get settingsSecurityPasswordChanged;
+
+  /// No description provided for @settingsSecurityPasswordDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Master password disabled'**
+  String get settingsSecurityPasswordDisabled;
+
+  /// No description provided for @settingsSecurityPasswordIncorrect.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect master password'**
+  String get settingsSecurityPasswordIncorrect;
+
+  /// No description provided for @settingsSecurityDisablePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable Master Password'**
+  String get settingsSecurityDisablePassword;
+
+  /// No description provided for @settingsSecurityDisablePasswordConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable the master password? This also disables biometric unlock and the app will no longer be locked.'**
+  String get settingsSecurityDisablePasswordConfirm;
+
+  /// No description provided for @settingsSecurityBiometricTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric Unlock'**
+  String get settingsSecurityBiometricTitle;
+
+  /// No description provided for @settingsSecurityBiometricDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock the app with fingerprint or face on supported devices'**
+  String get settingsSecurityBiometricDesc;
+
+  /// No description provided for @settingsSecurityBiometricUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometrics are unavailable on this device'**
+  String get settingsSecurityBiometricUnavailable;
+
+  /// No description provided for @settingsSecurityBiometricCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric authentication was cancelled'**
+  String get settingsSecurityBiometricCancelled;
+
+  /// No description provided for @settingsSecurityBiometricFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to enable biometric unlock'**
+  String get settingsSecurityBiometricFailed;
+
+  /// No description provided for @settingsSecurityLockNowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock Now'**
+  String get settingsSecurityLockNowTitle;
+
+  /// No description provided for @settingsSecurityLockNowDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock the app immediately; a master password or biometrics is required to unlock'**
+  String get settingsSecurityLockNowDesc;
+
+  /// No description provided for @lockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish is locked'**
+  String get lockTitle;
+
+  /// No description provided for @lockSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your master password to unlock'**
+  String get lockSubtitle;
+
+  /// No description provided for @lockPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Master Password'**
+  String get lockPasswordLabel;
+
+  /// No description provided for @lockPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your master password'**
+  String get lockPasswordRequired;
+
+  /// No description provided for @lockUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get lockUnlock;
+
+  /// No description provided for @lockBiometricAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock with biometrics'**
+  String get lockBiometricAction;
+
+  /// No description provided for @lockErrorInvalidPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect master password'**
+  String get lockErrorInvalidPassword;
+
+  /// No description provided for @lockErrorBiometricUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometrics are unavailable on this device'**
+  String get lockErrorBiometricUnavailable;
+
+  /// No description provided for @lockErrorBiometricCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric authentication was cancelled'**
+  String get lockErrorBiometricCancelled;
+
+  /// No description provided for @lockErrorBiometricNotEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric unlock is not enabled'**
+  String get lockErrorBiometricNotEnabled;
+
+  /// No description provided for @lockErrorUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock failed, please try again'**
+  String get lockErrorUnknown;
+
   /// No description provided for @settingsLanguageTitle.
   ///
   /// In en, this message translates to:
@@ -903,6 +1101,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Quit'**
   String get trayQuit;
+
+  /// No description provided for @trayLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock'**
+  String get trayLock;
 
   /// No description provided for @settingsSystemNotificationsTitle.
   ///
@@ -1857,6 +2061,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'App Settings'**
   String get accountAppSettings;
+
+  /// No description provided for @accountLockNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock Now'**
+  String get accountLockNow;
 
   /// No description provided for @accountUpdateYourProfile.
   ///

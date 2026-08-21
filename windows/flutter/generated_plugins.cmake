@@ -7,6 +7,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   disk_space_2
   file_selector_windows
   irondash_engine_context
+  local_auth_windows
   media_kit_libs_windows_video
   media_kit_video
   permission_handler_windows

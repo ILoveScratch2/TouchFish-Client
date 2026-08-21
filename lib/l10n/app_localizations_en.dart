@@ -235,6 +235,116 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCategoryAbout => 'About';
 
   @override
+  String get settingsCategorySecurity => 'Security';
+
+  @override
+  String get settingsSecurityMasterPasswordTitle => 'Master Password';
+
+  @override
+  String get settingsSecurityMasterPasswordDesc =>
+      'Unlock the app with a master password. Only locks the UI, does not encrypt data';
+
+  @override
+  String get settingsSecuritySetPassword => 'Set Master Password';
+
+  @override
+  String get settingsSecurityChangePassword => 'Change Master Password';
+
+  @override
+  String get settingsSecurityCurrentPassword => 'Current Master Password';
+
+  @override
+  String get settingsSecurityConfirmPassword => 'Confirm Master Password';
+
+  @override
+  String get settingsSecurityPasswordTooShort =>
+      'Master password must be at least 4 characters';
+
+  @override
+  String get settingsSecurityPasswordMismatch =>
+      'The two passwords do not match';
+
+  @override
+  String get settingsSecurityPasswordSet => 'Master password set';
+
+  @override
+  String get settingsSecurityPasswordChanged => 'Master password changed';
+
+  @override
+  String get settingsSecurityPasswordDisabled => 'Master password disabled';
+
+  @override
+  String get settingsSecurityPasswordIncorrect => 'Incorrect master password';
+
+  @override
+  String get settingsSecurityDisablePassword => 'Disable Master Password';
+
+  @override
+  String get settingsSecurityDisablePasswordConfirm =>
+      'Disable the master password? This also disables biometric unlock and the app will no longer be locked.';
+
+  @override
+  String get settingsSecurityBiometricTitle => 'Biometric Unlock';
+
+  @override
+  String get settingsSecurityBiometricDesc =>
+      'Unlock the app with fingerprint or face on supported devices';
+
+  @override
+  String get settingsSecurityBiometricUnavailable =>
+      'Biometrics are unavailable on this device';
+
+  @override
+  String get settingsSecurityBiometricCancelled =>
+      'Biometric authentication was cancelled';
+
+  @override
+  String get settingsSecurityBiometricFailed =>
+      'Failed to enable biometric unlock';
+
+  @override
+  String get settingsSecurityLockNowTitle => 'Lock Now';
+
+  @override
+  String get settingsSecurityLockNowDesc =>
+      'Lock the app immediately; a master password or biometrics is required to unlock';
+
+  @override
+  String get lockTitle => 'TouchFish is locked';
+
+  @override
+  String get lockSubtitle => 'Enter your master password to unlock';
+
+  @override
+  String get lockPasswordLabel => 'Master Password';
+
+  @override
+  String get lockPasswordRequired => 'Please enter your master password';
+
+  @override
+  String get lockUnlock => 'Unlock';
+
+  @override
+  String get lockBiometricAction => 'Unlock with biometrics';
+
+  @override
+  String get lockErrorInvalidPassword => 'Incorrect master password';
+
+  @override
+  String get lockErrorBiometricUnavailable =>
+      'Biometrics are unavailable on this device';
+
+  @override
+  String get lockErrorBiometricCancelled =>
+      'Biometric authentication was cancelled';
+
+  @override
+  String get lockErrorBiometricNotEnabled => 'Biometric unlock is not enabled';
+
+  @override
+  String get lockErrorUnknown => 'Unlock failed, please try again';
+
+  @override
   String get settingsLanguageTitle => 'Language';
 
   @override
@@ -437,6 +547,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trayQuit => 'Quit';
+
+  @override
+  String get trayLock => 'Lock';
 
   @override
   String get settingsSystemNotificationsTitle => 'System Notifications';
@@ -964,6 +1077,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountAppSettings => 'App Settings';
+
+  @override
+  String get accountLockNow => 'Lock Now';
 
   @override
   String get accountUpdateYourProfile => 'Update Your Profile';
