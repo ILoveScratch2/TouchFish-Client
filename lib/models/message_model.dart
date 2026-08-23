@@ -165,6 +165,32 @@ class ChatMessage {
     this.roomSeq,
   });
 
+  /// 消息列表排序比较器（服务端序号优先）。
+  ///
+  /// - 双方都有 [roomSeq]：按房间内服务端序号排序（与服务器时钟无关，免疫
+  ///   设备时钟偏差）；同序号时退回 [dedupKey] 保证稳定。
+  /// - 只有一方有 [roomSeq]：无序号的是本地未确认（pending）消息，排最后；
+  ///   确认消息按服务端序号互相排序。
+  /// - 都没有 [roomSeq]：退回本地时间戳比较，平局再按 [dedupKey]。
+  ///
+  /// 背景：自己发送的消息在 ack/回声回填前只有设备时钟时间戳，而收到的消息
+  /// 是服务器时钟时间戳，两种时钟混排会在时钟偏差时错序（重启拉取后消失）。
+  static int compareByOrder(
+    ChatMessage a,
+    ChatMessage b,
+    String Function(ChatMessage) dedupKey,
+  ) {
+    final aSeq = a.roomSeq;
+    final bSeq = b.roomSeq;
+    if (aSeq != null && bSeq != null && aSeq != bSeq) {
+      return aSeq.compareTo(bSeq);
+    }
+    if (aSeq != null && bSeq == null) return -1;
+    if (aSeq == null && bSeq != null) return 1;
+    final byTime = a.timestamp.compareTo(b.timestamp);
+    return byTime != 0 ? byTime : dedupKey(a).compareTo(dedupKey(b));
+  }
+
   ChatMessage copyWith({
     String? id,
     int? mid,

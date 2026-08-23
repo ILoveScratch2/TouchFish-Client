@@ -589,12 +589,8 @@ class ChatDataService extends ChangeNotifier {
     return 'id:${message.id}';
   }
 
-  int _compareMessages(ChatMessage a, ChatMessage b) {
-    final byTime = a.timestamp.compareTo(b.timestamp);
-    return byTime != 0
-        ? byTime
-        : _messageDedupKey(a).compareTo(_messageDedupKey(b));
-  }
+  int _compareMessages(ChatMessage a, ChatMessage b) =>
+      ChatMessage.compareByOrder(a, b, _messageDedupKey);
 
   bool _containsMessage(List<ChatMessage> messages, ChatMessage candidate) {
     final key = _messageDedupKey(candidate);
@@ -605,6 +601,47 @@ class ChatDataService extends ChangeNotifier {
       return messages.any((m) => m.mid == candidateMid);
     }
     return false;
+  }
+
+  int? _indexOfMessage(List<ChatMessage> messages, ChatMessage candidate) {
+    final key = _messageDedupKey(candidate);
+    for (var i = 0; i < messages.length; i++) {
+      if (_messageDedupKey(messages[i]) == key) return i;
+    }
+    final candidateMid = candidate.mid;
+    if (candidateMid != null) {
+      for (var i = 0; i < messages.length; i++) {
+        if (messages[i].mid == candidateMid) return i;
+      }
+    }
+    return null;
+  }
+
+  /// 服务端回声（MESSAGE.NEW 推回给自己）/补拉命中本地待确认消息时，
+  /// 采用服务端身份字段，让已确认消息获得服务端序号与发送时间，
+  /// 后续实时消息即可按服务端序号正确排序（不再依赖设备时钟）。
+  ChatMessage _adoptServerFields(ChatMessage existing, ChatMessage incoming) {
+    final serverMid = incoming.mid;
+    final serverSeq = incoming.roomSeq;
+    final isPending = existing.mid == null && existing.roomSeq == null;
+    if (isPending && serverMid != null && serverSeq != null) {
+      final incomingTime = incoming.timestamp;
+      return existing.copyWith(
+        id: serverMid.toString(),
+        mid: serverMid,
+        roomSeq: serverSeq,
+        timestamp: incomingTime.millisecondsSinceEpoch > 0
+            ? incomingTime
+            : existing.timestamp,
+      );
+    }
+    if (serverMid != null && existing.mid == null) {
+      return existing.copyWith(id: serverMid.toString(), mid: serverMid);
+    }
+    if (serverSeq != null && serverSeq != existing.roomSeq) {
+      return existing.copyWith(roomSeq: serverSeq);
+    }
+    return existing;
   }
 
   // --- Room/Contact list ---
@@ -731,6 +768,7 @@ class ChatDataService extends ChangeNotifier {
   void _onMessageAck(
     String clientMid, {
     int? serverMid,
+    int? roomSeq,
     required MessageStatus status,
     String? error,
   }) {
@@ -738,14 +776,19 @@ class ChatDataService extends ChangeNotifier {
       final msgs = _messageCache[roomId]!;
       final idx = msgs.indexWhere((m) => m.clientMid == clientMid);
       if (idx != -1) {
+        final existing = msgs[idx];
         final updated = List<ChatMessage>.from(msgs, growable: true);
-        updated[idx] = updated[idx].copyWith(
-          id: serverMid?.toString() ?? updated[idx].id,
-          mid: serverMid ?? updated[idx].mid,
+        updated[idx] = existing.copyWith(
+          id: serverMid?.toString() ?? existing.id,
+          mid: serverMid ?? existing.mid,
+          roomSeq: roomSeq ?? existing.roomSeq,
           status: status,
           ackError: error,
           clearAckError: error == null,
         );
+        if (roomSeq != null && roomSeq != existing.roomSeq) {
+          updated.sort(_compareMessages);
+        }
         _messageCache[roomId] = updated;
         _localStore.saveMessages(roomId, updated);
         if (idx == updated.length - 1 && serverMid != null) {
@@ -789,6 +832,7 @@ class ChatDataService extends ChangeNotifier {
       if (data != null) {
         final mid = (data['mid'] as num?)?.toInt();
         final clientMid = data['client_mid'] as String?;
+        final roomSeq = (data['room_seq'] as num?)?.toInt();
         final rawStatus = data['status'] as String? ?? 'sent';
         final status = rawStatus == 'failed'
             ? MessageStatus.failed
@@ -798,6 +842,7 @@ class ChatDataService extends ChangeNotifier {
           _onMessageAck(
             clientMid,
             serverMid: mid,
+            roomSeq: roomSeq,
             status: status,
             error: error,
           );
@@ -928,14 +973,25 @@ class ChatDataService extends ChangeNotifier {
     bool countUnread = true,
   }) {
     final cached = _messageCache[roomId] ?? [];
-    final exists = _containsMessage(cached, msg);
-    if (!exists) {
+    final matchIdx = _indexOfMessage(cached, msg);
+    if (matchIdx == null) {
       cached.add(msg);
-      cached.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      cached.sort(_compareMessages);
       _messageCache[roomId] = cached;
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
       _localStore.appendMessage(roomId, msg);
+    } else {
+      final upgraded = _adoptServerFields(cached[matchIdx], msg);
+      if (!identical(upgraded, cached[matchIdx])) {
+        final updated = List<ChatMessage>.from(cached);
+        updated[matchIdx] = upgraded;
+        updated.sort(_compareMessages);
+        _messageCache[roomId] = updated;
+        _touchCacheRoom(roomId);
+        _evictCacheIfNeeded();
+        _localStore.saveMessages(roomId, updated);
+      }
     }
 
     // 历史恢复的消息同样参照 _addToCache 的通知判定累计未读角标，
@@ -948,7 +1004,7 @@ class ChatDataService extends ChangeNotifier {
     final shouldCountUnread =
         countUnread &&
         !msg.isMe &&
-        !exists &&
+        matchIdx == null &&
         (msg.shouldAlert ??
             (uid != null &&
                 shouldNotifyMessage(
@@ -989,16 +1045,28 @@ class ChatDataService extends ChangeNotifier {
 
   void _addToCache(String roomId, ChatMessage msg) {
     final cached = _messageCache[roomId] ?? [];
-    final exists = _containsMessage(cached, msg);
-    if (!exists) {
+    final matchIdx = _indexOfMessage(cached, msg);
+    if (matchIdx == null) {
       cached.add(msg);
-      cached.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      cached.sort(_compareMessages);
       _messageCache[roomId] = cached;
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
       _localStore.appendMessage(roomId, msg);
+    } else {
+      final upgraded = _adoptServerFields(cached[matchIdx], msg);
+      if (!identical(upgraded, cached[matchIdx])) {
+        final updated = List<ChatMessage>.from(cached);
+        updated[matchIdx] = upgraded;
+        updated.sort(_compareMessages);
+        _messageCache[roomId] = updated;
+        _touchCacheRoom(roomId);
+        _evictCacheIfNeeded();
+        _localStore.saveMessages(roomId, updated);
+        notifyListeners();
+      }
+      return;
     }
-    if (exists) return;
 
     if (!msg.isMe && msg.senderAvatar == null && msg.senderUid != null) {
       _fetchProfileForRoom(
@@ -1257,7 +1325,7 @@ class ChatDataService extends ChangeNotifier {
     final cached = _messageCache[roomId] ?? [];
     if (!_containsMessage(cached, msg)) {
       cached.add(msg);
-      cached.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      cached.sort(_compareMessages);
       _messageCache[roomId] = cached;
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();

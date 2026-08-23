@@ -541,7 +541,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsSecurityMasterPasswordDesc.
   ///
   /// In en, this message translates to:
-  /// **'Unlock the app with a master password. Only locks the UI, does not encrypt data'**
+  /// **'Unlock the app with a master password.'**
   String get settingsSecurityMasterPasswordDesc;
 
   /// No description provided for @settingsSecuritySetPassword.

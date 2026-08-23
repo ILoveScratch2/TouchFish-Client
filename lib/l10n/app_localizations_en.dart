@@ -242,7 +242,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSecurityMasterPasswordDesc =>
-      'Unlock the app with a master password. Only locks the UI, does not encrypt data';
+      'Unlock the app with a master password.';
 
   @override
   String get settingsSecuritySetPassword => 'Set Master Password';

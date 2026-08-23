@@ -231,7 +231,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSecurityMasterPasswordTitle => '主密码';
 
   @override
-  String get settingsSecurityMasterPasswordDesc => '锁定应用需要输入主密码，仅锁定界面、不加密数据';
+  String get settingsSecurityMasterPasswordDesc => '锁定应用需要输入主密码';
 
   @override
   String get settingsSecuritySetPassword => '设置主密码';

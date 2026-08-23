@@ -98,4 +98,64 @@ void main() {
 
     expect(missing, isNull);
   });
+
+  test('orders by roomSeq before timestamps (immune to clock skew)', () async {
+    final serverT = DateTime.utc(2026, 1, 1, 12);
+    await LocalMessageStore.instance.saveMessages('U2', [
+      ChatMessage(
+        id: '1',
+        mid: 1,
+        roomSeq: 1,
+        text: 'a',
+        timestamp: serverT,
+        isMe: false,
+      ),
+      ChatMessage(
+        id: '3',
+        mid: 3,
+        roomSeq: 3,
+        text: 'c',
+        timestamp: serverT.add(const Duration(seconds: 2)),
+        isMe: false,
+      ),
+      ChatMessage(
+        id: '2',
+        mid: 2,
+        roomSeq: 2,
+        text: 'b',
+        timestamp: serverT.add(const Duration(seconds: 1)),
+        isMe: false,
+      ),
+    ]);
+
+    final stored = await LocalMessageStore.instance.loadMessages('U2');
+
+    expect(stored.map((message) => message.id), ['1', '2', '3']);
+  });
+
+  test('pending message without roomSeq sorts after confirmed ones', () async {
+    final serverT = DateTime.utc(2026, 1, 1, 12);
+    await LocalMessageStore.instance.saveMessages('U2', [
+      ChatMessage(
+        id: '1',
+        mid: 1,
+        roomSeq: 1,
+        text: 'confirmed',
+        timestamp: serverT,
+        isMe: false,
+      ),
+      ChatMessage(
+        id: 'pending',
+        clientMid: 'c2',
+        text: 'pending',
+        timestamp: serverT.add(const Duration(minutes: 5)),
+        isMe: true,
+        status: MessageStatus.pending,
+      ),
+    ]);
+
+    final stored = await LocalMessageStore.instance.loadMessages('U2');
+
+    expect(stored.map((message) => message.id), ['1', 'pending']);
+  });
 }

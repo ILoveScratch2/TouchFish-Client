@@ -230,7 +230,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsSecurityMasterPasswordTitle => '主密';
 
   @override
-  String get settingsSecurityMasterPasswordDesc => '以主密鎖定應用；惟鎖其面，不加密其數';
+  String get settingsSecurityMasterPasswordDesc => '以主密鎖定應用';
 
   @override
   String get settingsSecuritySetPassword => '設主密';

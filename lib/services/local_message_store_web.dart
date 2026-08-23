@@ -35,10 +35,8 @@ class LocalMessageStore {
       ? 'client:${message.clientMid}'
       : 'id:${message.id}';
 
-  int _compareMessages(ChatMessage a, ChatMessage b) {
-    final byTime = a.timestamp.compareTo(b.timestamp);
-    return byTime != 0 ? byTime : _messageKey(a).compareTo(_messageKey(b));
-  }
+  int _compareMessages(ChatMessage a, ChatMessage b) =>
+      ChatMessage.compareByOrder(a, b, _messageKey);
 
   Future<List<ChatMessage>> _loadMessages(
     SharedPreferences prefs,
