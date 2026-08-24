@@ -16,31 +16,36 @@ class LockScreenVisibilityService {
 
   static const String _settingKey = 'showOnLockScreen';
 
-  bool _applied = false;
-
+  /// 按当前设置项的值应用到原生侧。启动时调用以恢复上次的状态。
+  /// 通道未就绪等失败场景下最多重试 3 次，避免永久丢状态。
   Future<void> applyFromSettings() async {
-    if (_applied || kIsWeb || !Platform.isAndroid) return;
-    _applied = true;
+    if (kIsWeb || !Platform.isAndroid) return;
     final enabled = SettingsService.instance.getValue<bool>(
       _settingKey,
       false,
     );
     if (!enabled) return;
-    await setEnabled(true);
+    for (var attempt = 0; attempt < 3; attempt++) {
+      if (await setEnabled(true)) return;
+      await Future<void>.delayed(const Duration(seconds: 2));
+    }
   }
 
-  Future<void> setEnabled(bool enabled) async {
-    if (kIsWeb || !Platform.isAndroid) return;
+  /// 设置锁屏上层显示状态；成功返回 true。
+  Future<bool> setEnabled(bool enabled) async {
+    if (kIsWeb || !Platform.isAndroid) return true;
     try {
       await _channel.invokeMethod<bool>('setShowWhenLocked', {
         'enabled': enabled,
       });
+      return true;
     } catch (error, stackTrace) {
       talker.error(
         'Failed to apply show-on-lock-screen setting',
         error,
         stackTrace,
       );
+      return false;
     }
   }
 

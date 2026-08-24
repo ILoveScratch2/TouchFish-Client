@@ -602,13 +602,28 @@ class _TouchFishAppState extends State<TouchFishApp> {
         !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
     return ListenableBuilder(
-      listenable: ServerConnectionStatusService.instance,
+      listenable: Listenable.merge([
+        ServerConnectionStatusService.instance,
+        AppVirtualKeyboard.keyboardInset,
+      ]),
       builder: (context, _) {
         final service = ServerConnectionStatusService.instance;
+        final keyboardInset = AppVirtualKeyboard.keyboardInset.value;
+        final resizedChild = keyboardInset > 0
+            ? MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  viewInsets: MediaQuery.of(context).viewInsets.copyWith(
+                    bottom: MediaQuery.of(context).viewInsets.bottom +
+                        keyboardInset,
+                  ),
+                ),
+                child: child,
+              )
+            : child;
 
         return Stack(
           children: [
-            child,
+            resizedChild,
             SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
