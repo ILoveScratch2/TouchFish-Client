@@ -524,25 +524,23 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsSystemNotificationsDesc => '藉作業系統通知以達消息之知';
 
   @override
-  String get settingsNotificationLevelTitle => 'Notification Level';
+  String get settingsNotificationLevelTitle => '通知分級';
 
   @override
-  String get settingsNotificationLevelDesc =>
-      'Choose how banner notifications are displayed. Notification list is unaffected';
+  String get settingsNotificationLevelDesc => '擇橫幅通知之顯式，通知列表不受其影響';
 
   @override
-  String get settingsNotificationLevelMinimal => 'Level 1: Summary only';
+  String get settingsNotificationLevelMinimal => '一級：僅彙總';
 
   @override
-  String get settingsNotificationLevelPerSender =>
-      'Level 2: Per sender (default)';
+  String get settingsNotificationLevelPerSender => '二級：按聯絡人（默）';
 
   @override
-  String get settingsNotificationLevelFull => 'Level 3: Show all';
+  String get settingsNotificationLevelFull => '三級：悉數展示';
 
   @override
   String notificationLevelSummary(int contacts, int messages) {
-    return '$contacts contacts sent $messages messages';
+    return '$contacts 位聯絡人發來 $messages 條消息';
   }
 
   @override
@@ -3048,6 +3046,17 @@ class AppLocalizationsOch extends AppLocalizations {
   @override
   String settingsLocalMessageCount(int count, String size) {
     return '$count 條消息 · $size';
+  }
+
+  @override
+  String get maxCachedRooms => '緩存房間數';
+
+  @override
+  String get maxCachedRoomsDesc => '內存所存聊天房數之上限，逾則逐最久未用者';
+
+  @override
+  String maxCachedRoomsCount(Object count) {
+    return '$count 個';
   }
 
   @override

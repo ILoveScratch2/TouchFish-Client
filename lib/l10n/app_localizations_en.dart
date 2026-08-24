@@ -3184,6 +3184,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get maxCachedRooms => 'Cached chat rooms';
+
+  @override
+  String get maxCachedRoomsDesc =>
+      'Maximum chat rooms kept in memory. When exceeded, the least recently used room is evicted';
+
+  @override
+  String maxCachedRoomsCount(Object count) {
+    return '$count rooms';
+  }
+
+  @override
   String get settingsAutoLoadStickersTitle => 'Auto-load stickers';
 
   @override

@@ -266,7 +266,7 @@ class SettingsData {
           titleKey: 'settingsLockscreenReplyTitle',
           descriptionKey: 'settingsLockscreenReplyDesc',
           type: SettingType.switchSetting,
-          defaultValue: false,
+          defaultValue: true,
           icon: Icons.lock_open,
         ),
         SettingItem(

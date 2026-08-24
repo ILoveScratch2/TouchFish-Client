@@ -1238,6 +1238,9 @@
       "size": {"type": "String"}
     }
   },
+  "maxCachedRooms": "消息缓存房间数",
+  "maxCachedRoomsDesc": "内存中保留的最大聊天房间数，超出后驱逐最久未使用的记录",
+  "maxCachedRoomsCount": "{count} 个",
   "settingsAutoLoadStickersTitle": "自动加载贴图和表情",
   "settingsAutoLoadStickersDesc": "自动下载并缓存贴图。关闭后需手动点击贴图才会加载。",
   "settingsClearStickerCache": "清除贴图缓存",

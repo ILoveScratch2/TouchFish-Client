@@ -1275,6 +1275,9 @@
       "size": {"type": "String"}
     }
   },
+  "maxCachedRooms": "Cached chat rooms",
+  "maxCachedRoomsDesc": "Maximum chat rooms kept in memory. When exceeded, the least recently used room is evicted",
+  "maxCachedRoomsCount": "{count} rooms",
   "settingsAutoLoadStickersTitle": "Auto-load stickers",
   "settingsAutoLoadStickersDesc": "Download and cache sticker images automatically. When off, tap a sticker to load it.",
   "settingsClearStickerCache": "Clear sticker cache",

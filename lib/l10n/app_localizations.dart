@@ -5932,6 +5932,24 @@ abstract class AppLocalizations {
   /// **'{count} messages · {size}'**
   String settingsLocalMessageCount(int count, String size);
 
+  /// No description provided for @maxCachedRooms.
+  ///
+  /// In en, this message translates to:
+  /// **'Cached chat rooms'**
+  String get maxCachedRooms;
+
+  /// No description provided for @maxCachedRoomsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum chat rooms kept in memory. When exceeded, the least recently used room is evicted'**
+  String get maxCachedRoomsDesc;
+
+  /// No description provided for @maxCachedRoomsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} rooms'**
+  String maxCachedRoomsCount(Object count);
+
   /// No description provided for @settingsAutoLoadStickersTitle.
   ///
   /// In en, this message translates to:

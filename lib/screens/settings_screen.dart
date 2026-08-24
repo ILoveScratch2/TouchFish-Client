@@ -314,7 +314,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           );
         }
         if (item.key == 'maxCachedRooms') {
-          return _buildMaxCachedRoomsSetting(context);
+          return _buildMaxCachedRoomsSetting(context, l10n);
         }
         if (item.key == 'automaticPreviewMaxMiB') {
           return _buildAutomaticPreviewSetting(context, l10n, item);
@@ -1273,7 +1273,10 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  Widget _buildMaxCachedRoomsSetting(BuildContext context) {
+  Widget _buildMaxCachedRoomsSetting(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
     return ListenableBuilder(
       listenable: _settingsService,
       builder: (context, _) {
@@ -1297,13 +1300,13 @@ class _SettingsScreenState extends State<SettingsScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '消息缓存房间数',
+                              l10n.maxCachedRooms,
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             Padding(
                               padding: const EdgeInsets.only(top: 4.0),
                               child: Text(
-                                '内存中保留的最大聊天房间数，超出后驱逐最久未使用的记录',
+                                l10n.maxCachedRoomsDesc,
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ),
@@ -1311,7 +1314,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                         ),
                       ),
                       Text(
-                        '${currentVal.round()} 个',
+                        l10n.maxCachedRoomsCount(currentVal.round()),
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ],
@@ -1699,6 +1702,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsSystemNotificationsTitle;
       case 'settingsSystemNotificationsDesc':
         return l10n.settingsSystemNotificationsDesc;
+      case 'settingsCloseToTrayTitle':
+        return l10n.settingsCloseToTrayTitle;
+      case 'settingsCloseToTrayDesc':
+        return l10n.settingsCloseToTrayDesc;
       case 'settingsInAppNotificationsTitle':
         return l10n.settingsInAppNotificationsTitle;
       case 'settingsInAppNotificationsDesc':
@@ -1711,6 +1718,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsNotifyWithHaptic;
       case 'settingsNotifyWithHapticDescription':
         return l10n.settingsNotifyWithHapticDescription;
+      case 'settingsLockscreenReplyTitle':
+        return l10n.settingsLockscreenReplyTitle;
+      case 'settingsLockscreenReplyDesc':
+        return l10n.settingsLockscreenReplyDesc;
       case 'settingsMediaProxy':
         return l10n.settingsMediaProxy;
       case 'settingsMediaProxyDescription':
@@ -1761,6 +1772,14 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsSaveForumDraftsTitle;
       case 'settingsSaveForumDraftsDesc':
         return l10n.settingsSaveForumDraftsDesc;
+      case 'settingsAutoLoadStickersTitle':
+        return l10n.settingsAutoLoadStickersTitle;
+      case 'settingsAutoLoadStickersDesc':
+        return l10n.settingsAutoLoadStickersDesc;
+      case 'maxCachedRooms':
+        return l10n.maxCachedRooms;
+      case 'maxCachedRoomsDesc':
+        return l10n.maxCachedRoomsDesc;
       // About
       case 'settingsAboutAppTitle':
         return l10n.settingsAboutAppTitle;

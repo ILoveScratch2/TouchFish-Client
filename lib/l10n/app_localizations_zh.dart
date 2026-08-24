@@ -3051,6 +3051,17 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get maxCachedRooms => '消息缓存房间数';
+
+  @override
+  String get maxCachedRoomsDesc => '内存中保留的最大聊天房间数，超出后驱逐最久未使用的记录';
+
+  @override
+  String maxCachedRoomsCount(Object count) {
+    return '$count 个';
+  }
+
+  @override
   String get settingsAutoLoadStickersTitle => '自动加载贴图和表情';
 
   @override

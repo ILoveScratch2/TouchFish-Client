@@ -201,6 +201,12 @@
   "settingsChatNotificationsDesc": "配置私與群之通知",
   "settingsPrivateChatTitle": "私聊通知",
   "settingsGroupChatTitle": "群組通知",
+  "settingsNotificationLevelTitle": "通知分級",
+  "settingsNotificationLevelDesc": "擇橫幅通知之顯式，通知列表不受其影響",
+  "settingsNotificationLevelMinimal": "一級：僅彙總",
+  "settingsNotificationLevelPerSender": "二級：按聯絡人（默）",
+  "settingsNotificationLevelFull": "三級：悉數展示",
+  "notificationLevelSummary": "{contacts} 位聯絡人發來 {messages} 條消息",
 
   "settingsAboutAppTitle": "關於此件",
 
@@ -1158,6 +1164,9 @@
   "settingsSeconds120": "2 分鐘",
   "settingsSeconds300": "5 分鐘",
 
+  "maxCachedRooms": "緩存房間數",
+  "maxCachedRoomsDesc": "內存所存聊天房數之上限，逾則逐最久未用者",
+  "maxCachedRoomsCount": "{count} 個",
   "settingsStorageUsed": "已用空間",
   "settingsStorageFree": "可用空間",
   "settingsStorageUnavailable": "當前平台不支持查看磁盤信息",

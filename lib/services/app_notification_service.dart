@@ -119,7 +119,7 @@ class AppNotificationService extends ChangeNotifier
 
   /// xsfx，we need you!
   NotificationVisibility get _lockscreenVisibility =>
-      SettingsService.instance.getValue<bool>('lockscreenReply', false)
+      SettingsService.instance.getValue<bool>('lockscreenReply', true)
           ? NotificationVisibility.public
           : NotificationVisibility.private;
 
