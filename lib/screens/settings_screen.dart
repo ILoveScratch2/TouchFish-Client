@@ -1758,6 +1758,20 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsEnableAnimationsTitle;
       case 'settingsEnableAnimationsDesc':
         return l10n.settingsEnableAnimationsDesc;
+      case 'settingsLayoutModeTitle':
+        return l10n.settingsLayoutModeTitle;
+      case 'settingsLayoutModeDesc':
+        return l10n.settingsLayoutModeDesc;
+      case 'settingsLayoutModeAuto':
+        return l10n.settingsLayoutModeAuto;
+      case 'settingsLayoutModeForceWide':
+        return l10n.settingsLayoutModeForceWide;
+      case 'settingsLayoutModeForceNarrow':
+        return l10n.settingsLayoutModeForceNarrow;
+      case 'settingsWideThresholdTitle':
+        return l10n.settingsWideThresholdTitle;
+      case 'settingsWideThresholdDesc':
+        return l10n.settingsWideThresholdDesc;
       case 'settingsWeakNetworkTitle':
         return l10n.settingsWeakNetworkTitle;
       case 'settingsWeakNetworkDesc':
@@ -1891,6 +1905,20 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsSecurityLockNowTitle;
       case 'settingsSecurityLockNowDesc':
         return l10n.settingsSecurityLockNowDesc;
+      case 'settingsShowOnLockScreenTitle':
+        return l10n.settingsShowOnLockScreenTitle;
+      case 'settingsShowOnLockScreenDesc':
+        return l10n.settingsShowOnLockScreenDesc;
+      case 'settingsBuiltInKeyboardTitle':
+        return l10n.settingsBuiltInKeyboardTitle;
+      case 'settingsBuiltInKeyboardDesc':
+        return l10n.settingsBuiltInKeyboardDesc;
+      case 'settingsBuiltInKeyboardNever':
+        return l10n.settingsBuiltInKeyboardNever;
+      case 'settingsBuiltInKeyboardLock':
+        return l10n.settingsBuiltInKeyboardLock;
+      case 'settingsBuiltInKeyboardAlways':
+        return l10n.settingsBuiltInKeyboardAlways;
       default:
         return key;
     }
