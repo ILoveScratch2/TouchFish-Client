@@ -9,6 +9,7 @@ import 'package:flutter/services.dart' show KeyDownEvent, LogicalKeyboardKey;
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/message_model.dart';
 import '../../services/api/tf_api_client.dart';
 import '../../utils/talker.dart';
@@ -501,23 +502,29 @@ class _ImageLightboxState extends State<ImageLightbox> {
                         children: [
                           _iconButton(
                             icon: Icons.remove,
-                            tooltip: 'Zoom out',
+                            tooltip: AppLocalizations.of(
+                              context,
+                            )!.imageZoomOut,
                             onPressed: () => _zoomBy(-0.15),
                           ),
                           _iconButton(
                             icon: Icons.add,
-                            tooltip: 'Zoom in',
+                            tooltip: AppLocalizations.of(context)!.imageZoomIn,
                             onPressed: () => _zoomBy(0.15),
                           ),
                           const SizedBox(width: 8),
                           _iconButton(
                             icon: Icons.rotate_left,
-                            tooltip: 'Rotate left',
+                            tooltip: AppLocalizations.of(
+                              context,
+                            )!.imageRotateLeft,
                             onPressed: () => _rotateBy(-math.pi / 2),
                           ),
                           _iconButton(
                             icon: Icons.rotate_right,
-                            tooltip: 'Rotate right',
+                            tooltip: AppLocalizations.of(
+                              context,
+                            )!.imageRotateRight,
                             onPressed: () => _rotateBy(math.pi / 2),
                           ),
                           if (widget.exifData != null &&
@@ -527,7 +534,7 @@ class _ImageLightboxState extends State<ImageLightbox> {
                               icon: _showExif
                                   ? Icons.visibility
                                   : Icons.visibility_off,
-                              tooltip: 'EXIF',
+                              tooltip: AppLocalizations.of(context)!.imageExif,
                               onPressed: () {
                                 setState(() => _showExif = !_showExif);
                                 _revealControls();
@@ -545,7 +552,9 @@ class _ImageLightboxState extends State<ImageLightbox> {
                         child: Center(
                           child: _iconButton(
                             icon: Icons.chevron_left,
-                            tooltip: 'Previous',
+                            tooltip: MaterialLocalizations.of(
+                              context,
+                            ).previousPageTooltip,
                             onPressed: _currentIndex > 0
                                 ? () => _goToPage(_currentIndex - 1)
                                 : null,
@@ -559,7 +568,9 @@ class _ImageLightboxState extends State<ImageLightbox> {
                         child: Center(
                           child: _iconButton(
                             icon: Icons.chevron_right,
-                            tooltip: 'Next',
+                            tooltip: MaterialLocalizations.of(
+                              context,
+                            ).nextPageTooltip,
                             onPressed: _currentIndex < _items.length - 1
                                 ? () => _goToPage(_currentIndex + 1)
                                 : null,

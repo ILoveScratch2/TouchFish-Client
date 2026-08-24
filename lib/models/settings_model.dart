@@ -192,6 +192,33 @@ class SettingsData {
           defaultValue: true,
           icon: Icons.animation,
         ),
+        SettingItem(
+          key: 'layoutMode',
+          titleKey: 'settingsLayoutModeTitle',
+          descriptionKey: 'settingsLayoutModeDesc',
+          type: SettingType.dropdown,
+          defaultValue: 'auto',
+          icon: Icons.phone_iphone,
+          options: [
+            SettingOption(value: 'auto', labelKey: 'settingsLayoutModeAuto'),
+            SettingOption(
+              value: 'forceWide',
+              labelKey: 'settingsLayoutModeForceWide',
+            ),
+            SettingOption(
+              value: 'forceNarrow',
+              labelKey: 'settingsLayoutModeForceNarrow',
+            ),
+          ],
+        ),
+        SettingItem(
+          key: 'wideScreenThreshold',
+          titleKey: 'settingsWideThresholdTitle',
+          descriptionKey: 'settingsWideThresholdDesc',
+          type: SettingType.customWidget,
+          defaultValue: 600,
+          icon: Icons.vertical_align_center,
+        ),
       ],
     ),
     SettingCategoryData(

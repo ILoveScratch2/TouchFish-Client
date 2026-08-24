@@ -518,6 +518,45 @@ class AppLocalizationsOch extends AppLocalizations {
   String get trayLock => '鎖';
 
   @override
+  String get trayTooltip => 'TouchFish 客戶端';
+
+  @override
+  String get titleBarMinimize => '縮';
+
+  @override
+  String get titleBarMaximize => '擴';
+
+  @override
+  String get titleBarRestore => '復';
+
+  @override
+  String get titleBarClose => '闔';
+
+  @override
+  String get imageZoomIn => '放大';
+
+  @override
+  String get imageZoomOut => '縮小';
+
+  @override
+  String get imageRotateLeft => '左旋';
+
+  @override
+  String get imageRotateRight => '右旋';
+
+  @override
+  String get imageExif => '覽 EXIF';
+
+  @override
+  String get announcementEdit => '改公告';
+
+  @override
+  String get announcementDelete => '刪公告';
+
+  @override
+  String get chatSelectPlaceholder => '擇一對話以啟談';
+
+  @override
   String get settingsSystemNotificationsTitle => '系統通知';
 
   @override
@@ -542,6 +581,27 @@ class AppLocalizationsOch extends AppLocalizations {
   String notificationLevelSummary(int contacts, int messages) {
     return '$contacts 位聯絡人發來 $messages 條消息';
   }
+
+  @override
+  String get notificationReplyAction => '復';
+
+  @override
+  String get notificationReplyInputHint => '輸回復';
+
+  @override
+  String get notificationSummaryTitle => 'TouchFish 消息';
+
+  @override
+  String get notificationSummarySubtitle => '新聊天消息';
+
+  @override
+  String get notificationChannelName => 'TouchFish 通知';
+
+  @override
+  String get notificationChannelDesc => '來自 TouchFish 之消息與動態';
+
+  @override
+  String get notificationOpenAction => '啟通知';
 
   @override
   String get settingsInAppNotificationsTitle => '應用內通知';
@@ -2289,9 +2349,6 @@ class AppLocalizationsOch extends AppLocalizations {
   String get announcementCreateFailed => '發公告未成';
 
   @override
-  String get announcementEdit => '改公告';
-
-  @override
   String get announcementEditHint => '改公告之內容…';
 
   @override
@@ -2925,6 +2982,32 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get settingsEnableAnimationsDesc => '啟用頁面與界面動畫';
+
+  @override
+  String get settingsLayoutModeTitle => '佈局模式';
+
+  @override
+  String get settingsLayoutModeDesc => '擇寬屏或窄屏之佈局';
+
+  @override
+  String get settingsLayoutModeAuto => '自動';
+
+  @override
+  String get settingsLayoutModeForceWide => '強寬屏';
+
+  @override
+  String get settingsLayoutModeForceNarrow => '強窄屏';
+
+  @override
+  String get settingsWideThresholdTitle => '寬屏切換之限';
+
+  @override
+  String get settingsWideThresholdDesc => '窗寬至此值則易寬屏佈局（惟自動模式生效）';
+
+  @override
+  String settingsWideThresholdValue(Object px) {
+    return '$px px';
+  }
 
   @override
   String get settingsWeakNetworkTitle => '弱網模式';

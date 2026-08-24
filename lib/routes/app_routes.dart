@@ -35,6 +35,7 @@ import '../services/auth_state.dart';
 import '../widgets/window_frame.dart';
 import '../widgets/lock_gate.dart';
 import '../utils/talker.dart';
+import '../utils/wide_screen_helper.dart';
 
 class AppRoutes {
   static const String welcome = '/welcome';
@@ -126,7 +127,7 @@ class AppRoutes {
       child: child,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         if (reduceMotion) return child;
-        final isWide = MediaQuery.sizeOf(context).width >= 600;
+        final isWide = WideScreenHelper.isWide(context);
         final curved = CurvedAnimation(
           parent: animation,
           curve: Curves.easeOutCubic,
@@ -344,13 +345,13 @@ class AppRoutes {
                 GoRoute(
                   path: main,
                   pageBuilder: (context, state) {
-                    final isWide = MediaQuery.of(context).size.width >= 600;
+                    final isWide = WideScreenHelper.isWide(context);
                     final placeholder = ChatShellScreen(
                       child: Container(
                         color: Theme.of(context).scaffoldBackgroundColor,
                         child: Center(
                           child: Text(
-                            '选择一个聊天开始对话',
+                            AppLocalizations.of(context)!.chatSelectPlaceholder,
                             style: TextStyle(
                               color: Theme.of(
                                 context,
@@ -372,13 +373,13 @@ class AppRoutes {
                 GoRoute(
                   path: chat,
                   pageBuilder: (context, state) {
-                    final isWide = MediaQuery.of(context).size.width >= 600;
+                    final isWide = WideScreenHelper.isWide(context);
                     final placeholder = ChatShellScreen(
                       child: Container(
                         color: Theme.of(context).scaffoldBackgroundColor,
                         child: Center(
                           child: Text(
-                            '选择一个聊天开始对话',
+                            AppLocalizations.of(context)!.chatSelectPlaceholder,
                             style: TextStyle(
                               color: Theme.of(
                                 context,
@@ -400,7 +401,7 @@ class AppRoutes {
                   path: '/chat/:roomId',
                   pageBuilder: (context, state) {
                     final roomId = state.pathParameters['roomId']!;
-                    final isWide = MediaQuery.of(context).size.width >= 600;
+                    final isWide = WideScreenHelper.isWide(context);
                     final shell = ChatShellScreen(
                       child: ChatDetailScreen(
                         key: ValueKey(roomId),

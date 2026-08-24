@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:window_manager/window_manager.dart';
 import '../constants/app_constants.dart';
+import '../l10n/app_localizations.dart';
 
 /// Custom Title Bar by ILoveScratch2
 class CustomTitleBar extends StatefulWidget {
@@ -144,7 +145,7 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
             _buildWindowButton(
               icon: Symbols.minimize,
               onPressed: () => windowManager.minimize(),
-              tooltip: '最小化',
+              tooltip: AppLocalizations.of(context)!.titleBarMinimize,
             ),
 
             ValueListenableBuilder<bool>(
@@ -161,7 +162,9 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
                       windowManager.maximize();
                     }
                   },
-                  tooltip: isMaximized ? '还原' : '最大化',
+                  tooltip: isMaximized
+                      ? AppLocalizations.of(context)!.titleBarRestore
+                      : AppLocalizations.of(context)!.titleBarMaximize,
                 );
               },
             ),
@@ -169,7 +172,7 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
             _buildWindowButton(
               icon: Symbols.close,
               onPressed: () => windowManager.close(),
-              tooltip: '关闭',
+              tooltip: AppLocalizations.of(context)!.titleBarClose,
               isClose: true,
             ),
           ],

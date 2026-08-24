@@ -201,6 +201,23 @@
   "trayHideWindow": "Hide Window",
   "trayQuit": "Quit",
   "trayLock": "Lock",
+  "trayTooltip": "TouchFish Client",
+
+  "titleBarMinimize": "Minimize",
+  "titleBarMaximize": "Maximize",
+  "titleBarRestore": "Restore",
+  "titleBarClose": "Close",
+
+  "imageZoomIn": "Zoom in",
+  "imageZoomOut": "Zoom out",
+  "imageRotateLeft": "Rotate left",
+  "imageRotateRight": "Rotate right",
+  "imageExif": "View EXIF info",
+
+  "announcementEdit": "Edit announcement",
+  "announcementDelete": "Delete announcement",
+
+  "chatSelectPlaceholder": "Select a chat to start talking",
   
   "settingsSystemNotificationsTitle": "System Notifications",
   "settingsSystemNotificationsDesc": "Use system notifications for messages",
@@ -222,6 +239,14 @@
       }
     }
   },
+
+  "notificationReplyAction": "Reply",
+  "notificationReplyInputHint": "Type your reply",
+  "notificationSummaryTitle": "TouchFish Messages",
+  "notificationSummarySubtitle": "New chat messages",
+  "notificationChannelName": "TouchFish notifications",
+  "notificationChannelDesc": "Messages and activity from TouchFish",
+  "notificationOpenAction": "Open notification",
 
   "settingsInAppNotificationsTitle": "In-App Notifications",
   "settingsInAppNotificationsDesc": "Show notifications within the application",
@@ -1229,6 +1254,16 @@
   "settingsCacheCleared": "Cache cleared",
   "settingsEnableAnimationsTitle": "Animations",
   "settingsEnableAnimationsDesc": "Enable page and interface animations",
+
+  "settingsLayoutModeTitle": "Layout Mode",
+  "settingsLayoutModeDesc": "Choose between wide or narrow layout",
+  "settingsLayoutModeAuto": "Auto",
+  "settingsLayoutModeForceWide": "Force Wide",
+  "settingsLayoutModeForceNarrow": "Force Narrow",
+  "settingsWideThresholdTitle": "Wide Screen Threshold",
+  "settingsWideThresholdDesc": "Switch to the wide layout when the window width reaches this value (only in Auto mode)",
+  "settingsWideThresholdValue": "{px} px",
+
   "settingsWeakNetworkTitle": "Weak network mode",
   "settingsWeakNetworkDesc": "Use periodic synchronization when the connection is unstable",
   "settingsDataSavingTitle": "Data saving mode",

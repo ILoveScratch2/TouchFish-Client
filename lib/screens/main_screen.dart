@@ -9,6 +9,7 @@ import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
 import '../services/forum_pending_service.dart';
 import '../services/notification_service.dart';
+import '../utils/wide_screen_helper.dart';
 
 class MainScreen extends StatefulWidget {
   final Widget child;
@@ -141,7 +142,9 @@ class _MainScreenState extends State<MainScreen> {
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= 600;
+            final isWide = WideScreenHelper.isWideWithWidth(
+              constraints.maxWidth,
+            );
 
             if (isWide) {
               return Container(

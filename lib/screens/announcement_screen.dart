@@ -440,6 +440,7 @@ class _AnnouncementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final senderLabel =
         announcement.senderName ?? 'User ${announcement.sender}';
     final timeLabel = _formatTime(announcement.dateTime);
@@ -470,7 +471,7 @@ class _AnnouncementCard extends StatelessWidget {
                 if (isAdmin) ...[
                   IconButton(
                     icon: const Icon(Icons.edit_outlined),
-                    tooltip: '编辑公告',
+                    tooltip: l10n.announcementEdit,
                     iconSize: 18,
                     onPressed: onEdit,
                   ),
@@ -479,7 +480,7 @@ class _AnnouncementCard extends StatelessWidget {
                       Icons.delete_outline,
                       color: theme.colorScheme.error,
                     ),
-                    tooltip: '删除公告',
+                    tooltip: l10n.announcementDelete,
                     iconSize: 18,
                     onPressed: onDelete,
                   ),

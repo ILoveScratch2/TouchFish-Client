@@ -519,6 +519,45 @@ class AppLocalizationsZh extends AppLocalizations {
   String get trayLock => '锁定';
 
   @override
+  String get trayTooltip => 'TouchFish 客户端';
+
+  @override
+  String get titleBarMinimize => '最小化';
+
+  @override
+  String get titleBarMaximize => '最大化';
+
+  @override
+  String get titleBarRestore => '还原';
+
+  @override
+  String get titleBarClose => '关闭';
+
+  @override
+  String get imageZoomIn => '放大';
+
+  @override
+  String get imageZoomOut => '缩小';
+
+  @override
+  String get imageRotateLeft => '向左旋转';
+
+  @override
+  String get imageRotateRight => '向右旋转';
+
+  @override
+  String get imageExif => '查看 EXIF 信息';
+
+  @override
+  String get announcementEdit => '编辑公告';
+
+  @override
+  String get announcementDelete => '删除公告';
+
+  @override
+  String get chatSelectPlaceholder => '选择一个聊天开始对话';
+
+  @override
   String get settingsSystemNotificationsTitle => '系统通知';
 
   @override
@@ -543,6 +582,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String notificationLevelSummary(int contacts, int messages) {
     return '$contacts 个联系人发来 $messages 条消息';
   }
+
+  @override
+  String get notificationReplyAction => '回复';
+
+  @override
+  String get notificationReplyInputHint => '输入回复';
+
+  @override
+  String get notificationSummaryTitle => 'TouchFish 消息';
+
+  @override
+  String get notificationSummarySubtitle => '新聊天消息';
+
+  @override
+  String get notificationChannelName => 'TouchFish 通知';
+
+  @override
+  String get notificationChannelDesc => '来自 TouchFish 的消息与动态';
+
+  @override
+  String get notificationOpenAction => '打开通知';
 
   @override
   String get settingsInAppNotificationsTitle => '应用内通知';
@@ -2291,9 +2351,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get announcementCreateFailed => '发布公告失败';
 
   @override
-  String get announcementEdit => '编辑公告';
-
-  @override
   String get announcementEditHint => '编辑公告内容...';
 
   @override
@@ -2927,6 +2984,32 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsEnableAnimationsDesc => '启用页面和界面动画';
+
+  @override
+  String get settingsLayoutModeTitle => '布局模式';
+
+  @override
+  String get settingsLayoutModeDesc => '选择宽屏或窄屏布局方式';
+
+  @override
+  String get settingsLayoutModeAuto => '自动';
+
+  @override
+  String get settingsLayoutModeForceWide => '强制宽屏';
+
+  @override
+  String get settingsLayoutModeForceNarrow => '强制窄屏';
+
+  @override
+  String get settingsWideThresholdTitle => '宽屏切换阈值';
+
+  @override
+  String get settingsWideThresholdDesc => '窗口宽度达到该值时切换为宽屏布局（仅自动模式生效）';
+
+  @override
+  String settingsWideThresholdValue(Object px) {
+    return '$px px';
+  }
 
   @override
   String get settingsWeakNetworkTitle => '弱网模式';

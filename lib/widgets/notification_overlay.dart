@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../services/app_notification_service.dart';
+import '../utils/wide_screen_helper.dart';
 import 'optimized_image.dart';
 
 class AppNotificationOverlay extends StatelessWidget {
@@ -17,7 +18,7 @@ class AppNotificationOverlay extends StatelessWidget {
         final items = AppNotificationService.instance.items;
         if (items.isEmpty) return const SizedBox.shrink();
 
-        final desktop = MediaQuery.sizeOf(context).width >= 600;
+        final desktop = WideScreenHelper.isWide(context);
         final desktopFrame =
             !kIsWeb &&
             (Platform.isWindows || Platform.isMacOS || Platform.isLinux);

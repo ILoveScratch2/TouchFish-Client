@@ -187,6 +187,23 @@
   "trayHideWindow": "隐藏窗口",
   "trayQuit": "退出",
   "trayLock": "锁定",
+  "trayTooltip": "TouchFish 客户端",
+
+  "titleBarMinimize": "最小化",
+  "titleBarMaximize": "最大化",
+  "titleBarRestore": "还原",
+  "titleBarClose": "关闭",
+
+  "imageZoomIn": "放大",
+  "imageZoomOut": "缩小",
+  "imageRotateLeft": "向左旋转",
+  "imageRotateRight": "向右旋转",
+  "imageExif": "查看 EXIF 信息",
+
+  "announcementEdit": "编辑公告",
+  "announcementDelete": "删除公告",
+
+  "chatSelectPlaceholder": "选择一个聊天开始对话",
   
   "settingsSystemNotificationsTitle": "系统通知",
   "settingsSystemNotificationsDesc": "使用操作系统通知进行消息通知",
@@ -208,6 +225,14 @@
       }
     }
   },
+
+  "notificationReplyAction": "回复",
+  "notificationReplyInputHint": "输入回复",
+  "notificationSummaryTitle": "TouchFish 消息",
+  "notificationSummarySubtitle": "新聊天消息",
+  "notificationChannelName": "TouchFish 通知",
+  "notificationChannelDesc": "来自 TouchFish 的消息与动态",
+  "notificationOpenAction": "打开通知",
 
   "settingsInAppNotificationsTitle": "应用内通知",
   "settingsInAppNotificationsDesc": "在应用内进行消息通知",
@@ -1192,6 +1217,16 @@
   "settingsCacheCleared": "缓存已清除",
   "settingsEnableAnimationsTitle": "界面动画",
   "settingsEnableAnimationsDesc": "启用页面和界面动画",
+
+  "settingsLayoutModeTitle": "布局模式",
+  "settingsLayoutModeDesc": "选择宽屏或窄屏布局方式",
+  "settingsLayoutModeAuto": "自动",
+  "settingsLayoutModeForceWide": "强制宽屏",
+  "settingsLayoutModeForceNarrow": "强制窄屏",
+  "settingsWideThresholdTitle": "宽屏切换阈值",
+  "settingsWideThresholdDesc": "窗口宽度达到该值时切换为宽屏布局（仅自动模式生效）",
+  "settingsWideThresholdValue": "{px} px",
+
   "settingsWeakNetworkTitle": "弱网模式",
   "settingsWeakNetworkDesc": "网络不稳定时使用定时同步",
   "settingsDataSavingTitle": "省流量模式",

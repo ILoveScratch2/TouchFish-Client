@@ -187,6 +187,23 @@
   "trayHideWindow": "隱窗",
   "trayQuit": "退",
   "trayLock": "鎖",
+  "trayTooltip": "TouchFish 客戶端",
+
+  "titleBarMinimize": "縮",
+  "titleBarMaximize": "擴",
+  "titleBarRestore": "復",
+  "titleBarClose": "闔",
+
+  "imageZoomIn": "放大",
+  "imageZoomOut": "縮小",
+  "imageRotateLeft": "左旋",
+  "imageRotateRight": "右旋",
+  "imageExif": "覽 EXIF",
+
+  "announcementEdit": "改公告",
+  "announcementDelete": "刪公告",
+
+  "chatSelectPlaceholder": "擇一對話以啟談",
 
   "settingsSystemNotificationsTitle": "系統通知",
   "settingsSystemNotificationsDesc": "藉作業系統通知以達消息之知",
@@ -207,6 +224,13 @@
   "settingsNotificationLevelPerSender": "二級：按聯絡人（默）",
   "settingsNotificationLevelFull": "三級：悉數展示",
   "notificationLevelSummary": "{contacts} 位聯絡人發來 {messages} 條消息",
+  "notificationReplyAction": "復",
+  "notificationReplyInputHint": "輸回復",
+  "notificationSummaryTitle": "TouchFish 消息",
+  "notificationSummarySubtitle": "新聊天消息",
+  "notificationChannelName": "TouchFish 通知",
+  "notificationChannelDesc": "來自 TouchFish 之消息與動態",
+  "notificationOpenAction": "啟通知",
 
   "settingsAboutAppTitle": "關於此件",
 
@@ -1182,6 +1206,16 @@
   "settingsCacheCleared": "緩存已清除",
   "settingsEnableAnimationsTitle": "界面動畫",
   "settingsEnableAnimationsDesc": "啟用頁面與界面動畫",
+
+  "settingsLayoutModeTitle": "佈局模式",
+  "settingsLayoutModeDesc": "擇寬屏或窄屏之佈局",
+  "settingsLayoutModeAuto": "自動",
+  "settingsLayoutModeForceWide": "強寬屏",
+  "settingsLayoutModeForceNarrow": "強窄屏",
+  "settingsWideThresholdTitle": "寬屏切換之限",
+  "settingsWideThresholdDesc": "窗寬至此值則易寬屏佈局（惟自動模式生效）",
+  "settingsWideThresholdValue": "{px} px",
+
   "settingsWeakNetworkTitle": "弱網模式",
   "settingsWeakNetworkDesc": "網絡不穩定時使用定時同步",
   "settingsDataSavingTitle": "省流量模式",

@@ -16,6 +16,7 @@ import '../widgets/optimized_image.dart';
 import '../services/notification_service.dart';
 import '../services/snackbar_service.dart';
 import '../routes/app_routes.dart';
+import '../utils/wide_screen_helper.dart';
 import 'chat_detail_screen.dart';
 import 'group_create_screen.dart';
 
@@ -93,7 +94,7 @@ class _ChatShellScreenState extends State<ChatShellScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.of(context).size.width >= 600;
+    final isWide = WideScreenHelper.isWide(context);
 
     if (isWide) {
       final currentWidth = _isCollapsed ? _collapsedWidth : _sidebarWidth;

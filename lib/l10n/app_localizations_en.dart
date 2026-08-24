@@ -552,6 +552,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get trayLock => 'Lock';
 
   @override
+  String get trayTooltip => 'TouchFish Client';
+
+  @override
+  String get titleBarMinimize => 'Minimize';
+
+  @override
+  String get titleBarMaximize => 'Maximize';
+
+  @override
+  String get titleBarRestore => 'Restore';
+
+  @override
+  String get titleBarClose => 'Close';
+
+  @override
+  String get imageZoomIn => 'Zoom in';
+
+  @override
+  String get imageZoomOut => 'Zoom out';
+
+  @override
+  String get imageRotateLeft => 'Rotate left';
+
+  @override
+  String get imageRotateRight => 'Rotate right';
+
+  @override
+  String get imageExif => 'View EXIF info';
+
+  @override
+  String get announcementEdit => 'Edit Announcement';
+
+  @override
+  String get announcementDelete => 'Delete announcement';
+
+  @override
+  String get chatSelectPlaceholder => 'Select a chat to start talking';
+
+  @override
   String get settingsSystemNotificationsTitle => 'System Notifications';
 
   @override
@@ -579,6 +618,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String notificationLevelSummary(int contacts, int messages) {
     return '$contacts contacts sent $messages messages';
   }
+
+  @override
+  String get notificationReplyAction => 'Reply';
+
+  @override
+  String get notificationReplyInputHint => 'Type your reply';
+
+  @override
+  String get notificationSummaryTitle => 'TouchFish Messages';
+
+  @override
+  String get notificationSummarySubtitle => 'New chat messages';
+
+  @override
+  String get notificationChannelName => 'TouchFish notifications';
+
+  @override
+  String get notificationChannelDesc => 'Messages and activity from TouchFish';
+
+  @override
+  String get notificationOpenAction => 'Open notification';
 
   @override
   String get settingsInAppNotificationsTitle => 'In-App Notifications';
@@ -2399,9 +2459,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get announcementCreateFailed => 'Failed to create announcement';
 
   @override
-  String get announcementEdit => 'Edit Announcement';
-
-  @override
   String get announcementEditHint => 'Edit announcement content...';
 
   @override
@@ -3056,6 +3113,33 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsEnableAnimationsDesc =>
       'Enable page and interface animations';
+
+  @override
+  String get settingsLayoutModeTitle => 'Layout Mode';
+
+  @override
+  String get settingsLayoutModeDesc => 'Choose between wide or narrow layout';
+
+  @override
+  String get settingsLayoutModeAuto => 'Auto';
+
+  @override
+  String get settingsLayoutModeForceWide => 'Force Wide';
+
+  @override
+  String get settingsLayoutModeForceNarrow => 'Force Narrow';
+
+  @override
+  String get settingsWideThresholdTitle => 'Wide Screen Threshold';
+
+  @override
+  String get settingsWideThresholdDesc =>
+      'Switch to the wide layout when the window width reaches this value (only in Auto mode)';
+
+  @override
+  String settingsWideThresholdValue(Object px) {
+    return '$px px';
+  }
 
   @override
   String get settingsWeakNetworkTitle => 'Weak network mode';

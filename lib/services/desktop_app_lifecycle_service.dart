@@ -2,15 +2,14 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
-import '../l10n/app_localizations.dart';
 import '../models/app_state.dart';
 import '../models/settings_service.dart';
 import '../services/lock_service.dart';
+import '../utils/l10n.dart';
 import '../utils/talker.dart';
 
 class DesktopAppLifecycleService with TrayListener, WindowListener {
@@ -25,6 +24,8 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
 
   bool _initialized = false;
   bool _isQuitting = false;
+  bool _trayReady = false;
+  String? _lastTrayLanguage;
 
   /// Whether the window was hidden to the tray during the previous session.
   /// Used on startup to decide whether the window should be shown at all.
@@ -49,6 +50,17 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
 
     final prefs = await SharedPreferences.getInstance();
     _wasHiddenInTray = prefs.getBool(keyWasInTray) ?? false;
+
+    // 语言切换后刷新托盘菜单与提示，无需重启应用。
+    AppState.instance.addListener(_onAppStateChanged);
+  }
+
+  void _onAppStateChanged() {
+    if (!_trayReady) return;
+    final languageCode = currentAppLocalizations().localeName;
+    if (languageCode == _lastTrayLanguage) return;
+    _lastTrayLanguage = languageCode;
+    unawaited(_applyTrayLabels());
   }
 
   /// Sets up the tray icon and intercepts window close. Must be called after
@@ -75,53 +87,54 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
   }
 
   Future<void> _setupTray() async {
-    // Resolve localized menu labels. The tray is set up before runApp(), so
-    // there is no BuildContext available; use lookupAppLocalizations with the
-    // current app locale instead.
-    final locale = AppState.instance.locale;
-    AppLocalizations l10n;
-    if (locale != null) {
-      l10n = lookupAppLocalizations(locale);
-    } else {
-      l10n = lookupAppLocalizations(Locale('zh'));
-    }
-
     try {
       // Windows only supports .ico via LoadImage, while macOS/Linux work
       // well with PNG. Use the platform-appropriate icon file.
       final iconAsset = Platform.isWindows ? 'assets/icon.ico' : 'assets/logo.png';
       await trayManager.setIcon(iconAsset);
-      await trayManager.setToolTip('TouchFish Client');
-      await trayManager.setContextMenu(
-        Menu(
-          items: [
-            MenuItem(
-              key: 'show',
-              label: l10n.trayShowApp,
-              onClick: (_) => showWindow(),
-            ),
-            MenuItem(
-              key: 'hide',
-              label: l10n.trayHideWindow,
-              onClick: (_) => hideWindow(),
-            ),
-            MenuItem(
-              key: 'lock',
-              label: l10n.trayLock,
-              onClick: (_) => LockService.instance.lock(),
-            ),
-            MenuItem.separator(),
-            MenuItem(
-              key: 'quit',
-              label: l10n.trayQuit,
-              onClick: (_) => quit(),
-            ),
-          ],
-        ),
-      );
+      await _applyTrayLabels();
+      _trayReady = true;
     } catch (error, stackTrace) {
       talker.error('Failed to initialize system tray', error, stackTrace);
     }
+  }
+
+  /// 应用当前语言的托盘提示与菜单标签。
+  ///
+  /// 托盘在 runApp() 之前建立，没有 BuildContext；
+  /// 用 [currentAppLocalizations] 按当前语言设置解析。
+  /// 语言切换时（[_onAppStateChanged]）也会重新应用。
+  Future<void> _applyTrayLabels() async {
+    final l10n = currentAppLocalizations();
+    _lastTrayLanguage = l10n.localeName;
+    await trayManager.setToolTip(l10n.trayTooltip);
+    await trayManager.setContextMenu(
+      Menu(
+        items: [
+          MenuItem(
+            key: 'show',
+            label: l10n.trayShowApp,
+            onClick: (_) => showWindow(),
+          ),
+          MenuItem(
+            key: 'hide',
+            label: l10n.trayHideWindow,
+            onClick: (_) => hideWindow(),
+          ),
+          MenuItem(
+            key: 'lock',
+            label: l10n.trayLock,
+            onClick: (_) => LockService.instance.lock(),
+          ),
+          MenuItem.separator(),
+          MenuItem(
+            key: 'quit',
+            label: l10n.trayQuit,
+            onClick: (_) => quit(),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Shows and focuses the main window.

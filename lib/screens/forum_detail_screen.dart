@@ -14,6 +14,7 @@ import '../services/snackbar_service.dart';
 import 'forum_members_screen.dart';
 import 'forum_post_compose_screen.dart';
 import '../utils/talker.dart';
+import '../utils/wide_screen_helper.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/forum_attachments.dart';
 import '../routes/app_routes.dart';
@@ -194,7 +195,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
     final forum = _forum!;
 
-    final isWide = MediaQuery.of(context).size.width >= 600;
+    final isWide = WideScreenHelper.isWide(context);
 
     return Scaffold(
       body: Stack(

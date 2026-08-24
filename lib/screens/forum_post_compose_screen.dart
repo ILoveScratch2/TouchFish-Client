@@ -15,6 +15,7 @@ import '../services/snackbar_service.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/mention_text_field.dart';
 import '../utils/talker.dart';
+import '../utils/wide_screen_helper.dart';
 import '../models/file_attachment.dart';
 import '../services/draft_service.dart';
 import '../widgets/file_attachment_view.dart';
@@ -186,7 +187,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final screenSize = MediaQuery.of(context).size;
-    final isWide = screenSize.width > 600;
+    final isWide = WideScreenHelper.isWide(context);
     final viewInsets = MediaQuery.of(context).viewInsets;
 
     Widget content = Material(

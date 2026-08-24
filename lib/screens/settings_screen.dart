@@ -16,6 +16,7 @@ import '../services/font_loader_service.dart';
 import '../services/draft_service.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
+import '../utils/wide_screen_helper.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/local_storage_settings.dart';
 import '../services/media_proxy_service.dart';
@@ -65,17 +66,24 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWideScreen = constraints.maxWidth >= 600;
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isWideScreen = WideScreenHelper.isWideWithWidth(
+              constraints.maxWidth,
+            );
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(AppLocalizations.of(context)!.settingsTitle),
-          ),
-          body: isWideScreen
-              ? _buildWideLayout(context)
-              : _buildNarrowLayout(context),
+            return Scaffold(
+              appBar: AppBar(
+                title: Text(AppLocalizations.of(context)!.settingsTitle),
+              ),
+              body: isWideScreen
+                  ? _buildWideLayout(context)
+                  : _buildNarrowLayout(context),
+            );
+          },
         );
       },
     );
@@ -279,6 +287,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         }
         if (item.key == 'language' ||
             item.key == 'themeColor' ||
+            item.key == 'layoutMode' ||
             item.key == 'explicitSyncCooldownSeconds' ||
             item.key == 'notificationLevel' ||
             item.key == 'ipOverrideMode') {
@@ -315,6 +324,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         }
         if (item.key == 'maxCachedRooms') {
           return _buildMaxCachedRoomsSetting(context, l10n);
+        }
+        if (item.key == 'wideScreenThreshold') {
+          return _buildWideScreenThresholdSetting(context, l10n);
         }
         if (item.key == 'automaticPreviewMaxMiB') {
           return _buildAutomaticPreviewSetting(context, l10n, item);
@@ -1332,6 +1344,80 @@ class _SettingsScreenState extends State<SettingsScreen>
                         v.round(),
                       );
                     },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildWideScreenThresholdSetting(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        final mode = _settingsService.getValue<String>('layoutMode', 'auto');
+        final enabled = mode == 'auto';
+        final currentVal = _settingsService
+            .getValue<int>('wideScreenThreshold', 600)
+            .toDouble()
+            .clamp(400.0, 1200.0);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.vertical_align_center),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.settingsWideThresholdTitle,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Text(
+                                l10n.settingsWideThresholdDesc,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        l10n.settingsWideThresholdValue(currentVal.round()),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Slider(
+                    value: currentVal,
+                    min: 400,
+                    max: 1200,
+                    divisions: 16,
+                    label: l10n.settingsWideThresholdValue(currentVal.round()),
+                    onChanged: enabled
+                        ? (v) async {
+                            await _settingsService.setValue(
+                              'wideScreenThreshold',
+                              v.round(),
+                            );
+                          }
+                        : null,
                   ),
                 ],
               ),

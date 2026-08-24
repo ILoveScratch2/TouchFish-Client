@@ -29,6 +29,7 @@ import '../services/draft_service.dart';
 import '../services/local_message_store.dart';
 import '../services/message_sync_service.dart';
 import '../services/notification_service.dart';
+import '../utils/wide_screen_helper.dart';
 import '../utils/talker.dart';
 import 'chat_room_settings_screen.dart';
 import 'group_essence_screen.dart';
@@ -2226,7 +2227,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
 
     final colorScheme = Theme.of(context).colorScheme;
-    final isWide = MediaQuery.of(context).size.width >= 600;
+    final isWide = WideScreenHelper.isWide(context);
     final essenceButton = IconButton(
       icon: const Icon(Icons.auto_awesome),
       onPressed: _openEssenceScreen,

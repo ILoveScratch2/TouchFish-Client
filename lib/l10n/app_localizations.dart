@@ -1108,6 +1108,84 @@ abstract class AppLocalizations {
   /// **'Lock'**
   String get trayLock;
 
+  /// No description provided for @trayTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish Client'**
+  String get trayTooltip;
+
+  /// No description provided for @titleBarMinimize.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimize'**
+  String get titleBarMinimize;
+
+  /// No description provided for @titleBarMaximize.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximize'**
+  String get titleBarMaximize;
+
+  /// No description provided for @titleBarRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get titleBarRestore;
+
+  /// No description provided for @titleBarClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get titleBarClose;
+
+  /// No description provided for @imageZoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get imageZoomIn;
+
+  /// No description provided for @imageZoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get imageZoomOut;
+
+  /// No description provided for @imageRotateLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate left'**
+  String get imageRotateLeft;
+
+  /// No description provided for @imageRotateRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate right'**
+  String get imageRotateRight;
+
+  /// No description provided for @imageExif.
+  ///
+  /// In en, this message translates to:
+  /// **'View EXIF info'**
+  String get imageExif;
+
+  /// No description provided for @announcementEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Announcement'**
+  String get announcementEdit;
+
+  /// No description provided for @announcementDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete announcement'**
+  String get announcementDelete;
+
+  /// No description provided for @chatSelectPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a chat to start talking'**
+  String get chatSelectPlaceholder;
+
   /// No description provided for @settingsSystemNotificationsTitle.
   ///
   /// In en, this message translates to:
@@ -1155,6 +1233,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{contacts} contacts sent {messages} messages'**
   String notificationLevelSummary(int contacts, int messages);
+
+  /// No description provided for @notificationReplyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get notificationReplyAction;
+
+  /// No description provided for @notificationReplyInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your reply'**
+  String get notificationReplyInputHint;
+
+  /// No description provided for @notificationSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish Messages'**
+  String get notificationSummaryTitle;
+
+  /// No description provided for @notificationSummarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat messages'**
+  String get notificationSummarySubtitle;
+
+  /// No description provided for @notificationChannelName.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish notifications'**
+  String get notificationChannelName;
+
+  /// No description provided for @notificationChannelDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages and activity from TouchFish'**
+  String get notificationChannelDesc;
+
+  /// No description provided for @notificationOpenAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open notification'**
+  String get notificationOpenAction;
 
   /// No description provided for @settingsInAppNotificationsTitle.
   ///
@@ -4510,12 +4630,6 @@ abstract class AppLocalizations {
   /// **'Failed to create announcement'**
   String get announcementCreateFailed;
 
-  /// No description provided for @announcementEdit.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit Announcement'**
-  String get announcementEdit;
-
   /// No description provided for @announcementEditHint.
   ///
   /// In en, this message translates to:
@@ -5697,6 +5811,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enable page and interface animations'**
   String get settingsEnableAnimationsDesc;
+
+  /// No description provided for @settingsLayoutModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Layout Mode'**
+  String get settingsLayoutModeTitle;
+
+  /// No description provided for @settingsLayoutModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose between wide or narrow layout'**
+  String get settingsLayoutModeDesc;
+
+  /// No description provided for @settingsLayoutModeAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get settingsLayoutModeAuto;
+
+  /// No description provided for @settingsLayoutModeForceWide.
+  ///
+  /// In en, this message translates to:
+  /// **'Force Wide'**
+  String get settingsLayoutModeForceWide;
+
+  /// No description provided for @settingsLayoutModeForceNarrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Force Narrow'**
+  String get settingsLayoutModeForceNarrow;
+
+  /// No description provided for @settingsWideThresholdTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wide Screen Threshold'**
+  String get settingsWideThresholdTitle;
+
+  /// No description provided for @settingsWideThresholdDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to the wide layout when the window width reaches this value (only in Auto mode)'**
+  String get settingsWideThresholdDesc;
+
+  /// No description provided for @settingsWideThresholdValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{px} px'**
+  String settingsWideThresholdValue(Object px);
 
   /// No description provided for @settingsWeakNetworkTitle.
   ///
