@@ -317,6 +317,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'When enabled the app can appear above the Android lock screen, letting you view and use content without unlocking (some systems may restrict typing or secure actions)';
 
   @override
+  String get settingsBuiltInKeyboardTitle => 'Use Built-in Soft Keyboard';
+
+  @override
+  String get settingsBuiltInKeyboardDesc =>
+      'Use the built-in soft keyboard provided by TouchFish-Client to type. English input only';
+
+  @override
+  String get settingsBuiltInKeyboardNever => 'Never';
+
+  @override
+  String get settingsBuiltInKeyboardLock => 'Only when locked';
+
+  @override
+  String get settingsBuiltInKeyboardAlways => 'Always';
+
+  @override
   String get lockTitle => 'TouchFish is locked';
 
   @override

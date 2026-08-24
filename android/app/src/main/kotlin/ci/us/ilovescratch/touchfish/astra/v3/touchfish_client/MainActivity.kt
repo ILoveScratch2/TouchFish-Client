@@ -1,5 +1,6 @@
 package ci.us.ilovescratch.touchfish.astra.v3.touchfish_client
 
+import android.app.KeyguardManager
 import android.content.ContentValues
 import android.net.Uri
 import android.os.Build
@@ -85,6 +86,11 @@ class MainActivity : FlutterActivity() {
                         }
                     }
                     result.success(true)
+                }
+                "isKeyguardLocked" -> {
+                    val keyguardManager =
+                        getSystemService(KEYGUARD_SERVICE) as KeyguardManager
+                    result.success(keyguardManager.isKeyguardLocked)
                 }
                 else -> result.notImplemented()
             }

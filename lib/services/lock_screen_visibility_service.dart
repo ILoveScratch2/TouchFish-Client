@@ -43,4 +43,14 @@ class LockScreenVisibilityService {
       );
     }
   }
+
+  Future<bool?> isKeyguardLocked() async {
+    if (kIsWeb || !Platform.isAndroid) return null;
+    try {
+      return await _channel.invokeMethod<bool>('isKeyguardLocked');
+    } catch (error, stackTrace) {
+      talker.error('Failed to read keyguard state', error, stackTrace);
+      return null;
+    }
+  }
 }

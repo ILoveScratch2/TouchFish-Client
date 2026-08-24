@@ -84,6 +84,7 @@ dependencies:
   tray_manager: ^0.5.3
   permission_handler: ^12.0.1
   local_auth: ^3.0.2
+  virtual_keypad: ^1.0.1
 
 dev_dependencies:
   flutter_test:

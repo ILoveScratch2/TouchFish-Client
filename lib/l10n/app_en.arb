@@ -111,6 +111,12 @@
   "settingsSecurityLockNowDesc": "Lock the app immediately; a master password or biometrics is required to unlock",
   "settingsShowOnLockScreenTitle": "Show Above Lock Screen",
   "settingsShowOnLockScreenDesc": "When enabled the app can appear above the Android lock screen, letting you view and use content without unlocking (some systems may restrict typing or secure actions)",
+
+  "settingsBuiltInKeyboardTitle": "Use Built-in Soft Keyboard",
+  "settingsBuiltInKeyboardDesc": "Use the built-in soft keyboard provided by TouchFish-Client to type. English input only",
+  "settingsBuiltInKeyboardNever": "Never",
+  "settingsBuiltInKeyboardLock": "Only when locked",
+  "settingsBuiltInKeyboardAlways": "Always",
   "lockTitle": "TouchFish is locked",
   "lockSubtitle": "Enter your master password to unlock",
   "lockPasswordLabel": "Master Password",

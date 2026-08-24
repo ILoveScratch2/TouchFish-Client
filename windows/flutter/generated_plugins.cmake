@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
   disk_space_2
+  emoji_picker_flutter
   file_selector_windows
   irondash_engine_context
   local_auth_windows

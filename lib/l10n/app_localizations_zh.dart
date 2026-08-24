@@ -296,7 +296,23 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsShowOnLockScreenDesc =>
-      '开启后应用可显示在 Android 锁屏之上，即使未解锁也能查看和使用内容（部分系统可能限制输入字符或安全操作）';
+      '开启后应用可显示在 Android 锁屏之上，即使未解锁也能查看和使用内容（系统可能限制输入字符或安全操作）';
+
+  @override
+  String get settingsBuiltInKeyboardTitle => '使用应用内置软键盘';
+
+  @override
+  String get settingsBuiltInKeyboardDesc =>
+      '使用 TouchFish-Client 提供的内置软键盘输入文本，仅支持 English 输入';
+
+  @override
+  String get settingsBuiltInKeyboardNever => '完全不使用';
+
+  @override
+  String get settingsBuiltInKeyboardLock => '仅锁屏时';
+
+  @override
+  String get settingsBuiltInKeyboardAlways => '一直使用';
 
   @override
   String get lockTitle => 'TouchFish 已锁定';

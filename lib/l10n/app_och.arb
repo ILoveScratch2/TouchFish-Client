@@ -102,6 +102,12 @@
   "settingsSecurityLockNowDesc": "即鎖應用，須以主密或生物識別方能啟",
   "settingsShowOnLockScreenTitle": "顯於鎖屏之上",
   "settingsShowOnLockScreenDesc": "啟之則應用可顯於 Android 鎖屏之上，未解鎖亦可觀覽使用（部分系統或限輸字及安全操作）",
+
+  "settingsBuiltInKeyboardTitle": "用應用內建軟鍵盤",
+  "settingsBuiltInKeyboardDesc": "用 TouchFish-Client 內建軟鍵盤輸文，惟 English 可用",
+  "settingsBuiltInKeyboardNever": "概不使用",
+  "settingsBuiltInKeyboardLock": "惟鎖屏時",
+  "settingsBuiltInKeyboardAlways": "恆用之",
   "lockTitle": "TouchFish 已鎖",
   "lockSubtitle": "入主密以啟應用",
   "lockPasswordLabel": "主密",

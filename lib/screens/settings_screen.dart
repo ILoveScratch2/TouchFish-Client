@@ -255,6 +255,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       if (item.key == 'notificationLevel') return isAndroid;
       if (item.key == 'lockscreenReply') return isAndroid;
       if (item.key == 'showOnLockScreen') return isAndroid;
+      if (item.key == 'builtInKeyboardMode') return isAndroid;
       return true;
     }).toList();
     return ListView.builder(
@@ -290,6 +291,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         if (item.key == 'language' ||
             item.key == 'themeColor' ||
             item.key == 'layoutMode' ||
+            item.key == 'builtInKeyboardMode' ||
             item.key == 'explicitSyncCooldownSeconds' ||
             item.key == 'notificationLevel' ||
             item.key == 'ipOverrideMode') {

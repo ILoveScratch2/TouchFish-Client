@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:virtual_keypad/virtual_keypad.dart';
 import 'l10n/app_localizations.dart';
 import 'models/app_state.dart';
 import 'models/settings_service.dart';
@@ -31,6 +32,7 @@ import 'services/lock_service.dart';
 import 'services/lock_screen_visibility_service.dart';
 import 'utils/talker.dart';
 import 'widgets/app_alert_dialog.dart';
+import 'widgets/app_virtual_keyboard.dart';
 import 'widgets/notification_overlay.dart';
 import 'widgets/custom_title_bar.dart';
 import 'widgets/server_connection_banner.dart';
@@ -43,6 +45,7 @@ Future<void> main() async {
     WidgetsFlutterBinding.ensureInitialized();
     registerTalkerErrorHandlers();
     MediaKit.ensureInitialized();
+    initializeKeyboardLayouts();
 
     final isDesktop =
         !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
@@ -658,6 +661,7 @@ class _TouchFishAppState extends State<TouchFishApp> {
               ),
             ),
             const AppNotificationOverlay(),
+            const AppVirtualKeyboard(),
           ],
         );
       },

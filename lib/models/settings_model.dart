@@ -490,6 +490,28 @@ class SettingsData {
           defaultValue: false,
           icon: Icons.lock_open,
         ),
+        SettingItem(
+          key: 'builtInKeyboardMode',
+          titleKey: 'settingsBuiltInKeyboardTitle',
+          descriptionKey: 'settingsBuiltInKeyboardDesc',
+          type: SettingType.dropdown,
+          defaultValue: 'lock',
+          icon: Icons.keyboard,
+          options: [
+            SettingOption(
+              value: 'never',
+              labelKey: 'settingsBuiltInKeyboardNever',
+            ),
+            SettingOption(
+              value: 'lock',
+              labelKey: 'settingsBuiltInKeyboardLock',
+            ),
+            SettingOption(
+              value: 'always',
+              labelKey: 'settingsBuiltInKeyboardAlways',
+            ),
+          ],
+        ),
       ],
     ),
     SettingCategoryData(

@@ -298,6 +298,22 @@ class AppLocalizationsOch extends AppLocalizations {
       '啟之則應用可顯於 Android 鎖屏之上，未解鎖亦可觀覽使用（部分系統或限輸字及安全操作）';
 
   @override
+  String get settingsBuiltInKeyboardTitle => '用應用內建軟鍵盤';
+
+  @override
+  String get settingsBuiltInKeyboardDesc =>
+      '用 TouchFish-Client 內建軟鍵盤輸文，惟 English 可用';
+
+  @override
+  String get settingsBuiltInKeyboardNever => '概不使用';
+
+  @override
+  String get settingsBuiltInKeyboardLock => '惟鎖屏時';
+
+  @override
+  String get settingsBuiltInKeyboardAlways => '恆用之';
+
+  @override
   String get lockTitle => 'TouchFish 已鎖';
 
   @override
