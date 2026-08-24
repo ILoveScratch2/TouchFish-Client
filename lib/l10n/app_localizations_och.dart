@@ -291,6 +291,13 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsSecurityLockNowDesc => '即鎖應用，須以主密或生物識別方能啟';
 
   @override
+  String get settingsShowOnLockScreenTitle => '顯於鎖屏之上';
+
+  @override
+  String get settingsShowOnLockScreenDesc =>
+      '啟之則應用可顯於 Android 鎖屏之上，未解鎖亦可觀覽使用（部分系統或限輸字及安全操作）';
+
+  @override
   String get lockTitle => 'TouchFish 已鎖';
 
   @override

@@ -23,6 +23,7 @@ import '../services/media_proxy_service.dart';
 import '../services/ip_override_service.dart';
 import '../services/server_connection_status_service.dart';
 import '../services/lock_service.dart';
+import '../services/lock_screen_visibility_service.dart';
 import 'connectivity_self_check_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -253,6 +254,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     final visibleItems = categoryData.items.where((item) {
       if (item.key == 'notificationLevel') return isAndroid;
       if (item.key == 'lockscreenReply') return isAndroid;
+      if (item.key == 'showOnLockScreen') return isAndroid;
       return true;
     }).toList();
     return ListView.builder(
@@ -1049,6 +1051,11 @@ class _SettingsScreenState extends State<SettingsScreen>
               value: value,
               onChanged: (newValue) async {
                 await _settingsService.setValue(item.key, newValue);
+                if (item.key == 'showOnLockScreen') {
+                  await LockScreenVisibilityService.instance.setEnabled(
+                    newValue,
+                  );
+                }
                 if (!newValue && item.key == 'mediaProxyEnabled') {
                   await MediaProxyService.instance.stop();
                 }

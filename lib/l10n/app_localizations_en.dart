@@ -310,6 +310,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Lock the app immediately; a master password or biometrics is required to unlock';
 
   @override
+  String get settingsShowOnLockScreenTitle => 'Show Above Lock Screen';
+
+  @override
+  String get settingsShowOnLockScreenDesc =>
+      'When enabled the app can appear above the Android lock screen, letting you view and use content without unlocking (some systems may restrict typing or secure actions)';
+
+  @override
   String get lockTitle => 'TouchFish is locked';
 
   @override

@@ -100,6 +100,8 @@
   "settingsSecurityBiometricFailed": "启用生物识别失败",
   "settingsSecurityLockNowTitle": "立即锁定",
   "settingsSecurityLockNowDesc": "立即锁定应用，需要主密码或生物识别才能解锁",
+  "settingsShowOnLockScreenTitle": "显示在锁屏上层",
+  "settingsShowOnLockScreenDesc": "开启后应用可显示在 Android 锁屏之上，即使未解锁也能查看和使用内容（系统可能限制输入字符或安全操作）",
   "lockTitle": "TouchFish 已锁定",
   "lockSubtitle": "输入主密码以解锁应用",
   "lockPasswordLabel": "主密码",

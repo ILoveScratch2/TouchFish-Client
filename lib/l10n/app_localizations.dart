@@ -658,6 +658,18 @@ abstract class AppLocalizations {
   /// **'Lock the app immediately; a master password or biometrics is required to unlock'**
   String get settingsSecurityLockNowDesc;
 
+  /// No description provided for @settingsShowOnLockScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Above Lock Screen'**
+  String get settingsShowOnLockScreenTitle;
+
+  /// No description provided for @settingsShowOnLockScreenDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled the app can appear above the Android lock screen, letting you view and use content without unlocking (some systems may restrict typing or secure actions)'**
+  String get settingsShowOnLockScreenDesc;
+
   /// No description provided for @lockTitle.
   ///
   /// In en, this message translates to:

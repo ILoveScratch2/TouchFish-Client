@@ -28,6 +28,7 @@ import 'services/notification_service.dart';
 import 'services/server_connection_status_service.dart';
 import 'services/ip_override_service.dart';
 import 'services/lock_service.dart';
+import 'services/lock_screen_visibility_service.dart';
 import 'utils/talker.dart';
 import 'widgets/app_alert_dialog.dart';
 import 'widgets/notification_overlay.dart';
@@ -382,6 +383,9 @@ class _TouchFishAppState extends State<TouchFishApp> {
       _startSavedSessionRestoreIfNeeded();
       _startNotificationPollingIfLoggedIn();
       unawaited(_runStartupChecks());
+      if (!kIsWeb && Platform.isAndroid) {
+        unawaited(LockScreenVisibilityService.instance.applyFromSettings());
+      }
     });
   }
 

@@ -292,6 +292,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSecurityLockNowDesc => '立即锁定应用，需要主密码或生物识别才能解锁';
 
   @override
+  String get settingsShowOnLockScreenTitle => '显示在锁屏上层';
+
+  @override
+  String get settingsShowOnLockScreenDesc =>
+      '开启后应用可显示在 Android 锁屏之上，即使未解锁也能查看和使用内容（部分系统可能限制输入字符或安全操作）';
+
+  @override
   String get lockTitle => 'TouchFish 已锁定';
 
   @override

@@ -482,6 +482,14 @@ class SettingsData {
           defaultValue: null,
           icon: Icons.lock,
         ),
+        SettingItem(
+          key: 'showOnLockScreen',
+          titleKey: 'settingsShowOnLockScreenTitle',
+          descriptionKey: 'settingsShowOnLockScreenDesc',
+          type: SettingType.switchSetting,
+          defaultValue: false,
+          icon: Icons.lock_open,
+        ),
       ],
     ),
     SettingCategoryData(

@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -11,7 +12,9 @@ import java.io.File
 
 class MainActivity : FlutterActivity() {
     private val channelName = "touchfish/background_notification"
+    private val lockScreenChannelName = "touchfish/lock_screen"
     private var channel: MethodChannel? = null
+    private var lockScreenChannel: MethodChannel? = null
     private var pendingNotificationRoute: String? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -60,6 +63,28 @@ class MainActivity : FlutterActivity() {
                     } catch (e: Exception) {
                         result.error("SAVE_FAILED", e.message, e.stackTraceToString())
                     }
+                }
+                else -> result.notImplemented()
+            }
+        }
+        lockScreenChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            lockScreenChannelName,
+        )
+        lockScreenChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "setShowWhenLocked" -> {
+                    val enabled = call.argument<Boolean>("enabled") ?: false
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                        setShowWhenLocked(enabled)
+                    } else {
+                        if (enabled) {
+                            window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+                        } else {
+                            window.clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+                        }
+                    }
+                    result.success(true)
                 }
                 else -> result.notImplemented()
             }
@@ -135,6 +160,8 @@ class MainActivity : FlutterActivity() {
     override fun onDestroy() {
         channel?.setMethodCallHandler(null)
         channel = null
+        lockScreenChannel?.setMethodCallHandler(null)
+        lockScreenChannel = null
         BackgroundNotificationService.setAppForeground(false)
         super.onDestroy()
     }
