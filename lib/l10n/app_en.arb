@@ -1199,6 +1199,8 @@
   "settingsCategoryStorage": "Storage",
   "settingsNotifyWithHaptic": "Haptic Feedback on Notification",
   "settingsNotifyWithHapticDescription": "Trigger haptic feedback when a new in-app notification arrives",
+  "settingsLockscreenReplyTitle": "Quick Reply on Lock Screen",
+  "settingsLockscreenReplyDesc": "Reply to messages directly from the notification while the device is locked. Message content will be visible on the lock screen",
   "settingsMediaProxy": "Media Proxy",
   "settingsMediaProxyDescription": "Runs a local HTTP proxy to cache and stream media files for smoother playback",
   "settingsMediaProxyUnsupported": "Not supported on this platform",

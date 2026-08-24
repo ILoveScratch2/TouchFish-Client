@@ -2840,6 +2840,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsNotifyWithHapticDescription => '收到应用内新通知时触发触感反馈';
 
   @override
+  String get settingsLockscreenReplyTitle => '锁屏快捷回复';
+
+  @override
+  String get settingsLockscreenReplyDesc => '锁屏状态下可直接通过通知回复消息，消息内容将在锁屏可见';
+
+  @override
   String get settingsMediaProxy => '媒体代理';
 
   @override

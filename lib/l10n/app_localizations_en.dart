@@ -2962,6 +2962,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Trigger haptic feedback when a new in-app notification arrives';
 
   @override
+  String get settingsLockscreenReplyTitle => 'Quick Reply on Lock Screen';
+
+  @override
+  String get settingsLockscreenReplyDesc =>
+      'Reply to messages directly from the notification while the device is locked. Message content will be visible on the lock screen';
+
+  @override
   String get settingsMediaProxy => 'Media Proxy';
 
   @override

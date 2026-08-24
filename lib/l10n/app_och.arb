@@ -1143,6 +1143,8 @@
   "settingsCategoryStorage": "儲",
   "settingsNotifyWithHaptic": "通知觸感反饋",
   "settingsNotifyWithHapticDescription": "收到應用內新通知時觸發觸感反饋",
+  "settingsLockscreenReplyTitle": "鎖屏快捷回覆",
+  "settingsLockscreenReplyDesc": "鎖屏狀態下可直接透過通知回覆訊息，訊息內容將在鎖屏可見",
   "settingsMediaProxy": "媒體代理",
   "settingsMediaProxyDescription": "於本機運行 HTTP 代理以緩存並流式播放媒體，提供更流暢之播放體驗",
   "settingsMediaProxyUnsupported": "當前平台不支持此功能",

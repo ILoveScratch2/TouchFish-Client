@@ -244,6 +244,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         defaultTargetPlatform == TargetPlatform.android;
     final visibleItems = categoryData.items.where((item) {
       if (item.key == 'notificationLevel') return isAndroid;
+      if (item.key == 'lockscreenReply') return isAndroid;
       return true;
     }).toList();
     return ListView.builder(

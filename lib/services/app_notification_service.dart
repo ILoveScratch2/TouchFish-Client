@@ -117,10 +117,17 @@ class AppNotificationService extends ChangeNotifier
     _router = router;
   }
 
+  /// xsfx，we need you!
+  NotificationVisibility get _lockscreenVisibility =>
+      SettingsService.instance.getValue<bool>('lockscreenReply', false)
+          ? NotificationVisibility.public
+          : NotificationVisibility.private;
+
   /// 当前生效的通知分级。
   ///
   /// 分级只影响横幅展示逻辑，通知中心数据不变。
   /// 仅 Android 支持分级；其他平台始终为 [NotificationLevel.full]（原行为）。
+  /// Only A(ndroid) can do!
   NotificationLevel get notificationLevel {
     if (!kIsWeb &&
         defaultTargetPlatform == TargetPlatform.android &&
@@ -132,15 +139,13 @@ class AppNotificationService extends ChangeNotifier
     return NotificationLevel.full;
   }
 
-  /// 当前是否仅在收集聊天通知（一级/二级），
-  /// 非聊天通知（公告/论坛/系统事件）应始终以完整方式展示。
+  /// 当前是否仅在收集聊天通知
   bool _isChatNotification(AppNotification notification) =>
       notification.topic == 'message.private' ||
       notification.topic == 'message.group';
 
-  /// 抑制应用内横幅一段时间（例如应用刚启动/登录恢复历史通知时），
-  /// 期间新到达的事件只累计到各栏目的角标，不弹横幅轰炸用户；
-  /// 窗口结束后恢复正常横幅提醒。
+  
+  /// 不爆炸死 wyf
   void suppressInAppBanners(Duration duration) {
     _suppressInAppBanners = true;
     _bannerSuppressionTimer?.cancel();
@@ -153,7 +158,6 @@ class AppNotificationService extends ChangeNotifier
     _router = router;
     if (_initialized) return;
     _initialized = true;
-    // 观察者只注册一次，避免初始化失败重试时重复注册导致回调重复触发。
     if (!_observersRegistered) {
       _observersRegistered = true;
       WidgetsBinding.instance.addObserver(this);
@@ -363,6 +367,7 @@ class AppNotificationService extends ChangeNotifier
         'notificationSound',
         true,
       ),
+      visibility: _lockscreenVisibility,
       actions:
           level == NotificationLevel.perSender && notification.canReply
               ? androidInlineReplyActions
@@ -562,6 +567,7 @@ class AppNotificationService extends ChangeNotifier
         priority: androidDetails.priority,
         playSound: playSound,
         largeIcon: senderAvatar,
+        visibility: _lockscreenVisibility,
         actions: notification.canReply
             ? androidInlineReplyActions
             : null,

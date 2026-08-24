@@ -262,6 +262,14 @@ class SettingsData {
           icon: Icons.vibration,
         ),
         SettingItem(
+          key: 'lockscreenReply',
+          titleKey: 'settingsLockscreenReplyTitle',
+          descriptionKey: 'settingsLockscreenReplyDesc',
+          type: SettingType.switchSetting,
+          defaultValue: false,
+          icon: Icons.lock_open,
+        ),
+        SettingItem(
           key: 'chatNotifications',
           titleKey: 'settingsChatNotificationsTitle',
           descriptionKey: 'settingsChatNotificationsDesc',

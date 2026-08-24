@@ -5524,6 +5524,18 @@ abstract class AppLocalizations {
   /// **'Trigger haptic feedback when a new in-app notification arrives'**
   String get settingsNotifyWithHapticDescription;
 
+  /// No description provided for @settingsLockscreenReplyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Reply on Lock Screen'**
+  String get settingsLockscreenReplyTitle;
+
+  /// No description provided for @settingsLockscreenReplyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to messages directly from the notification while the device is locked. Message content will be visible on the lock screen'**
+  String get settingsLockscreenReplyDesc;
+
   /// No description provided for @settingsMediaProxy.
   ///
   /// In en, this message translates to:

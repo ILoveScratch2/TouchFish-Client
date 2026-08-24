@@ -2840,6 +2840,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsNotifyWithHapticDescription => '收到應用內新通知時觸發觸感反饋';
 
   @override
+  String get settingsLockscreenReplyTitle => '鎖屏快捷回覆';
+
+  @override
+  String get settingsLockscreenReplyDesc => '鎖屏狀態下可直接透過通知回覆訊息，訊息內容將在鎖屏可見';
+
+  @override
   String get settingsMediaProxy => '媒體代理';
 
   @override
