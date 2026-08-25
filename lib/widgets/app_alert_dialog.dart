@@ -210,6 +210,7 @@ class _TouchFishDialogOverlay<T> extends StatefulWidget {
 class _TouchFishDialogOverlayState<T> extends State<_TouchFishDialogOverlay<T>>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  final FocusNode _focusNode = FocusNode();
   bool _closing = false;
 
   @override
@@ -219,10 +220,16 @@ class _TouchFishDialogOverlayState<T> extends State<_TouchFishDialogOverlay<T>>
       vsync: this,
       duration: const Duration(milliseconds: 150),
     )..forward();
+    // autofocus 在底层路由的 FocusScope 已持有时会被丢弃，
+    // 显式请求焦点才能让弹窗接管键盘事件（如 Esc 关闭）。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
   }
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -240,7 +247,7 @@ class _TouchFishDialogOverlayState<T> extends State<_TouchFishDialogOverlay<T>>
     final inset = widget.topInset;
     final opacity = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
     return Focus(
-      autofocus: true,
+      focusNode: _focusNode,
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.escape &&

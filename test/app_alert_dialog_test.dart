@@ -64,7 +64,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('preset dialog message'), findsOneWidget);
-    final barrierRect = tester.getRect(find.byType(ModalBarrier));
+    // 底层页面路由自带一个透明 ModalBarrier，这里只找弹窗自己的屏障。
+    final dialogBarrier = find.byWidgetPredicate(
+      (w) => w is ModalBarrier && w.color != null,
+    );
+    final barrierRect = tester.getRect(dialogBarrier);
     expect(barrierRect.top, CustomTitleBar.height);
     await tester.tapAt(const Offset(400, 20));
     expect(titleBarTaps, 1);
