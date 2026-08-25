@@ -50,12 +50,10 @@ Future<void> main() async {
     final isDesktop =
         !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
-    // Enforce a single running instance. If another instance is already
-    // running, signal it to show its window and exit this process before any
-    // Flutter window is created.
+    // 我们只能有一个 xsfx is running!
     if (isDesktop) {
-      final isPrimary =
-          await SingleInstanceService.instance.tryAcquireSingleInstance();
+      final isPrimary = await SingleInstanceService.instance
+          .tryAcquireSingleInstance();
       if (!isPrimary) {
         talker.info('Exiting secondary TouchFish instance.');
         exit(0);
@@ -70,12 +68,9 @@ Future<void> main() async {
 
     if (isDesktop) {
       await windowManager.ensureInitialized();
-      // Only registers window/tray listeners now. The native window has not
-      // been created yet, so the tray icon must be set up after the window
-      // is ready (see waitUntilReadyToShow below).
+      // Windows Registry Editor Version 5.00
+      // 直接 reg（注册也是 reg tray）
       await DesktopAppLifecycleService.instance.initialize();
-      // When a second instance is launched, the primary instance shows its
-      // main window (from hidden tray state if necessary).
       SingleInstanceService.instance.onShowWindowRequested = () {
         unawaited(DesktopAppLifecycleService.instance.showWindow());
       };
@@ -124,8 +119,7 @@ Future<void> main() async {
 
         await windowManager.setMinimumSize(minSize);
         await windowManager.setOpacity(windowOpacity);
-        // Native window is fully created here — set up the tray icon and
-        // intercept close events now that a valid HWND exists.
+        // reactNATIVE
         await DesktopAppLifecycleService.instance.afterWindowReady();
         await DesktopAppLifecycleService.instance.restoreWindowState();
         // 上次退出时窗口隐藏在托盘里：本次启动直接驻留托盘，不显示窗口
@@ -359,7 +353,8 @@ class TouchFishApp extends StatefulWidget {
   State<TouchFishApp> createState() => _TouchFishAppState();
 }
 
-class _TouchFishAppState extends State<TouchFishApp> {
+class _TouchFishAppState extends State<TouchFishApp>
+    with WidgetsBindingObserver {
   final _appState = AppState.instance;
   late final _appListenable = Listenable.merge([
     _appState,
@@ -376,6 +371,7 @@ class _TouchFishAppState extends State<TouchFishApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _wasLoggedIn = AuthState.instance.isLoggedIn;
     AuthState.instance.sessionListenable.addListener(_onAuthStateChanged);
     unawaited(AppNotificationService.instance.initialize(_router));
@@ -392,6 +388,13 @@ class _TouchFishAppState extends State<TouchFishApp> {
     });
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !kIsWeb && Platform.isAndroid) {
+      unawaited(LockScreenVisibilityService.instance.applyFromSettings());
+    }
+  }
+
   Future<void> _runStartupChecks() async {
     // Android: request background (battery-optimization) permission.
     if (!kIsWeb && Platform.isAndroid) {
@@ -404,7 +407,8 @@ class _TouchFishAppState extends State<TouchFishApp> {
     if (!kIsWeb) {
       final result = await AppUpdateService.instance.checkForUpdate();
       if (!mounted || !result.hasUpdate) return;
-      final navigatorContext = _router.routerDelegate.navigatorKey.currentContext;
+      final navigatorContext =
+          _router.routerDelegate.navigatorKey.currentContext;
       if (navigatorContext == null || !navigatorContext.mounted) return;
       await AppUpdateFlow.instance.promptIfNeeded(
         navigatorContext,
@@ -446,6 +450,7 @@ class _TouchFishAppState extends State<TouchFishApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     AuthState.instance.sessionListenable.removeListener(_onAuthStateChanged);
     NotificationService.instance.stopPolling();
     ForumPendingService.instance.stopPolling();
@@ -613,7 +618,8 @@ class _TouchFishAppState extends State<TouchFishApp> {
             ? MediaQuery(
                 data: MediaQuery.of(context).copyWith(
                   viewInsets: MediaQuery.of(context).viewInsets.copyWith(
-                    bottom: MediaQuery.of(context).viewInsets.bottom +
+                    bottom:
+                        MediaQuery.of(context).viewInsets.bottom +
                         keyboardInset,
                   ),
                 ),
@@ -780,28 +786,28 @@ class _TouchFishAppState extends State<TouchFishApp> {
             );
             if (hasBackgroundImage && !kIsWeb) {
               return MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  disableAnimations: !_appState.animationsEnabled,
-                ),
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(disableAnimations: !_appState.animationsEnabled),
                 child: TouchFishSnackbarOverlay(
                   child: _buildSavedSessionRestoreOverlay(
                     context,
                     Container(
-                  color: Theme.of(context).colorScheme.surface,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      backgroundBlendMode: BlendMode.darken,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surface.withValues(alpha: 0.85),
-                      image: DecorationImage(
-                        opacity: 0.2,
-                        image: FileImage(File(backgroundImagePath)),
-                        fit: BoxFit.cover,
+                      color: Theme.of(context).colorScheme.surface,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          backgroundBlendMode: BlendMode.darken,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surface.withValues(alpha: 0.85),
+                          image: DecorationImage(
+                            opacity: 0.2,
+                            image: FileImage(File(backgroundImagePath)),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        child: content,
                       ),
-                    ),
-                    child: content,
-                  ),
                     ),
                   ),
                 ),
@@ -809,9 +815,9 @@ class _TouchFishAppState extends State<TouchFishApp> {
             }
             final animationsEnabled = _appState.animationsEnabled;
             return MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                disableAnimations: !animationsEnabled,
-              ),
+              data: MediaQuery.of(
+                context,
+              ).copyWith(disableAnimations: !animationsEnabled),
               child: TouchFishSnackbarOverlay(
                 child: _buildSavedSessionRestoreOverlay(context, content),
               ),

@@ -544,6 +544,7 @@
   "messageActionForward": "Forward",
   "messageActionDelete": "Delete",
   "messageActionRecall": "Recall",
+  "messageActionCopy": "Copy",
   "messageActionPin": "Pin",
   "messageActionUnpin": "Unpin",
   "pinnedMessageLabel": "Pinned",
@@ -1424,5 +1425,24 @@
         "type": "String"
       }
     }
-  }
+  },
+
+  "domainTrustLinkWarningTitle": "Confirm Navigation",
+  "domainTrustLinkUntrustedMessage": "This link points to an untrusted domain. Only continue if you are sure the link is safe.",
+  "domainTrustLinkHttpWarning": "This link uses insecure HTTP (not HTTPS). Data may be intercepted or tampered with.",
+  "domainTrustOpenAnyway": "Open Anyway",
+  "domainTrustCopyLink": "Copy Link",
+  "domainTrustAddToTrustedDomains": "Add this domain to trusted domains",
+  "domainTrustImageBlockedTitle": "Image from untrusted domain blocked",
+  "domainTrustImageBlockedDesc": "To protect your privacy, images from untrusted domains are not loaded.",
+  "domainTrustLoadImage": "Load Image",
+  "domainTrustInfoTitle": "About Domain Protection",
+  "domainTrustInfoBody": "Third-party sites may record or leak your visit data (such as your IP address) and engage in violations; they are not managed by TouchFish.\n\nEven if you do not actively visit a link, TouchFish Client's automatic loading may still generate network requests.\n\nTo protect your data, starting from version 0.0.2, TouchFish Client no longer loads external images or opens external links by default.\n\nIf you trust a site, you can configure it as a trusted domain under Settings - Connection to allow TouchFish Client to load it automatically.\n\nIf you do not need this protection, you can disable it under Settings - Connection.",
+  "settingsDomainTrustImageBlockTitle": "Image loading protection",
+  "settingsDomainTrustImageBlockDesc": "Block images loaded from untrusted domains",
+  "settingsDomainTrustLinkWarningTitle": "Link navigation protection",
+  "settingsDomainTrustLinkWarningDesc": "Warn before opening links from untrusted domains",
+  "settingsTrustedDomainsTitle": "Trusted Domains",
+  "settingsTrustedDomainsDesc": "One domain per line, e.g. example.com or *.example.com. The current server is always trusted.",
+  "settingsTrustedDomainsReset": "Reset to Default"
 }

@@ -21,6 +21,7 @@ import '../utils/talker.dart';
 import '../models/file_attachment.dart';
 import 'file_attachment_view.dart';
 import '../services/auth_state.dart';
+import '../services/snackbar_service.dart';
 import 'sheet_scaffold.dart';
 import 'sticker_text_renderer.dart';
 
@@ -263,6 +264,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
   void _showActionSheet() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       builder: (context) => _MessageActionSheet(
         message: widget.message,
         onReply: widget.onReply,
@@ -293,23 +295,31 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
       ),
       items: [
         PopupMenuItem(
-          value: 'reply',
-          enabled: !widget.message.isDeleted && widget.message.mid != null,
+          value: 'copy',
           child: ListTile(
             dense: true,
-            leading: const Icon(Symbols.reply),
-            title: Text(l10n.messageActionReply),
+            leading: const Icon(Symbols.content_copy),
+            title: Text(l10n.messageActionCopy),
           ),
         ),
-        PopupMenuItem(
-          value: 'forward',
-          enabled: !widget.message.isDeleted && widget.message.mid != null,
-          child: ListTile(
-            dense: true,
-            leading: const Icon(Symbols.forward),
-            title: Text(l10n.messageActionForward),
+        if (!widget.message.isDeleted && widget.message.mid != null)
+          PopupMenuItem(
+            value: 'reply',
+            child: ListTile(
+              dense: true,
+              leading: const Icon(Symbols.reply),
+              title: Text(l10n.messageActionReply),
+            ),
           ),
-        ),
+        if (!widget.message.isDeleted && widget.message.mid != null)
+          PopupMenuItem(
+            value: 'forward',
+            child: ListTile(
+              dense: true,
+              leading: const Icon(Symbols.forward),
+              title: Text(l10n.messageActionForward),
+            ),
+          ),
         if (widget.canRecall)
           PopupMenuItem(
             value: 'recall',
@@ -341,22 +351,21 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
         // 这个是 xsfx 手写的注释（，显然一个消息能被置顶就可以被设为精华
         if (widget.canPin && widget.essenceEnabled)
           PopupMenuItem(
-            value : 'essence',
-            child : ListTile(
+            value: 'essence',
+            child: ListTile(
               dense: true,
-              leading : Icon(
+              leading: Icon(
                 Symbols.auto_awesome,
                 color: Theme.of(context).colorScheme.primary,
               ),
-              title : Text(
-                widget.isEssence
-                  ? l10n.essenceRemove
-                  : l10n.essenceAdd,
-              )
-            )
-          )
+              title: Text(
+                widget.isEssence ? l10n.essenceRemove : l10n.essenceAdd,
+              ),
+            ),
+          ),
       ],
     );
+    if (selected == 'copy') _copyMessageText(widget.message);
     if (selected == 'reply') widget.onReply?.call(widget.message);
     if (selected == 'forward') widget.onForward?.call(widget.message);
     if (selected == 'recall') widget.onRecall?.call(widget.message);
@@ -431,9 +440,10 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                                 const SizedBox(width: 4),
                                 Text(
                                   l10n.pinnedMessageLabel,
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: textColor.withValues(alpha: 0.6),
-                                  ),
+                                  style: Theme.of(context).textTheme.labelSmall
+                                      ?.copyWith(
+                                        color: textColor.withValues(alpha: 0.6),
+                                      ),
                                 ),
                               ],
                             ),
@@ -455,9 +465,10 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                                 const SizedBox(width: 4),
                                 Text(
                                   l10n.essenceName,
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: textColor.withValues(alpha: 0.6),
-                                  ),
+                                  style: Theme.of(context).textTheme.labelSmall
+                                      ?.copyWith(
+                                        color: textColor.withValues(alpha: 0.6),
+                                      ),
                                 ),
                               ],
                             ),
@@ -479,7 +490,10 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  _formatTime(widget.message.timestamp, context),
+                                  _formatTime(
+                                    widget.message.timestamp,
+                                    context,
+                                  ),
                                   style: TextStyle(
                                     fontSize: 10,
                                     color: textColor.withValues(alpha: 0.7),
@@ -593,12 +607,12 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
       backgroundColor: colorScheme.primaryContainer,
       child: senderAvatar != null
           ? ClipOval(
-               child: DataSavingImage(
-                 url: senderAvatar,
-                 width: 32,
-                 height: 32,
-                 fit: BoxFit.cover,
-               ),
+              child: DataSavingImage(
+                url: senderAvatar,
+                width: 32,
+                height: 32,
+                fit: BoxFit.cover,
+              ),
             )
           : Icon(Icons.person, size: 18, color: colorScheme.onPrimaryContainer),
     );
@@ -820,17 +834,102 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
 
     return enableMarkdown
         ? Theme(
-            data: Theme.of(context).copyWith(
-              textTheme: textTheme.copyWith(
-                bodyMedium: textStyle,
-              ),
-            ),
+            data: Theme.of(
+              context,
+            ).copyWith(textTheme: textTheme.copyWith(bodyMedium: textStyle)),
             child: MarkdownRenderer(
               data: widget.message.text,
               selectable: true,
+              selectionContextMenuBuilder: _buildMessageTextContextMenu,
             ),
           )
         : Text(widget.message.text, style: textStyle);
+  }
+
+  Widget _buildMessageTextContextMenu(
+    BuildContext context,
+    SelectableRegionState state,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final message = widget.message;
+    final canAct = !message.isDeleted && message.mid != null;
+    final items = <ContextMenuButtonItem>[...state.contextMenuButtonItems];
+    if (canAct) {
+      items
+        ..add(
+          ContextMenuButtonItem(
+            label: l10n.messageActionCopy,
+            onPressed: () {
+              ContextMenuController.removeAny();
+              _copyMessageText(message);
+            },
+          ),
+        )
+        ..add(
+          ContextMenuButtonItem(
+            label: l10n.messageActionReply,
+            onPressed: () {
+              ContextMenuController.removeAny();
+              widget.onReply?.call(message);
+            },
+          ),
+        )
+        ..add(
+          ContextMenuButtonItem(
+            label: l10n.messageActionForward,
+            onPressed: () {
+              ContextMenuController.removeAny();
+              widget.onForward?.call(message);
+            },
+          ),
+        );
+    }
+    if (widget.canPin) {
+      items.add(
+        ContextMenuButtonItem(
+          label: widget.isPinned
+              ? l10n.messageActionUnpin
+              : l10n.messageActionPin,
+          onPressed: () {
+            ContextMenuController.removeAny();
+            widget.onPinToggle?.call();
+          },
+        ),
+      );
+    }
+    if (widget.canPin && widget.essenceEnabled) {
+      items.add(
+        ContextMenuButtonItem(
+          label: widget.isEssence ? l10n.essenceRemove : l10n.essenceAdd,
+          onPressed: () {
+            ContextMenuController.removeAny();
+            widget.onEssenceToggle?.call();
+          },
+        ),
+      );
+    }
+    if (widget.canRecall) {
+      items.add(
+        ContextMenuButtonItem(
+          label: l10n.messageActionRecall,
+          onPressed: () {
+            ContextMenuController.removeAny();
+            widget.onRecall?.call(message);
+          },
+        ),
+      );
+    }
+    return AdaptiveTextSelectionToolbar.buttonItems(
+      anchors: state.contextMenuAnchors,
+      buttonItems: items,
+    );
+  }
+
+  void _copyMessageText(ChatMessage message) {
+    Clipboard.setData(ClipboardData(text: message.text));
+    TouchFishSnackbarService.instance.show(
+      AppLocalizations.of(context)!.aboutCopiedToClipboard,
+    );
   }
 
   Widget _buildImageMessage(BuildContext context, ColorScheme colorScheme) {
@@ -1082,13 +1181,12 @@ class _MessageHoverActionMenu extends StatelessWidget {
                 icon: Icon(
                   Symbols.push_pin,
                   size: 16,
-                  color: isPinned
-                      ? Theme.of(context).colorScheme.error
-                      : null,
+                  color: isPinned ? Theme.of(context).colorScheme.error : null,
                 ),
                 onPressed: onPinToggle,
-                tooltip:
-                    isPinned ? l10n.messageActionUnpin : l10n.messageActionPin,
+                tooltip: isPinned
+                    ? l10n.messageActionUnpin
+                    : l10n.messageActionPin,
                 padding: EdgeInsets.zero,
               ),
             ),
@@ -1106,13 +1204,10 @@ class _MessageHoverActionMenu extends StatelessWidget {
                 icon: Icon(
                   Symbols.auto_awesome,
                   size: 16,
-                  color: isEssence
-                      ? Theme.of(context).colorScheme.error
-                      : null,
+                  color: isEssence ? Theme.of(context).colorScheme.error : null,
                 ),
                 onPressed: onEssenceToggle,
-                tooltip:
-                    isEssence ? l10n.essenceRemove : l10n.essenceAdd,
+                tooltip: isEssence ? l10n.essenceRemove : l10n.essenceAdd,
                 padding: EdgeInsets.zero,
               ),
             ),
@@ -1171,11 +1266,23 @@ class _MessageActionSheet extends StatelessWidget {
 
     return SheetScaffold(
       titleText: l10n.messageActions,
-      heightFactor: 0.55,
+      heightFactor: 0.7,
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
+          _ActionListTile(
+            icon: Symbols.content_copy,
+            label: l10n.messageActionCopy,
+            onTap: () {
+              Navigator.pop(context);
+              Clipboard.setData(ClipboardData(text: message.text));
+              TouchFishSnackbarService.instance.show(
+                l10n.aboutCopiedToClipboard,
+              );
+            },
+          ),
           if (!message.isDeleted && message.mid != null) ...[
+            const Divider(height: 17),
             _ActionListTile(
               icon: Symbols.reply,
               label: l10n.messageActionReply,
@@ -1197,8 +1304,7 @@ class _MessageActionSheet extends StatelessWidget {
             const Divider(height: 17),
             _ActionListTile(
               icon: Symbols.push_pin,
-              label:
-                  isPinned ? l10n.messageActionUnpin : l10n.messageActionPin,
+              label: isPinned ? l10n.messageActionUnpin : l10n.messageActionPin,
               onTap: () {
                 Navigator.pop(context);
                 onPinToggle?.call();

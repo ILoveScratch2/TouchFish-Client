@@ -364,7 +364,10 @@ class SettingsData {
           options: [
             SettingOption(value: 'off', labelKey: 'settingsIpOverrideOff'),
             SettingOption(value: 'mixed', labelKey: 'settingsIpOverrideMixed'),
-            SettingOption(value: 'complete', labelKey: 'settingsIpOverrideComplete'),
+            SettingOption(
+              value: 'complete',
+              labelKey: 'settingsIpOverrideComplete',
+            ),
           ],
         ),
         SettingItem(
@@ -421,6 +424,30 @@ class SettingsData {
             SettingOption(value: '120', labelKey: 'settingsSeconds120'),
             SettingOption(value: '300', labelKey: 'settingsSeconds300'),
           ],
+        ),
+        SettingItem(
+          key: 'domainTrustImageBlockEnabled',
+          titleKey: 'settingsDomainTrustImageBlockTitle',
+          descriptionKey: 'settingsDomainTrustImageBlockDesc',
+          type: SettingType.switchSetting,
+          defaultValue: true,
+          icon: Icons.image_not_supported_outlined,
+        ),
+        SettingItem(
+          key: 'domainTrustLinkWarningEnabled',
+          titleKey: 'settingsDomainTrustLinkWarningTitle',
+          descriptionKey: 'settingsDomainTrustLinkWarningDesc',
+          type: SettingType.switchSetting,
+          defaultValue: true,
+          icon: Icons.travel_explore,
+        ),
+        SettingItem(
+          key: 'trustedDomains',
+          titleKey: 'settingsTrustedDomainsTitle',
+          descriptionKey: 'settingsTrustedDomainsDesc',
+          type: SettingType.customWidget,
+          defaultValue: null,
+          icon: Icons.domain,
         ),
       ],
     ),

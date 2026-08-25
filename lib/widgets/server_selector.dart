@@ -6,6 +6,7 @@ import '../constants/app_constants.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/chat_ws_service.dart';
+import '../services/domain_trust_service.dart';
 
 class ServerInfo {
   final String displayName;
@@ -187,6 +188,7 @@ class _ServerSelectorState extends State<ServerSelector> {
           setState(() => _selectedIndex = index);
           await _saveServers();
           TfApiClient.instance.invalidateCache();
+          DomainTrustService.instance.refreshServerHost();
           _probeSelectedServer();
           if (context.mounted) Navigator.pop(context);
         },
@@ -201,6 +203,7 @@ class _ServerSelectorState extends State<ServerSelector> {
           });
           await _saveServers();
           TfApiClient.instance.invalidateCache();
+          DomainTrustService.instance.refreshServerHost();
           _probeSelectedServer();
         },
         onEdit: (index, server) async {
@@ -212,6 +215,7 @@ class _ServerSelectorState extends State<ServerSelector> {
           await _saveServers();
           if (index == _selectedIndex) {
             TfApiClient.instance.invalidateCache();
+            DomainTrustService.instance.refreshServerHost();
             _probeSelectedServer();
           }
         },
@@ -225,6 +229,7 @@ class _ServerSelectorState extends State<ServerSelector> {
             });
             await _saveServers();
             TfApiClient.instance.invalidateCache();
+            DomainTrustService.instance.refreshServerHost();
             _probeSelectedServer();
           }
         },

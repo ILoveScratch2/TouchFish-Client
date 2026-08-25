@@ -16,17 +16,12 @@ class LockScreenVisibilityService {
 
   static const String _settingKey = 'showOnLockScreen';
 
-  /// 按当前设置项的值应用到原生侧。启动时调用以恢复上次的状态。
-  /// 通道未就绪等失败场景下最多重试 3 次，避免永久丢状态。
+  // lock your mother lock
   Future<void> applyFromSettings() async {
     if (kIsWeb || !Platform.isAndroid) return;
-    final enabled = SettingsService.instance.getValue<bool>(
-      _settingKey,
-      false,
-    );
-    if (!enabled) return;
+    final enabled = SettingsService.instance.getValue<bool>(_settingKey, false);
     for (var attempt = 0; attempt < 3; attempt++) {
-      if (await setEnabled(true)) return;
+      if (await setEnabled(enabled)) return;
       await Future<void>.delayed(const Duration(seconds: 2));
     }
   }

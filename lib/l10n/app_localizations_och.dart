@@ -1301,6 +1301,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get messageActionRecall => '撤回';
 
   @override
+  String get messageActionCopy => '複製';
+
+  @override
   String get messageActionPin => '置頂';
 
   @override
@@ -3394,4 +3397,61 @@ class AppLocalizationsOch extends AppLocalizations {
   String updateApkSaveHint(String apkPath) {
     return 'APK 將存於：\n$apkPath';
   }
+
+  @override
+  String get domainTrustLinkWarningTitle => '連結跳轉確認';
+
+  @override
+  String get domainTrustLinkUntrustedMessage => '此連結來自不受信任的網域，請確認連結安全後再開啟。';
+
+  @override
+  String get domainTrustLinkHttpWarning =>
+      '此連結使用不安全的 HTTP 協定（非 HTTPS），資料可能被竊聽或竄改。';
+
+  @override
+  String get domainTrustOpenAnyway => '仍然開啟';
+
+  @override
+  String get domainTrustCopyLink => '複製連結';
+
+  @override
+  String get domainTrustAddToTrustedDomains => '將此網域加入信任網域';
+
+  @override
+  String get domainTrustImageBlockedTitle => '已阻止來自不受信任網域的圖片';
+
+  @override
+  String get domainTrustImageBlockedDesc => '為保護私隱，未載入來自不受信任網域的圖片。';
+
+  @override
+  String get domainTrustLoadImage => '載入圖片';
+
+  @override
+  String get domainTrustInfoTitle => '網域保護說明';
+
+  @override
+  String get domainTrustInfoBody =>
+      '第三方網站可能記錄/洩露您的訪問資料（如 IP 位址）並進行違規行為，它們不受 TouchFish 管理。\n\n即使您不主動訪問連結，TouchFish Client 的自動載入仍可能產生網絡請求。\n\n為了保護您的資料安全，從 0.0.2 版本開始，TouchFish Client 不再預設載入外部圖片並直接開啟外部連結。\n\n如果您信任該網站，可在 設定-連線 中設定該網站為受信任的網域，以允許 TouchFish Client 自動載入。\n\n如果您不需要該安全功能，可在 設定-連線 中關閉本安全防護功能。';
+
+  @override
+  String get settingsDomainTrustImageBlockTitle => '圖片載入保護';
+
+  @override
+  String get settingsDomainTrustImageBlockDesc => '阻止載入來自不受信任網域的圖片';
+
+  @override
+  String get settingsDomainTrustLinkWarningTitle => '連結跳轉保護';
+
+  @override
+  String get settingsDomainTrustLinkWarningDesc => '開啟不受信任網域的連結前進行警告';
+
+  @override
+  String get settingsTrustedDomainsTitle => '信任網域';
+
+  @override
+  String get settingsTrustedDomainsDesc =>
+      '每行一個網域，如 example.com 或 *.example.com。目前伺服器網域始終受信任。';
+
+  @override
+  String get settingsTrustedDomainsReset => '恢復預設';
 }

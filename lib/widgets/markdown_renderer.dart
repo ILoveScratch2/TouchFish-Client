@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'data_saving_image.dart';
 import 'optimized_image.dart';
 import 'package:flutter_highlight/themes/a11y-dark.dart';
@@ -15,6 +16,9 @@ import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
+import '../services/domain_trust_service.dart';
+import 'app_alert_dialog.dart';
+import 'untrusted_image_placeholder.dart';
 
 /// 等宽字体族：优先 Consolas，依次回退至各平台常见等宽字体。
 const String _codeFontFamily = 'Consolas';
@@ -45,11 +49,14 @@ class MarkdownRenderer extends HookWidget {
   final bool selectable;
   final bool fitContent;
 
+  final SelectableRegionContextMenuBuilder? selectionContextMenuBuilder;
+
   const MarkdownRenderer({
     super.key,
     required this.data,
     this.selectable = false,
     this.fitContent = true,
+    this.selectionContextMenuBuilder,
   });
 
   @override
@@ -93,20 +100,25 @@ class MarkdownRenderer extends HookWidget {
       onToggle: () => spoilerRevealed.value = !spoilerRevealed.value,
     );
 
+    final useCustomSelectionMenu =
+        selectable && selectionContextMenuBuilder != null;
     final markdown = MarkdownBlock(
       data: data,
-      selectable: selectable,
+      selectable: selectable && !useCustomSelectionMenu,
       config: config.copy(
         configs: [
           CodeConfig(
-            style: _codeTextStyle(
-              fontSize: 13,
-              color: isDark ? const Color(0xffe0e0e0) : const Color(0xff283237),
-            ).copyWith(
-              backgroundColor: isDark
-                  ? const Color(0x33ffffff)
-                  : const Color(0x33eff1f3),
-            ),
+            style:
+                _codeTextStyle(
+                  fontSize: 13,
+                  color: isDark
+                      ? const Color(0xffe0e0e0)
+                      : const Color(0xff283237),
+                ).copyWith(
+                  backgroundColor: isDark
+                      ? const Color(0x33ffffff)
+                      : const Color(0x33eff1f3),
+                ),
           ),
           isDark
               ? PreConfig.darkConfig.copy(
@@ -187,6 +199,10 @@ class MarkdownRenderer extends HookWidget {
                     ),
                     children: highLightSpans(
                       code,
+                      // wyf 你为什么这么喜欢dart
+                      //
+                      //
+                      //
                       // 与 markdown_widget 原行为一致：未指定语言时默认按 dart 高亮，
                       // 传 null 会导致 highlight 完全不做语法着色。
                       language: language.isEmpty ? 'dart' : language,
@@ -233,11 +249,19 @@ class MarkdownRenderer extends HookWidget {
       ),
     );
 
-    if (fitContent) {
-      return markdown;
+    Widget rendered = markdown;
+    if (useCustomSelectionMenu) {
+      rendered = SelectionArea(
+        contextMenuBuilder: selectionContextMenuBuilder,
+        child: markdown,
+      );
     }
 
-    return SizedBox(width: double.infinity, child: markdown);
+    if (fitContent) {
+      return rendered;
+    }
+
+    return SizedBox(width: double.infinity, child: rendered);
   }
 
   static MarkdownGenerator buildGenerator({
@@ -269,7 +293,100 @@ class MarkdownRenderer extends HookWidget {
       return;
     }
 
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final trustService = DomainTrustService.instance;
+    if (!trustService.linkProtectionEnabled ||
+        await trustService.isTrustedUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return;
+    }
+
+    if (!context.mounted) return;
+    final proceed = await _confirmUntrustedLink(context, uri);
+    if (proceed) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  static Future<bool> _confirmUntrustedLink(
+    BuildContext context,
+    Uri uri,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final isHttp = uri.scheme == 'http';
+    final trustService = DomainTrustService.instance;
+    final suggestTrust = await trustService.shouldSuggestTrust(uri.host);
+    if (!context.mounted) return false;
+    final trustChecked = ValueNotifier<bool>(false);
+
+    final message = [
+      l10n.domainTrustLinkUntrustedMessage,
+      uri.toString(),
+      if (isHttp) l10n.domainTrustLinkHttpWarning,
+    ].join('\n\n');
+
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(message),
+        if (suggestTrust) ...[
+          const SizedBox(height: 8),
+          ValueListenableBuilder<bool>(
+            valueListenable: trustChecked,
+            builder: (context, checked, _) => CheckboxListTile(
+              value: checked,
+              onChanged: (value) => trustChecked.value = value ?? false,
+              title: Text(l10n.domainTrustAddToTrustedDomains),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+            ),
+          ),
+        ],
+        const SizedBox(height: 4),
+        Align(
+          alignment: Alignment.centerRight,
+          child: IconButton(
+            onPressed: () => showDomainTrustInfo(context),
+            icon: const Icon(Icons.help_outline_rounded, size: 18),
+            tooltip: l10n.domainTrustInfoTitle,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+      ],
+    );
+
+    final result = await showTouchFishInfoDialog<String>(
+      context,
+      title: l10n.domainTrustLinkWarningTitle,
+      message: message,
+      content: content,
+      icon: isHttp ? Icons.warning_amber_rounded : Icons.shield_outlined,
+      actions: [
+        TouchFishDialogAction<String>(
+          label: l10n.domainTrustCopyLink,
+          result: 'copy',
+        ),
+        TouchFishDialogAction<String>(label: l10n.cancel, result: 'cancel'),
+        TouchFishDialogAction<String>(
+          label: l10n.domainTrustOpenAnyway,
+          result: 'open',
+          isPrimary: true,
+          isDestructive: isHttp,
+        ),
+      ],
+    );
+
+    if (result == 'copy') {
+      Clipboard.setData(ClipboardData(text: uri.toString()));
+    }
+    if (result == 'open') {
+      await trustService.recordConfirmedOpen(uri);
+      if (trustChecked.value) {
+        await trustService.addTrustedDomain(uri.host);
+      }
+    }
+    return result == 'open';
   }
 }
 
@@ -567,8 +684,7 @@ class LatexSyntax extends markdown.InlineSyntax {
   // 块公式允许空内容（*?），行内公式内容至少 1 个非 $ 非换行字符。
   // 避免 "$$$$"（空块公式）被行内分支误匹配成 "$$$" 导致
   // substring(2, 1) 抛 RangeError。
-  LatexSyntax(this.isDark)
-      : super(r'(\$\$[\s\S]*?\$\$)|(\$[^$\n]+\$)');
+  LatexSyntax(this.isDark) : super(r'(\$\$[\s\S]*?\$\$)|(\$[^$\n]+\$)');
 
   @override
   bool onMatch(markdown.InlineParser parser, Match match) {
@@ -700,32 +816,70 @@ class Heading3Config extends HeadingConfig {
   String get tag => MarkdownTag.h3.name;
 }
 
-class _MarkdownRemoteImage extends StatelessWidget {
+class _MarkdownRemoteImage extends StatefulWidget {
   final Uri uri;
 
   const _MarkdownRemoteImage({required this.uri});
 
   @override
+  State<_MarkdownRemoteImage> createState() => _MarkdownRemoteImageState();
+}
+
+class _MarkdownRemoteImageState extends State<_MarkdownRemoteImage> {
+  bool _confirmed = false;
+
+  Future<void> _openPreview() async {
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => _ImagePreviewScreen(uri: widget.uri),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => _ImagePreviewScreen(uri: uri),
+    return FutureBuilder<bool>(
+      future: DomainTrustService.instance.requiresImageBlock(widget.uri),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done ||
+            snapshot.data == null) {
+          return Container(
+            constraints: const BoxConstraints(minHeight: 120, maxWidth: 320),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Center(
+              child: SizedBox.square(
+                dimension: 24,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+            ),
+          );
+        }
+        final blocked = snapshot.data!;
+        if (blocked && !_confirmed) {
+          return UntrustedImagePlaceholder(
+            uri: widget.uri,
+            onProceed: () => setState(() => _confirmed = true),
+          );
+        }
+        return GestureDetector(
+          onTap: _openPreview,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.all(Radius.circular(8)),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 360),
+              child: DataSavingImage(
+                url: widget.uri.toString(),
+                fit: BoxFit.contain,
+              ),
+            ),
           ),
         );
       },
-      child: ClipRRect(
-        borderRadius: const BorderRadius.all(Radius.circular(8)),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 360),
-          child: DataSavingImage(
-            url: uri.toString(),
-            fit: BoxFit.contain,
-          ),
-        ),
-      ),
     );
   }
 }

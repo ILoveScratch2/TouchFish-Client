@@ -1302,6 +1302,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get messageActionRecall => '撤回';
 
   @override
+  String get messageActionCopy => '复制';
+
+  @override
   String get messageActionPin => '置顶';
 
   @override
@@ -3396,4 +3399,61 @@ class AppLocalizationsZh extends AppLocalizations {
   String updateApkSaveHint(String apkPath) {
     return 'APK 将保存到以下位置：\n$apkPath';
   }
+
+  @override
+  String get domainTrustLinkWarningTitle => '链接跳转确认';
+
+  @override
+  String get domainTrustLinkUntrustedMessage => '此链接来自不受信任的域名，请确认链接安全后再打开。';
+
+  @override
+  String get domainTrustLinkHttpWarning =>
+      '此链接使用不安全的 HTTP 协议（非 HTTPS），数据可能被窃听或篡改。';
+
+  @override
+  String get domainTrustOpenAnyway => '仍然打开';
+
+  @override
+  String get domainTrustCopyLink => '复制链接';
+
+  @override
+  String get domainTrustAddToTrustedDomains => '将该域加入信任域名';
+
+  @override
+  String get domainTrustImageBlockedTitle => '已阻止来自不受信任域名的图片';
+
+  @override
+  String get domainTrustImageBlockedDesc => '为保护隐私，未加载来自不受信任域名的图片。';
+
+  @override
+  String get domainTrustLoadImage => '加载图片';
+
+  @override
+  String get domainTrustInfoTitle => '域名保护说明';
+
+  @override
+  String get domainTrustInfoBody =>
+      '第三方站点可能记录/泄露您的访问数据（如 IP 地址）并进行违规行为，它们不受 TouchFish 管理。\n\n即使您不主动访问链接，TouchFish Client 的自动加载仍然可能产生网络请求。\n\n为了保护您的数据安全，从 0.0.2 版本开始，TouchFish Client 不再默认加载外部图片并直接打开外部链接。\n\n如果您信任该站点，可在 设置-连接 中配置该站点为受信任的域，以允许 TouchFish Client 自动加载。\n\n如果您不需要该安全功能，可在 设置-连接 中关闭本安全防护功能。';
+
+  @override
+  String get settingsDomainTrustImageBlockTitle => '图片加载保护';
+
+  @override
+  String get settingsDomainTrustImageBlockDesc => '阻止加载来自不受信任域名的图片';
+
+  @override
+  String get settingsDomainTrustLinkWarningTitle => '链接跳转保护';
+
+  @override
+  String get settingsDomainTrustLinkWarningDesc => '打开不受信任域名的链接前进行警告';
+
+  @override
+  String get settingsTrustedDomainsTitle => '信任域名';
+
+  @override
+  String get settingsTrustedDomainsDesc =>
+      '每行一个域名，如 example.com 或 *.example.com。当前服务器域名始终受信任。';
+
+  @override
+  String get settingsTrustedDomainsReset => '恢复默认';
 }

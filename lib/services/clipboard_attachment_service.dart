@@ -50,11 +50,14 @@ class ClipboardAttachmentService {
     final reader = await _readClipboard();
     if (reader == null) return false;
     return reader.items.any(
-      (item) => item.canProvide(Formats.fileUri) ||
-          item.getFormats(Formats.standardFormats).whereType<FileFormat>().isNotEmpty,
+      (item) =>
+          item.canProvide(Formats.fileUri) ||
+          item
+              .getFormats(Formats.standardFormats)
+              .whereType<FileFormat>()
+              .isNotEmpty,
     );
   }
-
 
   /// Reads every file currently available in the clipboard and returns their
   /// byte content together with metadata.
@@ -65,9 +68,16 @@ class ClipboardAttachmentService {
     final results = <ClipboardFileData>[];
 
     for (final item in reader.items) {
-      if (!kIsWeb && (Platform.isWindows ||
-          Platform.isLinux ||
-          Platform.isMacOS) && item.canProvide(Formats.fileUri)) {
+      // 某些平台（尤其是 macOS）在复制纯文本时也会把文本作为临时文件
+      // 暴露给 `Formats.fileUri` / `getFile`。此时应当按文本粘贴，
+      // 而不是当作文件上传。
+      final text = await _readPlainText(item);
+
+      final candidates = <ClipboardFileData>[];
+      var foundViaFileUri = false;
+      if (!kIsWeb &&
+          (Platform.isWindows || Platform.isLinux || Platform.isMacOS) &&
+          item.canProvide(Formats.fileUri)) {
         final uri = await item.readValue(Formats.fileUri);
         if (uri != null) {
           try {
@@ -78,26 +88,58 @@ class ClipboardAttachmentService {
               final rawName = uri.pathSegments.isNotEmpty
                   ? uri.pathSegments.last
                   : 'clipboard_file';
-              results.add(ClipboardFileData(
-                fileName: ensureFileExtension(rawName, bytes),
-                fileSize: stat.size,
-                bytes: bytes,
-              ));
-              continue;
+              candidates.add(
+                ClipboardFileData(
+                  fileName: ensureFileExtension(rawName, bytes),
+                  fileSize: stat.size,
+                  bytes: bytes,
+                ),
+              );
+              foundViaFileUri = true;
             }
           } catch (e) {
             talker.warning(
-              'ClipboardAttachmentService: failed to read file $uri', e);
+              'ClipboardAttachmentService: failed to read file $uri',
+              e,
+            );
           }
         }
       }
-      await _readViaGetFile(item, results);
+      if (!foundViaFileUri) {
+        await _readViaGetFile(item, candidates);
+      }
+      results.addAll(_filterTextSynthesizedFiles(candidates, text));
     }
     return results;
   }
 
+  Future<String?> _readPlainText(ClipboardDataReader item) async {
+    if (!item.canProvide(Formats.plainText)) return null;
+    try {
+      return await item.readValue(Formats.plainText);
+    } catch (e) {
+      talker.warning('ClipboardAttachmentService: failed to read text', e);
+      return null;
+    }
+  }
+
+  /// macOS FUCK YOU!
+  /// sm Tim Cook why TM you use this SB clipboard API?
+  List<ClipboardFileData> _filterTextSynthesizedFiles(
+    List<ClipboardFileData> candidates,
+    String? text,
+  ) {
+    if (candidates.isEmpty || text == null || text.trim().isEmpty) {
+      return candidates;
+    }
+    return candidates
+        .where((file) => detectFileType(file.bytes) != DetectedFileType.unknown)
+        .toList();
+  }
+
   Future<void> _readViaGetFile(
-    DataReader reader, List<ClipboardFileData> results,
+    DataReader reader,
+    List<ClipboardFileData> results,
   ) async {
     final fileFormats = reader
         .getFormats(Formats.standardFormats)
@@ -108,25 +150,31 @@ class ClipboardAttachmentService {
     for (final format in fileFormats) {
       try {
         final completer = Completer<void>();
-        reader.getFile(format, (file) async {
-          try {
-            final bytes = await file.readAll();
-            if (bytes.isNotEmpty) {
-              final rawName = file.fileName ?? 'clipboard_file';
-              results.add(ClipboardFileData(
-                fileName: ensureFileExtension(rawName, bytes),
-                fileSize: file.fileSize ?? bytes.length,
-                bytes: bytes,
-              ));
+        reader.getFile(
+          format,
+          (file) async {
+            try {
+              final bytes = await file.readAll();
+              if (bytes.isNotEmpty) {
+                final rawName = file.fileName ?? 'clipboard_file';
+                results.add(
+                  ClipboardFileData(
+                    fileName: ensureFileExtension(rawName, bytes),
+                    fileSize: file.fileSize ?? bytes.length,
+                    bytes: bytes,
+                  ),
+                );
+              }
+            } catch (e) {
+              talker.warning('ClipboardAttachmentService: readAll failed', e);
+            } finally {
+              if (!completer.isCompleted) completer.complete();
             }
-          } catch (e) {
-            talker.warning('ClipboardAttachmentService: readAll failed', e);
-          } finally {
+          },
+          onError: (e) {
             if (!completer.isCompleted) completer.complete();
-          }
-        }, onError: (e) {
-          if (!completer.isCompleted) completer.complete();
-        });
+          },
+        );
         await completer.future;
       } catch (e) {
         talker.warning('ClipboardAttachmentService: getFile failed', e);

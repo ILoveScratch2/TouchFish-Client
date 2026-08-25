@@ -1368,6 +1368,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageActionRecall => 'Recall';
 
   @override
+  String get messageActionCopy => 'Copy';
+
+  @override
   String get messageActionPin => 'Pin';
 
   @override
@@ -3536,4 +3539,68 @@ class AppLocalizationsEn extends AppLocalizations {
   String updateApkSaveHint(String apkPath) {
     return 'The APK will be saved to:\n$apkPath';
   }
+
+  @override
+  String get domainTrustLinkWarningTitle => 'Confirm Navigation';
+
+  @override
+  String get domainTrustLinkUntrustedMessage =>
+      'This link points to an untrusted domain. Only continue if you are sure the link is safe.';
+
+  @override
+  String get domainTrustLinkHttpWarning =>
+      'This link uses insecure HTTP (not HTTPS). Data may be intercepted or tampered with.';
+
+  @override
+  String get domainTrustOpenAnyway => 'Open Anyway';
+
+  @override
+  String get domainTrustCopyLink => 'Copy Link';
+
+  @override
+  String get domainTrustAddToTrustedDomains =>
+      'Add this domain to trusted domains';
+
+  @override
+  String get domainTrustImageBlockedTitle =>
+      'Image from untrusted domain blocked';
+
+  @override
+  String get domainTrustImageBlockedDesc =>
+      'To protect your privacy, images from untrusted domains are not loaded.';
+
+  @override
+  String get domainTrustLoadImage => 'Load Image';
+
+  @override
+  String get domainTrustInfoTitle => 'About Domain Protection';
+
+  @override
+  String get domainTrustInfoBody =>
+      'Third-party sites may record or leak your visit data (such as your IP address) and engage in violations; they are not managed by TouchFish.\n\nEven if you do not actively visit a link, TouchFish Client\'s automatic loading may still generate network requests.\n\nTo protect your data, starting from version 0.0.2, TouchFish Client no longer loads external images or opens external links by default.\n\nIf you trust a site, you can configure it as a trusted domain under Settings - Connection to allow TouchFish Client to load it automatically.\n\nIf you do not need this protection, you can disable it under Settings - Connection.';
+
+  @override
+  String get settingsDomainTrustImageBlockTitle => 'Image loading protection';
+
+  @override
+  String get settingsDomainTrustImageBlockDesc =>
+      'Block images loaded from untrusted domains';
+
+  @override
+  String get settingsDomainTrustLinkWarningTitle =>
+      'Link navigation protection';
+
+  @override
+  String get settingsDomainTrustLinkWarningDesc =>
+      'Warn before opening links from untrusted domains';
+
+  @override
+  String get settingsTrustedDomainsTitle => 'Trusted Domains';
+
+  @override
+  String get settingsTrustedDomainsDesc =>
+      'One domain per line, e.g. example.com or *.example.com. The current server is always trusted.';
+
+  @override
+  String get settingsTrustedDomainsReset => 'Reset to Default';
 }

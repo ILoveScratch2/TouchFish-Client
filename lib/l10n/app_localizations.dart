@@ -2626,6 +2626,12 @@ abstract class AppLocalizations {
   /// **'Recall'**
   String get messageActionRecall;
 
+  /// No description provided for @messageActionCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get messageActionCopy;
+
   /// No description provided for @messageActionPin.
   ///
   /// In en, this message translates to:
@@ -6597,6 +6603,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The APK will be saved to:\n{apkPath}'**
   String updateApkSaveHint(String apkPath);
+
+  /// No description provided for @domainTrustLinkWarningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Navigation'**
+  String get domainTrustLinkWarningTitle;
+
+  /// No description provided for @domainTrustLinkUntrustedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This link points to an untrusted domain. Only continue if you are sure the link is safe.'**
+  String get domainTrustLinkUntrustedMessage;
+
+  /// No description provided for @domainTrustLinkHttpWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This link uses insecure HTTP (not HTTPS). Data may be intercepted or tampered with.'**
+  String get domainTrustLinkHttpWarning;
+
+  /// No description provided for @domainTrustOpenAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Anyway'**
+  String get domainTrustOpenAnyway;
+
+  /// No description provided for @domainTrustCopyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Link'**
+  String get domainTrustCopyLink;
+
+  /// No description provided for @domainTrustAddToTrustedDomains.
+  ///
+  /// In en, this message translates to:
+  /// **'Add this domain to trusted domains'**
+  String get domainTrustAddToTrustedDomains;
+
+  /// No description provided for @domainTrustImageBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Image from untrusted domain blocked'**
+  String get domainTrustImageBlockedTitle;
+
+  /// No description provided for @domainTrustImageBlockedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'To protect your privacy, images from untrusted domains are not loaded.'**
+  String get domainTrustImageBlockedDesc;
+
+  /// No description provided for @domainTrustLoadImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Load Image'**
+  String get domainTrustLoadImage;
+
+  /// No description provided for @domainTrustInfoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About Domain Protection'**
+  String get domainTrustInfoTitle;
+
+  /// No description provided for @domainTrustInfoBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Third-party sites may record or leak your visit data (such as your IP address) and engage in violations; they are not managed by TouchFish.\n\nEven if you do not actively visit a link, TouchFish Client\'s automatic loading may still generate network requests.\n\nTo protect your data, starting from version 0.0.2, TouchFish Client no longer loads external images or opens external links by default.\n\nIf you trust a site, you can configure it as a trusted domain under Settings - Connection to allow TouchFish Client to load it automatically.\n\nIf you do not need this protection, you can disable it under Settings - Connection.'**
+  String get domainTrustInfoBody;
+
+  /// No description provided for @settingsDomainTrustImageBlockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Image loading protection'**
+  String get settingsDomainTrustImageBlockTitle;
+
+  /// No description provided for @settingsDomainTrustImageBlockDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Block images loaded from untrusted domains'**
+  String get settingsDomainTrustImageBlockDesc;
+
+  /// No description provided for @settingsDomainTrustLinkWarningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Link navigation protection'**
+  String get settingsDomainTrustLinkWarningTitle;
+
+  /// No description provided for @settingsDomainTrustLinkWarningDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Warn before opening links from untrusted domains'**
+  String get settingsDomainTrustLinkWarningDesc;
+
+  /// No description provided for @settingsTrustedDomainsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trusted Domains'**
+  String get settingsTrustedDomainsTitle;
+
+  /// No description provided for @settingsTrustedDomainsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'One domain per line, e.g. example.com or *.example.com. The current server is always trusted.'**
+  String get settingsTrustedDomainsDesc;
+
+  /// No description provided for @settingsTrustedDomainsReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to Default'**
+  String get settingsTrustedDomainsReset;
 }
 
 class _AppLocalizationsDelegate

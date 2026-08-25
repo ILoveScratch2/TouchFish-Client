@@ -22,6 +22,7 @@ import '../widgets/local_storage_settings.dart';
 import '../services/media_proxy_service.dart';
 import '../services/ip_override_service.dart';
 import '../services/server_connection_status_service.dart';
+import '../services/domain_trust_service.dart';
 import '../services/lock_service.dart';
 import '../services/lock_screen_visibility_service.dart';
 import 'connectivity_self_check_screen.dart';
@@ -338,8 +339,12 @@ class _SettingsScreenState extends State<SettingsScreen>
         if (item.key == 'localStorage') {
           return const LocalStorageSettings();
         }
-        if (item.key == 'ipOverrideDomains' || item.key == 'ipOverrideEntries') {
+        if (item.key == 'ipOverrideDomains' ||
+            item.key == 'ipOverrideEntries') {
           return _buildIpOverrideEditor(context, l10n, item);
+        }
+        if (item.key == 'trustedDomains') {
+          return _buildTrustedDomainsEditor(context, l10n, item);
         }
         if (item.key == 'connectionStatus') {
           return _buildConnectionStatusPreview(context, l10n, item);
@@ -487,10 +492,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
   }
 
-  Widget _buildBiometricSetting(
-    BuildContext context,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildBiometricSetting(BuildContext context, AppLocalizations l10n) {
     return ListenableBuilder(
       listenable: LockService.instance,
       builder: (context, _) {
@@ -634,14 +636,17 @@ class _SettingsScreenState extends State<SettingsScreen>
                             (o) =>
                                 _getSettingTitle(l10n, o.labelKey) == newValue,
                           );
-                            await _settingsService.setValue(item.key, option.value);
-                           if (item.key == 'ipOverrideMode') {
-                             await IpOverrideService.instance.setMode(
-                               IpOverrideMode.values.firstWhere(
-                                 (mode) => mode.name == option.value,
-                               ),
-                             );
-                           }
+                          await _settingsService.setValue(
+                            item.key,
+                            option.value,
+                          );
+                          if (item.key == 'ipOverrideMode') {
+                            await IpOverrideService.instance.setMode(
+                              IpOverrideMode.values.firstWhere(
+                                (mode) => mode.name == option.value,
+                              ),
+                            );
+                          }
                         }
                       },
                     ),
@@ -1054,9 +1059,14 @@ class _SettingsScreenState extends State<SettingsScreen>
               onChanged: (newValue) async {
                 await _settingsService.setValue(item.key, newValue);
                 if (item.key == 'showOnLockScreen') {
-                  await LockScreenVisibilityService.instance.setEnabled(
-                    newValue,
-                  );
+                  final applied = await LockScreenVisibilityService.instance
+                      .setEnabled(newValue);
+                  if (!applied && context.mounted) {
+                    await _settingsService.setValue(item.key, value);
+                    TouchFishSnackbarService.instance.show(
+                      l10n.commonFailedOperation,
+                    );
+                  }
                 }
                 if (!newValue && item.key == 'mediaProxyEnabled') {
                   await MediaProxyService.instance.stop();
@@ -1285,7 +1295,9 @@ class _SettingsScreenState extends State<SettingsScreen>
             } else if (item.key == 'connectivitySelfCheck') {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ConnectivitySelfCheckScreen()),
+                MaterialPageRoute(
+                  builder: (_) => const ConnectivitySelfCheckScreen(),
+                ),
               );
             }
           },
@@ -1554,18 +1566,29 @@ class _SettingsScreenState extends State<SettingsScreen>
       builder: (context, _) {
         final value = item.key == 'ipOverrideDomains'
             ? service.domains.join(', ')
-            : service.entries.map((entry) => '${entry.ip}${entry.port == null ? '' : ':${entry.port}'}').join(', ');
+            : service.entries
+                  .map(
+                    (entry) =>
+                        '${entry.ip}${entry.port == null ? '' : ':${entry.port}'}',
+                  )
+                  .join(', ');
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Card(
             child: ListTile(
               leading: Icon(item.icon),
               title: Text(_getSettingTitle(l10n, item.titleKey)),
-              subtitle: Text(value.isEmpty ? _getSettingTitle(l10n, item.descriptionKey!) : value),
+              subtitle: Text(
+                value.isEmpty
+                    ? _getSettingTitle(l10n, item.descriptionKey!)
+                    : value,
+              ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () async {
                 if (item.key == 'ipOverrideDomains') {
-                  final controller = TextEditingController(text: service.domains.join('\n'));
+                  final controller = TextEditingController(
+                    text: service.domains.join('\n'),
+                  );
                   final result = await showDialog<String>(
                     context: context,
                     builder: (dialogContext) => AlertDialog(
@@ -1573,38 +1596,80 @@ class _SettingsScreenState extends State<SettingsScreen>
                       content: TextField(
                         controller: controller,
                         maxLines: 6,
-                        decoration: InputDecoration(hintText: _getSettingTitle(l10n, item.descriptionKey!)),
+                        decoration: InputDecoration(
+                          hintText: _getSettingTitle(
+                            l10n,
+                            item.descriptionKey!,
+                          ),
+                        ),
                       ),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(l10n.cancel)),
-                        FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text), child: Text(l10n.confirm)),
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: Text(l10n.cancel),
+                        ),
+                        FilledButton(
+                          onPressed: () =>
+                              Navigator.pop(dialogContext, controller.text),
+                          child: Text(l10n.confirm),
+                        ),
                       ],
                     ),
                   );
                   controller.dispose();
                   if (result != null) {
-                    await service.setDomains(result.split(RegExp(r'[\n,]')).map((v) => v.trim()).where((v) => v.isNotEmpty).toList());
+                    await service.setDomains(
+                      result
+                          .split(RegExp(r'[\n,]'))
+                          .map((v) => v.trim())
+                          .where((v) => v.isNotEmpty)
+                          .toList(),
+                    );
                   }
                 } else {
-                  final controller = TextEditingController(text: service.entries.map((entry) => '${entry.ip}${entry.port == null ? '' : ':${entry.port}'}').join('\n'));
+                  final controller = TextEditingController(
+                    text: service.entries
+                        .map(
+                          (entry) =>
+                              '${entry.ip}${entry.port == null ? '' : ':${entry.port}'}',
+                        )
+                        .join('\n'),
+                  );
                   final result = await showDialog<String>(
                     context: context,
                     builder: (dialogContext) => AlertDialog(
                       title: Text(_getSettingTitle(l10n, item.titleKey)),
-                      content: TextField(controller: controller, maxLines: 6, decoration: InputDecoration(hintText: '1.2.3.4:443')),
+                      content: TextField(
+                        controller: controller,
+                        maxLines: 6,
+                        decoration: InputDecoration(hintText: '1.2.3.4:443'),
+                      ),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(l10n.cancel)),
-                        FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text), child: Text(l10n.confirm)),
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: Text(l10n.cancel),
+                        ),
+                        FilledButton(
+                          onPressed: () =>
+                              Navigator.pop(dialogContext, controller.text),
+                          child: Text(l10n.confirm),
+                        ),
                       ],
                     ),
                   );
                   controller.dispose();
                   if (result != null) {
-                    final entries = result.split(RegExp(r'[\n,]')).map((value) {
-                      final parts = value.trim().split(':');
-                      final port = parts.length > 1 ? int.tryParse(parts.last) : null;
-                      return IpOverrideEntry(ip: parts.first, port: port);
-                    }).where((entry) => entry.ip.isNotEmpty).toList();
+                    final entries = result
+                        .split(RegExp(r'[\n,]'))
+                        .map((value) {
+                          final parts = value.trim().split(':');
+                          final port = parts.length > 1
+                              ? int.tryParse(parts.last)
+                              : null;
+                          return IpOverrideEntry(ip: parts.first, port: port);
+                        })
+                        .where((entry) => entry.ip.isNotEmpty)
+                        .toList();
                     await service.setEntries(entries);
                   }
                 }
@@ -1616,24 +1681,115 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
+  Widget _buildTrustedDomainsEditor(
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingItem item,
+  ) {
+    return ListenableBuilder(
+      listenable: DomainTrustService.instance,
+      builder: (context, _) {
+        final domains = DomainTrustService.instance.trustedDomains;
+        final shown = domains.take(3).join(', ');
+        final summary = domains.isEmpty
+            ? ''
+            : shown + (domains.length > 3 ? '  (+${domains.length - 3})' : '');
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Card(
+            child: ListTile(
+              leading: Icon(item.icon),
+              title: Text(_getSettingTitle(l10n, item.titleKey)),
+              subtitle: Text(
+                summary.isEmpty
+                    ? _getSettingTitle(l10n, item.descriptionKey!)
+                    : summary,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _editTrustedDomains(context, l10n, domains),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _editTrustedDomains(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<String> domains,
+  ) async {
+    final controller = TextEditingController(text: domains.join('\n'));
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(_getSettingTitle(l10n, 'settingsTrustedDomainsTitle')),
+        content: TextField(
+          controller: controller,
+          maxLines: 8,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: _getSettingTitle(l10n, 'settingsTrustedDomainsDesc'),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, 'reset'),
+            child: Text(l10n.settingsTrustedDomainsReset),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            child: Text(l10n.confirm),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (result == null) return;
+    if (result == 'reset') {
+      await DomainTrustService.instance.resetTrustedDomains();
+    } else {
+      await DomainTrustService.instance.setTrustedDomains(
+        result
+            .split(RegExp(r'[\n,]'))
+            .map((v) => v.trim())
+            .where((v) => v.isNotEmpty)
+            .toList(),
+      );
+    }
+  }
+
   Widget _buildConnectionStatusPreview(
     BuildContext context,
     AppLocalizations l10n,
     SettingItem item,
   ) {
     return ListenableBuilder(
-      listenable: Listenable.merge([IpOverrideService.instance, ServerConnectionStatusService.instance]),
+      listenable: Listenable.merge([
+        IpOverrideService.instance,
+        ServerConnectionStatusService.instance,
+      ]),
       builder: (context, _) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Card(
           child: ListTile(
             leading: const Icon(Icons.network_check),
             title: Text(_getSettingTitle(l10n, item.titleKey)),
-            subtitle: Text('${ServerConnectionStatusService.instance.phase.name} · ${IpOverrideService.instance.mode.name} · ${IpOverrideService.instance.entries.isEmpty ? l10n.settingsIpOverrideNoEntry : IpOverrideService.instance.entries.first.ip}'),
+            subtitle: Text(
+              '${ServerConnectionStatusService.instance.phase.name} · ${IpOverrideService.instance.mode.name} · ${IpOverrideService.instance.entries.isEmpty ? l10n.settingsIpOverrideNoEntry : IpOverrideService.instance.entries.first.ip}',
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const ConnectivitySelfCheckScreen()),
+              MaterialPageRoute(
+                builder: (_) => const ConnectivitySelfCheckScreen(),
+              ),
             ),
           ),
         ),
@@ -1845,6 +2001,20 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsExplicitSyncCooldownTitle;
       case 'settingsExplicitSyncCooldownDesc':
         return l10n.settingsExplicitSyncCooldownDesc;
+      case 'settingsDomainTrustImageBlockTitle':
+        return l10n.settingsDomainTrustImageBlockTitle;
+      case 'settingsDomainTrustImageBlockDesc':
+        return l10n.settingsDomainTrustImageBlockDesc;
+      case 'settingsDomainTrustLinkWarningTitle':
+        return l10n.settingsDomainTrustLinkWarningTitle;
+      case 'settingsDomainTrustLinkWarningDesc':
+        return l10n.settingsDomainTrustLinkWarningDesc;
+      case 'settingsTrustedDomainsTitle':
+        return l10n.settingsTrustedDomainsTitle;
+      case 'settingsTrustedDomainsDesc':
+        return l10n.settingsTrustedDomainsDesc;
+      case 'settingsTrustedDomainsReset':
+        return l10n.settingsTrustedDomainsReset;
       case 'settingsSeconds10':
         return l10n.settingsSeconds10;
       case 'settingsSeconds30':
@@ -2424,7 +2594,8 @@ class _SecurityPasswordDialog extends StatefulWidget {
   final AppLocalizations l10n;
 
   @override
-  State<_SecurityPasswordDialog> createState() => _SecurityPasswordDialogState();
+  State<_SecurityPasswordDialog> createState() =>
+      _SecurityPasswordDialogState();
 }
 
 class _SecurityPasswordDialogState extends State<_SecurityPasswordDialog> {
@@ -2537,10 +2708,7 @@ class _SecurityPasswordDialogState extends State<_SecurityPasswordDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          for (final field in fields) ...[
-            field,
-            const SizedBox(height: 12),
-          ],
+          for (final field in fields) ...[field, const SizedBox(height: 12)],
           if (_error != null)
             Align(
               alignment: Alignment.centerLeft,
