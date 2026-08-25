@@ -100,7 +100,8 @@ class _AppVirtualKeyboardState extends State<AppVirtualKeyboard>
   }
 
   Future<void> _checkKeyguard() async {
-    final locked = await LockScreenVisibilityService.instance.isKeyguardLocked();
+    final locked = await LockScreenVisibilityService.instance
+        .isKeyguardLocked();
     if (!mounted || locked == null || locked == _keyguardLocked) return;
     setState(() => _keyguardLocked = locked);
   }
@@ -128,26 +129,32 @@ class _AppVirtualKeyboardState extends State<AppVirtualKeyboard>
       return const SizedBox.shrink();
     }
     WidgetsBinding.instance.addPostFrameCallback((_) => _updateKeyboardInset());
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: NotificationListener<SizeChangedLayoutNotification>(
-        onNotification: (_) {
-          _updateKeyboardInset();
-          return true;
-        },
-        child: SizeChangedLayoutNotifier(
-          child: VirtualKeypad(
-            key: _keypadKey,
-            standalone: true,
-            availableLanguages: const ['en'],
-            initialLanguage: 'en',
-            enableEmojiKey: false,
-            theme: Theme.of(context).brightness == Brightness.dark
-                ? VirtualKeypadTheme.dark
-                : VirtualKeypadTheme.light,
+    return Overlay(
+      initialEntries: [
+        OverlayEntry(
+          builder: (context) => Align(
+            alignment: Alignment.bottomCenter,
+            child: NotificationListener<SizeChangedLayoutNotification>(
+              onNotification: (_) {
+                _updateKeyboardInset();
+                return true;
+              },
+              child: SizeChangedLayoutNotifier(
+                child: VirtualKeypad(
+                  key: _keypadKey,
+                  standalone: true,
+                  availableLanguages: const ['en'],
+                  initialLanguage: 'en',
+                  enableEmojiKey: false,
+                  theme: Theme.of(context).brightness == Brightness.dark
+                      ? VirtualKeypadTheme.dark
+                      : VirtualKeypadTheme.light,
+                ),
+              ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
