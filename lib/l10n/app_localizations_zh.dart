@@ -315,6 +315,204 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsBuiltInKeyboardAlways => '一直使用';
 
   @override
+  String get settingsLinkOpenModeTitle => '打开链接方式';
+
+  @override
+  String get settingsLinkOpenModeDesc => '选择 Android 上链接的打开方式：内置浏览器或外部浏览器';
+
+  @override
+  String get settingsLinkOpenModeInapp => '内置浏览器';
+
+  @override
+  String get settingsLinkOpenModeExternal => '外部浏览器';
+
+  @override
+  String get settingsBrowserSearchEngineTitle => '搜索引擎';
+
+  @override
+  String get settingsBrowserSearchEngineDesc => '在浏览器地址栏输入搜索词时使用的搜索引擎';
+
+  @override
+  String get settingsBrowserSearchEngineBing => 'Bing';
+
+  @override
+  String get settingsBrowserSearchEngineDuckduckgo => 'DuckDuckGo';
+
+  @override
+  String get settingsBrowserSearchEngineBaidu => '百度';
+
+  @override
+  String get browserNewTab => '新建标签页';
+
+  @override
+  String get browserCloseTab => '关闭标签页';
+
+  @override
+  String get browserAddressHint => '输入网址或搜索内容';
+
+  @override
+  String get browserGo => '前往';
+
+  @override
+  String get browserBack => '后退';
+
+  @override
+  String get browserForward => '前进';
+
+  @override
+  String get browserRefresh => '刷新';
+
+  @override
+  String get browserStop => '停止';
+
+  @override
+  String get browserOpenInExternal => '在外部浏览器打开';
+
+  @override
+  String get browserOpenInNewTab => '在新标签页打开';
+
+  @override
+  String get browserCopyLink => '复制链接';
+
+  @override
+  String get browserCopied => '已复制链接';
+
+  @override
+  String get browserOpenFailed => '没有可打开此链接的应用';
+
+  @override
+  String get browserFindOnPage => '网页内查找';
+
+  @override
+  String get browserFindHint => '查找网页内容';
+
+  @override
+  String get browserNoResults => '无结果';
+
+  @override
+  String get browserShare => '分享';
+
+  @override
+  String get browserLoadingFailed => '页面加载失败';
+
+  @override
+  String get browserRetry => '重试';
+
+  @override
+  String get browserTabLimitReached => '标签页数量已达上限，请先关闭部分标签页';
+
+  @override
+  String get browserRememberDomainTitle => '在外部浏览器打开？';
+
+  @override
+  String browserRememberDomainMessage(Object domain) {
+    return '将 $domain 的链接始终用外部浏览器打开，并加入信任域？';
+  }
+
+  @override
+  String get browserOpenAnyway => '仍要打开';
+
+  @override
+  String get browserDownloadTitle => '下载文件';
+
+  @override
+  String get browserDownloadMessage => '此链接会下载文件。是否在外部浏览器中打开以完成下载？';
+
+  @override
+  String get browserDownloadOpen => '在浏览器中打开';
+
+  @override
+  String get browserAddBookmark => '添加书签';
+
+  @override
+  String get browserRemoveBookmark => '移除书签';
+
+  @override
+  String get browserBookmarkAdded => '已添加书签';
+
+  @override
+  String get browserBookmarkRemoved => '已移除书签';
+
+  @override
+  String get browserBookmarks => '书签';
+
+  @override
+  String get browserBookmarksEmpty => '暂无书签';
+
+  @override
+  String get browserHistory => '历史记录';
+
+  @override
+  String get browserHistoryEmpty => '暂无历史记录';
+
+  @override
+  String get browserHistoryClear => '清空历史';
+
+  @override
+  String get browserExitBrowser => '退出浏览器';
+
+  @override
+  String get settingsBrowserUserAgentTitle => '自定义 User-Agent';
+
+  @override
+  String get settingsBrowserUserAgentDesc =>
+      '留空使用默认值。可填入自定义 User-Agent（例如桌面版 Chrome）';
+
+  @override
+  String get settingsBrowserUserAgentHint => '自定义 User-Agent 字符串';
+
+  @override
+  String get settingsBrowserUserAgentDefault => '默认（自动）';
+
+  @override
+  String get settingsBrowserMixedContentTitle => '混合内容';
+
+  @override
+  String get settingsBrowserMixedContentDesc => '允许安全页面在内置浏览器中加载不安全的 http 资源';
+
+  @override
+  String get settingsBrowserMixedContentBlock => '阻止（默认）';
+
+  @override
+  String get settingsBrowserMixedContentAllow => '允许';
+
+  @override
+  String get settingsBrowserSearchEnginePrivacy => '隐私政策';
+
+  @override
+  String get browserImageMenuDownload => '下载图片';
+
+  @override
+  String get browserDownloading => '正在下载图片…';
+
+  @override
+  String get browserDownloadFailed => '图片下载失败';
+
+  @override
+  String get browserRendererGoneTitle => '页面崩溃';
+
+  @override
+  String get browserRendererGoneMessage => '网页渲染进程已崩溃。请重新加载页面或关闭该标签页。';
+
+  @override
+  String get browserCancelAlwaysExternalTitle => '取消始终外部打开？';
+
+  @override
+  String browserCancelAlwaysExternalMessage(Object domain) {
+    return '$domain 的链接当前始终在外部浏览器打开，是否取消？';
+  }
+
+  @override
+  String browserAlwaysExternalEnabled(Object domain) {
+    return '已设置 $domain 的链接始终在外部浏览器打开';
+  }
+
+  @override
+  String browserAlwaysExternalDisabled(Object domain) {
+    return '已取消 $domain 的链接始终在外部浏览器打开';
+  }
+
+  @override
   String get lockTitle => 'TouchFish 已锁定';
 
   @override

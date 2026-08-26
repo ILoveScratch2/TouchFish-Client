@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'data_saving_image.dart';
 import 'optimized_image.dart';
 import 'package:flutter_highlight/themes/a11y-dark.dart';
@@ -10,14 +9,13 @@ import 'package:go_router/go_router.dart';
 import 'package:markdown/markdown.dart' as markdown;
 import 'package:markdown_widget/markdown_widget.dart';
 import 'package:photo_view/photo_view.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/browser_service.dart';
 import '../services/chat_data_service.dart';
 import '../services/domain_trust_service.dart';
-import 'app_alert_dialog.dart';
 import 'untrusted_image_placeholder.dart';
 
 /// 等宽字体族：优先 Consolas，依次回退至各平台常见等宽字体。
@@ -292,101 +290,7 @@ class MarkdownRenderer extends HookWidget {
     if (uri == null) {
       return;
     }
-
-    final trustService = DomainTrustService.instance;
-    if (!trustService.linkProtectionEnabled ||
-        await trustService.isTrustedUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-      return;
-    }
-
-    if (!context.mounted) return;
-    final proceed = await _confirmUntrustedLink(context, uri);
-    if (proceed) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  static Future<bool> _confirmUntrustedLink(
-    BuildContext context,
-    Uri uri,
-  ) async {
-    final l10n = AppLocalizations.of(context)!;
-    final isHttp = uri.scheme == 'http';
-    final trustService = DomainTrustService.instance;
-    final suggestTrust = await trustService.shouldSuggestTrust(uri.host);
-    if (!context.mounted) return false;
-    final trustChecked = ValueNotifier<bool>(false);
-
-    final message = [
-      l10n.domainTrustLinkUntrustedMessage,
-      uri.toString(),
-      if (isHttp) l10n.domainTrustLinkHttpWarning,
-    ].join('\n\n');
-
-    final content = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(message),
-        if (suggestTrust) ...[
-          const SizedBox(height: 8),
-          ValueListenableBuilder<bool>(
-            valueListenable: trustChecked,
-            builder: (context, checked, _) => CheckboxListTile(
-              value: checked,
-              onChanged: (value) => trustChecked.value = value ?? false,
-              title: Text(l10n.domainTrustAddToTrustedDomains),
-              controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-            ),
-          ),
-        ],
-        const SizedBox(height: 4),
-        Align(
-          alignment: Alignment.centerRight,
-          child: IconButton(
-            onPressed: () => showDomainTrustInfo(context),
-            icon: const Icon(Icons.help_outline_rounded, size: 18),
-            tooltip: l10n.domainTrustInfoTitle,
-            visualDensity: VisualDensity.compact,
-          ),
-        ),
-      ],
-    );
-
-    final result = await showTouchFishInfoDialog<String>(
-      context,
-      title: l10n.domainTrustLinkWarningTitle,
-      message: message,
-      content: content,
-      icon: isHttp ? Icons.warning_amber_rounded : Icons.shield_outlined,
-      actions: [
-        TouchFishDialogAction<String>(
-          label: l10n.domainTrustCopyLink,
-          result: 'copy',
-        ),
-        TouchFishDialogAction<String>(label: l10n.cancel, result: 'cancel'),
-        TouchFishDialogAction<String>(
-          label: l10n.domainTrustOpenAnyway,
-          result: 'open',
-          isPrimary: true,
-          isDestructive: isHttp,
-        ),
-      ],
-    );
-
-    if (result == 'copy') {
-      Clipboard.setData(ClipboardData(text: uri.toString()));
-    }
-    if (result == 'open') {
-      await trustService.recordConfirmedOpen(uri);
-      if (trustChecked.value) {
-        await trustService.addTrustedDomain(uri.host);
-      }
-    }
-    return result == 'open';
+    await BrowserService.instance.openUri(context, uri);
   }
 }
 

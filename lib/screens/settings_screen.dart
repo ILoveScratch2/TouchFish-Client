@@ -23,6 +23,8 @@ import '../services/media_proxy_service.dart';
 import '../services/ip_override_service.dart';
 import '../services/server_connection_status_service.dart';
 import '../services/domain_trust_service.dart';
+import '../services/browser_service.dart';
+import '../services/search_engines.dart';
 import '../services/lock_service.dart';
 import '../services/lock_screen_visibility_service.dart';
 import 'connectivity_self_check_screen.dart';
@@ -257,6 +259,10 @@ class _SettingsScreenState extends State<SettingsScreen>
       if (item.key == 'lockscreenReply') return isAndroid;
       if (item.key == 'showOnLockScreen') return isAndroid;
       if (item.key == 'builtInKeyboardMode') return isAndroid;
+      if (item.key == 'linkOpenMode') return isAndroid;
+      if (item.key == 'browserSearchEngine') return isAndroid;
+      if (item.key == 'browserUserAgent') return isAndroid;
+      if (item.key == 'browserMixedContent') return isAndroid;
       return true;
     }).toList();
     return ListView.builder(
@@ -293,10 +299,15 @@ class _SettingsScreenState extends State<SettingsScreen>
             item.key == 'themeColor' ||
             item.key == 'layoutMode' ||
             item.key == 'builtInKeyboardMode' ||
+            item.key == 'linkOpenMode' ||
+            item.key == 'browserMixedContent' ||
             item.key == 'explicitSyncCooldownSeconds' ||
             item.key == 'notificationLevel' ||
             item.key == 'ipOverrideMode') {
           return _buildCustomDropdownSetting(context, l10n, item);
+        }
+        if (item.key == 'browserSearchEngine') {
+          return _buildSearchEngineSetting(context, l10n);
         }
         if (item.key == 'theme') {
           return _buildToggleSwitchSetting(context, l10n, item);
@@ -352,6 +363,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         if (item.key == 'masterPassword') {
           return _buildMasterPasswordSetting(context, l10n);
         }
+        if (item.key == 'browserUserAgent') {
+          return _buildBrowserUserAgentSetting(context, l10n);
+        }
         if (item.key == 'biometricUnlock') {
           return _buildBiometricSetting(context, l10n);
         }
@@ -360,6 +374,193 @@ class _SettingsScreenState extends State<SettingsScreen>
         }
         return const SizedBox.shrink();
     }
+  }
+
+  Widget _buildBrowserUserAgentSetting(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        final value = _settingsService.getValue<String>(
+          'browserUserAgent',
+          '',
+        );
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: ListTile(
+              leading: const Icon(Icons.devices),
+              title: Text(l10n.settingsBrowserUserAgentTitle),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.settingsBrowserUserAgentDesc),
+                  const SizedBox(height: 4),
+                  Text(
+                    value.isEmpty
+                        ? l10n.settingsBrowserUserAgentDefault
+                        : value,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              onTap: () async {
+                final controller = TextEditingController(text: value);
+                final result = await showDialog<String>(
+                  context: context,
+                  builder: (dialogContext) => AlertDialog(
+                    title: Text(l10n.settingsBrowserUserAgentTitle),
+                    content: TextField(
+                      controller: controller,
+                      maxLines: 3,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: l10n.settingsBrowserUserAgentHint,
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: Text(l10n.cancel),
+                      ),
+                      FilledButton(
+                        onPressed: () =>
+                            Navigator.pop(dialogContext, controller.text),
+                        child: Text(l10n.confirm),
+                      ),
+                    ],
+                  ),
+                );
+                controller.dispose();
+                if (result != null) {
+                  await _settingsService.setValue(
+                    'browserUserAgent',
+                    result.trim(),
+                  );
+                }
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _engineLabel(AppLocalizations l10n, SearchEngineConfig engine) {
+    switch (engine.id) {
+      case 'duckduckgo':
+        return l10n.settingsBrowserSearchEngineDuckduckgo;
+      case 'baidu':
+        return l10n.settingsBrowserSearchEngineBaidu;
+      default:
+        return l10n.settingsBrowserSearchEngineBing;
+    }
+  }
+
+  /// 搜索引擎选择（对照 Telegram WebBrowserSettings 的搜索引擎入口）：
+  /// 点击弹出选择对话框，每项可查看隐私政策。
+  Widget _buildSearchEngineSetting(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        final value = _settingsService.getValue<String>(
+          'browserSearchEngine',
+          'bing',
+        );
+        final engine = SearchEngineConfig.byId(value);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: ListTile(
+              leading: const Icon(Icons.search),
+              title: Text(l10n.settingsBrowserSearchEngineTitle),
+              subtitle: Text(
+                engine == null
+                    ? l10n.settingsBrowserSearchEngineBing
+                    : _engineLabel(l10n, engine),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () async {
+                final current = engine?.id ?? 'bing';
+                final selected = await _showSearchEnginePicker(
+                  context,
+                  l10n,
+                  current,
+                );
+                if (selected != null && mounted) {
+                  await _settingsService.setValue(
+                    'browserSearchEngine',
+                    selected,
+                  );
+                }
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 返回 null 表示未选择；否则为引擎 id。
+  Future<String?> _showSearchEnginePicker(
+    BuildContext context,
+    AppLocalizations l10n,
+    String current,
+  ) async {
+    String selected = current;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text(l10n.settingsBrowserSearchEngineTitle),
+          content: RadioGroup<String>(
+            groupValue: selected,
+            onChanged: (v) => setDialogState(() => selected = v ?? selected),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final engine in SearchEngineConfig.all)
+                  ListTile(
+                    leading: Radio<String>(value: engine.id),
+                    title: Text(_engineLabel(l10n, engine)),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.privacy_tip_outlined, size: 20),
+                      tooltip: l10n.settingsBrowserSearchEnginePrivacy,
+                      onPressed: () {
+                        final uri = Uri.tryParse(engine.privacyPolicyUrl);
+                        if (uri != null) {
+                          BrowserService.instance.openUri(dialogContext, uri);
+                        }
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.confirm),
+            ),
+          ],
+        ),
+      ),
+    );
+    return confirmed == true ? selected : null;
   }
 
   Widget _buildMasterPasswordSetting(
@@ -2089,6 +2290,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsBuiltInKeyboardLock;
       case 'settingsBuiltInKeyboardAlways':
         return l10n.settingsBuiltInKeyboardAlways;
+      case 'settingsBrowserMixedContentBlock':
+        return l10n.settingsBrowserMixedContentBlock;
+      case 'settingsBrowserMixedContentAllow':
+        return l10n.settingsBrowserMixedContentAllow;
       default:
         return key;
     }

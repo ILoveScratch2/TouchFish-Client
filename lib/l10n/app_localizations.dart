@@ -700,6 +700,384 @@ abstract class AppLocalizations {
   /// **'Always'**
   String get settingsBuiltInKeyboardAlways;
 
+  /// No description provided for @settingsLinkOpenModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Links In'**
+  String get settingsLinkOpenModeTitle;
+
+  /// No description provided for @settingsLinkOpenModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how links are opened on Android: in the built-in browser or in an external browser'**
+  String get settingsLinkOpenModeDesc;
+
+  /// No description provided for @settingsLinkOpenModeInapp.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in browser'**
+  String get settingsLinkOpenModeInapp;
+
+  /// No description provided for @settingsLinkOpenModeExternal.
+  ///
+  /// In en, this message translates to:
+  /// **'External browser'**
+  String get settingsLinkOpenModeExternal;
+
+  /// No description provided for @settingsBrowserSearchEngineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Engine'**
+  String get settingsBrowserSearchEngineTitle;
+
+  /// No description provided for @settingsBrowserSearchEngineDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Search engine used when typing a search term in the browser address bar'**
+  String get settingsBrowserSearchEngineDesc;
+
+  /// No description provided for @settingsBrowserSearchEngineBing.
+  ///
+  /// In en, this message translates to:
+  /// **'Bing'**
+  String get settingsBrowserSearchEngineBing;
+
+  /// No description provided for @settingsBrowserSearchEngineDuckduckgo.
+  ///
+  /// In en, this message translates to:
+  /// **'DuckDuckGo'**
+  String get settingsBrowserSearchEngineDuckduckgo;
+
+  /// No description provided for @settingsBrowserSearchEngineBaidu.
+  ///
+  /// In en, this message translates to:
+  /// **'Baidu'**
+  String get settingsBrowserSearchEngineBaidu;
+
+  /// No description provided for @browserNewTab.
+  ///
+  /// In en, this message translates to:
+  /// **'New Tab'**
+  String get browserNewTab;
+
+  /// No description provided for @browserCloseTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Tab'**
+  String get browserCloseTab;
+
+  /// No description provided for @browserAddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a URL or search the web'**
+  String get browserAddressHint;
+
+  /// No description provided for @browserGo.
+  ///
+  /// In en, this message translates to:
+  /// **'Go'**
+  String get browserGo;
+
+  /// No description provided for @browserBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get browserBack;
+
+  /// No description provided for @browserForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward'**
+  String get browserForward;
+
+  /// No description provided for @browserRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get browserRefresh;
+
+  /// No description provided for @browserStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get browserStop;
+
+  /// No description provided for @browserOpenInExternal.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in external browser'**
+  String get browserOpenInExternal;
+
+  /// No description provided for @browserOpenInNewTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in new tab'**
+  String get browserOpenInNewTab;
+
+  /// No description provided for @browserCopyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get browserCopyLink;
+
+  /// No description provided for @browserCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied'**
+  String get browserCopied;
+
+  /// No description provided for @browserOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'No app found to open this link'**
+  String get browserOpenFailed;
+
+  /// No description provided for @browserFindOnPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Find on page'**
+  String get browserFindOnPage;
+
+  /// No description provided for @browserFindHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Find on page'**
+  String get browserFindHint;
+
+  /// No description provided for @browserNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No results'**
+  String get browserNoResults;
+
+  /// No description provided for @browserShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get browserShare;
+
+  /// No description provided for @browserLoadingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load page'**
+  String get browserLoadingFailed;
+
+  /// No description provided for @browserRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get browserRetry;
+
+  /// No description provided for @browserTabLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many tabs open. Close a tab first'**
+  String get browserTabLimitReached;
+
+  /// No description provided for @browserRememberDomainTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in external browser?'**
+  String get browserRememberDomainTitle;
+
+  /// No description provided for @browserRememberDomainMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Always open {domain} links in the external browser and add it to the trusted domains?'**
+  String browserRememberDomainMessage(Object domain);
+
+  /// No description provided for @browserOpenAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Open anyway'**
+  String get browserOpenAnyway;
+
+  /// No description provided for @browserDownloadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get browserDownloadTitle;
+
+  /// No description provided for @browserDownloadMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This link downloads a file. Open it in the external browser to download?'**
+  String get browserDownloadMessage;
+
+  /// No description provided for @browserDownloadOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in browser'**
+  String get browserDownloadOpen;
+
+  /// No description provided for @browserAddBookmark.
+  ///
+  /// In en, this message translates to:
+  /// **'Add bookmark'**
+  String get browserAddBookmark;
+
+  /// No description provided for @browserRemoveBookmark.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove bookmark'**
+  String get browserRemoveBookmark;
+
+  /// No description provided for @browserBookmarkAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmark added'**
+  String get browserBookmarkAdded;
+
+  /// No description provided for @browserBookmarkRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmark removed'**
+  String get browserBookmarkRemoved;
+
+  /// No description provided for @browserBookmarks.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmarks'**
+  String get browserBookmarks;
+
+  /// No description provided for @browserBookmarksEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No bookmarks yet'**
+  String get browserBookmarksEmpty;
+
+  /// No description provided for @browserHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get browserHistory;
+
+  /// No description provided for @browserHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No history yet'**
+  String get browserHistoryEmpty;
+
+  /// No description provided for @browserHistoryClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear history'**
+  String get browserHistoryClear;
+
+  /// No description provided for @browserExitBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit browser'**
+  String get browserExitBrowser;
+
+  /// No description provided for @settingsBrowserUserAgentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom User-Agent'**
+  String get settingsBrowserUserAgentTitle;
+
+  /// No description provided for @settingsBrowserUserAgentDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty for default. Enter a custom User-Agent (e.g. a desktop Chrome one)'**
+  String get settingsBrowserUserAgentDesc;
+
+  /// No description provided for @settingsBrowserUserAgentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom User-Agent string'**
+  String get settingsBrowserUserAgentHint;
+
+  /// No description provided for @settingsBrowserUserAgentDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default (automatic)'**
+  String get settingsBrowserUserAgentDefault;
+
+  /// No description provided for @settingsBrowserMixedContentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mixed Content'**
+  String get settingsBrowserMixedContentTitle;
+
+  /// No description provided for @settingsBrowserMixedContentDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow secure pages to load insecure (http) resources inside the built-in browser'**
+  String get settingsBrowserMixedContentDesc;
+
+  /// No description provided for @settingsBrowserMixedContentBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Block (default)'**
+  String get settingsBrowserMixedContentBlock;
+
+  /// No description provided for @settingsBrowserMixedContentAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get settingsBrowserMixedContentAllow;
+
+  /// No description provided for @settingsBrowserSearchEnginePrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get settingsBrowserSearchEnginePrivacy;
+
+  /// No description provided for @browserImageMenuDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download image'**
+  String get browserImageMenuDownload;
+
+  /// No description provided for @browserDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading image…'**
+  String get browserDownloading;
+
+  /// No description provided for @browserDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to download image'**
+  String get browserDownloadFailed;
+
+  /// No description provided for @browserRendererGoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Page crashed'**
+  String get browserRendererGoneTitle;
+
+  /// No description provided for @browserRendererGoneMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The page\'s render process has crashed. Reload the page or close this tab.'**
+  String get browserRendererGoneMessage;
+
+  /// No description provided for @browserCancelAlwaysExternalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop opening externally?'**
+  String get browserCancelAlwaysExternalTitle;
+
+  /// No description provided for @browserCancelAlwaysExternalMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{domain} links are currently always opened in the external browser. Stop opening this domain in the external browser?'**
+  String browserCancelAlwaysExternalMessage(Object domain);
+
+  /// No description provided for @browserAlwaysExternalEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'{domain} will always open in the external browser'**
+  String browserAlwaysExternalEnabled(Object domain);
+
+  /// No description provided for @browserAlwaysExternalDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'{domain} links will no longer be forced to open in the external browser'**
+  String browserAlwaysExternalDisabled(Object domain);
+
   /// No description provided for @lockTitle.
   ///
   /// In en, this message translates to:

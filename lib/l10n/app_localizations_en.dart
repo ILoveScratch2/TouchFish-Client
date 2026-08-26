@@ -333,6 +333,209 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsBuiltInKeyboardAlways => 'Always';
 
   @override
+  String get settingsLinkOpenModeTitle => 'Open Links In';
+
+  @override
+  String get settingsLinkOpenModeDesc =>
+      'Choose how links are opened on Android: in the built-in browser or in an external browser';
+
+  @override
+  String get settingsLinkOpenModeInapp => 'Built-in browser';
+
+  @override
+  String get settingsLinkOpenModeExternal => 'External browser';
+
+  @override
+  String get settingsBrowserSearchEngineTitle => 'Search Engine';
+
+  @override
+  String get settingsBrowserSearchEngineDesc =>
+      'Search engine used when typing a search term in the browser address bar';
+
+  @override
+  String get settingsBrowserSearchEngineBing => 'Bing';
+
+  @override
+  String get settingsBrowserSearchEngineDuckduckgo => 'DuckDuckGo';
+
+  @override
+  String get settingsBrowserSearchEngineBaidu => 'Baidu';
+
+  @override
+  String get browserNewTab => 'New Tab';
+
+  @override
+  String get browserCloseTab => 'Close Tab';
+
+  @override
+  String get browserAddressHint => 'Type a URL or search the web';
+
+  @override
+  String get browserGo => 'Go';
+
+  @override
+  String get browserBack => 'Back';
+
+  @override
+  String get browserForward => 'Forward';
+
+  @override
+  String get browserRefresh => 'Refresh';
+
+  @override
+  String get browserStop => 'Stop';
+
+  @override
+  String get browserOpenInExternal => 'Open in external browser';
+
+  @override
+  String get browserOpenInNewTab => 'Open in new tab';
+
+  @override
+  String get browserCopyLink => 'Copy link';
+
+  @override
+  String get browserCopied => 'Link copied';
+
+  @override
+  String get browserOpenFailed => 'No app found to open this link';
+
+  @override
+  String get browserFindOnPage => 'Find on page';
+
+  @override
+  String get browserFindHint => 'Find on page';
+
+  @override
+  String get browserNoResults => 'No results';
+
+  @override
+  String get browserShare => 'Share';
+
+  @override
+  String get browserLoadingFailed => 'Failed to load page';
+
+  @override
+  String get browserRetry => 'Retry';
+
+  @override
+  String get browserTabLimitReached => 'Too many tabs open. Close a tab first';
+
+  @override
+  String get browserRememberDomainTitle => 'Open in external browser?';
+
+  @override
+  String browserRememberDomainMessage(Object domain) {
+    return 'Always open $domain links in the external browser and add it to the trusted domains?';
+  }
+
+  @override
+  String get browserOpenAnyway => 'Open anyway';
+
+  @override
+  String get browserDownloadTitle => 'Download';
+
+  @override
+  String get browserDownloadMessage =>
+      'This link downloads a file. Open it in the external browser to download?';
+
+  @override
+  String get browserDownloadOpen => 'Open in browser';
+
+  @override
+  String get browserAddBookmark => 'Add bookmark';
+
+  @override
+  String get browserRemoveBookmark => 'Remove bookmark';
+
+  @override
+  String get browserBookmarkAdded => 'Bookmark added';
+
+  @override
+  String get browserBookmarkRemoved => 'Bookmark removed';
+
+  @override
+  String get browserBookmarks => 'Bookmarks';
+
+  @override
+  String get browserBookmarksEmpty => 'No bookmarks yet';
+
+  @override
+  String get browserHistory => 'History';
+
+  @override
+  String get browserHistoryEmpty => 'No history yet';
+
+  @override
+  String get browserHistoryClear => 'Clear history';
+
+  @override
+  String get browserExitBrowser => 'Exit browser';
+
+  @override
+  String get settingsBrowserUserAgentTitle => 'Custom User-Agent';
+
+  @override
+  String get settingsBrowserUserAgentDesc =>
+      'Leave empty for default. Enter a custom User-Agent (e.g. a desktop Chrome one)';
+
+  @override
+  String get settingsBrowserUserAgentHint => 'Custom User-Agent string';
+
+  @override
+  String get settingsBrowserUserAgentDefault => 'Default (automatic)';
+
+  @override
+  String get settingsBrowserMixedContentTitle => 'Mixed Content';
+
+  @override
+  String get settingsBrowserMixedContentDesc =>
+      'Allow secure pages to load insecure (http) resources inside the built-in browser';
+
+  @override
+  String get settingsBrowserMixedContentBlock => 'Block (default)';
+
+  @override
+  String get settingsBrowserMixedContentAllow => 'Allow';
+
+  @override
+  String get settingsBrowserSearchEnginePrivacy => 'Privacy Policy';
+
+  @override
+  String get browserImageMenuDownload => 'Download image';
+
+  @override
+  String get browserDownloading => 'Downloading image…';
+
+  @override
+  String get browserDownloadFailed => 'Failed to download image';
+
+  @override
+  String get browserRendererGoneTitle => 'Page crashed';
+
+  @override
+  String get browserRendererGoneMessage =>
+      'The page\'s render process has crashed. Reload the page or close this tab.';
+
+  @override
+  String get browserCancelAlwaysExternalTitle => 'Stop opening externally?';
+
+  @override
+  String browserCancelAlwaysExternalMessage(Object domain) {
+    return '$domain links are currently always opened in the external browser. Stop opening this domain in the external browser?';
+  }
+
+  @override
+  String browserAlwaysExternalEnabled(Object domain) {
+    return '$domain will always open in the external browser';
+  }
+
+  @override
+  String browserAlwaysExternalDisabled(Object domain) {
+    return '$domain links will no longer be forced to open in the external browser';
+  }
+
+  @override
   String get lockTitle => 'TouchFish is locked';
 
   @override

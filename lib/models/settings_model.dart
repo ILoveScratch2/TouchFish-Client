@@ -539,6 +539,72 @@ class SettingsData {
             ),
           ],
         ),
+        SettingItem(
+          key: 'linkOpenMode',
+          titleKey: 'settingsLinkOpenModeTitle',
+          descriptionKey: 'settingsLinkOpenModeDesc',
+          type: SettingType.dropdown,
+          defaultValue: 'inapp',
+          icon: Icons.public,
+          options: [
+            SettingOption(
+              value: 'inapp',
+              labelKey: 'settingsLinkOpenModeInapp',
+            ),
+            SettingOption(
+              value: 'external',
+              labelKey: 'settingsLinkOpenModeExternal',
+            ),
+          ],
+        ),
+        SettingItem(
+          key: 'browserSearchEngine',
+          titleKey: 'settingsBrowserSearchEngineTitle',
+          descriptionKey: 'settingsBrowserSearchEngineDesc',
+          type: SettingType.dropdown,
+          defaultValue: 'bing',
+          icon: Icons.search,
+          options: [
+            SettingOption(
+              value: 'bing',
+              labelKey: 'settingsBrowserSearchEngineBing',
+            ),
+            SettingOption(
+              value: 'duckduckgo',
+              labelKey: 'settingsBrowserSearchEngineDuckduckgo',
+            ),
+            SettingOption(
+              value: 'baidu',
+              labelKey: 'settingsBrowserSearchEngineBaidu',
+            ),
+          ],
+        ),
+        SettingItem(
+          key: 'browserUserAgent',
+          titleKey: 'settingsBrowserUserAgentTitle',
+          descriptionKey: 'settingsBrowserUserAgentDesc',
+          type: SettingType.customWidget,
+          defaultValue: '',
+          icon: Icons.devices,
+        ),
+        SettingItem(
+          key: 'browserMixedContent',
+          titleKey: 'settingsBrowserMixedContentTitle',
+          descriptionKey: 'settingsBrowserMixedContentDesc',
+          type: SettingType.dropdown,
+          defaultValue: 'block',
+          icon: Icons.warning_amber_rounded,
+          options: [
+            SettingOption(
+              value: 'block',
+              labelKey: 'settingsBrowserMixedContentBlock',
+            ),
+            SettingOption(
+              value: 'allow',
+              labelKey: 'settingsBrowserMixedContentAllow',
+            ),
+          ],
+        ),
       ],
     ),
     SettingCategoryData(

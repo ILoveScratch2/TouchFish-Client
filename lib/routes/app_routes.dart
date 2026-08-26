@@ -28,6 +28,7 @@ import '../screens/sticker_screens.dart';
 import '../screens/forum_search_screen.dart';
 import '../screens/group_search_screen.dart';
 import '../screens/group_profile_screen.dart';
+import '../screens/browser_screen.dart';
 import '../l10n/app_localizations.dart';
 import '../screens/forward_screen.dart';
 import '../models/message_model.dart';
@@ -68,6 +69,7 @@ class AppRoutes {
   static const String profileEdit = '/profile/edit';
   static const String stickerMarket = '/stickers';
   static const String myStickers = '/stickers/mine';
+  static const String browser = '/browser';
 
   static const _publicPaths = {
     welcome,
@@ -272,6 +274,15 @@ class AppRoutes {
             GoRoute(
               path: about,
               builder: (context, state) => const AboutScreen(),
+            ),
+            GoRoute(
+              path: browser,
+              builder: (context, state) {
+                final extra = state.extra;
+                return BrowserScreen(
+                  initialUrl: extra is String ? extra : null,
+                );
+              },
             ),
             GoRoute(
               path: licenses,

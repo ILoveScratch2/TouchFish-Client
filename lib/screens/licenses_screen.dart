@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../services/browser_service.dart';
 import '../l10n/app_localizations.dart';
 import '../services/snackbar_service.dart';
 import '../oss_licenses.dart';
@@ -391,10 +391,9 @@ class _LicensesScreenState extends State<LicensesScreen> {
         subtitle: Text(url, maxLines: 1, overflow: TextOverflow.ellipsis),
         trailing: const Icon(Symbols.open_in_new, size: 20),
         onTap: () async {
-          final uri = Uri.parse(url);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          }
+          final uri = Uri.tryParse(url);
+          if (uri == null) return;
+          await BrowserService.instance.openUri(context, uri);
         },
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         minLeadingWidth: 24,

@@ -3,8 +3,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import '../services/browser_service.dart'; // 现在我们用内置浏览器看了
 import '../l10n/app_localizations.dart';
 import '../models/file_attachment.dart';
 import '../models/settings_service.dart';
@@ -136,13 +136,9 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
   Future<void> _preview() async {
     if (!_attachment.isPreviewable) return;
     if (_attachment.isPdf) {
-      final opened = await launchUrl(
-        Uri.parse(await _url()),
-        mode: LaunchMode.externalApplication,
-      );
-      if (!opened && mounted) {
-        TouchFishSnackbarService.instance.show(AppLocalizations.of(context)!.filePreviewFailed);
-      }
+      final url = Uri.tryParse(await _url());
+      if (url == null || !mounted) return;
+      await BrowserService.instance.openUri(context, url);
       return;
     }
     if (widget.allowAutomaticPreview && !widget.compact) {

@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
+import '../services/browser_service.dart';
 import '../l10n/app_localizations.dart';
 import '../constants/app_constants.dart';
 import 'debug/debug_options_screen.dart';
@@ -356,10 +356,9 @@ class _AboutScreenState extends State<AboutScreen>
   }
 
   Future<void> _launchURL(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    await BrowserService.instance.openUri(context, uri);
   }
 
   void _copyToClipboard(String text, String message) {

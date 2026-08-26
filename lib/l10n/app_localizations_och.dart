@@ -314,6 +314,204 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsBuiltInKeyboardAlways => '恆用之';
 
   @override
+  String get settingsLinkOpenModeTitle => '開鏈之式';
+
+  @override
+  String get settingsLinkOpenModeDesc => '擇 Android 開鏈之法：內建瀏覽器抑或外方瀏覽器';
+
+  @override
+  String get settingsLinkOpenModeInapp => '內建瀏覽器';
+
+  @override
+  String get settingsLinkOpenModeExternal => '外方瀏覽器';
+
+  @override
+  String get settingsBrowserSearchEngineTitle => '搜索之引';
+
+  @override
+  String get settingsBrowserSearchEngineDesc => '瀏覽器地址欄輸詞時所用之搜索引';
+
+  @override
+  String get settingsBrowserSearchEngineBing => 'Bing';
+
+  @override
+  String get settingsBrowserSearchEngineDuckduckgo => 'DuckDuckGo';
+
+  @override
+  String get settingsBrowserSearchEngineBaidu => '百度';
+
+  @override
+  String get browserNewTab => '新開頁籤';
+
+  @override
+  String get browserCloseTab => '闔頁籤';
+
+  @override
+  String get browserAddressHint => '輸網址或索詞';
+
+  @override
+  String get browserGo => '往之';
+
+  @override
+  String get browserBack => '退';
+
+  @override
+  String get browserForward => '進';
+
+  @override
+  String get browserRefresh => '刷新';
+
+  @override
+  String get browserStop => '止';
+
+  @override
+  String get browserOpenInExternal => '外方瀏覽器開之';
+
+  @override
+  String get browserOpenInNewTab => '新頁籤開之';
+
+  @override
+  String get browserCopyLink => '複鏈';
+
+  @override
+  String get browserCopied => '鏈已複';
+
+  @override
+  String get browserOpenFailed => '無應用可開此鏈';
+
+  @override
+  String get browserFindOnPage => '頁內尋';
+
+  @override
+  String get browserFindHint => '尋頁中文字';
+
+  @override
+  String get browserNoResults => '無果';
+
+  @override
+  String get browserShare => '分享';
+
+  @override
+  String get browserLoadingFailed => '載頁失敗';
+
+  @override
+  String get browserRetry => '復試';
+
+  @override
+  String get browserTabLimitReached => '頁籤已滿，請先闔數籤';
+
+  @override
+  String get browserRememberDomainTitle => '外方瀏覽器開之？';
+
+  @override
+  String browserRememberDomainMessage(Object domain) {
+    return '將 $domain 之鏈恆以外方瀏覽器開，並納入信域？';
+  }
+
+  @override
+  String get browserOpenAnyway => '仍開之';
+
+  @override
+  String get browserDownloadTitle => '下載文件';
+
+  @override
+  String get browserDownloadMessage => '此鏈將下載文件。以外方瀏覽器開之以竟其功？';
+
+  @override
+  String get browserDownloadOpen => '瀏覽器中開';
+
+  @override
+  String get browserAddBookmark => '加書籤';
+
+  @override
+  String get browserRemoveBookmark => '去書籤';
+
+  @override
+  String get browserBookmarkAdded => '書籤已加';
+
+  @override
+  String get browserBookmarkRemoved => '書籤已去';
+
+  @override
+  String get browserBookmarks => '書籤';
+
+  @override
+  String get browserBookmarksEmpty => '尚無書籤';
+
+  @override
+  String get browserHistory => '史錄';
+
+  @override
+  String get browserHistoryEmpty => '尚無史錄';
+
+  @override
+  String get browserHistoryClear => '清史';
+
+  @override
+  String get browserExitBrowser => '退瀏覽器';
+
+  @override
+  String get settingsBrowserUserAgentTitle => '定製 User-Agent';
+
+  @override
+  String get settingsBrowserUserAgentDesc =>
+      '空之則用預設。可填定製 User-Agent（如桌面 Chrome）';
+
+  @override
+  String get settingsBrowserUserAgentHint => '定製 User-Agent 字串';
+
+  @override
+  String get settingsBrowserUserAgentDefault => '預設（自動）';
+
+  @override
+  String get settingsBrowserMixedContentTitle => '混雜內容';
+
+  @override
+  String get settingsBrowserMixedContentDesc => '許安全頁於內建瀏覽器載不安全 http 資源';
+
+  @override
+  String get settingsBrowserMixedContentBlock => '阻止（預設）';
+
+  @override
+  String get settingsBrowserMixedContentAllow => '允許';
+
+  @override
+  String get settingsBrowserSearchEnginePrivacy => '隱私政策';
+
+  @override
+  String get browserImageMenuDownload => '下載圖片';
+
+  @override
+  String get browserDownloading => '圖片下載中…';
+
+  @override
+  String get browserDownloadFailed => '圖片下載敗';
+
+  @override
+  String get browserRendererGoneTitle => '頁面崩潰';
+
+  @override
+  String get browserRendererGoneMessage => '網頁渲染進程已崩。可重載頁面或閉此標籤。';
+
+  @override
+  String get browserCancelAlwaysExternalTitle => '止其外開？';
+
+  @override
+  String browserCancelAlwaysExternalMessage(Object domain) {
+    return '$domain 之鏈素以外瀏覽器開啟，止之乎？';
+  }
+
+  @override
+  String browserAlwaysExternalEnabled(Object domain) {
+    return '已令 $domain 之鏈恒以外瀏覽器開啟';
+  }
+
+  @override
+  String browserAlwaysExternalDisabled(Object domain) {
+    return '已復 $domain 外開之制';
+  }
+
+  @override
   String get lockTitle => 'TouchFish 已鎖';
 
   @override
