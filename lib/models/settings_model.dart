@@ -522,7 +522,7 @@ class SettingsData {
           titleKey: 'settingsBuiltInKeyboardTitle',
           descriptionKey: 'settingsBuiltInKeyboardDesc',
           type: SettingType.dropdown,
-          defaultValue: 'lock',
+          defaultValue: 'never',
           icon: Icons.keyboard,
           options: [
             SettingOption(

@@ -3404,7 +3404,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get domainTrustLinkWarningTitle => '链接跳转确认';
 
   @override
-  String get domainTrustLinkUntrustedMessage => '此链接来自不受信任的域名，请确认链接安全后再打开。';
+  String get domainTrustLinkUntrustedMessage => '此链接来自未经受信任的域名，请确认链接安全后再打开。';
 
   @override
   String get domainTrustLinkHttpWarning =>
@@ -3420,10 +3420,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get domainTrustAddToTrustedDomains => '将该域加入信任域名';
 
   @override
-  String get domainTrustImageBlockedTitle => '已阻止来自不受信任域名的图片';
+  String get domainTrustImageBlockedTitle => '已阻止来自未经受信任域名的图片';
 
   @override
-  String get domainTrustImageBlockedDesc => '为保护隐私，未加载来自不受信任域名的图片。';
+  String get domainTrustImageBlockedDesc => '为保护隐私，未加载来自未经受信任域名的图片。';
 
   @override
   String get domainTrustLoadImage => '加载图片';
@@ -3439,13 +3439,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsDomainTrustImageBlockTitle => '图片加载保护';
 
   @override
-  String get settingsDomainTrustImageBlockDesc => '阻止加载来自不受信任域名的图片';
+  String get settingsDomainTrustImageBlockDesc => '阻止加载来自未经受信任域名的图片';
 
   @override
   String get settingsDomainTrustLinkWarningTitle => '链接跳转保护';
 
   @override
-  String get settingsDomainTrustLinkWarningDesc => '打开不受信任域名的链接前进行警告';
+  String get settingsDomainTrustLinkWarningDesc => '打开未经受信任域名的链接前进行警告';
 
   @override
   String get settingsTrustedDomainsTitle => '信任域名';

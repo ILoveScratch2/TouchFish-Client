@@ -35,7 +35,7 @@ class _AppVirtualKeyboardState extends State<AppVirtualKeyboard>
   AppLifecycleState _lifecycle = AppLifecycleState.resumed;
 
   String get _mode =>
-      SettingsService.instance.getValue<String>(_modeKey, _modeLock);
+      SettingsService.instance.getValue<String>(_modeKey, _modeNever);
 
   bool get _enabled {
     switch (_mode) {
