@@ -1284,7 +1284,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (_messages.length > _galleryCap) return;
     for (final message in _messages) {
       final media = message.media;
-      if (message.type == MessageType.image && media != null) {
+      final isImageMessage = message.type == MessageType.image ||
+          (message.type == MessageType.file &&
+              (media?.mimeType ?? '').startsWith('image/'));
+      if (isImageMessage && media != null) {
         _imageEntries.add(
           LightboxImageItem(
             messageId: message.id,

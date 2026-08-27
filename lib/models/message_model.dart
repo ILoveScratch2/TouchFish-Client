@@ -530,6 +530,17 @@ class ChatMessage {
         ...json,
         'file_hash': fileHash,
       });
+      MessageType msgType;
+      final mime = attachment.mimeType ?? '';
+      if (mime.startsWith('image/')) {
+        msgType = MessageType.image;
+      } else if (mime.startsWith('video/')) {
+        msgType = MessageType.video;
+      } else if (mime.startsWith('audio/')) {
+        msgType = MessageType.audio;
+      } else {
+        msgType = MessageType.file;
+      }
       return ChatMessage(
         id:
             mid?.toString() ??
@@ -540,7 +551,7 @@ class ChatMessage {
         text: '[FILE]',
         timestamp: dt,
         isMe: isMe,
-        type: MessageType.file,
+        type: msgType,
         media: MessageMedia(
           path: fileHash,
           fileName: attachment.fileName,
