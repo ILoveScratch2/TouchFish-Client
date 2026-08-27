@@ -74,6 +74,7 @@ Future<T?> showTouchFishErrorDialog<T>(
   BuildContext context, {
   String? title,
   required String message,
+  Widget? content,
   List<TouchFishDialogAction<T>>? actions,
   IconData? icon,
   bool barrierDismissible = true,
@@ -84,6 +85,7 @@ Future<T?> showTouchFishErrorDialog<T>(
     tone: _TouchFishAlertTone.error,
     title: title,
     message: message,
+    content: content,
     actions: actions,
     icon: icon,
     barrierDismissible: barrierDismissible,

@@ -17,6 +17,7 @@ import '../../models/announcement_model.dart';
 import '../../models/notification_model.dart';
 import '../../models/file_attachment.dart';
 import '../server_connection_status_service.dart';
+import '../rsa_key_trust_service.dart';
 import '../../widgets/server_selector.dart';
 import '../../utils/talker.dart';
 
@@ -541,6 +542,17 @@ class TfApiClient {
   }
 
   Future<RSAPublicKey> _getRsaPublicKey(String baseUrl) async {
+    // 已保存/手动绑定的密钥优先，不再从服务器拉取。
+    final savedPem = await RsaKeyTrustService.instance.savedKeyFor(
+      RsaKeyTrustService.authorityOfBaseUrl(baseUrl),
+    );
+    if (savedPem != null && savedPem.trim().isNotEmpty) {
+      try {
+        return TfCrypto.parseRsaPublicKey(savedPem);
+      } catch (e) {
+        talker.warning('Failed to parse saved RSA public key', e);
+      }
+    }
     if (_cachedPubKey != null && _cachedBaseUrl == baseUrl) {
       return _cachedPubKey!;
     }
@@ -550,6 +562,20 @@ class TfApiClient {
     _cachedPubKey = pubKey;
     _cachedBaseUrl = baseUrl;
     return pubKey;
+  }
+
+  /// 拉取服务器实时 RSA 公钥 PEM（绕过缓存与已保存密钥短路）。
+  /// 服务器离线或请求失败时返回 null。
+  Future<String?> fetchRsaPublicKeyPem() async {
+    try {
+      final baseUrl = await getBaseUrl();
+      final response = await _getRequest('$baseUrl/get_rsa_pub');
+      if (response.statusCode != 200) return null;
+      return response.body;
+    } catch (e) {
+      talker.warning('fetchRsaPublicKeyPem failed', e);
+      return null;
+    }
   }
 
   String _normalizeApiPath(String path) {

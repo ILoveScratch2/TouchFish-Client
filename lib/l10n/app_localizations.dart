@@ -7233,6 +7233,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reset to Default'**
   String get settingsTrustedDomainsReset;
+
+  /// No description provided for @settingsRsaKeysTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'RSA Key Management'**
+  String get settingsRsaKeysTitle;
+
+  /// No description provided for @settingsRsaKeysDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage saved server RSA public keys and view the current server key SHA'**
+  String get settingsRsaKeysDesc;
+
+  /// No description provided for @rsaKeyManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'RSA Key Management'**
+  String get rsaKeyManagement;
+
+  /// No description provided for @rsaKeyManagementDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage saved server RSA public keys and key SHAs. Saving the server key on first connection is recommended; the client verifies the key on every connection to protect against man-in-the-middle attacks.'**
+  String get rsaKeyManagementDescription;
+
+  /// No description provided for @rsaCurrentServerSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Server'**
+  String get rsaCurrentServerSection;
+
+  /// No description provided for @rsaSavedKeysSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved Keys'**
+  String get rsaSavedKeysSection;
+
+  /// No description provided for @rsaUnknownServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown server'**
+  String get rsaUnknownServer;
+
+  /// No description provided for @rsaSavedKeySha.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved key SHA'**
+  String get rsaSavedKeySha;
+
+  /// No description provided for @rsaViewCurrentSha.
+  ///
+  /// In en, this message translates to:
+  /// **'View Current Key SHA'**
+  String get rsaViewCurrentSha;
+
+  /// No description provided for @rsaSaveCurrentKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Current Key'**
+  String get rsaSaveCurrentKey;
+
+  /// No description provided for @rsaSaveCurrentKeySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Current server key saved. SHA: {sha}'**
+  String rsaSaveCurrentKeySuccess(String sha);
+
+  /// No description provided for @rsaFetchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to fetch the server RSA key. Check your network connection.'**
+  String get rsaFetchFailed;
+
+  /// No description provided for @rsaNoSavedKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'No RSA keys saved yet'**
+  String get rsaNoSavedKeys;
+
+  /// No description provided for @rsaViewPublicKey.
+  ///
+  /// In en, this message translates to:
+  /// **'View Public Key'**
+  String get rsaViewPublicKey;
+
+  /// No description provided for @rsaCopySha.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy SHA'**
+  String get rsaCopySha;
+
+  /// No description provided for @rsaCopyPublicKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Public Key'**
+  String get rsaCopyPublicKey;
+
+  /// No description provided for @rsaDeleteKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Key'**
+  String get rsaDeleteKey;
+
+  /// No description provided for @rsaDeleteKeyConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the saved RSA key for server {authority}? The key will no longer be verified after deletion.'**
+  String rsaDeleteKeyConfirm(String authority);
+
+  /// No description provided for @rsaCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get rsaCopied;
+
+  /// No description provided for @rsaPublicKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Public Key'**
+  String get rsaPublicKey;
+
+  /// No description provided for @rsaKeySha.
+  ///
+  /// In en, this message translates to:
+  /// **'Key SHA'**
+  String get rsaKeySha;
+
+  /// No description provided for @rsaSaveKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Key'**
+  String get rsaSaveKey;
+
+  /// No description provided for @rsaDontSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t Save'**
+  String get rsaDontSave;
+
+  /// No description provided for @rsaDisconnectServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect from Server'**
+  String get rsaDisconnectServer;
+
+  /// No description provided for @rsaFirstConnectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This appears to be your first connection to this server. Save the RSA encryption key?'**
+  String get rsaFirstConnectTitle;
+
+  /// No description provided for @rsaFirstConnectMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Once saved, the client verifies the server key on every connection to protect against man-in-the-middle attacks.'**
+  String get rsaFirstConnectMessage;
+
+  /// No description provided for @rsaKeyChangedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning: Server RSA Encryption Key Changed'**
+  String get rsaKeyChangedTitle;
+
+  /// No description provided for @rsaNewKeySha.
+  ///
+  /// In en, this message translates to:
+  /// **'New RSA key SHA'**
+  String get rsaNewKeySha;
+
+  /// No description provided for @rsaOldKeySha.
+  ///
+  /// In en, this message translates to:
+  /// **'Old RSA key SHA'**
+  String get rsaOldKeySha;
+
+  /// No description provided for @rsaKeyChangedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: A MitM attacker could tamper with the RSA key to intercept communications between you and the server. Please confirm the key change with the server administrator!'**
+  String get rsaKeyChangedMessage;
+
+  /// No description provided for @rsaReplaceKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace with New Key'**
+  String get rsaReplaceKey;
+
+  /// No description provided for @rsaInvalidPem.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid RSA public key (PEM format)'**
+  String get rsaInvalidPem;
+
+  /// No description provided for @rsaPemFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'RSA Public Key (PEM)'**
+  String get rsaPemFieldLabel;
+
+  /// No description provided for @rsaPemFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the server RSA public key (optional). Once bound, the client uses this key for encrypted communication and no longer fetches it from the server.'**
+  String get rsaPemFieldHint;
 }
 
 class _AppLocalizationsDelegate

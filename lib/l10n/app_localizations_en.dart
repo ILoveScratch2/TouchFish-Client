@@ -3881,4 +3881,117 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsTrustedDomainsReset => 'Reset to Default';
+
+  @override
+  String get settingsRsaKeysTitle => 'RSA Key Management';
+
+  @override
+  String get settingsRsaKeysDesc =>
+      'Manage saved server RSA public keys and view the current server key SHA';
+
+  @override
+  String get rsaKeyManagement => 'RSA Key Management';
+
+  @override
+  String get rsaKeyManagementDescription =>
+      'Manage saved server RSA public keys and key SHAs. Saving the server key on first connection is recommended; the client verifies the key on every connection to protect against man-in-the-middle attacks.';
+
+  @override
+  String get rsaCurrentServerSection => 'Current Server';
+
+  @override
+  String get rsaSavedKeysSection => 'Saved Keys';
+
+  @override
+  String get rsaUnknownServer => 'Unknown server';
+
+  @override
+  String get rsaSavedKeySha => 'Saved key SHA';
+
+  @override
+  String get rsaViewCurrentSha => 'View Current Key SHA';
+
+  @override
+  String get rsaSaveCurrentKey => 'Save Current Key';
+
+  @override
+  String rsaSaveCurrentKeySuccess(String sha) {
+    return 'Current server key saved. SHA: $sha';
+  }
+
+  @override
+  String get rsaFetchFailed =>
+      'Failed to fetch the server RSA key. Check your network connection.';
+
+  @override
+  String get rsaNoSavedKeys => 'No RSA keys saved yet';
+
+  @override
+  String get rsaViewPublicKey => 'View Public Key';
+
+  @override
+  String get rsaCopySha => 'Copy SHA';
+
+  @override
+  String get rsaCopyPublicKey => 'Copy Public Key';
+
+  @override
+  String get rsaDeleteKey => 'Delete Key';
+
+  @override
+  String rsaDeleteKeyConfirm(String authority) {
+    return 'Delete the saved RSA key for server $authority? The key will no longer be verified after deletion.';
+  }
+
+  @override
+  String get rsaCopied => 'Copied';
+
+  @override
+  String get rsaPublicKey => 'Public Key';
+
+  @override
+  String get rsaKeySha => 'Key SHA';
+
+  @override
+  String get rsaSaveKey => 'Save Key';
+
+  @override
+  String get rsaDontSave => 'Don\'t Save';
+
+  @override
+  String get rsaDisconnectServer => 'Disconnect from Server';
+
+  @override
+  String get rsaFirstConnectTitle =>
+      'This appears to be your first connection to this server. Save the RSA encryption key?';
+
+  @override
+  String get rsaFirstConnectMessage =>
+      'Once saved, the client verifies the server key on every connection to protect against man-in-the-middle attacks.';
+
+  @override
+  String get rsaKeyChangedTitle => 'Warning: Server RSA Encryption Key Changed';
+
+  @override
+  String get rsaNewKeySha => 'New RSA key SHA';
+
+  @override
+  String get rsaOldKeySha => 'Old RSA key SHA';
+
+  @override
+  String get rsaKeyChangedMessage =>
+      'Note: A MitM attacker could tamper with the RSA key to intercept communications between you and the server. Please confirm the key change with the server administrator!';
+
+  @override
+  String get rsaReplaceKey => 'Replace with New Key';
+
+  @override
+  String get rsaInvalidPem => 'Invalid RSA public key (PEM format)';
+
+  @override
+  String get rsaPemFieldLabel => 'RSA Public Key (PEM)';
+
+  @override
+  String get rsaPemFieldHint =>
+      'Paste the server RSA public key (optional). Once bound, the client uses this key for encrypted communication and no longer fetches it from the server.';
 }

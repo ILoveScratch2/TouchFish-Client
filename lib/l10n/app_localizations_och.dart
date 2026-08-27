@@ -3724,4 +3724,112 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get settingsTrustedDomainsReset => '恢復預設';
+
+  @override
+  String get settingsRsaKeysTitle => 'RSA 密鑰管理';
+
+  @override
+  String get settingsRsaKeysDesc => '管理已保存之伺服器 RSA 公鑰，查閱當前伺服器之密鑰 SHA';
+
+  @override
+  String get rsaKeyManagement => 'RSA 密鑰管理';
+
+  @override
+  String get rsaKeyManagementDescription =>
+      '管理已保存之伺服器 RSA 公鑰與密鑰 SHA。初次連接時建議保存伺服器密鑰，此後每次連接皆會校驗密鑰是否一致，以防中間人攻擊。';
+
+  @override
+  String get rsaCurrentServerSection => '當前伺服器';
+
+  @override
+  String get rsaSavedKeysSection => '已保存之密鑰';
+
+  @override
+  String get rsaUnknownServer => '未知伺服器';
+
+  @override
+  String get rsaSavedKeySha => '已保存密鑰 SHA';
+
+  @override
+  String get rsaViewCurrentSha => '查閱當前密鑰 SHA';
+
+  @override
+  String get rsaSaveCurrentKey => '保存當前密鑰';
+
+  @override
+  String rsaSaveCurrentKeySuccess(String sha) {
+    return '已保存當前伺服器密鑰。SHA: $sha';
+  }
+
+  @override
+  String get rsaFetchFailed => '獲取伺服器 RSA 密鑰失敗，請檢查網路連接';
+
+  @override
+  String get rsaNoSavedKeys => '尚未保存任何 RSA 密鑰';
+
+  @override
+  String get rsaViewPublicKey => '查閱公鑰';
+
+  @override
+  String get rsaCopySha => '複製 SHA';
+
+  @override
+  String get rsaCopyPublicKey => '複製公鑰';
+
+  @override
+  String get rsaDeleteKey => '刪除密鑰';
+
+  @override
+  String rsaDeleteKeyConfirm(String authority) {
+    return '確定刪除伺服器 $authority 之已保存 RSA 密鑰乎？刪除後將不再校驗該伺服器之密鑰。';
+  }
+
+  @override
+  String get rsaCopied => '已複製';
+
+  @override
+  String get rsaPublicKey => '公鑰';
+
+  @override
+  String get rsaKeySha => '密鑰 SHA';
+
+  @override
+  String get rsaSaveKey => '保存密鑰';
+
+  @override
+  String get rsaDontSave => '不保存';
+
+  @override
+  String get rsaDisconnectServer => '斷開伺服器連接';
+
+  @override
+  String get rsaFirstConnectTitle => '此似為初次連接此伺服器，是否保存 RSA 加密密鑰？';
+
+  @override
+  String get rsaFirstConnectMessage => '保存後，客戶端將於每次連接時校驗伺服器密鑰是否一致，以防中間人攻擊。';
+
+  @override
+  String get rsaKeyChangedTitle => '警告：伺服器 RSA 加密密鑰已變更';
+
+  @override
+  String get rsaNewKeySha => '新 RSA 密鑰之 SHA';
+
+  @override
+  String get rsaOldKeySha => '舊 RSA 密鑰之 SHA';
+
+  @override
+  String get rsaKeyChangedMessage =>
+      '請注意：MitM 攻擊者可能藉篡改 RSA 密鑰以竊取您與伺服器間之通信，請向伺服器管理員確認密鑰變更！';
+
+  @override
+  String get rsaReplaceKey => '以新密鑰替換舊者';
+
+  @override
+  String get rsaInvalidPem => '無效之 RSA 公鑰（PEM 格式）';
+
+  @override
+  String get rsaPemFieldLabel => 'RSA 公鑰 (PEM)';
+
+  @override
+  String get rsaPemFieldHint => '粘貼伺服器 RSA 公鑰（可選）。綁定後客戶端將使用此密鑰加密通信，不再從伺服器拉取。';
 }

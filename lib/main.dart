@@ -16,6 +16,8 @@ import 'models/app_state.dart';
 import 'models/settings_service.dart';
 import 'routes/app_routes.dart';
 import 'services/auth_state.dart';
+import 'services/api/tf_api_client.dart';
+import 'services/rsa_key_trust_service.dart';
 import 'services/app_notification_service.dart';
 import 'services/chat_data_service.dart';
 import 'services/chat_ws_service.dart';
@@ -32,6 +34,7 @@ import 'services/lock_service.dart';
 import 'services/lock_screen_visibility_service.dart';
 import 'utils/talker.dart';
 import 'widgets/app_alert_dialog.dart';
+import 'widgets/rsa_key_prompts.dart';
 import 'widgets/app_virtual_keyboard.dart';
 import 'widgets/notification_overlay.dart';
 import 'widgets/custom_title_bar.dart';
@@ -367,6 +370,7 @@ class _TouchFishAppState extends State<TouchFishApp>
   bool _didShowStartupResetNotice = false;
   bool _didStartSavedSessionRestore = false;
   late bool _wasLoggedIn;
+  RsaKeyCheckResult? _pendingRestoreKeyCheck;
 
   @override
   void initState() {
@@ -479,13 +483,87 @@ class _TouchFishAppState extends State<TouchFishApp>
     await BackgroundPermissionService.instance.clearBackgroundServiceConfig();
   }
 
-  void _startSavedSessionRestoreIfNeeded() {
+  Future<void> _startSavedSessionRestoreIfNeeded() async {
     if (!widget.hasSavedSession || _didStartSavedSessionRestore) {
       return;
     }
 
     _didStartSavedSessionRestore = true;
-    unawaited(AuthState.instance.restoreSavedSession());
+
+    final navigatorContext = _router.routerDelegate.navigatorKey.currentContext;
+    if (navigatorContext == null || !navigatorContext.mounted) {
+      unawaited(AuthState.instance.restoreSavedSession());
+      return;
+    }
+
+    // RSA 密钥变更时先让用户决策，避免用旧密钥登录失败后无法提示。
+    final canRestore = await _verifyRsaKeyForSessionRestore(navigatorContext);
+    if (!canRestore) return;
+
+    final restored = await AuthState.instance.restoreSavedSession();
+    if (!restored || !mounted) return;
+
+    _maybePromptFirstConnectAfterRestore(navigatorContext);
+  }
+
+  /// 已保存会话恢复前的 RSA 密钥校验；返回 false 表示用户选择断开。
+  Future<bool> _verifyRsaKeyForSessionRestore(BuildContext context) async {
+    try {
+      final livePem = await TfApiClient.instance.fetchRsaPublicKeyPem();
+      final result = await RsaKeyTrustService.instance.checkKey(livePem);
+      result.log();
+      if (result.kind == RsaKeyCheckKind.changed) {
+        final replaced = await promptRsaKeyChanged(
+          context,
+          newSha: result.liveFingerprint!,
+          oldSha: result.savedFingerprint ?? '',
+        );
+        if (replaced) {
+          await RsaKeyTrustService.instance.saveKey(result.livePem!);
+          return true;
+        }
+        return false;
+      }
+      if (result.kind == RsaKeyCheckKind.firstTime) {
+        _pendingRestoreKeyCheck = result;
+      }
+      return true;
+    } catch (e, stackTrace) {
+      talker.warning(
+        'RSA key verification before session restore failed',
+        e,
+        stackTrace,
+      );
+      return true;
+    }
+  }
+
+  /// 恢复成功后若为首次连接，提示保存 RSA 密钥。
+  void _maybePromptFirstConnectAfterRestore(BuildContext context) {
+    final result = _pendingRestoreKeyCheck;
+    _pendingRestoreKeyCheck = null;
+    if (result == null ||
+        result.kind != RsaKeyCheckKind.firstTime ||
+        result.dismissed ||
+        result.livePem == null) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final choice = await promptRsaFirstConnect(
+        context,
+        sha: result.liveFingerprint!,
+      );
+      switch (choice) {
+        case RsaFirstConnectChoice.save:
+          await RsaKeyTrustService.instance.saveKey(result.livePem!);
+        case RsaFirstConnectChoice.dontSave:
+          await RsaKeyTrustService.instance.dismissKey();
+        case RsaFirstConnectChoice.disconnect:
+          await AuthState.instance.logout();
+      }
+    });
   }
 
   void _showStartupResetNoticeIfNeeded(BuildContext context) {

@@ -4,8 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
+import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/rsa_key_trust_service.dart';
+import '../services/server_branding_service.dart';
 import '../services/snackbar_service.dart';
+import '../widgets/rsa_key_prompts.dart';
 import '../widgets/server_selector.dart';
 import '../widgets/network_indicator.dart';
 import '../utils/talker.dart';
@@ -24,6 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   List<ConnectivityResult> _connectionStatus = [ConnectivityResult.none];
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  RsaKeyCheckResult? _pendingFirstConnectResult;
 
   @override
   void initState() {
@@ -35,6 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.text = AuthState.instance.rememberedPassword ?? '';
     _initConnectivity();
     _subscribeToConnectivityChanges();
+    unawaited(ServerBrandingService.instance.refresh());
   }
 
   Future<void> _initConnectivity() async {
@@ -88,11 +94,21 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _isLoading = true);
+
+    final keyOk = await _verifyRsaKeyBeforeLogin();
+    if (!mounted) return;
+    if (!keyOk) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
     final error = await AuthState.instance.login(username, password);
     if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (error == null) {
+      final shouldContinue = await _maybePromptFirstConnect();
+      if (!mounted || !shouldContinue) return;
       context.go(AppRoutes.main);
     } else {
       final msg = switch (error) {
@@ -103,6 +119,108 @@ class _LoginScreenState extends State<LoginScreen> {
       };
       TouchFishSnackbarService.instance.show(msg);
     }
+  }
+
+  /// 登录前校验 RSA 密钥：
+  /// - 密钥变更：弹警告，替换后继续或断开；
+  /// - 首次连接：记录结果，登录成功后弹保存提示。
+  /// 返回 false 表示用户选择断开，中止登录。
+  Future<bool> _verifyRsaKeyBeforeLogin() async {
+    try {
+      final livePem = await TfApiClient.instance.fetchRsaPublicKeyPem();
+      final result = await RsaKeyTrustService.instance.checkKey(livePem);
+      result.log();
+      if (result.kind == RsaKeyCheckKind.changed) {
+        return _promptKeyChanged(result);
+      }
+      if (result.kind == RsaKeyCheckKind.firstTime) {
+        _pendingFirstConnectResult = result;
+      }
+      return true;
+    } catch (e, stackTrace) {
+      talker.warning('RSA key verification before login failed', e, stackTrace);
+      return true;
+    }
+  }
+
+  /// 初次连接成功后的保存提示；返回 false 表示用户选择断开服务器连接。
+  Future<bool> _maybePromptFirstConnect() async {
+    final result = _pendingFirstConnectResult;
+    _pendingFirstConnectResult = null;
+    if (result == null ||
+        result.kind != RsaKeyCheckKind.firstTime ||
+        result.dismissed ||
+        result.livePem == null) {
+      return true;
+    }
+
+    final choice = await promptRsaFirstConnect(
+      context,
+      sha: result.liveFingerprint!,
+    );
+    if (!mounted) return false;
+
+    switch (choice) {
+      case RsaFirstConnectChoice.save:
+        await RsaKeyTrustService.instance.saveKey(result.livePem!);
+        return true;
+      case RsaFirstConnectChoice.dontSave:
+        await RsaKeyTrustService.instance.dismissKey();
+        return true;
+      case RsaFirstConnectChoice.disconnect:
+        await AuthState.instance.logout();
+        return false;
+    }
+  }
+
+  /// 密钥变更警告；返回 true 表示已用新密钥替换并继续登录。
+  Future<bool> _promptKeyChanged(RsaKeyCheckResult result) async {
+    final replaced = await promptRsaKeyChanged(
+      context,
+      newSha: result.liveFingerprint!,
+      oldSha: result.savedFingerprint ?? '',
+    );
+    if (!mounted) return false;
+    if (replaced) {
+      await RsaKeyTrustService.instance.saveKey(result.livePem!);
+      return true;
+    }
+    return false;
+  }
+
+  Widget _buildLoginLogo() {
+    final branding = ServerBrandingService.instance;
+    final logoUrl = branding.logoUrl;
+    if (logoUrl == null || logoUrl.isEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Image.asset(
+          'assets/logo.png',
+          width: 64,
+          height: 64,
+          fit: BoxFit.contain,
+        ),
+      );
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 64,
+        height: 64,
+        color: Colors.white,
+        padding: const EdgeInsets.all(6),
+        child: Image.network(
+          logoUrl,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => Image.asset(
+            'assets/logo.png',
+            width: 64,
+            height: 64,
+            fit: BoxFit.contain,
+          ),
+        ),
+      ),
+    );
   }
 
   void _register() {
@@ -204,7 +322,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.appName),
+        title: ListenableBuilder(
+          listenable: ServerBrandingService.instance,
+          builder: (context, _) {
+            final branding = ServerBrandingService.instance;
+            return Text(
+              branding.serverName ?? AppLocalizations.of(context)!.appName,
+            );
+          },
+        ),
         actions: [
           IconButton(
             onPressed: _openSettings,
@@ -225,22 +351,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Logo
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Image.asset(
-                          'assets/logo.png',
-                          width: 64,
-                          height: 64,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      Text(
-                        AppLocalizations.of(context)!.appName,
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                      // Logo + 服务器品牌标题（拉取完成后自动切换）
+                      ListenableBuilder(
+                        listenable: ServerBrandingService.instance,
+                        builder: (context, _) {
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildLoginLogo(),
+                              const SizedBox(height: 16),
+                              Text(
+                                ServerBrandingService.instance.serverName ??
+                                    AppLocalizations.of(context)!.appName,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 24),
 

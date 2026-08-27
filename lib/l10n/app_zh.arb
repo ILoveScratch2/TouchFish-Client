@@ -1496,5 +1496,54 @@
   "settingsDomainTrustLinkWarningDesc": "打开未经受信任域名的链接前进行警告",
   "settingsTrustedDomainsTitle": "信任域名",
   "settingsTrustedDomainsDesc": "每行一个域名，如 example.com 或 *.example.com。当前服务器域名始终受信任。",
-  "settingsTrustedDomainsReset": "恢复默认"
+  "settingsTrustedDomainsReset": "恢复默认",
+
+  "settingsRsaKeysTitle": "RSA 密钥管理",
+  "settingsRsaKeysDesc": "管理已保存的服务器 RSA 公钥，查看当前服务器的密钥 SHA",
+  "rsaKeyManagement": "RSA 密钥管理",
+  "rsaKeyManagementDescription": "管理已保存的服务器 RSA 公钥与密钥 SHA。首次连接时建议保存服务器密钥，之后每次连接都会校验密钥是否一致，防止中间人攻击。",
+  "rsaCurrentServerSection": "当前服务器",
+  "rsaSavedKeysSection": "已保存的密钥",
+  "rsaUnknownServer": "未知服务器",
+  "rsaSavedKeySha": "已保存密钥 SHA",
+  "rsaViewCurrentSha": "查看当前密钥 SHA",
+  "rsaSaveCurrentKey": "保存当前密钥",
+  "rsaSaveCurrentKeySuccess": "已保存当前服务器密钥。SHA: {sha}",
+  "@rsaSaveCurrentKeySuccess": {
+    "placeholders": {
+      "sha": {
+        "type": "String"
+      }
+    }
+  },
+  "rsaFetchFailed": "获取服务器 RSA 密钥失败，请检查网络连接",
+  "rsaNoSavedKeys": "尚未保存任何 RSA 密钥",
+  "rsaViewPublicKey": "查看公钥",
+  "rsaCopySha": "复制 SHA",
+  "rsaCopyPublicKey": "复制公钥",
+  "rsaDeleteKey": "删除密钥",
+  "rsaDeleteKeyConfirm": "确定要删除服务器 {authority} 的已保存 RSA 密钥吗？删除后将不再校验该服务器的密钥。",
+  "@rsaDeleteKeyConfirm": {
+    "placeholders": {
+      "authority": {
+        "type": "String"
+      }
+    }
+  },
+  "rsaCopied": "已复制",
+  "rsaPublicKey": "公钥",
+  "rsaKeySha": "密钥 SHA",
+  "rsaSaveKey": "保存密钥",
+  "rsaDontSave": "不保存",
+  "rsaDisconnectServer": "断开服务器连接",
+  "rsaFirstConnectTitle": "这似乎是你初次连接到该服务器，是否保存 RSA 加密密钥？",
+  "rsaFirstConnectMessage": "保存后，客户端将在每次连接时校验服务器密钥是否一致，防止中间人攻击。",
+  "rsaKeyChangedTitle": "警告：服务器 RSA 加密密钥变更",
+  "rsaNewKeySha": "新的 RSA 密钥的 SHA",
+  "rsaOldKeySha": "旧的 RSA 密钥的 SHA",
+  "rsaKeyChangedMessage": "请注意：MitM 攻击者可能通过篡改 RSA 密钥获取您与服务器间的通信，请向服务器管理员确认密钥变更！",
+  "rsaReplaceKey": "使用新密钥替换旧的",
+  "rsaInvalidPem": "无效的 RSA 公钥（PEM 格式）",
+  "rsaPemFieldLabel": "RSA 公钥 (PEM)",
+  "rsaPemFieldHint": "粘贴服务器 RSA 公钥（可选）。绑定后客户端将使用该密钥加密通信，不再从服务器拉取。"
 }

@@ -1533,5 +1533,54 @@
   "settingsDomainTrustLinkWarningDesc": "Warn before opening links from untrusted domains",
   "settingsTrustedDomainsTitle": "Trusted Domains",
   "settingsTrustedDomainsDesc": "One domain per line, e.g. example.com or *.example.com. The current server is always trusted.",
-  "settingsTrustedDomainsReset": "Reset to Default"
+  "settingsTrustedDomainsReset": "Reset to Default",
+
+  "settingsRsaKeysTitle": "RSA Key Management",
+  "settingsRsaKeysDesc": "Manage saved server RSA public keys and view the current server key SHA",
+  "rsaKeyManagement": "RSA Key Management",
+  "rsaKeyManagementDescription": "Manage saved server RSA public keys and key SHAs. Saving the server key on first connection is recommended; the client verifies the key on every connection to protect against man-in-the-middle attacks.",
+  "rsaCurrentServerSection": "Current Server",
+  "rsaSavedKeysSection": "Saved Keys",
+  "rsaUnknownServer": "Unknown server",
+  "rsaSavedKeySha": "Saved key SHA",
+  "rsaViewCurrentSha": "View Current Key SHA",
+  "rsaSaveCurrentKey": "Save Current Key",
+  "rsaSaveCurrentKeySuccess": "Current server key saved. SHA: {sha}",
+  "@rsaSaveCurrentKeySuccess": {
+    "placeholders": {
+      "sha": {
+        "type": "String"
+      }
+    }
+  },
+  "rsaFetchFailed": "Failed to fetch the server RSA key. Check your network connection.",
+  "rsaNoSavedKeys": "No RSA keys saved yet",
+  "rsaViewPublicKey": "View Public Key",
+  "rsaCopySha": "Copy SHA",
+  "rsaCopyPublicKey": "Copy Public Key",
+  "rsaDeleteKey": "Delete Key",
+  "rsaDeleteKeyConfirm": "Delete the saved RSA key for server {authority}? The key will no longer be verified after deletion.",
+  "@rsaDeleteKeyConfirm": {
+    "placeholders": {
+      "authority": {
+        "type": "String"
+      }
+    }
+  },
+  "rsaCopied": "Copied",
+  "rsaPublicKey": "Public Key",
+  "rsaKeySha": "Key SHA",
+  "rsaSaveKey": "Save Key",
+  "rsaDontSave": "Don't Save",
+  "rsaDisconnectServer": "Disconnect from Server",
+  "rsaFirstConnectTitle": "This appears to be your first connection to this server. Save the RSA encryption key?",
+  "rsaFirstConnectMessage": "Once saved, the client verifies the server key on every connection to protect against man-in-the-middle attacks.",
+  "rsaKeyChangedTitle": "Warning: Server RSA Encryption Key Changed",
+  "rsaNewKeySha": "New RSA key SHA",
+  "rsaOldKeySha": "Old RSA key SHA",
+  "rsaKeyChangedMessage": "Note: A MitM attacker could tamper with the RSA key to intercept communications between you and the server. Please confirm the key change with the server administrator!",
+  "rsaReplaceKey": "Replace with New Key",
+  "rsaInvalidPem": "Invalid RSA public key (PEM format)",
+  "rsaPemFieldLabel": "RSA Public Key (PEM)",
+  "rsaPemFieldHint": "Paste the server RSA public key (optional). Once bound, the client uses this key for encrypted communication and no longer fetches it from the server."
 }

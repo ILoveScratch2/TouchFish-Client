@@ -28,6 +28,7 @@ import '../services/search_engines.dart';
 import '../services/lock_service.dart';
 import '../services/lock_screen_visibility_service.dart';
 import 'connectivity_self_check_screen.dart';
+import 'rsa_key_management_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -263,6 +264,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       if (item.key == 'browserSearchEngine') return isAndroid;
       if (item.key == 'browserUserAgent') return isAndroid;
       if (item.key == 'browserMixedContent') return isAndroid;
+      if (item.key == 'launchInAppBrowser') return isAndroid;
       return true;
     }).toList();
     return ListView.builder(
@@ -1501,7 +1503,18 @@ class _SettingsScreenState extends State<SettingsScreen>
                 ),
               );
             } else if (item.key == 'launchInAppBrowser') {
+              if (kIsWeb || !Platform.isAndroid) {
+                return;
+              }
               context.push('/browser');
+            } else if (item.key == 'savedRsaKeys' ||
+                item.key == 'savedRsaKeysSecurity') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const RsaKeyManagementScreen(),
+                ),
+              );
             }
           },
         ),
@@ -2218,6 +2231,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsTrustedDomainsDesc;
       case 'settingsTrustedDomainsReset':
         return l10n.settingsTrustedDomainsReset;
+      case 'settingsRsaKeysTitle':
+        return l10n.settingsRsaKeysTitle;
+      case 'settingsRsaKeysDesc':
+        return l10n.settingsRsaKeysDesc;
       case 'settingsSeconds10':
         return l10n.settingsSeconds10;
       case 'settingsSeconds30':

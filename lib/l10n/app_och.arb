@@ -1476,5 +1476,54 @@
   "settingsDomainTrustLinkWarningDesc": "開啟不受信任網域的連結前進行警告",
   "settingsTrustedDomainsTitle": "信任網域",
   "settingsTrustedDomainsDesc": "每行一個網域，如 example.com 或 *.example.com。目前伺服器網域始終受信任。",
-  "settingsTrustedDomainsReset": "恢復預設"
+  "settingsTrustedDomainsReset": "恢復預設",
+
+  "settingsRsaKeysTitle": "RSA 密鑰管理",
+  "settingsRsaKeysDesc": "管理已保存之伺服器 RSA 公鑰，查閱當前伺服器之密鑰 SHA",
+  "rsaKeyManagement": "RSA 密鑰管理",
+  "rsaKeyManagementDescription": "管理已保存之伺服器 RSA 公鑰與密鑰 SHA。初次連接時建議保存伺服器密鑰，此後每次連接皆會校驗密鑰是否一致，以防中間人攻擊。",
+  "rsaCurrentServerSection": "當前伺服器",
+  "rsaSavedKeysSection": "已保存之密鑰",
+  "rsaUnknownServer": "未知伺服器",
+  "rsaSavedKeySha": "已保存密鑰 SHA",
+  "rsaViewCurrentSha": "查閱當前密鑰 SHA",
+  "rsaSaveCurrentKey": "保存當前密鑰",
+  "rsaSaveCurrentKeySuccess": "已保存當前伺服器密鑰。SHA: {sha}",
+  "@rsaSaveCurrentKeySuccess": {
+    "placeholders": {
+      "sha": {
+        "type": "String"
+      }
+    }
+  },
+  "rsaFetchFailed": "獲取伺服器 RSA 密鑰失敗，請檢查網路連接",
+  "rsaNoSavedKeys": "尚未保存任何 RSA 密鑰",
+  "rsaViewPublicKey": "查閱公鑰",
+  "rsaCopySha": "複製 SHA",
+  "rsaCopyPublicKey": "複製公鑰",
+  "rsaDeleteKey": "刪除密鑰",
+  "rsaDeleteKeyConfirm": "確定刪除伺服器 {authority} 之已保存 RSA 密鑰乎？刪除後將不再校驗該伺服器之密鑰。",
+  "@rsaDeleteKeyConfirm": {
+    "placeholders": {
+      "authority": {
+        "type": "String"
+      }
+    }
+  },
+  "rsaCopied": "已複製",
+  "rsaPublicKey": "公鑰",
+  "rsaKeySha": "密鑰 SHA",
+  "rsaSaveKey": "保存密鑰",
+  "rsaDontSave": "不保存",
+  "rsaDisconnectServer": "斷開伺服器連接",
+  "rsaFirstConnectTitle": "此似為初次連接此伺服器，是否保存 RSA 加密密鑰？",
+  "rsaFirstConnectMessage": "保存後，客戶端將於每次連接時校驗伺服器密鑰是否一致，以防中間人攻擊。",
+  "rsaKeyChangedTitle": "警告：伺服器 RSA 加密密鑰已變更",
+  "rsaNewKeySha": "新 RSA 密鑰之 SHA",
+  "rsaOldKeySha": "舊 RSA 密鑰之 SHA",
+  "rsaKeyChangedMessage": "請注意：MitM 攻擊者可能藉篡改 RSA 密鑰以竊取您與伺服器間之通信，請向伺服器管理員確認密鑰變更！",
+  "rsaReplaceKey": "以新密鑰替換舊者",
+  "rsaInvalidPem": "無效之 RSA 公鑰（PEM 格式）",
+  "rsaPemFieldLabel": "RSA 公鑰 (PEM)",
+  "rsaPemFieldHint": "粘貼伺服器 RSA 公鑰（可選）。綁定後客戶端將使用此密鑰加密通信，不再從伺服器拉取。"
 }

@@ -1,12 +1,17 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../constants/app_constants.dart';
 import '../services/api/tf_api_client.dart';
+import '../services/api/tf_crypto.dart';
 import '../services/auth_state.dart';
 import '../services/chat_ws_service.dart';
 import '../services/domain_trust_service.dart';
+import '../services/rsa_key_trust_service.dart';
+import '../services/server_branding_service.dart';
+import 'code_block.dart';
 
 class ServerInfo {
   final String displayName;
@@ -189,6 +194,7 @@ class _ServerSelectorState extends State<ServerSelector> {
           await _saveServers();
           TfApiClient.instance.invalidateCache();
           DomainTrustService.instance.refreshServerHost();
+          unawaited(ServerBrandingService.instance.refresh());
           _probeSelectedServer();
           if (context.mounted) Navigator.pop(context);
         },
@@ -204,6 +210,7 @@ class _ServerSelectorState extends State<ServerSelector> {
           await _saveServers();
           TfApiClient.instance.invalidateCache();
           DomainTrustService.instance.refreshServerHost();
+          unawaited(ServerBrandingService.instance.refresh());
           _probeSelectedServer();
         },
         onEdit: (index, server) async {
@@ -216,6 +223,7 @@ class _ServerSelectorState extends State<ServerSelector> {
           if (index == _selectedIndex) {
             TfApiClient.instance.invalidateCache();
             DomainTrustService.instance.refreshServerHost();
+            unawaited(ServerBrandingService.instance.refresh());
             _probeSelectedServer();
           }
         },
@@ -230,6 +238,7 @@ class _ServerSelectorState extends State<ServerSelector> {
             await _saveServers();
             TfApiClient.instance.invalidateCache();
             DomainTrustService.instance.refreshServerHost();
+            unawaited(ServerBrandingService.instance.refresh());
             _probeSelectedServer();
           }
         },
@@ -335,16 +344,28 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
     _selectedIndex = widget.selectedIndex;
   }
 
+  /// 服务器用于 RSA 密钥寻址的 authority（与解析后的 baseUrl 保持一致）。
+  String _serverAuthority(ServerInfo server) {
+    final port = server.apiPort.trim().isEmpty
+        ? AppConstants.defaultApiPort.toString()
+        : server.apiPort.trim();
+    final uri = Uri.tryParse('http://${server.address.trim()}:$port');
+    if (uri != null && uri.hasAuthority) return uri.authority;
+    return '${server.address.trim()}:$port';
+  }
+
   void _showAddDialog() {
     final displayNameController = TextEditingController();
     final addressController = TextEditingController();
     final apiPortController = TextEditingController();
     final tcpPortController = TextEditingController();
+    final rsaPemController = TextEditingController();
     final l10n = AppLocalizations.of(context)!;
 
     bool useHttps = false;
     bool tryWss = AppConstants.defaultTryWss;
     bool autoDetectTcpPort = AppConstants.defaultAutoDetectTcpPort;
+    bool rsaPemValid = true;
     String? apiPortError;
     String? tcpPortError;
 
@@ -480,6 +501,11 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                     },
                     contentPadding: EdgeInsets.zero,
                   ),
+                  const SizedBox(height: 12),
+                  _RsaPemField(
+                    controller: rsaPemController,
+                    onValidityChanged: (valid) => rsaPemValid = valid,
+                  ),
                 ],
               ),
             ),
@@ -489,13 +515,14 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                 child: Text(l10n.serverCancel),
               ),
               FilledButton(
-                onPressed: () {
+                onPressed: () async {
                   final displayName = displayNameController.text.trim();
                   final address = addressController.text.trim();
                   final apiPort = apiPortController.text.trim();
                   final tcpPort = autoDetectTcpPort
                       ? ''
                       : tcpPortController.text.trim();
+                  final rsaPem = rsaPemController.text.trim();
                   if (!validatePort(apiPort)) {
                     setDialogState(
                       () => apiPortError = l10n.serverErrorInvalidPort,
@@ -516,6 +543,9 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                     });
                     return;
                   }
+                  if (rsaPem.isNotEmpty && !rsaPemValid) {
+                    return;
+                  }
 
                   if (displayName.isNotEmpty || address.isNotEmpty) {
                     Navigator.pop(context);
@@ -528,6 +558,12 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                       tryWss: tryWss,
                       autoDetectTcpPort: autoDetectTcpPort,
                     );
+                    if (rsaPem.isNotEmpty && address.isNotEmpty) {
+                      await RsaKeyTrustService.instance.saveKey(
+                        rsaPem,
+                        _serverAuthority(server),
+                      );
+                    }
                     setState(() {
                       _servers.add(server);
                       _selectedIndex = _servers.length - 1;
@@ -549,16 +585,33 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
     final displayNameController = TextEditingController(
       text: server.displayName,
     );
+    final rsaPemController = TextEditingController();
     final l10n = AppLocalizations.of(context)!;
+    final authority = _serverAuthority(server);
 
     bool useHttps = server.useHttps;
     bool tryWss = server.tryWss;
     bool autoDetectTcpPort = server.autoDetectTcpPort;
+    bool rsaPemValid = true;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
+          Future<void> loadSavedPem() async {
+            final saved = await RsaKeyTrustService.instance.savedKeyFor(
+              authority,
+            );
+            if (saved != null && saved.trim().isNotEmpty) {
+              final normalized = TfCrypto.normalizePem(saved);
+              if (context.mounted && rsaPemController.text.trim().isEmpty) {
+                setDialogState(() => rsaPemController.text = normalized);
+              }
+            }
+          }
+
+          unawaited(loadSavedPem());
+
           return AlertDialog(
             title: Text(l10n.serverEdit),
             content: SingleChildScrollView(
@@ -641,6 +694,11 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                     },
                     contentPadding: EdgeInsets.zero,
                   ),
+                  const SizedBox(height: 12),
+                  _RsaPemField(
+                    controller: rsaPemController,
+                    onValidityChanged: (valid) => rsaPemValid = valid,
+                  ),
                 ],
               ),
             ),
@@ -650,8 +708,12 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                 child: Text(l10n.serverCancel),
               ),
               FilledButton(
-                onPressed: () {
+                onPressed: () async {
                   final displayName = displayNameController.text.trim();
+                  final rsaPem = rsaPemController.text.trim();
+                  if (rsaPem.isNotEmpty && !rsaPemValid) {
+                    return;
+                  }
                   Navigator.pop(context);
                   final updated = server.copyWith(
                     displayName: displayName.isEmpty
@@ -661,6 +723,14 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                     tryWss: tryWss,
                     autoDetectTcpPort: autoDetectTcpPort,
                   );
+                  if (rsaPem.isEmpty) {
+                    await RsaKeyTrustService.instance.deleteKey(authority);
+                  } else if (rsaPemValid) {
+                    await RsaKeyTrustService.instance.saveKey(
+                      rsaPem,
+                      authority,
+                    );
+                  }
                   setState(() => _servers[index] = updated);
                   widget.onEdit(index, updated);
                 },
@@ -823,6 +893,96 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
           ],
         );
       },
+    );
+  }
+}
+
+/// 服务器配置中的可选 RSA 公钥绑定输入框（不通过服务器拉取）。
+class _RsaPemField extends StatefulWidget {
+  final TextEditingController controller;
+  final ValueChanged<bool> onValidityChanged;
+
+  const _RsaPemField({
+    required this.controller,
+    required this.onValidityChanged,
+  });
+
+  @override
+  State<_RsaPemField> createState() => _RsaPemFieldState();
+}
+
+class _RsaPemFieldState extends State<_RsaPemField> {
+  bool _valid = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _valid = _isValidPem(widget.controller.text);
+    widget.onValidityChanged(_valid);
+  }
+
+  static bool _isValidPem(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return true;
+    try {
+      TfCrypto.parseRsaPublicKey(trimmed);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _onChanged(String text) {
+    setState(() => _valid = _isValidPem(text));
+    widget.onValidityChanged(_valid);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    String? sha;
+    final text = widget.controller.text.trim();
+    if (text.isNotEmpty && _valid) {
+      try {
+        sha = TfCrypto.rsaPublicKeyFingerprint(text);
+      } catch (_) {
+        sha = null;
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: widget.controller,
+          minLines: 3,
+          maxLines: 6,
+          style: const TextStyle(
+            fontFamily: codeFontFamily,
+            fontFamilyFallback: codeFontFamilyFallback,
+            fontSize: 12,
+          ),
+          decoration: InputDecoration(
+            labelText: l10n.rsaPemFieldLabel,
+            hintText: l10n.rsaPemFieldHint,
+            border: const OutlineInputBorder(),
+            errorText: text.isNotEmpty && !_valid ? l10n.rsaInvalidPem : null,
+            alignLabelWithHint: true,
+          ),
+          onChanged: _onChanged,
+        ),
+        if (sha != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            '${l10n.rsaKeySha}:',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          CodeBlock(text: sha, fontSize: 11),
+        ],
+      ],
     );
   }
 }
