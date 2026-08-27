@@ -14,12 +14,18 @@ class MediaProxyService {
 
   static const _maxCacheBytes = 2 * 1024 * 1024 * 1024;
   static const _outboundTimeout = Duration(seconds: 60);
+
+  /// 流式转发时远端连续空闲超过该时长即中断（防远端挂死导致永久等待）。
+  static const _streamIdleTimeout = Duration(seconds: 60);
   HttpServer? _server;
   HttpClient _client = HttpClient()
     ..connectionTimeout = const Duration(seconds: 30);
   Future<void>? _starting;
   final Map<String, _ChunkCache> _chunkCaches = {};
-  final Map<String, Future<void>> _writeChains = {};
+
+  /// 缓存文件写入锁：只串行化「检查连续性 + 追加写入 + 更新 meta」这几步，
+  /// 响应转发在锁外进行。播放器的探测/seek/moov 请求并发处理，互不阻塞。
+  final Map<String, Future<void>> _fileLocks = {};
 
   bool get isSupported => true;
   bool get isRunning => _server != null;
@@ -92,62 +98,61 @@ class MediaProxyService {
   }
 
   Future<void> _handle(HttpRequest request) async {
-    if (request.uri.path == '/health') {
-      request.response.write('OK');
-      await request.response.close();
-      return;
-    }
-    final rawUrl = request.uri.queryParameters['url'];
-    final remoteUri = rawUrl == null ? null : Uri.tryParse(rawUrl);
-    if (request.uri.path != '/media' ||
-        remoteUri == null ||
-        !const {'http', 'https'}.contains(remoteUri.scheme)) {
-      request.response.statusCode = HttpStatus.badRequest;
-      await request.response.close();
-      return;
-    }
+    try {
+      if (request.uri.path == '/health') {
+        request.response.write('OK');
+        await request.response.close();
+        return;
+      }
+      final rawUrl = request.uri.queryParameters['url'];
+      final remoteUri = rawUrl == null ? null : Uri.tryParse(rawUrl);
+      if (request.uri.path != '/media' ||
+          remoteUri == null ||
+          !const {'http', 'https'}.contains(remoteUri.scheme)) {
+        request.response.statusCode = HttpStatus.badRequest;
+        await request.response.close();
+        return;
+      }
 
-    final range = request.headers.value(HttpHeaders.rangeHeader);
-    if (range == null) {
-      await _handleFullRequest(request, remoteUri);
-    } else {
-      await _handleRangeRequest(request, remoteUri, range);
+      final range = request.headers.value(HttpHeaders.rangeHeader);
+      if (range == null) {
+        await _handleFullRequest(request, remoteUri);
+      } else {
+        await _handleRangeRequest(request, remoteUri, range);
+      }
+    } catch (error, stackTrace) {
+      talker.error('Media proxy request failed', error, stackTrace);
+      try {
+        request.response.statusCode = HttpStatus.badGateway;
+        await request.response.close();
+      } catch (_) {}
     }
   }
 
   Future<void> _handleFullRequest(HttpRequest request, Uri remoteUri) async {
     final cacheKey = _cacheKeyFor(remoteUri);
-    await _serializeWrite(cacheKey, () async {
-      final cache = await _getOrCreateChunkCache(cacheKey);
-      if (cache.isComplete && cache.cachedFilePath != null) {
-        final file = File(cache.cachedFilePath!);
-        if (await file.exists()) {
-          final fileSize = await file.length();
-          final response = request.response;
-          response.headers.contentType = ContentType.parse(
-            cache.contentType ?? 'application/octet-stream',
-          );
-          response.headers.contentLength = fileSize;
-          response.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
-          response.headers.set(
-            HttpHeaders.cacheControlHeader,
-            'public, max-age=31536000',
-          );
-          await response.addStream(file.openRead());
-          await response.close();
-          return;
-        }
-      }
-      await _streamAndCacheFull(request, remoteUri, cacheKey);
-    });
-  }
-
-  Future<void> _streamAndCacheFull(
-    HttpRequest request,
-    Uri remoteUri,
-    String cacheKey,
-  ) async {
     final cache = await _getOrCreateChunkCache(cacheKey);
+    if (cache.isComplete && cache.cachedFilePath != null) {
+      final file = File(cache.cachedFilePath!);
+      if (await file.exists()) {
+        final fileSize = await file.length();
+        final response = request.response;
+        response.headers.contentType = ContentType.parse(
+          cache.contentType ?? 'application/octet-stream',
+        );
+        response.headers.contentLength = fileSize;
+        response.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
+        response.headers.set(
+          HttpHeaders.cacheControlHeader,
+          'public, max-age=31536000',
+        );
+        await response.addStream(file.openRead());
+        await response.close();
+        return;
+      }
+    }
+    // 无 Range 的全量请求直接透传远端：不写缓存，避免与并发 Range 请求的
+    // 追加写入交错损坏缓存文件（播放器探测/seek 均使用 Range，不受影响）。
     final outbound = await _openOutbound('GET', remoteUri);
     final remote = await outbound.close();
     final response = request.response;
@@ -163,59 +168,8 @@ class MediaProxyService {
       final value = remote.headers.value(header);
       if (value != null) response.headers.set(header, value);
     }
-
-    final shouldCache = remote.statusCode == HttpStatus.ok &&
-        remote.contentLength > 0 &&
-        remote.contentLength <= _maxCacheBytes &&
-        _isMedia(remote.headers.contentType);
-
-    if (!shouldCache) {
-      await response.addStream(remote);
-      await response.close();
-      return;
-    }
-
-    // tee：边下载边把数据发给客户端，首字节立即到达，播放器即可起播；
-    // 客户端断开（response.done）时提前终止下载，避免后台空转。
-    final file = File(cache.cachedFilePath!);
-    final sink = file.openWrite();
-    var receivedLength = 0;
-    var sentAny = false;
-    var clientGone = false;
-    unawaited(response.done.then((_) => clientGone = true));
-    try {
-      await for (final chunk in remote) {
-        sink.add(chunk);
-        receivedLength += chunk.length;
-        response.add(chunk);
-        sentAny = true;
-        if (clientGone) break;
-      }
-      await sink.close();
-      // 客户端断开（clientGone）时不落 complete，避免把不完整文件当完整缓存。
-      if (!clientGone && receivedLength > 0) {
-        cache.contentType = remote.headers.contentType?.value;
-        cache.totalSize = receivedLength;
-        cache.markComplete();
-        await _writeMeta(cacheKey, cache);
-        unawaited(_trimCache());
-      }
-      await response.close();
-    } catch (e) {
-      await sink.close();
-      if (!sentAny) {
-        talker.error('Media proxy cache full write failed', e);
-        try {
-          response.statusCode = HttpStatus.internalServerError;
-          await response.close();
-        } catch (_) {}
-      } else {
-        talker.error('Media proxy cache write interrupted', e);
-        try {
-          await response.close();
-        } catch (_) {}
-      }
-    }
+    await response.addStream(remote.timeout(_streamIdleTimeout));
+    await response.close();
   }
 
   Future<void> _handleRangeRequest(
@@ -231,17 +185,15 @@ class MediaProxyService {
     }
 
     final cacheKey = _cacheKeyFor(remoteUri);
-    await _serializeWrite(cacheKey, () async {
-      final cache = await _getOrCreateChunkCache(cacheKey);
-      if (cache.isComplete && cache.cachedFilePath != null) {
-        final file = File(cache.cachedFilePath!);
-        if (await file.exists()) {
-          await _serveSlice(request, cache, file, range);
-          return;
-        }
+    final cache = await _getOrCreateChunkCache(cacheKey);
+    if (cache.isComplete && cache.cachedFilePath != null) {
+      final file = File(cache.cachedFilePath!);
+      if (await file.exists()) {
+        await _serveSlice(request, cache, file, range);
+        return;
       }
-      await _fetchRangeAndCache(request, remoteUri, cacheKey, range);
-    });
+    }
+    await _fetchRangeAndCache(request, remoteUri, cacheKey, range);
   }
 
   Future<void> _fetchRangeAndCache(
@@ -283,7 +235,7 @@ class MediaProxyService {
         cache.cachedFilePath != null;
 
     if (!shouldCache) {
-      await response.addStream(remote);
+      await response.addStream(remote.timeout(_streamIdleTimeout));
       await response.close();
       return;
     }
@@ -292,30 +244,38 @@ class MediaProxyService {
     var shouldCacheThis = true;
     var sentAny = false;
     try {
-      if (!await file.exists()) {
-        await file.create(recursive: true);
-        cache.totalSize = totalSize;
-      } else if (await file.length() != range.start) {
-        // 非连续分块不写入缓存
-        shouldCacheThis = false;
-      }
+      // 连续性检查在锁内完成：并发请求只有当前文件长度恰好等于
+      // 本请求起始偏移时才允许追加，避免乱序分块写坏缓存。
+      shouldCacheThis = await _withFileWriteLock(cacheKey, () async {
+        if (!await file.exists()) {
+          await file.create(recursive: true);
+          cache.totalSize = totalSize;
+        } else if (await file.length() != range.start) {
+          return false;
+        }
+        return true;
+      });
+
       if (shouldCacheThis) {
         final raf = await file.open(mode: FileMode.append);
         var clientGone = false;
         unawaited(response.done.then((_) => clientGone = true));
         try {
-          await for (final chunk in remote) {
-            await raf.writeFrom(chunk);
+          await for (final chunk in remote.timeout(_streamIdleTimeout)) {
+            // 追加写入走写锁（append 模式 + 锁内连续性保证），转发在锁外。
+            await _withFileWriteLock(cacheKey, () => raf.writeFrom(chunk));
             response.add(chunk);
             sentAny = true;
             if (clientGone) break;
           }
-          cache.contentType = remote.headers.contentType?.value;
-          cache.downloadedSize = await raf.length();
-          if (cache.downloadedSize >= totalSize) {
-            cache.markComplete();
-            await _writeMeta(cacheKey, cache);
-          }
+          await _withFileWriteLock(cacheKey, () async {
+            cache.contentType = remote.headers.contentType?.value;
+            cache.downloadedSize = await raf.length();
+            if (cache.downloadedSize >= totalSize) {
+              cache.markComplete();
+              await _writeMeta(cacheKey, cache);
+            }
+          });
         } finally {
           await raf.close();
         }
@@ -338,7 +298,7 @@ class MediaProxyService {
 
     // 未写入缓存时，数据尚未转发（流被上面消耗）需重新拉取，或已转发部分数据
     if (!sentAny) {
-      await response.addStream(remote);
+      await response.addStream(remote.timeout(_streamIdleTimeout));
     }
     await response.close();
   }
@@ -528,24 +488,18 @@ class MediaProxyService {
     }
   }
 
-  Future<void> _serializeWrite(
-    String key,
-    Future<void> Function() task,
-  ) async {
-    final previous = _writeChains[key];
-    final chained = (previous ?? Future<void>.value())
-        .then((_) => task())
-        .onError((error, stackTrace) {
-      talker.error('Media proxy cache write failed', error, stackTrace);
-    });
-    _writeChains[key] = chained;
-    try {
-      await chained;
-    } finally {
-      if (identical(_writeChains[key], chained)) {
-        _writeChains.remove(key);
-      }
-    }
+  /// 缓存文件写入互斥（按 cacheKey 细粒度）：只串行化「检查连续性 +
+  /// 追加写入 + 更新 meta」，响应转发在锁外并发进行，播放器的探测/seek
+  /// 请求不会被一个大文件下载阻塞。
+  Future<T> _withFileWriteLock<T>(String key, Future<T> Function() task) {
+    final previous = _fileLocks[key] ?? Future<void>.value();
+    final result = previous.then((_) => task());
+    // 链上吞掉错误，保证后续等待者不被前一个失败拖死。
+    _fileLocks[key] = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace __) {},
+    );
+    return result;
   }
 
   Future<int> cacheSize() async {
@@ -561,7 +515,7 @@ class MediaProxyService {
 
   Future<void> clearCache() async {
     _chunkCaches.clear();
-    _writeChains.clear();
+    _fileLocks.clear();
     final directory = await _cacheDirectory();
     if (await directory.exists()) {
       await directory.delete(recursive: true);
@@ -572,7 +526,7 @@ class MediaProxyService {
     final server = _server;
     _server = null;
     _chunkCaches.clear();
-    _writeChains.clear();
+    _fileLocks.clear();
     await server?.close(force: true);
   }
 }

@@ -179,5 +179,53 @@ void main() {
       expect(healthMs, lessThan(500));
       expect(healthMs, lessThan(slowMs));
     });
+
+    test('a stalled probe request does not block concurrent range requests',
+        () async {
+      // 回归用例：播放器先发 Range: bytes=0- 探测并因等待索引而停止读取
+      // （TCP 背压），随后发尾部 Range 读取 moov。旧实现把同一 URL 的请求
+      // 串行排队，尾部请求永远等不到 → 视频卡 0:00。
+      const totalBytes = 16 * 1024 * 1024;
+      final source = await startSlowSource(
+        totalBytes: totalBytes,
+        chunkBytes: 512 * 1024,
+        chunkDelay: const Duration(milliseconds: 10),
+      );
+      addTearDown(() => source.close(force: true));
+
+      final proxyUrl = await MediaProxyService.instance
+          .resolveUrl('http://127.0.0.1:${source.port}/video.mp4');
+      final client = HttpClient();
+      addTearDown(() => client.close(force: true));
+
+      // A：探测请求，收到响应头后立即 pause（连接保持打开、不再读数据），
+      // 制造背压让代理的下载挂起。
+      final aRequest = await client.getUrl(Uri.parse(proxyUrl));
+      aRequest.headers.set(HttpHeaders.rangeHeader, 'bytes=0-');
+      final aResponse = await aRequest.close();
+      expect(aResponse.statusCode, HttpStatus.partialContent);
+      final aSub = aResponse.listen((_) {});
+      aSub.pause();
+      addTearDown(() => aSub.cancel());
+
+      // B：并发请求文件尾部 64KB（ffmpeg 读取 moov 索引的典型请求）。
+      final bStart = totalBytes - 64 * 1024;
+      final bSw = Stopwatch()..start();
+      final bFuture = () async {
+        final bRequest = await client.getUrl(Uri.parse(proxyUrl));
+        bRequest.headers.set(HttpHeaders.rangeHeader, 'bytes=$bStart-');
+        final bResponse = await bRequest.close();
+        expect(bResponse.statusCode, HttpStatus.partialContent);
+        final received = await bResponse.fold<int>(
+          0,
+          (sum, chunk) => sum + chunk.length,
+        );
+        expect(received, 64 * 1024);
+        return bSw.elapsedMilliseconds;
+      }();
+      final bMs = await bFuture.timeout(const Duration(seconds: 15));
+      // 若被 A 的串行链阻塞，B 会在超时后失败；正常并发下应瞬时完成。
+      expect(bMs, lessThan(5000));
+    });
   });
 }
