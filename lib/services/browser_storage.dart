@@ -75,6 +75,54 @@ class BrowserStorage {
   Future<List<Map<String, dynamic>>> getHistory() async =>
       _decode((await _prefs).getString(kHistoryKey));
 
+  /// 返回 [cutoff] 之前访问记录的 URL 列表（用于按时间清除历史）。
+  Future<List<String>> historyUrlsBefore(DateTime cutoff) async {
+    final history = await getHistory();
+    final cutoffMs = cutoff.millisecondsSinceEpoch;
+    return history
+        .where((h) {
+          final visitedAt = h['visitedAt'];
+          return visitedAt is int && visitedAt < cutoffMs;
+        })
+        .map((h) => (h['url'] ?? '') as String)
+        .where((url) => url.isNotEmpty)
+        .toList();
+  }
+
+  /// 返回 [cutoff] 之前访问记录的唯一域名列表（用于按时间清除 Cookie）。
+  Future<List<String>> historyDomainsBefore(DateTime cutoff) async {
+    final urls = await historyUrlsBefore(cutoff);
+    final domains = <String>{};
+    for (final url in urls) {
+      final host = Uri.tryParse(url)?.host;
+      if (host != null && host.isNotEmpty) domains.add(host);
+    }
+    return domains.toList();
+  }
+
+  /// 删除 [cutoff] 之前的历史记录；[cutoff] 为 null 时清空全部。
+  Future<void> clearHistoryBefore(DateTime? cutoff) async {
+    final prefs = await _prefs;
+    if (cutoff == null) {
+      await prefs.remove(kHistoryKey);
+      return;
+    }
+    final cutoffMs = cutoff.millisecondsSinceEpoch;
+    final history = _decode(prefs.getString(kHistoryKey))
+      ..removeWhere((h) {
+        final visitedAt = h['visitedAt'];
+        return visitedAt is int && visitedAt < cutoffMs;
+      });
+    await prefs.setString(kHistoryKey, jsonEncode(history));
+  }
+
+  Future<void> removeHistoryEntry(String url) async {
+    final prefs = await _prefs;
+    final history = _decode(prefs.getString(kHistoryKey))
+      ..removeWhere((h) => h['url'] == url);
+    await prefs.setString(kHistoryKey, jsonEncode(history));
+  }
+
   Future<void> recordVisit(String url, String title) async {
     final prefs = await _prefs;
     final history = _decode(prefs.getString(kHistoryKey))

@@ -12,6 +12,9 @@ class BrowserTab {
   int progress = 0;
   bool loading = false;
   bool failed = false;
+
+  /// 主 frame 加载失败时的错误描述
+  String? errorDescription;
   InAppWebViewController? controller;
   final FindInteractionController findController;
 
@@ -97,6 +100,7 @@ class BrowserSession {
     tab.loading = false;
     tab.progress = 0;
     tab.failed = false;
+    tab.errorDescription = null;
     tab.themeColor = null;
   }
 

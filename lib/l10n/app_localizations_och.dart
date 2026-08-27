@@ -451,6 +451,72 @@ class AppLocalizationsOch extends AppLocalizations {
   String get browserExitBrowser => '退瀏覽器';
 
   @override
+  String get browserClearDataTitle => '清除瀏覽數據';
+
+  @override
+  String get browserClearDataDesc => '選時段與清除之數據種類';
+
+  @override
+  String get browserClearDataRangeHour => '近 1 時';
+
+  @override
+  String get browserClearDataRangeDay => '近 24 時';
+
+  @override
+  String get browserClearDataRangeWeek => '近 7 日';
+
+  @override
+  String get browserClearDataRangeAll => '全時';
+
+  @override
+  String get browserClearDataTypeHistory => '瀏覽史錄';
+
+  @override
+  String get browserClearDataTypeCookies => 'Cookie 與站點數據';
+
+  @override
+  String get browserClearDataTypeCache => '緩存文件';
+
+  @override
+  String get browserClearDataCookiesWarning => '清 Cookie 會使部分站點登出';
+
+  @override
+  String get browserClearDataConfirm => '清除';
+
+  @override
+  String get browserClearDataDone => '瀏覽數據已清';
+
+  @override
+  String get browserHistorySearchHint => '搜史錄';
+
+  @override
+  String get browserBookmarksSearchHint => '搜書籤';
+
+  @override
+  String get browserNoSearchResults => '無所獲';
+
+  @override
+  String get browserDeleteEntry => '刪除';
+
+  @override
+  String get browserHistoryToday => '今日';
+
+  @override
+  String get browserHistoryYesterday => '昨日';
+
+  @override
+  String get browserNewTabRecent => '近訪';
+
+  @override
+  String get browserNewTabOpenBookmarks => '書籤';
+
+  @override
+  String get browserNewTabOpenHistory => '史錄';
+
+  @override
+  String get browserNewTabSearchPlaceholder => '搜或入址';
+
+  @override
   String get settingsBrowserUserAgentTitle => '定製 User-Agent';
 
   @override

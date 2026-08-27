@@ -970,6 +970,138 @@ abstract class AppLocalizations {
   /// **'Exit browser'**
   String get browserExitBrowser;
 
+  /// No description provided for @browserClearDataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear browsing data'**
+  String get browserClearDataTitle;
+
+  /// No description provided for @browserClearDataDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a time range and the data types to clear'**
+  String get browserClearDataDesc;
+
+  /// No description provided for @browserClearDataRangeHour.
+  ///
+  /// In en, this message translates to:
+  /// **'Last hour'**
+  String get browserClearDataRangeHour;
+
+  /// No description provided for @browserClearDataRangeDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 24 hours'**
+  String get browserClearDataRangeDay;
+
+  /// No description provided for @browserClearDataRangeWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get browserClearDataRangeWeek;
+
+  /// No description provided for @browserClearDataRangeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get browserClearDataRangeAll;
+
+  /// No description provided for @browserClearDataTypeHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Browsing history'**
+  String get browserClearDataTypeHistory;
+
+  /// No description provided for @browserClearDataTypeCookies.
+  ///
+  /// In en, this message translates to:
+  /// **'Cookies and site data'**
+  String get browserClearDataTypeCookies;
+
+  /// No description provided for @browserClearDataTypeCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Cached files'**
+  String get browserClearDataTypeCache;
+
+  /// No description provided for @browserClearDataCookiesWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Clearing cookies will sign you out of some websites'**
+  String get browserClearDataCookiesWarning;
+
+  /// No description provided for @browserClearDataConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get browserClearDataConfirm;
+
+  /// No description provided for @browserClearDataDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Browsing data cleared'**
+  String get browserClearDataDone;
+
+  /// No description provided for @browserHistorySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search history'**
+  String get browserHistorySearchHint;
+
+  /// No description provided for @browserBookmarksSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search bookmarks'**
+  String get browserBookmarksSearchHint;
+
+  /// No description provided for @browserNoSearchResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No results found'**
+  String get browserNoSearchResults;
+
+  /// No description provided for @browserDeleteEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get browserDeleteEntry;
+
+  /// No description provided for @browserHistoryToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get browserHistoryToday;
+
+  /// No description provided for @browserHistoryYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get browserHistoryYesterday;
+
+  /// No description provided for @browserNewTabRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get browserNewTabRecent;
+
+  /// No description provided for @browserNewTabOpenBookmarks.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmarks'**
+  String get browserNewTabOpenBookmarks;
+
+  /// No description provided for @browserNewTabOpenHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get browserNewTabOpenHistory;
+
+  /// No description provided for @browserNewTabSearchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search or enter address'**
+  String get browserNewTabSearchPlaceholder;
+
   /// No description provided for @settingsBrowserUserAgentTitle.
   ///
   /// In en, this message translates to:

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -12,10 +13,12 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/settings_service.dart';
+import '../routes/app_routes.dart';
 import '../services/browser_service.dart';
 import '../services/browser_session.dart';
 import '../services/browser_storage.dart';
 import '../services/domain_trust_service.dart';
+import '../services/media_proxy_service.dart';
 import '../services/search_engines.dart';
 import '../utils/talker.dart';
 
@@ -72,6 +75,10 @@ class _BrowserScreenState extends State<BrowserScreen> {
 
   bool? _bookmarked;
   bool _allowPop = false;
+
+  /// 新标签页「最近访问」数据源。
+  final Future<List<Map<String, dynamic>>> _recentVisitsFuture =
+      BrowserStorage.instance.getHistory();
 
   BrowserSession get _session => BrowserSession.instance;
 
@@ -341,113 +348,186 @@ class _BrowserScreenState extends State<BrowserScreen> {
     );
   }
 
-  Future<void> _showBookmarksSheet() async {
-    final bookmarks = await BrowserStorage.instance.getBookmarks();
-    if (!mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: bookmarks.isEmpty
-            ? Padding(
-                padding: const EdgeInsets.all(32),
-                child: Center(child: Text(l10n.browserBookmarksEmpty)),
-              )
-            : ListView.builder(
-                shrinkWrap: true,
-                itemCount: bookmarks.length,
-                itemBuilder: (context, i) {
-                  final bookmark = bookmarks[i];
-                  final url = (bookmark['url'] ?? '') as String;
-                  final title = (bookmark['title'] ?? url) as String;
-                  return ListTile(
-                    leading: const Icon(Icons.bookmark_rounded),
-                    title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    subtitle: Text(url, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded),
-                      tooltip: l10n.browserRemoveBookmark,
-                      onPressed: () async {
-                        await BrowserStorage.instance.removeBookmark(url);
-                        if (sheetContext.mounted) {
-                          Navigator.of(sheetContext).pop();
-                        }
-                        if (mounted) {
-                          _refreshBookmarkState();
-                          unawaited(_showBookmarksSheet());
-                        }
-                      },
-                    ),
-                    onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      _openNewTab(url);
-                    },
-                  );
-                },
-              ),
-      ),
-    );
+  /// 打开书签/历史全屏页，选中条目后在新标签页打开（对照 Telegram
+  Future<void> _openListPage(String route) async {
+    final url = await context.push<String>(route);
+    if (url != null && url.isNotEmpty && mounted) {
+      _openNewTab(url);
+    }
   }
 
-  Future<void> _showHistorySheet() async {
-    final history = await BrowserStorage.instance.getHistory();
-    if (!mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (history.isNotEmpty)
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () async {
-                    await BrowserStorage.instance.clearHistory();
-                    if (sheetContext.mounted) {
-                      Navigator.of(sheetContext).pop();
-                    }
-                  },
-                  icon: const Icon(Icons.delete_sweep_rounded, size: 18),
-                  label: Text(l10n.browserHistoryClear),
-                ),
-              ),
-            Flexible(
-              child: history.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Center(child: Text(l10n.browserHistoryEmpty)),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: history.length,
-                      itemBuilder: (context, i) {
-                        final item = history[i];
-                        final url = (item['url'] ?? '') as String;
-                        final title = (item['title'] ?? url) as String;
-                        return ListTile(
-                          leading: const Icon(Icons.history_rounded),
-                          title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                          subtitle: Text(url, maxLines: 1, overflow: TextOverflow.ellipsis),
-                          onTap: () {
-                            Navigator.of(sheetContext).pop();
-                            _openNewTab(url);
-                          },
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Future<void> _showBookmarksSheet() => _openListPage(AppRoutes.browserBookmarks);
+
+  Future<void> _showHistorySheet() => _openListPage(AppRoutes.browserHistory);
 
   Future<void> _shareCurrentUrl() async {
     final url = _activeTab.url;
     if (url.isEmpty || url == 'about:blank') return;
     await SharePlus.instance.share(ShareParams(text: url));
+  }
+
+  /// 清除浏览数据（对照 Telegram WebBrowserSettings 的清缓存/清 Cookie/
+  /// 清历史入口，并支持按时间范围）。Cookie 无时间属性，按「时间范围内
+  /// 历史记录中的域名」逐个清除；选中全部时间时兜底全清。
+  Future<void> _showClearBrowsingDataDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+    var range = 0;
+    var clearHistory = true;
+    var clearCookies = false;
+    var clearCache = true;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text(l10n.browserClearDataTitle),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.browserClearDataDesc,
+                  style: Theme.of(dialogContext).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                RadioGroup<int>(
+                  groupValue: range,
+                  onChanged: (v) =>
+                      setDialogState(() => range = v ?? range),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final (value, label) in const [
+                        (0, 'browserClearDataRangeHour'),
+                        (1, 'browserClearDataRangeDay'),
+                        (2, 'browserClearDataRangeWeek'),
+                        (3, 'browserClearDataRangeAll'),
+                      ])
+                        RadioListTile<int>(
+                          value: value,
+                          title: Text(_l10nLabel(l10n, label)),
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 16),
+                CheckboxListTile(
+                  value: clearHistory,
+                  onChanged: (v) =>
+                      setDialogState(() => clearHistory = v ?? false),
+                  title: Text(l10n.browserClearDataTypeHistory),
+                  dense: true,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                CheckboxListTile(
+                  value: clearCookies,
+                  onChanged: (v) =>
+                      setDialogState(() => clearCookies = v ?? false),
+                  title: Text(l10n.browserClearDataTypeCookies),
+                  subtitle: Text(l10n.browserClearDataCookiesWarning),
+                  dense: true,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                CheckboxListTile(
+                  value: clearCache,
+                  onChanged: (v) =>
+                      setDialogState(() => clearCache = v ?? false),
+                  title: Text(l10n.browserClearDataTypeCache),
+                  dense: true,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.browserClearDataConfirm),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _clearBrowsingData(range, clearHistory, clearCookies, clearCache);
+  }
+
+  String _l10nLabel(AppLocalizations l10n, String key) {
+    switch (key) {
+      case 'browserClearDataRangeHour':
+        return l10n.browserClearDataRangeHour;
+      case 'browserClearDataRangeDay':
+        return l10n.browserClearDataRangeDay;
+      case 'browserClearDataRangeWeek':
+        return l10n.browserClearDataRangeWeek;
+      default:
+        return l10n.browserClearDataRangeAll;
+    }
+  }
+
+  Future<void> _clearBrowsingData(
+    int range,
+    bool clearHistory,
+    bool clearCookies,
+    bool clearCache,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final now = DateTime.now();
+    final cutoff = switch (range) {
+      0 => now.subtract(const Duration(hours: 1)),
+      1 => now.subtract(const Duration(days: 1)),
+      2 => now.subtract(const Duration(days: 7)),
+      _ => null,
+    };
+    final storage = BrowserStorage.instance;
+
+    if (clearHistory) {
+      await storage.clearHistoryBefore(cutoff);
+    }
+    if (clearCookies) {
+      final manager = CookieManager.instance();
+      try {
+        if (cutoff == null) {
+          await manager.deleteAllCookies();
+        } else {
+          final domains = await storage.historyDomainsBefore(cutoff);
+          for (final domain in domains) {
+            await manager.deleteCookies(url: WebUri('https://$domain/'));
+          }
+        }
+      } catch (e) {
+        talker.error('Failed to clear cookies', e);
+      }
+    }
+    if (clearCache) {
+      for (final tab in _session.tabs) {
+        final controller = tab.controller;
+        if (controller == null) continue;
+        try {
+          await controller.clearCache();
+        } catch (e) {
+          talker.error('Failed to clear webview cache', e);
+        }
+      }
+      await MediaProxyService.instance.clearCache();
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.browserClearDataDone)));
   }
 
   Future<void> _openExternal(Uri uri) async {
@@ -813,9 +893,13 @@ class _BrowserScreenState extends State<BrowserScreen> {
                       child: Row(
                         children: [
                           Icon(
-                            Icons.lock_outline_rounded,
+                            tab.failed
+                                ? Icons.gpp_bad_outlined
+                                : Icons.lock_outline_rounded,
                             size: 14,
-                            color: foreground.withValues(alpha: 0.6),
+                            color: tab.failed
+                                ? const Color(0xFFE57373)
+                                : foreground.withValues(alpha: 0.6),
                           ),
                           const SizedBox(width: 6),
                           Expanded(
@@ -958,6 +1042,8 @@ class _BrowserScreenState extends State<BrowserScreen> {
             await _showBookmarksSheet();
           case 'history':
             await _showHistorySheet();
+          case 'cleardata':
+            await _showClearBrowsingDataDialog();
           case 'exit':
             await _exitBrowser();
         }
@@ -1011,6 +1097,14 @@ class _BrowserScreenState extends State<BrowserScreen> {
             contentPadding: EdgeInsets.zero,
           ),
         ),
+        PopupMenuItem(
+          value: 'cleardata',
+          child: ListTile(
+            leading: const Icon(Icons.delete_sweep_rounded),
+            title: Text(l10n.browserClearDataTitle),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
         const PopupMenuDivider(),
         PopupMenuItem(
           value: 'exit',
@@ -1026,6 +1120,10 @@ class _BrowserScreenState extends State<BrowserScreen> {
 
   Widget _buildContent() {
     final s = _session;
+    final active = _activeTab;
+    final showNewTab = active.url == 'about:blank' &&
+        !active.loading &&
+        !active.failed;
     return Stack(
       children: [
         IndexedStack(
@@ -1034,6 +1132,7 @@ class _BrowserScreenState extends State<BrowserScreen> {
             for (final tab in s.tabs) _buildTabView(tab),
           ],
         ),
+        if (showNewTab) _buildNewTabPage(),
         if (_activeTab.loading)
           Align(
             alignment: Alignment.topCenter,
@@ -1047,28 +1146,217 @@ class _BrowserScreenState extends State<BrowserScreen> {
     );
   }
 
-  Widget _buildErrorOverlay() {
+  /// 新标签页起始页：搜索框 + 最近访问 + 书签/历史入口。
+  Widget _buildNewTabPage() {
+    final theme = Theme.of(context);
     return Positioned.fill(
       child: Container(
-        color: Theme.of(context).colorScheme.surface,
+        color: theme.colorScheme.surface,
         child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.cloud_off_rounded,
-                size: 48,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Icon(
+                    Icons.public_rounded,
+                    size: 52,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(height: 24),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(24),
+                    onTap: () {
+                      _addressController.text = '';
+                      setState(() {
+                        _addressEditing = true;
+                        _suggestions = const [];
+                      });
+                      _addressFocus.requestFocus();
+                    },
+                    child: Container(
+                      height: 48,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.search_rounded,
+                            size: 20,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            l10n.browserNewTabSearchPlaceholder,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    l10n.browserNewTabRecent,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  FutureBuilder<List<Map<String, dynamic>>>(
+                    future: _recentVisitsFuture,
+                    builder: (context, snapshot) {
+                      final recent = snapshot.data ?? const [];
+                      if (recent.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      return Column(
+                        children: [
+                          for (final item in recent.take(6))
+                            ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              leading: _recentAvatar(theme, item),
+                              title: Text(
+                                (item['title'] ?? item['url']) as String,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                (item['url'] ?? '') as String,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              onTap: () =>
+                                  _openNewTab((item['url'] ?? '') as String),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TextButton.icon(
+                        onPressed: _showBookmarksSheet,
+                        icon: const Icon(Icons.bookmarks_rounded, size: 18),
+                        label: Text(l10n.browserNewTabOpenBookmarks),
+                      ),
+                      const SizedBox(width: 12),
+                      TextButton.icon(
+                        onPressed: _showHistorySheet,
+                        icon: const Icon(Icons.history_rounded, size: 18),
+                        label: Text(l10n.browserNewTabOpenHistory),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              Text(l10n.browserLoadingFailed),
-              const SizedBox(height: 12),
-              FilledButton.tonalIcon(
-                onPressed: () => _activeTab.controller?.reload(),
-                icon: const Icon(Icons.refresh_rounded),
-                label: Text(l10n.browserRetry),
-              ),
-            ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _recentAvatar(ThemeData theme, Map<String, dynamic> item) {
+    final url = (item['url'] ?? '') as String;
+    final title = (item['title'] ?? url) as String;
+    final host = Uri.tryParse(url)?.host ?? '';
+    final letter = (title.isNotEmpty ? title[0] : (host.isNotEmpty ? host[0] : '?'))
+        .toUpperCase();
+    final palette = Colors.primaries;
+    final color = palette[host.hashCode.abs() % palette.length].shade600;
+    return CircleAvatar(
+      radius: 14,
+      backgroundColor: color.withValues(alpha: 0.18),
+      child: Text(
+        letter,
+        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+
+  /// FAILED!
+  Widget _buildErrorOverlay() {
+    final tab = _activeTab;
+    final theme = Theme.of(context);
+    final errorText = tab.errorDescription == null ||
+            tab.errorDescription!.isEmpty
+        ? null
+        : tab.errorDescription!;
+    return Positioned.fill(
+      child: Container(
+        color: theme.colorScheme.surface,
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.cloud_off_rounded,
+                  size: 48,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.browserLoadingFailed,
+                  style: theme.textTheme.titleMedium,
+                ),
+                if (tab.url.isNotEmpty && tab.url != 'about:blank') ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    tab.url,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                if (errorText != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    errorText,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    FilledButton.tonalIcon(
+                      onPressed: () => tab.controller?.reload(),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: Text(l10n.browserRetry),
+                    ),
+                    if (tab.url != 'about:blank')
+                      OutlinedButton.icon(
+                        onPressed: () => _openExternalAndTrust(tab.url),
+                        icon: const Icon(Icons.open_in_new, size: 18),
+                        label: Text(l10n.browserOpenInExternal),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1111,7 +1399,15 @@ class _BrowserScreenState extends State<BrowserScreen> {
           tab.loading = loading;
           tab.progress = progress;
           tab.failed = failed;
+          // 新导航开始即重置错误状态（对照 Telegram onPageStarted 重置）。
+          if (loading) {
+            tab.errorDescription = null;
+          }
         });
+      },
+      onError: (description) {
+        if (!mounted) return;
+        setState(() => tab.errorDescription = description);
       },
       onThemeColor: (color) {
         if (!mounted) return;
@@ -1343,6 +1639,17 @@ class _TabChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (tab.loading) ...[
+                SizedBox(
+                  width: 10,
+                  height: 10,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 1.5,
+                    color: selected ? Colors.white70 : foreground,
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ],
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 120),
                 child: Text(
@@ -1392,6 +1699,7 @@ class _TabWebView extends StatelessWidget {
   final void Function(InAppWebViewHitTestResultType type, String extra)
       onLongPressHitTest;
   final VoidCallback onRendererGone;
+  final ValueChanged<String> onError;
   final ValueChanged<String> onOpenExternal;
   final ValueChanged<DownloadStartRequest> onDownload;
   final ValueChanged<String> onNewWindow;
@@ -1406,6 +1714,7 @@ class _TabWebView extends StatelessWidget {
     required this.onThemeColor,
     required this.onLongPressHitTest,
     required this.onRendererGone,
+    required this.onError,
     required this.onOpenExternal,
     required this.onDownload,
     required this.onNewWindow,
@@ -1500,6 +1809,7 @@ class _TabWebView extends StatelessWidget {
       },
       onReceivedError: (controller, request, error) {
         if (request.isForMainFrame == true) {
+          onError(error.description);
           onState(tab.title, tab.url, false, tab.progress, true);
         }
       },

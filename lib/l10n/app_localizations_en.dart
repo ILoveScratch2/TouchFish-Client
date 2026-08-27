@@ -473,6 +473,74 @@ class AppLocalizationsEn extends AppLocalizations {
   String get browserExitBrowser => 'Exit browser';
 
   @override
+  String get browserClearDataTitle => 'Clear browsing data';
+
+  @override
+  String get browserClearDataDesc =>
+      'Choose a time range and the data types to clear';
+
+  @override
+  String get browserClearDataRangeHour => 'Last hour';
+
+  @override
+  String get browserClearDataRangeDay => 'Last 24 hours';
+
+  @override
+  String get browserClearDataRangeWeek => 'Last 7 days';
+
+  @override
+  String get browserClearDataRangeAll => 'All time';
+
+  @override
+  String get browserClearDataTypeHistory => 'Browsing history';
+
+  @override
+  String get browserClearDataTypeCookies => 'Cookies and site data';
+
+  @override
+  String get browserClearDataTypeCache => 'Cached files';
+
+  @override
+  String get browserClearDataCookiesWarning =>
+      'Clearing cookies will sign you out of some websites';
+
+  @override
+  String get browserClearDataConfirm => 'Clear';
+
+  @override
+  String get browserClearDataDone => 'Browsing data cleared';
+
+  @override
+  String get browserHistorySearchHint => 'Search history';
+
+  @override
+  String get browserBookmarksSearchHint => 'Search bookmarks';
+
+  @override
+  String get browserNoSearchResults => 'No results found';
+
+  @override
+  String get browserDeleteEntry => 'Delete';
+
+  @override
+  String get browserHistoryToday => 'Today';
+
+  @override
+  String get browserHistoryYesterday => 'Yesterday';
+
+  @override
+  String get browserNewTabRecent => 'Recent';
+
+  @override
+  String get browserNewTabOpenBookmarks => 'Bookmarks';
+
+  @override
+  String get browserNewTabOpenHistory => 'History';
+
+  @override
+  String get browserNewTabSearchPlaceholder => 'Search or enter address';
+
+  @override
   String get settingsBrowserUserAgentTitle => 'Custom User-Agent';
 
   @override
