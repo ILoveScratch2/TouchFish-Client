@@ -164,6 +164,8 @@
   "settingsBrowserMixedContentBlock": "阻止（默认）",
   "settingsBrowserMixedContentAllow": "允许",
   "settingsBrowserSearchEnginePrivacy": "隐私政策",
+  "settingsLaunchBrowserTitle": "启动应用内浏览器",
+  "settingsLaunchBrowserDesc": "打开内置浏览器页面，便于测试",
   "browserImageMenuDownload": "下载图片",
   "browserDownloading": "正在下载图片…",
   "browserDownloadFailed": "图片下载失败",

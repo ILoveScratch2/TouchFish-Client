@@ -605,6 +605,14 @@ class SettingsData {
             ),
           ],
         ),
+        SettingItem(
+          key: 'launchInAppBrowser',
+          titleKey: 'settingsLaunchBrowserTitle',
+          descriptionKey: 'settingsLaunchBrowserDesc',
+          type: SettingType.navigation,
+          defaultValue: null,
+          icon: Icons.public,
+        ),
       ],
     ),
     SettingCategoryData(

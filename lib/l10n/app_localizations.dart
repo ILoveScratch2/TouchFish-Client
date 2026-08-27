@@ -1024,6 +1024,18 @@ abstract class AppLocalizations {
   /// **'Privacy Policy'**
   String get settingsBrowserSearchEnginePrivacy;
 
+  /// No description provided for @settingsLaunchBrowserTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Built-in Browser'**
+  String get settingsLaunchBrowserTitle;
+
+  /// No description provided for @settingsLaunchBrowserDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the built-in browser page for testing'**
+  String get settingsLaunchBrowserDesc;
+
   /// No description provided for @browserImageMenuDownload.
   ///
   /// In en, this message translates to:

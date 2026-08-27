@@ -502,6 +502,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsBrowserSearchEnginePrivacy => 'Privacy Policy';
 
   @override
+  String get settingsLaunchBrowserTitle => 'Open Built-in Browser';
+
+  @override
+  String get settingsLaunchBrowserDesc =>
+      'Open the built-in browser page for testing';
+
+  @override
   String get browserImageMenuDownload => 'Download image';
 
   @override

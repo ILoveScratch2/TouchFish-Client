@@ -114,5 +114,14 @@ void main() {
       expect(item.defaultValue, 'block');
       expect(item.options?.map((o) => o.value), containsAll(['block', 'allow']));
     });
+
+    test('launchInAppBrowser is a navigation item in the security category',
+        () {
+      final item = SettingsData.categories
+          .expand((c) => c.items)
+          .firstWhere((i) => i.key == 'launchInAppBrowser');
+      expect(item.type, SettingType.navigation);
+      expect(item.titleKey, 'settingsLaunchBrowserTitle');
+    });
   });
 }

@@ -479,6 +479,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsBrowserSearchEnginePrivacy => '隱私政策';
 
   @override
+  String get settingsLaunchBrowserTitle => '啟內建瀏覽器';
+
+  @override
+  String get settingsLaunchBrowserDesc => '開內建瀏覽器頁，以便測試';
+
+  @override
   String get browserImageMenuDownload => '下載圖片';
 
   @override

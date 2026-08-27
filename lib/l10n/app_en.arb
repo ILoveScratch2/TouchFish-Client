@@ -173,6 +173,8 @@
   "settingsBrowserMixedContentBlock": "Block (default)",
   "settingsBrowserMixedContentAllow": "Allow",
   "settingsBrowserSearchEnginePrivacy": "Privacy Policy",
+  "settingsLaunchBrowserTitle": "Open Built-in Browser",
+  "settingsLaunchBrowserDesc": "Open the built-in browser page for testing",
   "browserImageMenuDownload": "Download image",
   "browserDownloading": "Downloading image…",
   "browserDownloadFailed": "Failed to download image",

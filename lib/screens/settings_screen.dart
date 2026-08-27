@@ -1500,6 +1500,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                   builder: (_) => const ConnectivitySelfCheckScreen(),
                 ),
               );
+            } else if (item.key == 'launchInAppBrowser') {
+              context.push('/browser');
             }
           },
         ),
@@ -2294,6 +2296,35 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsBrowserMixedContentBlock;
       case 'settingsBrowserMixedContentAllow':
         return l10n.settingsBrowserMixedContentAllow;
+      // Browser
+      case 'settingsBrowserSearchEngineTitle':
+        return l10n.settingsBrowserSearchEngineTitle;
+      case 'settingsBrowserSearchEngineDesc':
+        return l10n.settingsBrowserSearchEngineDesc;
+      case 'settingsBrowserMixedContentTitle':
+        return l10n.settingsBrowserMixedContentTitle;
+      case 'settingsBrowserMixedContentDesc':
+        return l10n.settingsBrowserMixedContentDesc;
+      case 'settingsBrowserUserAgentTitle':
+        return l10n.settingsBrowserUserAgentTitle;
+      case 'settingsBrowserUserAgentDesc':
+        return l10n.settingsBrowserUserAgentDesc;
+      case 'settingsBrowserUserAgentDefault':
+        return l10n.settingsBrowserUserAgentDefault;
+      case 'settingsBrowserUserAgentHint':
+        return l10n.settingsBrowserUserAgentHint;
+      case 'settingsLaunchBrowserTitle':
+        return l10n.settingsLaunchBrowserTitle;
+      case 'settingsLaunchBrowserDesc':
+        return l10n.settingsLaunchBrowserDesc;
+      case 'settingsLinkOpenModeTitle':
+        return l10n.settingsLinkOpenModeTitle;
+      case 'settingsLinkOpenModeDesc':
+        return l10n.settingsLinkOpenModeDesc;
+      case 'settingsLinkOpenModeInapp':
+        return l10n.settingsLinkOpenModeInapp;
+      case 'settingsLinkOpenModeExternal':
+        return l10n.settingsLinkOpenModeExternal;
       default:
         return key;
     }

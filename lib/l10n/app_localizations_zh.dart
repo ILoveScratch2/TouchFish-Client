@@ -480,6 +480,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsBrowserSearchEnginePrivacy => '隐私政策';
 
   @override
+  String get settingsLaunchBrowserTitle => '启动应用内浏览器';
+
+  @override
+  String get settingsLaunchBrowserDesc => '打开内置浏览器页面，便于测试';
+
+  @override
   String get browserImageMenuDownload => '下载图片';
 
   @override

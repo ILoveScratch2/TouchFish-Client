@@ -13,8 +13,10 @@ class MediaProxyService {
   MediaProxyService._();
 
   static const _maxCacheBytes = 2 * 1024 * 1024 * 1024;
+  static const _outboundTimeout = Duration(seconds: 60);
   HttpServer? _server;
-  HttpClient _client = HttpClient();
+  HttpClient _client = HttpClient()
+    ..connectionTimeout = const Duration(seconds: 30);
   Future<void>? _starting;
   final Map<String, _ChunkCache> _chunkCaches = {};
   final Map<String, Future<void>> _writeChains = {};
@@ -29,6 +31,13 @@ class MediaProxyService {
 
   Future<String> resolveUrl(String remoteUrl) async {
     if (!SettingsService.instance.getValue<bool>('mediaProxyEnabled', true)) {
+      return remoteUrl;
+    }
+    // 只代理 http(s) 远程地址：本地文件路径（上传预览）、file hash、空串等
+    // 一律直通，否则会被包成代理 URL 后因非 http(s) scheme 而被拒绝（400）。
+    final uri = Uri.tryParse(remoteUrl);
+    if (uri == null ||
+        !const {'http', 'https'}.contains(uri.scheme.toLowerCase())) {
       return remoteUrl;
     }
     try {
@@ -48,6 +57,15 @@ class MediaProxyService {
     }
   }
 
+  /// 带超时地建立出站连接，防止远端无响应时请求永久挂起。
+  Future<HttpClientRequest> _openOutbound(String method, Uri uri) async {
+    return _client
+        .openUrl(method, uri)
+        .timeout(_outboundTimeout, onTimeout: () {
+      throw TimeoutException('Media proxy outbound timeout: $uri');
+    });
+  }
+
   Future<void> _ensureStarted() async {
     if (_server != null) return;
     final starting = _starting ??= _start();
@@ -61,18 +79,15 @@ class MediaProxyService {
   Future<void> _start() async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     _server = server;
-    unawaited(
-      server.forEach((request) async {
-        try {
-          await _handle(request);
-        } catch (error, stackTrace) {
-          talker.error('Media proxy request failed', error, stackTrace);
-          try {
-            request.response.statusCode = HttpStatus.badGateway;
-            await request.response.close();
-          } catch (_) {}
-        }
-      }),
+    // 注意：不能使用 server.forEach —— 它对每个请求串行 await 回调，
+    // 一个大文件下载会阻塞所有并发请求（播放器的探测/seek/重试），
+    // 导致客户端永远收不到数据。listen + unawaited 保证并发处理。
+    server.listen(
+      (request) => unawaited(_handle(request)),
+      onError: (error, stackTrace) {
+        talker.error('Media proxy listener error', error, stackTrace);
+      },
+      cancelOnError: false,
     );
   }
 
@@ -133,7 +148,7 @@ class MediaProxyService {
     String cacheKey,
   ) async {
     final cache = await _getOrCreateChunkCache(cacheKey);
-    final outbound = await _client.openUrl(request.method, remoteUri);
+    final outbound = await _openOutbound('GET', remoteUri);
     final remote = await outbound.close();
     final response = request.response;
     response.statusCode = remote.statusCode;
@@ -160,32 +175,47 @@ class MediaProxyService {
       return;
     }
 
+    // tee：边下载边把数据发给客户端，首字节立即到达，播放器即可起播；
+    // 客户端断开（response.done）时提前终止下载，避免后台空转。
     final file = File(cache.cachedFilePath!);
     final sink = file.openWrite();
     var receivedLength = 0;
+    var sentAny = false;
+    var clientGone = false;
+    unawaited(response.done.then((_) => clientGone = true));
     try {
       await for (final chunk in remote) {
         sink.add(chunk);
         receivedLength += chunk.length;
+        response.add(chunk);
+        sentAny = true;
+        if (clientGone) break;
       }
       await sink.close();
-      cache.contentType = remote.headers.contentType?.value;
-      cache.totalSize = receivedLength;
-      cache.markComplete();
-      await _writeMeta(cacheKey, cache);
-      unawaited(_trimCache());
+      // 客户端断开（clientGone）时不落 complete，避免把不完整文件当完整缓存。
+      if (!clientGone && receivedLength > 0) {
+        cache.contentType = remote.headers.contentType?.value;
+        cache.totalSize = receivedLength;
+        cache.markComplete();
+        await _writeMeta(cacheKey, cache);
+        unawaited(_trimCache());
+      }
+      await response.close();
     } catch (e) {
       await sink.close();
-      talker.error('Media proxy cache full write failed', e);
-      try {
-        response.statusCode = HttpStatus.internalServerError;
-      } catch (_) {}
-      await response.close();
-      return;
+      if (!sentAny) {
+        talker.error('Media proxy cache full write failed', e);
+        try {
+          response.statusCode = HttpStatus.internalServerError;
+          await response.close();
+        } catch (_) {}
+      } else {
+        talker.error('Media proxy cache write interrupted', e);
+        try {
+          await response.close();
+        } catch (_) {}
+      }
     }
-
-    await response.addStream(File(cache.cachedFilePath!).openRead());
-    await response.close();
   }
 
   Future<void> _handleRangeRequest(
@@ -221,7 +251,7 @@ class MediaProxyService {
     _Range range,
   ) async {
     final cache = await _getOrCreateChunkCache(cacheKey);
-    final outbound = await _client.openUrl('GET', remoteUri);
+    final outbound = await _openOutbound('GET', remoteUri);
     outbound.headers.set(
       HttpHeaders.rangeHeader,
       'bytes=${range.start}-${range.end ?? ""}',
@@ -258,9 +288,9 @@ class MediaProxyService {
       return;
     }
 
-    final bodyBytes = <int>[];
     final file = File(cache.cachedFilePath!);
     var shouldCacheThis = true;
+    var sentAny = false;
     try {
       if (!await file.exists()) {
         await file.create(recursive: true);
@@ -271,10 +301,14 @@ class MediaProxyService {
       }
       if (shouldCacheThis) {
         final raf = await file.open(mode: FileMode.append);
+        var clientGone = false;
+        unawaited(response.done.then((_) => clientGone = true));
         try {
           await for (final chunk in remote) {
             await raf.writeFrom(chunk);
-            bodyBytes.addAll(chunk);
+            response.add(chunk);
+            sentAny = true;
+            if (clientGone) break;
           }
           cache.contentType = remote.headers.contentType?.value;
           cache.downloadedSize = await raf.length();
@@ -294,17 +328,18 @@ class MediaProxyService {
 
     if (shouldCacheThis) {
       response.statusCode = HttpStatus.partialContent;
-      response.headers.contentLength = bodyBytes.length;
       if (contentRange != null) {
         response.headers.set(HttpHeaders.contentRangeHeader, contentRange);
       }
       response.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
-      response.add(bodyBytes);
       await response.close();
       return;
     }
 
-    await response.addStream(remote);
+    // 未写入缓存时，数据尚未转发（流被上面消耗）需重新拉取，或已转发部分数据
+    if (!sentAny) {
+      await response.addStream(remote);
+    }
     await response.close();
   }
 
