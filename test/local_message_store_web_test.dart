@@ -158,4 +158,53 @@ void main() {
 
     expect(stored.map((message) => message.id), ['1', 'pending']);
   });
+
+  test('deleteMessage removes only the matching local message', () async {
+    final serverT = DateTime.utc(2026, 1, 1, 12);
+    final failed = ChatMessage(
+      id: 'c2',
+      clientMid: 'c2',
+      text: 'failed',
+      timestamp: serverT,
+      isMe: true,
+      status: MessageStatus.failed,
+    );
+    final confirmed = ChatMessage(
+      id: '1',
+      mid: 1,
+      roomSeq: 1,
+      text: 'confirmed',
+      timestamp: serverT.subtract(const Duration(minutes: 1)),
+      isMe: false,
+    );
+    await LocalMessageStore.instance.saveMessages('U2', [confirmed, failed]);
+
+    await LocalMessageStore.instance.deleteMessage('U2', failed);
+
+    final stored = await LocalMessageStore.instance.loadMessages('U2');
+    expect(stored.map((message) => message.id), ['1']);
+    expect(stored.any((message) => message.clientMid == 'c2'), isFalse);
+  });
+
+  test('deleteMessage by id removes messages without a clientMid', () async {
+    final target = ChatMessage(
+      id: '42',
+      text: 'local',
+      timestamp: DateTime.fromMillisecondsSinceEpoch(0),
+      isMe: true,
+      status: MessageStatus.failed,
+    );
+    final other = ChatMessage(
+      id: '43',
+      text: 'keep',
+      timestamp: DateTime.fromMillisecondsSinceEpoch(1),
+      isMe: true,
+    );
+    await LocalMessageStore.instance.saveMessages('U2', [target, other]);
+
+    await LocalMessageStore.instance.deleteMessage('U2', target);
+
+    final stored = await LocalMessageStore.instance.loadMessages('U2');
+    expect(stored.map((message) => message.id), ['43']);
+  });
 }

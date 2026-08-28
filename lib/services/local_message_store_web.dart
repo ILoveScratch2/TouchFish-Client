@@ -106,6 +106,19 @@ class LocalMessageStore {
     }
   }
 
+  Future<void> deleteMessage(String roomId, ChatMessage message) async {
+    final scope = _requireScope();
+    final prefs = await SharedPreferences.getInstance();
+    final key = _messageKey(message);
+    final messages = await _loadMessages(prefs, scope, roomId);
+    final remaining = messages
+        .where((e) => _messageKey(e) != key)
+        .map((e) => e.toJson())
+        .toList();
+    if (remaining.length == messages.length) return;
+    await prefs.setString(_key(scope, roomId), jsonEncode(remaining));
+  }
+
   Future<void> deleteRoom(String roomId) async {
     final scope = _requireScope();
     await (await SharedPreferences.getInstance()).remove(_key(scope, roomId));

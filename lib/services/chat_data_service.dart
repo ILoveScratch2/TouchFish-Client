@@ -1321,6 +1321,43 @@ class ChatDataService extends ChangeNotifier {
     }
   }
 
+  /// 删除本机未发送/发送失败的消息（mid 为 null 的本地消息），
+  /// 仅移除本地缓存与本地存储，不影响服务端。
+  void deleteLocalMessage(String roomId, ChatMessage message) {
+    var changed = false;
+    final cached = _messageCache[roomId];
+    if (cached != null) {
+      final updated = cached
+          .where((m) => !_sameLocalMessage(m, message))
+          .toList();
+      if (updated.length != cached.length) {
+        _messageCache[roomId] = updated;
+        unawaited(_localStore.deleteMessage(roomId, message));
+        changed = true;
+      }
+    }
+    if (changed) {
+      final roomIndex = _rooms.indexWhere((room) => room.id == roomId);
+      if (roomIndex >= 0 && _rooms[roomIndex].lastMessageMid == null) {
+        final lastMessages = _messageCache[roomId];
+        final last = lastMessages == null || lastMessages.isEmpty
+            ? null
+            : lastMessages.last;
+        _rooms[roomIndex] = _rooms[roomIndex].copyWith(
+          lastMessage: last?.text ?? '',
+        );
+      }
+    }
+    if (changed) notifyListeners();
+  }
+
+  bool _sameLocalMessage(ChatMessage a, ChatMessage b) {
+    if (a.clientMid != null && b.clientMid != null) {
+      return a.clientMid == b.clientMid;
+    }
+    return a.id == b.id;
+  }
+
   void addSentMessage(String roomId, ChatMessage msg) {
     final cached = _messageCache[roomId] ?? [];
     if (!_containsMessage(cached, msg)) {

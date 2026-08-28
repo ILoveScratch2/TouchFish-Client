@@ -32,6 +32,7 @@ class MessageBubble extends HookWidget {
   final ValueChanged<ChatMessage>? onReply;
   final ValueChanged<ChatMessage>? onForward;
   final ValueChanged<ChatMessage>? onRecall;
+  final ValueChanged<ChatMessage>? onDelete;
   final ValueChanged<int>? onQuoteTap;
   final bool showAvatar;
   final bool canRecall;
@@ -54,6 +55,7 @@ class MessageBubble extends HookWidget {
     this.onReply,
     this.onForward,
     this.onRecall,
+    this.onDelete,
     this.onQuoteTap,
     this.showAvatar = true,
     this.canRecall = false,
@@ -81,6 +83,7 @@ class MessageBubble extends HookWidget {
       onReply: onReply,
       onForward: onForward,
       onRecall: onRecall,
+      onDelete: onDelete,
       onQuoteTap: onQuoteTap,
       showAvatar: showAvatar,
       canRecall: canRecall,
@@ -102,6 +105,7 @@ class _MessageBubbleContent extends StatefulWidget {
   final ValueChanged<ChatMessage>? onReply;
   final ValueChanged<ChatMessage>? onForward;
   final ValueChanged<ChatMessage>? onRecall;
+  final ValueChanged<ChatMessage>? onDelete;
   final ValueChanged<int>? onQuoteTap;
   final bool showAvatar;
   final bool canRecall;
@@ -120,6 +124,7 @@ class _MessageBubbleContent extends StatefulWidget {
     this.onReply,
     this.onForward,
     this.onRecall,
+    this.onDelete,
     this.onQuoteTap,
     required this.showAvatar,
     required this.canRecall,
@@ -214,6 +219,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
     }
     if (widget.canPin) width += 64;
     if (widget.canRecall) width += 41;
+    if (widget.onDelete != null && !widget.message.isDeleted) width += 41;
     return width;
   }
 
@@ -270,6 +276,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
         onReply: widget.onReply,
         onForward: widget.onForward,
         onRecall: widget.onRecall,
+        onDelete: widget.onDelete,
         canRecall: widget.canRecall,
         isPinned: widget.isPinned,
         isEssence: widget.isEssence,
@@ -332,6 +339,18 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
               title: Text(l10n.messageActionRecall),
             ),
           ),
+        if (widget.onDelete != null && !widget.message.isDeleted)
+          PopupMenuItem(
+            value: 'delete',
+            child: ListTile(
+              dense: true,
+              leading: Icon(
+                Symbols.delete_forever,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(l10n.messageActionDelete),
+            ),
+          ),
         if (widget.canPin)
           PopupMenuItem(
             value: 'pin',
@@ -369,6 +388,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
     if (selected == 'reply') widget.onReply?.call(widget.message);
     if (selected == 'forward') widget.onForward?.call(widget.message);
     if (selected == 'recall') widget.onRecall?.call(widget.message);
+    if (selected == 'delete') widget.onDelete?.call(widget.message);
     if (selected == 'pin') widget.onPinToggle?.call();
     if (selected == 'essence') widget.onEssenceToggle?.call();
   }
@@ -593,6 +613,11 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
       onRecall: widget.canRecall
           ? () => widget.onRecall?.call(widget.message)
           : null,
+      onDelete: widget.message.isDeleted
+          ? null
+          : widget.onDelete == null
+          ? null
+          : () => widget.onDelete?.call(widget.message),
       isPinned: widget.isPinned,
       isEssence: widget.isEssence,
       canPin: widget.canPin,
@@ -919,6 +944,17 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
         ),
       );
     }
+    if (widget.onDelete != null && !message.isDeleted) {
+      items.add(
+        ContextMenuButtonItem(
+          label: l10n.messageActionDelete,
+          onPressed: () {
+            ContextMenuController.removeAny();
+            widget.onDelete?.call(message);
+          },
+        ),
+      );
+    }
     return AdaptiveTextSelectionToolbar.buttonItems(
       anchors: state.contextMenuAnchors,
       buttonItems: items,
@@ -1112,6 +1148,7 @@ class _MessageHoverActionMenu extends StatelessWidget {
   final VoidCallback? onReply;
   final VoidCallback? onForward;
   final VoidCallback? onRecall;
+  final VoidCallback? onDelete;
   final bool isPinned;
   final bool isEssence;
   final bool canPin;
@@ -1122,6 +1159,7 @@ class _MessageHoverActionMenu extends StatelessWidget {
     required this.onReply,
     required this.onForward,
     this.onRecall,
+    this.onDelete,
     this.isPinned = false,
     this.isEssence = false,
     this.canPin = false,
@@ -1229,6 +1267,27 @@ class _MessageHoverActionMenu extends StatelessWidget {
               ),
             ),
           ],
+          if (onDelete != null) ...[
+            Container(
+              width: 1,
+              height: 24,
+              color: Theme.of(context).colorScheme.outlineVariant,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+            ),
+            SizedBox.square(
+              dimension: 32,
+              child: IconButton(
+                icon: const Icon(
+                  Symbols.delete_forever,
+                  size: 16,
+                  color: Colors.red,
+                ),
+                onPressed: onDelete,
+                tooltip: l10n.messageActionDelete,
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1240,6 +1299,7 @@ class _MessageActionSheet extends StatelessWidget {
   final ValueChanged<ChatMessage>? onReply;
   final ValueChanged<ChatMessage>? onForward;
   final ValueChanged<ChatMessage>? onRecall;
+  final ValueChanged<ChatMessage>? onDelete;
   final bool canRecall;
   final bool isPinned;
   final bool isEssence;
@@ -1252,6 +1312,7 @@ class _MessageActionSheet extends StatelessWidget {
     this.onReply,
     this.onForward,
     this.onRecall,
+    this.onDelete,
     required this.canRecall,
     this.isPinned = false,
     this.isEssence = false,
@@ -1331,6 +1392,18 @@ class _MessageActionSheet extends StatelessWidget {
               onTap: () {
                 Navigator.pop(context);
                 onRecall?.call(message);
+              },
+            ),
+          ],
+          if (onDelete != null && !message.isDeleted) ...[
+            const Divider(height: 17),
+            _ActionListTile(
+              icon: Symbols.delete_forever,
+              label: l10n.messageActionDelete,
+              color: Theme.of(context).colorScheme.error,
+              onTap: () {
+                Navigator.pop(context);
+                onDelete?.call(message);
               },
             ),
           ],

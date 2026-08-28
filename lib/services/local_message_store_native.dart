@@ -401,6 +401,17 @@ class LocalMessageStore {
     }
   }
 
+  Future<void> deleteMessage(String roomId, ChatMessage message) async {
+    final scope = _requireScope();
+    final server = scope.server;
+    final uid = scope.uid;
+    final db = await _db(server, uid);
+    db.execute(
+      'DELETE FROM messages WHERE server_key = ? AND uid = ? AND room_id = ? AND message_key = ?',
+      [server, uid, roomId, _key(message)],
+    );
+  }
+
   Future<void> deleteRoom(String roomId) async {
     final scope = _requireScope();
     final server = scope.server;

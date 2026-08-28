@@ -802,6 +802,37 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     return _currentRoom?.type == ChatType.group && _canModerateGroup;
   }
 
+  /// 仅本机未发送/发送失败的消息（mid 为 null 的本地消息）可删除。
+  bool _canDeleteLocally(ChatMessage message) {
+    return message.isMe &&
+        message.mid == null &&
+        !message.isDeleted &&
+        (message.status == MessageStatus.failed ||
+            message.status == MessageStatus.pending);
+  }
+
+  void _deleteLocalMessage(ChatMessage message) {
+    final clientMid = message.clientMid;
+    if (clientMid != null) {
+      _pendingWsTimers.remove(clientMid)?.cancel();
+    }
+    if (_replyingTo?.clientMid == clientMid ||
+        _replyingTo?.id == message.id) {
+      _replyingTo = null;
+    }
+    if (_forwardingTo?.clientMid == clientMid ||
+        _forwardingTo?.id == message.id) {
+      _forwardingTo = null;
+    }
+    setState(() {
+      _messages.removeWhere(
+        (m) => m.id == message.id || m.clientMid == clientMid,
+      );
+      _rebuildImageEntries();
+    });
+    ChatDataService.instance.deleteLocalMessage(_contactUid, message);
+  }
+
   Future<void> _recallMessage(ChatMessage message) async {
     if (!_canRecall(message)) return;
     final l10n = AppLocalizations.of(context)!;
@@ -2449,6 +2480,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                         onReply: _startReply,
                                         onForward: _startForward,
                                         onRecall: _recallMessage,
+                                        onDelete: _canDeleteLocally(message)
+                                            ? (_) => _deleteLocalMessage(message)
+                                            : null,
                                         onQuoteTap: _scrollToQuotedMessage,
                                         showAvatar: showAvatar,
                                         galleryItems: _imageEntries.isEmpty
