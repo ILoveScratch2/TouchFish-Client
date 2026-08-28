@@ -54,3 +54,11 @@ server_test.py
 test.py
 key.pem
 key.pub
+
+# AUR Packaging
+*.tar
+*.zip
+pkg/
+src/
+
+
