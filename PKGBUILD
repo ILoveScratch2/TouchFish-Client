@@ -7,6 +7,7 @@ arch=('x86_64')
 url="https://github.com/ILoveScratch2/TouchFish-Client"
 license=('AGPL-3.0-only')
 depends=('gtk3' 'alsa-lib' 'libayatana-appindicator' 'mpv')
+makedepends=('patchelf')
 provides=('touchfish-client')
 conflicts=('touchfish-client')
 source=("$pkgname-$pkgver.zip::https://github.com/ILoveScratch2/TouchFish-Client/releases/download/$pkgver/touchfish-linux-x64.zip")
@@ -32,4 +33,6 @@ Terminal=false
 Categories=Network;InstantMessaging;
 EOF
     install -Dm644 "${srcdir}/touchfish-client.desktop" "${pkgdir}/usr/share/applications/touchfish-client.desktop"
+    rm -f "$pkgdir/usr/lib/touchfish/lib/libmpv.so.2"
+    patchelf --remove-rpath "$pkgdir/usr/lib/touchfish/touchfish_client"
 }
