@@ -796,17 +796,20 @@ class _BrowserScreenState extends State<BrowserScreen> {
         navigator.pop();
       },
       child: Scaffold(
-        body: Column(
-          children: [
-            _buildTabBar(),
-            _buildAddressBar(),
-            if (_addressEditing && _suggestions.isNotEmpty)
-              _buildSuggestionsPanel(),
-            const Divider(height: 1),
-            Expanded(child: _buildContent()),
-            if (_findActive) _buildFindBar(),
-            _buildBottomBar(),
-          ],
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              _buildTabBar(),
+              _buildAddressBar(),
+              if (_addressEditing && _suggestions.isNotEmpty)
+                _buildSuggestionsPanel(),
+              const Divider(height: 1),
+              Expanded(child: _buildContent()),
+              if (_findActive) _buildFindBar(),
+              SafeArea(top: false, child: _buildBottomBar()),
+            ],
+          ),
         ),
       ),
     );

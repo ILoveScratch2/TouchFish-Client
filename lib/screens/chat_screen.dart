@@ -100,64 +100,67 @@ class _ChatShellScreenState extends State<ChatShellScreen> {
       final currentWidth = _isCollapsed ? _collapsedWidth : _sidebarWidth;
 
       return Scaffold(
-        body: Row(
-          children: [
-            SizedBox(
-              width: currentWidth,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
-                child: MouseRegion(
-                  onEnter: (_) {
-                    setState(() {
-                      _isHovering = true;
-                    });
-                  },
-                  onExit: (_) {
-                    setState(() {
-                      _isHovering = false;
-                    });
-                  },
-                  child: ChatListScreen(
-                    isAside: true,
-                    isCollapsed: _isCollapsed,
-                    isHovering: _isHovering,
-                    onToggleCollapse: () {
+        body: SafeArea(
+          bottom: false,
+          child: Row(
+            children: [
+              SizedBox(
+                width: currentWidth,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+                  child: MouseRegion(
+                    onEnter: (_) {
                       setState(() {
-                        _isCollapsed = !_isCollapsed;
+                        _isHovering = true;
                       });
-                      _saveDividerPosition();
                     },
-                    onDragUpdate: (dx) {
-                      _updateDividerPosition(
-                        dx,
-                        MediaQuery.of(context).size.width,
-                      );
+                    onExit: (_) {
+                      setState(() {
+                        _isHovering = false;
+                      });
                     },
-                    onDragEnd: () {
-                      if (_sidebarWidth <= _collapseThreshold) {
+                    child: ChatListScreen(
+                      isAside: true,
+                      isCollapsed: _isCollapsed,
+                      isHovering: _isHovering,
+                      onToggleCollapse: () {
                         setState(() {
-                          _isCollapsed = true;
-                          _sidebarWidth = _minSidebarWidth;
+                          _isCollapsed = !_isCollapsed;
                         });
-                      }
-                      _saveDividerPosition();
-                    },
+                        _saveDividerPosition();
+                      },
+                      onDragUpdate: (dx) {
+                        _updateDividerPosition(
+                          dx,
+                          MediaQuery.of(context).size.width,
+                        );
+                      },
+                      onDragEnd: () {
+                        if (_sidebarWidth <= _collapseThreshold) {
+                          setState(() {
+                            _isCollapsed = true;
+                            _sidebarWidth = _minSidebarWidth;
+                          });
+                        }
+                        _saveDividerPosition();
+                      },
+                    ),
                   ),
                 ),
               ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(8),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                    ),
+                    child: widget.child,
                   ),
-                  child: widget.child,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }

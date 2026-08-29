@@ -147,75 +147,79 @@ class _MainScreenState extends State<MainScreen> {
             );
 
             if (isWide) {
-              return Container(
-                color: hasBackgroundImage
-                    ? Colors.transparent
-                    : Theme.of(context).colorScheme.surfaceContainer,
-                child: Row(
-                  children: [
-                    Container(
-                      color: hasBackgroundImage
-                          ? Theme.of(context).colorScheme.surfaceContainer
-                                .withValues(alpha: 0.7)
-                          : Colors.transparent,
-                      child: _buildNavRail(
-                        destinations,
-                        selectedIndex,
-                        context,
+              return SafeArea(
+                bottom: false,
+                child: Container(
+                  color: hasBackgroundImage
+                      ? Colors.transparent
+                      : Theme.of(context).colorScheme.surfaceContainer,
+                  child: Row(
+                    children: [
+                      Container(
+                        color: hasBackgroundImage
+                            ? Theme.of(context).colorScheme.surfaceContainer
+                                  .withValues(alpha: 0.7)
+                            : Colors.transparent,
+                        child: _buildNavRail(
+                          destinations,
+                          selectedIndex,
+                          context,
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          if (AuthState.instance.isBanned)
-                            MaterialBanner(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.errorContainer,
-                              leading: Icon(
-                                Icons.block,
-                                color: Theme.of(
+                      Expanded(
+                        child: Column(
+                          children: [
+                            if (AuthState.instance.isBanned)
+                              MaterialBanner(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                backgroundColor: Theme.of(
                                   context,
-                                ).colorScheme.onErrorContainer,
-                              ),
-                              content: Text(
-                                l10n.chatSendFailedBanned,
-                                style: TextStyle(
+                                ).colorScheme.errorContainer,
+                                leading: Icon(
+                                  Icons.block,
                                   color: Theme.of(
                                     context,
                                   ).colorScheme.onErrorContainer,
                                 ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => AuthState.instance.logout(),
-                                  child: Text(
-                                    l10n.accountLogout,
-                                    style: TextStyle(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onErrorContainer,
-                                    ),
+                                content: Text(
+                                  l10n.chatSendFailedBanned,
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onErrorContainer,
                                   ),
                                 ),
-                              ],
-                            ),
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(16),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        AuthState.instance.logout(),
+                                    child: Text(
+                                      l10n.accountLogout,
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onErrorContainer,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              child: widget.child,
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(16),
+                                ),
+                                child: widget.child,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             }
