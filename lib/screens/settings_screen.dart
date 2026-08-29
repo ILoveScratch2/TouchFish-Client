@@ -942,7 +942,6 @@ class _SettingsScreenState extends State<SettingsScreen>
             }
             if (!fonts.contains(value)) {
               value = 'System Default';
-              _settingsService.setValue(item.key, value);
             }
 
             final isCustom = value == _customFontSentinel;
