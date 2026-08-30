@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 
 /// 真·Code::Blocks
-const String codeFontFamily = 'Consolas';
+const String codeFontFamily = 'Fira Code';
 const List<String> codeFontFamilyFallback = [
   'Menlo',
   'Monaco',
   'Courier New',
   'Courier',
+  'Ubuntu Mono',
   'DejaVu Sans Mono',
   'Liberation Mono',
   'Noto Sans Mono',
   'Droid Sans Mono',
   'Source Code Pro',
-  'Fira Code',
+  'Consolas',
   'JetBrains Mono',
   'monospace',
 ];
