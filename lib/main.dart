@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show FlutterView;
-import 'package:flutter/cupertino.dart' show CupertinoLocalizations;
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -820,7 +820,7 @@ class _TouchFishAppState extends State<TouchFishApp>
               ),
               elevation: cardOpacity < 1 ? 0 : null,
             ),
-            pageTransitionsTheme: const PageTransitionsTheme(
+            pageTransitionsTheme: PageTransitionsTheme(
               builders: {
                 TargetPlatform.android: ZoomPageTransitionsBuilder(),
                 TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
@@ -844,7 +844,7 @@ class _TouchFishAppState extends State<TouchFishApp>
               ),
               elevation: cardOpacity < 1 ? 0 : null,
             ),
-            pageTransitionsTheme: const PageTransitionsTheme(
+            pageTransitionsTheme: PageTransitionsTheme(
               builders: {
                 TargetPlatform.android: ZoomPageTransitionsBuilder(),
                 TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
