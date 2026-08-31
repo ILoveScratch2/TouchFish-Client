@@ -224,25 +224,25 @@ class AppLocalizationsOch extends AppLocalizations {
   String get registerCaptchaRefresh => '更之';
 
   @override
-  String get registerErrorFailed => '註冊敗，請重試';
+  String get registerErrorFailed => '註冊未成，請重試';
 
   @override
   String get registerConfirmInfo => '確認註冊之資';
 
   @override
-  String get registerActivateFailed => '激活敗，請查激活碼';
+  String get registerActivateFailed => '激活未成，請查激活碼';
 
   @override
-  String get forumLoadFailed => '載論壇敗';
+  String get forumLoadFailed => '載論壇未成';
 
   @override
-  String get forumPostLoadFailed => '載帖子敗';
+  String get forumPostLoadFailed => '載帖子未成';
 
   @override
-  String get forumCommentFailed => '評論發送敗';
+  String get forumCommentFailed => '評論發送未成';
 
   @override
-  String get forumPostFailed => '發帖敗';
+  String get forumPostFailed => '發帖未成';
 
   @override
   String get userProfileNotFound => '戶不存';
@@ -453,7 +453,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get browserShare => '分享';
 
   @override
-  String get browserLoadingFailed => '載頁失敗';
+  String get browserLoadingFailed => '載頁未成';
 
   @override
   String get browserRetry => '復試';
@@ -518,10 +518,10 @@ class AppLocalizationsOch extends AppLocalizations {
   String get browserClearDataDesc => '選時段與清除之數據種類';
 
   @override
-  String get browserClearDataRangeHour => '近 1 時';
+  String get browserClearDataRangeHour => '近半時辰';
 
   @override
-  String get browserClearDataRangeDay => '近 24 時';
+  String get browserClearDataRangeDay => '近一日';
 
   @override
   String get browserClearDataRangeWeek => '近 7 日';
@@ -618,7 +618,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get browserDownloading => '圖片下載中…';
 
   @override
-  String get browserDownloadFailed => '圖片下載敗';
+  String get browserDownloadFailed => '圖片下載未成';
 
   @override
   String get browserRendererGoneTitle => '頁面崩潰';
@@ -775,7 +775,7 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String settingsBackgroundImageGenColorError(String error) {
-    return '取色敗：$error';
+    return '取色未成：$error';
   }
 
   @override
@@ -1045,7 +1045,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get serverErrorInvalidAddress => '地址無效';
 
   @override
-  String get serverErrorInvalidPort => '端口須為0至65535間之整數';
+  String get serverErrorInvalidPort => '端口須為 0 至 65535 間之整數';
 
   @override
   String get serverErrorDuplicatePort => '端口不可複';
@@ -1054,7 +1054,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get serverUseHttps => 'HTTPS';
 
   @override
-  String get serverUseHttpsOn => '試以加密連接（敗則退HTTP）';
+  String get serverUseHttpsOn => '試以加密連接（若未成則退 HTTP）';
 
   @override
   String get serverUseHttpsOff => '以明文連接';
@@ -1066,16 +1066,16 @@ class AppLocalizationsOch extends AppLocalizations {
   String get serverTryWss => 'WSS';
 
   @override
-  String get serverTryWssOn => '試密WebSocket（敗則退WS）';
+  String get serverTryWssOn => '試密WebSocket（若未成則退 WS）';
 
   @override
   String get serverTryWssOff => '以明WebSocket';
 
   @override
-  String get serverAutoDetectTcpPort => '自探TCP端口';
+  String get serverAutoDetectTcpPort => '自探 TCP 端口';
 
   @override
-  String get serverAutoDetectTcpPortDesc => '自服器取TCP端口';
+  String get serverAutoDetectTcpPortDesc => '自服器取 TCP 端口';
 
   @override
   String get navChat => '聊天';
@@ -1111,7 +1111,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminDefaultAssetsDescription => '上傳服器所用之 logo 與默認頭像圖。';
 
   @override
-  String get adminDefaultAssetsLoadFailed => '載默認圖像敗';
+  String get adminDefaultAssetsLoadFailed => '載默認圖像未成';
 
   @override
   String get adminDefaultAssetChangeAction => '上傳 PNG';
@@ -1153,7 +1153,7 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String adminDefaultAssetUploadFailed(String assetName) {
-    return '更 $assetName 敗。';
+    return '更 $assetName 未成。';
   }
 
   @override
@@ -1163,13 +1163,13 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminServerSettingsDescription => '更服器之名、註冊驗圖，及諸限額之要者。';
 
   @override
-  String get adminServerSettingsLoadFailed => '載服器設置敗';
+  String get adminServerSettingsLoadFailed => '載服器設置未成';
 
   @override
   String get adminServerSettingsSaveSuccess => '服器設置已更';
 
   @override
-  String get adminServerSettingsSaveFailed => '更新服器設置敗';
+  String get adminServerSettingsSaveFailed => '更新服器設置未成';
 
   @override
   String get adminServerSettingsInvalidInput => '請檢服器設置之表而後重試。';
@@ -1338,7 +1338,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminPendingForumsEmpty => '今無待審之論壇。';
 
   @override
-  String get adminPendingForumsLoadFailed => '載待審論壇敗';
+  String get adminPendingForumsLoadFailed => '載待審論壇未成';
 
   @override
   String adminPendingForumQueueId(int queueId) {
@@ -1370,7 +1370,7 @@ class AppLocalizationsOch extends AppLocalizations {
   }
 
   @override
-  String get adminApproveForumFailed => '論壇審准敗。';
+  String get adminApproveForumFailed => '論壇審准未成。';
 
   @override
   String get adminRejectForumAction => '駁論壇';
@@ -1389,7 +1389,7 @@ class AppLocalizationsOch extends AppLocalizations {
   }
 
   @override
-  String get adminRejectForumFailed => '論壇審駁敗。';
+  String get adminRejectForumFailed => '論壇審駁未成。';
 
   @override
   String get account => '賬戶';
@@ -1503,7 +1503,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get profileEditUpdated => '資料已更';
 
   @override
-  String get profileEditSaveFailed => '部分修改存敗';
+  String get profileEditSaveFailed => '部分修改存未成';
 
   @override
   String get profileEditUsernameCannotChange => '名號不可更';
@@ -1970,10 +1970,10 @@ class AppLocalizationsOch extends AppLocalizations {
   String get userProfileNoIntroduction => '暫無自我之介';
 
   @override
-  String get userProfileCopyUid => '複用戶ID';
+  String get userProfileCopyUid => '複用戶 ID';
 
   @override
-  String get userProfileUidCopied => '用戶ID已複';
+  String get userProfileUidCopied => '用戶 ID 已複';
 
   @override
   String get userProfileSendMessage => '發送消息';
@@ -2349,7 +2349,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get debugInfoDialogDemoMessage => '察得新服器配置，請擇次步之操。';
 
   @override
-  String get debugErrorDialogDemoTitle => '消息同步敗';
+  String get debugErrorDialogDemoTitle => '消息同步未成';
 
   @override
   String get debugErrorDialogDemoMessage => '今同步之務未成，君可即復試，或啟設置以察連接。';
@@ -2815,10 +2815,10 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminAccountCreateSuccess => '賬戶已創建';
 
   @override
-  String get adminAccountCreateFailed => '創建賬戶失敗，請察用戶名或權限';
+  String get adminAccountCreateFailed => '創建賬戶未成，請察用戶名或權限';
 
   @override
-  String get adminAccountLoadFailed => '加載用戶列表失敗';
+  String get adminAccountLoadFailed => '加載用戶列表未成';
 
   @override
   String get adminAccountEmpty => '暫無用戶';
@@ -2855,7 +2855,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminAccountRoleBanned => '已封禁';
 
   @override
-  String get adminAccountRoleChangeFailed => '更改角色失敗';
+  String get adminAccountRoleChangeFailed => '更改角色未成';
 
   @override
   String adminAccountRoleChangeSuccess(String name, String role) {
@@ -2879,7 +2879,7 @@ class AppLocalizationsOch extends AppLocalizations {
   }
 
   @override
-  String get adminAccountBanFailed => '封禁用戶失敗';
+  String get adminAccountBanFailed => '封禁用戶未成';
 
   @override
   String get adminAccountUnbanTitle => '解封用戶';
@@ -2898,7 +2898,7 @@ class AppLocalizationsOch extends AppLocalizations {
   }
 
   @override
-  String get adminAccountUnbanFailed => '解封用戶失敗';
+  String get adminAccountUnbanFailed => '解封用戶未成';
 
   @override
   String get adminAccountDeleteTitle => '刪除用戶';
@@ -2917,7 +2917,7 @@ class AppLocalizationsOch extends AppLocalizations {
   }
 
   @override
-  String get adminAccountDeleteFailed => '刪除用戶失敗';
+  String get adminAccountDeleteFailed => '刪除用戶未成';
 
   @override
   String get adminAccountTotalUsers => '位用戶';
@@ -2942,7 +2942,7 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String storageDeleteConfirm(String fileName) {
-    return '確定刪除 \"$fileName\"？此操作不可撤銷。';
+    return '確要刪除 \"$fileName\"？此操作不可撤銷。';
   }
 
   @override
@@ -2951,7 +2951,7 @@ class AppLocalizationsOch extends AppLocalizations {
   }
 
   @override
-  String get storageDeleteFailed => '刪除失敗';
+  String get storageDeleteFailed => '刪除未成';
 
   @override
   String storageUploaded(String fileName) {
@@ -2959,7 +2959,7 @@ class AppLocalizationsOch extends AppLocalizations {
   }
 
   @override
-  String get storageUploadFailed => '上傳失敗';
+  String get storageUploadFailed => '上傳未成';
 
   @override
   String get storageUploadError => '上傳錯誤';
@@ -2988,7 +2988,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminFileManagementDescription => '查看所有上傳文件，按用戶篩選，強制刪除文件。';
 
   @override
-  String get adminFileFilterUid => '按用戶ID篩選...';
+  String get adminFileFilterUid => '按用戶 ID 篩選...';
 
   @override
   String get adminFileFilter => '篩選';
@@ -3004,7 +3004,7 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String adminFileForceDeleteConfirm(String fileName, String owner) {
-    return '永久刪除 \"$fileName\"（所有者：$owner）？\n\n此操作將從磁盤和庫中移除該文件，忽略所有引用。';
+    return '永久刪除 \"$fileName\"（主人：$owner）？\n\n此操作將從磁盤和庫中移除該文件，忽略所有引用。';
   }
 
   @override
@@ -3013,7 +3013,7 @@ class AppLocalizationsOch extends AppLocalizations {
   }
 
   @override
-  String get adminFileForceDeleteFailed => '強制刪除失敗';
+  String get adminFileForceDeleteFailed => '強制刪除未成';
 
   @override
   String get adminFileNoFiles => '服務器上暫無文件';
@@ -3042,10 +3042,10 @@ class AppLocalizationsOch extends AppLocalizations {
   String get chatFunctionTabSpecial => '特別消息';
 
   @override
-  String get chatFunctionTabFilesHint => '選擇要發送的文件';
+  String get chatFunctionTabFilesHint => '擇將送之文件';
 
   @override
-  String get chatFunctionTabEmojiHint => '表情選擇器即將推出';
+  String get chatFunctionTabEmojiHint => '表情擇器即將推出';
 
   @override
   String get chatFunctionTabSpecialHint => '特別消息即將推出';
@@ -3070,7 +3070,7 @@ class AppLocalizationsOch extends AppLocalizations {
   }
 
   @override
-  String get serverFilePickerSearch => '搜索文件...';
+  String get serverFilePickerSearch => '尋文件...';
 
   @override
   String get serverFilePickerEmpty => '尚無上傳過的文件';
@@ -3079,10 +3079,10 @@ class AppLocalizationsOch extends AppLocalizations {
   String get serverFilePickerNoMatch => '無匹配的文件';
 
   @override
-  String get serverFilePickerError => '加載文件失敗';
+  String get serverFilePickerError => '加載文件未成';
 
   @override
-  String get chatSendFailed => '發送失敗';
+  String get chatSendFailed => '發送未成';
 
   @override
   String get chatCreateGroup => '創建羣組';
@@ -3138,7 +3138,7 @@ class AppLocalizationsOch extends AppLocalizations {
   }
 
   @override
-  String get groupCreateFailedLimit => '創建失敗，請檢查羣組數量限制';
+  String get groupCreateFailedLimit => '創建未成，請檢查羣組數量限制';
 
   @override
   String get groupSettingsSection => '羣組設定';
@@ -3174,7 +3174,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get groupTransferOwner => '轉讓羣主';
 
   @override
-  String get groupTransferOwnerConfirm => '轉讓後你將失去羣主權限，確定繼續嗎？';
+  String get groupTransferOwnerConfirm => '轉讓後你將失去羣主權限，確要繼續嗎？';
 
   @override
   String get groupTransferOwnerConfirmAction => '確認轉讓';
@@ -3186,7 +3186,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get groupLeave => '退出羣組';
 
   @override
-  String get groupLeaveConfirm => '確定要退出該羣組嗎？';
+  String get groupLeaveConfirm => '確要退出該羣組嗎？';
 
   @override
   String get groupLeaveOwnerHint => '羣主需先轉讓羣主後方可退出';
@@ -3204,7 +3204,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get groupInviteJoined => '已邀請加入羣組';
 
   @override
-  String get groupInviteFailed => '邀請失敗，請確認對方存在且已是您的好友';
+  String get groupInviteFailed => '邀請未成，請確認對方存在且已是您的好友';
 
   @override
   String get groupAvatarPermissionDenied => '僅羣主或管員可修改羣頭像';
@@ -3213,7 +3213,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get groupAvatarUpdateSuccess => '羣頭像已更新';
 
   @override
-  String get groupAvatarUploadFailedSize => '上傳失敗，請檢查檔案大小';
+  String get groupAvatarUploadFailedSize => '上傳未成，請檢查檔案大小';
 
   @override
   String get groupJoinDirectRequest => '直接申請加入';
@@ -3248,7 +3248,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get commonOk => '確定';
 
   @override
-  String get commonFailedOperation => '操作失敗，請重試';
+  String get commonFailedOperation => '操作未成，請重試';
 
   @override
   String get commonUserNotFound => '未找到該用戶';
@@ -3263,21 +3263,21 @@ class AppLocalizationsOch extends AppLocalizations {
   String get chatInputNotConnected => '未連接到聊天服務器';
 
   @override
-  String get chatInviteAcceptFailed => '接受好友請求失敗';
+  String get chatInviteAcceptFailed => '接受好友請求未成';
 
   @override
-  String get chatInviteRejectFailed => '拒絕好友請求失敗';
+  String get chatInviteRejectFailed => '拒絕好友請求未成';
 
   @override
   String get userProfileFriendRequestHint => '打個招呼...';
 
   @override
   String userProfileFriendRequestSent(String username) {
-    return '已向 $username 發送好友請求';
+    return '已向 $username 送結友請求';
   }
 
   @override
-  String get userProfileFriendRequestFailed => '發送好友請求失敗';
+  String get userProfileFriendRequestFailed => '發送好友請求未成';
 
   @override
   String get settingsCategoryConnection => '接';
@@ -3461,7 +3461,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsConnectivitySelfCheckDesc => '測試服務器和已配置之 IP 節點';
 
   @override
-  String get settingsConnectivityFailed => '連接失敗';
+  String get settingsConnectivityFailed => '連接未成';
 
   @override
   String get chatSearchAllMessages => '搜索所有聊天';
@@ -3683,7 +3683,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get groupProfileJoinPending => '申請已投，候群管審核';
 
   @override
-  String get groupProfileJoinFailed => '入群敗';
+  String get groupProfileJoinFailed => '入群未成';
 
   @override
   String get groupProfileAlreadyMember => '已在群中矣';
@@ -3727,7 +3727,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get forwardSuccess => '轉發已成';
 
   @override
-  String get forwardFailed => '轉發敗';
+  String get forwardFailed => '轉發未成';
 
   @override
   String get updateAvailableTitle => '發現新版本';
@@ -3747,7 +3747,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get updateDownloading => '正在下載更新...';
 
   @override
-  String get updateChangelogTitle => '更新之誌';
+  String get updateChangelogTitle => '更新銘文';
 
   @override
   String get updateDownloadedTitle => '下載已成';
@@ -3756,10 +3756,10 @@ class AppLocalizationsOch extends AppLocalizations {
   String get updateExtractHint => '更新包已下載。請自行解壓並更替應用程式以完成更新。';
 
   @override
-  String get updateDownloadFailedTitle => '下載敗';
+  String get updateDownloadFailedTitle => '下載未成';
 
   @override
-  String get updateDownloadFailedMessage => '更新下載敗，請查網絡後再試。';
+  String get updateDownloadFailedMessage => '更新下載未成，請查網絡後再試。';
 
   @override
   String get updateDownloadStartTitle => '始下載更新';
@@ -3830,7 +3830,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsRsaKeysTitle => 'RSA 密鑰管理';
 
   @override
-  String get settingsRsaKeysDesc => '管理已保存之伺服器 RSA 公鑰，查閱當前伺服器之密鑰 SHA';
+  String get settingsRsaKeysDesc => '管理已存之伺服器 RSA 公鑰，查閱當前伺服器之密鑰 SHA';
 
   @override
   String get settingsLegacyAuthTitle => '相容性：使用 UID 與 PASSWORD 作為登入選項（不建議）';
@@ -3844,13 +3844,13 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get rsaKeyManagementDescription =>
-      '管理已保存之伺服器 RSA 公鑰與密鑰 SHA。初次連接時建議保存伺服器密鑰，此後每次連接皆會校驗密鑰是否一致，以防中間人攻擊。';
+      '管理已存之伺服器 RSA 公鑰與密鑰 SHA。初次連接時建議保存伺服器密鑰，後皆會查密鑰是否一致，以防中間人攻擊。';
 
   @override
   String get rsaCurrentServerSection => '當前伺服器';
 
   @override
-  String get rsaSavedKeysSection => '已保存之密鑰';
+  String get rsaSavedKeysSection => '已存密鑰';
 
   @override
   String get rsaUnknownServer => '未知伺服器';
@@ -3862,15 +3862,15 @@ class AppLocalizationsOch extends AppLocalizations {
   String get rsaViewCurrentSha => '查閱當前密鑰 SHA';
 
   @override
-  String get rsaSaveCurrentKey => '保存當前密鑰';
+  String get rsaSaveCurrentKey => '存當前密鑰';
 
   @override
   String rsaSaveCurrentKeySuccess(String sha) {
-    return '已保存當前伺服器密鑰。SHA: $sha';
+    return '已存當前伺服器密鑰。SHA: $sha';
   }
 
   @override
-  String get rsaFetchFailed => '獲取伺服器 RSA 密鑰失敗，請檢查網路連接';
+  String get rsaFetchFailed => '取伺服器 RSA 密鑰未成，請查網路連接';
 
   @override
   String get rsaNoSavedKeys => '尚未保存任何 RSA 密鑰';
@@ -3889,7 +3889,7 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String rsaDeleteKeyConfirm(String authority) {
-    return '確定刪除伺服器 $authority 之已保存 RSA 密鑰乎？刪除後將不再校驗該伺服器之密鑰。';
+    return '確要刪除伺服器 $authority 之已保存 RSA 密鑰乎？刪除後將不再校驗該伺服器之密鑰。';
   }
 
   @override
