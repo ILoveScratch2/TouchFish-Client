@@ -125,6 +125,7 @@ class ClipboardAttachmentService {
 
   /// macOS FUCK YOU!
   /// sm Tim Cook why TM you use this SB clipboard API?
+  /// 我不行了我快笑死了
   List<ClipboardFileData> _filterTextSynthesizedFiles(
     List<ClipboardFileData> candidates,
     String? text,
@@ -132,9 +133,19 @@ class ClipboardAttachmentService {
     if (candidates.isEmpty || text == null || text.trim().isEmpty) {
       return candidates;
     }
-    return candidates
-        .where((file) => detectFileType(file.bytes) != DetectedFileType.unknown)
-        .toList();
+    // Fix: 复制文件变成文件名
+    return candidates.where((file) {
+      final detected = detectFileType(file.bytes);
+      if (detected != DetectedFileType.unknown) {
+        return true;
+      }
+
+      if (file.fileName.startsWith('clipboard_file')) {  // 通过这种方式来判断是不是 mac 的 clipboard 文字
+        return false;
+      }
+
+      return true;
+    }).toList();
   }
 
   Future<void> _readViaGetFile(

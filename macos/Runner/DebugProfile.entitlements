@@ -12,8 +12,9 @@
 	<true/>
 	<key>com.apple.security.files.downloads.read-write</key>
 	<true/>
-	<key>com.apple.security.files.user-selected.read-only</key>
-	<true/>
+    <!--  Modified by Young-Liao: 为了支持在Mac下载文件  -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
 	<key>com.apple.security.network.server</key>
