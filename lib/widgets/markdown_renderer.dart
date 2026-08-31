@@ -18,19 +18,20 @@ import '../services/chat_data_service.dart';
 import '../services/domain_trust_service.dart';
 import 'untrusted_image_placeholder.dart';
 
-/// 等宽字体族：优先 Consolas，依次回退至各平台常见等宽字体。
-const String _codeFontFamily = 'Consolas';
+/// 等宽字体族：优先 Fira Code，依次回退至各平台常见等宽字体。
+const String _codeFontFamily = 'Fira Code';
 const List<String> _codeFontFamilyFallback = [
   'Menlo',
   'Monaco',
   'Courier New',
   'Courier',
+  'Ubuntu Mono',
   'DejaVu Sans Mono',
   'Liberation Mono',
   'Noto Sans Mono',
   'Droid Sans Mono',
   'Source Code Pro',
-  'Fira Code',
+  'Consolas',
   'JetBrains Mono',
   'monospace',
 ];

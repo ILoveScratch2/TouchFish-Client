@@ -317,8 +317,6 @@
   "imageRotateRight": "右旋",
   "imageExif": "覽 EXIF",
 
-  "announcementEdit": "改公告",
-  "announcementDelete": "刪公告",
 
   "chatSelectPlaceholder": "擇一對話以啟談",
 
@@ -383,14 +381,14 @@
   "serverAutoDetectTcpPort": "自探 TCP 端口",
   "serverAutoDetectTcpPortDesc": "自服器取 TCP 端口",
 
-  "navChat": "聊天",
-  "navAnnouncement": "公告",
+  "navChat": "閒談",
+  "navAnnouncement": "告示",
   "navForum": "論壇",
   "navAccount": "賬戶",
-  "navAdmin": "管員",
+  "navAdmin": "司事",
 
-  "adminTitle": "管理員",
-  "adminDescription": "管理 TouchFish 之服器",
+  "adminTitle": "司事府",
+  "adminDescription": "司 TouchFish 之服器",
   "adminAccessDenied": "君今無管理之權。",
   "adminRootOnly": "惟 root 之賬戶可治服器之配置。",
   "adminDefaultAssets": "默認圖像",
@@ -589,7 +587,7 @@
   "notificationTitle": "通知",
   "notificationEmpty": "暫無通知",
   "notificationClearAll": "清除全部",
-  "notificationTabAnnouncements": "公告",
+  "notificationTabAnnouncements": "告示",
   "notificationTabNotifications": "通知",
   "chatPinned": "置頂會話",
   "chatDirectMessage": "私聊",
@@ -647,7 +645,7 @@
   "essenceLabel": "{count, plural, other{{count} 條精華訊息}}",
   "@essenceLabel": {"placeholders": {"count": {}}},
   "essenceName" : "精華",
-  "essenceAdd" : "取其精華",
+  "essenceAdd" : "取之為精華",
   "essenceRemove" : "去其糟粕",
   "messageRecallConfirmTitle": "撤回消息乎？",
   "messageRecallConfirmBody": "消息之文將為眾人所移，且不可復。",
@@ -656,6 +654,11 @@
   "messageQuoteRecalled": "已撤之消息",
   "messageQuoteMissing": "原消息不可得",
   "messageReplyingTo": "回覆 {name}",
+  "@messageReplyingTo": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
   "messageReplyDismiss": "罷回覆",
 
   "chatRoomSettings": "聊天之設",
@@ -715,6 +718,11 @@
   "fileDownloading": "方下載…",
   "fileDownloadStarted": "下載已始",
   "fileDownloadSaved": "已存至 {path}",
+  "@fileDownloadSaved": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
   "fileDownloadFailed": "下載未成",
   "forumAttachments": "附件",
   "forumAttachmentRemove": "移除附件",
@@ -723,6 +731,11 @@
   "settingsAutomaticPreviewDesc": "自動預觀不逾所擇大小之可觀文件",
   "settingsAutomaticPreviewDisabled": "關",
   "settingsAutomaticPreviewSize": "{size} MiB",
+  "@settingsAutomaticPreviewSize": {
+    "placeholders": {
+      "size": {"type": "int"}
+    }
+  },
 
   "userProfileTitle": "用戶之資",
   "userProfileUsername": "名號",
@@ -741,11 +754,17 @@
   "userProfileUidCopied": "用戶 ID 已複",
   "userProfileSendMessage": "發送消息",
   "userProfileLoading": "方載用戶之資…",
-  "userProfileAddFriend": "添好友",
+  "userProfileAddFriend": "結好友",
   "userProfileUnknownEmail": "未知",
 
   "aboutTitle": "關於",
   "aboutVersionInfo": "版本 {version}（{buildNumber}）",
+  "@aboutVersionInfo": {
+    "placeholders": {
+      "version": {"type": "String"},
+      "buildNumber": {"type": "String"}
+    }
+  },
   "aboutAppInfoSection": "應用之資",
   "aboutPackageName": "包名",
   "aboutVersion": "版本",
@@ -769,6 +788,11 @@
   "aboutLicenseFullText": "許可之全文",
   "aboutLicenseClose": "關閉",
   "aboutCopyright": "© {year} ILoveScratch2。保有諸權。",
+  "@aboutCopyright": {
+    "placeholders": {
+      "year": {"type": "String"}
+    }
+  },
   "aboutMadeWith": "By ILoveScratch2 & TouchFish Dev Team",
   "aboutCopiedToClipboard": "已複至剪貼板",
   "aboutCopyToClipboard": "複至剪貼板",
@@ -828,6 +852,13 @@
   "licensesTitle": "開源之許",
   "licensesSearchHint": "索包…",
   "licensesPackageCount": "{count} 包",
+  "@licensesPackageCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "licensesNoResults": "未得包",
   "licensesVersion": "版本",
   "licensesDescription": "描述",
@@ -1016,23 +1047,24 @@
   "forumCommentDeleteHint": "確欲刪此評論乎？",
   "forumCommentDeleteSuccess": "評論已刪",
   "forumCommentDeleteFailed": "刪評論未成",
-  "announcementTitle": "公告",
-  "announcementNoAnnouncements": "暫無公告",
-  "announcementCreate": "發公告",
-  "announcementCreateHint": "書公告之內容…",
-  "announcementCreateEmpty": "內容不可空",
-  "announcementCreateSuccess": "公告已發",
-  "announcementCreateFailed": "發公告未成",
-  "announcementEdit": "改公告",
-  "announcementEditHint": "改公告之內容…",
-  "announcementEditSuccess": "公告已更",
-  "announcementEditFailed": "改公告未成",
-  "announcementEditEmpty": "內容不可空",
-  "announcementDeleteConfirm": "確欲刪除此公告乎？",
-  "announcementDeleteSuccess": "公告已刪",
-  "announcementDeleteFailed": "刪公告未成",
-  "adminAnnouncements": "公告之治",
-  "adminAnnouncementsDescription": "建而治系統之公告",
+  "announcementTitle": "告示",
+  "announcementNoAnnouncements": "暫無告示",
+  "announcementCreate": "貼告示",
+  "announcementCreateHint": "書告示之內容…",
+  "announcementCreateEmpty": "內容不可無",
+  "announcementCreateSuccess": "告示已發",
+  "announcementCreateFailed": "發告示未成",
+  "announcementEdit": "改告示",
+  "announcementEditHint": "改告示之內容…",
+  "announcementEditSuccess": "告示已更",
+  "announcementEditFailed": "改告示未成",
+  "announcementEditEmpty": "內容不可無",
+  "announcementDelete": "刪告示",
+  "announcementDeleteConfirm": "確欲除此告示乎？",
+  "announcementDeleteSuccess": "告示已刪",
+  "announcementDeleteFailed": "刪告示未成",
+  "adminAnnouncements": "司告示府",
+  "adminAnnouncementsDescription": "建而治系統之告示",
   "adminAccountManagement": "賬戶管理",
   "adminAccountManagementDescription": "查察並管理用戶賬戶",
   "adminAccountSearch": "檢索用戶名、郵箱或 UID",
@@ -1221,7 +1253,7 @@
   "serverFilePickerError": "加載文件未成",
   "chatSendFailed": "發送未成",
   "chatCreateGroup": "創建羣組",
-  "chatAddFriend": "添加好友",
+  "chatAddFriend": "結交好友",
   "chatAddFriendHint": "輸入用戶名或 UID",
   "chatSendFailedBanned": "你已被封禁，無法發送訊息",
   "chatSendFailedRateLimited": "發送訊息過快，請稍後再試",
@@ -1289,16 +1321,16 @@
   "commonFileReadError": "無法讀取檔案",
   "chatLoading": "加載中...",
   "chatInputNotConnected": "未連接到聊天服務器",
-  "chatInviteAcceptFailed": "接受好友請求未成",
-  "chatInviteRejectFailed": "拒絕好友請求未成",
-  "userProfileFriendRequestHint": "打個招呼...",
+  "chatInviteAcceptFailed": "接受結友請求未成",
+  "chatInviteRejectFailed": "拒絕結友請求未成",
+  "userProfileFriendRequestHint": "致以問候...",
   "userProfileFriendRequestSent": "已向 {username} 送結友請求",
   "@userProfileFriendRequestSent": {
     "placeholders": {
       "username": {"type": "String"}
     }
   },
-  "userProfileFriendRequestFailed": "發送好友請求未成",
+  "userProfileFriendRequestFailed": "送結友請求未成",
 
   "settingsCategoryConnection": "接",
   "settingsCategoryStorage": "儲",
@@ -1322,6 +1354,11 @@
   "maxCachedRooms": "緩存房間數",
   "maxCachedRoomsDesc": "內存所存聊天房數之上限，逾則逐最久未用者",
   "maxCachedRoomsCount": "{count} 個",
+  "@maxCachedRoomsCount": {
+    "placeholders": {
+      "count": {"type": "Object"}
+    }
+  },
   "settingsStorageUsed": "已用空間",
   "settingsStorageFree": "可用空間",
   "settingsStorageUnavailable": "當前平台不支持查看磁盤信息",

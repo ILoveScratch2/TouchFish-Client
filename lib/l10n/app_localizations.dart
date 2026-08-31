@@ -1717,7 +1717,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsCustomFontHint.
   ///
   /// In en, this message translates to:
-  /// **'e.g. LXGW WenKai Screen'**
+  /// **'e.g. Segoe UI'**
   String get settingsCustomFontHint;
 
   /// No description provided for @settingsSendModeTitle.
@@ -1851,18 +1851,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View EXIF info'**
   String get imageExif;
-
-  /// No description provided for @announcementEdit.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit Announcement'**
-  String get announcementEdit;
-
-  /// No description provided for @announcementDelete.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete announcement'**
-  String get announcementDelete;
 
   /// No description provided for @chatSelectPlaceholder.
   ///
@@ -5392,6 +5380,12 @@ abstract class AppLocalizations {
   /// **'Failed to create announcement'**
   String get announcementCreateFailed;
 
+  /// No description provided for @announcementEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Announcement'**
+  String get announcementEdit;
+
   /// No description provided for @announcementEditHint.
   ///
   /// In en, this message translates to:
@@ -5415,6 +5409,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Content cannot be empty'**
   String get announcementEditEmpty;
+
+  /// No description provided for @announcementDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete announcement'**
+  String get announcementDelete;
 
   /// No description provided for @announcementDeleteConfirm.
   ///

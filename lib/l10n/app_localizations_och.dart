@@ -902,12 +902,6 @@ class AppLocalizationsOch extends AppLocalizations {
   String get imageExif => '覽 EXIF';
 
   @override
-  String get announcementEdit => '改公告';
-
-  @override
-  String get announcementDelete => '刪公告';
-
-  @override
   String get chatSelectPlaceholder => '擇一對話以啟談';
 
   @override
@@ -1078,10 +1072,10 @@ class AppLocalizationsOch extends AppLocalizations {
   String get serverAutoDetectTcpPortDesc => '自服器取 TCP 端口';
 
   @override
-  String get navChat => '聊天';
+  String get navChat => '閒談';
 
   @override
-  String get navAnnouncement => '公告';
+  String get navAnnouncement => '告示';
 
   @override
   String get navForum => '論壇';
@@ -1090,13 +1084,13 @@ class AppLocalizationsOch extends AppLocalizations {
   String get navAccount => '賬戶';
 
   @override
-  String get navAdmin => '管員';
+  String get navAdmin => '司事';
 
   @override
-  String get adminTitle => '管理員';
+  String get adminTitle => '司事府';
 
   @override
-  String get adminDescription => '管理 TouchFish 之服器';
+  String get adminDescription => '司 TouchFish 之服器';
 
   @override
   String get adminAccessDenied => '君今無管理之權。';
@@ -1536,7 +1530,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get notificationClearAll => '清除全部';
 
   @override
-  String get notificationTabAnnouncements => '公告';
+  String get notificationTabAnnouncements => '告示';
 
   @override
   String get notificationTabNotifications => '通知';
@@ -1703,7 +1697,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get essenceName => '精華';
 
   @override
-  String get essenceAdd => '取其精華';
+  String get essenceAdd => '取之為精華';
 
   @override
   String get essenceRemove => '去其糟粕';
@@ -1982,7 +1976,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get userProfileLoading => '方載用戶之資…';
 
   @override
-  String get userProfileAddFriend => '添好友';
+  String get userProfileAddFriend => '結好友';
 
   @override
   String get userProfileUnknownEmail => '未知';
@@ -2722,52 +2716,58 @@ class AppLocalizationsOch extends AppLocalizations {
   String get forumCommentDeleteFailed => '刪評論未成';
 
   @override
-  String get announcementTitle => '公告';
+  String get announcementTitle => '告示';
 
   @override
-  String get announcementNoAnnouncements => '暫無公告';
+  String get announcementNoAnnouncements => '暫無告示';
 
   @override
-  String get announcementCreate => '發公告';
+  String get announcementCreate => '貼告示';
 
   @override
-  String get announcementCreateHint => '書公告之內容…';
+  String get announcementCreateHint => '書告示之內容…';
 
   @override
-  String get announcementCreateEmpty => '內容不可空';
+  String get announcementCreateEmpty => '內容不可無';
 
   @override
-  String get announcementCreateSuccess => '公告已發';
+  String get announcementCreateSuccess => '告示已發';
 
   @override
-  String get announcementCreateFailed => '發公告未成';
+  String get announcementCreateFailed => '發告示未成';
 
   @override
-  String get announcementEditHint => '改公告之內容…';
+  String get announcementEdit => '改告示';
 
   @override
-  String get announcementEditSuccess => '公告已更';
+  String get announcementEditHint => '改告示之內容…';
 
   @override
-  String get announcementEditFailed => '改公告未成';
+  String get announcementEditSuccess => '告示已更';
 
   @override
-  String get announcementEditEmpty => '內容不可空';
+  String get announcementEditFailed => '改告示未成';
 
   @override
-  String get announcementDeleteConfirm => '確欲刪除此公告乎？';
+  String get announcementEditEmpty => '內容不可無';
 
   @override
-  String get announcementDeleteSuccess => '公告已刪';
+  String get announcementDelete => '刪告示';
 
   @override
-  String get announcementDeleteFailed => '刪公告未成';
+  String get announcementDeleteConfirm => '確欲除此告示乎？';
 
   @override
-  String get adminAnnouncements => '公告之治';
+  String get announcementDeleteSuccess => '告示已刪';
 
   @override
-  String get adminAnnouncementsDescription => '建而治系統之公告';
+  String get announcementDeleteFailed => '刪告示未成';
+
+  @override
+  String get adminAnnouncements => '司告示府';
+
+  @override
+  String get adminAnnouncementsDescription => '建而治系統之告示';
 
   @override
   String get adminAccountManagement => '賬戶管理';
@@ -3088,7 +3088,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get chatCreateGroup => '創建羣組';
 
   @override
-  String get chatAddFriend => '添加好友';
+  String get chatAddFriend => '結交好友';
 
   @override
   String get chatAddFriendHint => '輸入用戶名或 UID';
@@ -3263,13 +3263,13 @@ class AppLocalizationsOch extends AppLocalizations {
   String get chatInputNotConnected => '未連接到聊天服務器';
 
   @override
-  String get chatInviteAcceptFailed => '接受好友請求未成';
+  String get chatInviteAcceptFailed => '接受結友請求未成';
 
   @override
-  String get chatInviteRejectFailed => '拒絕好友請求未成';
+  String get chatInviteRejectFailed => '拒絕結友請求未成';
 
   @override
-  String get userProfileFriendRequestHint => '打個招呼...';
+  String get userProfileFriendRequestHint => '致以問候...';
 
   @override
   String userProfileFriendRequestSent(String username) {
@@ -3277,7 +3277,7 @@ class AppLocalizationsOch extends AppLocalizations {
   }
 
   @override
-  String get userProfileFriendRequestFailed => '發送好友請求未成';
+  String get userProfileFriendRequestFailed => '送結友請求未成';
 
   @override
   String get settingsCategoryConnection => '接';

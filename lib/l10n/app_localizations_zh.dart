@@ -903,12 +903,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get imageExif => '查看 EXIF 信息';
 
   @override
-  String get announcementEdit => '编辑公告';
-
-  @override
-  String get announcementDelete => '删除公告';
-
-  @override
   String get chatSelectPlaceholder => '选择一个聊天开始对话';
 
   @override
@@ -2745,6 +2739,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get announcementCreateFailed => '发布公告失败';
 
   @override
+  String get announcementEdit => '编辑公告';
+
+  @override
   String get announcementEditHint => '编辑公告内容...';
 
   @override
@@ -2755,6 +2752,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get announcementEditEmpty => '内容不能为空';
+
+  @override
+  String get announcementDelete => '删除公告';
 
   @override
   String get announcementDeleteConfirm => '确认删除此公告？';
