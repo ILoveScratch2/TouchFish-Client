@@ -812,7 +812,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter the name of the system font to use';
 
   @override
-  String get settingsCustomFontHint => 'e.g. LXGW WenKai Screen';
+  String get settingsCustomFontHint => 'e.g. Segoe UI';
 
   @override
   String get settingsSendModeTitle => 'Send Mode';
@@ -881,12 +881,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get imageExif => 'View EXIF info';
-
-  @override
-  String get announcementEdit => 'Edit Announcement';
-
-  @override
-  String get announcementDelete => 'Delete announcement';
 
   @override
   String get chatSelectPlaceholder => 'Select a chat to start talking';
@@ -2763,6 +2757,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get announcementCreateFailed => 'Failed to create announcement';
 
   @override
+  String get announcementEdit => 'Edit Announcement';
+
+  @override
   String get announcementEditHint => 'Edit announcement content...';
 
   @override
@@ -2773,6 +2770,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get announcementEditEmpty => 'Content cannot be empty';
+
+  @override
+  String get announcementDelete => 'Delete announcement';
 
   @override
   String get announcementDeleteConfirm => 'Delete this announcement?';

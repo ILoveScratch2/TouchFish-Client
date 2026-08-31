@@ -281,7 +281,7 @@
   "settingsFontCustomOption": "Custom",
   "settingsCustomFontTitle": "Custom font",
   "settingsCustomFontDesc": "Enter the name of the system font to use",
-  "settingsCustomFontHint": "e.g. LXGW WenKai Screen",
+  "settingsCustomFontHint": "e.g. Segoe UI",
   
   "settingsSendModeTitle": "Send Mode",
   "settingsSendModeDesc": "Keyboard shortcut for sending messages",
@@ -310,9 +310,6 @@
   "imageRotateLeft": "Rotate left",
   "imageRotateRight": "Rotate right",
   "imageExif": "View EXIF info",
-
-  "announcementEdit": "Edit announcement",
-  "announcementDelete": "Delete announcement",
 
   "chatSelectPlaceholder": "Select a chat to start talking",
   
@@ -1042,6 +1039,7 @@
   "announcementEditSuccess": "Announcement updated",
   "announcementEditFailed": "Failed to update announcement",
   "announcementEditEmpty": "Content cannot be empty",
+  "announcementDelete": "Delete announcement",
   "announcementDeleteConfirm": "Delete this announcement?",
   "announcementDeleteSuccess": "Announcement deleted",
   "announcementDeleteFailed": "Failed to delete announcement",

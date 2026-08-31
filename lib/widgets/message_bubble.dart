@@ -676,9 +676,17 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
       return '${l10n.chatYesterday} ${DateFormat.Hm().format(time)}';
     }
     if (now.difference(time).inDays < 7) {
-      return '${DateFormat.E(locale.toString()).format(time)} ${DateFormat.Hm().format(time)}';
+      try {
+        return '${DateFormat.E(locale.toString()).format(time)} ${DateFormat.Hm().format(time)}';
+      } catch (e) {
+        return '${DateFormat.E(locale.languageCode == 'och' ? 'zh' : locale.languageCode).format(time)} ${DateFormat.Hm().format(time)}';
+      }
     }
-    return DateFormat.MMMd(locale.toString()).add_Hm().format(time);
+    try {
+      return DateFormat.MMMd(locale.toString()).add_Hm().format(time);
+    } catch (e) {
+      return DateFormat.MMMd(locale.languageCode == 'och' ? 'zh' : locale.languageCode).add_Hm().format(time);
+    }
   }
 
   Widget _buildMessageContent(

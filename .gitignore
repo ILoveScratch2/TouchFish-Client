@@ -54,3 +54,5 @@ server_test.py
 test.py
 key.pem
 key.pub
+# Widget Preview related
+.widget_preview/
