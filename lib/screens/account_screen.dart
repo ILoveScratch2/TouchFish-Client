@@ -432,6 +432,14 @@ class _AccountScreenState extends State<AccountScreen> {
         title: Text(l10n.accountAppSettings),
         onTap: () => context.push(AppRoutes.settings),
       ),
+      ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+        trailing: const Icon(Symbols.chevron_right),
+        dense: true,
+        leading: const Icon(Symbols.devices, size: 24),
+        title: Text(l10n.accountSessionDevices),
+        onTap: () => context.push(AppRoutes.sessionDevices),
+      ),
       ListenableBuilder(
         listenable: LockService.instance,
         builder: (context, _) {

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pointycastle/export.dart';
@@ -25,6 +26,35 @@ class EssenceResult {
   final List<int> mids;
   final bool essenceEnabled;
   const EssenceResult({required this.mids, required this.essenceEnabled});
+}
+
+/// 认证模式：JWT（推荐）或旧版 uid+password。
+enum TfAuthMode { jwt, legacy }
+
+/// /auth/login
+class TfLoginResult {
+  final TfAuthMode mode;
+  final String? token;
+  final int? expiresAt;
+  final String? error;
+  final bool degraded;
+
+  const TfLoginResult.jwt({required this.token, required this.expiresAt})
+      : mode = TfAuthMode.jwt,
+        error = null,
+        degraded = false;
+
+  const TfLoginResult.legacy({this.degraded = false})
+      : mode = TfAuthMode.legacy,
+        token = null,
+        expiresAt = null,
+        error = null;
+
+  const TfLoginResult.error(this.error)
+      : mode = TfAuthMode.legacy,
+        token = null,
+        expiresAt = null,
+        degraded = false;
 }
 
 typedef MessageSyncResult = ({
@@ -116,6 +146,9 @@ class TfServerConfig {
   final bool? reverseProxyEnabled;
   final int? proxyCount;
   final List<String> defaultJoinTargets;
+  final bool? legacyAuthEnabled;
+  final int? jwtExpiresSeconds;
+  final int? jwtMaxPerUser;
 
   const TfServerConfig({
     required this.captcha,
@@ -145,6 +178,9 @@ class TfServerConfig {
     this.reverseProxyEnabled,
     this.proxyCount,
     this.defaultJoinTargets = const [],
+    this.legacyAuthEnabled,
+    this.jwtExpiresSeconds,
+    this.jwtMaxPerUser,
   });
 
   static int _parseIntValue(dynamic value, int fallback) {
@@ -212,6 +248,65 @@ class TfServerConfig {
       defaultJoinTargets: (json['default_join_targets'] as List<dynamic>? ?? const [])
           .map((value) => value.toString())
           .toList(),
+      legacyAuthEnabled: json['legacy_auth_enabled'] as bool?,
+      jwtExpiresSeconds: _parseOptionalIntValue(json['jwt_expires_seconds']),
+      jwtMaxPerUser: _parseOptionalIntValue(json['jwt_max_per_user']),
+    );
+  }
+}
+
+/// 当前用户签发的一个 JWT（设备）条目。
+class TfAuthTokenInfo {
+  final String jti;
+  final int issuedAt;
+  final int expiresAt;
+  final String ip;
+  final String ua;
+  final bool isCurrent;
+
+  const TfAuthTokenInfo({
+    required this.jti,
+    required this.issuedAt,
+    required this.expiresAt,
+    this.ip = '',
+    this.ua = '',
+    this.isCurrent = false,
+  });
+
+  factory TfAuthTokenInfo.fromJson(Map<String, dynamic> json) {
+    return TfAuthTokenInfo(
+      jti: json['jti'] as String? ?? '',
+      issuedAt: (json['issued_at'] as num?)?.toInt() ?? 0,
+      expiresAt: (json['expires_at'] as num?)?.toInt() ?? 0,
+      ip: json['ip'] as String? ?? '',
+      ua: json['ua'] as String? ?? '',
+      isCurrent: json['is_current'] == true,
+    );
+  }
+}
+
+/// /auth/tokens/list 的解析结果。
+class TfTokenListResult {
+  final List<TfAuthTokenInfo> tokens;
+  final int maxPerUser;
+
+  const TfTokenListResult({required this.tokens, required this.maxPerUser});
+
+  factory TfTokenListResult.fromJson(Map<String, dynamic> json) {
+    final raw = json['tokens'];
+    final tokens = raw is List
+        ? raw
+            .whereType<Map>()
+            .map(
+              (item) => TfAuthTokenInfo.fromJson(
+                Map<String, dynamic>.from(item),
+              ),
+            )
+            .toList()
+        : const <TfAuthTokenInfo>[];
+    return TfTokenListResult(
+      tokens: tokens,
+      maxPerUser: (json['max_per_user'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -315,6 +410,29 @@ class TfApiClient {
   TfServerConfig? _cachedServerConfig;
   String? _cachedAppVersion;
 
+  String? _authToken;
+  bool _legacyAuthMode = false;
+  Future<bool> Function()? _tokenExpiredHandler;
+  void Function(String note)? _authNoteHandler;
+
+  /// 由 AuthState 在登录/恢复/登出时同步当前认证上下文。
+  void setAuthContext({String? token, required bool legacyMode}) {
+    _authToken = token;
+    _legacyAuthMode = legacyMode;
+  }
+
+  /// 注册 token 失效回调（AuthState 内实现静默重登），返回 true 表示已重新登录。
+  void setTokenExpiredHandler(Future<bool> Function()? handler) {
+    _tokenExpiredHandler = handler;
+  }
+
+  /// 注册服务器 deprecation note 回调（AuthState 内实现一次性提示）。
+  void setAuthNoteHandler(void Function(String note)? handler) {
+    _authNoteHandler = handler;
+  }
+
+  bool get isJwtAuthActive => _authToken != null && !_legacyAuthMode;
+
   Future<String> _appVersion() async {
     if (_cachedAppVersion != null) return _cachedAppVersion!;
     try {
@@ -328,7 +446,19 @@ class TfApiClient {
   }
 
   Future<String> _officialUserAgent() async =>
-      'TouchFish-Client/${await _appVersion()} (official, dart:io)';
+      'TouchFish-Client/${await _appVersion()} (official, dart:io, ${_platformLabel()})';
+
+  String _platformLabel() {
+    if (kIsWeb) return 'web';
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.android => 'android',
+      TargetPlatform.iOS => 'ios',
+      TargetPlatform.macOS => 'macos',
+      TargetPlatform.windows => 'windows',
+      TargetPlatform.linux => 'linux',
+      _ => 'unknown',
+    };
+  }
 
   Future<String> _debugUserAgent() async =>
       'TouchFish-Client-API-Debug/${await _appVersion()}';
@@ -590,8 +720,18 @@ class TfApiClient {
     Map<String, dynamic> body, {
     int? uid,
     String? password,
+    bool skipToken = false,
+    String? tokenOverride,
   }) {
     final fullBody = Map<String, dynamic>.from(body);
+    final token = tokenOverride != null
+        ? tokenOverride
+        : (isJwtAuthActive ? _authToken : null);
+    if (token != null && !skipToken) {
+      fullBody['token'] = token;
+      if (uid != null) fullBody['uid'] = uid;
+      return fullBody;
+    }
     if (uid != null) fullBody['uid'] = uid;
     if (password != null) fullBody['password'] = password;
     return fullBody;
@@ -631,12 +771,20 @@ class TfApiClient {
     Map<String, dynamic> body, {
     int? uid,
     String? password,
+    bool skipToken = false,
+    String? tokenOverride,
   }) async {
     final baseUrl = await getBaseUrl();
     final requestUrl = _buildRequestUri(baseUrl, path).toString();
     final pubKey = await _getRsaPublicKey(baseUrl);
 
-    final fullBody = _buildRequestBody(body, uid: uid, password: password);
+    final fullBody = _buildRequestBody(
+      body,
+      uid: uid,
+      password: password,
+      skipToken: skipToken,
+      tokenOverride: tokenOverride,
+    );
 
     final aesKey = TfCrypto.generateAesKey();
     final iv = TfCrypto.generateIv();
@@ -674,26 +822,75 @@ class TfApiClient {
     String? password,
   }) async {
     try {
-      final preparedRequest = await _prepareSecretPostRequest(
+      var result = await _secretPostInternal(
         path,
         body,
         uid: uid,
         password: password,
       );
-
-      final response = await _postRequest(
-        preparedRequest.requestUrl,
-        headers: {'Content-Type': 'application/json'},
-        body: preparedRequest.requestBody,
-        timeout: _secretPostTimeout,
-      );
-
-      if (response.statusCode != 200) return null;
-
-      return _decryptSecretResponse(response.body, preparedRequest.aesKey);
+      final data = _parseJsonMap(result);
+      if (data != null && data['error'] == 'token_expired') {
+        final handler = _tokenExpiredHandler;
+        if (handler != null) {
+          final relogged = await handler();
+          if (relogged) {
+            result = await _secretPostInternal(
+              path,
+              body,
+              uid: uid,
+              password: password,
+            );
+          }
+        }
+      }
+      return result;
     } catch (e) {
       talker.error('secretPost $path failed', e);
       return null;
+    }
+  }
+
+  /// 发送加密请求但不捕获异常
+  Future<String?> _secretPostInternal(
+    String path,
+    Map<String, dynamic> body, {
+    int? uid,
+    String? password,
+    bool skipToken = false,
+    String? tokenOverride,
+  }) async {
+    final preparedRequest = await _prepareSecretPostRequest(
+      path,
+      body,
+      uid: uid,
+      password: password,
+      skipToken: skipToken,
+      tokenOverride: tokenOverride,
+    );
+
+    final response = await _postRequest(
+      preparedRequest.requestUrl,
+      headers: {'Content-Type': 'application/json'},
+      body: preparedRequest.requestBody,
+      timeout: _secretPostTimeout,
+    );
+
+    if (response.statusCode != 200) return null;
+
+    final plain = _decryptSecretResponse(
+      response.body,
+      preparedRequest.aesKey,
+    );
+    _captureAuthNote(plain);
+    return plain;
+  }
+
+  void _captureAuthNote(String plain) {
+    final data = _parseJsonMap(plain);
+    if (data == null) return;
+    final note = data['note'];
+    if (note is String && note.isNotEmpty) {
+      _authNoteHandler?.call(note);
     }
   }
 
@@ -704,10 +901,17 @@ class TfApiClient {
     bool encryptRequest = true,
     int? uid,
     String? password,
+    bool useAuthToken = true,
   }) async {
     try {
       final baseUrl = await getBaseUrl();
-      final fullBody = _buildRequestBody(body, uid: uid, password: password);
+      final skipToken = !useAuthToken;
+      final fullBody = _buildRequestBody(
+        body,
+        uid: uid,
+        password: password,
+        skipToken: skipToken,
+      );
 
       switch (method) {
         case TfDebugRequestMethod.get:
@@ -756,6 +960,7 @@ class TfApiClient {
             body,
             uid: uid,
             password: password,
+            skipToken: skipToken,
           );
           final response = await _postRequest(
             preparedRequest.requestUrl,
@@ -838,7 +1043,7 @@ class TfApiClient {
     }
   }
 
-  Future<TfServerConfig?> queryServerSettings(int uid, String password) async {
+  Future<TfServerConfig?> queryServerSettings(int uid, String? password) async {
     final result = await secretPost(
       '/auth/server_settings/query',
       const {},
@@ -856,7 +1061,7 @@ class TfApiClient {
 
   Future<TfServerConfig?> updateServerSettings(
     int uid,
-    String password, {
+    String? password, {
     required String serverName,
     required bool captcha,
     required int fileLastTime,
@@ -874,6 +1079,9 @@ class TfApiClient {
     bool? reverseProxyEnabled,
     int? proxyCount,
     List<String>? defaultJoinTargets,
+    bool? legacyAuthEnabled,
+    int? jwtExpiresSeconds,
+    int? jwtMaxPerUser,
   }) async {
     final result = await secretPost(
       '/auth/server_settings/update',
@@ -900,6 +1108,11 @@ class TfApiClient {
         if (proxyCount != null) 'proxy_count': proxyCount,
         if (defaultJoinTargets != null)
           'default_join_targets': defaultJoinTargets,
+        if (legacyAuthEnabled != null)
+          'legacy_auth_enabled': legacyAuthEnabled,
+        if (jwtExpiresSeconds != null)
+          'jwt_expires_seconds': jwtExpiresSeconds,
+        if (jwtMaxPerUser != null) 'jwt_max_per_user': jwtMaxPerUser,
       },
       uid: uid,
       password: password,
@@ -915,7 +1128,7 @@ class TfApiClient {
 
   Future<bool> changeEmailVerify(
     int uid,
-    String password, {
+    String? password, {
     required bool changeTo,
     String? verifyEmail,
     String? emailPassword,
@@ -1018,14 +1231,112 @@ class TfApiClient {
     }
   }
 
-  Future<bool> login(int uid, String password) async {
-    final result = await secretPost(
-      '/auth/login',
-      {},
-      uid: uid,
-      password: password,
-    );
-    return _parseBool(result);
+  /// 登录。默认优先 JWT（请求带 jwt:true）：
+  /// - 新服务器返回 {token, ...} → jwt 模式；
+  /// - 旧服务器返回 "…True/False" → legacy 模式（degraded=true，自动降级）；
+  Future<TfLoginResult> login(
+    int uid,
+    String password, {
+    bool legacyMode = false,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (!legacyMode) body['jwt'] = true;
+      final result = await _secretPostInternal(
+        '/auth/login',
+        body,
+        uid: uid,
+        password: password,
+        skipToken: true,
+      );
+      final data = _parseJsonMap(result);
+      if (data != null) {
+        final error = data['error'];
+        if (error != null) {
+          final code = switch (error) {
+            'auth_failed' => 'authFailed',
+            'token_limit_reached' => 'tokenLimitReached',
+            _ => 'serverError',
+          };
+          return TfLoginResult.error(code);
+        }
+        final token = data['token'];
+        if (token is String && token.isNotEmpty) {
+          return TfLoginResult.jwt(
+            token: token,
+            expiresAt: (data['expires_at'] as num?)?.toInt(),
+          );
+        }
+        return TfLoginResult.error('serverError');
+      }
+      if (_parseBool(result)) {
+        return TfLoginResult.legacy(degraded: !legacyMode);
+      }
+      return TfLoginResult.error('authFailed');
+    } catch (e) {
+      talker.error('TfApiClient.login failed', e);
+      return TfLoginResult.error('networkError');
+    }
+  }
+
+  /// 会话探活：校验已保存的 JWT 是否仍有效（需先 setAuthContext 注入 token
+  /// 返回 true=有效；false=服务器明确拒绝（过期/被吊销）；null=网络或解析失败
+  Future<bool?> validateToken() async {
+    try {
+      final result = await _secretPostInternal('/auth/validate', const {});
+      final data = _parseJsonMap(result);
+      if (data == null) return null;
+      if (data['valid'] == true) return true;
+      return false;
+    } catch (e) {
+      talker.error('validateToken failed', e);
+      return null;
+    }
+  }
+
+  /// 列出活跃 token（设备）列表。返回 null 表示请求失败（如服务器不支持 JWT
+  Future<TfTokenListResult?> listAuthTokens({int? targetUid}) async {
+    try {
+      final result = await secretPost(
+        '/auth/tokens/list',
+        {if (targetUid != null) 'target_uid': targetUid},
+      );
+      final data = _parseJsonMap(result);
+      if (data == null) return null;
+      return TfTokenListResult.fromJson(data);
+    } catch (e) {
+      talker.error('listAuthTokens failed', e);
+      return null;
+    }
+  }
+
+  /// 移除指定 jti 的 token（踢出设备）。返回 null 表示请求失败
+  Future<bool?> revokeAuthToken(String jti, {int? targetUid}) async {
+    try {
+      final result = await secretPost(
+        '/auth/tokens/revoke',
+        {
+          'jti': jti,
+          if (targetUid != null) 'target_uid': targetUid,
+        },
+      );
+      final data = _parseJsonMap(result);
+      if (data == null) return null;
+      if (data['success'] == true) return true;
+      return false;
+    } catch (e) {
+      talker.error('revokeAuthToken failed', e);
+      return null;
+    }
+  }
+
+  /// 登出时吊销指定 token
+  Future<void> logoutCurrentToken(String token) async {
+    try {
+      await _secretPostInternal('/auth/logout', const {}, tokenOverride: token);
+    } catch (e) {
+      talker.error('logoutCurrentToken failed', e);
+    }
   }
 
   Future<bool> register(
@@ -1039,16 +1350,35 @@ class TfApiClient {
     if (email != null && email.isNotEmpty) body['email'] = email;
     if (captchaStamp != null) body['captcha_stamp'] = captchaStamp;
     if (captchaCode != null) body['captcha_code'] = captchaCode;
-    final result = await secretPost('/auth/register', body);
-    return _parseBool(result);
+    // 注册为免认证端点，不携带当前 token
+    try {
+      final result = await _secretPostInternal(
+        '/auth/register',
+        body,
+        skipToken: true,
+      );
+      return _parseBool(result);
+    } catch (e) {
+      talker.error('register failed', e);
+      return false;
+    }
   }
 
   Future<bool> activateAccount(int uid, int activateCode) async {
-    final result = await secretPost('/auth/activate', {
-      'uid': uid,
-      'activate_code': activateCode,
-    });
-    return _parseBool(result);
+    try {
+      final result = await _secretPostInternal(
+        '/auth/activate',
+        {
+          'uid': uid,
+          'activate_code': activateCode,
+        },
+        skipToken: true,
+      );
+      return _parseBool(result);
+    } catch (e) {
+      talker.error('activateAccount failed', e);
+      return false;
+    }
   }
 
   Future<bool> changeSign(int uid, String password, String newSign) async {

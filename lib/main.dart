@@ -32,6 +32,7 @@ import 'services/server_connection_status_service.dart';
 import 'services/ip_override_service.dart';
 import 'services/lock_service.dart';
 import 'services/lock_screen_visibility_service.dart';
+import 'services/snackbar_service.dart';
 import 'utils/talker.dart';
 import 'widgets/app_alert_dialog.dart';
 import 'widgets/rsa_key_prompts.dart';
@@ -369,6 +370,7 @@ class _TouchFishAppState extends State<TouchFishApp>
   );
   bool _didShowStartupResetNotice = false;
   bool _didStartSavedSessionRestore = false;
+  bool _didShowDeprecationNotice = false;
   late bool _wasLoggedIn;
   RsaKeyCheckResult? _pendingRestoreKeyCheck;
 
@@ -378,6 +380,7 @@ class _TouchFishAppState extends State<TouchFishApp>
     WidgetsBinding.instance.addObserver(this);
     _wasLoggedIn = AuthState.instance.isLoggedIn;
     AuthState.instance.sessionListenable.addListener(_onAuthStateChanged);
+    AuthState.instance.addListener(_onAuthNotice);
     unawaited(AppNotificationService.instance.initialize(_router));
     BackgroundPermissionService.instance.installNotificationRouteHandler();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -456,12 +459,41 @@ class _TouchFishAppState extends State<TouchFishApp>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     AuthState.instance.sessionListenable.removeListener(_onAuthStateChanged);
+    AuthState.instance.removeListener(_onAuthNotice);
     NotificationService.instance.stopPolling();
     ForumPendingService.instance.stopPolling();
     super.dispose();
   }
 
+  /// 服务器 deprecation note
+  void _onAuthNotice() {
+    final notice = AuthState.instance.deprecationNotice;
+    if (notice == null || notice.isEmpty) {
+      _didShowDeprecationNotice = false;
+      return;
+    }
+    if (_didShowDeprecationNotice) return;
+    _didShowDeprecationNotice = true;
+    final navigatorContext =
+        _router.routerDelegate.navigatorKey.currentContext;
+    if (navigatorContext == null || !navigatorContext.mounted) return;
+    TouchFishSnackbarService.instance.show(notice);
+  }
+
   void _onAuthStateChanged() {
+    if (AuthState.instance.sessionExpiredNotice) {
+      AuthState.instance.clearSessionExpiredNotice();
+      final navigatorContext =
+          _router.routerDelegate.navigatorKey.currentContext;
+      if (navigatorContext != null && navigatorContext.mounted) {
+        final l10n = AppLocalizations.of(navigatorContext);
+        if (l10n != null) {
+          TouchFishSnackbarService.instance.show(l10n.sessionExpiredMessage);
+        }
+      }
+      _router.go(AppRoutes.login);
+    }
+
     final isLoggedIn = AuthState.instance.isLoggedIn;
     if (isLoggedIn == _wasLoggedIn) return;
     _wasLoggedIn = isLoggedIn;
@@ -655,10 +687,14 @@ class _TouchFishAppState extends State<TouchFishApp>
     BuildContext context,
     AppLocalizations l10n,
   ) {
+    final reason = AuthState.instance.restoreFailureReason;
+    final message = reason == RestoreFailureReason.network
+        ? l10n.sessionRestoreNetworkError
+        : l10n.savedSessionRestoreFailedMessage;
     return buildTouchFishErrorDialog(
       context,
       title: l10n.savedSessionRestoreFailedTitle,
-      message: l10n.savedSessionRestoreFailedMessage,
+      message: message,
       icon: Icons.cloud_off_rounded,
       selectableMessage: false,
       addDefaultActionWhenEmpty: false,

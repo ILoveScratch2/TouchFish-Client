@@ -358,6 +358,24 @@ abstract class AppLocalizations {
   /// **'Network error, please try again'**
   String get loginErrorNetwork;
 
+  /// No description provided for @loginErrorSessionLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many logged-in devices'**
+  String get loginErrorSessionLimit;
+
+  /// No description provided for @loginDegradedToLegacy.
+  ///
+  /// In en, this message translates to:
+  /// **'This server does not support JWT auth. Automatically fell back to legacy login (UID + PASSWORD)'**
+  String get loginDegradedToLegacy;
+
+  /// No description provided for @sessionExpiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Login session expired, please sign in again'**
+  String get sessionExpiredMessage;
+
   /// No description provided for @savedSessionRestoreConnectingTitle.
   ///
   /// In en, this message translates to:
@@ -381,6 +399,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This session can\'t be used on the server. Check your network connection or login credentials.'**
   String get savedSessionRestoreFailedMessage;
+
+  /// No description provided for @sessionDevicesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Session Devices'**
+  String get sessionDevicesTitle;
+
+  /// No description provided for @sessionDevicesUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This server doesn\'t support JWT authentication. Device management is unavailable.'**
+  String get sessionDevicesUnsupported;
+
+  /// No description provided for @sessionDevicesCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged in'**
+  String get sessionDevicesCountLabel;
+
+  /// No description provided for @sessionDevicesUnlimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited'**
+  String get sessionDevicesUnlimited;
+
+  /// No description provided for @sessionDevicesUnknownDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown device'**
+  String get sessionDevicesUnknownDevice;
+
+  /// No description provided for @sessionDevicesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No logged-in devices'**
+  String get sessionDevicesEmpty;
+
+  /// No description provided for @sessionDevicesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load devices'**
+  String get sessionDevicesLoadFailed;
+
+  /// No description provided for @sessionDevicesCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current device'**
+  String get sessionDevicesCurrent;
+
+  /// No description provided for @sessionDevicesIpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'IP:'**
+  String get sessionDevicesIpLabel;
+
+  /// No description provided for @sessionDevicesIssuedAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued at'**
+  String get sessionDevicesIssuedAtLabel;
+
+  /// No description provided for @sessionDevicesExpiresAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires at'**
+  String get sessionDevicesExpiresAtLabel;
+
+  /// No description provided for @sessionDevicesRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove device'**
+  String get sessionDevicesRemove;
+
+  /// No description provided for @sessionDevicesRemoveConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove device?'**
+  String get sessionDevicesRemoveConfirmTitle;
+
+  /// No description provided for @sessionDevicesRemoveConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This device will be signed out immediately. Sign in again to restore access.'**
+  String get sessionDevicesRemoveConfirmMessage;
+
+  /// No description provided for @sessionDevicesRemoveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Device removed'**
+  String get sessionDevicesRemoveSuccess;
+
+  /// No description provided for @sessionDevicesRemoveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove device, please try again'**
+  String get sessionDevicesRemoveFailed;
+
+  /// No description provided for @sessionRestoreNetworkError.
+  ///
+  /// In en, this message translates to:
+  /// **'Network connection failed. Please check your network and try again.'**
+  String get sessionRestoreNetworkError;
 
   /// No description provided for @registerErrorCaptchaRequired.
   ///
@@ -2500,6 +2620,54 @@ abstract class AppLocalizations {
   /// **'Trusted Proxy Count'**
   String get adminServerFieldProxyCount;
 
+  /// No description provided for @adminServerSectionAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication'**
+  String get adminServerSectionAuth;
+
+  /// No description provided for @adminServerAuthDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Controls how clients authenticate.'**
+  String get adminServerAuthDescription;
+
+  /// No description provided for @adminServerFieldLegacyAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow legacy UID + PASSWORD login'**
+  String get adminServerFieldLegacyAuth;
+
+  /// No description provided for @adminServerLegacyAuthDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, only JWT authentication is accepted and legacy clients can\'t log in.'**
+  String get adminServerLegacyAuthDescription;
+
+  /// No description provided for @adminServerFieldJwtExpires.
+  ///
+  /// In en, this message translates to:
+  /// **'JWT Expiry (seconds)'**
+  String get adminServerFieldJwtExpires;
+
+  /// No description provided for @adminServerJwtExpiresDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Default 604800 (7 days), minimum 60.'**
+  String get adminServerJwtExpiresDescription;
+
+  /// No description provided for @adminServerFieldJwtMaxPerUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Tokens per User'**
+  String get adminServerFieldJwtMaxPerUser;
+
+  /// No description provided for @adminServerJwtMaxPerUserDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'0 or -1 means unlimited.'**
+  String get adminServerJwtMaxPerUserDescription;
+
   /// No description provided for @adminServerEmailPasswordRequired.
   ///
   /// In en, this message translates to:
@@ -2733,6 +2901,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'App Settings'**
   String get accountAppSettings;
+
+  /// No description provided for @accountSessionDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Session Devices'**
+  String get accountSessionDevices;
 
   /// No description provided for @accountLockNow.
   ///
@@ -4564,6 +4738,24 @@ abstract class AppLocalizations {
   /// **'Current login credentials are unavailable.'**
   String get debugApiTesterNoCredentials;
 
+  /// No description provided for @debugApiTesterUseToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach JWT token'**
+  String get debugApiTesterUseToken;
+
+  /// No description provided for @debugApiTesterUseTokenDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Attaches the current JWT in JWT sessions; turn off to test auth-free requests like login.'**
+  String get debugApiTesterUseTokenDescription;
+
+  /// No description provided for @debugApiTesterUseTokenUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Only available in JWT sessions.'**
+  String get debugApiTesterUseTokenUnavailable;
+
   /// No description provided for @debugApiTesterEncryptRequest.
   ///
   /// In en, this message translates to:
@@ -5373,6 +5565,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Change Role'**
   String get adminAccountChangeRole;
+
+  /// No description provided for @adminAccountViewDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'View Devices'**
+  String get adminAccountViewDevices;
 
   /// No description provided for @adminAccountChangeRoleTitle.
   ///
@@ -7245,6 +7443,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage saved server RSA public keys and view the current server key SHA'**
   String get settingsRsaKeysDesc;
+
+  /// No description provided for @settingsLegacyAuthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility: use UID and PASSWORD as login option (not recommended)'**
+  String get settingsLegacyAuthTitle;
+
+  /// No description provided for @settingsLegacyAuthDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses the legacy authentication flow for login and requests. Only needed with old servers or servers without JWT support'**
+  String get settingsLegacyAuthDesc;
 
   /// No description provided for @rsaKeyManagement.
   ///

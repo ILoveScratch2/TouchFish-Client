@@ -23,6 +23,7 @@ import '../screens/about_screen.dart';
 import '../screens/licenses_screen.dart';
 import '../screens/profile_edit_screen.dart';
 import '../screens/server_settings_screen.dart';
+import '../screens/session_devices_screen.dart';
 import '../screens/account_management_screen.dart';
 import '../screens/sticker_screens.dart';
 import '../screens/forum_search_screen.dart';
@@ -68,6 +69,7 @@ class AppRoutes {
   static const String about = '/about';
   static const String licenses = '/licenses';
   static const String profileEdit = '/profile/edit';
+  static const String sessionDevices = '/session-devices';
   static const String stickerMarket = '/stickers';
   static const String myStickers = '/stickers/mine';
   static const String browser = '/browser';
@@ -304,6 +306,18 @@ class AppRoutes {
             GoRoute(
               path: profileEdit,
               builder: (context, state) => const ProfileEditScreen(),
+            ),
+            GoRoute(
+              path: sessionDevices,
+              builder: (context, state) {
+                final args = state.extra;
+                final uid = args is Map ? args['uid'] : null;
+                final username = args is Map ? args['username'] : null;
+                return SessionDevicesScreen(
+                  targetUid: uid is int ? uid : null,
+                  targetUsername: username is String ? username : null,
+                );
+              },
             ),
             GoRoute(
               path: forumSearch,

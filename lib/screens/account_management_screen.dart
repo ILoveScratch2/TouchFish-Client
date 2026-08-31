@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
+import '../routes/app_routes.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/snackbar_service.dart';
@@ -674,6 +676,14 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
                         _banUser(user);
                       case 'delete':
                         _deleteUser(user);
+                      case 'devices':
+                        context.push(
+                          AppRoutes.sessionDevices,
+                          extra: {
+                            'uid': int.tryParse(user.uid),
+                            'username': user.username,
+                          },
+                        );
                     }
                   },
                   itemBuilder: (context) => [
@@ -698,6 +708,14 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
                               ? l10n.adminAccountUnbanAction
                               : l10n.adminAccountBanAction,
                         ),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'devices',
+                      child: ListTile(
+                        leading: const Icon(Icons.devices_outlined),
+                        title: Text(l10n.adminAccountViewDevices),
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),

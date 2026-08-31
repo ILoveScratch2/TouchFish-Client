@@ -107,6 +107,10 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = false);
 
     if (error == null) {
+      // 自动降级为旧版认证时提示一次
+      if (AuthState.instance.degradedToLegacy) {
+        TouchFishSnackbarService.instance.show(l10n.loginDegradedToLegacy);
+      }
       final shouldContinue = await _maybePromptFirstConnect();
       if (!mounted || !shouldContinue) return;
       context.go(AppRoutes.main);
@@ -114,6 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final msg = switch (error) {
         'userNotFound' => l10n.loginErrorUserNotFound,
         'invalidCredentials' => l10n.loginErrorInvalidCredentials,
+        'sessionLimitReached' => l10n.loginErrorSessionLimit,
         'networkError' => l10n.loginErrorNetwork,
         _ => l10n.loginErrorNetwork,
       };

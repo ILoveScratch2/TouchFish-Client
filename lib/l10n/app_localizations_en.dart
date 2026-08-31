@@ -146,6 +146,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginErrorNetwork => 'Network error, please try again';
 
   @override
+  String get loginErrorSessionLimit => 'Too many logged-in devices';
+
+  @override
+  String get loginDegradedToLegacy =>
+      'This server does not support JWT auth. Automatically fell back to legacy login (UID + PASSWORD)';
+
+  @override
+  String get sessionExpiredMessage =>
+      'Login session expired, please sign in again';
+
+  @override
   String get savedSessionRestoreConnectingTitle => 'Connecting';
 
   @override
@@ -158,6 +169,61 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get savedSessionRestoreFailedMessage =>
       'This session can\'t be used on the server. Check your network connection or login credentials.';
+
+  @override
+  String get sessionDevicesTitle => 'Session Devices';
+
+  @override
+  String get sessionDevicesUnsupported =>
+      'This server doesn\'t support JWT authentication. Device management is unavailable.';
+
+  @override
+  String get sessionDevicesCountLabel => 'Logged in';
+
+  @override
+  String get sessionDevicesUnlimited => 'Unlimited';
+
+  @override
+  String get sessionDevicesUnknownDevice => 'Unknown device';
+
+  @override
+  String get sessionDevicesEmpty => 'No logged-in devices';
+
+  @override
+  String get sessionDevicesLoadFailed => 'Failed to load devices';
+
+  @override
+  String get sessionDevicesCurrent => 'Current device';
+
+  @override
+  String get sessionDevicesIpLabel => 'IP:';
+
+  @override
+  String get sessionDevicesIssuedAtLabel => 'Issued at';
+
+  @override
+  String get sessionDevicesExpiresAtLabel => 'Expires at';
+
+  @override
+  String get sessionDevicesRemove => 'Remove device';
+
+  @override
+  String get sessionDevicesRemoveConfirmTitle => 'Remove device?';
+
+  @override
+  String get sessionDevicesRemoveConfirmMessage =>
+      'This device will be signed out immediately. Sign in again to restore access.';
+
+  @override
+  String get sessionDevicesRemoveSuccess => 'Device removed';
+
+  @override
+  String get sessionDevicesRemoveFailed =>
+      'Failed to remove device, please try again';
+
+  @override
+  String get sessionRestoreNetworkError =>
+      'Network connection failed. Please check your network and try again.';
 
   @override
   String get registerErrorCaptchaRequired => 'Please enter the captcha';
@@ -1303,6 +1369,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminServerFieldProxyCount => 'Trusted Proxy Count';
 
   @override
+  String get adminServerSectionAuth => 'Authentication';
+
+  @override
+  String get adminServerAuthDescription => 'Controls how clients authenticate.';
+
+  @override
+  String get adminServerFieldLegacyAuth => 'Allow legacy UID + PASSWORD login';
+
+  @override
+  String get adminServerLegacyAuthDescription =>
+      'When off, only JWT authentication is accepted and legacy clients can\'t log in.';
+
+  @override
+  String get adminServerFieldJwtExpires => 'JWT Expiry (seconds)';
+
+  @override
+  String get adminServerJwtExpiresDescription =>
+      'Default 604800 (7 days), minimum 60.';
+
+  @override
+  String get adminServerFieldJwtMaxPerUser => 'Max Tokens per User';
+
+  @override
+  String get adminServerJwtMaxPerUserDescription => '0 or -1 means unlimited.';
+
+  @override
   String get adminServerEmailPasswordRequired =>
       'Enabling email verification requires a verification email and an email password.';
 
@@ -1432,6 +1524,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountAppSettings => 'App Settings';
+
+  @override
+  String get accountSessionDevices => 'Session Devices';
 
   @override
   String get accountLockNow => 'Lock Now';
@@ -2427,6 +2522,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Current login credentials are unavailable.';
 
   @override
+  String get debugApiTesterUseToken => 'Attach JWT token';
+
+  @override
+  String get debugApiTesterUseTokenDescription =>
+      'Attaches the current JWT in JWT sessions; turn off to test auth-free requests like login.';
+
+  @override
+  String get debugApiTesterUseTokenUnavailable =>
+      'Only available in JWT sessions.';
+
+  @override
   String get debugApiTesterEncryptRequest => 'Encrypt request body';
 
   @override
@@ -2854,6 +2960,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminAccountChangeRole => 'Change Role';
+
+  @override
+  String get adminAccountViewDevices => 'View Devices';
 
   @override
   String adminAccountChangeRoleTitle(String name) {
@@ -3888,6 +3997,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsRsaKeysDesc =>
       'Manage saved server RSA public keys and view the current server key SHA';
+
+  @override
+  String get settingsLegacyAuthTitle =>
+      'Compatibility: use UID and PASSWORD as login option (not recommended)';
+
+  @override
+  String get settingsLegacyAuthDesc =>
+      'Uses the legacy authentication flow for login and requests. Only needed with old servers or servers without JWT support';
 
   @override
   String get rsaKeyManagement => 'RSA Key Management';

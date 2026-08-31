@@ -24,6 +24,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
   TfDebugRequestResult? _result;
   bool _isSending = false;
   bool _includeCredentials = false;
+  bool _useAuthToken = true;
   bool _encryptRequest = true;
   TfDebugRequestMethod _requestMethod = TfDebugRequestMethod.post;
 
@@ -31,6 +32,9 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
     return AuthState.instance.uid != null &&
         AuthState.instance.password != null;
   }
+
+  bool get _canUseAuthToken =>
+      _includeCredentials && AuthState.instance.isJwtMode;
 
   bool get _canEncryptRequest => _requestMethod == TfDebugRequestMethod.post;
 
@@ -145,6 +149,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
       encryptRequest: _canEncryptRequest && _encryptRequest,
       uid: _includeCredentials ? AuthState.instance.uid : null,
       password: _includeCredentials ? AuthState.instance.password : null,
+      useAuthToken: _canUseAuthToken && _useAuthToken,
     );
 
     if (!mounted) {
@@ -261,6 +266,22 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
               onChanged: _hasCredentials
                   ? (value) {
                       setState(() => _includeCredentials = value);
+                    }
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: _useAuthToken,
+              title: Text(l10n.debugApiTesterUseToken),
+              subtitle: Text(
+                _canUseAuthToken
+                    ? l10n.debugApiTesterUseTokenDescription
+                    : l10n.debugApiTesterUseTokenUnavailable,
+              ),
+              onChanged: _canUseAuthToken
+                  ? (value) {
+                      setState(() => _useAuthToken = value);
                     }
                   : null,
             ),

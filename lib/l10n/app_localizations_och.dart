@@ -139,6 +139,16 @@ class AppLocalizationsOch extends AppLocalizations {
   String get loginErrorNetwork => '網絡有誤，請重試';
 
   @override
+  String get loginErrorSessionLimit => '登入裝置數量已達上限';
+
+  @override
+  String get loginDegradedToLegacy =>
+      '此伺服器不支援 JWT 認證，已自動降級為相容登入（UID + PASSWORD）';
+
+  @override
+  String get sessionExpiredMessage => '登錄已過期，請重新登錄';
+
+  @override
   String get savedSessionRestoreConnectingTitle => '連中';
 
   @override
@@ -149,6 +159,57 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get savedSessionRestoreFailedMessage => '服器不能用此會話，請察網絡之連與登入之憑。';
+
+  @override
+  String get sessionDevicesTitle => '設備管理';
+
+  @override
+  String get sessionDevicesUnsupported => '此服器不支 JWT 認證，不能管設備';
+
+  @override
+  String get sessionDevicesCountLabel => '已登錄';
+
+  @override
+  String get sessionDevicesUnlimited => '不限';
+
+  @override
+  String get sessionDevicesUnknownDevice => '未知之設備';
+
+  @override
+  String get sessionDevicesEmpty => '今無登錄之設備';
+
+  @override
+  String get sessionDevicesLoadFailed => '載設備之表敗矣';
+
+  @override
+  String get sessionDevicesCurrent => '當下之設備';
+
+  @override
+  String get sessionDevicesIpLabel => 'IP:';
+
+  @override
+  String get sessionDevicesIssuedAtLabel => '簽於';
+
+  @override
+  String get sessionDevicesExpiresAtLabel => '過於';
+
+  @override
+  String get sessionDevicesRemove => '移除設備';
+
+  @override
+  String get sessionDevicesRemoveConfirmTitle => '移除設備乎？';
+
+  @override
+  String get sessionDevicesRemoveConfirmMessage => '此設備之登錄將即時失效，欲復須重登。';
+
+  @override
+  String get sessionDevicesRemoveSuccess => '設備已移除';
+
+  @override
+  String get sessionDevicesRemoveFailed => '移除敗矣，請復試之';
+
+  @override
+  String get sessionRestoreNetworkError => '網絡連接失敗，請檢查網絡後重試';
 
   @override
   String get registerErrorCaptchaRequired => '請輸入驗證碼';
@@ -1235,6 +1296,30 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminServerFieldProxyCount => '信代理之層數';
 
   @override
+  String get adminServerSectionAuth => '認證';
+
+  @override
+  String get adminServerAuthDescription => '定客戶端登入認證之方式。';
+
+  @override
+  String get adminServerFieldLegacyAuth => '許舊版 UID+PASSWORD 登入';
+
+  @override
+  String get adminServerLegacyAuthDescription => '閉之則唯受 JWT 認證，舊版客戶端不能登。';
+
+  @override
+  String get adminServerFieldJwtExpires => 'JWT 之有效期（秒）';
+
+  @override
+  String get adminServerJwtExpiresDescription => '默 604800（七日），至少 60。';
+
+  @override
+  String get adminServerFieldJwtMaxPerUser => '每用戶最多 Token 數';
+
+  @override
+  String get adminServerJwtMaxPerUserDescription => '0 或 -1 為不限。';
+
+  @override
   String get adminServerEmailPasswordRequired => '啟郵箱驗證須填驗證郵箱與郵箱密碼。';
 
   @override
@@ -1362,6 +1447,9 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get accountAppSettings => '應用設置';
+
+  @override
+  String get accountSessionDevices => '設備管理';
 
   @override
   String get accountLockNow => '即時鎖定';
@@ -2318,6 +2406,16 @@ class AppLocalizationsOch extends AppLocalizations {
   String get debugApiTesterNoCredentials => '今無可用之登據。';
 
   @override
+  String get debugApiTesterUseToken => '攜 JWT Token';
+
+  @override
+  String get debugApiTesterUseTokenDescription =>
+      'JWT 會話中自攜 token；閉之可試登入等不需認證之請求。';
+
+  @override
+  String get debugApiTesterUseTokenUnavailable => '唯 JWT 會話可用。';
+
+  @override
   String get debugApiTesterEncryptRequest => '密請求之體';
 
   @override
@@ -2732,6 +2830,9 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get adminAccountChangeRole => '更改角色';
+
+  @override
+  String get adminAccountViewDevices => '視設備';
 
   @override
   String adminAccountChangeRoleTitle(String name) {
@@ -3730,6 +3831,13 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get settingsRsaKeysDesc => '管理已存之伺服器 RSA 公鑰，查閱當前伺服器之密鑰 SHA';
+
+  @override
+  String get settingsLegacyAuthTitle => '相容性：使用 UID 與 PASSWORD 作為登入選項（不建議）';
+
+  @override
+  String get settingsLegacyAuthDesc =>
+      '開啟後使用舊版認證方式登入與請求，僅於連接舊版或不支援 JWT 之伺服器時使用';
 
   @override
   String get rsaKeyManagement => 'RSA 密鑰管理';
