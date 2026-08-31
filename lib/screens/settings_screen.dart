@@ -2235,6 +2235,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsRsaKeysTitle;
       case 'settingsRsaKeysDesc':
         return l10n.settingsRsaKeysDesc;
+      case 'settingsLegacyAuthTitle':
+        return l10n.settingsLegacyAuthTitle;
+      case 'settingsLegacyAuthDesc':
+        return l10n.settingsLegacyAuthDesc;
       case 'settingsSeconds10':
         return l10n.settingsSeconds10;
       case 'settingsSeconds30':

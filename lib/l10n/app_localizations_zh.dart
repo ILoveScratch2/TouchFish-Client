@@ -139,6 +139,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get loginErrorNetwork => '网络错误，请重试';
 
   @override
+  String get loginErrorSessionLimit => '登录设备数量已达上限';
+
+  @override
+  String get loginDegradedToLegacy =>
+      '该服务器不支持 JWT 认证，已自动降级为兼容登录（UID + PASSWORD）';
+
+  @override
+  String get sessionExpiredMessage => '登录已过期，请重新登录';
+
+  @override
   String get savedSessionRestoreConnectingTitle => '正在连接';
 
   @override
@@ -149,6 +159,57 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get savedSessionRestoreFailedMessage => '无法在服务器使用该会话，请检查网络连接或登录凭据';
+
+  @override
+  String get sessionDevicesTitle => '设备管理';
+
+  @override
+  String get sessionDevicesUnsupported => '当前服务器不支持 JWT 认证，无法管理设备';
+
+  @override
+  String get sessionDevicesCountLabel => '已登录';
+
+  @override
+  String get sessionDevicesUnlimited => '不限';
+
+  @override
+  String get sessionDevicesUnknownDevice => '未知设备';
+
+  @override
+  String get sessionDevicesEmpty => '暂无已登录设备';
+
+  @override
+  String get sessionDevicesLoadFailed => '加载设备列表失败';
+
+  @override
+  String get sessionDevicesCurrent => '当前设备';
+
+  @override
+  String get sessionDevicesIpLabel => 'IP:';
+
+  @override
+  String get sessionDevicesIssuedAtLabel => '签发于';
+
+  @override
+  String get sessionDevicesExpiresAtLabel => '过期于';
+
+  @override
+  String get sessionDevicesRemove => '移除设备';
+
+  @override
+  String get sessionDevicesRemoveConfirmTitle => '移除设备？';
+
+  @override
+  String get sessionDevicesRemoveConfirmMessage => '该设备的登录状态将立即失效，如需恢复需重新登录。';
+
+  @override
+  String get sessionDevicesRemoveSuccess => '设备已移除';
+
+  @override
+  String get sessionDevicesRemoveFailed => '移除失败，请重试';
+
+  @override
+  String get sessionRestoreNetworkError => '网络连接失败，请检查网络后重试';
 
   @override
   String get registerErrorCaptchaRequired => '请输入验证码';
@@ -1242,6 +1303,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get adminServerFieldProxyCount => '信任的代理层数';
 
   @override
+  String get adminServerSectionAuth => '认证';
+
+  @override
+  String get adminServerAuthDescription => '控制客户端登录认证方式。';
+
+  @override
+  String get adminServerFieldLegacyAuth => '允许旧版 UID+PASSWORD 登录';
+
+  @override
+  String get adminServerLegacyAuthDescription => '关闭后仅接受 JWT 认证，旧版客户端将无法登录。';
+
+  @override
+  String get adminServerFieldJwtExpires => 'JWT 有效期（秒）';
+
+  @override
+  String get adminServerJwtExpiresDescription => '默认 604800（7 天），最小 60。';
+
+  @override
+  String get adminServerFieldJwtMaxPerUser => '每用户最大 Token 数';
+
+  @override
+  String get adminServerJwtMaxPerUserDescription => '0 或 -1 表示不限制。';
+
+  @override
   String get adminServerEmailPasswordRequired => '启用邮箱验证需要填写验证邮箱和邮箱密码。';
 
   @override
@@ -1369,6 +1454,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get accountAppSettings => '应用设置';
+
+  @override
+  String get accountSessionDevices => '设备管理';
 
   @override
   String get accountLockNow => '立即锁定';
@@ -2326,6 +2414,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get debugApiTesterNoCredentials => '当前没有可用的登录凭据。';
 
   @override
+  String get debugApiTesterUseToken => '携带 JWT Token';
+
+  @override
+  String get debugApiTesterUseTokenDescription =>
+      'JWT 会话中自动携带 token；关闭后可用于测试登录等免认证请求。';
+
+  @override
+  String get debugApiTesterUseTokenUnavailable => '仅在 JWT 会话中可用。';
+
+  @override
   String get debugApiTesterEncryptRequest => '加密请求体';
 
   @override
@@ -2734,6 +2832,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get adminAccountChangeRole => '更改角色';
+
+  @override
+  String get adminAccountViewDevices => '查看设备';
 
   @override
   String adminAccountChangeRoleTitle(String name) {
@@ -3732,6 +3833,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsRsaKeysDesc => '管理已保存的服务器 RSA 公钥，查看当前服务器的密钥 SHA';
+
+  @override
+  String get settingsLegacyAuthTitle => '兼容性：使用 UID 和 PASSWORD 作为登录选项（不推荐）';
+
+  @override
+  String get settingsLegacyAuthDesc =>
+      '开启后使用旧版认证方式登录与请求，仅在与旧版服务器或不支持 JWT 的服务器连接时使用';
 
   @override
   String get rsaKeyManagement => 'RSA 密钥管理';

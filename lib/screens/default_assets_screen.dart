@@ -185,7 +185,7 @@ class _DefaultAssetsScreenState extends State<DefaultAssetsScreen> {
     try {
       final success = await TfApiClient.instance.uploadDefaultAvatar(
         AuthState.instance.uid!,
-        AuthState.instance.password!,
+        AuthState.instance.password ?? '',
         assetType,
         base64.encode(bytes),
       );

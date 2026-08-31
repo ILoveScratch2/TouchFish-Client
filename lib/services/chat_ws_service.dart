@@ -53,7 +53,9 @@ class ChatWsService extends ChangeNotifier {
   Future<bool> connect() async {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
-    if (uid == null || password == null) return false;
+    final jwtMode = AuthState.instance.isJwtMode;
+    if (uid == null) return false;
+    if (!jwtMode && password == null) return false;
 
     if (!await _hasNetworkConnectivity()) {
       talker.info('ChatWsService connect refused: no network connectivity');
@@ -79,12 +81,20 @@ class ChatWsService extends ChangeNotifier {
       final host = await _resolveHost();
       final tcpPort = await TfApiClient.instance.resolveTcpPort();
       final tryWss = await TfApiClient.instance.shouldTryWss();
+      var reloginAttempted = false;
       for (final uri in candidateWebSocketUris(host, tcpPort, tryWss: tryWss)) {
         final result = await _connectToCandidate(uri, uid, password);
         if (result == _CandidateConnectionResult.authenticated) {
           return true;
         }
         if (result == _CandidateConnectionResult.authenticationFailed) {
+          // JWT 模式：token 失效时静默重登一次并重试
+          if (AuthState.instance.isJwtMode &&
+              !reloginAttempted &&
+              await AuthState.instance.relogin()) {
+            reloginAttempted = true;
+            continue;
+          }
           break;
         }
       }
@@ -102,6 +112,20 @@ class ChatWsService extends ChangeNotifier {
     return false;
   }
 
+  static String _buildAuthLoginPayload(int uid, String? password) {
+    if (AuthState.instance.isJwtMode) {
+      return jsonEncode({
+        'type': 'AUTH.LOGIN',
+        'token': AuthState.instance.token,
+      });
+    }
+    return jsonEncode({
+      'type': 'AUTH.LOGIN',
+      'uid': uid,
+      'password': password,
+    });
+  }
+
   @visibleForTesting
   static List<Uri> candidateWebSocketUris(
     String host,
@@ -115,7 +139,7 @@ class ChatWsService extends ChangeNotifier {
   Future<_CandidateConnectionResult> _connectToCandidate(
     Uri uri,
     int uid,
-    String password,
+    String? password,
   ) async {
     WebSocketChannel? candidateChannel;
     var transportConnected = false;
@@ -148,7 +172,7 @@ class ChatWsService extends ChangeNotifier {
         }),
       );
       _sendEncrypted(
-        jsonEncode({'type': 'AUTH.LOGIN', 'uid': uid, 'password': password}),
+        _buildAuthLoginPayload(uid, password),
       );
 
       final success = await _authCompleter!.future.timeout(

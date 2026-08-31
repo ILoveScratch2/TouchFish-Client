@@ -450,6 +450,14 @@ class SettingsData {
           icon: Icons.domain,
         ),
         SettingItem(
+          key: 'legacyAuthMode',
+          titleKey: 'settingsLegacyAuthTitle',
+          descriptionKey: 'settingsLegacyAuthDesc',
+          type: SettingType.switchSetting,
+          defaultValue: false,
+          icon: Icons.password,
+        ),
+        SettingItem(
           key: 'savedRsaKeys',
           titleKey: 'settingsRsaKeysTitle',
           descriptionKey: 'settingsRsaKeysDesc',

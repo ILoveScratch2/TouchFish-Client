@@ -33,12 +33,15 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   final _emailPasswordController = TextEditingController();
   final _proxyCountController = TextEditingController();
   final _defaultJoinTargetsController = TextEditingController();
+  final _jwtExpiresSecondsController = TextEditingController();
+  final _jwtMaxPerUserController = TextEditingController();
 
   TfServerConfig? _settings;
   bool _captcha = false;
   bool _emailEnabled = false;
   bool _smtpUseSsl = true;
   bool _reverseProxyEnabled = false;
+  bool _legacyAuthEnabled = true;
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -66,13 +69,15 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     _emailPasswordController.dispose();
     _proxyCountController.dispose();
     _defaultJoinTargetsController.dispose();
+    _jwtExpiresSecondsController.dispose();
+    _jwtMaxPerUserController.dispose();
     super.dispose();
   }
 
   bool get _canManageServer {
     return AuthState.instance.currentUser?.isRoot == true &&
         AuthState.instance.uid != null &&
-        AuthState.instance.password != null;
+        (AuthState.instance.password != null || AuthState.instance.isJwtMode);
   }
 
   void _applySettings(TfServerConfig settings) {
@@ -99,6 +104,11 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     _verifyEmailController.text = settings.verifyEmail ?? '';
     _emailPasswordController.clear();
     _defaultJoinTargetsController.text = settings.defaultJoinTargets.join(' ');
+    _legacyAuthEnabled = settings.legacyAuthEnabled ?? true;
+    _jwtExpiresSecondsController.text =
+        (settings.jwtExpiresSeconds ?? 604800).toString();
+    _jwtMaxPerUserController.text =
+        (settings.jwtMaxPerUser ?? 5).toString();
   }
 
   Future<void> _loadSettings({bool showError = false}) async {
@@ -114,7 +124,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     }
 
     final uid = AuthState.instance.uid!;
-    final password = AuthState.instance.password!;
+    final password = AuthState.instance.password ?? '';
 
     setState(() => _isLoading = true);
 
@@ -239,6 +249,15 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       _proxyCountController.text,
       minimum: 0,
     );
+    final jwtExpiresSeconds = _parseIntegerField(
+      _jwtExpiresSecondsController.text,
+      minimum: 60,
+    );
+    final jwtMaxPerUser = _parseIntegerField(
+      _jwtMaxPerUserController.text,
+      minimum: 0,
+      allowUnlimited: true,
+    );
     final defaultJoinTargets = _parseDefaultJoinTargets(
       _defaultJoinTargetsController.text,
     );
@@ -254,6 +273,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         dailyStickerPackLimit == null ||
         maxStickerSize == null ||
         smtpPort == null ||
+        jwtExpiresSeconds == null ||
+        jwtMaxPerUser == null ||
         defaultJoinTargets == null ||
         (_reverseProxyEnabled && proxyCount == null)) {
       TouchFishSnackbarService.instance.show(
@@ -266,7 +287,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
 
     try {
       final uid = AuthState.instance.uid!;
-      final password = AuthState.instance.password!;
+      final password = AuthState.instance.password ?? '';
       final wasEmailEnabled = _settings?.emailActivate ?? false;
       final verifyEmail = _verifyEmailController.text.trim();
       final emailPassword = _emailPasswordController.text;
@@ -332,6 +353,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         reverseProxyEnabled: _reverseProxyEnabled,
         proxyCount: _reverseProxyEnabled ? proxyCount : 1,
         defaultJoinTargets: defaultJoinTargets,
+        legacyAuthEnabled: _legacyAuthEnabled,
+        jwtExpiresSeconds: jwtExpiresSeconds,
+        jwtMaxPerUser: jwtMaxPerUser,
       );
 
       if (!mounted) {
@@ -760,6 +784,54 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     );
   }
 
+  Widget _buildAuthCard(BuildContext context, AppLocalizations l10n) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildAdvancedCardHeader(
+            context,
+            l10n.adminServerSectionAuth,
+            l10n.adminServerAuthDescription,
+          ),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: _legacyAuthEnabled,
+              title: Text(l10n.adminServerFieldLegacyAuth),
+              subtitle: Text(l10n.adminServerLegacyAuthDescription),
+              onChanged: _isSaving
+                  ? null
+                  : (value) {
+                      setState(() => _legacyAuthEnabled = value);
+                    },
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          _numberField(
+            controller: _jwtExpiresSecondsController,
+            labelText: l10n.adminServerFieldJwtExpires,
+            helperText: l10n.adminServerJwtExpiresDescription,
+            icon: Icons.timer_outlined,
+          ),
+          const SizedBox(height: 12),
+          _numberField(
+            controller: _jwtMaxPerUserController,
+            labelText: l10n.adminServerFieldJwtMaxPerUser,
+            helperText: l10n.adminServerJwtMaxPerUserDescription,
+            icon: Icons.devices_outlined,
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
   Widget _buildReadOnlyInfoCard(BuildContext context, AppLocalizations l10n) {
     final settings = _settings;
     if (settings == null) {
@@ -846,6 +918,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               _buildEmailServiceCard(context, l10n),
               const SizedBox(height: 16),
               _buildReverseProxyCard(context, l10n),
+              const SizedBox(height: 16),
+              _buildAuthCard(context, l10n),
               const SizedBox(height: 16),
               _buildReadOnlyInfoCard(context, l10n),
               const SizedBox(height: 24),
