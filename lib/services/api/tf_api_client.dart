@@ -1381,6 +1381,44 @@ class TfApiClient {
     }
   }
 
+  /// 忘记密码：向注册邮箱发送验证码。
+  Future<bool> forgotPassword(String email) async {
+    try {
+      final result = await _secretPostInternal(
+        '/auth/forgot_password',
+        {'email': email},
+        skipToken: true,
+      );
+      return _parseBool(result);
+    } catch (e) {
+      talker.error('forgotPassword failed', e);
+      return false;
+    }
+  }
+
+  /// 忘记密码：验证邮箱验证码后重置密码。
+  Future<bool> resetPassword(
+    String email,
+    int activateCode,
+    String newPassword,
+  ) async {
+    try {
+      final result = await _secretPostInternal(
+        '/auth/reset_password',
+        {
+          'email': email,
+          'activate_code': activateCode,
+          'new_pwd': newPassword,
+        },
+        skipToken: true,
+      );
+      return _parseBool(result);
+    } catch (e) {
+      talker.error('resetPassword failed', e);
+      return false;
+    }
+  }
+
   Future<bool> changeSign(int uid, String password, String newSign) async {
     final result = await secretPost(
       '/auth/change_sign',
@@ -2765,7 +2803,7 @@ class TfApiClient {
       'creater': raw[1],
       'groupname': raw[2],
       'members': members.map((m) => m is num ? m.toInt() : m).toList(),
-      'require_review': raw[4],
+      'require_review': raw[8],
       'enter_hint': raw[5],
       'introduction': raw[6],
       'allow_direct_join': raw[7],
@@ -2813,7 +2851,7 @@ class TfApiClient {
         'creater': raw[1],
         'groupname': raw[2],
         'members': members.map((m) => m is num ? m.toInt() : m).toList(),
-        'require_review': raw[4],
+        'require_review': raw[8],
         'enter_hint': raw[5],
         'introduction': raw[6],
         'allow_direct_join': raw[7],

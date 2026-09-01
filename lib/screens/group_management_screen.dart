@@ -220,6 +220,34 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
     }
   }
 
+  Future<void> _editIntroduction(AppLocalizations l10n) async {
+    final value = await showDialog<String>(
+      context: context,
+      builder: (_) => TextEntryDialog(
+        title: l10n.groupIntroductionLabel,
+        hintText: l10n.groupIntroductionHelp,
+        cancelLabel: l10n.commonCancel,
+        confirmLabel: l10n.save,
+        icon: Icons.article_outlined,
+        initialValue: _settings?['introduction'] as String? ?? '',
+        maxLines: 6,
+        allowEmpty: true,
+      ),
+    );
+    if (value == null) return;
+    final ok = await TfApiClient.instance.updateGroupSettings(
+      _uid,
+      _password,
+      widget.gid,
+      {'introduction': value},
+    );
+    if (!mounted) return;
+    _showSnack(
+      ok ? l10n.groupIntroductionUpdated : l10n.commonFailedOperation,
+    );
+    if (ok) _load();
+  }
+
   Future<void> _editEnterHint(AppLocalizations l10n) async {
     final value = await showDialog<String>(
       context: context,
@@ -504,6 +532,17 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
   List<Widget> _buildSettingsTiles(AppLocalizations l10n) {
     final settings = _settings ?? {};
     return [
+      ListTile(
+        leading: const Icon(Icons.article_outlined),
+        title: Text(l10n.groupIntroductionLabel),
+        subtitle: Text(
+          (_settings?['introduction'] as String?)?.trim().isNotEmpty == true
+              ? _settings!['introduction'] as String
+              : l10n.groupIntroductionHelp,
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => _editIntroduction(l10n),
+      ),
       ListTile(
         leading: const Icon(Icons.info_outline),
         title: Text(l10n.groupEnterHintLabel),

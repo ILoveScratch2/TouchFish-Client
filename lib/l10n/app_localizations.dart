@@ -5113,7 +5113,7 @@ abstract class AppLocalizations {
   /// No description provided for @forumMemberRoleHint.
   ///
   /// In en, this message translates to:
-  /// **'0=Member, 50=Admin, 100=Owner'**
+  /// **'0=Member, 50=Admin'**
   String get forumMemberRoleHint;
 
   /// No description provided for @forumRoleOwner.
@@ -7647,6 +7647,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Paste the server RSA public key (optional). Once bound, the client uses this key for encrypted communication and no longer fetches it from the server.'**
   String get rsaPemFieldHint;
+
+  /// No description provided for @loginForgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get loginForgotPassword;
+
+  /// No description provided for @forgotPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot Password'**
+  String get forgotPasswordTitle;
+
+  /// No description provided for @forgotPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the email registered to your account. We will send a verification code to reset your password.'**
+  String get forgotPasswordHint;
+
+  /// No description provided for @forgotPasswordEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered email'**
+  String get forgotPasswordEmailLabel;
+
+  /// No description provided for @forgotPasswordEmailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your email'**
+  String get forgotPasswordEmailRequired;
+
+  /// No description provided for @forgotPasswordSendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Code'**
+  String get forgotPasswordSendCode;
+
+  /// No description provided for @forgotPasswordResend.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend'**
+  String get forgotPasswordResend;
+
+  /// No description provided for @forgotPasswordCodeSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code sent. Check your email.'**
+  String get forgotPasswordCodeSent;
+
+  /// No description provided for @forgotPasswordCodeSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send verification code'**
+  String get forgotPasswordCodeSendFailed;
+
+  /// No description provided for @forgotPasswordCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code'**
+  String get forgotPasswordCodeLabel;
+
+  /// No description provided for @forgotPasswordCodeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the verification code'**
+  String get forgotPasswordCodeRequired;
+
+  /// No description provided for @forgotPasswordSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Password'**
+  String get forgotPasswordSubmit;
+
+  /// No description provided for @forgotPasswordSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password reset successfully'**
+  String get forgotPasswordSuccess;
+
+  /// No description provided for @forgotPasswordFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Password reset failed. Check the code or email.'**
+  String get forgotPasswordFailed;
+
+  /// No description provided for @changePasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Password'**
+  String get changePasswordTitle;
+
+  /// No description provided for @changePasswordOldPwd.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get changePasswordOldPwd;
+
+  /// No description provided for @changePasswordOldPwdRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your current password'**
+  String get changePasswordOldPwdRequired;
+
+  /// No description provided for @changePasswordNewPwd.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get changePasswordNewPwd;
+
+  /// No description provided for @changePasswordNewPwdRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a new password'**
+  String get changePasswordNewPwdRequired;
+
+  /// No description provided for @changePasswordConfirmPwd.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm new password'**
+  String get changePasswordConfirmPwd;
+
+  /// No description provided for @changePasswordConfirmPwdRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm the new password'**
+  String get changePasswordConfirmPwdRequired;
+
+  /// No description provided for @changePasswordMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get changePasswordMismatch;
+
+  /// No description provided for @changePasswordSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Password'**
+  String get changePasswordSubmit;
+
+  /// No description provided for @changePasswordSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed'**
+  String get changePasswordSuccess;
+
+  /// No description provided for @changePasswordFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to change password. Check your current password.'**
+  String get changePasswordFailed;
+
+  /// No description provided for @groupIntroductionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Introduction'**
+  String get groupIntroductionLabel;
+
+  /// No description provided for @groupIntroductionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown on the group profile page'**
+  String get groupIntroductionHelp;
+
+  /// No description provided for @groupIntroductionUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Group introduction updated'**
+  String get groupIntroductionUpdated;
+
+  /// No description provided for @forumRemoveMemberFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove member'**
+  String get forumRemoveMemberFailed;
+
+  /// No description provided for @forumMemberRoleFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update role'**
+  String get forumMemberRoleFailed;
 }
 
 class _AppLocalizationsDelegate

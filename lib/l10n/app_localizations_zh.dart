@@ -2604,7 +2604,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get forumMemberRole => '角色';
 
   @override
-  String get forumMemberRoleHint => '0=成员, 50=管理员, 100=所有者';
+  String get forumMemberRoleHint => '0=成员, 50=管理员';
 
   @override
   String get forumRoleOwner => '所有者';
@@ -3942,4 +3942,94 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get rsaPemFieldHint => '粘贴服务器 RSA 公钥（可选）。绑定后客户端将使用该密钥加密通信，不再从服务器拉取。';
+
+  @override
+  String get loginForgotPassword => '忘记密码？';
+
+  @override
+  String get forgotPasswordTitle => '忘记密码';
+
+  @override
+  String get forgotPasswordHint => '输入注册账号时使用的邮箱，我们将发送验证码用于重置密码。';
+
+  @override
+  String get forgotPasswordEmailLabel => '注册邮箱';
+
+  @override
+  String get forgotPasswordEmailRequired => '请输入邮箱';
+
+  @override
+  String get forgotPasswordSendCode => '发送验证码';
+
+  @override
+  String get forgotPasswordResend => '重新发送';
+
+  @override
+  String get forgotPasswordCodeSent => '验证码已发送，请查收邮件';
+
+  @override
+  String get forgotPasswordCodeSendFailed => '验证码发送失败';
+
+  @override
+  String get forgotPasswordCodeLabel => '验证码';
+
+  @override
+  String get forgotPasswordCodeRequired => '请输入验证码';
+
+  @override
+  String get forgotPasswordSubmit => '重置密码';
+
+  @override
+  String get forgotPasswordSuccess => '密码重置成功';
+
+  @override
+  String get forgotPasswordFailed => '密码重置失败，请检查验证码或邮箱';
+
+  @override
+  String get changePasswordTitle => '修改密码';
+
+  @override
+  String get changePasswordOldPwd => '当前密码';
+
+  @override
+  String get changePasswordOldPwdRequired => '请输入当前密码';
+
+  @override
+  String get changePasswordNewPwd => '新密码';
+
+  @override
+  String get changePasswordNewPwdRequired => '请输入新密码';
+
+  @override
+  String get changePasswordConfirmPwd => '确认新密码';
+
+  @override
+  String get changePasswordConfirmPwdRequired => '请再次输入新密码';
+
+  @override
+  String get changePasswordMismatch => '两次输入的密码不一致';
+
+  @override
+  String get changePasswordSubmit => '修改密码';
+
+  @override
+  String get changePasswordSuccess => '密码修改成功';
+
+  @override
+  String get changePasswordFailed => '密码修改失败，请检查当前密码';
+
+  @override
+  String get groupIntroductionLabel => '群聊介绍';
+
+  @override
+  String get groupIntroductionHelp => '显示在群资料页面';
+
+  @override
+  String get groupIntroductionUpdated => '群聊介绍已更新';
+
+  @override
+  String get forumRemoveMemberFailed => '移除成员失败';
+
+  @override
+  String get forumMemberRoleFailed => '角色设置失败';
 }

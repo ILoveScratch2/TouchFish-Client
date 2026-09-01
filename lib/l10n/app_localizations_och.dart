@@ -2602,7 +2602,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get forumMemberRole => '角色';
 
   @override
-  String get forumMemberRoleHint => '0=成員，50=管員，100=主';
+  String get forumMemberRoleHint => '0=成員，50=管員';
 
   @override
   String get forumRoleOwner => '主';
@@ -3940,4 +3940,94 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get rsaPemFieldHint => '粘貼伺服器 RSA 公鑰（可選）。綁定後客戶端將使用此密鑰加密通信，不再從伺服器拉取。';
+
+  @override
+  String get loginForgotPassword => '忘記密碼？';
+
+  @override
+  String get forgotPasswordTitle => '忘記密碼';
+
+  @override
+  String get forgotPasswordHint => '請輸入註冊賬號所用之郵箱，我們將發送驗證碼以重置密碼。';
+
+  @override
+  String get forgotPasswordEmailLabel => '註冊郵箱';
+
+  @override
+  String get forgotPasswordEmailRequired => '請輸入郵箱';
+
+  @override
+  String get forgotPasswordSendCode => '發送驗證碼';
+
+  @override
+  String get forgotPasswordResend => '重新發送';
+
+  @override
+  String get forgotPasswordCodeSent => '驗證碼已發送，請查收郵件';
+
+  @override
+  String get forgotPasswordCodeSendFailed => '驗證碼發送失敗';
+
+  @override
+  String get forgotPasswordCodeLabel => '驗證碼';
+
+  @override
+  String get forgotPasswordCodeRequired => '請輸入驗證碼';
+
+  @override
+  String get forgotPasswordSubmit => '重置密碼';
+
+  @override
+  String get forgotPasswordSuccess => '密碼重置成功';
+
+  @override
+  String get forgotPasswordFailed => '密碼重置失敗，請檢查驗證碼或郵箱';
+
+  @override
+  String get changePasswordTitle => '修改密碼';
+
+  @override
+  String get changePasswordOldPwd => '當前密碼';
+
+  @override
+  String get changePasswordOldPwdRequired => '請輸入當前密碼';
+
+  @override
+  String get changePasswordNewPwd => '新密碼';
+
+  @override
+  String get changePasswordNewPwdRequired => '請輸入新密碼';
+
+  @override
+  String get changePasswordConfirmPwd => '確認新密碼';
+
+  @override
+  String get changePasswordConfirmPwdRequired => '請再次輸入新密碼';
+
+  @override
+  String get changePasswordMismatch => '兩次輸入之密碼不一致';
+
+  @override
+  String get changePasswordSubmit => '修改密碼';
+
+  @override
+  String get changePasswordSuccess => '密碼修改成功';
+
+  @override
+  String get changePasswordFailed => '密碼修改失敗，請檢查當前密碼';
+
+  @override
+  String get groupIntroductionLabel => '羣聊介紹';
+
+  @override
+  String get groupIntroductionHelp => '顯示於羣資料頁';
+
+  @override
+  String get groupIntroductionUpdated => '羣聊介紹已更新';
+
+  @override
+  String get forumRemoveMemberFailed => '移除成員失敗';
+
+  @override
+  String get forumMemberRoleFailed => '角色設置失敗';
 }
