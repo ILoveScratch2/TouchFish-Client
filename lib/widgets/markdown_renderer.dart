@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'data_saving_image.dart';
 import 'optimized_image.dart';
 import 'package:flutter_highlight/themes/a11y-dark.dart';
@@ -182,40 +183,70 @@ class MarkdownRenderer extends HookWidget {
             textStyle: _codeTextStyle(),
             styleNotMatched: _codeTextStyle(),
             decoration: codeBlockDecoration,
-            builder: (code, language) => Container(
-              decoration: codeBlockDecoration,
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              padding: const EdgeInsets.all(16),
-              width: double.infinity,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: RichText(
-                  text: TextSpan(
-                    style: _codeTextStyle(
-                      color: isDark
-                          ? const Color(0xffd6d6d6)
-                          : const Color(0xff24292f),
-                    ),
-                    children: highLightSpans(
-                      code,
-                      // wyf 你为什么这么喜欢dart
-                      //
-                      //
-                      //
-                      // 与 markdown_widget 原行为一致：未指定语言时默认按 dart 高亮，
-                      // 传 null 会导致 highlight 完全不做语法着色。
-                      language: language.isEmpty ? 'dart' : language,
-                      theme: isDark ? a11yDarkTheme : a11yLightTheme,
-                      // 注意：textStyle / styleNotMatched 不能带 color。
-                      // highLightSpans 内部做 nodeStyle.merge(textStyle)，
-                      // textStyle 里的 color 会覆盖每个语法 token 的高亮颜色，
-                      // 导致所有代码变成单色、看起来没有语法高亮。
-                      textStyle: _codeTextStyle(),
-                      styleNotMatched: _codeTextStyle(),
+            builder: (code, language) => Stack(
+              children: [
+                Container(
+                  decoration: codeBlockDecoration,
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.all(16),
+                  width: double.infinity,
+                  child: SelectionArea(  // 支持可以选中的 markdown 代码渲染
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Text.rich(
+                        TextSpan(
+                          style: _codeTextStyle(
+                            color: isDark
+                                ? const Color(0xffd6d6d6)
+                                : const Color(0xff24292f),
+                          ),
+                          children: highLightSpans(
+                            code,
+                            // wyf 你为什么这么喜欢dart
+                            //
+                            //
+                            //
+                            // 与 markdown_widget 原行为一致：未指定语言时默认按 dart 高亮，
+                            // 传 null 会导致 highlight 完全不做语法着色。
+                            language: language.isEmpty ? 'dart' : language,
+                            theme: isDark ? a11yDarkTheme : a11yLightTheme,
+                            // 注意：textStyle / styleNotMatched 不能带 color。
+                            // highLightSpans 内部做 nodeStyle.merge(textStyle)，
+                            // textStyle 里的 color 会覆盖每个语法 token 的高亮颜色，
+                            // 导致所有代码变成单色、看起来没有语法高亮。
+                            textStyle: _codeTextStyle(),
+                            styleNotMatched: _codeTextStyle(),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+                Positioned(
+                  top: 12,
+                  right: 8,
+                  child: SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.copy, size: 14),
+                      tooltip: '复制代码',
+                      onPressed: () async {
+                        await Clipboard.setData(ClipboardData(text: code));
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('代码已复制到剪贴板'),
+                              duration: Duration(milliseconds: 800),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           TableConfig(

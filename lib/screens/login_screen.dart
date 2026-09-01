@@ -457,6 +457,16 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 4),
+
+                      // Forgot password
+                      TextButton(
+                        onPressed: () =>
+                            context.push(AppRoutes.forgotPassword),
+                        child: Text(
+                          AppLocalizations.of(context)!.loginForgotPassword,
+                        ),
+                      ),
                     ],
                   ),
                 ),

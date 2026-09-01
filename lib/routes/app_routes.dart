@@ -8,6 +8,8 @@ import '../screens/register_screen.dart';
 import '../screens/register_step2_screen.dart';
 import '../screens/register_step3_screen.dart';
 import '../screens/register_success_screen.dart';
+import '../screens/forgot_password_screen.dart';
+import '../screens/change_password_screen.dart';
 import '../screens/chat_screen.dart';
 import '../screens/chat_detail_screen.dart';
 import '../screens/announcement_screen.dart';
@@ -65,6 +67,8 @@ class AppRoutes {
   static const String registerStep2 = '/register/step2';
   static const String registerStep3 = '/register/step3';
   static const String registerSuccess = '/register/success';
+  static const String forgotPassword = '/forgot-password';
+  static const String changePassword = '/change-password';
   static const String userProfile = '/user/:userId';
   static const String about = '/about';
   static const String licenses = '/licenses';
@@ -84,6 +88,7 @@ class AppRoutes {
     registerStep2,
     registerStep3,
     registerSuccess,
+    forgotPassword,
     about,
     licenses,
   };
@@ -268,6 +273,14 @@ class AppRoutes {
             GoRoute(
               path: registerSuccess,
               builder: (context, state) => const RegisterSuccessScreen(),
+            ),
+            GoRoute(
+              path: forgotPassword,
+              builder: (context, state) => const ForgotPasswordScreen(),
+            ),
+            GoRoute(
+              path: changePassword,
+              builder: (context, state) => const ChangePasswordScreen(),
             ),
             GoRoute(
               path: '/user/:userId',

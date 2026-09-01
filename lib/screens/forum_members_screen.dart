@@ -186,8 +186,12 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
       ),
     );
     uidController.dispose();
-    if (result == true && mounted) {
-      await _fetchMembers();
+    if (mounted) {
+      if (result == true) {
+        await _fetchMembers();
+      } else {
+        TouchFishSnackbarService.instance.show(l10n.forumCreateFailed);
+      }
     }
   }
 
@@ -199,8 +203,16 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
     bool isModerator,
   ) {
     final displayName = account?.username ?? 'UID:${member.accountUid}';
+    final myUid = AuthState.instance.uid?.toString();
+    final isSelf = myUid != null && member.accountUid == myUid;
+    // 论坛主(100)可管理管理员/成员；管理员只能管理普通成员；
+    // 自己与论坛主(100)不可被管理
+    final myRole = widget.currentIdentity?.role ?? 0;
     final canManage =
-        isModerator && (widget.currentIdentity?.role ?? 0) > member.role;
+        isModerator &&
+        !isSelf &&
+        member.role < 100 &&
+        member.role < myRole;
 
     return ListTile(
       contentPadding: const EdgeInsets.only(left: 16, right: 12),
@@ -241,12 +253,14 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
           ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () {
-                    _showRoleEditSheet(context, l10n, member, account);
-                  },
-                ),
+                // 仅论坛主(100)可调整角色（管理员不能授予/降级角色）
+                if ((widget.currentIdentity?.role ?? 0) >= 100)
+                  IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () {
+                      _showRoleEditSheet(context, l10n, member, account);
+                    },
+                  ),
                 IconButton(
                   icon: const Icon(Icons.delete),
                   onPressed: () {
@@ -284,6 +298,10 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
                       if (mounted && ok) {
                         _fetchMembers();
                         TouchFishSnackbarService.instance.show(l10n.forumRemoveMember);
+                      } else if (mounted) {
+                        TouchFishSnackbarService.instance.show(
+                          l10n.forumRemoveMemberFailed,
+                        );
                       }
                     });
                   },
@@ -324,6 +342,8 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
       if (mounted && ok) {
         _fetchMembers();
         TouchFishSnackbarService.instance.show(l10n.forumMemberRole);
+      } else if (mounted) {
+        TouchFishSnackbarService.instance.show(l10n.forumMemberRoleFailed);
       }
     }
   }
@@ -414,12 +434,13 @@ class _ForumMemberRoleSheetState extends State<_ForumMemberRoleSheet> {
                 children: [
                   Autocomplete<int>(
                     optionsBuilder: (TextEditingValue textEditingValue) {
+                      // 论坛主不可授予（100），仅可设置管理员(50)或成员(0)
                       if (textEditingValue.text.isEmpty) {
-                        return const [100, 50, 0];
+                        return const [50, 0];
                       }
                       final int? value = int.tryParse(textEditingValue.text);
-                      if (value == null) return const [100, 50, 0];
-                      return [100, 50, 0].where(
+                      if (value == null) return const [50, 0];
+                      return [50, 0].where(
                         (option) =>
                             option.toString().contains(textEditingValue.text),
                       );

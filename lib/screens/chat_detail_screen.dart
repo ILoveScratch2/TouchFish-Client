@@ -881,6 +881,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         deletedBy: (recalled['deleted_by'] as num?)?.toInt() ?? uid,
       );
       if (_replyingTo?.mid == mid) setState(() => _replyingTo = null);
+      if (_currentRoom?.type == ChatType.group) {
+        // 撤回的若为置顶消息，服务端已取消置顶，这里刷新置顶栏
+        unawaited(_fetchPinnedMessages());
+      }
     } else {
       TouchFishSnackbarService.instance.show(l10n.messageRecallFailed);
     }
@@ -967,6 +971,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       );
       if (!mounted) return;
       if (_pinnedMessageContents.containsKey(messageId) || msg == null) {
+        continue;
+      }
+      // 置顶消息已被撤回/删除时不再展示
+      if (msg.isDeleted) {
+        if (_pinnedMessages.any((p) => p.messageId == messageId)) {
+          unawaited(_fetchPinnedMessages());
+        }
         continue;
       }
       setState(() {

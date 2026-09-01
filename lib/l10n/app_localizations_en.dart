@@ -2727,7 +2727,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forumMemberRole => 'Role';
 
   @override
-  String get forumMemberRoleHint => '0=Member, 50=Admin, 100=Owner';
+  String get forumMemberRoleHint => '0=Member, 50=Admin';
 
   @override
   String get forumRoleOwner => 'Owner';
@@ -4111,4 +4111,100 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get rsaPemFieldHint =>
       'Paste the server RSA public key (optional). Once bound, the client uses this key for encrypted communication and no longer fetches it from the server.';
+
+  @override
+  String get loginForgotPassword => 'Forgot password?';
+
+  @override
+  String get forgotPasswordTitle => 'Forgot Password';
+
+  @override
+  String get forgotPasswordHint =>
+      'Enter the email registered to your account. We will send a verification code to reset your password.';
+
+  @override
+  String get forgotPasswordEmailLabel => 'Registered email';
+
+  @override
+  String get forgotPasswordEmailRequired => 'Please enter your email';
+
+  @override
+  String get forgotPasswordSendCode => 'Send Code';
+
+  @override
+  String get forgotPasswordResend => 'Resend';
+
+  @override
+  String get forgotPasswordCodeSent =>
+      'Verification code sent. Check your email.';
+
+  @override
+  String get forgotPasswordCodeSendFailed => 'Failed to send verification code';
+
+  @override
+  String get forgotPasswordCodeLabel => 'Verification code';
+
+  @override
+  String get forgotPasswordCodeRequired => 'Please enter the verification code';
+
+  @override
+  String get forgotPasswordSubmit => 'Reset Password';
+
+  @override
+  String get forgotPasswordSuccess => 'Password reset successfully';
+
+  @override
+  String get forgotPasswordFailed =>
+      'Password reset failed. Check the code or email.';
+
+  @override
+  String get changePasswordTitle => 'Change Password';
+
+  @override
+  String get changePasswordOldPwd => 'Current password';
+
+  @override
+  String get changePasswordOldPwdRequired =>
+      'Please enter your current password';
+
+  @override
+  String get changePasswordNewPwd => 'New password';
+
+  @override
+  String get changePasswordNewPwdRequired => 'Please enter a new password';
+
+  @override
+  String get changePasswordConfirmPwd => 'Confirm new password';
+
+  @override
+  String get changePasswordConfirmPwdRequired =>
+      'Please confirm the new password';
+
+  @override
+  String get changePasswordMismatch => 'Passwords do not match';
+
+  @override
+  String get changePasswordSubmit => 'Change Password';
+
+  @override
+  String get changePasswordSuccess => 'Password changed';
+
+  @override
+  String get changePasswordFailed =>
+      'Failed to change password. Check your current password.';
+
+  @override
+  String get groupIntroductionLabel => 'Group Introduction';
+
+  @override
+  String get groupIntroductionHelp => 'Shown on the group profile page';
+
+  @override
+  String get groupIntroductionUpdated => 'Group introduction updated';
+
+  @override
+  String get forumRemoveMemberFailed => 'Failed to remove member';
+
+  @override
+  String get forumMemberRoleFailed => 'Failed to update role';
 }
