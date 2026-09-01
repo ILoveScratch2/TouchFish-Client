@@ -284,7 +284,7 @@ class _AttachmentPreview extends StatelessWidget {
                     : MemoryImage(bytes!),
                 fit: BoxFit.contain,
                 errorBuilder: bytes == null
-                    ? (_, __, ___) => _error(context)
+                    ? (_, _, _) => _error(context)
                     : null,
               ),
             ),

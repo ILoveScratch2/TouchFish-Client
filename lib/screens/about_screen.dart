@@ -798,7 +798,7 @@ class _AboutScreenState extends State<AboutScreen>
                           child: CircleAvatar(
                             radius: 50,
                             backgroundColor: theme.colorScheme.primary
-                                .withOpacity(0.1),
+                                .withValues(alpha: 0.1),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(50),
                               child: Image.asset(

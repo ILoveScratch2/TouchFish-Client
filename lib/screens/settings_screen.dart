@@ -2806,7 +2806,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 );
               } else if (result != null) {
                 final newColors = Map<String, dynamic>.from(customColors);
-                newColors[colorKey] = result.value;
+                newColors[colorKey] = result.toARGB32();
                 await _settingsService.setJsonValue('customColors', newColors);
               }
             },

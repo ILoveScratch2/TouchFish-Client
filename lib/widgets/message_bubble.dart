@@ -978,12 +978,13 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
 
   Widget _buildImageMessage(BuildContext context, ColorScheme colorScheme) {
     final media = widget.message.media;
-    if (media == null)
+    if (media == null) {
       return _buildTextMessage(
         context,
         colorScheme,
         Theme.of(context).textTheme,
       );
+    }
 
     if (media.fileHash != null) {
       return _buildRemoteAttachment(media);
@@ -1073,12 +1074,13 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
 
   Widget _buildVideoMessage(BuildContext context, ColorScheme colorScheme) {
     final media = widget.message.media;
-    if (media == null)
+    if (media == null) {
       return _buildTextMessage(
         context,
         colorScheme,
         Theme.of(context).textTheme,
       );
+    }
 
     if (media.fileHash != null) return _buildRemoteAttachment(media);
     return ClipRRect(
@@ -1100,12 +1102,13 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
 
   Widget _buildAudioMessage(BuildContext context, ColorScheme colorScheme) {
     final media = widget.message.media;
-    if (media == null)
+    if (media == null) {
       return _buildTextMessage(
         context,
         colorScheme,
         Theme.of(context).textTheme,
       );
+    }
 
     if (media.fileHash != null) return _buildRemoteAttachment(media);
     return ConstrainedBox(
@@ -1125,8 +1128,9 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
     TextTheme textTheme,
   ) {
     final media = widget.message.media;
-    if (media == null)
+    if (media == null) {
       return _buildTextMessage(context, colorScheme, textTheme);
+    }
 
     return _buildRemoteAttachment(media);
   }

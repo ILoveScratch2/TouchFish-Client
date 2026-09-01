@@ -32,8 +32,8 @@ class ChatListWidget extends StatelessWidget {
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
-        backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-        collapsedBackgroundColor: colorScheme.surfaceContainer.withOpacity(0.5),
+        backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        collapsedBackgroundColor: colorScheme.surfaceContainer.withValues(alpha: 0.5),
         title: Text(l10n.chatPinned),
         leading: const Icon(Icons.push_pin),
         initiallyExpanded: true,

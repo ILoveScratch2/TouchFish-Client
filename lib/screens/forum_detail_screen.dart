@@ -364,7 +364,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Colors.black.withOpacity(0.36), Colors.black.withOpacity(0.7)],
+                        colors: [Colors.black.withValues(alpha: 0.36), Colors.black.withValues(alpha: 0.7)],
                       ),
                     ),
                   ),
@@ -747,6 +747,7 @@ class _ForumActionMenu extends StatelessWidget {
       itemBuilder: (context) => [
         if ((identity?.role ?? 0) >= 50) ...[
           PopupMenuItem(
+            onTap: onEditForum,
             child: Row(
               children: [
                 Icon(
@@ -757,9 +758,9 @@ class _ForumActionMenu extends StatelessWidget {
                 Text(l10n.forumEdit),
               ],
             ),
-            onTap: onEditForum,
           ),
           PopupMenuItem(
+            onTap: onPinPost,
             child: Row(
               children: [
                 Icon(
@@ -770,7 +771,6 @@ class _ForumActionMenu extends StatelessWidget {
                 Text(l10n.forumPinPost),
               ],
             ),
-            onTap: onPinPost,
           ),
         ],
         if (isAdmin)

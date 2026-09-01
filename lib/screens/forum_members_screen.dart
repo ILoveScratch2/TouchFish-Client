@@ -272,8 +272,9 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
                       if (uid == null ||
                           pwd == null ||
                           fid == null ||
-                          targetUid == null)
+                          targetUid == null) {
                         return;
+                      }
                       final ok = await TfApiClient.instance.removeMember(
                         uid,
                         pwd,
@@ -310,8 +311,9 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
       final pwd = AuthState.instance.password;
       final fid = int.tryParse(widget.forumId);
       final targetUid = int.tryParse(member.accountUid);
-      if (uid == null || pwd == null || fid == null || targetUid == null)
+      if (uid == null || pwd == null || fid == null || targetUid == null) {
         return;
+      }
       final ok = await TfApiClient.instance.changeMemberRole(
         uid,
         pwd,
@@ -412,8 +414,9 @@ class _ForumMemberRoleSheetState extends State<_ForumMemberRoleSheet> {
                 children: [
                   Autocomplete<int>(
                     optionsBuilder: (TextEditingValue textEditingValue) {
-                      if (textEditingValue.text.isEmpty)
+                      if (textEditingValue.text.isEmpty) {
                         return const [100, 50, 0];
+                      }
                       final int? value = int.tryParse(textEditingValue.text);
                       if (value == null) return const [100, 50, 0];
                       return [100, 50, 0].where(

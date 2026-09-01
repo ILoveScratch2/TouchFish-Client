@@ -191,7 +191,7 @@ class _ChatInputBarState extends State<ChatInputBar>
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -317,7 +317,7 @@ class _ChatInputBarState extends State<ChatInputBar>
                       decoration: BoxDecoration(
                         border: Border.all(
                           width: 1,
-                          color: colorScheme.outline.withOpacity(0.3),
+                          color: colorScheme.outline.withValues(alpha: 0.3),
                         ),
                         borderRadius: const BorderRadius.all(
                           Radius.circular(24),
@@ -479,7 +479,7 @@ class _ChatInputBarState extends State<ChatInputBar>
           Icon(
             Icons.folder_open,
             size: 40,
-            color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
           ),
           const SizedBox(height: 8),
           Text(
@@ -614,7 +614,7 @@ class _ChatInputBarState extends State<ChatInputBar>
           Icon(
             Icons.smart_toy_outlined,
             size: 40,
-            color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
           ),
           const SizedBox(height: 8),
           Text(

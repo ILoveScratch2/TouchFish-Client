@@ -483,7 +483,7 @@ class TfApiClient {
           .get(
             Uri.parse(url),
             headers: {
-              if (headers != null) ...headers,
+              ...?headers,
               'User-Agent': userAgent ?? await _officialUserAgent(),
             },
           )
@@ -514,7 +514,7 @@ class TfApiClient {
           .post(
             Uri.parse(url),
             headers: {
-              if (headers != null) ...headers,
+              ...?headers,
               'User-Agent': userAgent ?? await _officialUserAgent(),
             },
             body: body,
@@ -724,9 +724,7 @@ class TfApiClient {
     String? tokenOverride,
   }) {
     final fullBody = Map<String, dynamic>.from(body);
-    final token = tokenOverride != null
-        ? tokenOverride
-        : (isJwtAuthActive ? _authToken : null);
+    final token = tokenOverride ?? (isJwtAuthActive ? _authToken : null);
     if (token != null && !skipToken) {
       fullBody['token'] = token;
       if (uid != null) fullBody['uid'] = uid;
@@ -1093,26 +1091,19 @@ class TfApiClient {
         'single_group_max_people': singleGroupMaxPeople,
         'max_file_size': maxFileSize,
         'max_message_length': maxMessageLength,
-        if (maxStickerPacksPerUser != null)
-          'max_sticker_packs_per_user': maxStickerPacksPerUser,
-        if (maxStickersPerPack != null)
-          'max_stickers_per_pack': maxStickersPerPack,
-        if (dailyStickerPackCreationLimit != null)
-          'daily_sticker_pack_creation_limit': dailyStickerPackCreationLimit,
-        if (maxStickerSize != null) 'max_sticker_size': maxStickerSize,
-        if (smtpHost != null) 'smtp_host': smtpHost,
-        if (smtpPort != null) 'smtp_port': smtpPort,
-        if (smtpUseSsl != null) 'smtp_use_ssl': smtpUseSsl,
-        if (reverseProxyEnabled != null)
-          'reverse_proxy_enabled': reverseProxyEnabled,
-        if (proxyCount != null) 'proxy_count': proxyCount,
-        if (defaultJoinTargets != null)
-          'default_join_targets': defaultJoinTargets,
-        if (legacyAuthEnabled != null)
-          'legacy_auth_enabled': legacyAuthEnabled,
-        if (jwtExpiresSeconds != null)
-          'jwt_expires_seconds': jwtExpiresSeconds,
-        if (jwtMaxPerUser != null) 'jwt_max_per_user': jwtMaxPerUser,
+        'max_sticker_packs_per_user': ?maxStickerPacksPerUser,
+        'max_stickers_per_pack': ?maxStickersPerPack,
+        'daily_sticker_pack_creation_limit': ?dailyStickerPackCreationLimit,
+        'max_sticker_size': ?maxStickerSize,
+        'smtp_host': ?smtpHost,
+        'smtp_port': ?smtpPort,
+        'smtp_use_ssl': ?smtpUseSsl,
+        'reverse_proxy_enabled': ?reverseProxyEnabled,
+        'proxy_count': ?proxyCount,
+        'default_join_targets': ?defaultJoinTargets,
+        'legacy_auth_enabled': ?legacyAuthEnabled,
+        'jwt_expires_seconds': ?jwtExpiresSeconds,
+        'jwt_max_per_user': ?jwtMaxPerUser,
       },
       uid: uid,
       password: password,
@@ -1137,8 +1128,8 @@ class TfApiClient {
       '/auth/change_email_verify',
       {
         'change_to': changeTo,
-        if (verifyEmail != null) 'verify_email': verifyEmail,
-        if (emailPassword != null) 'email_password': emailPassword,
+        'verify_email': ?verifyEmail,
+        'email_password': ?emailPassword,
       },
       uid: uid,
       password: password,
@@ -1299,7 +1290,7 @@ class TfApiClient {
     try {
       final result = await secretPost(
         '/auth/tokens/list',
-        {if (targetUid != null) 'target_uid': targetUid},
+        {'target_uid': ?targetUid},
       );
       final data = _parseJsonMap(result);
       if (data == null) return null;
@@ -1317,7 +1308,7 @@ class TfApiClient {
         '/auth/tokens/revoke',
         {
           'jti': jti,
-          if (targetUid != null) 'target_uid': targetUid,
+          'target_uid': ?targetUid,
         },
       );
       final data = _parseJsonMap(result);
@@ -1620,8 +1611,9 @@ class TfApiClient {
       },
     );
     final response = await _getRequest(uri.toString());
-    if (response.statusCode < 200 || response.statusCode >= 300)
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Forum search failed');
+    }
     return Map<String, dynamic>.from(jsonDecode(response.body) as Map);
   }
 
@@ -1920,7 +1912,7 @@ class TfApiClient {
       {
         'forum_name': forumName,
         'introduction': introduction,
-        if (requestId != null) 'request_id': requestId,
+        'request_id': ?requestId,
       },
       uid: uid,
       password: password,
@@ -2160,8 +2152,8 @@ class TfApiClient {
     final result = await secretPost(
       '/notification/mark_read',
       {
-        if (timeStamp != null) 'time_stamp': timeStamp,
-        if (ids != null) 'ids': ids,
+        'time_stamp': ?timeStamp,
+        'ids': ?ids,
       },
       uid: uid,
       password: password,
@@ -2212,7 +2204,7 @@ class TfApiClient {
       {
         'room_id': roomId,
         'last_seq': lastSeq,
-        if (lastMid != null) 'last_mid': lastMid,
+        'last_mid': ?lastMid,
         if (missingSequences.isNotEmpty) 'missing_sequences': missingSequences,
         if (missingSequenceRanges.isNotEmpty)
           'missing_sequence_ranges': missingSequenceRanges,
@@ -2394,8 +2386,9 @@ class TfApiClient {
       },
     );
     final response = await _getRequest(uri.toString());
-    if (response.statusCode < 200 || response.statusCode >= 300)
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Failed to load sticker market');
+    }
     return Map<String, dynamic>.from(jsonDecode(response.body) as Map);
   }
 
@@ -2549,9 +2542,9 @@ class TfApiClient {
         '/sticker/pack/update',
         {
           'pack_id': packId,
-          if (name != null) 'name': name,
-          if (prefix != null) 'prefix': prefix,
-          if (description != null) 'description': description,
+          'name': ?name,
+          'prefix': ?prefix,
+          'description': ?description,
         },
         uid: uid,
         password: password,

@@ -623,7 +623,7 @@ class _AccountNotificationSheet extends StatelessWidget {
                         Icon(
                           Icons.notifications_none,
                           size: 64,
-                          color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -640,7 +640,7 @@ class _AccountNotificationSheet extends StatelessWidget {
                       vertical: 8,
                     ),
                     itemCount: notifs.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 6),
+                    separatorBuilder: (_, _) => const SizedBox(height: 6),
                     itemBuilder: (context, index) {
                       final notif = notifs[index];
                       return _NotificationCard(notification: notif);

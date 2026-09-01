@@ -68,11 +68,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       }
     } catch (e) {
       talker.error('UserProfileScreen: _loadProfile failed', e);
-      if (mounted)
+      if (mounted) {
         setState(() {
           _isLoading = false;
           _error = e.toString();
         });
+      }
     }
   }
 

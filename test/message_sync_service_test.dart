@@ -149,8 +149,8 @@ void main() {
                   hasMore: false,
                 );
         },
-        processMessages: (_, __) {},
-        saveSyncPoint: (_, __) async {},
+        processMessages: (_, _) {},
+        saveSyncPoint: (_, _) async {},
       );
 
       await service.syncRoomFromMid('G2', 200);
@@ -174,7 +174,7 @@ void main() {
             hasMore: false,
           );
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(service.clear);
       service.queueMissingForTesting('U3', [2, 3]);
@@ -207,7 +207,7 @@ void main() {
             hasMore: false,
           );
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(service.clear);
       service.queueMissingForTesting(
@@ -234,7 +234,7 @@ void main() {
             hasMore: false,
           );
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(service.clear);
       service.queueMissingForTesting('U7', [2, 3]);
@@ -259,7 +259,7 @@ void main() {
             hasMore: false,
           );
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(() {
         gate.complete();
@@ -287,7 +287,7 @@ void main() {
             hasMore: false,
           );
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(service.clear);
       service.queueMissingForTesting('U6', [2, 3]);
@@ -311,7 +311,7 @@ void main() {
             hasMore: false,
           );
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(service.clear);
       service.queueMissingForTesting('U8', [2, 3]);
@@ -327,7 +327,7 @@ void main() {
         fetchMessages: (_) async {
           return (messages: <ChatMessage>[], currentSeq: 9, hasMore: false);
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(service.clear);
       service.queueMissingForTesting('U9', [5]);
@@ -351,7 +351,7 @@ void main() {
           await gate.future;
           return (messages: <ChatMessage>[], currentSeq: 12, hasMore: false);
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(() {
         gate.complete();
@@ -378,7 +378,7 @@ void main() {
         fetchMessages: (_) async {
           return (messages: <ChatMessage>[], currentSeq: 1, hasMore: false);
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(service.clear);
       service.registerRoomSeq('U11', 1);

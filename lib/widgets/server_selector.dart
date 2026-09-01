@@ -832,7 +832,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                                 fontSize: 12,
                                 color: isSelected
                                     ? colorScheme.onPrimaryContainer
-                                          .withOpacity(0.7)
+                                          .withValues(alpha: 0.7)
                                     : colorScheme.onSurfaceVariant,
                               ),
                             )

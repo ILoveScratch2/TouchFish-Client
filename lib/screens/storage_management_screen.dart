@@ -224,15 +224,19 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
         ext.endsWith('.jpg') ||
         ext.endsWith('.jpeg') ||
         ext.endsWith('.gif') ||
-        ext.endsWith('.webp'))
+        ext.endsWith('.webp')) {
       return cs.tertiary;
-    if (ext.endsWith('.mp4') || ext.endsWith('.mov') || ext.endsWith('.avi'))
+    }
+    if (ext.endsWith('.mp4') || ext.endsWith('.mov') || ext.endsWith('.avi')) {
       return cs.error;
-    if (ext.endsWith('.mp3') || ext.endsWith('.wav') || ext.endsWith('.ogg'))
+    }
+    if (ext.endsWith('.mp3') || ext.endsWith('.wav') || ext.endsWith('.ogg')) {
       return cs.secondary;
+    }
     if (ext.endsWith('.pdf')) return cs.error;
-    if (ext.endsWith('.zip') || ext.endsWith('.rar') || ext.endsWith('.7z'))
+    if (ext.endsWith('.zip') || ext.endsWith('.rar') || ext.endsWith('.7z')) {
       return cs.primary;
+    }
     return cs.onSurfaceVariant;
   }
 
@@ -390,7 +394,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
       onRefresh: _loadData,
       child: ListView.separated(
         itemCount: _files.length,
-        separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
+        separatorBuilder: (_, _) => const Divider(height: 1, indent: 72),
         itemBuilder: (context, index) =>
             _buildFileTile(_files[index], l10n, colorScheme),
       ),

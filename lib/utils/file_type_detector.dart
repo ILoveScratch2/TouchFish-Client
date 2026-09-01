@@ -46,7 +46,7 @@ DetectedFileType detectFileType(Uint8List bytes, {String fallbackName = ''}) {
   }
   try {
     final text = utf8.decode(bytes.take(4096).toList(), allowMalformed: false).replaceFirst('\uFEFF', '').trimLeft().toLowerCase();
-    if (text.indexOf('<svg') >= 0 && text.indexOf('<svg') < 512) return DetectedFileType.svg;
+    if (text.contains('<svg') && text.indexOf('<svg') < 512) return DetectedFileType.svg;
   } catch (_) {}
   if (starts(const [0x1f, 0x8b]) && bytes.length <= 10 * 1024 * 1024) {
     try {

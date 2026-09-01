@@ -54,7 +54,7 @@ void main() {
   });
 
   testWidgets('dialog renders below the title bar area', (tester) async {
-    var result;
+    bool? result;
     await tester.pumpWidget(
       buildHarness(
         open: (context) async => result = await openDialog!(context),
@@ -80,7 +80,7 @@ void main() {
   });
 
   testWidgets('action button returns its result', (tester) async {
-    var result;
+    bool? result;
     await tester.pumpWidget(
       buildHarness(
         open: (context) async => result = await openDialog!(context),
@@ -97,7 +97,7 @@ void main() {
   });
 
   testWidgets('escape key dismisses a dismissible dialog', (tester) async {
-    var result;
+    bool? result;
     await tester.pumpWidget(
       buildHarness(
         open: (context) async => result = await openDialog!(context),

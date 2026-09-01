@@ -410,7 +410,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
                                 height: 96,
                               )
                             : null,
-                        onBackgroundImageError: (_, __) {},
+                        onBackgroundImageError: (_, _) {},
                         child: const Icon(
                           Icons.group,
                           size: 48,

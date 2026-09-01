@@ -497,7 +497,7 @@ class MediaProxyService {
     // 链上吞掉错误，保证后续等待者不被前一个失败拖死。
     _fileLocks[key] = result.then<void>(
       (_) {},
-      onError: (Object _, StackTrace __) {},
+      onError: (Object _, StackTrace _) {},
     );
     return result;
   }

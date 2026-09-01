@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../lib/models/settings_service.dart';
-import '../lib/services/api/tf_crypto.dart';
-import '../lib/services/rsa_key_trust_service.dart';
+import 'package:touchfish_client/models/settings_service.dart';
+import 'package:touchfish_client/services/api/tf_crypto.dart';
+import 'package:touchfish_client/services/rsa_key_trust_service.dart';
 
 // AITester's PEM
 const _testPem = '''

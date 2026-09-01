@@ -290,7 +290,7 @@ class MessageSyncService extends ChangeNotifier {
   ]) async {
     final roomIds = <String>{
       ...knownRoomIds,
-      if (activeRoomId != null) activeRoomId!,
+      ?activeRoomId,
       ..._queuedMissing.keys,
     };
     for (final roomId in roomIds) {

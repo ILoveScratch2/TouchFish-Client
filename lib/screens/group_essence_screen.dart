@@ -96,10 +96,12 @@ class _GroupEssenceScreenState extends State<GroupEssenceScreen> {
         _loadFailed = false;
       });
     } catch (_) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _isLoading = false;
         _loadFailed = true;
       });
+      }
     }
   }
 
