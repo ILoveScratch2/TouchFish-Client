@@ -1038,6 +1038,8 @@
   "forumComposeAttachImage": "Attach image",
   "forumComposeAttachFile": "Attach file",
   "forumCopyLink": "Copy Link",
+  "forumCopyPost": "Copy Post",
+  "forumPostCopied": "Post content copied",
   "forumCommentSend": "Send",
   "forumExpandEditor": "Expand editor",
   "forumMdBold": "Bold",

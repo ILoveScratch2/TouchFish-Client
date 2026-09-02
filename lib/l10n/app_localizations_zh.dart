@@ -2652,6 +2652,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get forumCopyLink => '复制链接';
 
   @override
+  String get forumCopyPost => '复制帖子';
+
+  @override
+  String get forumPostCopied => '帖子内容已复制';
+
+  @override
   String get forumCommentSend => '发送';
 
   @override

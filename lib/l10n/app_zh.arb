@@ -1009,6 +1009,8 @@
   "forumComposeAttachImage": "添加图片",
   "forumComposeAttachFile": "添加附件",
   "forumCopyLink": "复制链接",
+  "forumCopyPost": "复制帖子",
+  "forumPostCopied": "帖子内容已复制",
   "forumCommentSend": "发送",
   "forumExpandEditor": "展开编辑器",
   "forumMdBold": "加粗",

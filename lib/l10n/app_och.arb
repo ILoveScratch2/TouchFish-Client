@@ -1026,6 +1026,8 @@
   "forumComposeAttachImage": "添圖",
   "forumComposeAttachFile": "添附件",
   "forumCopyLink": "複鏈接",
+  "forumCopyPost": "複帖",
+  "forumPostCopied": "帖文已複",
   "forumCommentSend": "發",
   "forumExpandEditor": "展纂器",
   "forumMdBold": "粗體",

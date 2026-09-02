@@ -2775,6 +2775,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forumCopyLink => 'Copy Link';
 
   @override
+  String get forumCopyPost => 'Copy Post';
+
+  @override
+  String get forumPostCopied => 'Post content copied';
+
+  @override
   String get forumCommentSend => 'Send';
 
   @override

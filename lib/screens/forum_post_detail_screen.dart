@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../models/forum_model.dart';
@@ -458,6 +459,36 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     );
   }
 
+  void _copyPostContent() {
+    if (_post == null) return;
+
+    final buffer = StringBuffer();
+
+    // 添加标题（如果存在）
+    if (_post!.title.isNotEmpty) {
+      buffer.writeln(_post!.title);
+      buffer.writeln();
+    }
+
+    // 添加内容
+    buffer.writeln(_post!.content);
+
+    // 添加来源标记
+    buffer.writeln();
+    buffer.writeln('---');
+    buffer.writeln('来自 TouchFish 论坛');
+
+    // 复制到剪贴板
+    Clipboard.setData(ClipboardData(text: buffer.toString()));
+
+    // 显示提示
+    if (mounted) {
+      TouchFishSnackbarService.instance.show(
+        AppLocalizations.of(context)!.forumPostCopied,
+      );
+    }
+  }
+
   Widget _buildActionButtons(BuildContext context, AppLocalizations l10n) {
     return SizedBox(
       height: 48,
@@ -475,6 +506,12 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
             },
             icon: const Icon(Icons.comment_outlined, size: 18),
             label: Text(l10n.forumComments(_commentDataList.length)),
+          ),
+          const SizedBox(width: 8),
+          FilledButton.tonalIcon(
+            onPressed: _copyPostContent,
+            icon: const Icon(Icons.content_copy_outlined, size: 18),
+            label: Text(l10n.forumCopyPost),
           ),
           const SizedBox(width: 8),
           FilledButton.tonalIcon(

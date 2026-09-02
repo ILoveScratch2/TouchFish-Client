@@ -5194,6 +5194,18 @@ abstract class AppLocalizations {
   /// **'Copy Link'**
   String get forumCopyLink;
 
+  /// No description provided for @forumCopyPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Post'**
+  String get forumCopyPost;
+
+  /// No description provided for @forumPostCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Post content copied'**
+  String get forumPostCopied;
+
   /// No description provided for @forumCommentSend.
   ///
   /// In en, this message translates to:

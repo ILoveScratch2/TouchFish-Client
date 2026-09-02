@@ -2650,6 +2650,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get forumCopyLink => '複鏈接';
 
   @override
+  String get forumCopyPost => '複帖';
+
+  @override
+  String get forumPostCopied => '帖文已複';
+
+  @override
   String get forumCommentSend => '發';
 
   @override
