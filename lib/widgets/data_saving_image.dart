@@ -27,10 +27,12 @@ class DataSavingImage extends StatefulWidget {
 class _DataSavingImageState extends State<DataSavingImage> {
   bool _requested = false;
   bool? _cached;
+  Future<CacheManager?>? _cacheManagerFuture;
 
   @override
   void initState() {
     super.initState();
+    _cacheManagerFuture = FileCacheService.instance.getCacheManager();
     _checkCache();
   }
 
@@ -82,9 +84,10 @@ class _DataSavingImageState extends State<DataSavingImage> {
         height: widget.height,
       );
       return FutureBuilder<CacheManager?>(
-        future: FileCacheService.instance.getCacheManager(),
+        future: _cacheManagerFuture,
         builder: (context, snapshot) {
           return CachedNetworkImage(
+            key: ValueKey(widget.url),
             imageUrl: widget.url,
             cacheManager: snapshot.data,
             fit: widget.fit,

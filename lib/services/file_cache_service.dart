@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
@@ -19,6 +20,7 @@ class FileCacheService {
 
   CacheManager? _cacheManager;
   Future<CacheManager?>? _initFuture;
+  Timer? _sizeCheckTimer;
 
   /// 默认缓存大小限制（字节）：500MB
   static const int defaultMaxCacheSize = 500 * 1024 * 1024;
@@ -39,6 +41,7 @@ class FileCacheService {
   /// 设置缓存大小限制（字节），0 表示无限制
   Future<void> setMaxCacheSize(int bytes) async {
     await SettingsService.instance.setValue('fileCacheMaxSizeBytes', bytes);
+    // 立即执行一次清理
     await _enforceSizeLimit();
   }
 
@@ -81,6 +84,12 @@ class FileCacheService {
     final manager = await _ensureCacheManager();
     if (manager == null) return;
     await _enforceSizeLimit();
+    
+    // 启动定期检查（每 5 分钟）
+    _sizeCheckTimer?.cancel();
+    _sizeCheckTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      _enforceSizeLimit();
+    });
   }
 
   /// 从 URL 获取文件；未命中缓存时自动下载并写入磁盘缓存。
@@ -89,7 +98,6 @@ class FileCacheService {
     if (manager == null) return null;
     try {
       final file = await manager.getSingleFile(url, headers: headers);
-      await _enforceSizeLimit();
       return file;
     } catch (e, stack) {
       talker.error('Failed to get cached file: $url', e, stack);
@@ -116,7 +124,6 @@ class FileCacheService {
     if (manager == null) return;
     try {
       await manager.downloadFile(url, authHeaders: headers);
-      await _enforceSizeLimit();
       talker.debug('Preloaded file into cache: $url');
     } catch (e, stack) {
       talker.error('Failed to preload file: $url', e, stack);

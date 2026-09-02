@@ -41,7 +41,7 @@ ImageProvider resizedImageProvider(
 /// 按实际渲染尺寸下采样解码的图片。
 ///
 /// 网络图片通过磁盘缓存（FileCacheService）加载，支持离线查看。
-class OptimizedImage extends StatelessWidget {
+class OptimizedImage extends StatefulWidget {
   final ImageProvider provider;
   final BoxFit fit;
   final bool gaplessPlayback;
@@ -56,6 +56,22 @@ class OptimizedImage extends StatelessWidget {
     this.errorBuilder,
     this.frameBuilder,
   });
+
+  @override
+  State<OptimizedImage> createState() => _OptimizedImageState();
+}
+
+class _OptimizedImageState extends State<OptimizedImage> {
+  Future<CacheManager?>? _cacheManagerFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // 网络图片需要缓存管理器
+    if (widget.provider is NetworkImage) {
+      _cacheManagerFuture = FileCacheService.instance.getCacheManager();
+    }
+  }
 
   Widget _placeholder(BuildContext context) => Container(
     color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -75,15 +91,15 @@ class OptimizedImage extends StatelessWidget {
     ),
   );
 
-  Widget _error(BuildContext context, Object error) => errorBuilder != null
-      ? errorBuilder!(context, error, StackTrace.current)
+  Widget _error(BuildContext context, Object error) => widget.errorBuilder != null
+      ? widget.errorBuilder!(context, error, StackTrace.current)
       : _broken(context);
 
   @override
   Widget build(BuildContext context) {
     // 网络图片走磁盘缓存
-    if (provider is NetworkImage) {
-      final networkImage = provider as NetworkImage;
+    if (widget.provider is NetworkImage) {
+      final networkImage = widget.provider as NetworkImage;
       return LayoutBuilder(
         builder: (context, constraints) {
           final size = imageDecodeSize(
@@ -93,17 +109,18 @@ class OptimizedImage extends StatelessWidget {
           );
 
           return FutureBuilder<CacheManager?>(
-            future: FileCacheService.instance.getCacheManager(),
+            future: _cacheManagerFuture,
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 // 缓存管理器初始化中
                 return _placeholder(context);
               }
               return CachedNetworkImage(
+                key: ValueKey(networkImage.url),
                 imageUrl: networkImage.url,
                 // web/无 path_provider 环境为 null，使用包默认缓存实现
                 cacheManager: snapshot.data,
-                fit: fit,
+                fit: widget.fit,
                 memCacheWidth: size.width,
                 memCacheHeight: size.height,
                 placeholder: (context, url) => _placeholder(context),
@@ -118,7 +135,7 @@ class OptimizedImage extends StatelessWidget {
     // 本地/内存/其他 ImageProvider：按实际渲染尺寸下采样解码
     return LayoutBuilder(
       builder: (context, constraints) {
-        var imageProvider = provider;
+        var imageProvider = widget.provider;
         if (!kIsWeb) {
           final size = imageDecodeSize(
             MediaQuery.of(context).devicePixelRatio,
@@ -127,7 +144,7 @@ class OptimizedImage extends StatelessWidget {
           );
           if (size.width != null || size.height != null) {
             imageProvider = ResizeImage(
-              provider,
+              widget.provider,
               width: size.width,
               height: size.height,
               policy: ResizeImagePolicy.fit,
@@ -136,10 +153,10 @@ class OptimizedImage extends StatelessWidget {
         }
         return Image(
           image: imageProvider,
-          fit: fit,
-          gaplessPlayback: gaplessPlayback,
-          errorBuilder: errorBuilder,
-          frameBuilder: frameBuilder,
+          fit: widget.fit,
+          gaplessPlayback: widget.gaplessPlayback,
+          errorBuilder: widget.errorBuilder,
+          frameBuilder: widget.frameBuilder,
         );
       },
     );

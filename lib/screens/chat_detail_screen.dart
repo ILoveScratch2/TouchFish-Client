@@ -658,19 +658,23 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (_isJumpingToMessage) return;
     _refreshRoom();
     final cached = ChatDataService.instance.getMessages(_contactUid);
+    
+    // 未读角标、房间列表等无关通知不重建消息列表
+    if (_sameMessageRefs(cached)) {
+      return;
+    }
+    
     final previousLastId = _messages.isNotEmpty ? _messages.last.id : null;
     final countChanged = cached.length != _messages.length;
     final lastIdChanged = cached.isNotEmpty && cached.last.id != previousLastId;
     final wasNearBottom = _isNearBottom;
-    // 未读角标、房间列表等无关通知不重建消息列表（ChatMessage 不可变，
-    // 引用逐一相同说明缓存内容没变）。
-    if (countChanged || lastIdChanged || !_sameMessageRefs(cached)) {
-      setState(() {
-        _messages.clear();
-        _messages.addAll(cached);
-        _rebuildImageEntries();
-      });
-    }
+    
+    setState(() {
+      _messages.clear();
+      _messages.addAll(cached);
+      _rebuildImageEntries();
+    });
+    
     if ((countChanged || lastIdChanged) && wasNearBottom) {
       _scrollToBottom();
     }
@@ -2502,14 +2506,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                               .difference(previous.timestamp)
                                               .inMinutes >=
                                           5;
-                                  final key = message.mid == null
-                                      ? null
-                                      : _messageKeys.putIfAbsent(
-                                          message.mid!,
-                                          GlobalKey.new,
-                                        );
+                                  final stableKey = message.mid?.toString() ?? message.id;
                                   return Dismissible(
-                                    key: ValueKey('swipe-${message.id}'),
+                                    key: ValueKey('swipe-$stableKey'),
                                     direction: message.isDeleted
                                         ? DismissDirection.none
                                         : DismissDirection.endToStart,
@@ -2536,52 +2535,50 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                         ),
                                       ),
                                     ),
-                                    child: KeyedSubtree(
-                                      key: key,
-                                      child: MessageBubble(
-                                        message: message,
-                                        onReply: _startReply,
-                                        onForward: _startForward,
-                                        onRecall: _recallMessage,
-                                        onDelete: _canDeleteLocally(message)
-                                            ? (_) =>
-                                                  _deleteLocalMessage(message)
-                                            : null,
-                                        onQuoteTap: _scrollToQuotedMessage,
-                                        showAvatar: showAvatar,
-                                        galleryItems: _imageEntries.isEmpty
-                                            ? null
-                                            : _imageEntries,
-                                        galleryIndex:
-                                            _imageIndexById[message] ?? 0,
-                                        canRecall: _canRecall(message),
-                                        isEssence:
-                                            message.mid != null &&
-                                            _essenceMids.contains(
-                                              message.mid,
-                                            ) &&
-                                            _essenceEnabled,
-                                        isPinned:
-                                            message.mid != null &&
-                                            _pinnedMessages.any(
-                                              (p) => p.messageId == message.mid,
-                                            ),
-                                        canPin:
-                                            _currentRoom?.type ==
-                                                ChatType.group &&
-                                            _canModerateGroup &&
-                                            message.mid != null &&
-                                            !message.isDeleted,
-                                        essenceEnabled: _essenceEnabled,
-                                        onPinToggle: message.mid != null
-                                            ? () => _togglePin(message)
-                                            : null,
-                                        onEssenceToggle:
-                                            message.mid != null &&
-                                                _essenceEnabled
-                                            ? () => _toggleEssence(message)
-                                            : null,
-                                      ),
+                                    child: MessageBubble(
+                                      key: ValueKey('bubble-$stableKey'),
+                                      message: message,
+                                      onReply: _startReply,
+                                      onForward: _startForward,
+                                      onRecall: _recallMessage,
+                                      onDelete: _canDeleteLocally(message)
+                                          ? (_) =>
+                                                _deleteLocalMessage(message)
+                                          : null,
+                                      onQuoteTap: _scrollToQuotedMessage,
+                                      showAvatar: showAvatar,
+                                      galleryItems: _imageEntries.isEmpty
+                                          ? null
+                                          : _imageEntries,
+                                      galleryIndex:
+                                          _imageIndexById[message] ?? 0,
+                                      canRecall: _canRecall(message),
+                                      isEssence:
+                                          message.mid != null &&
+                                          _essenceMids.contains(
+                                            message.mid,
+                                          ) &&
+                                          _essenceEnabled,
+                                      isPinned:
+                                          message.mid != null &&
+                                          _pinnedMessages.any(
+                                            (p) => p.messageId == message.mid,
+                                          ),
+                                      canPin:
+                                          _currentRoom?.type ==
+                                              ChatType.group &&
+                                          _canModerateGroup &&
+                                          message.mid != null &&
+                                          !message.isDeleted,
+                                      essenceEnabled: _essenceEnabled,
+                                      onPinToggle: message.mid != null
+                                          ? () => _togglePin(message)
+                                          : null,
+                                      onEssenceToggle:
+                                          message.mid != null &&
+                                              _essenceEnabled
+                                          ? () => _toggleEssence(message)
+                                          : null,
                                     ),
                                   );
                                 },
