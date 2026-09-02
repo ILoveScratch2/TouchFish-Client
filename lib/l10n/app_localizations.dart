@@ -3142,6 +3142,24 @@ abstract class AppLocalizations {
   /// **'Group Chat'**
   String get chatDetailGroupChat;
 
+  /// No description provided for @chatTypingSingle.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is typing...'**
+  String chatTypingSingle(String name);
+
+  /// No description provided for @chatTypingDouble.
+  ///
+  /// In en, this message translates to:
+  /// **'{name1} and {name2} are typing...'**
+  String chatTypingDouble(String name1, String name2);
+
+  /// No description provided for @chatTypingMultiple.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} and {count} others are typing...'**
+  String chatTypingMultiple(String name, int count);
+
   /// No description provided for @chatDetailNoMessages.
   ///
   /// In en, this message translates to:

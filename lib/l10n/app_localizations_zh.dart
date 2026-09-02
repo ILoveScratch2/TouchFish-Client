@@ -1570,6 +1570,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatDetailGroupChat => '群聊';
 
   @override
+  String chatTypingSingle(String name) {
+    return '$name 正在输入...';
+  }
+
+  @override
+  String chatTypingDouble(String name1, String name2) {
+    return '$name1 和 $name2 正在输入...';
+  }
+
+  @override
+  String chatTypingMultiple(String name, int count) {
+    return '$name 和其他 $count 人正在输入...';
+  }
+
+  @override
   String get chatDetailNoMessages => '暂无消息\n发送一条消息开始聊天吧';
 
   @override

@@ -1647,6 +1647,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatDetailGroupChat => 'Group Chat';
 
   @override
+  String chatTypingSingle(String name) {
+    return '$name is typing...';
+  }
+
+  @override
+  String chatTypingDouble(String name1, String name2) {
+    return '$name1 and $name2 are typing...';
+  }
+
+  @override
+  String chatTypingMultiple(String name, int count) {
+    return '$name and $count others are typing...';
+  }
+
+  @override
   String get chatDetailNoMessages =>
       'No messages yet\nSend a message to start chatting';
 

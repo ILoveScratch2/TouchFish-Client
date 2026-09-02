@@ -627,6 +627,12 @@
   "chatDetailUnknownUser": "Unknown User",
   "chatDetailOther": "Other",
   "chatDetailGroupChat": "Group Chat",
+  "chatTypingSingle": "{name} is typing...",
+  "@chatTypingSingle": {"placeholders": {"name": {"type": "String"}}},
+  "chatTypingDouble": "{name1} and {name2} are typing...",
+  "@chatTypingDouble": {"placeholders": {"name1": {"type": "String"}, "name2": {"type": "String"}}},
+  "chatTypingMultiple": "{name} and {count} others are typing...",
+  "@chatTypingMultiple": {"placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}},
   "chatDetailNoMessages": "No messages yet\nSend a message to start chatting",
   "chatBackToBottom": "Back to bottom",
   

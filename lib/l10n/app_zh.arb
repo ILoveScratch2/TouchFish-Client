@@ -616,6 +616,12 @@
   "chatDetailUnknownUser": "未知用户",
   "chatDetailOther": "对方",
   "chatDetailGroupChat": "群聊",
+  "chatTypingSingle": "{name} 正在输入...",
+  "@chatTypingSingle": {"placeholders": {"name": {"type": "String"}}},
+  "chatTypingDouble": "{name1} 和 {name2} 正在输入...",
+  "@chatTypingDouble": {"placeholders": {"name1": {"type": "String"}, "name2": {"type": "String"}}},
+  "chatTypingMultiple": "{name} 和其他 {count} 人正在输入...",
+  "@chatTypingMultiple": {"placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}},
   "chatDetailNoMessages": "暂无消息\n发送一条消息开始聊天吧",
   "chatBackToBottom": "回到底部",
   

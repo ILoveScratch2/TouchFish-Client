@@ -1,5 +1,5 @@
 import 'dart:io' show File, Platform;
-import 'dart:typed_data';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -7,6 +7,8 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 import '../services/clipboard_attachment_service.dart';
+import '../services/auth_state.dart';
+import '../services/chat_ws_service.dart';
 import 'server_file_picker_sheet.dart';
 import 'stickers/sticker_picker.dart';
 import '../l10n/app_localizations.dart';
@@ -16,23 +18,29 @@ import '../utils/file_type_detector.dart';
 import 'mention_text_field.dart';
 
 class ChatInputBar extends StatefulWidget {
+  final String roomId;
   final TextEditingController controller;
   final VoidCallback onSend;
   final Function(PlatformFile file, MessageType type)? onFilePicked;
 
   /// 选择服务端已上传的文件直接发送（免二次上传）。
-  final Future<void> Function(Map<String, dynamic> serverFile, MessageType type)?
-      onServerFilePicked;
+  final Future<void> Function(
+    Map<String, dynamic> serverFile,
+    MessageType type,
+  )?
+  onServerFilePicked;
   final List<MentionUser> mentionUsers;
   final ChatMessage? actionMessage;
   final bool actionIsForward;
   final VoidCallback? onClearAction;
+
   /// When true (default), Ctrl+V / Cmd+V will automatically detect and upload
   /// files from the clipboard instead of pasting text.
   final bool enableClipboardUpload;
 
   const ChatInputBar({
     super.key,
+    this.roomId = '',
     required this.controller,
     required this.onSend,
     this.onFilePicked,
@@ -53,19 +61,66 @@ class _ChatInputBarState extends State<ChatInputBar>
   bool _isExpanded = false;
   late final TabController _tabController;
   late final FocusNode _inputFocusNode;
+  Timer? _typingTimer;
+  bool _typingActive = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _inputFocusNode = FocusNode(onKeyEvent: _handleInputKeyEvent);
+    widget.controller.addListener(_handleTypingChanged);
   }
 
   @override
   void dispose() {
+    widget.controller.removeListener(_handleTypingChanged);
+    _typingTimer?.cancel();
+    if (_typingActive) ChatWsService.instance.sendTyping(widget.roomId, false);
     _tabController.dispose();
     _inputFocusNode.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant ChatInputBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.roomId != widget.roomId) {
+      _typingTimer?.cancel();
+      if (_typingActive) {
+        ChatWsService.instance.sendTyping(oldWidget.roomId, false);
+        _typingActive = false;
+      }
+      if (widget.controller.text.trim().isNotEmpty) {
+        _handleTypingChanged();
+      }
+    }
+  }
+
+  void _handleTypingChanged() {
+    if (!AuthState.instance.isLoggedIn) return;
+    final hasText = widget.controller.text.trim().isNotEmpty;
+    if (hasText && !_typingActive) {
+      ChatWsService.instance.sendTyping(widget.roomId, true);
+      _typingActive = true;
+    }
+    _typingTimer?.cancel();
+    if (!hasText) {
+      _stopTyping();
+      return;
+    }
+    _typingTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (_typingActive) {
+        ChatWsService.instance.sendTyping(widget.roomId, true);
+      }
+    });
+  }
+
+  void _stopTyping() {
+    _typingTimer?.cancel();
+    if (!_typingActive) return;
+    ChatWsService.instance.sendTyping(widget.roomId, false);
+    _typingActive = false;
   }
 
   KeyEventResult _handleInputKeyEvent(FocusNode node, KeyEvent event) {
@@ -132,8 +187,7 @@ class _ChatInputBarState extends State<ChatInputBar>
           DetectedFileType.svg ||
           DetectedFileType.tgs ||
           DetectedFileType.webp => MessageType.image,
-          DetectedFileType.unknown =>
-            _messageTypeFromExtension(file.fileName),
+          DetectedFileType.unknown => _messageTypeFromExtension(file.fileName),
         };
 
         final platformFile = PlatformFile(
@@ -152,10 +206,10 @@ class _ChatInputBarState extends State<ChatInputBar>
           if (text != null && text.isNotEmpty && mounted) {
             final value = widget.controller.value;
             final selection = value.selection;
-            final start =
-                selection.isValid ? selection.start : value.text.length;
-            final end =
-                selection.isValid ? selection.end : value.text.length;
+            final start = selection.isValid
+                ? selection.start
+                : value.text.length;
+            final end = selection.isValid ? selection.end : value.text.length;
             widget.controller.value = value.copyWith(
               text: value.text.replaceRange(start, end, text),
               selection: TextSelection.collapsed(offset: start + text.length),
@@ -433,7 +487,8 @@ class _ChatInputBarState extends State<ChatInputBar>
                               : l10n.messageReplyingTo(
                                   message.isMe
                                       ? 'Me'
-                                      : message.senderName ?? l10n.commonUnknown,
+                                      : message.senderName ??
+                                            l10n.commonUnknown,
                                 ),
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(fontWeight: FontWeight.w500),
@@ -563,10 +618,7 @@ class _ChatInputBarState extends State<ChatInputBar>
   Future<void> _handleServerFilePick() async {
     final file = await showServerFilePicker(context);
     if (file == null || !mounted || widget.onServerFilePicked == null) return;
-    await widget.onServerFilePicked!(
-      file,
-      _messageTypeFromServerFile(file),
-    );
+    await widget.onServerFilePicked!(file, _messageTypeFromServerFile(file));
   }
 
   Widget _buildEmojiTab(ColorScheme colorScheme, AppLocalizations l10n) {
@@ -574,14 +626,19 @@ class _ChatInputBarState extends State<ChatInputBar>
       onPick: (pack, sticker) {
         _insertText(':${pack.prefix}+${sticker.slug}:');
       },
-      onLongPress: (pack, sticker) => _insertText(':${pack.prefix}+${sticker.slug}:'),
+      onLongPress: (pack, sticker) =>
+          _insertText(':${pack.prefix}+${sticker.slug}:'),
     );
   }
 
   void _insertText(String value) {
     final selection = widget.controller.selection;
-    final start = selection.start < 0 ? widget.controller.text.length : selection.start;
-    final end = selection.end < 0 ? widget.controller.text.length : selection.end;
+    final start = selection.start < 0
+        ? widget.controller.text.length
+        : selection.start;
+    final end = selection.end < 0
+        ? widget.controller.text.length
+        : selection.end;
     widget.controller.value = widget.controller.value.copyWith(
       text: widget.controller.text.replaceRange(start, end, value),
       selection: TextSelection.collapsed(offset: start + value.length),
@@ -591,12 +648,30 @@ class _ChatInputBarState extends State<ChatInputBar>
   MessageType _messageTypeFromExtension(String fileName) {
     final ext = fileName.split('.').last.toLowerCase();
     switch (ext) {
-      case 'png': case 'jpg': case 'jpeg': case 'gif': case 'bmp':
-      case 'svg': case 'tgs': case 'webp':
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+      case 'gif':
+      case 'bmp':
+      case 'svg':
+      case 'tgs':
+      case 'webp':
         return MessageType.image;
-      case 'mp4': case 'webm': case 'mkv': case 'avi': case 'mov': case 'flv': case 'wmv':
+      case 'mp4':
+      case 'webm':
+      case 'mkv':
+      case 'avi':
+      case 'mov':
+      case 'flv':
+      case 'wmv':
         return MessageType.video;
-      case 'mp3': case 'wav': case 'flac': case 'ogg': case 'aac': case 'm4a': case 'wma':
+      case 'mp3':
+      case 'wav':
+      case 'flac':
+      case 'ogg':
+      case 'aac':
+      case 'm4a':
+      case 'wma':
         return MessageType.audio;
       default:
         return MessageType.file;
@@ -704,7 +779,9 @@ class _ChatInputBarState extends State<ChatInputBar>
               (!kIsWeb && file.path != null)) {
             final Uint8List header = kIsWeb
                 ? file.bytes!
-                : Uint8List.fromList(await File(file.path!).openRead(0, 4096).first);
+                : Uint8List.fromList(
+                    await File(file.path!).openRead(0, 4096).first,
+                  );
             final detected = detectFileType(header, fallbackName: file.name);
             final messageType = switch (detected) {
               DetectedFileType.png ||

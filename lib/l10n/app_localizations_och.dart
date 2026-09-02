@@ -1569,6 +1569,21 @@ class AppLocalizationsOch extends AppLocalizations {
   String get chatDetailGroupChat => '群聊';
 
   @override
+  String chatTypingSingle(String name) {
+    return '$name 方輸入中...';
+  }
+
+  @override
+  String chatTypingDouble(String name1, String name2) {
+    return '$name1 與 $name2 方輸入中...';
+  }
+
+  @override
+  String chatTypingMultiple(String name, int count) {
+    return '$name 與餘 $count 人方輸入中...';
+  }
+
+  @override
   String get chatDetailNoMessages => '暫無消息\n發送一則以啟聊';
 
   @override

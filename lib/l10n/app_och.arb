@@ -601,6 +601,12 @@
   "chatDetailUnknownUser": "未知之戶",
   "chatDetailOther": "對方",
   "chatDetailGroupChat": "群聊",
+  "chatTypingSingle": "{name} 方輸入中...",
+  "@chatTypingSingle": {"placeholders": {"name": {"type": "String"}}},
+  "chatTypingDouble": "{name1} 與 {name2} 方輸入中...",
+  "@chatTypingDouble": {"placeholders": {"name1": {"type": "String"}, "name2": {"type": "String"}}},
+  "chatTypingMultiple": "{name} 與餘 {count} 人方輸入中...",
+  "@chatTypingMultiple": {"placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}},
   "chatDetailNoMessages": "暫無消息\n發送一則以啟聊",
   "chatBackToBottom": "返至底部",
 

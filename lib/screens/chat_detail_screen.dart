@@ -36,6 +36,8 @@ import 'group_essence_screen.dart';
 import '../widgets/pinned_messages_sheet.dart';
 import '../widgets/optimized_image.dart';
 import '../widgets/sync_indicator.dart';
+import '../models/typing_status.dart';
+import '../widgets/typing_indicator.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   final String roomId;
@@ -92,6 +94,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   bool _fetchingPins = false;
   bool _isJumpingToMessage = false;
   Timer? _weakNetworkTimer;
+  final Map<int, TypingStatus> _typingUsers = {};
+  StreamSubscription<ChatWsEvent>? _typingSub;
+  Timer? _typingCleanupTimer;
 
   String get _contactUid {
     final id = widget.roomId;
@@ -107,6 +112,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     _messageController.addListener(_scheduleDraftSave);
+    _typingCleanupTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final cutoff = DateTime.now().subtract(const Duration(seconds: 5));
+      final expired = _typingUsers.entries
+          .where((entry) => entry.value.updatedAt.isBefore(cutoff))
+          .map((entry) => entry.key)
+          .toList();
+      if (expired.isEmpty || !mounted) return;
+      setState(() {
+        for (final uid in expired) {
+          _typingUsers.remove(uid);
+        }
+      });
+    });
   }
 
   @override
@@ -153,6 +171,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _essenceMids = [];
     _essenceEnabled = true;
     _fetchingEssenceRoomId = null;
+    _typingUsers.clear();
     _suppressDraftSave = true;
     _messageController.clear();
     _suppressDraftSave = false;
@@ -166,6 +185,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _startRealMessaging();
     _initMessageSync();
     _weakNetworkTimer?.cancel();
+    _typingCleanupTimer?.cancel();
+    _typingSub?.cancel();
+    _typingUsers.clear();
     if (SettingsService.instance.getValue<bool>('weakNetworkMode', false)) {
       _weakNetworkTimer = Timer.periodic(const Duration(seconds: 30), (_) {
         unawaited(
@@ -310,6 +332,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _essenceSub = NotificationService.instance.essenceChanges.listen(
       _onEssenceChanged,
     );
+    _typingSub = ChatWsService.instance.eventStream.listen(_onTypingEvent);
     _realtimeListenersAttached = true;
   }
 
@@ -319,7 +342,36 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     ChatDataService.instance.removeListener(_onChatDataChanged);
     _essenceSub?.cancel();
     _essenceSub = null;
+    _typingSub?.cancel();
+    _typingSub = null;
+    _typingUsers.clear();
     _realtimeListenersAttached = false;
+  }
+
+  void _onTypingEvent(ChatWsEvent event) {
+    if (!mounted ||
+        (event.type != 'typing.start' && event.type != 'typing.stop')) {
+      return;
+    }
+    final data = event.notification;
+    if (data == null || data['room_id']?.toString() != _contactUid) return;
+    final uid = (data['uid'] as num?)?.toInt();
+    if (uid == null || uid == AuthState.instance.uid) return;
+    setState(() {
+      if (event.type == 'typing.start') {
+        _typingUsers[uid] = TypingStatus(uid: uid, updatedAt: DateTime.now());
+      } else {
+        _typingUsers.remove(uid);
+      }
+    });
+  }
+
+  List<String> _typingNames() {
+    final chatData = ChatDataService.instance;
+    return _typingUsers.keys.map((uid) {
+      final profile = chatData.getUser('U$uid');
+      return profile?.username ?? 'User $uid';
+    }).toList();
   }
 
   bool get _isRoomSyncing =>
@@ -816,8 +868,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (clientMid != null) {
       _pendingWsTimers.remove(clientMid)?.cancel();
     }
-    if (_replyingTo?.clientMid == clientMid ||
-        _replyingTo?.id == message.id) {
+    if (_replyingTo?.clientMid == clientMid || _replyingTo?.id == message.id) {
       _replyingTo = null;
     }
     if (_forwardingTo?.clientMid == clientMid ||
@@ -1326,7 +1377,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (_messages.length > _galleryCap) return;
     for (final message in _messages) {
       final media = message.media;
-      final isImageMessage = message.type == MessageType.image ||
+      final isImageMessage =
+          message.type == MessageType.image ||
           (message.type == MessageType.file &&
               (media?.mimeType ?? '').startsWith('image/'));
       if (isImageMessage && media != null) {
@@ -2492,7 +2544,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                         onForward: _startForward,
                                         onRecall: _recallMessage,
                                         onDelete: _canDeleteLocally(message)
-                                            ? (_) => _deleteLocalMessage(message)
+                                            ? (_) =>
+                                                  _deleteLocalMessage(message)
                                             : null,
                                         onQuoteTap: _scrollToQuotedMessage,
                                         showAvatar: showAvatar,
@@ -2560,7 +2613,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 ],
               ),
             ),
+            if (_typingUsers.isNotEmpty)
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 150),
+                child: TypingIndicator(
+                  key: ValueKey(_typingUsers.keys.toList()),
+                  userNames: _typingNames(),
+                ),
+              ),
             ChatInputBar(
+              roomId: _contactUid,
               controller: _messageController,
               onSend: _sendMessage,
               onFilePicked: _sendMediaMessage,
