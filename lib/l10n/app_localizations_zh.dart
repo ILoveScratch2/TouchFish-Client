@@ -834,7 +834,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsCustomFontDesc => '输入要使用的系统字体名称';
 
   @override
-  String get settingsCustomFontHint => '例如：LXGW WenKai Screen';
+  String get settingsCustomFontHint => '例如：Microsoft YaHei';
 
   @override
   String get settingsSendModeTitle => '发送模式';
@@ -2034,7 +2034,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aboutFontLicenseDescription =>
-      '本应用使用 HarmonyOS Sans SC 与 LXGW WenKai 字体，由华为终端有限公司根据 HarmonyOS Sans Fonts License Agreement 提供和 LXGW 根据 SIL Open Font License 1.1 提供。这些字体的使用遵循各自的许可证协议。';
+      '本应用使用 HarmonyOS Sans SC 字体，由华为终端有限公司根据 HarmonyOS Sans Fonts License Agreement 提供。该字体的使用遵循其许可证协议。';
 
   @override
   String get aboutFontLicenseFullText => '完整许可证文本';

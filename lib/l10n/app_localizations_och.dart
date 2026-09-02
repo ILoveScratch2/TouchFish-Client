@@ -833,7 +833,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsCustomFontDesc => '書欲用之系字體名';
 
   @override
-  String get settingsCustomFontHint => '如：LXGW WenKai Screen';
+  String get settingsCustomFontHint => '如：Microsoft YaHei';
 
   @override
   String get settingsSendModeTitle => '發送之式';
@@ -2033,7 +2033,7 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get aboutFontLicenseDescription =>
-      '本應用用 HarmonyOS Sans SC 與 LXGW WenKai 字體，由華為終端有限公司據 HarmonyOS Sans Fonts License Agreement 提供，LXGW 據 SIL Open Font License 1.1 提供。此等字體之用各循其許可。';
+      '本應用用 HarmonyOS Sans SC 字體，由華為終端有限公司據 HarmonyOS Sans Fonts License Agreement 提供。此字體之用循其許可。';
 
   @override
   String get aboutFontLicenseFullText => '許可之全文';

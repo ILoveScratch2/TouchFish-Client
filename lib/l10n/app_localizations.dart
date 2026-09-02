@@ -4015,7 +4015,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutFontLicenseDescription.
   ///
   /// In en, this message translates to:
-  /// **'This application uses HarmonyOS Sans SC  & LXGW WenKai fonts, provided by Huawei Device Co., Ltd. under the HarmonyOS Sans Fonts License Agreement and LXGW under the SIL Open Font License 1.1. The use of these fonts is subject to their respective license agreements.'**
+  /// **'This application uses HarmonyOS Sans SC font, provided by Huawei Device Co., Ltd. under the HarmonyOS Sans Fonts License Agreement. The use of this font is subject to its license agreement.'**
   String get aboutFontLicenseDescription;
 
   /// No description provided for @aboutFontLicenseFullText.

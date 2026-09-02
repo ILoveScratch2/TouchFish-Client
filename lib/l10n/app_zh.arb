@@ -287,7 +287,7 @@
   "settingsFontCustomOption": "自定义",
   "settingsCustomFontTitle": "自定义字体",
   "settingsCustomFontDesc": "输入要使用的系统字体名称",
-  "settingsCustomFontHint": "例如：LXGW WenKai Screen",
+  "settingsCustomFontHint": "例如：Microsoft YaHei",
   
   "settingsSendModeTitle": "发送模式",
   "settingsSendModeDesc": "发送使用的快捷键",
@@ -774,7 +774,7 @@
   "aboutServerRepository": "后端服务器",
   "aboutFontLicense": "字体许可",
   "aboutFontLicenseDialogTitle": "字体许可",
-  "aboutFontLicenseDescription": "本应用使用 HarmonyOS Sans SC 与 LXGW WenKai 字体，由华为终端有限公司根据 HarmonyOS Sans Fonts License Agreement 提供和 LXGW 根据 SIL Open Font License 1.1 提供。这些字体的使用遵循各自的许可证协议。",
+  "aboutFontLicenseDescription": "本应用使用 HarmonyOS Sans SC 字体，由华为终端有限公司根据 HarmonyOS Sans Fonts License Agreement 提供。该字体的使用遵循其许可证协议。",
   "aboutFontLicenseFullText": "完整许可证文本",
   "aboutFontLicenseClose": "关闭",
   "aboutOpenSourceLicenses": "开源许可证",

@@ -121,8 +121,6 @@ flutter:
     - assets/icon.ico
     - assets/font/HarmonyOS_Sans_SC.ttf
     - assets/font/LICENSE.txt
-    - assets/font-wenkai/LXGWWenKai.ttf
-    - assets/font-wenkai/LICENSE.txt
     - LICENSE
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -153,9 +151,6 @@ flutter:
     - family: HarmonyOS Sans SC
       fonts:
         - asset: assets/font/HarmonyOS_Sans_SC.ttf
-    - family: LXGW WenKai
-      fonts:
-        - asset: assets/font-wenkai/LXGWWenKai.ttf
 
 # flutter_launcher_icons configuration
 flutter_launcher_icons:

@@ -555,12 +555,6 @@ class _AboutScreenState extends State<AboutScreen>
                       fontName: 'HarmonyOS Sans SC',
                       licensePath: 'assets/font/LICENSE.txt',
                     ),
-                    const SizedBox(height: 12),
-                    _buildFontLicenseOption(
-                      context,
-                      fontName: 'LXGW WenKai',
-                      licensePath: 'assets/font-wenkai/LICENSE.txt',
-                    ),
                   ],
                 ),
               ),
