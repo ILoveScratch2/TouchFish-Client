@@ -17,10 +17,10 @@ import '../services/notification_service.dart';
 import '../services/snackbar_service.dart';
 import '../routes/app_routes.dart';
 import '../utils/wide_screen_helper.dart';
-import 'chat_detail_screen.dart';
 import 'group_create_screen.dart';
 
 class ChatShellScreen extends StatefulWidget {
+  /// 聊天区内容（宽屏下为右侧嵌套导航区域，窄屏下整屏直通）。
   final Widget child;
 
   const ChatShellScreen({super.key, required this.child});
@@ -29,7 +29,8 @@ class ChatShellScreen extends StatefulWidget {
   State<ChatShellScreen> createState() => _ChatShellScreenState();
 }
 
-class _ChatShellScreenState extends State<ChatShellScreen> {
+class _ChatShellScreenState extends State<ChatShellScreen>
+    with SingleTickerProviderStateMixin {
   static const String _dividerPositionKey = 'chat_divider_position';
   static const String _collapsedStateKey = 'chat_list_collapsed';
   static const double _collapsedWidth = 80.0;
@@ -43,10 +44,54 @@ class _ChatShellScreenState extends State<ChatShellScreen> {
   bool _isCollapsed = false;
   double _sidebarWidth = 320.0;
 
+  /// 整壳入场动画：仅当从其它主 Section 切进聊天区（壳重新挂载）时播放。
+  /// 聊天是导航栏最左的 tab，从任何其它 tab 回来都固定从左侧滑入；
+  /// 列表/详情在壳内部路由切换时壳保持常驻，不会重播。
+  late final AnimationController _enterController;
+  late final Animation<double> _enterAnimation;
+
   @override
   void initState() {
     super.initState();
     _loadDividerPosition();
+    _enterController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+    _enterAnimation = CurvedAnimation(
+      parent: _enterController,
+      curve: Curves.easeOutCubic,
+    );
+    // 初始帧后再启动，避免冷启动首屏也被过渡一次
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !MediaQuery.disableAnimationsOf(context)) {
+        _enterController.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _enterController.dispose();
+    super.dispose();
+  }
+
+  Widget _enterWrapper(
+    BuildContext context,
+    Widget child, {
+    bool vertical = false,
+  }) {
+    if (MediaQuery.disableAnimationsOf(context)) return child;
+    return FadeTransition(
+      opacity: _enterAnimation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: vertical ? const Offset(0, 0.02) : const Offset(-0.06, 0),
+          end: Offset.zero,
+        ).animate(_enterAnimation),
+        child: child,
+      ),
+    );
   }
 
   Future<void> _loadDividerPosition() async {
@@ -99,78 +144,80 @@ class _ChatShellScreenState extends State<ChatShellScreen> {
     if (isWide) {
       final currentWidth = _isCollapsed ? _collapsedWidth : _sidebarWidth;
 
-      return Scaffold(
-        body: SafeArea(
-          bottom: false,
-          child: Row(
-            children: [
-              SizedBox(
-                width: currentWidth,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
-                  child: MouseRegion(
-                    onEnter: (_) {
-                      setState(() {
-                        _isHovering = true;
-                      });
-                    },
-                    onExit: (_) {
-                      setState(() {
-                        _isHovering = false;
-                      });
-                    },
-                    child: ChatListScreen(
-                      isAside: true,
-                      isCollapsed: _isCollapsed,
-                      isHovering: _isHovering,
-                      onToggleCollapse: () {
+      // 宽屏：左侧聊天列表常驻，右侧为聊天区子路由（列表页/详情页带转场动画）
+      return _enterWrapper(
+        context,
+        Scaffold(
+          body: SafeArea(
+            bottom: false,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: currentWidth,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+                    child: MouseRegion(
+                      onEnter: (_) {
                         setState(() {
-                          _isCollapsed = !_isCollapsed;
+                          _isHovering = true;
                         });
-                        _saveDividerPosition();
                       },
-                      onDragUpdate: (dx) {
-                        _updateDividerPosition(
-                          dx,
-                          MediaQuery.of(context).size.width,
-                        );
+                      onExit: (_) {
+                        setState(() {
+                          _isHovering = false;
+                        });
                       },
-                      onDragEnd: () {
-                        if (_sidebarWidth <= _collapseThreshold) {
+                      child: ChatListScreen(
+                        isAside: true,
+                        isCollapsed: _isCollapsed,
+                        isHovering: _isHovering,
+                        onToggleCollapse: () {
                           setState(() {
-                            _isCollapsed = true;
-                            _sidebarWidth = _minSidebarWidth;
+                            _isCollapsed = !_isCollapsed;
                           });
-                        }
-                        _saveDividerPosition();
-                      },
+                          _saveDividerPosition();
+                        },
+                        onDragUpdate: (dx) {
+                          _updateDividerPosition(
+                            dx,
+                            MediaQuery.of(context).size.width,
+                          );
+                        },
+                        onDragEnd: () {
+                          if (_sidebarWidth <= _collapseThreshold) {
+                            setState(() {
+                              _isCollapsed = true;
+                              _sidebarWidth = _minSidebarWidth;
+                            });
+                          }
+                          _saveDividerPosition();
+                        },
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(8),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(8),
+                      ),
+                      child: widget.child,
                     ),
-                    child: widget.child,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+        vertical: true,
       );
     }
-    return widget.child is ChatDetailScreen
-        ? widget.child
-        : const ChatListScreen(
-            isAside: false,
-            isCollapsed: false,
-            isHovering: false,
-          );
+    // 窄屏：整个聊天区（列表/详情）都由内嵌子路由承载，
+    // 保持 ChatShellScreen 常驻可以让切换房间不重建列表。
+    // 进入聊天区（壳重新挂载）时从左侧滑入：聊天是导航栏最左的 tab。
+    return _enterWrapper(context, widget.child);
   }
 }
 

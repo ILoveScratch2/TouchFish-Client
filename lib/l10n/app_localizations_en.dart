@@ -4207,4 +4207,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forumMemberRoleFailed => 'Failed to update role';
+
+  @override
+  String get fileCacheTitle => 'File cache (offline ready)';
+
+  @override
+  String fileCacheCountSummary(String size, int count) {
+    return '$size · $count files';
+  }
+
+  @override
+  String get fileCacheSettingsTitle => 'File cache settings';
+
+  @override
+  String get fileCacheLimitTitle => 'Cache size limit';
+
+  @override
+  String get fileCacheUnlimited => 'Unlimited';
+
+  @override
+  String get fileCacheDescription =>
+      'The file cache stores images, videos and other files so they can be viewed offline. You can set a size cap or turn the limit off.';
+
+  @override
+  String get fileCacheLimitDialogTitle => 'Set cache size limit';
+
+  @override
+  String get fileCacheLimitFieldLabel => 'Cache size (MB)';
+
+  @override
+  String get fileCacheLimitFieldHint => 'Enter 0 for no limit';
+
+  @override
+  String get fileSaveToLocal => 'Save to local';
+
+  @override
+  String get fileSaveToLocalDescription =>
+      'Save into the downloads folder; not affected by cache cleanup';
 }

@@ -1645,5 +1645,25 @@
   "groupIntroductionHelp": "Shown on the group profile page",
   "groupIntroductionUpdated": "Group introduction updated",
   "forumRemoveMemberFailed": "Failed to remove member",
-  "forumMemberRoleFailed": "Failed to update role"
+  "forumMemberRoleFailed": "Failed to update role",
+  "fileCacheTitle": "File cache (offline ready)",
+  "@fileCacheTitle": {
+    "description": "Title for the local file cache entry in storage settings"
+  },
+  "fileCacheCountSummary": "{size} \u00b7 {count} files",
+  "@fileCacheCountSummary": {
+    "placeholders": {
+      "size": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "fileCacheSettingsTitle": "File cache settings",
+  "fileCacheLimitTitle": "Cache size limit",
+  "fileCacheUnlimited": "Unlimited",
+  "fileCacheDescription": "The file cache stores images, videos and other files so they can be viewed offline. You can set a size cap or turn the limit off.",
+  "fileCacheLimitDialogTitle": "Set cache size limit",
+  "fileCacheLimitFieldLabel": "Cache size (MB)",
+  "fileCacheLimitFieldHint": "Enter 0 for no limit",
+  "fileSaveToLocal": "Save to local",
+  "fileSaveToLocalDescription": "Save into the downloads folder; not affected by cache cleanup"
 }

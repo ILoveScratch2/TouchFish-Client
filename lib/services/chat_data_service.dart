@@ -95,6 +95,7 @@ class ChatDataService extends ChangeNotifier {
   int? _roomPreferencesUid;
   String? _roomPreferencesScope;
   final Set<String> _fetchingGroups = {};
+  final Set<String> _fetchingUsers = {}; // 正在加载的用户资料
 
   /// 从设置读取消息缓存的最大会话房间数（默认 50）
   int get _maxCachedRooms =>
@@ -1178,11 +1179,20 @@ class ChatDataService extends ChangeNotifier {
 
   void _fetchProfileForRoom(String roomId, {String? messageRoomId}) {
     if (_userCache[roomId] != null) return;
+    // 防止重复加载同一个用户
+    if (!_fetchingUsers.add(roomId)) return;
+    
     final puid = _parseUid(roomId);
-    if (puid == null) return;
+    if (puid == null) {
+      _fetchingUsers.remove(roomId);
+      return;
+    }
     final generation = _generation;
     final uid = AuthState.instance.uid;
+    
     TfApiClient.instance.getUserByUid(puid).then((profile) {
+      _fetchingUsers.remove(roomId);
+      
       if (profile == null ||
           _generation != generation ||
           AuthState.instance.uid != uid) {
@@ -1198,7 +1208,11 @@ class ChatDataService extends ChangeNotifier {
         profile.username,
         profile.avatar,
       );
+      // 强制通知UI刷新，确保"User X"被更新
       notifyListeners();
+    }).catchError((error, stack) {
+      _fetchingUsers.remove(roomId);
+      talker.error('Failed to fetch profile for $roomId', error, stack);
     });
   }
 
@@ -1245,15 +1259,19 @@ class ChatDataService extends ChangeNotifier {
     }
   }
 
-  /// 为一批消息中尚未缓存的发送者逐个抓取资料。
+  /// 从一批消息中筛出「资料缺失且未在抓取中」的发送者房间列表（去重）。
   ///
-  /// 群聊历史/同步加载的消息发送者不在 /chat/list 的直接联系人里时，
-  /// _userCache 中并无其资料，导致昵称回退显示为 "User X"（见 _fillSenderInfo）。
-  /// 这里主动调用 _fetchProfileForRoom 补齐，资料返回后由 _fillMsgAvatars
-  /// 就地更新 [messageRoomId] 对应房间缓存里的消息昵称/头像。
-  void _ensureSenderProfiles(List<ChatMessage> messages, String roomId) {
-    final myUid = AuthState.instance.uid;
-    if (myUid == null) return;
+  /// 纯函数，便于单元测试：返回的 roomId 应调用 [_fetchProfileForRoom] 补齐，
+  /// 否则发送者昵称会回退显示为 "User X"。
+  @visibleForTesting
+  static List<String> collectMissingSenderRooms({
+    required List<ChatMessage> messages,
+    required int? myUid,
+    required Set<String> cachedRooms,
+    required Set<String> fetchingRooms,
+  }) {
+    final missing = <String>[];
+    if (myUid == null) return missing;
     final seen = <int>{};
     for (final message in messages) {
       final senderUid = message.senderUid;
@@ -1265,7 +1283,33 @@ class ChatDataService extends ChangeNotifier {
         continue;
       }
       final senderRoomId = roomIdFromUid(senderUid);
-      if (_userCache[senderRoomId] != null) continue;
+      if (cachedRooms.contains(senderRoomId) ||
+          fetchingRooms.contains(senderRoomId)) {
+        continue;
+      }
+      missing.add(senderRoomId);
+    }
+    return missing;
+  }
+
+  /// 为一批消息中尚未缓存的发送者逐个抓取资料。
+  ///
+  /// 群聊历史/同步加载的消息发送者不在 /chat/list 的直接联系人里时，
+  /// _userCache 中并无其资料，导致昵称回退显示为 "User X"（见 _fillSenderInfo）。
+  /// 这里主动调用 _fetchProfileForRoom 补齐，资料返回后由 _fillMsgAvatars
+  /// 就地更新 [messageRoomId] 对应房间缓存里的消息昵称/头像。
+  Future<void> _ensureSenderProfiles(
+    List<ChatMessage> messages,
+    String roomId,
+  ) async {
+    final missingProfiles = collectMissingSenderRooms(
+      messages: messages,
+      myUid: AuthState.instance.uid,
+      cachedRooms: _userCache.keys.toSet(),
+      fetchingRooms: _fetchingUsers,
+    );
+    // 批量启动加载（异步，不阻塞）
+    for (final senderRoomId in missingProfiles) {
       _fetchProfileForRoom(senderRoomId, messageRoomId: roomId);
     }
   }

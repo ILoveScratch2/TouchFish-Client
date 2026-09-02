@@ -116,13 +116,40 @@ class AppRoutes {
     return -1;
   }
 
+  /// 判断是否为子页面导航（同一 Section 内的页面切换）。
+  ///
+  /// 他妈的不要叠加主 Section 切换动画
+  /// 神秘 dsv4f 给我 debug 半天，梁文锋你死定了过拟合这么严重的 fw ds
+  @visibleForTesting
+  static bool isSubPageNavigation(String path) {
+    // 聊天页面内的导航
+    if (path.startsWith('/chat/') && path != '/chat') {
+      return true;
+    }
+    // 论坛页面内的导航
+    if (path.startsWith('/forum/') && path != '/forum') {
+      return true;
+    }
+    return false;
+  }
+
   static Page<void> _mainSectionPage(
     BuildContext context,
     GoRouterState state,
     Widget child,
   ) {
+    final path = state.uri.path;
+    
+    // 如果是子页面导航，不使用动画
+    if (isSubPageNavigation(path)) {
+      return NoTransitionPage<void>(
+        key: state.pageKey,
+        child: child,
+      );
+    }
+    
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final currentIndex = _sectionIndexOf(state.uri.path);
+    final currentIndex = _sectionIndexOf(path);
     final lastIndex = _lastMainSectionIndex;
     final isForward = lastIndex == null || currentIndex >= lastIndex;
     if (currentIndex >= 0) {
@@ -163,6 +190,44 @@ class AppRoutes {
         );
       },
     );
+  }
+
+  /// 聊天区占位页（宽屏右侧未选会话时显示）。
+  static Widget _chatPlaceholder(BuildContext context) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: Center(
+        child: Text(
+          AppLocalizations.of(context)!.chatSelectPlaceholder,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 聊天区索引页（URL 为 `/chat`）。
+  ///
+  /// 宽屏：列表常驻在 ChatShellScreen 左侧，这里只提供"选择会话"占位；
+  /// 窄屏：显示全屏聊天列表。
+  ///
+  /// 索引页自身不做转场动画：进入聊天 Section 的整体过渡由 ChatShellScreen
+  /// 整壳入场动画承担；从详情返回列表时索引页常驻栈底（或被静默补入），
+  /// 不会重放"列表滑入"动画。
+  static Page<void> _chatIndexPage(
+    BuildContext context,
+    GoRouterState state,
+  ) {
+    final isWide = WideScreenHelper.isWide(context);
+    final Widget page = isWide
+        ? _chatPlaceholder(context)
+        : const ChatListScreen(
+            isAside: false,
+            isCollapsed: false,
+            isHovering: false,
+          );
+    return NoTransitionPage<void>(key: state.pageKey, child: page);
   }
 
   @visibleForTesting
@@ -393,78 +458,108 @@ class AppRoutes {
                 return MainScreen(child: child);
               },
               routes: [
-                GoRoute(
-                  path: main,
-                  pageBuilder: (context, state) {
-                    final isWide = WideScreenHelper.isWide(context);
-                    final placeholder = ChatShellScreen(
-                      child: Container(
-                        color: Theme.of(context).scaffoldBackgroundColor,
-                        child: Center(
-                          child: Text(
-                            AppLocalizations.of(context)!.chatSelectPlaceholder,
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
+                // 聊天区使用常驻 Shell：ChatShellScreen（左侧列表、拖动栏等
+                // 状态）跨 /chat、/chat/:roomId 切换保持不重建；详情页作为
+                // /chat 的嵌套子路由，在壳内子导航中 push 播放转场动画——
+                // 宽屏=右侧面板区域动画，窄屏=整屏 push 动画
+
+                // what the fuck
+                ShellRoute(
+                  builder: (context, state, child) {
+                    return ChatShellScreen(child: child);
+                  },
+                  routes: [
+                    // CHAT NB!
+                    GoRoute(
+                      path: main,
+                      redirect: (context, state) => chat,
+                    ),
+                    GoRoute(
+                      path: chat,
+                      pageBuilder: (context, state) =>
+                          _chatIndexPage(context, state),
+                      routes: [
+                        GoRoute(
+                          path: ':roomId',
+                          pageBuilder: (context, state) {
+                            final roomId = state.pathParameters['roomId']!;
+                            final reduceMotion =
+                                MediaQuery.disableAnimationsOf(context);
+                            final detail = ChatDetailScreen(
+                              key: ValueKey(roomId),
+                              roomId: roomId,
+                            );
+                            if (reduceMotion) {
+                              return NoTransitionPage<void>(
+                                key: state.pageKey,
+                                child: detail,
+                              );
+                            }
+                            // 统一使用 opaque:false 的自定义转场：
+                            // 聊天列表页全程保持在 overlay 上（不做 offstage），
+                            // 不然他妈的 opaque 路由 pop 时恢复下层就会他妈的报错
+
+                            // 气死我了，不要管文不文明了
+                            if (!WideScreenHelper.isWide(context)) {
+                              // 窄屏：整屏从右滑入
+                              return CustomTransitionPage<void>(
+                                key: state.pageKey,
+                                opaque: false,
+                                transitionDuration:
+                                    const Duration(milliseconds: 300),
+                                reverseTransitionDuration:
+                                    const Duration(milliseconds: 260),
+                                child: detail,
+                                transitionsBuilder: (context, animation,
+                                        secondaryAnimation, child) {
+                                  final curved = CurvedAnimation(
+                                    parent: animation,
+                                    curve: Curves.easeOutCubic,
+                                    reverseCurve: Curves.easeInCubic,
+                                  );
+                                  return SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(1, 0),
+                                      end: Offset.zero,
+                                    ).animate(curved),
+                                    child: child,
+                                  );
+                                },
+                              );
+                            }
+                            // 宽屏：仅在右侧面板区域内轻量过渡
+                            return CustomTransitionPage<void>(
+                              key: state.pageKey,
+                              opaque: false,
+                              transitionDuration:
+                                  const Duration(milliseconds: 260),
+                              reverseTransitionDuration:
+                                  const Duration(milliseconds: 240),
+                              child: detail,
+                              transitionsBuilder: (context, animation,
+                                      secondaryAnimation, child) {
+                                final curved = CurvedAnimation(
+                                  parent: animation,
+                                  curve: Curves.easeOutCubic,
+                                  reverseCurve: Curves.easeInCubic,
+                                );
+                                return FadeTransition(
+                                  opacity: curved,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(0.05, 0),
+                                      end: Offset.zero,
+                                    ).animate(curved),
+                                    child: child,
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         ),
-                      ),
-                    );
-                    // 宽的时候没动画（不然很奇怪）
-                    return isWide
-                        ? NoTransitionPage(
-                            key: state.pageKey,
-                            child: placeholder,
-                          )
-                        : _mainSectionPage(context, state, placeholder);
-                  },
-                ),
-                GoRoute(
-                  path: chat,
-                  pageBuilder: (context, state) {
-                    final isWide = WideScreenHelper.isWide(context);
-                    final placeholder = ChatShellScreen(
-                      child: Container(
-                        color: Theme.of(context).scaffoldBackgroundColor,
-                        child: Center(
-                          child: Text(
-                            AppLocalizations.of(context)!.chatSelectPlaceholder,
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                    return isWide
-                        ? NoTransitionPage(
-                            key: state.pageKey,
-                            child: placeholder,
-                          )
-                        : _mainSectionPage(context, state, placeholder);
-                  },
-                ),
-                GoRoute(
-                  path: '/chat/:roomId',
-                  pageBuilder: (context, state) {
-                    final roomId = state.pathParameters['roomId']!;
-                    final isWide = WideScreenHelper.isWide(context);
-                    final shell = ChatShellScreen(
-                      child: ChatDetailScreen(
-                        key: ValueKey(roomId),
-                        roomId: roomId,
-                      ),
-                    );
-                    // 宽的时候没动画（不然很奇怪）
-                    // 窄的时候才能德芙纵享丝滑
-                    return isWide
-                        ? NoTransitionPage(key: state.pageKey, child: shell)
-                        : MaterialPage(child: shell);
-                  },
+                      ],
+                    ),
+                  ],
                 ),
                 GoRoute(
                   path: announcement,

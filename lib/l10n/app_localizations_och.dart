@@ -4030,4 +4030,39 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get forumMemberRoleFailed => '角色設置失敗';
+
+  @override
+  String get fileCacheTitle => '檔案緩存（可離線用）';
+
+  @override
+  String fileCacheCountSummary(String size, int count) {
+    return '$size · $count 個檔案';
+  }
+
+  @override
+  String get fileCacheSettingsTitle => '檔案緩存設置';
+
+  @override
+  String get fileCacheLimitTitle => '緩存大小限制';
+
+  @override
+  String get fileCacheUnlimited => '無限制';
+
+  @override
+  String get fileCacheDescription => '檔案緩存者，存圖、影諸檔以備離線觀覽；可設大小上限，亦可關其限。';
+
+  @override
+  String get fileCacheLimitDialogTitle => '設緩存大小上限';
+
+  @override
+  String get fileCacheLimitFieldLabel => '緩存大小 (MB)';
+
+  @override
+  String get fileCacheLimitFieldHint => '輸 0 即無限制';
+
+  @override
+  String get fileSaveToLocal => '存至本機';
+
+  @override
+  String get fileSaveToLocalDescription => '存至下載資料夾，不受緩存清理所限';
 }

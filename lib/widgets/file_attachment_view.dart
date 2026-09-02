@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -11,6 +12,8 @@ import '../models/settings_service.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/file_download_service.dart';
 import '../services/snackbar_service.dart';
+import '../services/file_cache_service.dart';
+import '../utils/talker.dart';
 import 'media/audio_player.dart';
 import 'media/image_lightbox.dart';
 import 'media/video_viewer.dart';
@@ -123,7 +126,13 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
       final result = await downloadFile(await _url(), _attachment.fileName);
       if (!mounted) return;
       if (result.cancelled) return;
-      TouchFishSnackbarService.instance.show(result.succeeded ? result.savedPath == null ? l10n.fileDownloadStarted : l10n.fileDownloadSaved(result.savedPath!) : l10n.fileDownloadFailed);
+      TouchFishSnackbarService.instance.show(
+        result.succeeded
+            ? result.savedPath == null
+                ? l10n.fileDownloadStarted
+                : l10n.fileDownloadSaved(result.savedPath!)
+            : l10n.fileDownloadFailed,
+      );
     } catch (_) {
       if (mounted) {
         TouchFishSnackbarService.instance.show(l10n.fileDownloadFailed);
@@ -131,6 +140,64 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
     } finally {
       if (mounted) setState(() => _downloading = false);
     }
+  }
+
+  Future<void> _saveToLocal() async {
+    if (_downloading) return;
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _downloading = true);
+    try {
+      final url = await _url();
+      final file = await FileCacheService.instance.saveFilePermanently(
+        url,
+        _attachment.fileName,
+      );
+      if (!mounted) return;
+      if (file != null) {
+        TouchFishSnackbarService.instance.show(
+          l10n.fileDownloadSaved(file.path),
+        );
+      } else {
+        TouchFishSnackbarService.instance.show(l10n.fileDownloadFailed);
+      }
+    } catch (e) {
+      if (mounted) {
+        TouchFishSnackbarService.instance.show(l10n.fileDownloadFailed);
+      }
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
+  }
+
+  void _showDownloadOptions() {
+    final l10n = AppLocalizations.of(context)!;
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Symbols.download),
+              title: Text(l10n.fileDownload),
+              onTap: () {
+                Navigator.pop(context);
+                _download();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Symbols.save),
+              title: Text(l10n.fileSaveToLocal),
+              subtitle: Text(l10n.fileSaveToLocalDescription),
+              onTap: () {
+                Navigator.pop(context);
+                _saveToLocal();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _preview() async {
@@ -215,6 +282,7 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
               ),
             IconButton(
               onPressed: _downloading ? null : _download,
+              onLongPress: _downloading ? null : _showDownloadOptions,
               icon: _downloading
                   ? const SizedBox.square(
                       dimension: 18,
@@ -261,84 +329,111 @@ class _AttachmentPreview extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         final url = snapshot.data!;
-        Widget preview;
-        if (attachment.isImage) {
-          preview = GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ImageLightbox(
-                  imagePath: url,
-                  imageBytes: bytes,
-                  heroTag: 'attachment_${attachment.hash}',
-                  items: galleryItems,
-                  initialIndex: galleryIndex,
-                ),
-              ),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: OptimizedImage(
-                provider: bytes == null
-                    ? NetworkImage(url)
-                    : MemoryImage(bytes!),
-                fit: BoxFit.contain,
-                errorBuilder: bytes == null
-                    ? (_, _, _) => _error(context)
-                    : null,
-              ),
-            ),
-          );
-        } else if (attachment.isVideo) {
-          preview = AspectRatio(
-            aspectRatio: 16 / 9,
-            child: VideoViewer(videoPath: url, videoBytes: bytes),
-          );
-        } else if (attachment.isAudio) {
-          preview = AudioPlayer(
-            audioPath: url,
-            audioBytes: bytes,
-            filename: attachment.fileName,
-          );
-        } else if (attachment.isText) {
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
-              child: _TextAttachmentPreview(
-                attachment: attachment,
-                url: url,
-                bytes: bytes,
-                onDownload: onDownload,
-              ),
-            ),
-          );
-        } else {
-          preview = _error(context);
+        // 已有字节内容时直接展示，否则优先用磁盘缓存文件，实现离线查看
+        if (bytes != null) {
+          return _buildPreview(context, url, file: null);
         }
-        return Stack(
-          children: [
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: 520,
-                  maxHeight: 520,
-                ),
-                child: preview,
-              ),
-            ),
-            if (onDownload != null)
-              Positioned(
-                top: 4,
-                right: 4,
-                child: IconButton.filledTonal(
-                  onPressed: onDownload,
-                  icon: const Icon(Symbols.download),
-                  tooltip: AppLocalizations.of(context)!.fileDownload,
-                ),
-              ),
-          ],
+        return FutureBuilder<File?>(
+          future: FileCacheService.instance.getFile(url),
+          builder: (context, fileSnapshot) {
+            if (fileSnapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return _buildPreview(context, url, file: fileSnapshot.data);
+          },
         );
       },
+    );
+  }
+
+  Widget _buildPreview(BuildContext context, String url, {File? file}) {
+    Widget preview;
+    if (attachment.isImage) {
+      // 磁盘缓存命中时直接使用本地文件（离线可看）
+      final ImageProvider provider;
+      if (file != null) {
+        provider = FileImage(file);
+      } else if (bytes != null) {
+        provider = MemoryImage(bytes!);
+      } else {
+        provider = NetworkImage(url);
+      }
+      preview = GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ImageLightbox(
+              imagePath: file?.path ?? url,
+              imageBytes: file != null ? null : bytes,
+              heroTag: 'attachment_${attachment.hash}',
+              items: galleryItems,
+              initialIndex: galleryIndex,
+            ),
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: OptimizedImage(
+            provider: provider,
+            fit: BoxFit.contain,
+            errorBuilder: file == null && bytes == null
+                ? (_, _, _) => _error(context)
+                : null,
+          ),
+        ),
+      );
+    } else if (attachment.isVideo) {
+      preview = AspectRatio(
+        aspectRatio: 16 / 9,
+        child: VideoViewer(
+          videoPath: file?.path ?? url,
+          videoBytes: file != null ? null : bytes,
+        ),
+      );
+    } else if (attachment.isAudio) {
+      preview = AudioPlayer(
+        audioPath: file?.path ?? url,
+        audioBytes: file != null ? null : bytes,
+        filename: attachment.fileName,
+      );
+    } else if (attachment.isText) {
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: _TextAttachmentPreview(
+            attachment: attachment,
+            url: url,
+            bytes: bytes,
+            file: file,
+            onDownload: onDownload,
+          ),
+        ),
+      );
+    } else {
+      preview = _error(context);
+    }
+    return Stack(
+      children: [
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 520,
+              maxHeight: 520,
+            ),
+            child: preview,
+          ),
+        ),
+        if (onDownload != null)
+          Positioned(
+            top: 4,
+            right: 4,
+            child: IconButton.filledTonal(
+              onPressed: onDownload,
+              icon: const Icon(Symbols.download),
+              tooltip: AppLocalizations.of(context)!.fileDownload,
+            ),
+          ),
+      ],
     );
   }
 
@@ -350,12 +445,16 @@ class _TextAttachmentPreview extends StatefulWidget {
   final FileAttachment attachment;
   final String url;
   final Uint8List? bytes;
+
+  /// 磁盘缓存文件（命中缓存时优先本地读取，支持离线预览）
+  final File? file;
   final VoidCallback? onDownload;
 
   const _TextAttachmentPreview({
     required this.attachment,
     required this.url,
     this.bytes,
+    this.file,
     this.onDownload,
   });
 
@@ -375,7 +474,9 @@ class _TextAttachmentPreviewState extends State<_TextAttachmentPreview> {
   @override
   void didUpdateWidget(covariant _TextAttachmentPreview oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.url != widget.url || oldWidget.bytes != widget.bytes) {
+    if (oldWidget.url != widget.url ||
+        oldWidget.bytes != widget.bytes ||
+        oldWidget.file != widget.file) {
       _contentFuture = _loadContent();
     }
   }
@@ -383,6 +484,15 @@ class _TextAttachmentPreviewState extends State<_TextAttachmentPreview> {
   Future<String> _loadContent() async {
     final bytes = widget.bytes;
     if (bytes != null) return utf8.decode(bytes, allowMalformed: true);
+    final file = widget.file;
+    if (file != null) {
+      try {
+        final fileBytes = await file.readAsBytes();
+        return utf8.decode(fileBytes, allowMalformed: true);
+      } catch (e) {
+        talker.error('Failed to read cached text file', e);
+      }
+    }
     return TfApiClient.instance.getTextFile(widget.url);
   }
 

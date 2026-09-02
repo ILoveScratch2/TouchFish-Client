@@ -33,6 +33,7 @@ import 'services/ip_override_service.dart';
 import 'services/lock_service.dart';
 import 'services/lock_screen_visibility_service.dart';
 import 'services/snackbar_service.dart';
+import 'services/file_cache_service.dart';
 import 'utils/talker.dart';
 import 'widgets/app_alert_dialog.dart';
 import 'widgets/rsa_key_prompts.dart';
@@ -69,6 +70,8 @@ Future<void> main() async {
     await LockService.instance.init();
     await IpOverrideService.instance.ensureDefaultDomain();
     await IpOverrideService.instance.refreshGlobal();
+    // 预热文件缓存（初始化缓存管理器并执行容量检查）
+    unawaited(FileCacheService.instance.warmup());
 
     if (isDesktop) {
       await windowManager.ensureInitialized();

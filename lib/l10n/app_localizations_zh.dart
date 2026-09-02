@@ -4032,4 +4032,39 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get forumMemberRoleFailed => '角色设置失败';
+
+  @override
+  String get fileCacheTitle => '文件缓存（离线可用）';
+
+  @override
+  String fileCacheCountSummary(String size, int count) {
+    return '$size · $count 个文件';
+  }
+
+  @override
+  String get fileCacheSettingsTitle => '文件缓存设置';
+
+  @override
+  String get fileCacheLimitTitle => '缓存大小限制';
+
+  @override
+  String get fileCacheUnlimited => '无限制';
+
+  @override
+  String get fileCacheDescription => '文件缓存用于离线查看图片、视频等文件，可设置大小上限，也可关闭限制。';
+
+  @override
+  String get fileCacheLimitDialogTitle => '设置缓存大小限制';
+
+  @override
+  String get fileCacheLimitFieldLabel => '缓存大小 (MB)';
+
+  @override
+  String get fileCacheLimitFieldHint => '输入 0 表示无限制';
+
+  @override
+  String get fileSaveToLocal => '保存到本地';
+
+  @override
+  String get fileSaveToLocalDescription => '保存到下载文件夹，不受缓存清理影响';
 }

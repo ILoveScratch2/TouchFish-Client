@@ -7827,6 +7827,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to update role'**
   String get forumMemberRoleFailed;
+
+  /// Title for the local file cache entry in storage settings
+  ///
+  /// In en, this message translates to:
+  /// **'File cache (offline ready)'**
+  String get fileCacheTitle;
+
+  /// No description provided for @fileCacheCountSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} · {count} files'**
+  String fileCacheCountSummary(String size, int count);
+
+  /// No description provided for @fileCacheSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'File cache settings'**
+  String get fileCacheSettingsTitle;
+
+  /// No description provided for @fileCacheLimitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache size limit'**
+  String get fileCacheLimitTitle;
+
+  /// No description provided for @fileCacheUnlimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited'**
+  String get fileCacheUnlimited;
+
+  /// No description provided for @fileCacheDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The file cache stores images, videos and other files so they can be viewed offline. You can set a size cap or turn the limit off.'**
+  String get fileCacheDescription;
+
+  /// No description provided for @fileCacheLimitDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set cache size limit'**
+  String get fileCacheLimitDialogTitle;
+
+  /// No description provided for @fileCacheLimitFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache size (MB)'**
+  String get fileCacheLimitFieldLabel;
+
+  /// No description provided for @fileCacheLimitFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter 0 for no limit'**
+  String get fileCacheLimitFieldHint;
+
+  /// No description provided for @fileSaveToLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to local'**
+  String get fileSaveToLocal;
+
+  /// No description provided for @fileSaveToLocalDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Save into the downloads folder; not affected by cache cleanup'**
+  String get fileSaveToLocalDescription;
 }
 
 class _AppLocalizationsDelegate

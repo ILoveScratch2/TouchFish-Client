@@ -1627,5 +1627,16 @@
   "groupIntroductionHelp": "顯示於羣資料頁",
   "groupIntroductionUpdated": "羣聊介紹已更新",
   "forumRemoveMemberFailed": "移除成員失敗",
-  "forumMemberRoleFailed": "角色設置失敗"
+  "forumMemberRoleFailed": "角色設置失敗",
+  "fileCacheTitle": "檔案緩存（可離線用）",
+  "fileCacheCountSummary": "{size} · {count} 個檔案",
+  "fileCacheSettingsTitle": "檔案緩存設置",
+  "fileCacheLimitTitle": "緩存大小限制",
+  "fileCacheUnlimited": "無限制",
+  "fileCacheDescription": "檔案緩存者，存圖、影諸檔以備離線觀覽；可設大小上限，亦可關其限。",
+  "fileCacheLimitDialogTitle": "設緩存大小上限",
+  "fileCacheLimitFieldLabel": "緩存大小 (MB)",
+  "fileCacheLimitFieldHint": "輸 0 即無限制",
+  "fileSaveToLocal": "存至本機",
+  "fileSaveToLocalDescription": "存至下載資料夾，不受緩存清理所限"
 }

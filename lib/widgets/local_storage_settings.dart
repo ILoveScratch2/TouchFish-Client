@@ -16,6 +16,7 @@ import '../services/database_backup_service.dart';
 import '../services/snackbar_service.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/file_cache_service.dart';
 
 class LocalStorageSettings extends StatefulWidget {
   const LocalStorageSettings({super.key});
@@ -31,6 +32,8 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
   int _mediaCacheBytes = 0;
   int _stickerCacheBytes = 0;
   int _flutterCacheBytes = 0;
+  int _fileCacheBytes = 0;
+  int _fileCacheCount = 0;
   String? _databasePath;
   bool _loading = true;
   bool _working = false;
@@ -60,6 +63,11 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
       _mediaCacheBytes = await MediaProxyService.instance.cacheSize();
       _stickerCacheBytes = await StickerCache.instance.sizeBytes;
       _flutterCacheBytes = await CacheService.instance.getFlutterCacheSize();
+      
+      // 获取文件缓存信息
+      final fileCacheStats = await FileCacheService.instance.getCacheStats();
+      _fileCacheBytes = fileCacheStats.totalSize;
+      _fileCacheCount = fileCacheStats.fileCount;
     } catch (_) {
     }
     if (mounted) setState(() => _loading = false);
@@ -107,12 +115,111 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
     TouchFishSnackbarService.instance.show(AppLocalizations.of(context)!.settingsCacheCleared);
   }
 
+  Future<void> _clearFileCache() async {
+    setState(() => _working = true);
+    await FileCacheService.instance.clearCache();
+    if (!mounted) return;
+    setState(() {
+      _working = false;
+      _fileCacheBytes = 0;
+      _fileCacheCount = 0;
+    });
+    TouchFishSnackbarService.instance.show(AppLocalizations.of(context)!.settingsCacheCleared);
+  }
+
+  Future<void> _showFileCacheSettings() async {
+    final l10n = AppLocalizations.of(context)!;
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => SheetScaffold(
+        titleText: l10n.fileCacheSettingsTitle,
+        heightFactor: 0.6,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.storage),
+                title: Text(l10n.fileCacheLimitTitle),
+                subtitle: Text(
+                  FileCacheService.instance.isCacheLimitEnabled
+                      ? '${(FileCacheService.instance.maxCacheSizeBytes / 1024 / 1024).toStringAsFixed(0)} MB'
+                      : l10n.fileCacheUnlimited,
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showCacheLimitDialog(),
+              ),
+              const Divider(),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  l10n.fileCacheDescription,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showCacheLimitDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+    final currentSize = FileCacheService.instance.maxCacheSizeBytes;
+    final controller = TextEditingController(
+      text: currentSize > 0 ? (currentSize / 1024 / 1024).toStringAsFixed(0) : '0',
+    );
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.fileCacheLimitDialogTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: l10n.fileCacheLimitFieldLabel,
+                helperText: l10n.fileCacheLimitFieldHint,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.commonCancel),
+          ),
+          TextButton(
+            onPressed: () async {
+              final sizeMB = int.tryParse(controller.text) ?? 0;
+              final sizeBytes = sizeMB * 1024 * 1024;
+              await FileCacheService.instance.setMaxCacheSize(sizeBytes);
+              if (context.mounted) {
+                Navigator.pop(context);
+                Navigator.pop(context);
+                _load();
+              }
+            },
+            child: Text(l10n.commonOk),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _clearAllCaches() async {
     setState(() => _working = true);
     await Future.wait([
       CacheService.instance.clearFlutterCache(),
       MediaProxyService.instance.clearCache(),
       StickerCache.instance.clear(),
+      FileCacheService.instance.clearCache(),
     ]);
     if (!mounted) return;
     setState(() {
@@ -120,6 +227,8 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
       _flutterCacheBytes = 0;
       _mediaCacheBytes = 0;
       _stickerCacheBytes = 0;
+      _fileCacheBytes = 0;
+      _fileCacheCount = 0;
     });
     TouchFishSnackbarService.instance.show(AppLocalizations.of(context)!.settingsCacheCleared);
   }
@@ -329,6 +438,25 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
           subtitle: Text(_formatBytes(_flutterCacheBytes)),
           trailing: TextButton(
             onPressed: _working ? null : _clearFlutterCache,
+            child: Text(l10n.settingsClearCache),
+          ),
+        ),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+          minLeadingWidth: 48,
+          leading: const Icon(Icons.folder_outlined),
+          title: Text(l10n.fileCacheTitle),
+          subtitle: Text(
+            _fileCacheBytes > 0 || _fileCacheCount > 0
+                ? l10n.fileCacheCountSummary(
+                    _formatBytes(_fileCacheBytes),
+                    _fileCacheCount,
+                  )
+                : _formatBytes(_fileCacheBytes),
+          ),
+          onTap: _showFileCacheSettings,
+          trailing: TextButton(
+            onPressed: _working ? null : _clearFileCache,
             child: Text(l10n.settingsClearCache),
           ),
         ),
