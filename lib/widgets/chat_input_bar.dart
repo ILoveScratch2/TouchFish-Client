@@ -10,6 +10,7 @@ import '../services/clipboard_attachment_service.dart';
 import '../services/auth_state.dart';
 import '../services/chat_ws_service.dart';
 import 'server_file_picker_sheet.dart';
+import 'stickers/sticker_autocomplete.dart';
 import 'stickers/sticker_picker.dart';
 import '../l10n/app_localizations.dart';
 import '../models/message_model.dart';
@@ -329,24 +330,38 @@ class _ChatInputBarState extends State<ChatInputBar>
                   ],
                 ),
                 Expanded(
-                  child: MentionTextField(
-                    controller: widget.controller,
-                    focusNode: _inputFocusNode,
-                    mentionUsers: widget.mentionUsers,
-                    maxLines: 5,
-                    minLines: 1,
-                    keyboardType: TextInputType.multiline,
-                    textInputAction: TextInputAction.newline,
-                    textAlign: TextAlign.left,
-                    decoration: InputDecoration(
-                      hintText: l10n.chatInputPlaceholder,
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
+                  child: Stack(
+                    children: [
+                      MentionTextField(
+                        controller: widget.controller,
+                        focusNode: _inputFocusNode,
+                        mentionUsers: widget.mentionUsers,
+                        maxLines: 5,
+                        minLines: 1,
+                        keyboardType: TextInputType.multiline,
+                        textInputAction: TextInputAction.newline,
+                        textAlign: TextAlign.left,
+                        decoration: InputDecoration(
+                          hintText: l10n.chatInputPlaceholder,
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                        ),
                       ),
-                    ),
+                      // 贴纸自动补全 稳定锚（）（）（）（:prefix+ ）
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: StickerInputHelper(
+                            controller: widget.controller,
+                            focusNode: _inputFocusNode,
+                            onStickerSelected: (_) {},
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 IconButton(

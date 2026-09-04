@@ -311,6 +311,12 @@
   "settingsEnableMarkdownTitle": "Render Markdown/LaTeX",
   "settingsEnableMarkdownDesc": "Render Markdown and LaTeX formatted text",
   
+  "settingsMessageDisplayStyleTitle": "Message Display Style",
+  "settingsMessageDisplayStyleDesc": "Choose the message list display style",
+  "settingsMessageDisplayStyleBubble": "Bubble",
+  "settingsMessageDisplayStyleCompact": "Compact(TF-style)",
+  "settingsMessageDisplayStyleColumn": "Column (TF-style+)",
+  
   "settingsCloseToTrayTitle": "Minimize to Tray on Close",
   "settingsCloseToTrayDesc": "Keep running in the background when the window is closed instead of quitting (desktop only)",
   
@@ -1483,6 +1489,11 @@
   "forumSearchPostsHeader": "Posts",
 
   "stickerNoPacks": "No sticker packs",
+  "stickerRecent": "Recent",
+  "stickerPacks": "Packs",
+  "stickerNoRecentStickers": "No recently used stickers",
+  "stickerBrowseMarket": "Browse sticker market",
+  "stickerLoadError": "Failed to load, tap to retry",
   "commonUnknown": "Unknown",
 
   "groupSearchTitle": "Search Groups",

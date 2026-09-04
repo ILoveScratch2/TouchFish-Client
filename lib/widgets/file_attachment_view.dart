@@ -298,7 +298,7 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
   }
 }
 
-class _AttachmentPreview extends StatelessWidget {
+class _AttachmentPreview extends StatefulWidget {
   final FileAttachment attachment;
   final Future<String> urlFuture;
   final Uint8List? bytes;
@@ -316,9 +316,28 @@ class _AttachmentPreview extends StatelessWidget {
   });
 
   @override
+  State<_AttachmentPreview> createState() => _AttachmentPreviewState();
+}
+
+class _AttachmentPreviewState extends State<_AttachmentPreview> {
+  /// ParsedURL is loading
+  String? _fileUrl;
+  Future<File?>? _fileFuture;
+
+  @override
+  void didUpdateWidget(covariant _AttachmentPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.urlFuture != widget.urlFuture ||
+        oldWidget.bytes != widget.bytes) {
+      _fileUrl = null;
+      _fileFuture = null;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return FutureBuilder<String>(
-      future: urlFuture,
+      future: widget.urlFuture,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Center(
@@ -330,11 +349,15 @@ class _AttachmentPreview extends StatelessWidget {
         }
         final url = snapshot.data!;
         // 已有字节内容时直接展示，否则优先用磁盘缓存文件，实现离线查看
-        if (bytes != null) {
+        if (widget.bytes != null) {
           return _buildPreview(context, url, file: null);
         }
+        if (url != _fileUrl) {
+          _fileUrl = url;
+          _fileFuture = FileCacheService.instance.getFile(url);
+        }
         return FutureBuilder<File?>(
-          future: FileCacheService.instance.getFile(url),
+          future: _fileFuture,
           builder: (context, fileSnapshot) {
             if (fileSnapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -347,6 +370,8 @@ class _AttachmentPreview extends StatelessWidget {
   }
 
   Widget _buildPreview(BuildContext context, String url, {File? file}) {
+    final attachment = widget.attachment;
+    final bytes = widget.bytes;
     Widget preview;
     if (attachment.isImage) {
       // 磁盘缓存命中时直接使用本地文件（离线可看）
@@ -354,7 +379,7 @@ class _AttachmentPreview extends StatelessWidget {
       if (file != null) {
         provider = FileImage(file);
       } else if (bytes != null) {
-        provider = MemoryImage(bytes!);
+        provider = MemoryImage(bytes);
       } else {
         provider = NetworkImage(url);
       }
@@ -366,8 +391,8 @@ class _AttachmentPreview extends StatelessWidget {
               imagePath: file?.path ?? url,
               imageBytes: file != null ? null : bytes,
               heroTag: 'attachment_${attachment.hash}',
-              items: galleryItems,
-              initialIndex: galleryIndex,
+              items: widget.galleryItems,
+              initialIndex: widget.galleryIndex,
             ),
           ),
         ),
@@ -405,7 +430,7 @@ class _AttachmentPreview extends StatelessWidget {
             url: url,
             bytes: bytes,
             file: file,
-            onDownload: onDownload,
+            onDownload: widget.onDownload,
           ),
         ),
       );
@@ -423,12 +448,12 @@ class _AttachmentPreview extends StatelessWidget {
             child: preview,
           ),
         ),
-        if (onDownload != null)
+        if (widget.onDownload != null)
           Positioned(
             top: 4,
             right: 4,
             child: IconButton.filledTonal(
-              onPressed: onDownload,
+              onPressed: widget.onDownload,
               icon: const Icon(Symbols.download),
               tooltip: AppLocalizations.of(context)!.fileDownload,
             ),

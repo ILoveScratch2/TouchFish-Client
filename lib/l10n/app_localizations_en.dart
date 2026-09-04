@@ -900,6 +900,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Render Markdown and LaTeX formatted text';
 
   @override
+  String get settingsMessageDisplayStyleTitle => 'Message Display Style';
+
+  @override
+  String get settingsMessageDisplayStyleDesc =>
+      'Choose the message list display style';
+
+  @override
+  String get settingsMessageDisplayStyleBubble => 'Bubble';
+
+  @override
+  String get settingsMessageDisplayStyleCompact => 'Compact(TF-style)';
+
+  @override
+  String get settingsMessageDisplayStyleColumn => 'Column (TF-style+)';
+
+  @override
   String get settingsCloseToTrayTitle => 'Minimize to Tray on Close';
 
   @override
@@ -3804,6 +3820,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stickerNoPacks => 'No sticker packs';
+
+  @override
+  String get stickerRecent => 'Recent';
+
+  @override
+  String get stickerPacks => 'Packs';
+
+  @override
+  String get stickerNoRecentStickers => 'No recently used stickers';
+
+  @override
+  String get stickerBrowseMarket => 'Browse sticker market';
+
+  @override
+  String get stickerLoadError => 'Failed to load, tap to retry';
 
   @override
   String get commonUnknown => 'Unknown';

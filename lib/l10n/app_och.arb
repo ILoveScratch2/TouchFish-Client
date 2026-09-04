@@ -296,6 +296,12 @@
 
   "settingsEnableMarkdownTitle": "染 Markdown/LaTeX 內容",
   "settingsEnableMarkdownDesc": "將可染之 Markdown/LaTeX 文予以渲染",
+  
+  "settingsMessageDisplayStyleTitle": "消息顯示樣式",
+  "settingsMessageDisplayStyleDesc": "擇消息列表之顯示風格",
+  "settingsMessageDisplayStyleBubble": "氣泡模式",
+  "settingsMessageDisplayStyleCompact": "緊湊模式（TF 風格）",
+  "settingsMessageDisplayStyleColumn": "列式模式（TF 風格+）",
 
   "settingsCloseToTrayTitle": "闔窗退隱於託盤",
   "settingsCloseToTrayDesc": "闔窗後仍於後臺運行，不離應用（惟桌面平臺）",
@@ -1471,6 +1477,11 @@
   "forumSearchPostsHeader": "帖子",
 
   "stickerNoPacks": "暫無已藏貼圖包",
+  "stickerRecent": "最近所用",
+  "stickerPacks": "表情包",
+  "stickerNoRecentStickers": "未有近期所用之表情",
+  "stickerBrowseMarket": "瀏覽表情包市場",
+  "stickerLoadError": "載入失敗，點擊重試",
   "commonUnknown": "未知",
 
   "groupSearchTitle": "尋群",

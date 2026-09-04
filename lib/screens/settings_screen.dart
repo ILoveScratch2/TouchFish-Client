@@ -300,6 +300,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         if (item.key == 'language' ||
             item.key == 'themeColor' ||
             item.key == 'layoutMode' ||
+            item.key == 'messageDisplayStyle' ||
             item.key == 'builtInKeyboardMode' ||
             item.key == 'linkOpenMode' ||
             item.key == 'browserMixedContent' ||
@@ -815,8 +816,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                   ),
                   const SizedBox(width: 16),
+                  // 宽 170：容纳"列式模式（Discord风格）"级的长选项标签
                   SizedBox(
-                    width: 140,
+                    width: 170,
                     child: CustomDropdown<String>(
                       hintText: '',
                       initialItem: selectedLabel,
@@ -2106,6 +2108,16 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsEnableMarkdownTitle;
       case 'settingsEnableMarkdownDesc':
         return l10n.settingsEnableMarkdownDesc;
+      case 'settingsMessageDisplayStyleTitle':
+        return l10n.settingsMessageDisplayStyleTitle;
+      case 'settingsMessageDisplayStyleDesc':
+        return l10n.settingsMessageDisplayStyleDesc;
+      case 'settingsMessageDisplayStyleBubble':
+        return l10n.settingsMessageDisplayStyleBubble;
+      case 'settingsMessageDisplayStyleCompact':
+        return l10n.settingsMessageDisplayStyleCompact;
+      case 'settingsMessageDisplayStyleColumn':
+        return l10n.settingsMessageDisplayStyleColumn;
       case 'settingsAutomaticPreviewTitle':
         return l10n.settingsAutomaticPreviewTitle;
       case 'settingsAutomaticPreviewDesc':

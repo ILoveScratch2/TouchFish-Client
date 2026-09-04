@@ -9,6 +9,53 @@ import 'package:path_provider/path_provider.dart';
 import '../models/settings_service.dart';
 import '../utils/talker.dart';
 
+/// get-file 似乎暂时莫得缓存诶
+final RegExp _immutableUrlPattern = RegExp(
+  r'/(file/get_file|sticker/get)/',
+);
+
+/// 内容 hash 寻址的 URL：磁盘缓存命中即可直接使用
+bool _isImmutableUrl(String url) => _immutableUrlPattern.hasMatch(url);
+
+class _HashImmutableFileService extends HttpFileService {
+  static final Duration _maxAge = const Duration(days: 365);
+
+  @override
+  Future<FileServiceResponse> get(
+    String url, {
+    Map<String, String>? headers,
+  }) async {
+    final response = await super.get(url, headers: headers);
+    if (!_isImmutableUrl(url)) return response;
+    return _HashImmutableResponse(response);
+  }
+}
+
+class _HashImmutableResponse implements FileServiceResponse {
+  _HashImmutableResponse(this._inner);
+
+  final FileServiceResponse _inner;
+
+  @override
+  int get statusCode => _inner.statusCode;
+
+  @override
+  Stream<List<int>> get content => _inner.content;
+
+  @override
+  int? get contentLength => _inner.contentLength;
+
+  @override
+  DateTime get validTill =>
+      DateTime.now().add(_HashImmutableFileService._maxAge);
+
+  @override
+  String? get eTag => _inner.eTag;
+
+  @override
+  String get fileExtension => _inner.fileExtension;
+}
+
 /// 文件缓存
 /// cache = 擦车！
 class FileCacheService {
@@ -60,6 +107,7 @@ class FileCacheService {
             _cacheKey,
             stalePeriod: defaultMaxAge,
             maxNrOfCacheObjects: maxObjects,
+            fileService: _HashImmutableFileService(),
           ),
         );
         _cacheManager = manager;
@@ -93,12 +141,20 @@ class FileCacheService {
   }
 
   /// 从 URL 获取文件；未命中缓存时自动下载并写入磁盘缓存。
+  ///
+  /// 内容 hash 寻址的不可变 URL（/file/get_file、/sticker/get）
+  /// 磁盘缓存命中即返回，不校验 validTill 和 Cache-Control 避免服务器坑人
+  /// 其它 URL（外链图片等可变内容）随便了
   Future<File?> getFile(String url, {Map<String, String>? headers}) async {
     final manager = await _ensureCacheManager();
     if (manager == null) return null;
     try {
-      final file = await manager.getSingleFile(url, headers: headers);
-      return file;
+      if (!_isImmutableUrl(url)) {
+        return await manager.getSingleFile(url, headers: headers);
+      }
+      final cached = await manager.getFileFromCache(url);
+      if (cached != null) return cached.file;
+      return await manager.getSingleFile(url, headers: headers);
     } catch (e, stack) {
       talker.error('Failed to get cached file: $url', e, stack);
       return null;

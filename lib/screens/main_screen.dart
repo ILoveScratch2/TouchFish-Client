@@ -24,6 +24,9 @@ class _MainScreenState extends State<MainScreen> {
   final _forumPendingService = ForumPendingService.instance;
   final _chatDataService = ChatDataService.instance;
 
+  /// 宽/窄布局分支切换时 widget.child 会 reload，显然这是 sb 设计，我们需要用 GlobalKey 保住状态。
+  final _childKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -212,7 +215,10 @@ class _MainScreenState extends State<MainScreen> {
                                 borderRadius: const BorderRadius.only(
                                   topLeft: Radius.circular(16),
                                 ),
-                                child: widget.child,
+                                child: KeyedSubtree(
+                                  key: _childKey,
+                                  child: widget.child,
+                                ),
                               ),
                             ),
                           ],
@@ -261,7 +267,9 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                       ],
                     ),
-                  Expanded(child: widget.child),
+                  Expanded(
+                    child: KeyedSubtree(key: _childKey, child: widget.child),
+                  ),
                 ],
               ),
               bottomNavigationBar: showBottomNav

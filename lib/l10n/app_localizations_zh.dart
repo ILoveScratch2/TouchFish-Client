@@ -855,6 +855,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsEnableMarkdownDesc => '将可渲染的Markdown/LaTeX文本进行渲染';
 
   @override
+  String get settingsMessageDisplayStyleTitle => '消息显示样式';
+
+  @override
+  String get settingsMessageDisplayStyleDesc => '选择消息列表的显示风格';
+
+  @override
+  String get settingsMessageDisplayStyleBubble => '气泡模式';
+
+  @override
+  String get settingsMessageDisplayStyleCompact => '紧凑模式（TF 风格）';
+
+  @override
+  String get settingsMessageDisplayStyleColumn => '列式模式（TF 风格+）';
+
+  @override
   String get settingsCloseToTrayTitle => '关闭时最小化到托盘';
 
   @override
@@ -3651,6 +3666,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get stickerNoPacks => '暂无已收藏贴图包';
+
+  @override
+  String get stickerRecent => '最近使用';
+
+  @override
+  String get stickerPacks => '表情包';
+
+  @override
+  String get stickerNoRecentStickers => '暂无最近使用的表情';
+
+  @override
+  String get stickerBrowseMarket => '浏览表情包市场';
+
+  @override
+  String get stickerLoadError => '加载失败，点击重试';
 
   @override
   String get commonUnknown => '未知';

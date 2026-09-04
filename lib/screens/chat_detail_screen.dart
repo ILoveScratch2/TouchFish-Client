@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, listEquals;
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:go_router/go_router.dart';
@@ -14,10 +14,10 @@ import '../models/chat_model.dart';
 import '../models/message_model.dart';
 import '../models/settings_service.dart';
 import '../models/user_profile.dart';
-import '../widgets/message_bubble.dart';
 import '../widgets/media/image_lightbox.dart';
 import '../widgets/chat_input_bar.dart';
 import '../routes/app_routes.dart';
+import 'chat_detail/widgets/message_list_view.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/mention_text_field.dart';
 import '../services/auth_state.dart';
@@ -659,8 +659,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _refreshRoom();
     final cached = ChatDataService.instance.getMessages(_contactUid);
     
-    // 未读角标、房间列表等无关通知不重建消息列表
-    if (_sameMessageRefs(cached)) {
+    // 未读角标、房间列表等无关通知不重建消息列表；服务端刷新/ack 生成的新
+    // 实例若内容与本地一致（本地 _updateMessageStatus 等已同步），同样跳过，
+    // 避免全量替换导致所有气泡重建、图片闪烁重载。
+    if (_sameMessageContent(cached)) {
       return;
     }
     
@@ -687,12 +689,66 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
   }
 
-  bool _sameMessageRefs(List<ChatMessage> cached) {
+  /// 引用相同，或仅实例不同但渲染相关内容一致（含本地 pending 状态机字段）
+  /// 时视为无变化，跳过列表重建。
+  bool _sameMessageContent(List<ChatMessage> cached) {
     if (cached.length != _messages.length) return false;
     for (var i = 0; i < cached.length; i++) {
-      if (!identical(cached[i], _messages[i])) return false;
+      final a = cached[i];
+      final b = _messages[i];
+      if (identical(a, b)) continue;
+      if (a.id != b.id ||
+          a.mid != b.mid ||
+          a.clientMid != b.clientMid ||
+          a.status != b.status ||
+          a.text != b.text ||
+          a.isDeleted != b.isDeleted ||
+          a.type != b.type ||
+          a.senderUid != b.senderUid ||
+          a.senderName != b.senderName ||
+          a.senderAvatar != b.senderAvatar ||
+          a.timestamp != b.timestamp ||
+          a.quoteMid != b.quoteMid ||
+          a.forwardedMid != b.forwardedMid ||
+          a.mentionsMe != b.mentionsMe ||
+          !listEquals(a.mentionedUids, b.mentionedUids) ||
+          !_samePreview(a.quotePreview, b.quotePreview) ||
+          !_samePreview(a.forwardPreview, b.forwardPreview) ||
+          !_sameMedia(a.media, b.media)) {
+        return false;
+      }
     }
     return true;
+  }
+
+  /// 引用预览
+  static bool _samePreview(
+    QuotedMessagePreview? a,
+    QuotedMessagePreview? b,
+  ) {
+    if (a == null || b == null) return a == b;
+    return a.mid == b.mid &&
+        a.senderUid == b.senderUid &&
+        a.senderName == b.senderName &&
+        a.content == b.content &&
+        a.contentType == b.contentType &&
+        a.fileHash == b.fileHash &&
+        a.fileName == b.fileName &&
+        a.isDeleted == b.isDeleted &&
+        a.isMissing == b.isMissing;
+  }
+
+  static bool _sameMedia(MessageMedia? a, MessageMedia? b) {
+    if (a == null || b == null) return a == b;
+    if (a.path != b.path ||
+        a.fileName != b.fileName ||
+        a.fileSize != b.fileSize ||
+        a.mimeType != b.mimeType ||
+        a.aspectRatio != b.aspectRatio ||
+        a.fileHash != b.fileHash) {
+      return false;
+    }
+    return identical(a.bytes, b.bytes) || listEquals(a.bytes, b.bytes);
   }
 
   void _loadChatRoom() {
@@ -2463,126 +2519,29 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       onNotification: _onScrollMetricsChanged,
                       child: NotificationListener<ScrollNotification>(
                         onNotification: _onUserScroll,
-                        child: _messages.isEmpty
-                            ? RefreshIndicator(
-                                onRefresh: _onRefresh,
-                                child: ListView(
-                                  children: [
-                                    SizedBox(
-                                      height:
-                                          MediaQuery.of(context).size.height *
-                                          0.4,
-                                      child: Center(
-                                        child: Text(
-                                          l10n.chatDetailNoMessages,
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : ListView.builder(
-                                controller: _scrollController,
-                                reverse: true,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                ),
-                                itemCount: _messages.length,
-                                itemBuilder: (context, index) {
-                                  final messageIndex =
-                                      _messages.length - 1 - index;
-                                  final message = _messages[messageIndex];
-                                  final previous = messageIndex > 0
-                                      ? _messages[messageIndex - 1]
-                                      : null;
-                                  final showAvatar =
-                                      previous == null ||
-                                      previous.senderUid != message.senderUid ||
-                                      message.timestamp
-                                              .difference(previous.timestamp)
-                                              .inMinutes >=
-                                          5;
-                                  final stableKey = message.mid?.toString() ?? message.id;
-                                  return Dismissible(
-                                    key: ValueKey('swipe-$stableKey'),
-                                    direction: message.isDeleted
-                                        ? DismissDirection.none
-                                        : DismissDirection.endToStart,
-                                    dismissThresholds: const {
-                                      DismissDirection.endToStart: 0.22,
-                                    },
-                                    resizeDuration: null,
-                                    movementDuration: const Duration(
-                                      milliseconds: 120,
-                                    ),
-                                    confirmDismiss: (_) async {
-                                      _startReply(message);
-                                      return false;
-                                    },
-                                    background: Align(
-                                      alignment: Alignment.centerRight,
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                          right: 24,
-                                        ),
-                                        child: Icon(
-                                          Icons.reply,
-                                          color: colorScheme.primary,
-                                        ),
-                                      ),
-                                    ),
-                                    child: MessageBubble(
-                                      key: ValueKey('bubble-$stableKey'),
-                                      message: message,
-                                      onReply: _startReply,
-                                      onForward: _startForward,
-                                      onRecall: _recallMessage,
-                                      onDelete: _canDeleteLocally(message)
-                                          ? (_) =>
-                                                _deleteLocalMessage(message)
-                                          : null,
-                                      onQuoteTap: _scrollToQuotedMessage,
-                                      showAvatar: showAvatar,
-                                      galleryItems: _imageEntries.isEmpty
-                                          ? null
-                                          : _imageEntries,
-                                      galleryIndex:
-                                          _imageIndexById[message] ?? 0,
-                                      canRecall: _canRecall(message),
-                                      isEssence:
-                                          message.mid != null &&
-                                          _essenceMids.contains(
-                                            message.mid,
-                                          ) &&
-                                          _essenceEnabled,
-                                      isPinned:
-                                          message.mid != null &&
-                                          _pinnedMessages.any(
-                                            (p) => p.messageId == message.mid,
-                                          ),
-                                      canPin:
-                                          _currentRoom?.type ==
-                                              ChatType.group &&
-                                          _canModerateGroup &&
-                                          message.mid != null &&
-                                          !message.isDeleted,
-                                      essenceEnabled: _essenceEnabled,
-                                      onPinToggle: message.mid != null
-                                          ? () => _togglePin(message)
-                                          : null,
-                                      onEssenceToggle:
-                                          message.mid != null &&
-                                              _essenceEnabled
-                                          ? () => _toggleEssence(message)
-                                          : null,
-                                    ),
-                                  );
-                                },
-                              ),
+                        child: MessageListView(
+                          messages: _messages,
+                          scrollController: _scrollController,
+                          galleryItems: _imageEntries,
+                          imageIndexById: _imageIndexById,
+                          essenceMids: _essenceMids,
+                          pinnedMessages: _pinnedMessages,
+                          essenceEnabled: _essenceEnabled,
+                          currentRoom: _currentRoom,
+                          canModerateGroup: _canModerateGroup,
+                          onRefresh: _onRefresh,
+                          onReply: _startReply,
+                          onForward: _startForward,
+                          onRecall: _recallMessage,
+                          onDelete: _deleteLocalMessage,
+                          onQuoteTap: _scrollToQuotedMessage,
+                          onPinToggle: _togglePin,
+                          onEssenceToggle: _toggleEssence,
+                          canRecall: _canRecall,
+                          canDeleteLocally: _canDeleteLocally,
+                          noMessagesText: l10n.chatDetailNoMessages,
+                          colorScheme: colorScheme,
+                        ),
                       ),
                     ),
                   ),

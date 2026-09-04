@@ -142,7 +142,7 @@ class _MessageBubbleContent extends StatefulWidget {
   State<_MessageBubbleContent> createState() => _MessageBubbleState();
 }
 
-class _MessageBubbleState extends State<_MessageBubbleContent> {
+class _MessageBubbleState extends State<_MessageBubbleContent> with AutomaticKeepAliveClientMixin {
   static _MessageBubbleState? _activeHoverOwner;
 
   final GlobalKey _bubbleKey = GlobalKey();
@@ -152,6 +152,10 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
   Offset? _secondaryTapPosition;
   Offset? _longPressOrigin;
   Timer? _longPressTimer;
+
+  // 媒体消息需要保留状态！！！！！！！！！！！！！！！！！！！！！
+  @override
+  bool get wantKeepAlive => widget.message.media != null;
 
   @override
   void dispose() {
@@ -395,6 +399,22 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+
+    final style = SettingsService.instance.getValue<String>(
+      'messageDisplayStyle',
+      'bubble',
+    );
+    if (style == 'compact' || style == 'column') {
+      return _buildLinearLayout(
+        context,
+        isCompact: style == 'compact',
+      );
+    }
+    return _buildBubbleLayout(context);
+  }
+
+  Widget _buildBubbleLayout(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
@@ -599,6 +619,213 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
           ),
         ),
       ),
+    );
+  }
+
+  // ---------- compact / column ----------
+
+  bool get _linearMine => widget.message.isMe;
+
+  String get _linearSenderName {
+    final message = widget.message;
+    if (message.senderName?.trim().isNotEmpty == true) {
+      return message.senderName!;
+    }
+    if (message.isMe) {
+      return AuthState.instance.currentUser?.username ?? 'Me';
+    }
+    return 'User ${message.senderUid ?? ''}';
+  }
+
+  String? get _linearSenderAvatar {
+    final message = widget.message;
+    return message.senderAvatar ??
+        (message.isMe ? AuthState.instance.currentUser?.avatar : null);
+  }
+
+  /// 弄点区分色
+  Color _linearSenderColor(ColorScheme colorScheme) {
+    if (_linearMine) return colorScheme.primary;
+    final uid = widget.message.senderUid ?? 0;
+    final hue = (uid.abs() * 137.508) % 360.0;
+    final dark = colorScheme.brightness == Brightness.dark;
+    return HSLColor.fromAHSL(
+      1,
+      hue,
+      dark ? 0.55 : 0.6,
+      dark ? 0.78 : 0.34,
+    ).toColor();
+  }
+
+  Widget _buildLinearLayout(BuildContext context, {required bool isCompact}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
+    final mine = _linearMine;
+    final showHeader = widget.showAvatar;
+    final textColor = mine
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurface;
+    final nameColor = _linearSenderColor(colorScheme);
+    final timeColor = colorScheme.onSurfaceVariant.withValues(alpha: 0.75);
+
+    final header = <Widget>[
+      if (widget.isPinned)
+        _linearBadge(
+          text: l10n.pinnedMessageLabel,
+          icon: Symbols.push_pin,
+          color: timeColor,
+        ),
+      if (widget.isEssence && widget.essenceEnabled)
+        _linearBadge(
+          text: l10n.essenceName,
+          icon: Symbols.auto_awesome,
+          color: timeColor,
+        ),
+    ];
+
+    final content = _buildMessageContent(
+      context,
+      colorScheme,
+      textTheme,
+      textColor,
+    );
+
+    return Align(
+      key: ValueKey('message-alignment-${widget.message.id}'),
+      alignment: Alignment.centerLeft,
+      child: Material(
+        color: Colors.transparent,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: isCompact ? 1 : 3,
+          ),
+          child: Stack(
+            children: [
+              MouseRegion(
+                onEnter: (_) => _scheduleShowHoverActions(),
+                onExit: (_) => _scheduleHideHoverActions(),
+                child: Listener(
+                  onPointerDown: _handlePointerDown,
+                  onPointerMove: _handlePointerMove,
+                  onPointerUp: _cancelLongPress,
+                  onPointerCancel: _cancelLongPress,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onSecondaryTapDown: (details) =>
+                        _secondaryTapPosition = details.globalPosition,
+                    onSecondaryTap: _showDesktopMenu,
+                    child: Row(
+                      crossAxisAlignment: mine
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
+                      children: [
+                        if (!isCompact)
+                          showHeader
+                              ? Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: _buildAvatar(
+                                    colorScheme,
+                                    _linearSenderAvatar,
+                                  ),
+                                )
+                              : const SizedBox(width: 40),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (header.isNotEmpty) ...[
+                                for (final badge in header)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 2),
+                                    child: badge,
+                                  ),
+                                const SizedBox(height: 2),
+                              ],
+                              if (showHeader)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 2),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.max,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.baseline,
+                                    textBaseline: TextBaseline.alphabetic,
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          _linearSenderName,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: textTheme.bodySmall?.copyWith(
+                                            color: nameColor,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        _formatTime(
+                                          widget.message.timestamp,
+                                          context,
+                                        ),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: timeColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              // 消息内容宽度封顶
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 720,
+                                ),
+                                child: KeyedSubtree(
+                                  key: _bubbleKey,
+                                  child: content,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (mine &&
+                            widget.message.status != MessageStatus.sent) ...[
+                          const SizedBox(width: 6),
+                          _buildStatusIndicator(timeColor),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _linearBadge({
+    required String text,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 11,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 

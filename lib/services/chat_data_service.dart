@@ -96,10 +96,66 @@ class ChatDataService extends ChangeNotifier {
   String? _roomPreferencesScope;
   final Set<String> _fetchingGroups = {};
   final Set<String> _fetchingUsers = {}; // 正在加载的用户资料
+  
+  // 分房间通知回调(河流pod)
+  final Map<String, List<VoidCallback>> _roomListeners = {};
+  // 每房间只补发一次，
+  bool _batchRoomNotify = false;
+  final Set<String> _batchedRoomNotifyQueue = {};
 
   /// 从设置读取消息缓存的最大会话房间数（默认 50）
   int get _maxCachedRooms =>
       SettingsService.instance.getValue<int>('maxCachedRooms', 50);
+
+  /// 添加房间监听器
+  void addRoomListener(String roomId, VoidCallback listener) {
+    _roomListeners.putIfAbsent(roomId, () => []).add(listener);
+  }
+
+  /// 移除房间监听器
+  void removeRoomListener(String roomId, VoidCallback listener) {
+    _roomListeners[roomId]?.remove(listener);
+    if (_roomListeners[roomId]?.isEmpty ?? false) {
+      _roomListeners.remove(roomId);
+    }
+  }
+
+  /// 在批量摄入的循环外执行 [action]：期间对各房间的通知会被挂起，
+  /// 结束后对实际变化过的房间各补发一次。支持嵌套（内层不再挂起）！！
+  void _withBatchedRoomNotify(VoidCallback action) {
+    if (_batchRoomNotify) {
+      action();
+      return;
+    }
+    _batchRoomNotify = true;
+    try {
+      action();
+    } finally {
+      _batchRoomNotify = false;
+      for (final roomId in _batchedRoomNotifyQueue) {
+        _notifyRoom(roomId);
+      }
+      _batchedRoomNotifyQueue.clear();
+    }
+  }
+
+  /// 通知特定房间的监听器
+  void _notifyRoom(String roomId) {
+    if (_batchRoomNotify) {
+      _batchedRoomNotifyQueue.add(roomId);
+      return;
+    }
+    final listeners = _roomListeners[roomId];
+    if (listeners != null) {
+      for (final listener in [...listeners]) {
+        try {
+          listener();
+        } catch (e) {
+          talker.warning('Listener error for room $roomId: $e');
+        }
+      }
+    }
+  }
 
   void _touchCacheRoom(String roomId) {
     _cacheAccessOrder.remove(roomId);
@@ -202,6 +258,11 @@ class ChatDataService extends ChangeNotifier {
     _touchCacheRoom(roomId);
     _evictCacheIfNeeded();
     unawaited(_localStore.saveMessages(roomId, msgs));
+    
+    // 分房间通知（新增）
+    _notifyRoom(roomId);
+    
+    // 全局通知（保留兼容性）
     notifyListeners();
   }
 
@@ -328,6 +389,7 @@ class ChatDataService extends ChangeNotifier {
       if (changed) {
         _messageCache[entry.key] = messages;
         unawaited(_localStore.saveMessages(entry.key, messages));
+        _notifyRoom(entry.key);
       }
     }
     notifyListeners();
@@ -532,6 +594,7 @@ class ChatDataService extends ChangeNotifier {
     _roomPreferences.clear();
     _rooms.clear();
     _contacts.clear();
+    _roomListeners.clear(); // 清理所有监听器，防止内存泄漏
     _isLoading = false;
     notifyListeners();
   }
@@ -950,21 +1013,23 @@ class ChatDataService extends ChangeNotifier {
     bool isHistorical = false,
   }) {
     if (messages.isEmpty) return;
-    for (final msg in messages) {
-      if (msg.isDeleted) {
-        if (msg.mid != null) {
-          markMessageRecalled(
-            msg.mid!,
-            roomId: roomId,
-            deletedAt: msg.deletedAt,
-            deletedBy: msg.deletedBy,
-          );
+    _withBatchedRoomNotify(() {
+      for (final msg in messages) {
+        if (msg.isDeleted) {
+          if (msg.mid != null) {
+            markMessageRecalled(
+              msg.mid!,
+              roomId: roomId,
+              deletedAt: msg.deletedAt,
+              deletedBy: msg.deletedBy,
+            );
+          }
+          continue;
         }
-        continue;
+        _addToCacheSilent(roomId, msg, countUnread: !isHistorical);
       }
-      _addToCacheSilent(roomId, msg, countUnread: !isHistorical);
-    }
-    _ensureSenderProfiles(messages, roomId);
+      _ensureSenderProfiles(messages, roomId);
+    });
     notifyListeners();
   }
 
@@ -975,6 +1040,7 @@ class ChatDataService extends ChangeNotifier {
   }) {
     final cached = _messageCache[roomId] ?? [];
     final matchIdx = _indexOfMessage(cached, msg);
+    var listChanged = false;
     if (matchIdx == null) {
       cached.add(msg);
       cached.sort(_compareMessages);
@@ -982,6 +1048,7 @@ class ChatDataService extends ChangeNotifier {
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
       _localStore.appendMessage(roomId, msg);
+      listChanged = true;
     } else {
       final upgraded = _adoptServerFields(cached[matchIdx], msg);
       if (!identical(upgraded, cached[matchIdx])) {
@@ -992,8 +1059,10 @@ class ChatDataService extends ChangeNotifier {
         _touchCacheRoom(roomId);
         _evictCacheIfNeeded();
         _localStore.saveMessages(roomId, updated);
+        listChanged = true;
       }
     }
+    if (listChanged) _notifyRoom(roomId);
 
     // 历史恢复的消息同样参照 _addToCache 的通知判定累计未读角标，
     // 这样在另一平台离线期间的私聊/群聊消息会在聊天列表右侧
@@ -1047,6 +1116,7 @@ class ChatDataService extends ChangeNotifier {
   void _addToCache(String roomId, ChatMessage msg) {
     final cached = _messageCache[roomId] ?? [];
     final matchIdx = _indexOfMessage(cached, msg);
+    var listChanged = false;
     if (matchIdx == null) {
       cached.add(msg);
       cached.sort(_compareMessages);
@@ -1054,6 +1124,7 @@ class ChatDataService extends ChangeNotifier {
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
       _localStore.appendMessage(roomId, msg);
+      listChanged = true;
     } else {
       final upgraded = _adoptServerFields(cached[matchIdx], msg);
       if (!identical(upgraded, cached[matchIdx])) {
@@ -1065,9 +1136,12 @@ class ChatDataService extends ChangeNotifier {
         _evictCacheIfNeeded();
         _localStore.saveMessages(roomId, updated);
         notifyListeners();
+        listChanged = true;
       }
+      if (listChanged) _notifyRoom(roomId);
       return;
     }
+    _notifyRoom(roomId);
 
     if (!msg.isMe && msg.senderAvatar == null && msg.senderUid != null) {
       _fetchProfileForRoom(
@@ -1362,6 +1436,7 @@ class ChatDataService extends ChangeNotifier {
     if (changed) {
       _messageCache[roomId] = updated;
       _localStore.saveMessages(roomId, updated);
+      _notifyRoom(roomId);
     }
   }
 
@@ -1377,6 +1452,7 @@ class ChatDataService extends ChangeNotifier {
       if (updated.length != cached.length) {
         _messageCache[roomId] = updated;
         unawaited(_localStore.deleteMessage(roomId, message));
+        _notifyRoom(roomId);
         changed = true;
       }
     }
@@ -1411,6 +1487,7 @@ class ChatDataService extends ChangeNotifier {
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
       _localStore.appendMessage(roomId, msg);
+      _notifyRoom(roomId);
     }
 
     final idx = _rooms.indexWhere((r) => r.id == roomId);
@@ -1468,6 +1545,7 @@ class ChatDataService extends ChangeNotifier {
       if (identical(updated, messages)) continue;
       _messageCache[id] = updated;
       unawaited(_localStore.saveMessages(id, updated));
+      _notifyRoom(id);
       changed = true;
     }
     if (roomId != null && !cachedTargetFound) {
@@ -1611,6 +1689,7 @@ class ChatDataService extends ChangeNotifier {
       _messageCache[roomId] = visible;
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
+      _notifyRoom(roomId);
     }
     _ensureSenderProfiles(visible, roomId);
     await _localStore.saveMessages(roomId, serverFilled);
@@ -1674,6 +1753,7 @@ class ChatDataService extends ChangeNotifier {
     _touchCacheRoom(roomId);
     await _localStore.saveMessages(roomId, olderFilled);
     _ensureSenderProfiles(olderFilled, roomId);
+    _notifyRoom(roomId);
     if (merged.length != cached.length) notifyListeners();
     return MessageHistoryPage(
       messages: merged,

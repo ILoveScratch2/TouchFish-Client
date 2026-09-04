@@ -145,6 +145,19 @@ class SettingsData {
           icon: Icons.text_format,
         ),
         SettingItem(
+          key: 'messageDisplayStyle',
+          titleKey: 'settingsMessageDisplayStyleTitle',
+          descriptionKey: 'settingsMessageDisplayStyleDesc',
+          type: SettingType.dropdown,
+          defaultValue: 'bubble',
+          icon: Icons.chat_bubble_outline,
+          options: [
+            SettingOption(value: 'bubble', labelKey: 'settingsMessageDisplayStyleBubble'),
+            SettingOption(value: 'compact', labelKey: 'settingsMessageDisplayStyleCompact'),
+            SettingOption(value: 'column', labelKey: 'settingsMessageDisplayStyleColumn'),
+          ],
+        ),
+        SettingItem(
           key: 'automaticPreviewMaxMiB',
           titleKey: 'settingsAutomaticPreviewTitle',
           descriptionKey: 'settingsAutomaticPreviewDesc',

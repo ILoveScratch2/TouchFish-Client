@@ -62,15 +62,44 @@ class OptimizedImage extends StatefulWidget {
 }
 
 class _OptimizedImageState extends State<OptimizedImage> {
-  Future<CacheManager?>? _cacheManagerFuture;
+  /// 磁盘缓存管理器
+  CacheManager? _cacheManager;
+  /// loading loading loading
+  bool _cacheManagerReady = false;
+  ({int? width, int? height})? _cachedDecodeSize;
+  Size? _lastConstraints;
+  ImageProvider? _cachedImageProvider;
 
   @override
   void initState() {
     super.initState();
-    // 网络图片需要缓存管理器
-    if (widget.provider is NetworkImage) {
-      _cacheManagerFuture = FileCacheService.instance.getCacheManager();
+    _initCacheManager();
+  }
+
+  @override
+  void didUpdateWidget(OptimizedImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 只在 provider 变化时重新初始化
+    if (widget.provider != oldWidget.provider) {
+      _cachedDecodeSize = null;
+      _lastConstraints = null;
+      _cachedImageProvider = null;
+      _cacheManagerReady = false;
+      _initCacheManager();
     }
+  }
+
+  void _initCacheManager() {
+    // 网络图片需要缓存管理器
+    if (widget.provider is! NetworkImage) return;
+    FileCacheService.instance.getCacheManager().then((manager) {
+      if (mounted) {
+        setState(() {
+          _cacheManager = manager;
+          _cacheManagerReady = true;
+        });
+      }
+    });
   }
 
   Widget _placeholder(BuildContext context) => Container(
@@ -102,32 +131,33 @@ class _OptimizedImageState extends State<OptimizedImage> {
       final networkImage = widget.provider as NetworkImage;
       return LayoutBuilder(
         builder: (context, constraints) {
-          final size = imageDecodeSize(
-            MediaQuery.of(context).devicePixelRatio,
-            width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
-            height: constraints.hasBoundedHeight ? constraints.maxHeight : null,
-          );
+          // 缓存解码尺寸
+          final currentSize = Size(constraints.maxWidth, constraints.maxHeight);
+          if (_lastConstraints != currentSize) {
+            _lastConstraints = currentSize;
+            _cachedDecodeSize = imageDecodeSize(
+              MediaQuery.of(context).devicePixelRatio,
+              width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
+              height: constraints.hasBoundedHeight ? constraints.maxHeight : null,
+            );
+          }
 
-          return FutureBuilder<CacheManager?>(
-            future: _cacheManagerFuture,
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                // 缓存管理器初始化中
-                return _placeholder(context);
-              }
-              return CachedNetworkImage(
-                key: ValueKey(networkImage.url),
-                imageUrl: networkImage.url,
-                // web/无 path_provider 环境为 null，使用包默认缓存实现
-                cacheManager: snapshot.data,
-                fit: widget.fit,
-                memCacheWidth: size.width,
-                memCacheHeight: size.height,
-                placeholder: (context, url) => _placeholder(context),
-                errorWidget: (context, url, error) => _error(context, error),
-              );
-            },
-          );
+          // 缓存管理器!!!!!
+          if (_cacheManagerReady) {
+            return CachedNetworkImage(
+              key: ValueKey(networkImage.url),
+              imageUrl: networkImage.url,
+              cacheManager: _cacheManager,
+              fit: widget.fit,
+              memCacheWidth: _cachedDecodeSize?.width,
+              memCacheHeight: _cachedDecodeSize?.height,
+              placeholder: (context, url) => _placeholder(context),
+              errorWidget: (context, url, error) => _error(context, error),
+            );
+          }
+
+          // 缓存管理器初始化中
+          return _placeholder(context);
         },
       );
     }
@@ -135,24 +165,32 @@ class _OptimizedImageState extends State<OptimizedImage> {
     // 本地/内存/其他 ImageProvider：按实际渲染尺寸下采样解码
     return LayoutBuilder(
       builder: (context, constraints) {
-        var imageProvider = widget.provider;
-        if (!kIsWeb) {
-          final size = imageDecodeSize(
-            MediaQuery.of(context).devicePixelRatio,
-            width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
-            height: constraints.hasBoundedHeight ? constraints.maxHeight : null,
-          );
-          if (size.width != null || size.height != null) {
-            imageProvider = ResizeImage(
-              widget.provider,
-              width: size.width,
-              height: size.height,
-              policy: ResizeImagePolicy.fit,
+        // 缓存解码尺寸和 provider
+        final currentSize = Size(constraints.maxWidth, constraints.maxHeight);
+        if (_lastConstraints != currentSize) {
+          _lastConstraints = currentSize;
+          
+          var imageProvider = widget.provider;
+          if (!kIsWeb) {
+            final size = imageDecodeSize(
+              MediaQuery.of(context).devicePixelRatio,
+              width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
+              height: constraints.hasBoundedHeight ? constraints.maxHeight : null,
             );
+            if (size.width != null || size.height != null) {
+              imageProvider = ResizeImage(
+                widget.provider,
+                width: size.width,
+                height: size.height,
+                policy: ResizeImagePolicy.fit,
+              );
+            }
           }
+          _cachedImageProvider = imageProvider;
         }
+        
         return Image(
-          image: imageProvider,
+          image: _cachedImageProvider ?? widget.provider,
           fit: widget.fit,
           gaplessPlayback: widget.gaplessPlayback,
           errorBuilder: widget.errorBuilder,

@@ -854,6 +854,21 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsEnableMarkdownDesc => '將可染之 Markdown/LaTeX 文予以渲染';
 
   @override
+  String get settingsMessageDisplayStyleTitle => '消息顯示樣式';
+
+  @override
+  String get settingsMessageDisplayStyleDesc => '擇消息列表之顯示風格';
+
+  @override
+  String get settingsMessageDisplayStyleBubble => '氣泡模式';
+
+  @override
+  String get settingsMessageDisplayStyleCompact => '緊湊模式（TF 風格）';
+
+  @override
+  String get settingsMessageDisplayStyleColumn => '列式模式（TF 風格+）';
+
+  @override
   String get settingsCloseToTrayTitle => '闔窗退隱於託盤';
 
   @override
@@ -3649,6 +3664,21 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get stickerNoPacks => '暫無已藏貼圖包';
+
+  @override
+  String get stickerRecent => '最近所用';
+
+  @override
+  String get stickerPacks => '表情包';
+
+  @override
+  String get stickerNoRecentStickers => '未有近期所用之表情';
+
+  @override
+  String get stickerBrowseMarket => '瀏覽表情包市場';
+
+  @override
+  String get stickerLoadError => '載入失敗，點擊重試';
 
   @override
   String get commonUnknown => '未知';

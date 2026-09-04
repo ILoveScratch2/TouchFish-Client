@@ -19,7 +19,7 @@ import '../utils/wide_screen_helper.dart';
 import '../models/file_attachment.dart';
 import '../services/draft_service.dart';
 import '../widgets/file_attachment_view.dart';
-import '../widgets/stickers/sticker_picker.dart';
+import '../widgets/stickers/sticker_picker_enhanced.dart';
 
 class ForumPostComposeSheet extends StatefulWidget {
   final String forumId;
@@ -445,13 +445,13 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => SafeArea(
+      builder: (sheetContext) => SafeArea(
         child: SizedBox(
           height: MediaQuery.of(context).size.height * 0.5,
-          child: StickerPickerPanel(
+          child: StickerPickerEnhanced(
             onPick: (pack, sticker) {
               _insertText(':${pack.prefix}+${sticker.slug}:');
-              Navigator.pop(context);
+              Navigator.pop(sheetContext);
             },
           ),
         ),

@@ -12,6 +12,7 @@ import 'package:photo_view/photo_view_gallery.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/message_model.dart';
 import '../../services/api/tf_api_client.dart';
+import '../../services/file_cache_service.dart';
 import '../../utils/talker.dart';
 import 'exif_info_overlay.dart';
 
@@ -75,6 +76,7 @@ class _ImageLightboxState extends State<ImageLightbox> {
   late final List<PhotoViewController> _controllers;
   late final PageController _pageController;
   late final Map<int, Future<String>> _urlFutures = {};
+  final Map<String, Future<File?>> _fileCacheFutures = {};
   late final FocusNode _focusNode;
 
   late int _currentIndex;
@@ -127,6 +129,14 @@ class _ImageLightboxState extends State<ImageLightbox> {
     final resolver = widget.resolveUrl ?? TfApiClient.instance.getFileUrl;
     return resolver(hash);
   }
+
+  /// 按 URL 取磁盘缓存文件（未命中自动下载）；同一 URL 的 Future 复用，
+  /// 避免画廊重建时反复触发下载/等待。
+  Future<File?> _cachedFileFor(String url) =>
+      _fileCacheFutures.putIfAbsent(
+        url,
+        () => FileCacheService.instance.getFile(url),
+      );
 
   /// 同步可得的 ImageProvider；拿不到（纯 hash）返回 null，由 FutureBuilder 异步解析。
   ImageProvider? _resolveProviderSync(LightboxImageItem item) {
@@ -190,15 +200,35 @@ class _ImageLightboxState extends State<ImageLightbox> {
               ),
             );
           }
-          return PhotoView(
-            imageProvider: NetworkImage(snapshot.data!),
-            controller: controller,
-            basePosition: Alignment.center,
-            minScale: PhotoViewComputedScale.contained * 0.9,
-            maxScale: PhotoViewComputedScale.covered * 3,
-            initialScale: PhotoViewComputedScale.contained,
-            onTapUp: (context, details, value) => _toggleControls(),
-            enableRotation: true,
+          final url = snapshot.data!;
+          // 磁盘缓存命中用本地文件
+          return FutureBuilder<File?>(
+            future: _cachedFileFor(url),
+            builder: (context, fileSnapshot) {
+              if (fileSnapshot.connectionState != ConnectionState.done) {
+                return const Center(
+                  child: SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white54,
+                    ),
+                  ),
+                );
+              }
+              final file = fileSnapshot.data;
+              return PhotoView(
+                imageProvider: file != null ? FileImage(file) : NetworkImage(url),
+                controller: controller,
+                basePosition: Alignment.center,
+                minScale: PhotoViewComputedScale.contained * 0.9,
+                maxScale: PhotoViewComputedScale.covered * 3,
+                initialScale: PhotoViewComputedScale.contained,
+                onTapUp: (context, details, value) => _toggleControls(),
+                enableRotation: true,
+              );
+            },
           );
         },
       ),

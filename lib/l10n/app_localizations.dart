@@ -1756,6 +1756,36 @@ abstract class AppLocalizations {
   /// **'Render Markdown and LaTeX formatted text'**
   String get settingsEnableMarkdownDesc;
 
+  /// No description provided for @settingsMessageDisplayStyleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Message Display Style'**
+  String get settingsMessageDisplayStyleTitle;
+
+  /// No description provided for @settingsMessageDisplayStyleDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the message list display style'**
+  String get settingsMessageDisplayStyleDesc;
+
+  /// No description provided for @settingsMessageDisplayStyleBubble.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubble'**
+  String get settingsMessageDisplayStyleBubble;
+
+  /// No description provided for @settingsMessageDisplayStyleCompact.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact(TF-style)'**
+  String get settingsMessageDisplayStyleCompact;
+
+  /// No description provided for @settingsMessageDisplayStyleColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Column (TF-style+)'**
+  String get settingsMessageDisplayStyleColumn;
+
   /// No description provided for @settingsCloseToTrayTitle.
   ///
   /// In en, this message translates to:
@@ -7089,6 +7119,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No sticker packs'**
   String get stickerNoPacks;
+
+  /// No description provided for @stickerRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get stickerRecent;
+
+  /// No description provided for @stickerPacks.
+  ///
+  /// In en, this message translates to:
+  /// **'Packs'**
+  String get stickerPacks;
+
+  /// No description provided for @stickerNoRecentStickers.
+  ///
+  /// In en, this message translates to:
+  /// **'No recently used stickers'**
+  String get stickerNoRecentStickers;
+
+  /// No description provided for @stickerBrowseMarket.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse sticker market'**
+  String get stickerBrowseMarket;
+
+  /// No description provided for @stickerLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load, tap to retry'**
+  String get stickerLoadError;
 
   /// No description provided for @commonUnknown.
   ///
