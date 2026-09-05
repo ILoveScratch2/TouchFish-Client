@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../models/chat_model.dart';
+import '../providers/chat/message_provider.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/chat_data_service.dart';
 import '../services/chat_ws_service.dart';
@@ -562,74 +564,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
-        for (final room in items.take(10))
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-            child: IconButton(
-              tooltip: room.name,
-              onPressed: () {
-                context.go('/chat/${room.id}');
-              },
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-              splashRadius: 24,
-              icon: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor: colorScheme.primaryContainer,
-                    backgroundImage: room.avatar != null
-                        ? resizedImageProvider(
-                            NetworkImage(room.avatar!),
-                            MediaQuery.of(context).devicePixelRatio,
-                            width: 36,
-                            height: 36,
-                          )
-                        : null,
-                    child: room.avatar == null
-                        ? Icon(
-                            room.type == ChatType.direct
-                                ? Icons.person
-                                : Icons.group,
-                            color: colorScheme.onPrimaryContainer,
-                            size: 18,
-                          )
-                        : null,
-                  ),
-                  if (room.unreadCount > 0)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: colorScheme.error,
-                          shape: BoxShape.circle,
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Center(
-                          child: Text(
-                            room.unreadCount > 99
-                                ? '99+'
-                                : room.unreadCount.toString(),
-                            style: TextStyle(
-                              color: colorScheme.onError,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              height: 1.0,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
+        for (final room in items.take(10)) _CollapsedRoomButton(room: room),
         for (final contact in contactItems.take(10))
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -849,5 +784,83 @@ class _ChatListScreenState extends State<ChatListScreen>
       return;
     }
     context.push('/user/$targetUid');
+  }
+}
+
+class _CollapsedRoomButton extends ConsumerWidget {
+  final ChatRoom room;
+
+  const _CollapsedRoomButton({required this.room});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final unread = ref.watch(unreadCountProvider(room.id));
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      child: IconButton(
+        tooltip: room.name,
+        onPressed: () {
+          context.go('/chat/${room.id}');
+        },
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+        splashRadius: 24,
+        icon: Stack(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: colorScheme.primaryContainer,
+              backgroundImage: room.avatar != null
+                  ? resizedImageProvider(
+                      NetworkImage(room.avatar!),
+                      MediaQuery.of(context).devicePixelRatio,
+                      width: 36,
+                      height: 36,
+                    )
+                  : null,
+              child: room.avatar == null
+                  ? Icon(
+                      room.type == ChatType.direct
+                          ? Icons.person
+                          : Icons.group,
+                      color: colorScheme.onPrimaryContainer,
+                      size: 18,
+                    )
+                  : null,
+            ),
+            if (unread > 0)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: colorScheme.error,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Center(
+                    child: Text(
+                      unread > 99 ? '99+' : unread.toString(),
+                      style: TextStyle(
+                        color: colorScheme.onError,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        height: 1.0,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }

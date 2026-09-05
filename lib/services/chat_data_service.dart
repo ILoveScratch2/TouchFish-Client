@@ -866,6 +866,7 @@ class ChatDataService extends ChangeNotifier {
         if (status == MessageStatus.failed && error != null) {
           _ackErrorController.add((clientMid: clientMid, error: error));
         }
+        _notifyRoom(roomId);
         notifyListeners();
         return;
       }
@@ -1746,7 +1747,9 @@ class ChatDataService extends ChangeNotifier {
     }
 
     final olderFilled = _fillSenderInfo(olderMsgs);
-    final merged = _mergeMessages(olderFilled, [...localMsgs, ...cached]);
+    // 用 await 完成后的最新缓存合并，而不是开头捕获的 cached
+    final currentCache = _messageCache[roomId] ?? [];
+    final merged = _mergeMessages(olderFilled, [...localMsgs, ...currentCache]);
     merged.sort(_compareMessages);
 
     _messageCache[roomId] = merged;
@@ -1754,7 +1757,7 @@ class ChatDataService extends ChangeNotifier {
     await _localStore.saveMessages(roomId, olderFilled);
     _ensureSenderProfiles(olderFilled, roomId);
     _notifyRoom(roomId);
-    if (merged.length != cached.length) notifyListeners();
+    if (merged.length != currentCache.length) notifyListeners();
     return MessageHistoryPage(
       messages: merged,
       hasMore:

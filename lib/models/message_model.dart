@@ -191,6 +191,64 @@ class ChatMessage {
     return byTime != 0 ? byTime : dedupKey(a).compareTo(dedupKey(b));
   }
 
+  /// 渲染相关内容是否一致（实例不同但 UI 无需重绘时 1
+  static bool sameRenderedContent(ChatMessage a, ChatMessage b) {
+    if (identical(a, b)) return true;
+    return a.id == b.id &&
+        a.mid == b.mid &&
+        a.clientMid == b.clientMid &&
+        a.status == b.status &&
+        a.text == b.text &&
+        a.isDeleted == b.isDeleted &&
+        a.type == b.type &&
+        a.senderUid == b.senderUid &&
+        a.senderName == b.senderName &&
+        a.senderAvatar == b.senderAvatar &&
+        a.timestamp == b.timestamp &&
+        a.quoteMid == b.quoteMid &&
+        a.forwardedMid == b.forwardedMid &&
+        a.mentionsMe == b.mentionsMe &&
+        _sameIntList(a.mentionedUids, b.mentionedUids) &&
+        _samePreview(a.quotePreview, b.quotePreview) &&
+        _samePreview(a.forwardPreview, b.forwardPreview) &&
+        _sameMedia(a.media, b.media);
+  }
+
+  static bool _sameIntList(List<int> a, List<int> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  static bool _samePreview(QuotedMessagePreview? a, QuotedMessagePreview? b) {
+    if (a == null || b == null) return a == b;
+    return a.mid == b.mid &&
+        a.senderUid == b.senderUid &&
+        a.senderName == b.senderName &&
+        a.content == b.content &&
+        a.contentType == b.contentType &&
+        a.fileHash == b.fileHash &&
+        a.fileName == b.fileName &&
+        a.isDeleted == b.isDeleted &&
+        a.isMissing == b.isMissing;
+  }
+
+  static bool _sameMedia(MessageMedia? a, MessageMedia? b) {
+    if (a == null || b == null) return a == b;
+    if (a.path != b.path ||
+        a.fileName != b.fileName ||
+        a.fileSize != b.fileSize ||
+        a.mimeType != b.mimeType ||
+        a.aspectRatio != b.aspectRatio ||
+        a.fileHash != b.fileHash) {
+      return false;
+    }
+    return identical(a.bytes, b.bytes) ||
+        (a.bytes != null && b.bytes != null && _sameIntList(a.bytes!, b.bytes!));
+  }
+
   ChatMessage copyWith({
     String? id,
     int? mid,

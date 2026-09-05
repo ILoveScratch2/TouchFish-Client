@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, listEquals;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:go_router/go_router.dart';
@@ -14,7 +14,6 @@ import '../models/chat_model.dart';
 import '../models/message_model.dart';
 import '../models/settings_service.dart';
 import '../models/user_profile.dart';
-import '../widgets/media/image_lightbox.dart';
 import '../widgets/chat_input_bar.dart';
 import '../routes/app_routes.dart';
 import 'chat_detail/widgets/message_list_view.dart';
@@ -38,26 +37,26 @@ import '../widgets/optimized_image.dart';
 import '../widgets/sync_indicator.dart';
 import '../models/typing_status.dart';
 import '../widgets/typing_indicator.dart';
+import '../providers/chat/message_provider.dart';
+import '../providers/chat/chat_room_state_provider.dart';
+import '../providers/chat/image_gallery_provider.dart';
 
-class ChatDetailScreen extends StatefulWidget {
+class ChatDetailScreen extends ConsumerStatefulWidget {
   final String roomId;
 
   const ChatDetailScreen({super.key, required this.roomId});
 
   @override
-  State<ChatDetailScreen> createState() => _ChatDetailScreenState();
+  ConsumerState<ChatDetailScreen> createState() => _ChatDetailScreenState();
 }
 
-class _ChatDetailScreenState extends State<ChatDetailScreen> {
+class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  final List<ChatMessage> _messages = [];
-
-  /// 当前聊天按时间序的图片画廊条目（灯箱多图用）。消息超过 [_galleryCap] 时
-  /// 清空并退化为单图模式，限制重建开销。
-  final List<LightboxImageItem> _imageEntries = [];
-  final Map<ChatMessage, int> _imageIndexById = {};
-  static const int _galleryCap = 3000;
+  /// 跟踪当前挂在哪个控制器上的滚动监听，切房间时重新挂载。
+  ScrollController? _scrollListenerAttached;
+  /// 元素是否在树内？
+  ///  ref.read（deactivated 元素做祖先查找会 BOOMshakalaka
+  bool _treeActive = true;
 
   final Map<int, GlobalKey> _messageKeys = {};
   final Map<String, Timer> _pendingWsTimers = {};
@@ -77,22 +76,18 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   bool _showGroupEnterHint = true;
   bool _followBottom = true;
   bool _showBackToBottom = false;
-  ChatMessage? _replyingTo;
-  ChatMessage? _forwardingTo;
   bool _canModerateGroup = false;
   Timer? _draftTimer;
   bool _suppressDraftSave = false;
   int _roomGeneration = 0;
   List<PinnedMessage> _pinnedMessages = [];
   final Map<int, ChatMessage?> _pinnedMessageContents = {};
-  int _pinCurrentPage = 0;
   final GlobalKey _pinnedBarKey = GlobalKey();
   List<int> _essenceMids = [];
   bool _essenceEnabled = true;
   String? _fetchingEssenceRoomId;
   StreamSubscription<int>? _essenceSub;
   bool _fetchingPins = false;
-  bool _isJumpingToMessage = false;
   Timer? _weakNetworkTimer;
   final Map<int, TypingStatus> _typingUsers = {};
   StreamSubscription<ChatWsEvent>? _typingSub;
@@ -107,10 +102,53 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     return id;
   }
 
+  // ---- Riverpod 状态访问器 ----
+  List<ChatMessage> get _messages => ref.read(roomMessagesProvider(_contactUid));
+
+  ChatRoomUiState get _uiState => ref.read(chatRoomStateProvider(_contactUid));
+
+  ScrollController get _scrollController => _uiState.scrollController;
+
+  ChatMessage? get _replyingTo => _uiState.replyingTo;
+
+  ChatMessage? get _forwardingTo => _uiState.forwardingTo;
+
+  int get _pinCurrentPage => _uiState.pinnedCurrentPage;
+
+  bool get _isJumpingToMessage => _uiState.isJumpingToMessage;
+
+  void _setReplyingTo(ChatMessage? message) =>
+      ref.read(chatRoomStateProvider(_contactUid).notifier).setReplyingTo(message);
+
+  void _setForwardingTo(ChatMessage? message) =>
+      ref.read(chatRoomStateProvider(_contactUid).notifier).setForwardingTo(message);
+
+  void _clearReplyAction() {
+    final notifier = ref.read(chatRoomStateProvider(_contactUid).notifier);
+    notifier.setReplyingTo(null);
+    notifier.setForwardingTo(null);
+  }
+
+  void _setPinCurrentPage(int page) =>
+      ref.read(chatRoomStateProvider(_contactUid).notifier).setPinnedPage(page);
+
+  void _setJumpingToMessage(bool jumping) =>
+      ref.read(chatRoomStateProvider(_contactUid).notifier)
+          .setJumpingToMessage(jumping);
+
+  /// 把 [_onScroll] 挂到当前房间的滚动控制器上（切房间后控制器会换新）。
+  void _attachScrollListener() {
+    final controller = _scrollController;
+    if (_scrollListenerAttached == controller) return;
+    _scrollListenerAttached?.removeListener(_onScroll);
+    controller.addListener(_onScroll);
+    _scrollListenerAttached = controller;
+  }
+
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    _attachScrollListener();
     _messageController.addListener(_scheduleDraftSave);
     _typingCleanupTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       final cutoff = DateTime.now().subtract(const Duration(seconds: 5));
@@ -146,27 +184,47 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
   }
 
+  @override
+  void deactivate() {
+    // 元素移出树时立即摘掉所有监听
+    _treeActive = false;
+    _detachRealtimeListeners();
+    _ackErrorSub?.cancel();
+    _ackErrorSub = null;
+    super.deactivate();
+  }
+
+  @override
+  void activate() {
+    super.activate();
+    _treeActive = true;
+    if (!_isInitialized) return;
+    // GlobalKey 重挂载等场景会 deactivate→activate：恢复监听与 ack 错误流
+    _attachRealtimeListeners();
+    if (AuthState.instance.isLoggedIn && _ackErrorSub == null) {
+      _ackErrorSub = ChatDataService.instance.ackErrorStream.listen(_onAckError);
+    }
+    _wsConnected = ChatWsService.instance.isAuthenticated;
+  }
+
   void _initRoom() {
     _roomGeneration++;
+    _attachScrollListener();
     for (final timer in _pendingWsTimers.values) {
       timer.cancel();
     }
     _pendingWsTimers.clear();
     _restFallbackAttempted.clear();
     _messageKeys.clear();
-    _messages.clear();
-    _rebuildImageEntries();
     _currentRoom = null;
     _avatarLoadFailed = false;
     _isLoadingOlder = false;
     _isLoadingMessages = false;
     _hasMoreMessages = true;
-    _isJumpingToMessage = false;
     _groupEnterHint = '';
     _showGroupEnterHint = true;
     _followBottom = true;
     _showBackToBottom = false;
-    _replyingTo = null;
     _canModerateGroup = false;
     _essenceMids = [];
     _essenceEnabled = true;
@@ -263,7 +321,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _weakNetworkTimer?.cancel();
     unawaited(_saveDraft());
     _messageController.dispose();
-    _scrollController.dispose();
+    _scrollListenerAttached?.removeListener(_onScroll);
+    _scrollListenerAttached = null;
     super.dispose();
   }
 
@@ -432,15 +491,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final roomId = _contactUid;
     final roomGeneration = _roomGeneration;
 
-    // 先同步展示本地缓存，切房间立即有内容，网络刷新在后台完成。
-    final cached = chatData.getMessages(roomId);
-    if (cached.isNotEmpty && _messages.isEmpty) {
-      setState(() {
-        _messages.addAll(cached);
-        _rebuildImageEntries();
-      });
-      _followBottom = true;
-    }
     setState(() => _isLoadingMessages = true);
 
     final page = await chatData.refreshMessagesForContact(roomId);
@@ -452,9 +502,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _refreshRoom();
 
     setState(() {
-      _messages.clear();
-      _messages.addAll(chatData.getMessages(roomId));
-      _rebuildImageEntries();
       _isLoadingMessages = false;
       _hasMoreMessages = page.hasMore;
     });
@@ -536,7 +583,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
     final page = aheadPage ?? behindPage ?? 0;
     if (page != _pinCurrentPage && mounted) {
-      setState(() => _pinCurrentPage = page);
+      _setPinCurrentPage(page);
     }
   }
 
@@ -567,8 +614,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     setState(() => _isLoadingOlder = true);
     final roomId = _contactUid;
     final roomGeneration = _roomGeneration;
-    final chatData = ChatDataService.instance;
-    final page = await chatData.loadOlderMessages(roomId);
+    final hasMore =
+        await ref.read(roomMessagesProvider(roomId).notifier).loadOlder();
 
     if (!mounted ||
         roomGeneration != _roomGeneration ||
@@ -576,11 +623,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       return;
     }
     setState(() {
-      _messages.clear();
-      _messages.addAll(chatData.getMessages(roomId));
-      _rebuildImageEntries();
       _isLoadingOlder = false;
-      _hasMoreMessages = page.hasMore;
+      _hasMoreMessages = hasMore;
     });
   }
 
@@ -651,32 +695,26 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   void _onChatDataChanged() {
-    if (!mounted) return;
-    // 跳转过程中完全忽略实时数据变动，避免：
-    //  1) 新消息触发 _scrollToBottom 把跳转顶回底部
-    //  2) 列表被替换导致按 index 的分段跳转失效
+    if (!mounted || !_treeActive) return;
+    // 跳转过程中完全忽略实时数据变动，避免新消息触发 _scrollToBottom 把跳转顶回底部
     if (_isJumpingToMessage) return;
     _refreshRoom();
-    final cached = ChatDataService.instance.getMessages(_contactUid);
-    
-    // 未读角标、房间列表等无关通知不重建消息列表；服务端刷新/ack 生成的新
-    // 实例若内容与本地一致（本地 _updateMessageStatus 等已同步），同样跳过，
-    // 避免全量替换导致所有气泡重建、图片闪烁重载。
-    if (_sameMessageContent(cached)) {
-      return;
-    }
-    
-    final previousLastId = _messages.isNotEmpty ? _messages.last.id : null;
-    final countChanged = cached.length != _messages.length;
-    final lastIdChanged = cached.isNotEmpty && cached.last.id != previousLastId;
+  }
+
+  /// 消息列表 Provider 状态变化 原 _onChatDataChanged 里的消息列表逻辑迁移至此
+  void _onProviderMessagesChanged(
+    List<ChatMessage>? prev,
+    List<ChatMessage> next,
+  ) {
+    if (!mounted || !_treeActive) return;
+
+    if (_isJumpingToMessage) return;
+
+    final previousLastId = prev != null && prev.isNotEmpty ? prev.last.id : null;
+    final countChanged = next.length != (prev?.length ?? 0);
+    final lastIdChanged = next.isNotEmpty && next.last.id != previousLastId;
     final wasNearBottom = _isNearBottom;
-    
-    setState(() {
-      _messages.clear();
-      _messages.addAll(cached);
-      _rebuildImageEntries();
-    });
-    
+
     if ((countChanged || lastIdChanged) && wasNearBottom) {
       _scrollToBottom();
     }
@@ -689,75 +727,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
   }
 
-  /// 引用相同，或仅实例不同但渲染相关内容一致（含本地 pending 状态机字段）
-  /// 时视为无变化，跳过列表重建。
-  bool _sameMessageContent(List<ChatMessage> cached) {
-    if (cached.length != _messages.length) return false;
-    for (var i = 0; i < cached.length; i++) {
-      final a = cached[i];
-      final b = _messages[i];
-      if (identical(a, b)) continue;
-      if (a.id != b.id ||
-          a.mid != b.mid ||
-          a.clientMid != b.clientMid ||
-          a.status != b.status ||
-          a.text != b.text ||
-          a.isDeleted != b.isDeleted ||
-          a.type != b.type ||
-          a.senderUid != b.senderUid ||
-          a.senderName != b.senderName ||
-          a.senderAvatar != b.senderAvatar ||
-          a.timestamp != b.timestamp ||
-          a.quoteMid != b.quoteMid ||
-          a.forwardedMid != b.forwardedMid ||
-          a.mentionsMe != b.mentionsMe ||
-          !listEquals(a.mentionedUids, b.mentionedUids) ||
-          !_samePreview(a.quotePreview, b.quotePreview) ||
-          !_samePreview(a.forwardPreview, b.forwardPreview) ||
-          !_sameMedia(a.media, b.media)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /// 引用预览
-  static bool _samePreview(
-    QuotedMessagePreview? a,
-    QuotedMessagePreview? b,
-  ) {
-    if (a == null || b == null) return a == b;
-    return a.mid == b.mid &&
-        a.senderUid == b.senderUid &&
-        a.senderName == b.senderName &&
-        a.content == b.content &&
-        a.contentType == b.contentType &&
-        a.fileHash == b.fileHash &&
-        a.fileName == b.fileName &&
-        a.isDeleted == b.isDeleted &&
-        a.isMissing == b.isMissing;
-  }
-
-  static bool _sameMedia(MessageMedia? a, MessageMedia? b) {
-    if (a == null || b == null) return a == b;
-    if (a.path != b.path ||
-        a.fileName != b.fileName ||
-        a.fileSize != b.fileSize ||
-        a.mimeType != b.mimeType ||
-        a.aspectRatio != b.aspectRatio ||
-        a.fileHash != b.fileHash) {
-      return false;
-    }
-    return identical(a.bytes, b.bytes) || listEquals(a.bytes, b.bytes);
-  }
-
   void _loadChatRoom() {
     final chatData = ChatDataService.instance;
     final profile = chatData.getUser(_contactUid);
     _mentionUsers.clear();
     _pinnedMessages.clear();
     _pinnedMessageContents.clear();
-    _pinCurrentPage = 0;
     _fetchingPins = false;
     if (profile != null && _contactUid.startsWith('U')) {
       _mentionUsers.add(
@@ -895,10 +870,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   void _startReply(ChatMessage message) {
     if (message.mid == null || message.isDeleted) return;
-    setState(() {
-      _replyingTo = message;
-      _forwardingTo = null;
-    });
+    _setReplyingTo(message);
+    _setForwardingTo(null);
   }
 
   void _startForward(ChatMessage message) {
@@ -929,18 +902,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       _pendingWsTimers.remove(clientMid)?.cancel();
     }
     if (_replyingTo?.clientMid == clientMid || _replyingTo?.id == message.id) {
-      _replyingTo = null;
+      _setReplyingTo(null);
     }
     if (_forwardingTo?.clientMid == clientMid ||
         _forwardingTo?.id == message.id) {
-      _forwardingTo = null;
+      _setForwardingTo(null);
     }
-    setState(() {
-      _messages.removeWhere(
-        (m) => m.id == message.id || m.clientMid == clientMid,
-      );
-      _rebuildImageEntries();
-    });
+    // deleteLocalMessage 会通知房间监听器，消息列表与画廊 Provider 自动刷新
     ChatDataService.instance.deleteLocalMessage(_contactUid, message);
   }
 
@@ -991,7 +959,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         deletedAt: deletedAt,
         deletedBy: (recalled['deleted_by'] as num?)?.toInt() ?? uid,
       );
-      if (_replyingTo?.mid == mid) setState(() => _replyingTo = null);
+      if (_replyingTo?.mid == mid) _setReplyingTo(null);
       if (_currentRoom?.type == ChatType.group) {
         // 撤回的若为置顶消息，服务端已取消置顶，这里刷新置顶栏
         unawaited(_fetchPinnedMessages());
@@ -1052,15 +1020,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           : null;
       setState(() {
         _pinnedMessages = pins;
-        if (pins.isNotEmpty) {
-          final retainedPage = currentMessageId == null
-              ? -1
-              : pins.indexWhere((pin) => pin.messageId == currentMessageId);
-          _pinCurrentPage = retainedPage >= 0 ? retainedPage : pins.length - 1;
-        } else {
-          _pinCurrentPage = 0;
-        }
       });
+      if (pins.isNotEmpty) {
+        final retainedPage = currentMessageId == null
+            ? -1
+            : pins.indexWhere((pin) => pin.messageId == currentMessageId);
+        _setPinCurrentPage(retainedPage >= 0 ? retainedPage : pins.length - 1);
+      } else {
+        _setPinCurrentPage(0);
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _updatePinnedPageFromScroll();
       });
@@ -1228,12 +1196,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             ),
     );
 
-    setState(() {
-      _messages.add(userMessage);
-      _rebuildImageEntries();
-      _replyingTo = null;
-      _forwardingTo = null;
-    });
+    _clearReplyAction();
     _messageController.clear();
     unawaited(DraftService.instance.clearDraft('chat', _contactUid));
     _scrollToBottom();
@@ -1394,20 +1357,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         mid: mid ?? updated[cIdx].mid,
         status: status ?? updated[cIdx].status,
       );
+      // setMessages 会通知房间监听器
       ChatDataService.instance.setMessages(_contactUid, updated);
     }
-    if (!mounted) return;
-    setState(() {
-      final idx = _messages.indexWhere((m) => m.clientMid == clientMid);
-      if (idx != -1) {
-        _messages[idx] = _messages[idx].copyWith(
-          id: mid?.toString() ?? _messages[idx].id,
-          mid: mid ?? _messages[idx].mid,
-          status: status ?? _messages[idx].status,
-        );
-      }
-      _rebuildImageEntries();
-    });
   }
 
   void _updateMessageMedia(String clientMid, MessageMedia media) {
@@ -1417,42 +1369,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       final updated = msgs.toList();
       updated[cIdx] = updated[cIdx].copyWith(media: media);
       ChatDataService.instance.setMessages(_contactUid, updated);
-    }
-    if (!mounted) return;
-    setState(() {
-      final idx = _messages.indexWhere((m) => m.clientMid == clientMid);
-      if (idx != -1) {
-        _messages[idx] = _messages[idx].copyWith(media: media);
-      }
-      _rebuildImageEntries();
-    });
-  }
-
-  /// 根据当前 [_messages] 重建图片画廊条目与下标映射。
-  ///
-  /// 在 [_messages] 任何结构变更（含 id 变化）后调用；O(n)，n 为消息数。
-  void _rebuildImageEntries() {
-    _imageEntries.clear();
-    _imageIndexById.clear();
-    if (_messages.length > _galleryCap) return;
-    for (final message in _messages) {
-      final media = message.media;
-      final isImageMessage =
-          message.type == MessageType.image ||
-          (message.type == MessageType.file &&
-              (media?.mimeType ?? '').startsWith('image/'));
-      if (isImageMessage && media != null) {
-        _imageEntries.add(
-          LightboxImageItem(
-            messageId: message.id,
-            media: media,
-            bytes: media.bytes != null
-                ? Uint8List.fromList(media.bytes!)
-                : null,
-          ),
-        );
-        _imageIndexById[message] = _imageEntries.length - 1;
-      }
     }
   }
 
@@ -1560,11 +1476,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             ),
     );
 
-    setState(() {
-      _messages.add(userMessage);
-      _rebuildImageEntries();
-      _replyingTo = null;
-    });
+    _setReplyingTo(null);
     ChatDataService.instance.addSentMessage(_contactUid, userMessage);
     _scrollToBottom();
 
@@ -1753,11 +1665,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
 
     if (!mounted) return;
-    setState(() {
-      _messages.add(userMessage);
-      _rebuildImageEntries();
-      _replyingTo = null;
-    });
+    _setReplyingTo(null);
     ChatDataService.instance.addSentMessage(_contactUid, userMessage);
     _scrollToBottom();
 
@@ -1854,7 +1762,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     // 目标不在视口内：分段瞬时逼近。
     // 一次性 jumpTo 很远会让 ListView.builder 在单帧内布局海量 item 而冻结，
     // 因此每次只跳约 5 个视口高度，等一帧布局完成后再继续，直到接近目标。
-    _isJumpingToMessage = true;
+    _setJumpingToMessage(true);
     _jumpStepToMessage(index: index, mid: mid);
   }
 
@@ -1868,7 +1776,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         if (retry < 60) {
           _jumpStepToMessage(index: index, mid: mid, retry: retry + 1);
         } else {
-          _isJumpingToMessage = false;
+          _setJumpingToMessage(false);
         }
         return;
       }
@@ -1881,7 +1789,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           duration: Duration.zero,
           alignment: 0.35,
         );
-        _isJumpingToMessage = false;
+        _setJumpingToMessage(false);
         return;
       }
 
@@ -1923,7 +1831,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (!mounted || index >= _messages.length) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || index >= _messages.length) return;
-      _isJumpingToMessage = false;
+      _setJumpingToMessage(false);
       final context = mid != null ? _messageKeys[mid]?.currentContext : null;
       if (context != null) {
         Scrollable.ensureVisible(
@@ -1959,7 +1867,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
 
     // 翻页加载期间也进入“跳转中”状态，防止实时消息插入/替换列表打断跳转
-    _isJumpingToMessage = true;
+    _setJumpingToMessage(true);
 
     // 2. 目标不在当前列表，往前翻页加载直到找到或没有更多
     var exhausted = false;
@@ -1993,9 +1901,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         }
 
         setState(() => _isLoadingOlder = true);
-        MessageHistoryPage page;
+        bool hasMore;
         try {
-          page = await ChatDataService.instance.loadOlderMessages(roomId);
+          hasMore =
+              await ref.read(roomMessagesProvider(roomId).notifier).loadOlder();
         } catch (error, stackTrace) {
           talker.error('Jump-to-message: load older failed', error, stackTrace);
           if (mounted) setState(() => _isLoadingOlder = false);
@@ -2007,13 +1916,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             roomId != _contactUid) {
           return;
         }
-        final msgs = ChatDataService.instance.getMessages(roomId);
+        final msgs = ref.read(roomMessagesProvider(roomId));
         setState(() {
-          _messages
-            ..clear()
-            ..addAll(msgs);
           _isLoadingOlder = false;
-          _hasMoreMessages = page.hasMore;
+          _hasMoreMessages = hasMore;
         });
 
         index = _indexOfMessage(target);
@@ -2022,7 +1928,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           _scrollToMessageIndex(index);
           return;
         }
-        if (!page.hasMore || msgs.isEmpty) {
+        if (!hasMore || msgs.isEmpty) {
           exhausted = true;
           break;
         }
@@ -2031,7 +1937,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       // 如果目标已在列表中被定位并交给分段滚动处理，
       // 则保持 _isJumpingToMessage = true，由 _jumpFinalAlign 在完成后复位；
       // 否则（未找到/被中断）在此复位。
-      if (mounted && !locatedInList) _isJumpingToMessage = false;
+      if (mounted && !locatedInList) _setJumpingToMessage(false);
     }
 
     if (mounted && exhausted && !aborted) _showJumpMessageNotFound();
@@ -2376,6 +2282,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
+    final messages = ref.watch(roomMessagesProvider(_contactUid));
+    final uiState = ref.watch(chatRoomStateProvider(_contactUid));
+    final gallery = ref.watch(imageGalleryProvider(_contactUid));
+    ref.listen(roomMessagesProvider(_contactUid), _onProviderMessagesChanged);
+
     if (_currentRoom == null) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.chatDetailLoading)),
@@ -2520,10 +2431,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       child: NotificationListener<ScrollNotification>(
                         onNotification: _onUserScroll,
                         child: MessageListView(
-                          messages: _messages,
-                          scrollController: _scrollController,
-                          galleryItems: _imageEntries,
-                          imageIndexById: _imageIndexById,
+                          messages: messages,
+                          scrollController: uiState.scrollController,
+                          galleryItems: gallery.items,
+                          imageIndexById: gallery.indexById,
                           essenceMids: _essenceMids,
                           pinnedMessages: _pinnedMessages,
                           essenceEnabled: _essenceEnabled,
@@ -2584,12 +2495,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               onFilePicked: _sendMediaMessage,
               onServerFilePicked: _sendServerFile,
               mentionUsers: _mentionUsers,
-              actionMessage: _replyingTo ?? _forwardingTo,
-              actionIsForward: _forwardingTo != null,
-              onClearAction: () => setState(() {
-                _replyingTo = null;
-                _forwardingTo = null;
-              }),
+              actionMessage: uiState.replyingTo ?? uiState.forwardingTo,
+              actionIsForward: uiState.forwardingTo != null,
+              onClearAction: _clearReplyAction,
             ),
           ],
         ),

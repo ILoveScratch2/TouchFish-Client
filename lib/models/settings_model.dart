@@ -507,6 +507,14 @@ class SettingsData {
           defaultValue: true,
           icon: Icons.sticky_note_2_outlined,
         ),
+        SettingItem(
+          key: 'chatStickerRecentTab',
+          titleKey: 'settingsChatStickerRecentTabTitle',
+          descriptionKey: 'settingsChatStickerRecentTabDesc',
+          type: SettingType.switchSetting,
+          defaultValue: true,
+          icon: Icons.history,
+        ),
       ],
     ),
     SettingCategoryData(

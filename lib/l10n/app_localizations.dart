@@ -6952,6 +6952,18 @@ abstract class AppLocalizations {
   /// **'Download and cache sticker images automatically. When off, tap a sticker to load it.'**
   String get settingsAutoLoadStickersDesc;
 
+  /// No description provided for @settingsChatStickerRecentTabTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show recent tab in chat sticker panel'**
+  String get settingsChatStickerRecentTabTitle;
+
+  /// No description provided for @settingsChatStickerRecentTabDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, the sticker panel in chat hides the recent tab and shows only sticker packs.'**
+  String get settingsChatStickerRecentTabDesc;
+
   /// No description provided for @settingsClearStickerCache.
   ///
   /// In en, this message translates to:

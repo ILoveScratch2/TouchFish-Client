@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../models/chat_model.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/chat/message_provider.dart';
 import 'optimized_image.dart';
 
-class ChatListWidget extends StatelessWidget {
+class ChatListWidget extends ConsumerWidget {
   final List<ChatRoom> chatRooms;
 
   const ChatListWidget({super.key, required this.chatRooms});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final pinnedRooms = chatRooms.where((room) => room.isPinned).toList();
     final unpinnedRooms = chatRooms.where((room) => !room.isPinned).toList();
 
@@ -20,7 +22,7 @@ class ChatListWidget extends StatelessWidget {
         if (pinnedRooms.isNotEmpty) ...[
           _buildPinnedSection(context, pinnedRooms),
         ],
-        ...unpinnedRooms.map((room) => _buildChatRoomTile(context, room)),
+        ...unpinnedRooms.map((room) => _ChatRoomTile(room: room)),
       ],
     );
   }
@@ -38,21 +40,33 @@ class ChatListWidget extends StatelessWidget {
         leading: const Icon(Icons.push_pin),
         initiallyExpanded: true,
         children: rooms
-            .map((room) => _buildChatRoomTile(context, room))
+            .map((room) => _ChatRoomTile(room: room))
             .toList(),
       ),
     );
   }
 
-  Widget _buildChatRoomTile(BuildContext context, ChatRoom room) {
+}
+
+class _ChatRoomTile extends ConsumerWidget {
+  final ChatRoom room;
+
+  const _ChatRoomTile({required this.room});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final unread = ref.watch(unreadCountProvider(room.id));
+    final timeText = room.lastMessageTime != null
+        ? _formatRoomTime(room.lastMessageTime!, context)
+        : null;
 
     return ListTile(
       leading: _buildAvatar(context, room),
       title: Text(
         room.name,
         style: TextStyle(
-          fontWeight: room.unreadCount > 0
+          fontWeight: unread > 0
               ? FontWeight.bold
               : FontWeight.normal,
         ),
@@ -63,7 +77,7 @@ class ChatListWidget extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: room.unreadCount > 0
+                color: unread > 0
                     ? colorScheme.onSurface
                     : colorScheme.onSurfaceVariant,
               ),
@@ -73,14 +87,14 @@ class ChatListWidget extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (room.lastMessageTime != null)
+          if (timeText != null)
             Text(
-              _formatTime(room.lastMessageTime!, context),
+              timeText,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
-          if (room.unreadCount > 0) ...[
+          if (unread > 0) ...[
             const SizedBox(height: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -90,7 +104,7 @@ class ChatListWidget extends StatelessWidget {
               ),
               constraints: const BoxConstraints(minWidth: 20),
               child: Text(
-                room.unreadCount > 99 ? '99+' : room.unreadCount.toString(),
+                unread > 99 ? '99+' : unread.toString(),
                 style: TextStyle(
                   color: colorScheme.onPrimary,
                   fontSize: 12,
@@ -129,28 +143,27 @@ class ChatListWidget extends StatelessWidget {
           : null,
     );
   }
+}
 
-  String _formatTime(DateTime time, BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final now = DateTime.now();
-    final difference = now.difference(time);
+String _formatRoomTime(DateTime time, BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
+  final now = DateTime.now();
+  final difference = now.difference(time);
 
-    if (difference.inDays == 0) {
-      // 今天显示时间
-      return DateFormat('HH:mm').format(time);
-    } else if (difference.inDays == 1) {
-      // 昨天就是昨天
-      return l10n.chatYesterday;
-    } else if (difference.inDays < 7) {
-      // 一周内显示星期
-      final locale = Localizations.localeOf(context);
-      final dateLocale = locale.languageCode == 'och'
-          ? 'zh'
-          : locale.toString();
-      return DateFormat.E(dateLocale).format(time);
-    } else {
-      // 超过一周显示日期
-      return DateFormat('MM/dd').format(time);
-    }
+  if (difference.inDays == 0) {
+    // 今天显示时间
+    return DateFormat('HH:mm').format(time);
+  } else if (difference.inDays == 1) {
+    // 昨天就是昨天
+    return l10n.chatYesterday;
+  } else if (difference.inDays < 7) {
+    // 一周内显示星期
+    final locale = Localizations.localeOf(context);
+    final dateLocale =
+        locale.languageCode == 'och' ? 'zh' : locale.toString();
+    return DateFormat.E(dateLocale).format(time);
+  } else {
+    // 超过一周显示日期
+    return DateFormat('MM/dd').format(time);
   }
 }

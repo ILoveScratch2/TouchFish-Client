@@ -3584,6 +3584,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsAutoLoadStickersDesc => '自动下载并缓存贴图。关闭后需手动点击贴图才会加载。';
 
   @override
+  String get settingsChatStickerRecentTabTitle => '聊天表情面板显示“最近使用”';
+
+  @override
+  String get settingsChatStickerRecentTabDesc =>
+      '关闭后聊天中的表情面板不再显示“最近使用”栏，仅显示表情包列表。';
+
+  @override
   String get settingsClearStickerCache => '清除贴图缓存';
 
   @override

@@ -1,21 +1,21 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/sticker_model.dart';
 import '../../providers/sticker/sticker_provider.dart';
+import 'sticker_image.dart';
 
 /// Sticker 自动补全
+/// 
+/// 打广告：https://www.luogu.com.cn/article/8o5kwvgy
 class StickerAutocompleteOverlay extends ConsumerWidget {
   final String query;
-  final VoidCallback onDismiss;
   final Function(String stickerText) onSelect;
 
   const StickerAutocompleteOverlay({
     super.key,
     required this.query,
-    required this.onDismiss,
     required this.onSelect,
   });
 
@@ -31,48 +31,37 @@ class StickerAutocompleteOverlay extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
+        final colorScheme = Theme.of(context).colorScheme;
         return Material(
           elevation: 8,
-          borderRadius: BorderRadius.circular(8),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 220,
-              maxWidth: 320,
-              minWidth: 160,
-            ),
-            child: ListView.builder(
-              shrinkWrap: true,
-              padding: EdgeInsets.zero,
-              itemCount: matches.length,
-              itemBuilder: (context, index) {
-                final match = matches[index];
-                final text = ':${match.pack.prefix}+${match.sticker.slug}:';
-                return ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.emoji_emotions, size: 20),
-                  title: Text(
-                    text,
-                    style: const TextStyle(fontSize: 14),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: match.sticker.name?.isNotEmpty == true
-                      ? Text(
-                          match.sticker.name!,
-                          style: const TextStyle(fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
-                        )
-                      : null,
-                  onTap: () {
-                    // 与实体选择器一致：记录最近使用（勿 await）
-                    unawaited(
-                      ref
-                          .read(recentStickersProvider.notifier)
-                          .recordUsage(match.pack, match.sticker),
-                    );
-                    onSelect(text);
-                  },
-                );
-              },
+          borderRadius: BorderRadius.circular(12),
+          color: colorScheme.surfaceContainerHigh,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 240, maxWidth: 300),
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                itemCount: matches.length,
+                itemBuilder: (context, index) {
+                  final match = matches[index];
+                  final text = ':${match.pack.prefix}+${match.sticker.slug}:';
+                  return _StickerMatchTile(
+                    match: match,
+                    text: text,
+                    onTap: () {
+                      // 与实体选择器一致：记录最近使用（勿 await）
+                      unawaited(
+                        ref
+                            .read(recentStickersProvider.notifier)
+                            .recordUsage(match.pack, match.sticker),
+                      );
+                      onSelect(text);
+                    },
+                  );
+                },
+              ),
             ),
           ),
         );
@@ -133,18 +122,79 @@ class StickerMatch {
   StickerMatch({required this.pack, required this.sticker});
 }
 
+/// Sticker 自动补全候选
+class _StickerMatchTile extends StatelessWidget {
+  final StickerMatch match;
+  final String text;
+  final VoidCallback onTap;
+
+  const _StickerMatchTile({
+    required this.match,
+    required this.text,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 40,
+              height: 40,
+              child: StickerImage(
+                hash: match.sticker.fileHash,
+                fileType: match.sticker.fileType,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    text,
+                    style: textTheme.bodyMedium,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (match.sticker.name?.isNotEmpty == true)
+                    Text(
+                      match.sticker.name!,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Sticker 输入助手：监听文本变化与焦点，在输入框上方显示自动补全浮层。
 ///
-/// 需与输入框叠放
+/// 定位锚点 [layerLink] 由外部共享，委屈委屈 @ 了
 class StickerInputHelper extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
+  final LayerLink layerLink;
   final Function(String) onStickerSelected;
 
   const StickerInputHelper({
     super.key,
     required this.controller,
     required this.focusNode,
+    required this.layerLink,
     required this.onStickerSelected,
   });
 
@@ -155,6 +205,7 @@ class StickerInputHelper extends StatefulWidget {
 class _StickerInputHelperState extends State<StickerInputHelper> {
   OverlayEntry? _overlayEntry;
   String? _currentQuery;
+  bool _disposed = false;
 
   @override
   void initState() {
@@ -165,6 +216,7 @@ class _StickerInputHelperState extends State<StickerInputHelper> {
 
   @override
   void dispose() {
+    _disposed = true;
     widget.controller.removeListener(_onTextChanged);
     widget.focusNode.removeListener(_onFocusChanged);
     _removeOverlay();
@@ -172,9 +224,11 @@ class _StickerInputHelperState extends State<StickerInputHelper> {
   }
 
   void _onFocusChanged() {
-    // 失焦收浮层
+    // 失焦收浮层（稍延时，允许点击候选条目时的焦点转移先完成）
     if (!widget.focusNode.hasFocus) {
-      _hideAutocomplete();
+      Future.delayed(const Duration(milliseconds: 150), () {
+        if (!_disposed) _hideAutocomplete();
+      });
     }
   }
 
@@ -182,7 +236,10 @@ class _StickerInputHelperState extends State<StickerInputHelper> {
     final text = widget.controller.text;
     final cursorPos = widget.controller.selection.baseOffset;
 
-    if (cursorPos < 0) return;
+    if (cursorPos < 0 || !widget.focusNode.hasFocus) {
+      _hideAutocomplete();
+      return;
+    }
     final beforeCursor = text.substring(0, cursorPos);
 
     // ':' 后至少一个合法字符，避免孤立的 ':' 弹出全部包slug 段允许 '-'（与消息渲染语法 :prefix+slug: 的 [A-Za-z0-9_-] 一致）否则含 '-' 的 slug 打字到一半浮层会消失。
@@ -205,50 +262,30 @@ class _StickerInputHelperState extends State<StickerInputHelper> {
   void _showAutocomplete(String query) {
     _removeOverlay();
 
-    final renderBox = context.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-    if (!renderBox.hasSize) return;
-
-    final position = renderBox.localToGlobal(Offset.zero);
-
-    // 横向防 stack overflow：菜单宽上限 320，屏幕窄时收缩
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final left = position.dx.clamp(
-      0.0,
-      math.max(0.0, screenWidth - 320),
-    ).toDouble();
-
+    // 与 @ 提及一致
     _overlayEntry = OverlayEntry(
-      builder: (context) => Stack(
-        children: [
-          // 半透明不拦截
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: _hideAutocomplete,
-            ),
+      builder: (context) => Positioned(
+        left: 0,
+        top: 0,
+        child: CompositedTransformFollower(
+          link: widget.layerLink,
+          showWhenUnlinked: false,
+          targetAnchor: Alignment.topLeft,
+          followerAnchor: Alignment.bottomLeft,
+          offset: const Offset(0, -4),
+          child: StickerAutocompleteOverlay(
+            query: query,
+            onSelect: (stickerText) {
+              _insertSticker(stickerText);
+              _hideAutocomplete();
+            },
           ),
-          Positioned(
-            left: left,
-            bottom: screenHeight(context) - position.dy + 8,
-            child: StickerAutocompleteOverlay(
-              query: query,
-              onDismiss: _hideAutocomplete,
-              onSelect: (stickerText) {
-                _insertSticker(stickerText);
-                _hideAutocomplete();
-              },
-            ),
-          ),
-        ],
+        ),
       ),
     );
 
     Overlay.of(context).insert(_overlayEntry!);
   }
-
-  double screenHeight(BuildContext context) =>
-      MediaQuery.sizeOf(context).height;
 
   void _hideAutocomplete() {
     _currentQuery = null;
@@ -288,3 +325,16 @@ class _StickerInputHelperState extends State<StickerInputHelper> {
     return const SizedBox.shrink();
   }
 }
+
+
+
+
+
+
+
+/// 兄弟兄弟，真有人看代码吗？
+/// 如果你看到了这一行……那么………………
+/// 去给我的文章点赞！
+/// https://www.luogu.com.cn/article/8o5kwvgy
+/// 
+/// by YWD2023

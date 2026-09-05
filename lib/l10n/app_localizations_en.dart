@@ -3737,6 +3737,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Download and cache sticker images automatically. When off, tap a sticker to load it.';
 
   @override
+  String get settingsChatStickerRecentTabTitle =>
+      'Show recent tab in chat sticker panel';
+
+  @override
+  String get settingsChatStickerRecentTabDesc =>
+      'When off, the sticker panel in chat hides the recent tab and shows only sticker packs.';
+
+  @override
   String get settingsClearStickerCache => 'Clear sticker cache';
 
   @override

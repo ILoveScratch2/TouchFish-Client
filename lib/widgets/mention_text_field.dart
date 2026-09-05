@@ -22,6 +22,9 @@ class MentionTextField extends StatefulWidget {
   final ValueChanged<String>? onSubmitted;
   final List<MentionUser> mentionUsers;
 
+  /// 为了贴纸补全只能委屈一下你了
+  final LayerLink? layerLink;
+
   const MentionTextField({
     super.key,
     required this.controller,
@@ -35,6 +38,7 @@ class MentionTextField extends StatefulWidget {
     this.textInputAction,
     this.textAlign = TextAlign.start,
     this.onSubmitted,
+    this.layerLink,
   });
 
   @override
@@ -50,6 +54,8 @@ class _MentionTextFieldState extends State<MentionTextField> {
     const [],
   );
   bool _disposed = false;
+
+  LayerLink get _activeLink => widget.layerLink ?? _layerLink;
 
   @override
   void initState() {
@@ -186,7 +192,7 @@ class _MentionTextFieldState extends State<MentionTextField> {
         left: 0,
         top: 0,
         child: CompositedTransformFollower(
-          link: _layerLink,
+          link: _activeLink,
           showWhenUnlinked: false,
           targetAnchor: Alignment.topLeft,
           followerAnchor: Alignment.bottomLeft,
@@ -203,7 +209,7 @@ class _MentionTextFieldState extends State<MentionTextField> {
   @override
   Widget build(BuildContext context) {
     return CompositedTransformTarget(
-      link: _layerLink,
+      link: _activeLink,
       child: TextField(
         controller: widget.controller,
         focusNode: _focusNode,

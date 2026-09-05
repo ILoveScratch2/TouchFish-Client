@@ -1458,6 +1458,8 @@
   "maxCachedRoomsCount": "{count} rooms",
   "settingsAutoLoadStickersTitle": "Auto-load stickers",
   "settingsAutoLoadStickersDesc": "Download and cache sticker images automatically. When off, tap a sticker to load it.",
+  "settingsChatStickerRecentTabTitle": "Show recent tab in chat sticker panel",
+  "settingsChatStickerRecentTabDesc": "When off, the sticker panel in chat hides the recent tab and shows only sticker packs.",
   "settingsClearStickerCache": "Clear sticker cache",
   "settingsClearStickerCacheDescription": "Delete locally cached sticker images.",
   "settingsClearLocalMessages": "Clear",

@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,7 +13,19 @@ import 'sticker_image.dart';
 class StickerPickerEnhanced extends ConsumerStatefulWidget {
   final void Function(StickerPack pack, StickerItem sticker) onPick;
 
-  const StickerPickerEnhanced({super.key, required this.onPick});
+  /// 是否显示最近使用
+  final bool showRecentTab;
+
+  /// 紧凑模式！
+  /// 给wyf更多空间
+  final bool compact;
+
+  const StickerPickerEnhanced({
+    super.key,
+    required this.onPick,
+    this.showRecentTab = true,
+    this.compact = false,
+  });
 
   @override
   ConsumerState<StickerPickerEnhanced> createState() =>
@@ -41,20 +54,22 @@ class _StickerPickerEnhancedState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final packsAsync = ref.watch(myStickerPacksProvider);
+
+    if (!widget.showRecentTab) {
+      return packsAsync.when(
+        data: _buildPacksTab,
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, _) => _buildLoadError(
+          onRetry: () => ref.read(myStickerPacksProvider.notifier).refresh(),
+        ),
+      );
+    }
+
     final recentAsync = ref.watch(recentStickersProvider);
 
     return Column(
       children: [
-        TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(icon: const Icon(Icons.history), text: l10n.stickerRecent),
-            Tab(
-              icon: const Icon(Icons.emoji_emotions),
-              text: l10n.stickerPacks,
-            ),
-          ],
-        ),
+        _buildInnerTabBar(l10n),
         Expanded(
           child: TabBarView(
             controller: _tabController,
@@ -86,6 +101,59 @@ class _StickerPickerEnhancedState
     );
   }
 
+  Widget _buildInnerTabBar(AppLocalizations l10n) {
+    if (widget.compact) {
+      return SizedBox(
+        height: 40,
+        child: TabBar(
+          controller: _tabController,
+          dividerColor: Colors.transparent,
+          indicatorSize: TabBarIndicatorSize.label,
+          labelStyle: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+          unselectedLabelStyle: const TextStyle(fontSize: 13),
+          tabs: [
+            Tab(
+              height: 40,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.history, size: 16),
+                  const SizedBox(width: 4),
+                  Text(l10n.stickerRecent),
+                ],
+              ),
+            ),
+            Tab(
+              height: 40,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.emoji_emotions, size: 16),
+                  const SizedBox(width: 4),
+                  Text(l10n.stickerPacks),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return TabBar(
+      controller: _tabController,
+      tabs: [
+        Tab(icon: const Icon(Icons.history), text: l10n.stickerRecent),
+        Tab(
+          icon: const Icon(Icons.emoji_emotions),
+          text: l10n.stickerPacks,
+        ),
+      ],
+    );
+  }
+
   Widget _buildLoadError({required VoidCallback onRetry}) {
     final l10n = AppLocalizations.of(context)!;
     return Center(
@@ -98,6 +166,18 @@ class _StickerPickerEnhancedState
   }
 
   // ---------- 最近使用 ----------
+
+  /// 桌面端（鼠标）拖不动，把鼠标/触控板加进 dragDevices 恢复拖动。
+  static ScrollBehavior _dragBehavior(BuildContext context) {
+    return ScrollConfiguration.of(context).copyWith(
+      dragDevices: {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.trackpad,
+      },
+    );
+  }
 
   Widget _buildRecentTab(List<RecentStickerItem> recent) {
     final l10n = AppLocalizations.of(context)!;
@@ -123,29 +203,32 @@ class _StickerPickerEnhancedState
       );
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(12),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 5,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-      ),
-      itemCount: recent.length,
-      itemBuilder: (context, index) {
-        final item = recent[index];
-        return InkWell(
-          key: ValueKey('recent-${item.packId}-${item.stickerId}'),
-          onTap: () => _useRecent(item),
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.all(4),
-            child: StickerImage(
-              hash: item.fileHash,
-              fileType: item.fileType,
+    return ScrollConfiguration(
+      behavior: _dragBehavior(context),
+      child: GridView.builder(
+        padding: const EdgeInsets.all(12),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 5,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+        ),
+        itemCount: recent.length,
+        itemBuilder: (context, index) {
+          final item = recent[index];
+          return InkWell(
+            key: ValueKey('recent-${item.packId}-${item.stickerId}'),
+            onTap: () => _useRecent(item),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              child: StickerImage(
+                hash: item.fileHash,
+                fileType: item.fileType,
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -213,28 +296,31 @@ class _StickerPickerEnhancedState
     return Column(
       children: [
         SizedBox(
-          height: 56,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: packs.length,
-            itemBuilder: (context, index) {
-              final pack = packs[index].pack;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  key: ValueKey('pack-${pack.id}'),
-                  selected: index == effectiveIndex,
-                  label: Text(
-                    pack.name,
-                    overflow: TextOverflow.ellipsis,
+          height: widget.compact ? 48 : 56,
+          child: ScrollConfiguration(
+            behavior: _dragBehavior(context),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: packs.length,
+              itemBuilder: (context, index) {
+                final pack = packs[index].pack;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    key: ValueKey('pack-${pack.id}'),
+                    selected: index == effectiveIndex,
+                    label: Text(
+                      pack.name,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    avatar: _buildPackIcon(pack),
+                    onSelected: (_) =>
+                        setState(() => _selectedPackIndex = index),
                   ),
-                  avatar: _buildPackIcon(pack),
-                  onSelected: (_) =>
-                      setState(() => _selectedPackIndex = index),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
         const Divider(height: 1),
@@ -257,22 +343,25 @@ class _StickerPickerEnhancedState
   }
 
   Widget _buildStickerGrid(StickerPack pack) {
-    return GridView.builder(
-      padding: const EdgeInsets.all(12),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 5,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
+    return ScrollConfiguration(
+      behavior: _dragBehavior(context),
+      child: GridView.builder(
+        padding: const EdgeInsets.all(12),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 5,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+        ),
+        itemCount: pack.stickers.length,
+        itemBuilder: (context, index) {
+          final sticker = pack.stickers[index];
+          return StickerTile(
+            key: ValueKey('sticker-${sticker.id}'),
+            sticker: sticker,
+            onTap: () => _pick(pack, sticker),
+          );
+        },
       ),
-      itemCount: pack.stickers.length,
-      itemBuilder: (context, index) {
-        final sticker = pack.stickers[index];
-        return StickerTile(
-          key: ValueKey('sticker-${sticker.id}'),
-          sticker: sticker,
-          onTap: () => _pick(pack, sticker),
-        );
-      },
     );
   }
 

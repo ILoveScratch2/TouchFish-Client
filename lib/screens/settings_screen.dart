@@ -2291,6 +2291,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsAutoLoadStickersTitle;
       case 'settingsAutoLoadStickersDesc':
         return l10n.settingsAutoLoadStickersDesc;
+      case 'settingsChatStickerRecentTabTitle':
+        return l10n.settingsChatStickerRecentTabTitle;
+      case 'settingsChatStickerRecentTabDesc':
+        return l10n.settingsChatStickerRecentTabDesc;
       case 'maxCachedRooms':
         return l10n.maxCachedRooms;
       case 'maxCachedRoomsDesc':

@@ -6,15 +6,12 @@ import '../../services/chat_data_service.dart';
 part 'message_provider.g.dart';
 
 /// 单房间 消息列表
+///
+/// 我们只听 CDS 的，这个叫缓存先生！
 @riverpod
 class RoomMessages extends _$RoomMessages {
-  static const int _maxMessagesInMemory = 500;
-  static const int _keepWhenTrimming = 400;
-
   @override
   List<ChatMessage> build(String roomId) {
-    final messages = ChatDataService.instance.getMessages(roomId);
-
     void listener() => _refreshMessages();
     ChatDataService.instance.addRoomListener(roomId, listener);
 
@@ -22,93 +19,38 @@ class RoomMessages extends _$RoomMessages {
       ChatDataService.instance.removeRoomListener(roomId, listener);
     });
 
-    return _trimIfNeeded(messages);
-  }
-
-  void addMessage(ChatMessage message) {
-    final current = state;
-
-    if (current.any((m) => _identity(m) == _identity(message))) {
-      return;
-    }
-
-    final newList = [...current, message];
-    state = _trimIfNeeded(newList);
-  }
-
-  void addMessages(List<ChatMessage> messages) {
-    final current = state;
-    final existingIds = current.map(_identity).toSet();
-    final newMessages = messages.where(
-      (m) => !existingIds.contains(_identity(m))
-    ).toList();
-
-    if (newMessages.isEmpty) return;
-
-    final newList = [...current, ...newMessages];
-    state = _trimIfNeeded(newList);
-  }
-
-  void updateMessage(ChatMessage updated) {
-    state = [
-      for (final msg in state)
-        if (_identity(msg) == _identity(updated)) updated else msg
-    ];
-  }
-
-  void removeMessage(String messageId) {
-    state = state
-        .where(
-          (m) =>
-              _identity(m) != messageId &&
-              m.id != messageId &&
-              m.mid?.toString() != messageId,
-        )
-        .toList();
-  }
-
-  static String _identity(ChatMessage message) =>
-      message.clientMid ?? message.mid?.toString() ?? message.id;
-
-  List<ChatMessage> _trimIfNeeded(List<ChatMessage> messages) {
-    if (messages.length <= _maxMessagesInMemory) {
-      return List.of(messages);
-    }
-
-    // CDS，启动！
-
-    final sorted = [...messages]
-      ..sort((a, b) => ChatMessage.compareByOrder(a, b, _identity));
-
-    return List.of(sorted.skip(sorted.length - _keepWhenTrimming));
+    // 拷贝列表：CDS 缓存会被原地变异（如 addSentMessage）！
+    return List.of(ChatDataService.instance.getMessages(roomId));
   }
 
   void _refreshMessages() {
     final fresh = ChatDataService.instance.getMessages(roomId);
-    state = _trimIfNeeded(fresh);
+    if (_sameContent(fresh)) return;
+    state = List.of(fresh);
+  }
+
+  /// 与当前 state 逐条比较渲染
+  bool _sameContent(List<ChatMessage> fresh) {
+    final current = state;
+    if (fresh.length != current.length) return false;
+    for (var i = 0; i < fresh.length; i++) {
+      if (!ChatMessage.sameRenderedContent(fresh[i], current[i])) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// 加载更多历史消息
   ///
   /// 完成后不覆盖 state since await 期间可能有 wyf 的消息
-  Future<void> loadOlder() async {
+  /// 
+  /// 
+  /// CDS 的 loadOlderMessages 已把更早历史合并进缓存并发出房间通知（_refreshMessages 可能已更新 state）但是为了过度防御编程所以我们是需要 check again
+  Future<bool> loadOlder() async {
     final result = await ChatDataService.instance.loadOlderMessages(roomId);
-    final latest = ChatDataService.instance.getMessages(roomId);
-    state = _trimIfNeeded(_mergeByOrder(result.messages, latest));
-  }
-
-  /// GitHub: Enable Auto-Merge
-  List<ChatMessage> _mergeByOrder(
-    List<ChatMessage> a,
-    List<ChatMessage> b,
-  ) {
-    final byIdentity = <String, ChatMessage>{
-      for (final m in a) _identity(m): m,
-      for (final m in b) _identity(m): m,
-    };
-    final merged = byIdentity.values.toList()
-      ..sort((x, y) => ChatMessage.compareByOrder(x, y, _identity));
-    return merged;
+    _refreshMessages();
+    return result.hasMore;
   }
 
   void refresh() {

@@ -3582,6 +3582,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsAutoLoadStickersDesc => '自下載並緩貼圖。關後需手點貼圖方載之。';
 
   @override
+  String get settingsChatStickerRecentTabTitle => '聊天表情板顯示「最近所用」';
+
+  @override
+  String get settingsChatStickerRecentTabDesc => '既閉，則聊天表情板不復見「最近所用」一欄，惟餘表情包。';
+
+  @override
   String get settingsClearStickerCache => '清貼圖緩';
 
   @override

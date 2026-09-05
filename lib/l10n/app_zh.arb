@@ -1423,6 +1423,8 @@
   "maxCachedRoomsCount": "{count} 个",
   "settingsAutoLoadStickersTitle": "自动加载贴图和表情",
   "settingsAutoLoadStickersDesc": "自动下载并缓存贴图。关闭后需手动点击贴图才会加载。",
+  "settingsChatStickerRecentTabTitle": "聊天表情面板显示“最近使用”",
+  "settingsChatStickerRecentTabDesc": "关闭后聊天中的表情面板不再显示“最近使用”栏，仅显示表情包列表。",
   "settingsClearStickerCache": "清除贴图缓存",
   "settingsClearStickerCacheDescription": "删除本地缓存的贴图文件。",
   "settingsClearLocalMessages": "清除",

@@ -11,7 +11,7 @@ import '../services/auth_state.dart';
 import '../services/chat_ws_service.dart';
 import 'server_file_picker_sheet.dart';
 import 'stickers/sticker_autocomplete.dart';
-import 'stickers/sticker_picker.dart';
+import 'stickers/sticker_picker_enhanced.dart';
 import '../l10n/app_localizations.dart';
 import '../models/message_model.dart';
 import '../models/settings_service.dart';
@@ -62,6 +62,8 @@ class _ChatInputBarState extends State<ChatInputBar>
   bool _isExpanded = false;
   late final TabController _tabController;
   late final FocusNode _inputFocusNode;
+  /// @ 提及与贴纸自动补全共用的定位锚点：都锚定输入框左上角
+  final LayerLink _inputLayerLink = LayerLink();
   Timer? _typingTimer;
   bool _typingActive = false;
 
@@ -71,16 +73,23 @@ class _ChatInputBarState extends State<ChatInputBar>
     _tabController = TabController(length: 3, vsync: this);
     _inputFocusNode = FocusNode(onKeyEvent: _handleInputKeyEvent);
     widget.controller.addListener(_handleTypingChanged);
+    // 表情面板「最近使用」开关等设置变化时刷新
+    SettingsService.instance.addListener(_onSettingsChanged);
   }
 
   @override
   void dispose() {
+    SettingsService.instance.removeListener(_onSettingsChanged);
     widget.controller.removeListener(_handleTypingChanged);
     _typingTimer?.cancel();
     if (_typingActive) ChatWsService.instance.sendTyping(widget.roomId, false);
     _tabController.dispose();
     _inputFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onSettingsChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -336,6 +345,7 @@ class _ChatInputBarState extends State<ChatInputBar>
                         controller: widget.controller,
                         focusNode: _inputFocusNode,
                         mentionUsers: widget.mentionUsers,
+                        layerLink: _inputLayerLink,
                         maxLines: 5,
                         minLines: 1,
                         keyboardType: TextInputType.multiline,
@@ -357,6 +367,7 @@ class _ChatInputBarState extends State<ChatInputBar>
                           child: StickerInputHelper(
                             controller: widget.controller,
                             focusNode: _inputFocusNode,
+                            layerLink: _inputLayerLink,
                             onStickerSelected: (_) {},
                           ),
                         ),
@@ -381,7 +392,7 @@ class _ChatInputBarState extends State<ChatInputBar>
               curve: Curves.easeInOut,
               child: _isExpanded
                   ? Container(
-                      height: 200,
+                      height: 300,
                       margin: const EdgeInsets.only(top: 8, bottom: 3),
                       decoration: BoxDecoration(
                         border: Border.all(
@@ -428,7 +439,7 @@ class _ChatInputBarState extends State<ChatInputBar>
                               controller: _tabController,
                               children: [
                                 _buildFilesTab(colorScheme, l10n),
-                                _buildEmojiTab(colorScheme, l10n),
+                                _buildEmojiTab(),
                                 _buildSpecialMessagesTab(colorScheme, l10n),
                               ],
                             ),
@@ -636,13 +647,17 @@ class _ChatInputBarState extends State<ChatInputBar>
     await widget.onServerFilePicked!(file, _messageTypeFromServerFile(file));
   }
 
-  Widget _buildEmojiTab(ColorScheme colorScheme, AppLocalizations l10n) {
-    return StickerPickerPanel(
+  Widget _buildEmojiTab() {
+    final showRecent = SettingsService.instance.getValue<bool>(
+      'chatStickerRecentTab',
+      true,
+    );
+    return StickerPickerEnhanced(
+      showRecentTab: showRecent,
+      compact: true,
       onPick: (pack, sticker) {
         _insertText(':${pack.prefix}+${sticker.slug}:');
       },
-      onLongPress: (pack, sticker) =>
-          _insertText(':${pack.prefix}+${sticker.slug}:'),
     );
   }
 

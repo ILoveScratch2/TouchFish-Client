@@ -1213,7 +1213,8 @@ class _MessageBubbleState extends State<_MessageBubbleContent> with AutomaticKee
       );
     }
 
-    if (media.fileHash != null) {
+    // 本地字节仍在，which means 自己刚发送的图片！
+    if (media.fileHash != null && widget.cachedBytes == null) {
       return _buildRemoteAttachment(media);
     }
     return GestureDetector(
@@ -1309,7 +1310,9 @@ class _MessageBubbleState extends State<_MessageBubbleContent> with AutomaticKee
       );
     }
 
-    if (media.fileHash != null) return _buildRemoteAttachment(media);
+    if (media.fileHash != null && widget.cachedBytes == null) {
+      return _buildRemoteAttachment(media);
+    }
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: ConstrainedBox(
@@ -1337,7 +1340,9 @@ class _MessageBubbleState extends State<_MessageBubbleContent> with AutomaticKee
       );
     }
 
-    if (media.fileHash != null) return _buildRemoteAttachment(media);
+    if (media.fileHash != null && widget.cachedBytes == null) {
+      return _buildRemoteAttachment(media);
+    }
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 300),
       child: AudioPlayer(
