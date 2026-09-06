@@ -7995,6 +7995,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save into the downloads folder; not affected by cache cleanup'**
   String get fileSaveToLocalDescription;
+
+  /// No description provided for @callCalling.
+  ///
+  /// In en, this message translates to:
+  /// **'Calling…'**
+  String get callCalling;
+
+  /// No description provided for @callStartVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Video call'**
+  String get callStartVideo;
+
+  /// No description provided for @callConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get callConnecting;
+
+  /// No description provided for @callIncoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming video call'**
+  String get callIncoming;
+
+  /// No description provided for @callWaitingForPeer.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the peer…'**
+  String get callWaitingForPeer;
+
+  /// No description provided for @callAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get callAccept;
+
+  /// No description provided for @callDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get callDecline;
+
+  /// No description provided for @callMute.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute'**
+  String get callMute;
+
+  /// No description provided for @callUnmute.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute'**
+  String get callUnmute;
+
+  /// No description provided for @callCameraOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera off'**
+  String get callCameraOff;
+
+  /// No description provided for @callCameraOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera on'**
+  String get callCameraOn;
+
+  /// No description provided for @callHangup.
+  ///
+  /// In en, this message translates to:
+  /// **'Hang up'**
+  String get callHangup;
+
+  /// No description provided for @callClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get callClose;
+
+  /// No description provided for @callNoActiveCall.
+  ///
+  /// In en, this message translates to:
+  /// **'No active call'**
+  String get callNoActiveCall;
+
+  /// No description provided for @callEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Call ended'**
+  String get callEnded;
+
+  /// No description provided for @callPeerOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Peer is offline'**
+  String get callPeerOffline;
+
+  /// No description provided for @callPeerBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Peer is in another call'**
+  String get callPeerBusy;
+
+  /// No description provided for @callPeerDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Peer declined the call'**
+  String get callPeerDeclined;
+
+  /// No description provided for @callNoAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'No one answered'**
+  String get callNoAnswer;
+
+  /// No description provided for @callNotFriends.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not friends with this user'**
+  String get callNotFriends;
+
+  /// No description provided for @callServerLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many requests, please try later'**
+  String get callServerLimited;
+
+  /// No description provided for @callInvalidRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid call request'**
+  String get callInvalidRequest;
+
+  /// No description provided for @callConnectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed'**
+  String get callConnectFailed;
+
+  /// No description provided for @callMediaUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera or microphone unavailable'**
+  String get callMediaUnavailable;
+
+  /// No description provided for @callCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Call cancelled'**
+  String get callCancelled;
+
+  /// No description provided for @callEndError.
+  ///
+  /// In en, this message translates to:
+  /// **'Call failed'**
+  String get callEndError;
 }
 
 class _AppLocalizationsDelegate

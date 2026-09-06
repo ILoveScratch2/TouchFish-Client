@@ -33,6 +33,7 @@ import '../screens/group_search_screen.dart';
 import '../screens/group_profile_screen.dart';
 import '../screens/browser_screen.dart';
 import '../screens/browser_history_screen.dart';
+import '../screens/call_screen.dart';
 import '../l10n/app_localizations.dart';
 import '../screens/forward_screen.dart';
 import '../models/message_model.dart';
@@ -79,6 +80,9 @@ class AppRoutes {
   static const String browser = '/browser';
   static const String browserHistory = '/browser/history';
   static const String browserBookmarks = '/browser/bookmarks';
+  static const String call = '/call';
+
+  static String callPath(int peerUid) => '$call/$peerUid';
 
   static const _publicPaths = {
     welcome,
@@ -380,6 +384,22 @@ class AppRoutes {
             GoRoute(
               path: licenses,
               builder: (context, state) => const LicensesScreen(),
+            ),
+            GoRoute(
+              path: '/call/:peerUid',
+              builder: (context, state) {
+                final peerUid = int.tryParse(
+                  state.pathParameters['peerUid'] ?? '',
+                );
+                if (peerUid == null) {
+                  return Scaffold(
+                    body: Center(
+                      child: Text(AppLocalizations.of(context)!.callInvalidRequest),
+                    ),
+                  );
+                }
+                return CallScreen(peerUid: peerUid);
+              },
             ),
             GoRoute(
               path: profileEdit,

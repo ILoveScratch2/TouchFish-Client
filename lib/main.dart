@@ -22,6 +22,7 @@ import 'services/rsa_key_trust_service.dart';
 import 'services/app_notification_service.dart';
 import 'services/chat_data_service.dart';
 import 'services/chat_ws_service.dart';
+import 'services/call_service.dart';
 import 'services/app_update_service.dart';
 import 'services/app_update_flow.dart';
 import 'services/background_permission_service.dart';
@@ -387,6 +388,11 @@ class _TouchFishAppState extends State<TouchFishApp>
     _wasLoggedIn = AuthState.instance.isLoggedIn;
     AuthState.instance.sessionListenable.addListener(_onAuthStateChanged);
     AuthState.instance.addListener(_onAuthNotice);
+    CallService.instance.onOpenCallScreen =
+        (peerUid, {required bool isIncoming}) async {
+      await _router.push(AppRoutes.callPath(peerUid));
+    };
+    CallService.instance.init();
     unawaited(AppNotificationService.instance.initialize(_router));
     BackgroundPermissionService.instance.installNotificationRouteHandler();
     WidgetsBinding.instance.addPostFrameCallback((_) {

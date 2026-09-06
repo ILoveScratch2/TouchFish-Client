@@ -4122,4 +4122,82 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get fileSaveToLocalDescription => '存至下載資料夾，不受緩存清理所限';
+
+  @override
+  String get callCalling => '方呼…';
+
+  @override
+  String get callStartVideo => '視訊通話';
+
+  @override
+  String get callConnecting => '方連…';
+
+  @override
+  String get callIncoming => '來電 · 視訊通話';
+
+  @override
+  String get callWaitingForPeer => '俟彼應…';
+
+  @override
+  String get callAccept => '接之';
+
+  @override
+  String get callDecline => '卻之';
+
+  @override
+  String get callMute => '噤聲';
+
+  @override
+  String get callUnmute => '復聲';
+
+  @override
+  String get callCameraOff => '閉鏡';
+
+  @override
+  String get callCameraOn => '開鏡';
+
+  @override
+  String get callHangup => '掛斷';
+
+  @override
+  String get callClose => '閉';
+
+  @override
+  String get callNoActiveCall => '今無通話';
+
+  @override
+  String get callEnded => '話終';
+
+  @override
+  String get callPeerOffline => '彼等離線';
+
+  @override
+  String get callPeerBusy => '彼方在話中';
+
+  @override
+  String get callPeerDeclined => '彼謝絕此話';
+
+  @override
+  String get callNoAnswer => '彼無回應';
+
+  @override
+  String get callNotFriends => '爾二人非友，不可通話';
+
+  @override
+  String get callServerLimited => '請求過頻，請稍後再試';
+
+  @override
+  String get callInvalidRequest => '通話之請不正';
+
+  @override
+  String get callConnectFailed => '連之不果，請查網絡';
+
+  @override
+  String get callMediaUnavailable => '鏡頭或麥克風不可用';
+
+  @override
+  String get callCancelled => '話已罷矣';
+
+  @override
+  String get callEndError => '通話有異';
 }

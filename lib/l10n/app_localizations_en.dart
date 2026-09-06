@@ -4304,4 +4304,82 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get fileSaveToLocalDescription =>
       'Save into the downloads folder; not affected by cache cleanup';
+
+  @override
+  String get callCalling => 'Calling…';
+
+  @override
+  String get callStartVideo => 'Video call';
+
+  @override
+  String get callConnecting => 'Connecting…';
+
+  @override
+  String get callIncoming => 'Incoming video call';
+
+  @override
+  String get callWaitingForPeer => 'Waiting for the peer…';
+
+  @override
+  String get callAccept => 'Accept';
+
+  @override
+  String get callDecline => 'Decline';
+
+  @override
+  String get callMute => 'Mute';
+
+  @override
+  String get callUnmute => 'Unmute';
+
+  @override
+  String get callCameraOff => 'Camera off';
+
+  @override
+  String get callCameraOn => 'Camera on';
+
+  @override
+  String get callHangup => 'Hang up';
+
+  @override
+  String get callClose => 'Close';
+
+  @override
+  String get callNoActiveCall => 'No active call';
+
+  @override
+  String get callEnded => 'Call ended';
+
+  @override
+  String get callPeerOffline => 'Peer is offline';
+
+  @override
+  String get callPeerBusy => 'Peer is in another call';
+
+  @override
+  String get callPeerDeclined => 'Peer declined the call';
+
+  @override
+  String get callNoAnswer => 'No one answered';
+
+  @override
+  String get callNotFriends => 'You are not friends with this user';
+
+  @override
+  String get callServerLimited => 'Too many requests, please try later';
+
+  @override
+  String get callInvalidRequest => 'Invalid call request';
+
+  @override
+  String get callConnectFailed => 'Connection failed';
+
+  @override
+  String get callMediaUnavailable => 'Camera or microphone unavailable';
+
+  @override
+  String get callCancelled => 'Call cancelled';
+
+  @override
+  String get callEndError => 'Call failed';
 }

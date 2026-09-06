@@ -574,6 +574,18 @@ class ChatWsService extends ChangeNotifier {
     );
   }
 
+  /// 发送任意加密信令包（用于 call.* 等自定义协议）。
+  bool sendEncryptedPacket(Map<String, dynamic> packet) {
+    if (!isAuthenticated) return false;
+    try {
+      _sendEncrypted(jsonEncode(packet));
+      return true;
+    } catch (e) {
+      talker.error('sendEncryptedPacket error', e);
+      return false;
+    }
+  }
+
   void sendTyping(String roomId, bool isTyping) {
     if (!isAuthenticated) return;
     _sendEncrypted(

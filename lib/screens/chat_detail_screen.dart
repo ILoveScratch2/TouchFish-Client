@@ -24,6 +24,7 @@ import '../services/api/tf_api_client.dart';
 import '../services/snackbar_service.dart';
 import '../services/chat_ws_service.dart';
 import '../services/chat_data_service.dart';
+import '../services/call_service.dart';
 import '../services/draft_service.dart';
 import '../services/local_message_store.dart';
 import '../services/message_sync_service.dart';
@@ -894,6 +895,18 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         !message.isDeleted &&
         (message.status == MessageStatus.failed ||
             message.status == MessageStatus.pending);
+  }
+
+  Future<void> _startVideoCall() async {
+    if (_currentRoom?.type != ChatType.direct) return;
+    final uid = int.tryParse(_contactUid.startsWith('U')
+        ? _contactUid.substring(1)
+        : '');
+    if (uid == null) return;
+    final ok = await CallService.instance.startCall(uid);
+    if (ok && mounted) {
+      context.push(AppRoutes.callPath(uid));
+    }
   }
 
   void _deleteLocalMessage(ChatMessage message) {
@@ -2300,6 +2313,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       icon: const Icon(Icons.auto_awesome),
       onPressed: _openEssenceScreen,
     );
+    final callButton = _currentRoom?.type == ChatType.direct
+        ? IconButton(
+            icon: const Icon(Icons.videocam_outlined),
+            tooltip: l10n.callStartVideo,
+            onPressed: _startVideoCall,
+          )
+        : null;
     final settingButton = IconButton(
       icon: const Icon(Icons.more_vert),
       onPressed: () async {
@@ -2319,11 +2339,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       },
     );
     List<IconButton> actiontmp = [];
+    if (callButton != null) actiontmp.add(callButton);
     if (_currentRoom?.type == ChatType.group && _essenceEnabled) {
-      actiontmp = [essenceButton, settingButton];
-    } else {
-      actiontmp = [settingButton];
+      actiontmp.add(essenceButton);
     }
+    actiontmp.add(settingButton);
 
     return Scaffold(
       resizeToAvoidBottomInset: true,

@@ -8,6 +8,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   emoji_picker_flutter
   file_selector_windows
   flutter_inappwebview_windows
+  flutter_webrtc
   irondash_engine_context
   local_auth_windows
   media_kit_libs_windows_video

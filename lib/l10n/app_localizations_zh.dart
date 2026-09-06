@@ -4125,4 +4125,82 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get fileSaveToLocalDescription => '保存到下载文件夹，不受缓存清理影响';
+
+  @override
+  String get callCalling => '正在呼叫…';
+
+  @override
+  String get callStartVideo => '视频通话';
+
+  @override
+  String get callConnecting => '正在连接…';
+
+  @override
+  String get callIncoming => '来电 · 视频通话';
+
+  @override
+  String get callWaitingForPeer => '正在等待对方…';
+
+  @override
+  String get callAccept => '接听';
+
+  @override
+  String get callDecline => '拒绝';
+
+  @override
+  String get callMute => '静音';
+
+  @override
+  String get callUnmute => '取消静音';
+
+  @override
+  String get callCameraOff => '关闭摄像头';
+
+  @override
+  String get callCameraOn => '打开摄像头';
+
+  @override
+  String get callHangup => '挂断';
+
+  @override
+  String get callClose => '关闭';
+
+  @override
+  String get callNoActiveCall => '当前没有通话';
+
+  @override
+  String get callEnded => '通话已结束';
+
+  @override
+  String get callPeerOffline => '对方离线';
+
+  @override
+  String get callPeerBusy => '对方正在通话中';
+
+  @override
+  String get callPeerDeclined => '对方拒绝了通话';
+
+  @override
+  String get callNoAnswer => '对方无应答';
+
+  @override
+  String get callNotFriends => '你们还不是好友，无法通话';
+
+  @override
+  String get callServerLimited => '请求过于频繁，请稍后再试';
+
+  @override
+  String get callInvalidRequest => '通话请求不合法';
+
+  @override
+  String get callConnectFailed => '连接不上，请检查网络后重试';
+
+  @override
+  String get callMediaUnavailable => '摄像头或麦克风不可用';
+
+  @override
+  String get callCancelled => '通话已取消';
+
+  @override
+  String get callEndError => '通话出现异常';
 }
