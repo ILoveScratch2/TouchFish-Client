@@ -28,7 +28,7 @@ class _DataSavingImageState extends State<DataSavingImage> {
   bool _requested = false;
   bool? _cached;
   /// dspark
-  CacheManager? _cacheManager;
+  BaseCacheManager? _cacheManager;
   bool _cacheManagerReady = false;
   ({int? width, int? height})? _cachedDecodeSize;
   ({double? width, double? height})? _lastSize;
@@ -37,7 +37,18 @@ class _DataSavingImageState extends State<DataSavingImage> {
   @override
   void initState() {
     super.initState();
-    FileCacheService.instance.getCacheManager().then((manager) {
+    _initCacheManager();
+    _checkCache();
+  }
+
+  void _initCacheManager() {
+    final service = FileCacheService.instance;
+    if (service.isManagerReady) {
+      _cacheManager = service.cacheManager;
+      _cacheManagerReady = true;
+      return;
+    }
+    service.getCacheManager().then((manager) {
       if (mounted) {
         setState(() {
           _cacheManager = manager;
@@ -45,7 +56,6 @@ class _DataSavingImageState extends State<DataSavingImage> {
         });
       }
     });
-    _checkCache();
   }
 
   @override

@@ -63,7 +63,7 @@ class OptimizedImage extends StatefulWidget {
 
 class _OptimizedImageState extends State<OptimizedImage> {
   /// 磁盘缓存管理器
-  CacheManager? _cacheManager;
+  BaseCacheManager? _cacheManager;
   /// loading loading loading
   bool _cacheManagerReady = false;
   ({int? width, int? height})? _cachedDecodeSize;
@@ -92,7 +92,13 @@ class _OptimizedImageState extends State<OptimizedImage> {
   void _initCacheManager() {
     // 网络图片需要缓存管理器
     if (widget.provider is! NetworkImage) return;
-    FileCacheService.instance.getCacheManager().then((manager) {
+    final service = FileCacheService.instance;
+    if (service.isManagerReady) {
+      _cacheManager = service.cacheManager;
+      _cacheManagerReady = true;
+      return;
+    }
+    service.getCacheManager().then((manager) {
       if (mounted) {
         setState(() {
           _cacheManager = manager;
