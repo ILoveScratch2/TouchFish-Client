@@ -88,6 +88,7 @@ class MessageListView extends StatelessWidget {
     return ListView.builder(
       controller: scrollController,
       reverse: true,
+      cacheExtent: 1200,
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: messages.length,
       itemBuilder: (context, index) {

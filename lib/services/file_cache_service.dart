@@ -19,6 +19,7 @@ bool _isImmutableUrl(String url) => _immutableUrlPattern.hasMatch(url);
 
 class _HashImmutableFileService extends HttpFileService {
   static final Duration _maxAge = const Duration(days: 365);
+  static final Duration _externalMinAge = const Duration(minutes: 30);
 
   @override
   Future<FileServiceResponse> get(
@@ -26,15 +27,16 @@ class _HashImmutableFileService extends HttpFileService {
     Map<String, String>? headers,
   }) async {
     final response = await super.get(url, headers: headers);
-    if (!_isImmutableUrl(url)) return response;
-    return _HashImmutableResponse(response);
+    if (_isImmutableUrl(url)) return _MinAgeResponse(response, _maxAge);
+    return _MinAgeResponse(response, _externalMinAge);
   }
 }
 
-class _HashImmutableResponse implements FileServiceResponse {
-  _HashImmutableResponse(this._inner);
+class _MinAgeResponse implements FileServiceResponse {
+  _MinAgeResponse(this._inner, this._minAge);
 
   final FileServiceResponse _inner;
+  final Duration _minAge;
 
   @override
   int get statusCode => _inner.statusCode;
@@ -46,8 +48,11 @@ class _HashImmutableResponse implements FileServiceResponse {
   int? get contentLength => _inner.contentLength;
 
   @override
-  DateTime get validTill =>
-      DateTime.now().add(_HashImmutableFileService._maxAge);
+  DateTime get validTill {
+    final floor = DateTime.now().add(_minAge);
+    final server = _inner.validTill;
+    return server.isAfter(floor) ? server : floor;
+  }
 
   @override
   String? get eTag => _inner.eTag;
@@ -102,7 +107,10 @@ class FileCacheService {
     _initFuture = () async {
       try {
         final maxObjects = 100000;
-        final manager = CacheManager(
+        // 必须用 ImageCacheManager：普通 CacheManager 会无视
+        // memCacheWidth/memCacheHeight，外链大图按原尺寸解码，
+        // 一张几十 MB 直接把 ImageCache 挤爆，滚动回看疯狂重解
+        final manager = _TouchFishImageCacheManager(
           Config(
             _cacheKey,
             stalePeriod: defaultMaxAge,
@@ -126,6 +134,13 @@ class FileCacheService {
   }
 
   Future<CacheManager?> getCacheManager() => _ensureCacheManager();
+
+  /// 缓存管理器是否已就绪（同步可查）。图片重挂载时用它跳过异步门控，
+  /// 否则每次滚回视口都要先闪一帧 loading 才出图。
+  bool get isManagerReady => _cacheManager != null;
+
+  /// 已就绪时的缓存管理器（配 [isManagerReady] 同步使用）。
+  CacheManager? get cacheManager => _cacheManager;
 
   /// 启动预热：初始化缓存管理器并执行容量检查
   Future<void> warmup() async {
@@ -358,6 +373,11 @@ class FileCacheService {
     }
     return '${(bytes / 1024 / 1024 / 1024).toStringAsFixed(2)} GB';
   }
+}
+
+/// 带缩略图变体缓存的缓存管理器（ImageCacheManager 是 mixin）
+class _TouchFishImageCacheManager extends CacheManager with ImageCacheManager {
+  _TouchFishImageCacheManager(super.config);
 }
 
 /// 缓存统计信息
