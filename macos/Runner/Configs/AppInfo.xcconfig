@@ -8,7 +8,7 @@
 PRODUCT_NAME = touchfish_client
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = ci.us.ilovescratch.touchfish.astra.v3.touchfishClient
+PRODUCT_BUNDLE_IDENTIFIER = ci.us.wyf.touchfishClient
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 ci.us.ilovescratch.touchfish.astra.v3. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 ci.us.wyf. All rights reserved.

@@ -1,4 +1,4 @@
-package ci.us.ilovescratch.touchfish.astra.v3.touchfish_client
+package ci.us.wyf.touchfish_client
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -34,8 +34,8 @@ class BackgroundNotificationService : Service() {
         private const val KEY_LAST_FETCH_MS = "last_fetch_ms"
         private const val POLL_MS = 30_000L
 
-        const val ACTION_START = "ci.us.ilovescratch.touchfish.astra.v3.touchfish_client.START_BACKGROUND"
-        const val ACTION_STOP = "ci.us.ilovescratch.touchfish.astra.v3.touchfish_client.STOP_BACKGROUND"
+        const val ACTION_START = "ci.us.wyf.touchfish_client.START_BACKGROUND"
+        const val ACTION_STOP = "ci.us.wyf.touchfish_client.STOP_BACKGROUND"
         const val REPLY_INPUT_KEY = "touchfish_inline_reply"
         const val EXTRA_ROOM_ID = "room_id"
         const val EXTRA_NOTIFICATION_ID = "notification_id"

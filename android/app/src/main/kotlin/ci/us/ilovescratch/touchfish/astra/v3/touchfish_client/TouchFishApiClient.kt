@@ -1,4 +1,4 @@
-package ci.us.ilovescratch.touchfish.astra.v3.touchfish_client
+package ci.us.wyf.touchfish_client
 
 import android.content.Context
 import android.util.Base64
