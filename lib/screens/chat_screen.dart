@@ -321,11 +321,10 @@ class _ChatListScreenState extends State<ChatListScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (widget.isAside) {
-      return _buildAsideView(context);
-    }
-
-    return _buildFullScreenView(context);
+    final content = widget.isAside
+        ? _buildAsideView(context)
+        : _buildFullScreenView(context);
+    return ensureProviderScope(context, content);
   }
 
   Widget _buildAsideView(BuildContext context) {

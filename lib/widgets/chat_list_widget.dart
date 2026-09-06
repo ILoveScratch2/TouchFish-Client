@@ -7,10 +7,32 @@ import '../l10n/app_localizations.dart';
 import '../providers/chat/message_provider.dart';
 import 'optimized_image.dart';
 
-class ChatListWidget extends ConsumerWidget {
+/// 测试或独立嵌入时可能没有祖先 ProviderScope（应用本体由 main.dart 提供），
+/// 缺了就自动补一层，保证 Consumer 后代（未读角标等）可用。
+Widget ensureProviderScope(BuildContext context, Widget child) {
+  try {
+    ProviderScope.containerOf(context, listen: false);
+    return child;
+  } on StateError {
+    return ProviderScope(child: child);
+  }
+}
+
+class ChatListWidget extends StatelessWidget {
   final List<ChatRoom> chatRooms;
 
   const ChatListWidget({super.key, required this.chatRooms});
+
+  @override
+  Widget build(BuildContext context) {
+    return ensureProviderScope(context, _ChatListContent(chatRooms: chatRooms));
+  }
+}
+
+class _ChatListContent extends ConsumerWidget {
+  final List<ChatRoom> chatRooms;
+
+  const _ChatListContent({required this.chatRooms});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
