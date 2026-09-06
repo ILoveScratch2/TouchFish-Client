@@ -237,6 +237,24 @@ class ChatMessage {
 
   static bool _sameMedia(MessageMedia? a, MessageMedia? b) {
     if (a == null || b == null) return a == b;
+    
+    // 如果 bytes 都存在且相同，那么 fileHash 和 path 的变化不影响渲染
+    // （pending→uploaded 时保持渲染一致性，避免气泡重建）
+    final aBytes = a.bytes;
+    final bBytes = b.bytes;
+    if (aBytes != null && bBytes != null) {
+      final bytesMatch = identical(aBytes, bBytes) || 
+                        _sameIntList(aBytes, bBytes);
+      if (bytesMatch) {
+        // bytes 相同时，只比较渲染相关字段（fileName/fileSize/mimeType/aspectRatio）
+        return a.fileName == b.fileName &&
+               a.fileSize == b.fileSize &&
+               a.mimeType == b.mimeType &&
+               a.aspectRatio == b.aspectRatio;
+      }
+    }
+    
+    // bytes 不同或不存在时，比较所有字段
     if (a.path != b.path ||
         a.fileName != b.fileName ||
         a.fileSize != b.fileSize ||
@@ -245,8 +263,8 @@ class ChatMessage {
         a.fileHash != b.fileHash) {
       return false;
     }
-    return identical(a.bytes, b.bytes) ||
-        (a.bytes != null && b.bytes != null && _sameIntList(a.bytes!, b.bytes!));
+    return identical(aBytes, bBytes) ||
+        (aBytes != null && bBytes != null && _sameIntList(aBytes, bBytes));
   }
 
   ChatMessage copyWith({
