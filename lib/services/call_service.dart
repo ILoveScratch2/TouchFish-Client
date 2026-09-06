@@ -11,7 +11,7 @@ import 'rtc_peer.dart';
 
 /// 视频通话信令 + 状态机。
 ///
-/// 服务端只做信令中继，媒��?（RTC）走 P2P。本服务监听
+/// 服务端只做信令中继，媒体�?（RTC）走 P2P。本服务监听
 /// [ChatWsService] 的加密信令流，处理呼叫 / 应答 / ICE / 挂断状态迁移。
 class CallService extends ChangeNotifier {
   CallService._();

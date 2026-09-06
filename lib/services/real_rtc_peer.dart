@@ -5,6 +5,23 @@ import 'package:flutter/widgets.dart';
 
 import 'rtc_peer.dart';
 
+/// 依据枚举出的设备与用户是否要视频，决定 getUserMedia 该请求哪些媒体。
+///
+/// Windows 原生 GetUserAudio 在 `audio:true` 且无任何录音设备时越界崩溃，
+/// 因此必须仅在确有对应输入设备时才请求，绝不能盲传 `audio:true`。
+@visibleForTesting
+({bool audio, bool video}) resolveMediaAvailability(
+  Iterable<String> deviceKinds, {
+  required bool videoRequested,
+}) {
+  final hasMic = deviceKinds.contains('audioinput');
+  final hasCamera = deviceKinds.contains('videoinput');
+  return (
+    audio: hasMic,
+    video: videoRequested && hasCamera,
+  );
+}
+
 /// 基于 flutter_webrtc 的真实通话会话。
 class RealRtcPeer implements RtcPeer {
   final rtc.RTCPeerConnection _pc;
@@ -60,14 +77,32 @@ class RealRtcPeer implements RtcPeer {
     rtc.RTCFactory? factory,
   }) async {
     final navigator = factory?.navigator ?? rtc.navigator;
+
+    // 探测真实可用的输入设备。Windows 原生 GetUserAudio 在 `audio:true` 且
+    // RecordingDevices() 为 0 时会越界读索引 0，直接段错误崩掉整个 App，
+    // 触达不到 Dart 的 catch。这里先用无副作用的 enumerateDevices 安全探测，
+    // 只在确实存在输入设备时才请求对应媒体，从根上避免原生崩溃。
+    var audioAvailable = true;
+    var videoAvailable = videoEnabled;
+    try {
+      final devices = await navigator.mediaDevices.enumerateDevices();
+      final availability =
+          resolveMediaAvailability(devices.map((d) => d.kind ?? ''),
+              videoRequested: videoEnabled);
+      audioAvailable = availability.audio;
+      videoAvailable = availability.video;
+    } catch (_) {
+      // 枚举失败属异常情况：退回全请求，与旧行为一致。
+    }
+
     final stream = await navigator.mediaDevices.getUserMedia({
-      'audio': true,
-      'video': videoEnabled,
+      'audio': audioAvailable,
+      'video': videoAvailable,
     });
     final pc = await (factory == null
         ? rtc.createPeerConnection({'iceServers': iceServers})
         : factory.createPeerConnection({'iceServers': iceServers}));
-    final peer = RealRtcPeer._(pc, stream, videoEnabled);
+    final peer = RealRtcPeer._(pc, stream, videoAvailable);
     await peer._localRenderer.initialize();
     peer._localRenderer.srcObject = stream;
     await peer._remoteRenderer.initialize();
