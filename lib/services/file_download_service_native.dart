@@ -4,6 +4,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../providers/task/task_manager_provider.dart';
+import 'file_service.dart';
 import 'file_download_result.dart';
 
 typedef DownloadFetcher = Future<http.Response> Function(Uri uri);
@@ -49,7 +51,11 @@ Future<FileDownloadResult> downloadAndSaveFile({
   );
 }
 
-Future<FileDownloadResult> downloadFile(String url, String fileName) async {
+Future<FileDownloadResult> downloadFile(
+  String url,
+  String fileName, {
+  TaskManager? taskManager,
+}) async {
   if (!Platform.isWindows && !Platform.isLinux && !Platform.isMacOS) {
     return downloadAndSaveFile(
       url: url,
@@ -68,6 +74,34 @@ Future<FileDownloadResult> downloadFile(String url, String fileName) async {
   if (destination == null) {
     return const FileDownloadResult(FileDownloadStatus.cancelled);
   }
+
+  // Use FileService with progress if taskManager is provided
+  if (taskManager != null) {
+    try {
+      final outcome = await FileService.instance.downloadFile(
+        url: url,
+        fileName: fileName,
+        savePath: destination,
+        taskManager: taskManager,
+      );
+      if (outcome.savedPath != null) {
+        return FileDownloadResult(
+          FileDownloadStatus.succeeded,
+          savedPath: outcome.savedPath,
+          taskId: outcome.taskId,
+        );
+      } else {
+        return FileDownloadResult(
+          FileDownloadStatus.failed,
+          taskId: outcome.taskId,
+        );
+      }
+    } catch (_) {
+      return const FileDownloadResult(FileDownloadStatus.failed);
+    }
+  }
+
+  // Fallback to old method without progress
   final response = await http.get(
     Uri.parse(url),
   ).timeout(const Duration(minutes: 2));

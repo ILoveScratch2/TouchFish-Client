@@ -2024,6 +2024,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fileDownloadFailed => 'Download failed';
 
   @override
+  String get taskSheetTitle => 'Transfer tasks';
+
+  @override
+  String get taskNoTasks => 'No tasks yet';
+
+  @override
+  String taskTotalCount(int count) {
+    return '($count tasks in total)';
+  }
+
+  @override
+  String get taskClearFinished => 'Clear finished';
+
+  @override
+  String get taskClearAll => 'Clear all';
+
+  @override
+  String get taskStatusPreparing => 'Preparing';
+
+  @override
+  String get taskStatusUploading => 'Uploading';
+
+  @override
+  String get taskStatusDownloading => 'Downloading';
+
+  @override
+  String get taskStatusCompleted => 'Completed';
+
+  @override
+  String get taskStatusFailed => 'Failed';
+
+  @override
+  String taskMoreCount(int count) {
+    return '+$count more';
+  }
+
+  @override
+  String chatUploadingProgress(String percent) {
+    return 'Uploading $percent';
+  }
+
+  @override
+  String get chatInstantUploadProgress => 'Checking instant upload...';
+
+  @override
   String get forumAttachments => 'Attachments';
 
   @override

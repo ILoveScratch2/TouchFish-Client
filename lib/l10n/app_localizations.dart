@@ -3820,6 +3820,84 @@ abstract class AppLocalizations {
   /// **'Download failed'**
   String get fileDownloadFailed;
 
+  /// No description provided for @taskSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer tasks'**
+  String get taskSheetTitle;
+
+  /// No description provided for @taskNoTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks yet'**
+  String get taskNoTasks;
+
+  /// No description provided for @taskTotalCount.
+  ///
+  /// In en, this message translates to:
+  /// **'({count} tasks in total)'**
+  String taskTotalCount(int count);
+
+  /// No description provided for @taskClearFinished.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear finished'**
+  String get taskClearFinished;
+
+  /// No description provided for @taskClearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get taskClearAll;
+
+  /// No description provided for @taskStatusPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing'**
+  String get taskStatusPreparing;
+
+  /// No description provided for @taskStatusUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading'**
+  String get taskStatusUploading;
+
+  /// No description provided for @taskStatusDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading'**
+  String get taskStatusDownloading;
+
+  /// No description provided for @taskStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get taskStatusCompleted;
+
+  /// No description provided for @taskStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get taskStatusFailed;
+
+  /// No description provided for @taskMoreCount.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String taskMoreCount(int count);
+
+  /// No description provided for @chatUploadingProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading {percent}'**
+  String chatUploadingProgress(String percent);
+
+  /// Progress message when checking if file can be instantly uploaded
+  ///
+  /// In en, this message translates to:
+  /// **'Checking instant upload...'**
+  String get chatInstantUploadProgress;
+
   /// No description provided for @forumAttachments.
   ///
   /// In en, this message translates to:

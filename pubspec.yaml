@@ -92,6 +92,8 @@ dependencies:
   flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.6.1
   flutter_webrtc: ^1.6.1
+  dio: ^5.7.0
+  crypto: ^3.0.6
 
 dev_dependencies:
   flutter_test:

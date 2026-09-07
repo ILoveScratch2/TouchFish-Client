@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -21,6 +20,7 @@ import '../l10n/app_localizations.dart';
 import '../widgets/mention_text_field.dart';
 import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
+import '../services/file_service.dart';
 import '../services/snackbar_service.dart';
 import '../services/chat_ws_service.dart';
 import '../services/chat_data_service.dart';
@@ -41,6 +41,7 @@ import '../widgets/typing_indicator.dart';
 import '../providers/chat/message_provider.dart';
 import '../providers/chat/chat_room_state_provider.dart';
 import '../providers/chat/image_gallery_provider.dart';
+import '../providers/task/task_manager_provider.dart';
 
 class ChatDetailScreen extends ConsumerStatefulWidget {
   final String roomId;
@@ -1494,14 +1495,17 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _scrollToBottom();
 
     try {
-      final fileBase64 = base64.encode(bytes);
-      final response = await TfApiClient.instance.uploadFile(
-        uid,
-        password,
-        fileName,
-        fileBase64,
+      final taskManager = ref.read(taskManagerProvider.notifier);
+      final hash = await FileService.instance.uploadFile(
+        uid: uid,
+        password: password,
+        fileName: fileName,
+        bytes: bytes,
+        filePath: kIsWeb ? null : filePath,
+        clientMid: clientMid,
+        roomId: _contactUid,
+        taskManager: taskManager,
       );
-      final hash = response?['hash'] as String?;
       if (hash == null) {
         _updateMessageStatus(clientMid, status: MessageStatus.failed);
         return;

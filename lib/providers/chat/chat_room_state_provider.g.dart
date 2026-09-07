@@ -36,22 +36,22 @@ abstract class _$ChatRoomState
   ChatRoomUiState build(String roomId);
 }
 
-/// 聊天室 UI 状态（滚动位置、回复/转发、选择模式等瞬态）
+/// Status of Liberty
 ///
 /// Copied from [ChatRoomState].
 @ProviderFor(ChatRoomState)
 const chatRoomStateProvider = ChatRoomStateFamily();
 
-/// 聊天室 UI 状态（滚动位置、回复/转发、选择模式等瞬态）
+/// Status of Liberty
 ///
 /// Copied from [ChatRoomState].
 class ChatRoomStateFamily extends Family<ChatRoomUiState> {
-  /// 聊天室 UI 状态（滚动位置、回复/转发、选择模式等瞬态）
+  /// Status of Liberty
   ///
   /// Copied from [ChatRoomState].
   const ChatRoomStateFamily();
 
-  /// 聊天室 UI 状态（滚动位置、回复/转发、选择模式等瞬态）
+  /// Status of Liberty
   ///
   /// Copied from [ChatRoomState].
   ChatRoomStateProvider call(String roomId) {
@@ -80,12 +80,12 @@ class ChatRoomStateFamily extends Family<ChatRoomUiState> {
   String? get name => r'chatRoomStateProvider';
 }
 
-/// 聊天室 UI 状态（滚动位置、回复/转发、选择模式等瞬态）
+/// Status of Liberty
 ///
 /// Copied from [ChatRoomState].
 class ChatRoomStateProvider
     extends AutoDisposeNotifierProviderImpl<ChatRoomState, ChatRoomUiState> {
-  /// 聊天室 UI 状态（滚动位置、回复/转发、选择模式等瞬态）
+  /// Status of Liberty
   ///
   /// Copied from [ChatRoomState].
   ChatRoomStateProvider(String roomId)

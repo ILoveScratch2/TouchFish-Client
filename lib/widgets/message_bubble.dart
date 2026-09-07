@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'data_saving_image.dart';
 import 'optimized_image.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -22,6 +23,8 @@ import '../models/file_attachment.dart';
 import 'file_attachment_view.dart';
 import '../services/auth_state.dart';
 import '../services/snackbar_service.dart';
+import '../providers/task/task_manager_provider.dart';
+import '../models/file_task.dart';
 import 'sheet_scaffold.dart';
 import 'sticker_text_renderer.dart';
 
@@ -932,8 +935,9 @@ class _MessageBubbleState extends State<_MessageBubbleContent> with AutomaticKee
       MessageType.file => _buildFileMessage(context, colorScheme, textTheme),
       MessageType.text => _buildTextMessage(context, colorScheme, textTheme),
     };
+    final contentWithProgress = _wrapWithUploadProgress(content);
     final quote = widget.message.quotePreview ?? widget.message.forwardPreview;
-    if (quote == null) return content;
+    if (quote == null) return contentWithProgress;
     final isForward = widget.message.forwardPreview != null;
     return Column(
       crossAxisAlignment: widget.message.isMe
@@ -949,7 +953,30 @@ class _MessageBubbleState extends State<_MessageBubbleContent> with AutomaticKee
             textColor: textColor,
           ),
         ),
+        contentWithProgress,
+      ],
+    );
+  }
+
+  /// 若该消息是"自己正在上传"的 pending 消息，则叠加上传进度遮罩。
+  Widget _wrapWithUploadProgress(Widget content) {
+    final message = widget.message;
+    // 只有自己发送、处于 pending 且带附件的消息才可能正在上传。
+    if (!message.isMe || message.status != MessageStatus.pending) {
+      return content;
+    }
+    if (message.media == null) return content;
+    final clientMid = message.clientMid;
+    if (clientMid == null) return content;
+
+    return Stack(
+      children: [
         content,
+        Positioned.fill(
+          child: IgnorePointer(
+            child: _UploadProgressOverlay(clientMid: clientMid),
+          ),
+        ),
       ],
     );
   }
@@ -1383,6 +1410,110 @@ class _MessageBubbleState extends State<_MessageBubbleContent> with AutomaticKee
         bytes: widget.cachedBytes,
         galleryItems: widget.galleryItems,
         galleryIndex: widget.galleryIndex,
+      ),
+    );
+  }
+}
+
+class _UploadProgressOverlay extends ConsumerWidget {
+  final String clientMid;
+
+  const _UploadProgressOverlay({required this.clientMid});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final task = ref.watch(
+      taskManagerProvider.select((tasks) {
+        for (final t in tasks) {
+          if (t.clientMid == clientMid) return t;
+        }
+        return null;
+      }),
+    );
+
+    if (task == null ||
+        (task.status != FileTaskStatus.preparing &&
+            task.status != FileTaskStatus.transferring)) {
+      return const SizedBox.shrink();
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final progress = task.progress;
+    final isInstantUpload = task.status == FileTaskStatus.preparing && 
+                            progress == null;
+
+    return Container(
+      // 柔和半透明遮罩，更优雅的视觉效果
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            colorScheme.surface.withValues(alpha: 0.0),
+            colorScheme.surface.withValues(alpha: 0.92),
+          ],
+          stops: const [0.3, 1.0],
+        ),
+      ),
+      alignment: Alignment.bottomCenter,
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox.square(
+                dimension: 14,
+                child: Theme(
+                  data: Theme.of(context).copyWith(
+                    progressIndicatorTheme: const ProgressIndicatorThemeData(
+                      circularTrackPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  child: CircularProgressIndicator(
+                    value: progress,
+                    strokeWidth: 2,
+                    color: isInstantUpload 
+                        ? colorScheme.tertiary
+                        : colorScheme.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  isInstantUpload
+                      ? l10n.chatInstantUploadProgress
+                      : l10n.chatUploadingProgress(task.progressLabel),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          if (progress != null && progress > 0) ...[
+            const SizedBox(height: 6),
+            SizedBox(
+              width: 180,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 3,
+                  color: colorScheme.primary,
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

@@ -3,12 +3,14 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../services/browser_service.dart'; // 现在我们用内置浏览器看了
 import '../l10n/app_localizations.dart';
 import '../models/file_attachment.dart';
 import '../models/settings_service.dart';
+import '../providers/task/task_manager_provider.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/file_download_service.dart';
 import '../services/snackbar_service.dart';
@@ -20,7 +22,7 @@ import 'media/video_viewer.dart';
 import 'optimized_image.dart';
 import 'sheet_scaffold.dart';
 
-class FileAttachmentView extends StatefulWidget {
+class FileAttachmentView extends ConsumerStatefulWidget {
   final FileAttachment attachment;
   final String? sourceUrl;
   final Uint8List? bytes;
@@ -43,7 +45,7 @@ class FileAttachmentView extends StatefulWidget {
   });
 
   @override
-  State<FileAttachmentView> createState() => _FileAttachmentViewState();
+  ConsumerState<FileAttachmentView> createState() => _FileAttachmentViewState();
 }
 
 bool shouldAutomaticallyPreviewFile({
@@ -58,9 +60,12 @@ bool shouldAutomaticallyPreviewFile({
       size <= limitMiB * 1024 * 1024;
 }
 
-class _FileAttachmentViewState extends State<FileAttachmentView> {
+class _FileAttachmentViewState extends ConsumerState<FileAttachmentView> {
   bool _previewRequested = false;
   bool _downloading = false;
+
+  /// 当前正在进行的下载任务 ID（用于行内显示真实进度）。
+  String? _activeTaskId;
   late FileAttachment _attachment;
   late Future<String> _urlFuture;
 
@@ -123,8 +128,13 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
     final l10n = AppLocalizations.of(context)!;
     setState(() => _downloading = true);
     try {
-      final result = await downloadFile(await _url(), _attachment.fileName);
+      final result = await downloadFile(
+        await _url(),
+        _attachment.fileName,
+        taskManager: ref.read(taskManagerProvider.notifier),
+      );
       if (!mounted) return;
+      _activeTaskId = result.taskId;
       if (result.cancelled) return;
       TouchFishSnackbarService.instance.show(
         result.succeeded
@@ -247,6 +257,21 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
     }
 
     final l10n = AppLocalizations.of(context)!;
+
+    // 行内下载真实进度：任务完成前 `_downloading` 一直为真，圆环数值随
+    // taskManager 刷新；web/stub 无任务（_activeTaskId 为 null）时回退小转圈。
+    double? downloadProgress;
+    if (_downloading && _activeTaskId != null) {
+      final tasks = ref.watch(taskManagerProvider);
+      for (final t in tasks) {
+        if (t.id == _activeTaskId) {
+          final p = t.progress;
+          downloadProgress = p?.clamp(0.0, 1.0);
+          break;
+        }
+      }
+    }
+
     return Material(
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(8),
@@ -284,15 +309,52 @@ class _FileAttachmentViewState extends State<FileAttachmentView> {
               onPressed: _downloading ? null : _download,
               onLongPress: _downloading ? null : _showDownloadOptions,
               icon: _downloading
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
+                  ? _DownloadingIndicator(progress: downloadProgress)
                   : const Icon(Symbols.download),
               tooltip: _downloading ? l10n.fileDownloading : l10n.fileDownload,
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 下载行尾图标：有确定进度时显示带整数百分比的小圆环，否则转圈。
+class _DownloadingIndicator extends StatelessWidget {
+  final double? progress;
+
+  const _DownloadingIndicator({this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    if (progress == null) {
+      return const SizedBox.square(
+        dimension: 18,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    final scheme = Theme.of(context).colorScheme;
+    return SizedBox.square(
+      dimension: 26,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          CircularProgressIndicator(
+            value: progress!.clamp(0.0, 1.0),
+            strokeWidth: 2.5,
+            valueColor: AlwaysStoppedAnimation<Color>(scheme.primary),
+            backgroundColor: scheme.surfaceContainerHighest,
+          ),
+          Text(
+            '${(progress! * 100).round()}',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
       ),
     );
   }

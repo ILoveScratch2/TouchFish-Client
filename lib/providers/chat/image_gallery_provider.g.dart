@@ -6,7 +6,7 @@ part of 'image_gallery_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$imageGalleryHash() => r'ebd538cabbd4e9e8a6b9a5785769e4ea631bf61d';
+String _$imageGalleryHash() => r'5355f82aa62f36219959980148c1956d0ccd2123';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -38,20 +38,32 @@ abstract class _$ImageGallery
 
 /// 图片画廊
 ///
+/// 只收录图片消息（image 类型或 image/* 的 file），按时间序排列。直接 watch imageMessagesProvider，消息列表变化时
+/// 自动重建!
+///
 /// Copied from [ImageGallery].
 @ProviderFor(ImageGallery)
 const imageGalleryProvider = ImageGalleryFamily();
 
 /// 图片画廊
 ///
+/// 只收录图片消息（image 类型或 image/* 的 file），按时间序排列。直接 watch imageMessagesProvider，消息列表变化时
+/// 自动重建!
+///
 /// Copied from [ImageGallery].
 class ImageGalleryFamily extends Family<ImageGalleryState> {
   /// 图片画廊
+  ///
+  /// 只收录图片消息（image 类型或 image/* 的 file），按时间序排列。直接 watch imageMessagesProvider，消息列表变化时
+  /// 自动重建!
   ///
   /// Copied from [ImageGallery].
   const ImageGalleryFamily();
 
   /// 图片画廊
+  ///
+  /// 只收录图片消息（image 类型或 image/* 的 file），按时间序排列。直接 watch imageMessagesProvider，消息列表变化时
+  /// 自动重建!
   ///
   /// Copied from [ImageGallery].
   ImageGalleryProvider call(String roomId) {
@@ -82,10 +94,16 @@ class ImageGalleryFamily extends Family<ImageGalleryState> {
 
 /// 图片画廊
 ///
+/// 只收录图片消息（image 类型或 image/* 的 file），按时间序排列。直接 watch imageMessagesProvider，消息列表变化时
+/// 自动重建!
+///
 /// Copied from [ImageGallery].
 class ImageGalleryProvider
     extends AutoDisposeNotifierProviderImpl<ImageGallery, ImageGalleryState> {
   /// 图片画廊
+  ///
+  /// 只收录图片消息（image 类型或 image/* 的 file），按时间序排列。直接 watch imageMessagesProvider，消息列表变化时
+  /// 自动重建!
   ///
   /// Copied from [ImageGallery].
   ImageGalleryProvider(String roomId)

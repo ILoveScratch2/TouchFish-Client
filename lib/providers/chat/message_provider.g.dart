@@ -29,38 +29,30 @@ class _SystemHash {
   }
 }
 
-/// 房间未读消息数（来自 ChatDataService 房间列表的服务端角标语义：
-/// 在聊天列表收到新消息时累计、进入房间时清零）。
+/// 房间未读消息数
 ///
-/// 不要用 `messages.where((m) => !m.isMe).length` 推导——那是对方消息总数，
-/// 不等于未读数。CDS 是唯一真相源，这里只做透传。
+/// TMD 不是 `messages.where((m) => !m.isMe).length` 好吗？dsv4f 拉完了
 ///
 /// Copied from [unreadCount].
 @ProviderFor(unreadCount)
 const unreadCountProvider = UnreadCountFamily();
 
-/// 房间未读消息数（来自 ChatDataService 房间列表的服务端角标语义：
-/// 在聊天列表收到新消息时累计、进入房间时清零）。
+/// 房间未读消息数
 ///
-/// 不要用 `messages.where((m) => !m.isMe).length` 推导——那是对方消息总数，
-/// 不等于未读数。CDS 是唯一真相源，这里只做透传。
+/// TMD 不是 `messages.where((m) => !m.isMe).length` 好吗？dsv4f 拉完了
 ///
 /// Copied from [unreadCount].
 class UnreadCountFamily extends Family<int> {
-  /// 房间未读消息数（来自 ChatDataService 房间列表的服务端角标语义：
-  /// 在聊天列表收到新消息时累计、进入房间时清零）。
+  /// 房间未读消息数
   ///
-  /// 不要用 `messages.where((m) => !m.isMe).length` 推导——那是对方消息总数，
-  /// 不等于未读数。CDS 是唯一真相源，这里只做透传。
+  /// TMD 不是 `messages.where((m) => !m.isMe).length` 好吗？dsv4f 拉完了
   ///
   /// Copied from [unreadCount].
   const UnreadCountFamily();
 
-  /// 房间未读消息数（来自 ChatDataService 房间列表的服务端角标语义：
-  /// 在聊天列表收到新消息时累计、进入房间时清零）。
+  /// 房间未读消息数
   ///
-  /// 不要用 `messages.where((m) => !m.isMe).length` 推导——那是对方消息总数，
-  /// 不等于未读数。CDS 是唯一真相源，这里只做透传。
+  /// TMD 不是 `messages.where((m) => !m.isMe).length` 好吗？dsv4f 拉完了
   ///
   /// Copied from [unreadCount].
   UnreadCountProvider call(String roomId) {
@@ -89,19 +81,15 @@ class UnreadCountFamily extends Family<int> {
   String? get name => r'unreadCountProvider';
 }
 
-/// 房间未读消息数（来自 ChatDataService 房间列表的服务端角标语义：
-/// 在聊天列表收到新消息时累计、进入房间时清零）。
+/// 房间未读消息数
 ///
-/// 不要用 `messages.where((m) => !m.isMe).length` 推导——那是对方消息总数，
-/// 不等于未读数。CDS 是唯一真相源，这里只做透传。
+/// TMD 不是 `messages.where((m) => !m.isMe).length` 好吗？dsv4f 拉完了
 ///
 /// Copied from [unreadCount].
 class UnreadCountProvider extends AutoDisposeProvider<int> {
-  /// 房间未读消息数（来自 ChatDataService 房间列表的服务端角标语义：
-  /// 在聊天列表收到新消息时累计、进入房间时清零）。
+  /// 房间未读消息数
   ///
-  /// 不要用 `messages.where((m) => !m.isMe).length` 推导——那是对方消息总数，
-  /// 不等于未读数。CDS 是唯一真相源，这里只做透传。
+  /// TMD 不是 `messages.where((m) => !m.isMe).length` 好吗？dsv4f 拉完了
   ///
   /// Copied from [unreadCount].
   UnreadCountProvider(String roomId)
@@ -299,7 +287,7 @@ class _ImageMessagesProviderElement
   String get roomId => (origin as ImageMessagesProvider).roomId;
 }
 
-String _$roomMessagesHash() => r'd2a4baa24862ce68bdd4ae7077a3e2db60a361a1';
+String _$roomMessagesHash() => r'0f4cf27ce9652ff36147ec9bce6fc7afb670386d';
 
 abstract class _$RoomMessages
     extends BuildlessAutoDisposeNotifier<List<ChatMessage>> {
@@ -308,22 +296,30 @@ abstract class _$RoomMessages
   List<ChatMessage> build(String roomId);
 }
 
-/// 单个房间的消息列表
+/// 单房间 消息列表
+///
+/// 我们只听 CDS 的，这个叫缓存先生！
 ///
 /// Copied from [RoomMessages].
 @ProviderFor(RoomMessages)
 const roomMessagesProvider = RoomMessagesFamily();
 
-/// 单个房间的消息列表
+/// 单房间 消息列表
+///
+/// 我们只听 CDS 的，这个叫缓存先生！
 ///
 /// Copied from [RoomMessages].
 class RoomMessagesFamily extends Family<List<ChatMessage>> {
-  /// 单个房间的消息列表
+  /// 单房间 消息列表
+  ///
+  /// 我们只听 CDS 的，这个叫缓存先生！
   ///
   /// Copied from [RoomMessages].
   const RoomMessagesFamily();
 
-  /// 单个房间的消息列表
+  /// 单房间 消息列表
+  ///
+  /// 我们只听 CDS 的，这个叫缓存先生！
   ///
   /// Copied from [RoomMessages].
   RoomMessagesProvider call(String roomId) {
@@ -352,12 +348,16 @@ class RoomMessagesFamily extends Family<List<ChatMessage>> {
   String? get name => r'roomMessagesProvider';
 }
 
-/// 单个房间的消息列表
+/// 单房间 消息列表
+///
+/// 我们只听 CDS 的，这个叫缓存先生！
 ///
 /// Copied from [RoomMessages].
 class RoomMessagesProvider
     extends AutoDisposeNotifierProviderImpl<RoomMessages, List<ChatMessage>> {
-  /// 单个房间的消息列表
+  /// 单房间 消息列表
+  ///
+  /// 我们只听 CDS 的，这个叫缓存先生！
   ///
   /// Copied from [RoomMessages].
   RoomMessagesProvider(String roomId)

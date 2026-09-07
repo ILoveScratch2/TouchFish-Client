@@ -1933,6 +1933,51 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fileDownloadFailed => '下载失败';
 
   @override
+  String get taskSheetTitle => '传输任务';
+
+  @override
+  String get taskNoTasks => '暂无任务';
+
+  @override
+  String taskTotalCount(int count) {
+    return '共 $count 项';
+  }
+
+  @override
+  String get taskClearFinished => '清除已完成';
+
+  @override
+  String get taskClearAll => '清空全部';
+
+  @override
+  String get taskStatusPreparing => '准备中';
+
+  @override
+  String get taskStatusUploading => '上传中';
+
+  @override
+  String get taskStatusDownloading => '下载中';
+
+  @override
+  String get taskStatusCompleted => '已完成';
+
+  @override
+  String get taskStatusFailed => '失败';
+
+  @override
+  String taskMoreCount(int count) {
+    return '另有 $count 项';
+  }
+
+  @override
+  String chatUploadingProgress(String percent) {
+    return '上传中 $percent';
+  }
+
+  @override
+  String get chatInstantUploadProgress => '秒传检查中...';
+
+  @override
   String get forumAttachments => '附件';
 
   @override

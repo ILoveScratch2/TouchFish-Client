@@ -44,6 +44,7 @@ import 'widgets/notification_overlay.dart';
 import 'widgets/custom_title_bar.dart';
 import 'widgets/server_connection_banner.dart';
 import 'widgets/snackbar_overlay.dart';
+import 'widgets/task_overlay.dart';
 import 'utils/web_splash_stub.dart'
     if (dart.library.js) 'utils/web_splash_web.dart';
 
@@ -910,6 +911,15 @@ class _TouchFishAppState extends State<TouchFishApp>
               context,
               child ?? const SizedBox.shrink(),
             );
+            final contentWithTasks = Stack(
+              children: [
+                content,
+                TaskOverlay(
+                  navigatorContextProvider: () =>
+                      _router.routerDelegate.navigatorKey.currentContext,
+                ),
+              ],
+            );
             if (hasBackgroundImage && !kIsWeb) {
               return MediaQuery(
                 data: MediaQuery.of(
@@ -932,7 +942,7 @@ class _TouchFishAppState extends State<TouchFishApp>
                             fit: BoxFit.cover,
                           ),
                         ),
-                        child: content,
+                        child: contentWithTasks,
                       ),
                     ),
                   ),
@@ -945,7 +955,7 @@ class _TouchFishAppState extends State<TouchFishApp>
                 context,
               ).copyWith(disableAnimations: !animationsEnabled),
               child: TouchFishSnackbarOverlay(
-                child: _buildSavedSessionRestoreOverlay(context, content),
+                child: _buildSavedSessionRestoreOverlay(context, contentWithTasks),
               ),
             );
           },

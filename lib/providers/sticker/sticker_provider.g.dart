@@ -8,7 +8,7 @@ part of 'sticker_provider.dart';
 
 String _$myStickerPacksHash() => r'7db3690ff6930d6fa2062ad82064a2525f74c26d';
 
-/// 用户拥有的 Sticker 包
+/// UserSticker.exe
 ///
 /// Copied from [MyStickerPacks].
 @ProviderFor(MyStickerPacks)
@@ -29,7 +29,7 @@ final myStickerPacksProvider =
 typedef _$MyStickerPacks = AutoDisposeAsyncNotifier<List<OwnedStickerPack>>;
 String _$recentStickersHash() => r'5e265be1bd78baf8a417bcd116e208d8e348ffcd';
 
-/// 最近使用的 Sticker（本地持久化）
+/// RECENT STICKERS PLEASE
 ///
 /// Copied from [RecentStickers].
 @ProviderFor(RecentStickers)

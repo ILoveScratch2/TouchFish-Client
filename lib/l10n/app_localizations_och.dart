@@ -1932,6 +1932,51 @@ class AppLocalizationsOch extends AppLocalizations {
   String get fileDownloadFailed => '下載未成';
 
   @override
+  String get taskSheetTitle => '傳輸之事';
+
+  @override
+  String get taskNoTasks => '今無任務';
+
+  @override
+  String taskTotalCount(int count) {
+    return '凡 $count 項';
+  }
+
+  @override
+  String get taskClearFinished => '清除既成者';
+
+  @override
+  String get taskClearAll => '盡清諸務';
+
+  @override
+  String get taskStatusPreparing => '備之';
+
+  @override
+  String get taskStatusUploading => '上傳中';
+
+  @override
+  String get taskStatusDownloading => '下載中';
+
+  @override
+  String get taskStatusCompleted => '已成';
+
+  @override
+  String get taskStatusFailed => '敗矣';
+
+  @override
+  String taskMoreCount(int count) {
+    return '另有 $count 項';
+  }
+
+  @override
+  String chatUploadingProgress(String percent) {
+    return '上傳中 $percent';
+  }
+
+  @override
+  String get chatInstantUploadProgress => '秒傳查驗中……';
+
+  @override
   String get forumAttachments => '附件';
 
   @override

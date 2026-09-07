@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pointycastle/export.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -399,9 +399,24 @@ class TfApiClient {
 
   http.Client _http = http.Client();
 
+  /// 用于大文件上传/下载的 Dio 实例（支持 onSendProgress/onReceiveProgress）。
+  Dio? _dio;
+
+  Dio _dioClient() {
+    return _dio ??= Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(minutes: 30),
+        sendTimeout: const Duration(minutes: 30),
+      ),
+    );
+  }
+
   void rebuildHttpClient() {
     _http.close();
     _http = http.Client();
+    _dio?.close();
+    _dio = null;
     invalidateCache();
   }
 
@@ -3263,6 +3278,102 @@ class TfApiClient {
     if (success is bool && !success) return null;
 
     return data;
+  }
+
+  /// 秒传预检：查询服务端是否已存在内容相同（SHA256）且仍可用的文件。
+  ///
+  /// 命中时服务端直接登记当前用户的所有权并返回 `file_hash`，`instant` 为 true；
+  /// 未命中时 `instant` 为 false，调用方照常走真实上传。鉴权/配额失败或网络异常
+  /// 返回 null，同样表示“跳过预检、走真实上传”。
+  Future<Map<String, dynamic>?> instantUpload(
+    int uid,
+    String password,
+    String fileName,
+    String fileHash,
+  ) async {
+    final result = await secretPost(
+      '/file/instant_upload',
+      {'filename': fileName, 'file_hash': fileHash},
+      uid: uid,
+      password: password,
+    );
+    final data = _parseJsonMap(result);
+    if (data == null) return null;
+    final success = data['success'];
+    if (success is bool && !success) return null;
+    return data;
+  }
+
+  /// 上传单个分块到服务端分块上传 API。
+  ///
+  /// 首次调用（`fileId == null`）时服务端会返回 `file_id` 作为会话 ID，
+  /// 后续分块必须携带该 ID。最后一个分块会返回 `file_hash` 及文件元数据。
+  ///
+  /// [onProgress] 为当前分块加密后字节的发送进度（0 ~ total）。
+  Future<Map<String, dynamic>?> uploadChunk({
+    required int uid,
+    required String password,
+    required String fileName,
+    required int chunkIndex,
+    required int chunkTotal,
+    required String chunkData,
+    String? fileId,
+    String? expectedHash,
+    void Function(int sent, int total)? onProgress,
+  }) async {
+    final body = <String, dynamic>{
+      'filename': fileName,
+      'chunk_index': chunkIndex,
+      'chunk_total': chunkTotal,
+      'chunk_data': chunkData,
+      if (fileId != null) 'file_id': fileId,
+      if (expectedHash != null) 'expected_hash': expectedHash,
+    };
+
+    final preparedRequest = await _prepareSecretPostRequest(
+      '/file/chunked_upload',
+      body,
+      uid: uid,
+      password: password,
+    );
+
+    try {
+      final response = await _dioClient().post<String>(
+        preparedRequest.requestUrl,
+        data: preparedRequest.requestBody,
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          responseType: ResponseType.plain,
+        ),
+        onSendProgress: onProgress,
+      );
+
+      ServerConnectionStatusService.instance.reportReachable();
+
+      if (response.statusCode != 200 || response.data == null) return null;
+
+      final plain = _decryptSecretResponse(
+        response.data!,
+        preparedRequest.aesKey,
+      );
+      _captureAuthNote(plain);
+      final data = _parseJsonMap(plain);
+      if (data == null) return null;
+
+      final success = data['success'];
+      if (success is bool && !success) return null;
+
+      return data;
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        _handleConnectivityFailure();
+      }
+      talker.error('uploadChunk failed', e);
+      return null;
+    }
   }
 
   Future<Map<String, dynamic>?> uploadSticker(
