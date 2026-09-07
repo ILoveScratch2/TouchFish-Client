@@ -478,6 +478,14 @@ class SettingsData {
           defaultValue: null,
           icon: Icons.key_outlined,
         ),
+        SettingItem(
+          key: 'allowMultipleInstances',
+          titleKey: 'settingsAllowMultiInstanceTitle',
+          descriptionKey: 'settingsAllowMultiInstanceDesc',
+          type: SettingType.switchSetting,
+          defaultValue: false,
+          icon: Icons.copy_all,
+        ),
       ],
     ),
     SettingCategoryData(

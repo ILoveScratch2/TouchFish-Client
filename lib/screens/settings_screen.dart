@@ -2362,6 +2362,11 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsLinkOpenModeInapp;
       case 'settingsLinkOpenModeExternal':
         return l10n.settingsLinkOpenModeExternal;
+      // Multi-instance
+      case 'settingsAllowMultiInstanceTitle':
+        return l10n.settingsAllowMultiInstanceTitle;
+      case 'settingsAllowMultiInstanceDesc':
+        return l10n.settingsAllowMultiInstanceDesc;
       default:
         return key;
     }

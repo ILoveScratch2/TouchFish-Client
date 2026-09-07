@@ -4427,4 +4427,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get callEndError => 'Call failed';
+
+  @override
+  String get settingsAllowMultiInstanceTitle => 'Allow multiple instances';
+
+  @override
+  String get settingsAllowMultiInstanceDesc =>
+      'Allow running several app instances at once. The same account on the same server can still only be signed in by one instance. Takes effect after restart.';
+
+  @override
+  String get loginErrorDuplicateInstance =>
+      'This account is already signed in on this server by another instance.';
+
+  @override
+  String get sessionRestoreDuplicateMessage =>
+      'This account is already signed in on this server by another instance, so the saved session was not restored here.';
 }

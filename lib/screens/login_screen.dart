@@ -119,6 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
         'userNotFound' => l10n.loginErrorUserNotFound,
         'invalidCredentials' => l10n.loginErrorInvalidCredentials,
         'sessionLimitReached' => l10n.loginErrorSessionLimit,
+        'duplicateLogin' => l10n.loginErrorDuplicateInstance,
         'networkError' => l10n.loginErrorNetwork,
         _ => l10n.loginErrorNetwork,
       };

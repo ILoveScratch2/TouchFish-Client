@@ -1731,5 +1731,9 @@
   "callConnectFailed": "Connection failed",
   "callMediaUnavailable": "Camera or microphone unavailable",
   "callCancelled": "Call cancelled",
-  "callEndError": "Call failed"
+  "callEndError": "Call failed",
+  "settingsAllowMultiInstanceTitle": "Allow multiple instances",
+  "settingsAllowMultiInstanceDesc": "Allow running several app instances at once. The same account on the same server can still only be signed in by one instance. Takes effect after restart.",
+  "loginErrorDuplicateInstance": "This account is already signed in on this server by another instance.",
+  "sessionRestoreDuplicateMessage": "This account is already signed in on this server by another instance, so the saved session was not restored here."
 }

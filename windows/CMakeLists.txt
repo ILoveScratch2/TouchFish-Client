@@ -2,6 +2,13 @@
 cmake_minimum_required(VERSION 3.14)
 project(touchfish_client LANGUAGES CXX)
 
+# 在中文/GBK 代码页(936)机器上,MSVC 默认按本地代码页读取源码,会把插件里无 BOM 的
+# UTF-8 文件误读并产生 C4819 警告,再被 APPLY_STANDARD_SETTINGS 的 /WX 升级为 C2220 错误。
+# 强制 MSVC 以 UTF-8 读取源码。该选项会传播给之后 add_subdirectory 的所有插件目标。
+if(MSVC)
+  add_compile_options(/utf-8)
+endif()
+
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
 set(BINARY_NAME "touchfish_client")

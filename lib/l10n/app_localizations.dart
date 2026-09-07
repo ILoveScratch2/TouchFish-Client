@@ -8229,6 +8229,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Call failed'**
   String get callEndError;
+
+  /// No description provided for @settingsAllowMultiInstanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow multiple instances'**
+  String get settingsAllowMultiInstanceTitle;
+
+  /// No description provided for @settingsAllowMultiInstanceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow running several app instances at once. The same account on the same server can still only be signed in by one instance. Takes effect after restart.'**
+  String get settingsAllowMultiInstanceDesc;
+
+  /// No description provided for @loginErrorDuplicateInstance.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is already signed in on this server by another instance.'**
+  String get loginErrorDuplicateInstance;
+
+  /// No description provided for @sessionRestoreDuplicateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is already signed in on this server by another instance, so the saved session was not restored here.'**
+  String get sessionRestoreDuplicateMessage;
 }
 
 class _AppLocalizationsDelegate

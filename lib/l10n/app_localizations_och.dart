@@ -4245,4 +4245,17 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get callEndError => '通話有異';
+
+  @override
+  String get settingsAllowMultiInstanceTitle => '許其多開';
+
+  @override
+  String get settingsAllowMultiInstanceDesc =>
+      '容並行多個客戶端之例。同一伺服器之同一賬號，仍祇許一例登入。重啟方為生效。';
+
+  @override
+  String get loginErrorDuplicateInstance => '此賬號已於它例登入此伺服器。';
+
+  @override
+  String get sessionRestoreDuplicateMessage => '此賬號已為它例所據，故本例不復存其舊會話。';
 }

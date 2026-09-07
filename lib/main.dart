@@ -58,13 +58,22 @@ Future<void> main() async {
     final isDesktop =
         !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
-    // 我们只能有一个 xsfx is running!
+    // 我们只能有一个 xsfx is running!（除非在设置里开了“允许多开”）
     if (isDesktop) {
-      final isPrimary = await SingleInstanceService.instance
-          .tryAcquireSingleInstance();
-      if (!isPrimary) {
-        talker.info('Exiting secondary TouchFish instance.');
-        exit(0);
+      final prefs = await SharedPreferences.getInstance();
+      final allowMultipleInstances =
+          prefs.getBool('allowMultipleInstances') ?? false;
+      if (!allowMultipleInstances) {
+        final isPrimary = await SingleInstanceService.instance
+            .tryAcquireSingleInstance();
+        if (!isPrimary) {
+          talker.info('Exiting secondary TouchFish instance.');
+          exit(0);
+        }
+      } else {
+        talker.info(
+          'Multiple instances enabled; skipping single-instance enforcement.',
+        );
       }
     }
 
@@ -701,9 +710,14 @@ class _TouchFishAppState extends State<TouchFishApp>
     AppLocalizations l10n,
   ) {
     final reason = AuthState.instance.restoreFailureReason;
-    final message = reason == RestoreFailureReason.network
-        ? l10n.sessionRestoreNetworkError
-        : l10n.savedSessionRestoreFailedMessage;
+    final (message, canRetry) = switch (reason) {
+      RestoreFailureReason.duplicateSession => (
+          l10n.sessionRestoreDuplicateMessage,
+          false,
+        ),
+      RestoreFailureReason.network => (l10n.sessionRestoreNetworkError, true),
+      _ => (l10n.savedSessionRestoreFailedMessage, true),
+    };
     return buildTouchFishErrorDialog(
       context,
       title: l10n.savedSessionRestoreFailedTitle,
@@ -719,12 +733,13 @@ class _TouchFishAppState extends State<TouchFishApp>
           },
           child: Text(MaterialLocalizations.of(context).okButtonLabel),
         ),
-        FilledButton(
-          onPressed: () {
-            unawaited(AuthState.instance.restoreSavedSession());
-          },
-          child: Text(l10n.retry),
-        ),
+        if (canRetry)
+          FilledButton(
+            onPressed: () {
+              unawaited(AuthState.instance.restoreSavedSession());
+            },
+            child: Text(l10n.retry),
+          ),
       ],
     );
   }

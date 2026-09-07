@@ -4248,4 +4248,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get callEndError => '通话出现异常';
+
+  @override
+  String get settingsAllowMultiInstanceTitle => '允许多开实例';
+
+  @override
+  String get settingsAllowMultiInstanceDesc =>
+      '允许同时运行多个客户端实例。同一服务器的同一账号仍只允许一个实例登录。需重启应用后生效。';
+
+  @override
+  String get loginErrorDuplicateInstance => '该账号已在另一实例中登录此服务器。';
+
+  @override
+  String get sessionRestoreDuplicateMessage => '该账号已在另一实例中登录此服务器，本实例未恢复已保存的会话。';
 }

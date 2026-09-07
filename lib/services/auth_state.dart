@@ -6,11 +6,12 @@ import '../models/user_profile.dart';
 import '../utils/talker.dart';
 import 'api/tf_api_client.dart';
 import 'local_message_store.dart';
+import 'multi_instance_guard.dart';
 
 enum SavedSessionRestoreStatus { idle, restoring, succeeded, failed }
 
 /// 已保存会话恢复失败的原因，用于 UI 区分提示。
-enum RestoreFailureReason { none, tokenExpired, credentials, network }
+enum RestoreFailureReason { none, tokenExpired, credentials, network, duplicateSession }
 
 class _AuthSessionNotifier extends ChangeNotifier {
   void changed() => notifyListeners();
@@ -117,6 +118,20 @@ class AuthState extends ChangeNotifier {
         TfApiClient.instance.setAuthContext(token: _token, legacyMode: false);
         final valid = await TfApiClient.instance.validateToken();
         if (valid == true && profile != null) {
+          // 多开互斥：同一服务器同一账号已被其它实例登录时，不在此实例恢复。
+          final acquired = await MultiInstanceGuard.instance.acquire(
+            uid: savedUid,
+            username: profile.username,
+          );
+          if (!acquired) {
+            talker.info(
+              'AuthState.restoreSavedSession: (server, uid=$savedUid) already held by another instance.',
+            );
+            _restoreFailureReason = RestoreFailureReason.duplicateSession;
+            _savedSessionRestoreStatus = SavedSessionRestoreStatus.failed;
+            _notifySessionChanged();
+            return false;
+          }
           final baseUrl = await TfApiClient.instance.getBaseUrl();
           LocalMessageStore.instance.configureScope(baseUrl, savedUid);
           _uid = savedUid;
@@ -153,6 +168,20 @@ class AuthState extends ChangeNotifier {
           legacyMode: true,
         );
         if (result.error == null && profile != null) {
+          // 多开互斥：同一服务器同一账号已被其它实例登录时，不在此实例恢复。
+          final acquired = await MultiInstanceGuard.instance.acquire(
+            uid: savedUid,
+            username: profile.username,
+          );
+          if (!acquired) {
+            talker.info(
+              'AuthState.restoreSavedSession: (server, uid=$savedUid) already held by another instance.',
+            );
+            _restoreFailureReason = RestoreFailureReason.duplicateSession;
+            _savedSessionRestoreStatus = SavedSessionRestoreStatus.failed;
+            _notifySessionChanged();
+            return false;
+          }
           final baseUrl = await TfApiClient.instance.getBaseUrl();
           LocalMessageStore.instance.configureScope(baseUrl, savedUid);
           _uid = savedUid;
@@ -248,6 +277,21 @@ class AuthState extends ChangeNotifier {
           'tokenLimitReached' => 'sessionLimitReached',
           _ => 'networkError',
         };
+      }
+
+      // 多开互斥：先占位，成功后才会在本实例建立会话；被占则拒绝并吊销刚签发的 token。
+      final acquired = await MultiInstanceGuard.instance.acquire(
+        uid: uid,
+        username: profile.username,
+      );
+      if (!acquired) {
+        if (result.mode == TfAuthMode.jwt && result.token != null) {
+          unawaited(TfApiClient.instance.logoutCurrentToken(result.token!));
+        }
+        talker.info(
+          'AuthState.login: (server, uid=$uid) already held by another instance; rejecting.',
+        );
+        return 'duplicateLogin';
       }
 
       _degradedToLegacy = result.degraded;
@@ -373,6 +417,8 @@ class AuthState extends ChangeNotifier {
     TfApiClient.instance.setAuthContext(token: null, legacyMode: true);
     _notifySessionChanged();
     LocalMessageStore.instance.clearScope();
+    // 释放多开互斥占位（fail-open：非桌面/未开启时 no-op）
+    await MultiInstanceGuard.instance.release();
     final prefs = await SharedPreferences.getInstance();
     await _clearStorage(prefs);
   }
