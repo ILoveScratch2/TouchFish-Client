@@ -8230,6 +8230,12 @@ abstract class AppLocalizations {
   /// **'Call failed'**
   String get callEndError;
 
+  /// No description provided for @callSwitchCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch camera'**
+  String get callSwitchCamera;
+
   /// No description provided for @settingsAllowMultiInstanceTitle.
   ///
   /// In en, this message translates to:

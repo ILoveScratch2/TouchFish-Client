@@ -4250,6 +4250,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get callEndError => '通话出现异常';
 
   @override
+  String get callSwitchCamera => '切换摄像头';
+
+  @override
   String get settingsAllowMultiInstanceTitle => '允许多开实例';
 
   @override

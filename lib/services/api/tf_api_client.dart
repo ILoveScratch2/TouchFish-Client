@@ -40,21 +40,21 @@ class TfLoginResult {
   final bool degraded;
 
   const TfLoginResult.jwt({required this.token, required this.expiresAt})
-      : mode = TfAuthMode.jwt,
-        error = null,
-        degraded = false;
+    : mode = TfAuthMode.jwt,
+      error = null,
+      degraded = false;
 
   const TfLoginResult.legacy({this.degraded = false})
-      : mode = TfAuthMode.legacy,
-        token = null,
-        expiresAt = null,
-        error = null;
+    : mode = TfAuthMode.legacy,
+      token = null,
+      expiresAt = null,
+      error = null;
 
   const TfLoginResult.error(this.error)
-      : mode = TfAuthMode.legacy,
-        token = null,
-        expiresAt = null,
-        degraded = false;
+    : mode = TfAuthMode.legacy,
+      token = null,
+      expiresAt = null,
+      degraded = false;
 }
 
 typedef MessageSyncResult = ({
@@ -149,6 +149,7 @@ class TfServerConfig {
   final bool? legacyAuthEnabled;
   final int? jwtExpiresSeconds;
   final int? jwtMaxPerUser;
+  final List<Map<String, dynamic>> iceServers;
 
   const TfServerConfig({
     required this.captcha,
@@ -181,6 +182,7 @@ class TfServerConfig {
     this.legacyAuthEnabled,
     this.jwtExpiresSeconds,
     this.jwtMaxPerUser,
+    this.iceServers = const [],
   });
 
   static int _parseIntValue(dynamic value, int fallback) {
@@ -207,6 +209,27 @@ class TfServerConfig {
             (key, value) => MapEntry(key.toString(), value.toString()),
           )
         : const <String, String>{};
+    final iceServers = <Map<String, dynamic>>[];
+    final iceServersRaw = json['ice_servers'];
+    if (iceServersRaw is List) {
+      for (final rawServer in iceServersRaw.whereType<Map>()) {
+        final rawUrls = rawServer['urls'];
+        final urls = rawUrls is String
+            ? [rawUrls]
+            : rawUrls is List
+            ? rawUrls
+                  .whereType<String>()
+                  .where((url) => url.isNotEmpty)
+                  .toList()
+            : const <String>[];
+        if (urls.isEmpty) continue;
+        final server = <String, dynamic>{'urls': urls};
+        for (final key in const ['username', 'credential']) {
+          if (rawServer[key] is String) server[key] = rawServer[key];
+        }
+        iceServers.add(server);
+      }
+    }
 
     return TfServerConfig(
       captcha: json['captcha'] as bool? ?? false,
@@ -245,12 +268,14 @@ class TfServerConfig {
       smtpUseSsl: json['smtp_use_ssl'] as bool?,
       reverseProxyEnabled: json['reverse_proxy_enabled'] as bool?,
       proxyCount: _parseOptionalIntValue(json['proxy_count']),
-      defaultJoinTargets: (json['default_join_targets'] as List<dynamic>? ?? const [])
-          .map((value) => value.toString())
-          .toList(),
+      defaultJoinTargets:
+          (json['default_join_targets'] as List<dynamic>? ?? const [])
+              .map((value) => value.toString())
+              .toList(),
       legacyAuthEnabled: json['legacy_auth_enabled'] as bool?,
       jwtExpiresSeconds: _parseOptionalIntValue(json['jwt_expires_seconds']),
       jwtMaxPerUser: _parseOptionalIntValue(json['jwt_max_per_user']),
+      iceServers: iceServers,
     );
   }
 }
@@ -296,13 +321,12 @@ class TfTokenListResult {
     final raw = json['tokens'];
     final tokens = raw is List
         ? raw
-            .whereType<Map>()
-            .map(
-              (item) => TfAuthTokenInfo.fromJson(
-                Map<String, dynamic>.from(item),
-              ),
-            )
-            .toList()
+              .whereType<Map>()
+              .map(
+                (item) =>
+                    TfAuthTokenInfo.fromJson(Map<String, dynamic>.from(item)),
+              )
+              .toList()
         : const <TfAuthTokenInfo>[];
     return TfTokenListResult(
       tokens: tokens,
@@ -890,10 +914,7 @@ class TfApiClient {
 
     if (response.statusCode != 200) return null;
 
-    final plain = _decryptSecretResponse(
-      response.body,
-      preparedRequest.aesKey,
-    );
+    final plain = _decryptSecretResponse(response.body, preparedRequest.aesKey);
     _captureAuthNote(plain);
     return plain;
   }
@@ -1303,10 +1324,9 @@ class TfApiClient {
   /// 列出活跃 token（设备）列表。返回 null 表示请求失败（如服务器不支持 JWT
   Future<TfTokenListResult?> listAuthTokens({int? targetUid}) async {
     try {
-      final result = await secretPost(
-        '/auth/tokens/list',
-        {'target_uid': ?targetUid},
-      );
+      final result = await secretPost('/auth/tokens/list', {
+        'target_uid': ?targetUid,
+      });
       final data = _parseJsonMap(result);
       if (data == null) return null;
       return TfTokenListResult.fromJson(data);
@@ -1319,13 +1339,10 @@ class TfApiClient {
   /// 移除指定 jti 的 token（踢出设备）。返回 null 表示请求失败
   Future<bool?> revokeAuthToken(String jti, {int? targetUid}) async {
     try {
-      final result = await secretPost(
-        '/auth/tokens/revoke',
-        {
-          'jti': jti,
-          'target_uid': ?targetUid,
-        },
-      );
+      final result = await secretPost('/auth/tokens/revoke', {
+        'jti': jti,
+        'target_uid': ?targetUid,
+      });
       final data = _parseJsonMap(result);
       if (data == null) return null;
       if (data['success'] == true) return true;
@@ -1372,14 +1389,10 @@ class TfApiClient {
 
   Future<bool> activateAccount(int uid, int activateCode) async {
     try {
-      final result = await _secretPostInternal(
-        '/auth/activate',
-        {
-          'uid': uid,
-          'activate_code': activateCode,
-        },
-        skipToken: true,
-      );
+      final result = await _secretPostInternal('/auth/activate', {
+        'uid': uid,
+        'activate_code': activateCode,
+      }, skipToken: true);
       return _parseBool(result);
     } catch (e) {
       talker.error('activateAccount failed', e);
@@ -1390,11 +1403,9 @@ class TfApiClient {
   /// 忘记密码：向注册邮箱发送验证码。
   Future<bool> forgotPassword(String email) async {
     try {
-      final result = await _secretPostInternal(
-        '/auth/forgot_password',
-        {'email': email},
-        skipToken: true,
-      );
+      final result = await _secretPostInternal('/auth/forgot_password', {
+        'email': email,
+      }, skipToken: true);
       return _parseBool(result);
     } catch (e) {
       talker.error('forgotPassword failed', e);
@@ -1409,15 +1420,11 @@ class TfApiClient {
     String newPassword,
   ) async {
     try {
-      final result = await _secretPostInternal(
-        '/auth/reset_password',
-        {
-          'email': email,
-          'activate_code': activateCode,
-          'new_pwd': newPassword,
-        },
-        skipToken: true,
-      );
+      final result = await _secretPostInternal('/auth/reset_password', {
+        'email': email,
+        'activate_code': activateCode,
+        'new_pwd': newPassword,
+      }, skipToken: true);
       return _parseBool(result);
     } catch (e) {
       talker.error('resetPassword failed', e);
@@ -2204,10 +2211,7 @@ class TfApiClient {
   }) async {
     final result = await secretPost(
       '/notification/mark_read',
-      {
-        'time_stamp': ?timeStamp,
-        'ids': ?ids,
-      },
+      {'time_stamp': ?timeStamp, 'ids': ?ids},
       uid: uid,
       password: password,
     );

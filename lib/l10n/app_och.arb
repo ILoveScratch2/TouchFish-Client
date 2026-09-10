@@ -1699,6 +1699,7 @@
   "callMediaUnavailable": "鏡頭或麥克風不可用",
   "callCancelled": "話已罷矣",
   "callEndError": "通話有異",
+  "callSwitchCamera": "更鏡頭",
   "settingsAllowMultiInstanceTitle": "許其多開",
   "settingsAllowMultiInstanceDesc": "容並行多個客戶端之例。同一伺服器之同一賬號，仍祇許一例登入。重啟方為生效。",
   "loginErrorDuplicateInstance": "此賬號已於它例登入此伺服器。",

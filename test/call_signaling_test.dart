@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,8 +19,10 @@ class FakeRtcPeer implements RtcPeer {
   final _stateController = StreamController<String>.broadcast();
   final _trackController = StreamController<void>.broadcast();
 
-  static Future<RtcPeer> create({required bool videoEnabled}) async =>
-      FakeRtcPeer();
+  static Future<RtcPeer> create({
+    required bool videoEnabled,
+    List<Map<String, dynamic>>? iceServers,
+  }) async => FakeRtcPeer();
 
   void emitIceState(String state) => _stateController.add(state);
 
@@ -71,6 +73,12 @@ class FakeRtcPeer implements RtcPeer {
   }
 
   @override
+  Future<void> switchCamera(String deviceId) async {}
+
+  @override
+  Future<List<RtcCameraDevice>> listCameras() async => const [];
+
+  @override
   Future<void> dispose() async {
     disposeCalled = true;
     await _iceController.close();
@@ -96,6 +104,7 @@ void main() {
       },
       peerFactory: FakeRtcPeer.create,
       eventStream: events.stream,
+      iceServersFetcher: () async => null,
     );
   });
 
@@ -127,6 +136,27 @@ void main() {
     expect((invite['payload'] as Map)['sdp'], 'fake-offer-sdp');
   });
 
+  test('passes server ICE servers to the peer factory', () async {
+    List<Map<String, dynamic>>? received;
+    service.configureForTesting(
+      iceServersFetcher: () async => [
+        {
+          'urls': ['turn:turn.example.com:3478'],
+          'username': 'user',
+          'credential': 'secret',
+        },
+      ],
+      peerFactory: ({required videoEnabled, iceServers}) async {
+        received = iceServers;
+        return FakeRtcPeer();
+      },
+    );
+
+    expect(await service.startCall(42), isTrue);
+    expect(received, isNotNull);
+    expect(received!.single['urls'], ['turn:turn.example.com:3478']);
+  });
+
   test('startCall rejected when already in a call', () async {
     await service.startCall(42);
     final ok = await service.startCall(7);
@@ -134,36 +164,42 @@ void main() {
     expect(sent.length, 1);
   });
 
-  test('incoming invite notifies open screen and accept sends answer',
-      () async {
-    wireOpenScreen();
-    events.add(callEvent('call.invite', {
-      'call_id': 'c1',
-      'from_uid': 42,
-      'payload': {'sdp': 'remote-sdp', 'sdp_type': 'offer'},
-    }));
-    await Future<void>.delayed(Duration.zero);
-    expect(service.state, RtcCallState.incoming);
-    expect(service.peerUid, 42);
-    expect(openedUid, 42);
-    expect(openedIncoming, isTrue);
+  test(
+    'incoming invite notifies open screen and accept sends answer',
+    () async {
+      wireOpenScreen();
+      events.add(
+        callEvent('call.invite', {
+          'call_id': 'c1',
+          'from_uid': 42,
+          'payload': {'sdp': 'remote-sdp', 'sdp_type': 'offer'},
+        }),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(service.state, RtcCallState.incoming);
+      expect(service.peerUid, 42);
+      expect(openedUid, 42);
+      expect(openedIncoming, isTrue);
 
-    final accepted = await service.acceptCall();
-    expect(accepted, isTrue);
-    expect(service.state, RtcCallState.connecting);
-    final answer = sent.single;
-    expect(answer['type'], 'call.answer');
-    expect(answer['call_id'], 'c1');
-    expect((answer['payload'] as Map)['sdp'], 'fake-answer-sdp');
-  });
+      final accepted = await service.acceptCall();
+      expect(accepted, isTrue);
+      expect(service.state, RtcCallState.connecting);
+      final answer = sent.single;
+      expect(answer['type'], 'call.answer');
+      expect(answer['call_id'], 'c1');
+      expect((answer['payload'] as Map)['sdp'], 'fake-answer-sdp');
+    },
+  );
 
   test('incoming invite while busy is auto-declined', () async {
     await service.startCall(1);
-    events.add(callEvent('call.invite', {
-      'call_id': 'other',
-      'from_uid': 42,
-      'payload': {'sdp': 'x', 'sdp_type': 'offer'},
-    }));
+    events.add(
+      callEvent('call.invite', {
+        'call_id': 'other',
+        'from_uid': 42,
+        'payload': {'sdp': 'x', 'sdp_type': 'offer'},
+      }),
+    );
     await Future<void>.delayed(Duration.zero);
     final hangup = sent.lastWhere((p) => p['type'] == 'call.hangup');
     expect(hangup['reason'], 'busy');
@@ -172,16 +208,20 @@ void main() {
   });
 
   test('call.ice buffered before answer then flushed to peer', () async {
-    events.add(callEvent('call.invite', {
-      'call_id': 'c1',
-      'from_uid': 42,
-      'payload': {'sdp': 'remote-sdp', 'sdp_type': 'offer'},
-    }));
-    events.add(callEvent('call.ice', {
-      'call_id': 'c1',
-      'from_uid': 42,
-      'candidate': {'candidate': 'a=b', 'sdpMid': '0', 'sdpMLineIndex': 0},
-    }));
+    events.add(
+      callEvent('call.invite', {
+        'call_id': 'c1',
+        'from_uid': 42,
+        'payload': {'sdp': 'remote-sdp', 'sdp_type': 'offer'},
+      }),
+    );
+    events.add(
+      callEvent('call.ice', {
+        'call_id': 'c1',
+        'from_uid': 42,
+        'candidate': {'candidate': 'a=b', 'sdpMid': '0', 'sdpMLineIndex': 0},
+      }),
+    );
     await Future<void>.delayed(Duration.zero);
     await service.acceptCall();
     final servicePeer = service.debugPeer as FakeRtcPeer;
@@ -190,11 +230,13 @@ void main() {
   });
 
   test('decline sends call.hangup decline and ends call', () async {
-    events.add(callEvent('call.invite', {
-      'call_id': 'c1',
-      'from_uid': 42,
-      'payload': {'sdp': 'remote-sdp', 'sdp_type': 'offer'},
-    }));
+    events.add(
+      callEvent('call.invite', {
+        'call_id': 'c1',
+        'from_uid': 42,
+        'payload': {'sdp': 'remote-sdp', 'sdp_type': 'offer'},
+      }),
+    );
     await Future<void>.delayed(Duration.zero);
     service.declineCall();
     expect(service.state, RtcCallState.ended);
@@ -206,11 +248,13 @@ void main() {
   test('call.ack offline fails the outgoing call', () async {
     await service.startCall(42);
     final callId = sent.single['call_id'];
-    events.add(callEvent('call.ack', {
-      'call_id': callId,
-      'for': 'call.invite',
-      'status': 'offline',
-    }));
+    events.add(
+      callEvent('call.ack', {
+        'call_id': callId,
+        'for': 'call.invite',
+        'status': 'offline',
+      }),
+    );
     await Future<void>.delayed(Duration.zero);
     expect(service.state, RtcCallState.failed);
     expect(service.endReason, RtcCallEndReason.offline);
@@ -219,11 +263,13 @@ void main() {
   test('call.ack not_friends fails the outgoing call', () async {
     await service.startCall(42);
     final callId = sent.single['call_id'];
-    events.add(callEvent('call.ack', {
-      'call_id': callId,
-      'for': 'call.invite',
-      'status': 'not_friends',
-    }));
+    events.add(
+      callEvent('call.ack', {
+        'call_id': callId,
+        'for': 'call.invite',
+        'status': 'not_friends',
+      }),
+    );
     await Future<void>.delayed(Duration.zero);
     expect(service.state, RtcCallState.failed);
     expect(service.endReason, RtcCallEndReason.notFriends);
@@ -232,11 +278,13 @@ void main() {
   test('answer leads to connecting then connected on ICE state', () async {
     await service.startCall(42);
     final callId = sent.single['call_id'];
-    events.add(callEvent('call.answer', {
-      'call_id': callId,
-      'from_uid': 42,
-      'payload': {'sdp': 'remote-answer', 'sdp_type': 'answer'},
-    }));
+    events.add(
+      callEvent('call.answer', {
+        'call_id': callId,
+        'from_uid': 42,
+        'payload': {'sdp': 'remote-answer', 'sdp_type': 'answer'},
+      }),
+    );
     await Future<void>.delayed(Duration.zero);
     expect(service.state, RtcCallState.connecting);
     final peer = service.debugPeer as FakeRtcPeer;
@@ -248,11 +296,13 @@ void main() {
   test('remote hangup cancel finishes the call', () async {
     await service.startCall(42);
     final callId = sent.single['call_id'];
-    events.add(callEvent('call.hangup', {
-      'call_id': callId,
-      'from_uid': 42,
-      'reason': 'cancel',
-    }));
+    events.add(
+      callEvent('call.hangup', {
+        'call_id': callId,
+        'from_uid': 42,
+        'reason': 'cancel',
+      }),
+    );
     await Future<void>.delayed(Duration.zero);
     expect(service.state, RtcCallState.ended);
     expect(service.endReason, RtcCallEndReason.cancelled);
@@ -267,8 +317,7 @@ void main() {
     expect(service.state, RtcCallState.ended);
   });
 
-  test('toggleMute and toggleCamera flip flags and delegate to peer',
-      () async {
+  test('toggleMute and toggleCamera flip flags and delegate to peer', () async {
     await service.startCall(1);
     final peer = service.debugPeer as FakeRtcPeer;
     await service.toggleMute();

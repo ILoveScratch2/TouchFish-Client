@@ -4429,6 +4429,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get callEndError => 'Call failed';
 
   @override
+  String get callSwitchCamera => 'Switch camera';
+
+  @override
   String get settingsAllowMultiInstanceTitle => 'Allow multiple instances';
 
   @override

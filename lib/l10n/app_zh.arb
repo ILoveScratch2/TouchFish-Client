@@ -1682,6 +1682,7 @@
   "callMediaUnavailable": "摄像头或麦克风不可用",
   "callCancelled": "通话已取消",
   "callEndError": "通话出现异常",
+  "callSwitchCamera": "切换摄像头",
   "settingsAllowMultiInstanceTitle": "允许多开实例",
   "settingsAllowMultiInstanceDesc": "允许同时运行多个客户端实例。同一服务器的同一账号仍只允许一个实例登录。需重启应用后生效。",
   "loginErrorDuplicateInstance": "该账号已在另一实例中登录此服务器。",

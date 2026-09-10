@@ -4247,6 +4247,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get callEndError => '通話有異';
 
   @override
+  String get callSwitchCamera => '更鏡頭';
+
+  @override
   String get settingsAllowMultiInstanceTitle => '許其多開';
 
   @override

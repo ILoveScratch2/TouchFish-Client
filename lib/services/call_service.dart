@@ -8,6 +8,7 @@ import 'auth_state.dart';
 import 'chat_ws_service.dart';
 import 'real_rtc_peer.dart';
 import 'rtc_peer.dart';
+import 'api/tf_api_client.dart';
 
 /// 视频通话信令 + 状态机。
 ///
@@ -22,10 +23,13 @@ class CallService extends ChangeNotifier {
   static const Duration _ringTimeout = Duration(seconds: 30);
   static const Duration _connectTimeout = Duration(seconds: 20);
 
-  bool Function(Map<String, dynamic> packet) _send =
-      (packet) => ChatWsService.instance.sendEncryptedPacket(packet);
+  bool Function(Map<String, dynamic> packet) _send = (packet) =>
+      ChatWsService.instance.sendEncryptedPacket(packet);
 
   RtcPeerFactory _peerFactory = RealRtcPeer.create;
+  Future<List<Map<String, dynamic>>?> Function() _iceServersFetcher =
+      _fetchDefaultIceServers;
+  List<Map<String, dynamic>>? _cachedIceServers;
 
   Stream<ChatWsEvent>? _eventStream;
   bool _initialized = false;
@@ -35,8 +39,10 @@ class CallService extends ChangeNotifier {
 
   int? _peerUid;
   int? get peerUid => _peerUid;
+  int? _lastPeerUid;
 
   String? _callId;
+  String? get callId => _callId;
 
   RtcPeer? _peer;
   Map<String, dynamic>? _incomingOffer;
@@ -67,10 +73,11 @@ class CallService extends ChangeNotifier {
 
   Timer? _ringTimer;
   Timer? _connectTimer;
+  Future<void>? _teardownFuture;
 
   /// 打开通话页面（来电时由本服务自动触发）。
   Future<void> Function(int peerUid, {required bool isIncoming})?
-      onOpenCallScreen;
+  onOpenCallScreen;
 
   late final StreamSubscription _wsSubscription;
 
@@ -86,10 +93,12 @@ class CallService extends ChangeNotifier {
     bool Function(Map<String, dynamic> packet)? sender,
     RtcPeerFactory? peerFactory,
     Stream<ChatWsEvent>? eventStream,
+    Future<List<Map<String, dynamic>>?> Function()? iceServersFetcher,
   }) {
     if (sender != null) _send = sender;
     if (peerFactory != null) _peerFactory = peerFactory;
     if (eventStream != null) _eventStream = eventStream;
+    if (iceServersFetcher != null) _iceServersFetcher = iceServersFetcher;
     init();
   }
 
@@ -106,8 +115,11 @@ class CallService extends ChangeNotifier {
     }
     service._initialized = false;
     service._eventStream = null;
+    service._cachedIceServers = null;
+    service._iceServersFetcher = _fetchDefaultIceServers;
     service._state = RtcCallState.idle;
     service._peerUid = null;
+    service._lastPeerUid = null;
     service._callId = null;
     service._incomingOffer = null;
     service._pendingCandidates.clear();
@@ -122,18 +134,32 @@ class CallService extends ChangeNotifier {
 
   /// 呼出视频通话。
   Future<bool> startCall(int peerUid) async {
+    if (_state == RtcCallState.ended || _state == RtcCallState.failed) {
+      resetFinishedCall();
+    }
     if (_state != RtcCallState.idle) return false;
+    await _teardownFuture;
+    _teardownFuture = null;
     _resetSession();
     _state = RtcCallState.outgoing;
     _peerUid = peerUid;
+    _lastPeerUid = peerUid;
     _callId = _generateCallId();
     _micEnabled = true;
     _cameraEnabled = true;
     _endReason = null;
+    final callId = _callId;
     notifyListeners();
     _startRingTimer();
     try {
-      final peer = await _peerFactory(videoEnabled: true);
+      final peer = await _peerFactory(
+        videoEnabled: true,
+        iceServers: await _loadIceServers(),
+      );
+      if (_state != RtcCallState.outgoing || _callId != callId) {
+        await peer.dispose();
+        return false;
+      }
       _attachPeer(peer);
       final offer = await peer.createOffer();
       _send({
@@ -145,10 +171,8 @@ class CallService extends ChangeNotifier {
       return true;
     } catch (e, stackTrace) {
       talker.error('CallService.startCall failed', e, stackTrace);
-      _finishCall(
-        failed: true,
-        reason: RtcCallEndReason.mediaFailed,
-      );
+      _sendHangup('error');
+      _finishCall(failed: true, reason: RtcCallEndReason.mediaFailed);
       return false;
     }
   }
@@ -165,8 +189,16 @@ class CallService extends ChangeNotifier {
     _state = RtcCallState.connecting;
     notifyListeners();
     _startConnectTimer();
+    final callId = _callId;
     try {
-      final peer = await _peerFactory(videoEnabled: true);
+      final peer = await _peerFactory(
+        videoEnabled: true,
+        iceServers: await _loadIceServers(),
+      );
+      if (_state != RtcCallState.connecting || _callId != callId) {
+        await peer.dispose();
+        return false;
+      }
       _attachPeer(peer);
       await peer.setRemoteDescription(offer);
       _remoteDescriptionApplied = true;
@@ -186,9 +218,28 @@ class CallService extends ChangeNotifier {
       return true;
     } catch (e, stackTrace) {
       talker.error('CallService.acceptCall failed', e, stackTrace);
+      _sendHangup('error');
       _finishCall(failed: true, reason: RtcCallEndReason.mediaFailed);
       return false;
     }
+  }
+
+  Future<List<Map<String, dynamic>>?> _loadIceServers() async {
+    if (_cachedIceServers != null) return _cachedIceServers;
+    _cachedIceServers = await _iceServersFetcher();
+    return _cachedIceServers;
+  }
+
+  static Future<List<Map<String, dynamic>>?> _fetchDefaultIceServers() async {
+    try {
+      final config = await TfApiClient.instance.fetchServerInfo();
+      if (config != null && config.iceServers.isNotEmpty) {
+        return config.iceServers;
+      }
+    } catch (e) {
+      talker.warning('Failed to fetch ICE servers; using local defaults', e);
+    }
+    return null;
   }
 
   /// 拒绝来电。
@@ -204,10 +255,26 @@ class CallService extends ChangeNotifier {
     final reason = _state == RtcCallState.incoming
         ? 'decline'
         : _state == RtcCallState.outgoing
-            ? 'cancel'
-            : 'hangup';
+        ? 'cancel'
+        : 'hangup';
     _sendHangup(reason);
     _finishCall(failed: false, reason: RtcCallEndReason.hangup);
+  }
+
+  /// Clears the terminal UI state so a new call can be started.
+  void resetFinishedCall() {
+    if (_state != RtcCallState.ended && _state != RtcCallState.failed) {
+      return;
+    }
+    _state = RtcCallState.idle;
+    _peerUid = null;
+    _callId = null;
+    _incomingOffer = null;
+    _pendingCandidates.clear();
+    _remoteDescriptionApplied = false;
+    _remoteStreamPresent = false;
+    _endReason = null;
+    notifyListeners();
   }
 
   Future<void> toggleMute() async {
@@ -232,6 +299,30 @@ class CallService extends ChangeNotifier {
       talker.error('CallService.toggleCamera failed', e, stackTrace);
     }
     notifyListeners();
+  }
+
+  Future<List<RtcCameraDevice>> listCameras() async {
+    final peer = _peer;
+    if (peer == null) return const [];
+    return peer.listCameras();
+  }
+
+  Future<void> switchCamera(String deviceId) async {
+    final peer = _peer;
+    if (peer == null) return;
+    try {
+      await peer.switchCamera(deviceId);
+    } catch (e, stackTrace) {
+      talker.error('CallService.switchCamera failed', e, stackTrace);
+      rethrow;
+    }
+  }
+
+  Future<bool> retryCall() async {
+    final uid = _lastPeerUid;
+    if (uid == null) return false;
+    resetFinishedCall();
+    return startCall(uid);
   }
 
   void _sendHangup(String reason) {
@@ -388,6 +479,7 @@ class CallService extends ChangeNotifier {
       _pendingCandidates.clear();
     } catch (e, stackTrace) {
       talker.error('CallService._applyRemote failed', e, stackTrace);
+      _sendHangup('error');
       _finishCall(failed: true, reason: RtcCallEndReason.connectFailed);
     }
   }
@@ -418,6 +510,7 @@ class CallService extends ChangeNotifier {
   void _onPeerIceState(String state) {
     switch (state) {
       case 'connected':
+      case 'completed':
         _cancelConnectTimer();
         if (_state == RtcCallState.connecting) {
           _state = RtcCallState.connected;
@@ -427,6 +520,7 @@ class CallService extends ChangeNotifier {
       case 'failed':
         if (_state == RtcCallState.connecting ||
             _state == RtcCallState.connected) {
+          _sendHangup('error');
           _finishCall(failed: true, reason: RtcCallEndReason.connectFailed);
         }
         break;
@@ -444,6 +538,7 @@ class CallService extends ChangeNotifier {
   void _startConnectTimer() {
     _connectTimer = Timer(_connectTimeout, () {
       if (_state != RtcCallState.connecting) return;
+      _sendHangup('error');
       _finishCall(failed: true, reason: RtcCallEndReason.connectFailed);
     });
   }
@@ -467,9 +562,13 @@ class CallService extends ChangeNotifier {
     required bool failed,
     RtcCallEndReason reason = RtcCallEndReason.hangup,
   }) {
+    if (_state == RtcCallState.ended || _state == RtcCallState.failed) {
+      return;
+    }
     _cancelTimers();
     final peer = _peer;
     _peer = null;
+    _lastPeerUid = _peerUid;
     _state = failed ? RtcCallState.failed : RtcCallState.ended;
     _endReason = reason;
     _peerUid = null;
@@ -480,7 +579,7 @@ class CallService extends ChangeNotifier {
     _remoteStreamPresent = false;
     notifyListeners();
     if (peer != null) {
-      unawaited(peer.dispose());
+      _teardownFuture = peer.dispose();
     }
   }
 
@@ -493,7 +592,7 @@ class CallService extends ChangeNotifier {
     _remoteDescriptionApplied = false;
     _remoteStreamPresent = false;
     if (peer != null) {
-      unawaited(peer.dispose());
+      _teardownFuture = peer.dispose();
     }
   }
 

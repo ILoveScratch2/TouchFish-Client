@@ -63,6 +63,13 @@ enum RtcCallEndReason {
   error,
 }
 
+class RtcCameraDevice {
+  final String id;
+  final String label;
+
+  const RtcCameraDevice({required this.id, required this.label});
+}
+
 /// 极薄的一次通话 RTC 会话抽象：把 flutter_webrtc 的使用限制在
 /// [RealRtcPeer] 一个文件内，方便单元测试注入假实现。
 abstract interface class RtcPeer {
@@ -99,11 +106,18 @@ abstract interface class RtcPeer {
   /// 开关本地摄像头。
   Future<void> setCameraEnabled(bool enabled);
 
+  /// Nintendo **Switch**Camera
+  Future<List<RtcCameraDevice>> listCameras();
+
+  Future<void> switchCamera(String deviceId);
+
   /// 释放所有本地媒体与连接资源。
   Future<void> dispose();
 }
 
-/// 创建 [RtcPeer] 的工厂，测试可注入假实现。
-typedef RtcPeerFactory = Future<RtcPeer> Function({
-  required bool videoEnabled,
-});
+/// 创建 [RtcPeer]，测试可注入假实现。
+typedef RtcPeerFactory =
+    Future<RtcPeer> Function({
+      required bool videoEnabled,
+      List<Map<String, dynamic>>? iceServers,
+    });
