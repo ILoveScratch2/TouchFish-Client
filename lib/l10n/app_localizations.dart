@@ -8259,6 +8259,318 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This account is already signed in on this server by another instance, so the saved session was not restored here.'**
   String get sessionRestoreDuplicateMessage;
+
+  /// No description provided for @errorCodeAuthTokenExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Login session has expired'**
+  String get errorCodeAuthTokenExpired;
+
+  /// No description provided for @errorCodeAuthFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication failed'**
+  String get errorCodeAuthFailed;
+
+  /// No description provided for @errorCodeAuthTokenLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum number of active sessions reached'**
+  String get errorCodeAuthTokenLimitReached;
+
+  /// No description provided for @errorCodeAuthNotAuthenticated.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication required'**
+  String get errorCodeAuthNotAuthenticated;
+
+  /// No description provided for @errorCodePermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have permission to perform this action'**
+  String get errorCodePermissionDenied;
+
+  /// No description provided for @errorCodeValidationInvalidRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Request parameters are invalid'**
+  String get errorCodeValidationInvalidRequest;
+
+  /// No description provided for @errorCodeResourceNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested resource was not found'**
+  String get errorCodeResourceNotFound;
+
+  /// No description provided for @errorCodeResourceUserNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'User does not exist'**
+  String get errorCodeResourceUserNotFound;
+
+  /// No description provided for @errorCodeResourceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource is unavailable'**
+  String get errorCodeResourceUnavailable;
+
+  /// No description provided for @errorCodeAuthCannotRevokeCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot revoke the current session token'**
+  String get errorCodeAuthCannotRevokeCurrent;
+
+  /// No description provided for @errorCodePermissionNotFriends.
+  ///
+  /// In en, this message translates to:
+  /// **'Users are not friends'**
+  String get errorCodePermissionNotFriends;
+
+  /// No description provided for @errorCodePermissionNotGroupMember.
+  ///
+  /// In en, this message translates to:
+  /// **'User is not a member of this group'**
+  String get errorCodePermissionNotGroupMember;
+
+  /// No description provided for @errorCodeResourceGroupNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Group does not exist'**
+  String get errorCodeResourceGroupNotFound;
+
+  /// No description provided for @errorCodeResourceUserBanned.
+  ///
+  /// In en, this message translates to:
+  /// **'User account is banned'**
+  String get errorCodeResourceUserBanned;
+
+  /// No description provided for @errorCodeValidationInvalidUid.
+  ///
+  /// In en, this message translates to:
+  /// **'User ID is invalid'**
+  String get errorCodeValidationInvalidUid;
+
+  /// No description provided for @errorCodeValidationInvalidFilename.
+  ///
+  /// In en, this message translates to:
+  /// **'Filename is invalid'**
+  String get errorCodeValidationInvalidFilename;
+
+  /// No description provided for @errorCodeValidationExtensionNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'File extension is not allowed'**
+  String get errorCodeValidationExtensionNotAllowed;
+
+  /// No description provided for @errorCodeValidationInvalidFileHash.
+  ///
+  /// In en, this message translates to:
+  /// **'File hash is invalid'**
+  String get errorCodeValidationInvalidFileHash;
+
+  /// No description provided for @errorCodeValidationInvalidChunkParameters.
+  ///
+  /// In en, this message translates to:
+  /// **'Chunk parameters are invalid'**
+  String get errorCodeValidationInvalidChunkParameters;
+
+  /// No description provided for @errorCodeValidationInvalidBase64.
+  ///
+  /// In en, this message translates to:
+  /// **'Base64 data is invalid'**
+  String get errorCodeValidationInvalidBase64;
+
+  /// No description provided for @errorCodeValidationInvalidTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Message target is invalid'**
+  String get errorCodeValidationInvalidTarget;
+
+  /// No description provided for @errorCodeValidationInvalidQuote.
+  ///
+  /// In en, this message translates to:
+  /// **'Quoted message is invalid'**
+  String get errorCodeValidationInvalidQuote;
+
+  /// No description provided for @errorCodeValidationInvalidCallId.
+  ///
+  /// In en, this message translates to:
+  /// **'Call ID is invalid'**
+  String get errorCodeValidationInvalidCallId;
+
+  /// No description provided for @errorCodeValidationMessageTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Message is too long'**
+  String get errorCodeValidationMessageTooLong;
+
+  /// No description provided for @errorCodeValidationMissingParameter.
+  ///
+  /// In en, this message translates to:
+  /// **'A required parameter is missing'**
+  String get errorCodeValidationMissingParameter;
+
+  /// No description provided for @errorCodeFileNotOwned.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not own this file'**
+  String get errorCodeFileNotOwned;
+
+  /// No description provided for @errorCodeFileUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'File is unavailable'**
+  String get errorCodeFileUnavailable;
+
+  /// No description provided for @errorCodeFileTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'File exceeds the maximum size'**
+  String get errorCodeFileTooLarge;
+
+  /// No description provided for @errorCodeFileChunkTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Chunk exceeds the maximum size'**
+  String get errorCodeFileChunkTooLarge;
+
+  /// No description provided for @errorCodeFileStorageQuotaExceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage quota has been exceeded'**
+  String get errorCodeFileStorageQuotaExceeded;
+
+  /// No description provided for @errorCodeFileTooManyUploads.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many concurrent uploads'**
+  String get errorCodeFileTooManyUploads;
+
+  /// No description provided for @errorCodeFileDecodeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'File data could not be decoded'**
+  String get errorCodeFileDecodeFailed;
+
+  /// No description provided for @errorCodeFileMissingFileId.
+  ///
+  /// In en, this message translates to:
+  /// **'file_id is required'**
+  String get errorCodeFileMissingFileId;
+
+  /// No description provided for @errorCodeFileInvalidFileId.
+  ///
+  /// In en, this message translates to:
+  /// **'File ID is invalid'**
+  String get errorCodeFileInvalidFileId;
+
+  /// No description provided for @errorCodeFileChunkTotalMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Chunk total does not match the upload'**
+  String get errorCodeFileChunkTotalMismatch;
+
+  /// No description provided for @errorCodeFileMissingChunk.
+  ///
+  /// In en, this message translates to:
+  /// **'One or more file chunks are missing'**
+  String get errorCodeFileMissingChunk;
+
+  /// No description provided for @errorCodeFileWriteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'File could not be written'**
+  String get errorCodeFileWriteFailed;
+
+  /// No description provided for @errorCodeFileDirectoryCreationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload directory could not be created'**
+  String get errorCodeFileDirectoryCreationFailed;
+
+  /// No description provided for @errorCodeFileChunkInfoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Chunk information could not be recorded'**
+  String get errorCodeFileChunkInfoFailed;
+
+  /// No description provided for @errorCodeFileChunkReadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Chunk information could not be read'**
+  String get errorCodeFileChunkReadFailed;
+
+  /// No description provided for @errorCodeFileHashVerificationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'File hash verification failed'**
+  String get errorCodeFileHashVerificationFailed;
+
+  /// No description provided for @errorCodeFileFinalizationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'File upload finalization failed'**
+  String get errorCodeFileFinalizationFailed;
+
+  /// No description provided for @errorCodeFileReferenceFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'File reference could not be created'**
+  String get errorCodeFileReferenceFailed;
+
+  /// No description provided for @errorCodeFileUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'File upload failed'**
+  String get errorCodeFileUploadFailed;
+
+  /// No description provided for @errorCodeStickerUnsupportedType.
+  ///
+  /// In en, this message translates to:
+  /// **'Sticker type is not supported'**
+  String get errorCodeStickerUnsupportedType;
+
+  /// No description provided for @errorCodeStickerTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Sticker exceeds the maximum size'**
+  String get errorCodeStickerTooLarge;
+
+  /// No description provided for @errorCodeStickerQuotaExceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Sticker storage quota has been exceeded'**
+  String get errorCodeStickerQuotaExceeded;
+
+  /// No description provided for @errorCodeMessageClientMidConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Message client ID conflicts with existing content'**
+  String get errorCodeMessageClientMidConflict;
+
+  /// No description provided for @errorCodeMessageAlreadyRecalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Message has already been recalled'**
+  String get errorCodeMessageAlreadyRecalled;
+
+  /// No description provided for @errorCodeRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many requests'**
+  String get errorCodeRateLimited;
+
+  /// No description provided for @errorCodeConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource conflict'**
+  String get errorCodeConflict;
+
+  /// No description provided for @errorCodeServerError.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal server error'**
+  String get errorCodeServerError;
 }
 
 class _AppLocalizationsDelegate

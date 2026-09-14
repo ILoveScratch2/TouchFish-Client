@@ -4264,4 +4264,160 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sessionRestoreDuplicateMessage => '该账号已在另一实例中登录此服务器，本实例未恢复已保存的会话。';
+
+  @override
+  String get errorCodeAuthTokenExpired => '登录会话已过期';
+
+  @override
+  String get errorCodeAuthFailed => '身份验证失败';
+
+  @override
+  String get errorCodeAuthTokenLimitReached => '已达到活跃会话数量上限';
+
+  @override
+  String get errorCodeAuthNotAuthenticated => '需要身份验证';
+
+  @override
+  String get errorCodePermissionDenied => '你没有执行此操作的权限';
+
+  @override
+  String get errorCodeValidationInvalidRequest => '请求参数无效';
+
+  @override
+  String get errorCodeResourceNotFound => '请求的资源不存在';
+
+  @override
+  String get errorCodeResourceUserNotFound => '用户不存在';
+
+  @override
+  String get errorCodeResourceUnavailable => '资源暂时不可用';
+
+  @override
+  String get errorCodeAuthCannotRevokeCurrent => '不能注销当前会话令牌';
+
+  @override
+  String get errorCodePermissionNotFriends => '双方不是好友';
+
+  @override
+  String get errorCodePermissionNotGroupMember => '用户不是该群组成员';
+
+  @override
+  String get errorCodeResourceGroupNotFound => '群组不存在';
+
+  @override
+  String get errorCodeResourceUserBanned => '用户账号已被封禁';
+
+  @override
+  String get errorCodeValidationInvalidUid => '用户 ID 无效';
+
+  @override
+  String get errorCodeValidationInvalidFilename => '文件名无效';
+
+  @override
+  String get errorCodeValidationExtensionNotAllowed => '不允许使用此文件扩展名';
+
+  @override
+  String get errorCodeValidationInvalidFileHash => '文件哈希无效';
+
+  @override
+  String get errorCodeValidationInvalidChunkParameters => '分块参数无效';
+
+  @override
+  String get errorCodeValidationInvalidBase64 => 'Base64 数据无效';
+
+  @override
+  String get errorCodeValidationInvalidTarget => '消息目标无效';
+
+  @override
+  String get errorCodeValidationInvalidQuote => '引用的消息无效';
+
+  @override
+  String get errorCodeValidationInvalidCallId => '通话 ID 无效';
+
+  @override
+  String get errorCodeValidationMessageTooLong => '消息过长';
+
+  @override
+  String get errorCodeValidationMissingParameter => '缺少必要参数';
+
+  @override
+  String get errorCodeFileNotOwned => '你不拥有此文件';
+
+  @override
+  String get errorCodeFileUnavailable => '文件不可用';
+
+  @override
+  String get errorCodeFileTooLarge => '文件超过大小限制';
+
+  @override
+  String get errorCodeFileChunkTooLarge => '文件分块超过大小限制';
+
+  @override
+  String get errorCodeFileStorageQuotaExceeded => '存储空间已超出配额';
+
+  @override
+  String get errorCodeFileTooManyUploads => '同时进行的上传过多';
+
+  @override
+  String get errorCodeFileDecodeFailed => '文件数据解码失败';
+
+  @override
+  String get errorCodeFileMissingFileId => '缺少 file_id';
+
+  @override
+  String get errorCodeFileInvalidFileId => '文件 ID 无效';
+
+  @override
+  String get errorCodeFileChunkTotalMismatch => '分块总数与上传记录不一致';
+
+  @override
+  String get errorCodeFileMissingChunk => '缺少一个或多个文件分块';
+
+  @override
+  String get errorCodeFileWriteFailed => '文件写入失败';
+
+  @override
+  String get errorCodeFileDirectoryCreationFailed => '无法创建上传目录';
+
+  @override
+  String get errorCodeFileChunkInfoFailed => '无法记录分块信息';
+
+  @override
+  String get errorCodeFileChunkReadFailed => '无法读取分块信息';
+
+  @override
+  String get errorCodeFileHashVerificationFailed => '文件哈希校验失败';
+
+  @override
+  String get errorCodeFileFinalizationFailed => '文件上传收尾失败';
+
+  @override
+  String get errorCodeFileReferenceFailed => '无法创建文件引用';
+
+  @override
+  String get errorCodeFileUploadFailed => '文件上传失败';
+
+  @override
+  String get errorCodeStickerUnsupportedType => '不支持此表情包类型';
+
+  @override
+  String get errorCodeStickerTooLarge => '表情包超过大小限制';
+
+  @override
+  String get errorCodeStickerQuotaExceeded => '表情包存储空间已超出配额';
+
+  @override
+  String get errorCodeMessageClientMidConflict => '消息客户端 ID 冲突';
+
+  @override
+  String get errorCodeMessageAlreadyRecalled => '消息已经撤回';
+
+  @override
+  String get errorCodeRateLimited => '请求过于频繁';
+
+  @override
+  String get errorCodeConflict => '资源冲突';
+
+  @override
+  String get errorCodeServerError => '服务器内部错误';
 }

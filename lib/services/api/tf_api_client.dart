@@ -16,6 +16,7 @@ import '../../models/forum_model.dart';
 import '../../models/sticker_model.dart';
 import '../../models/announcement_model.dart';
 import '../../models/notification_model.dart';
+import '../../models/api_error.dart';
 import '../../models/file_attachment.dart';
 import '../server_connection_status_service.dart';
 import '../rsa_key_trust_service.dart';
@@ -421,6 +422,10 @@ class TfApiClient {
   static TfApiClient get instance => _instance ??= TfApiClient._();
   TfApiClient._();
 
+  /// The last structured API error, available to callers that currently use
+  /// nullable return values. It is cleared after a successful API response.
+  ApiError? lastApiError;
+
   http.Client _http = http.Client();
 
   /// 用于大文件上传/下载的 Dio 实例（支持 onSendProgress/onReceiveProgress）。
@@ -822,6 +827,7 @@ class TfApiClient {
       skipToken: skipToken,
       tokenOverride: tokenOverride,
     );
+    fullBody['detail_error'] = true;
 
     final aesKey = TfCrypto.generateAesKey();
     final iv = TfCrypto.generateIv();
@@ -866,7 +872,7 @@ class TfApiClient {
         password: password,
       );
       final data = _parseJsonMap(result);
-      if (data != null && data['error'] == 'token_expired') {
+      if (data != null && ApiError.fromResponse(data).isTokenExpired) {
         final handler = _tokenExpiredHandler;
         if (handler != null) {
           final relogged = await handler();
@@ -912,9 +918,11 @@ class TfApiClient {
       timeout: _secretPostTimeout,
     );
 
-    if (response.statusCode != 200) return null;
-
     final plain = _decryptSecretResponse(response.body, preparedRequest.aesKey);
+    final responseData = _parseJsonMap(plain);
+    lastApiError = responseData != null && responseData['error'] != null
+        ? ApiError.fromResponse(responseData)
+        : null;
     _captureAuthNote(plain);
     return plain;
   }
@@ -1283,6 +1291,9 @@ class TfApiClient {
           final code = switch (error) {
             'auth_failed' => 'authFailed',
             'token_limit_reached' => 'tokenLimitReached',
+            'AUTH_FAILED' => 'authFailed',
+            'AUTH_TOKEN_LIMIT_REACHED' => 'tokenLimitReached',
+            'AUTH_INVALID_PASSWORD' => 'authFailed',
             _ => 'serverError',
           };
           return TfLoginResult.error(code);

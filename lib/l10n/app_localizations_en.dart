@@ -4445,4 +4445,179 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get sessionRestoreDuplicateMessage =>
       'This account is already signed in on this server by another instance, so the saved session was not restored here.';
+
+  @override
+  String get errorCodeAuthTokenExpired => 'Login session has expired';
+
+  @override
+  String get errorCodeAuthFailed => 'Authentication failed';
+
+  @override
+  String get errorCodeAuthTokenLimitReached =>
+      'Maximum number of active sessions reached';
+
+  @override
+  String get errorCodeAuthNotAuthenticated => 'Authentication required';
+
+  @override
+  String get errorCodePermissionDenied =>
+      'You do not have permission to perform this action';
+
+  @override
+  String get errorCodeValidationInvalidRequest =>
+      'Request parameters are invalid';
+
+  @override
+  String get errorCodeResourceNotFound => 'Requested resource was not found';
+
+  @override
+  String get errorCodeResourceUserNotFound => 'User does not exist';
+
+  @override
+  String get errorCodeResourceUnavailable => 'Resource is unavailable';
+
+  @override
+  String get errorCodeAuthCannotRevokeCurrent =>
+      'Cannot revoke the current session token';
+
+  @override
+  String get errorCodePermissionNotFriends => 'Users are not friends';
+
+  @override
+  String get errorCodePermissionNotGroupMember =>
+      'User is not a member of this group';
+
+  @override
+  String get errorCodeResourceGroupNotFound => 'Group does not exist';
+
+  @override
+  String get errorCodeResourceUserBanned => 'User account is banned';
+
+  @override
+  String get errorCodeValidationInvalidUid => 'User ID is invalid';
+
+  @override
+  String get errorCodeValidationInvalidFilename => 'Filename is invalid';
+
+  @override
+  String get errorCodeValidationExtensionNotAllowed =>
+      'File extension is not allowed';
+
+  @override
+  String get errorCodeValidationInvalidFileHash => 'File hash is invalid';
+
+  @override
+  String get errorCodeValidationInvalidChunkParameters =>
+      'Chunk parameters are invalid';
+
+  @override
+  String get errorCodeValidationInvalidBase64 => 'Base64 data is invalid';
+
+  @override
+  String get errorCodeValidationInvalidTarget => 'Message target is invalid';
+
+  @override
+  String get errorCodeValidationInvalidQuote => 'Quoted message is invalid';
+
+  @override
+  String get errorCodeValidationInvalidCallId => 'Call ID is invalid';
+
+  @override
+  String get errorCodeValidationMessageTooLong => 'Message is too long';
+
+  @override
+  String get errorCodeValidationMissingParameter =>
+      'A required parameter is missing';
+
+  @override
+  String get errorCodeFileNotOwned => 'You do not own this file';
+
+  @override
+  String get errorCodeFileUnavailable => 'File is unavailable';
+
+  @override
+  String get errorCodeFileTooLarge => 'File exceeds the maximum size';
+
+  @override
+  String get errorCodeFileChunkTooLarge => 'Chunk exceeds the maximum size';
+
+  @override
+  String get errorCodeFileStorageQuotaExceeded =>
+      'Storage quota has been exceeded';
+
+  @override
+  String get errorCodeFileTooManyUploads => 'Too many concurrent uploads';
+
+  @override
+  String get errorCodeFileDecodeFailed => 'File data could not be decoded';
+
+  @override
+  String get errorCodeFileMissingFileId => 'file_id is required';
+
+  @override
+  String get errorCodeFileInvalidFileId => 'File ID is invalid';
+
+  @override
+  String get errorCodeFileChunkTotalMismatch =>
+      'Chunk total does not match the upload';
+
+  @override
+  String get errorCodeFileMissingChunk => 'One or more file chunks are missing';
+
+  @override
+  String get errorCodeFileWriteFailed => 'File could not be written';
+
+  @override
+  String get errorCodeFileDirectoryCreationFailed =>
+      'Upload directory could not be created';
+
+  @override
+  String get errorCodeFileChunkInfoFailed =>
+      'Chunk information could not be recorded';
+
+  @override
+  String get errorCodeFileChunkReadFailed =>
+      'Chunk information could not be read';
+
+  @override
+  String get errorCodeFileHashVerificationFailed =>
+      'File hash verification failed';
+
+  @override
+  String get errorCodeFileFinalizationFailed =>
+      'File upload finalization failed';
+
+  @override
+  String get errorCodeFileReferenceFailed =>
+      'File reference could not be created';
+
+  @override
+  String get errorCodeFileUploadFailed => 'File upload failed';
+
+  @override
+  String get errorCodeStickerUnsupportedType => 'Sticker type is not supported';
+
+  @override
+  String get errorCodeStickerTooLarge => 'Sticker exceeds the maximum size';
+
+  @override
+  String get errorCodeStickerQuotaExceeded =>
+      'Sticker storage quota has been exceeded';
+
+  @override
+  String get errorCodeMessageClientMidConflict =>
+      'Message client ID conflicts with existing content';
+
+  @override
+  String get errorCodeMessageAlreadyRecalled =>
+      'Message has already been recalled';
+
+  @override
+  String get errorCodeRateLimited => 'Too many requests';
+
+  @override
+  String get errorCodeConflict => 'Resource conflict';
+
+  @override
+  String get errorCodeServerError => 'Internal server error';
 }

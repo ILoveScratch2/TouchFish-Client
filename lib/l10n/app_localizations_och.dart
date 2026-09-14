@@ -4261,4 +4261,160 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get sessionRestoreDuplicateMessage => '此賬號已為它例所據，故本例不復存其舊會話。';
+
+  @override
+  String get errorCodeAuthTokenExpired => '登入之會話已逾期';
+
+  @override
+  String get errorCodeAuthFailed => '驗證不成';
+
+  @override
+  String get errorCodeAuthTokenLimitReached => '活躍會話已至其數之限';
+
+  @override
+  String get errorCodeAuthNotAuthenticated => '須先驗證身份';
+
+  @override
+  String get errorCodePermissionDenied => '無權行此事';
+
+  @override
+  String get errorCodeValidationInvalidRequest => '所請之參數有誤';
+
+  @override
+  String get errorCodeResourceNotFound => '所求之物不存';
+
+  @override
+  String get errorCodeResourceUserNotFound => '此人不存';
+
+  @override
+  String get errorCodeResourceUnavailable => '此資源暫不可用';
+
+  @override
+  String get errorCodeAuthCannotRevokeCurrent => '不可撤銷當前會話之令牌';
+
+  @override
+  String get errorCodePermissionNotFriends => '二者非友';
+
+  @override
+  String get errorCodePermissionNotGroupMember => '此人非群組之員';
+
+  @override
+  String get errorCodeResourceGroupNotFound => '群組不存';
+
+  @override
+  String get errorCodeResourceUserBanned => '此賬號已禁';
+
+  @override
+  String get errorCodeValidationInvalidUid => '用戶之 ID 無效';
+
+  @override
+  String get errorCodeValidationInvalidFilename => '文件名無效';
+
+  @override
+  String get errorCodeValidationExtensionNotAllowed => '此文件副檔名不許';
+
+  @override
+  String get errorCodeValidationInvalidFileHash => '文件哈希無效';
+
+  @override
+  String get errorCodeValidationInvalidChunkParameters => '分塊參數有誤';
+
+  @override
+  String get errorCodeValidationInvalidBase64 => 'Base64 資料有誤';
+
+  @override
+  String get errorCodeValidationInvalidTarget => '消息所向有誤';
+
+  @override
+  String get errorCodeValidationInvalidQuote => '所引消息有誤';
+
+  @override
+  String get errorCodeValidationInvalidCallId => '通話 ID 有誤';
+
+  @override
+  String get errorCodeValidationMessageTooLong => '消息過長';
+
+  @override
+  String get errorCodeValidationMissingParameter => '缺必要參數';
+
+  @override
+  String get errorCodeFileNotOwned => '此文件非汝所有';
+
+  @override
+  String get errorCodeFileUnavailable => '文件不可用';
+
+  @override
+  String get errorCodeFileTooLarge => '文件逾其大小之限';
+
+  @override
+  String get errorCodeFileChunkTooLarge => '分塊逾其大小之限';
+
+  @override
+  String get errorCodeFileStorageQuotaExceeded => '存儲空間逾配額';
+
+  @override
+  String get errorCodeFileTooManyUploads => '並行上傳過多';
+
+  @override
+  String get errorCodeFileDecodeFailed => '文件資料解碼不成';
+
+  @override
+  String get errorCodeFileMissingFileId => '缺 file_id';
+
+  @override
+  String get errorCodeFileInvalidFileId => '文件 ID 有誤';
+
+  @override
+  String get errorCodeFileChunkTotalMismatch => '分塊總數與上傳記錄不合';
+
+  @override
+  String get errorCodeFileMissingChunk => '缺一或多個文件分塊';
+
+  @override
+  String get errorCodeFileWriteFailed => '文件寫入不成';
+
+  @override
+  String get errorCodeFileDirectoryCreationFailed => '上傳目錄建立不成';
+
+  @override
+  String get errorCodeFileChunkInfoFailed => '分塊資料記錄不成';
+
+  @override
+  String get errorCodeFileChunkReadFailed => '分塊資料讀取不成';
+
+  @override
+  String get errorCodeFileHashVerificationFailed => '文件哈希校驗不成';
+
+  @override
+  String get errorCodeFileFinalizationFailed => '文件上傳收尾不成';
+
+  @override
+  String get errorCodeFileReferenceFailed => '文件引用建立不成';
+
+  @override
+  String get errorCodeFileUploadFailed => '文件上傳不成';
+
+  @override
+  String get errorCodeStickerUnsupportedType => '此貼圖類型不受';
+
+  @override
+  String get errorCodeStickerTooLarge => '貼圖逾大小之限';
+
+  @override
+  String get errorCodeStickerQuotaExceeded => '貼圖存儲逾配額';
+
+  @override
+  String get errorCodeMessageClientMidConflict => '消息客戶端 ID 相衝';
+
+  @override
+  String get errorCodeMessageAlreadyRecalled => '消息已撤回';
+
+  @override
+  String get errorCodeRateLimited => '所請過頻';
+
+  @override
+  String get errorCodeConflict => '資源相衝';
+
+  @override
+  String get errorCodeServerError => '伺服器內部有誤';
 }
