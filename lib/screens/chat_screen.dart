@@ -472,7 +472,7 @@ class _ChatListScreenState extends State<ChatListScreen>
             Positioned(
               bottom: 16,
               right: 16,
-              child: FloatingActionButton.small(
+              child: FloatingActionButton(
                 heroTag: 'chat-fab',
                 onPressed: () => _showAddMenu(context),
                 child: const Icon(Icons.add),
@@ -666,7 +666,7 @@ class _ChatListScreenState extends State<ChatListScreen>
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.small(
+      floatingActionButton: FloatingActionButton(
         heroTag: 'chat-fab',
         onPressed: () => _showAddMenu(context),
         child: const Icon(Icons.add),

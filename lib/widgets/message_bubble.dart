@@ -52,6 +52,7 @@ class MessageBubble extends HookWidget {
 
   /// 本条消息在画廊中的下标。
   final int galleryIndex;
+  final bool animateEntrance;
 
   const MessageBubble({
     super.key,
@@ -71,6 +72,7 @@ class MessageBubble extends HookWidget {
     this.onEssenceToggle,
     this.galleryItems,
     this.galleryIndex = 0,
+    this.animateEntrance = false,
   });
 
   @override
@@ -84,6 +86,7 @@ class MessageBubble extends HookWidget {
     return _MessageBubbleContent(
       message: message,
       cachedBytes: cachedBytes,
+      animateEntrance: animateEntrance,
       onReply: onReply,
       onForward: onForward,
       onRecall: onRecall,
@@ -99,6 +102,72 @@ class MessageBubble extends HookWidget {
       onEssenceToggle: onEssenceToggle,
       galleryItems: galleryItems,
       galleryIndex: galleryIndex,
+    );
+  }
+}
+
+/// 新消息入场：淡入 + 从下方滑入 + 撑开高度（参考 Solian 的发送动画）。
+///
+/// 只在 [animate] 首次为 true 时播放一次，元素复用/重建不会重播。
+class _MessageEntrance extends StatefulWidget {
+  final bool animate;
+  final Widget child;
+
+  const _MessageEntrance({required this.animate, required this.child});
+
+  @override
+  State<_MessageEntrance> createState() => _MessageEntranceState();
+}
+
+class _MessageEntranceState extends State<_MessageEntrance>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 400),
+  );
+  late final CurvedAnimation _progress = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOutQuart,
+  );
+  late final Animation<double> _fade = CurvedAnimation(
+    parent: _controller,
+    curve: const Interval(0.1, 1, curve: Curves.easeOut),
+  );
+  late final Animation<Offset> _slide = Tween<Offset>(
+    begin: const Offset(0, 0.12),
+    end: Offset.zero,
+  ).animate(_progress);
+
+  /// 播过动画后一直保持包装层，避免动画结束换结构把子树元素重建掉。
+  bool _entered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _entered = widget.animate;
+    if (_entered) {
+      _controller.forward();
+    } else {
+      _controller.value = 1;
+    }
+  }
+
+  @override
+  void dispose() {
+    _progress.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_entered) return widget.child;
+    return FadeTransition(
+      opacity: _fade,
+      child: SizeTransition(
+        sizeFactor: _progress,
+        child: SlideTransition(position: _slide, child: widget.child),
+      ),
     );
   }
 }
@@ -121,10 +190,12 @@ class _MessageBubbleContent extends StatefulWidget {
   final VoidCallback? onEssenceToggle;
   final List<LightboxImageItem>? galleryItems;
   final int galleryIndex;
+  final bool animateEntrance;
 
   const _MessageBubbleContent({
     required this.message,
     this.cachedBytes,
+    this.animateEntrance = false,
     this.onReply,
     this.onForward,
     this.onRecall,
@@ -410,10 +481,11 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
       'messageDisplayStyle',
       'bubble',
     );
-    if (style == 'compact' || style == 'column') {
-      return _buildLinearLayout(context, isCompact: style == 'compact');
-    }
-    return _buildBubbleLayout(context);
+    final content = style == 'compact' || style == 'column'
+        ? _buildLinearLayout(context, isCompact: style == 'compact')
+        : _buildBubbleLayout(context);
+    // 始终包一层（结构稳定，不会因为动画结束而重建子树的元素）
+    return _MessageEntrance(animate: widget.animateEntrance, child: content);
   }
 
   Widget _buildBubbleLayout(BuildContext context) {

@@ -82,6 +82,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   Timer? _draftTimer;
   bool _suppressDraftSave = false;
   int _roomGeneration = 0;
+  List<ChatMessage> _lastBuiltMessages = const [];
+  Set<String> _entranceKeys = const {};
+  Timer? _entranceKeysTimer;
   List<PinnedMessage> _pinnedMessages = [];
   final Map<int, ChatMessage?> _pinnedMessageContents = {};
   final GlobalKey _pinnedBarKey = GlobalKey();
@@ -232,6 +235,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _essenceEnabled = true;
     _fetchingEssenceRoomId = null;
     _typingUsers.clear();
+    _lastBuiltMessages = const [];
+    _entranceKeysTimer?.cancel();
+    _entranceKeys = const {};
     _suppressDraftSave = true;
     _messageController.clear();
     _suppressDraftSave = false;
@@ -321,6 +327,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _essenceSub?.cancel();
     _draftTimer?.cancel();
     _weakNetworkTimer?.cancel();
+    _entranceKeysTimer?.cancel();
     unawaited(_saveDraft());
     _messageController.dispose();
     _scrollListenerAttached?.removeListener(_onScroll);
@@ -701,6 +708,26 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     // 跳转过程中完全忽略实时数据变动，避免新消息触发 _scrollToBottom 把跳转顶回底部
     if (_isJumpingToMessage) return;
     _refreshRoom();
+  }
+
+  /// 尾部新追加的消息键（入场动画用）。
+  ///
+  /// 键要留到新气泡真正构建出来为止——插入的新 item 比 provider 通知晚一帧，
+  /// 只在当帧有效的话动画会丢。过一阵没人认领就清掉，避免滚回视口时重播。
+  Set<String> _diffEntranceKeys(List<ChatMessage> messages) {
+    if (!identical(_lastBuiltMessages, messages)) {
+      final keys = newlyAppendedMessageKeys(_lastBuiltMessages, messages);
+      _lastBuiltMessages = messages;
+      if (keys.isNotEmpty) {
+        _entranceKeys = keys;
+        _entranceKeysTimer?.cancel();
+        _entranceKeysTimer = Timer(const Duration(milliseconds: 500), () {
+          if (!mounted || !_treeActive) return;
+          setState(() => _entranceKeys = const {});
+        });
+      }
+    }
+    return _entranceKeys;
   }
 
   /// 消息列表 Provider 状态变化 原 _onChatDataChanged 里的消息列表逻辑迁移至此
@@ -2304,6 +2331,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final gallery = ref.watch(imageGalleryProvider(_contactUid));
     ref.listen(roomMessagesProvider(_contactUid), _onProviderMessagesChanged);
 
+    // 父级先构建 → 这一帧里新建的气泡才能拿到入场动画标记
+    final entranceKeys = _diffEntranceKeys(messages);
+
     if (_currentRoom == null) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.chatDetailLoading)),
@@ -2456,6 +2486,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                         onNotification: _onUserScroll,
                         child: MessageListView(
                           messages: messages,
+                          entranceKeys: entranceKeys,
                           scrollController: uiState.scrollController,
                           galleryItems: gallery.items,
                           imageIndexById: gallery.indexById,
