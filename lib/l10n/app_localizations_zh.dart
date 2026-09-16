@@ -1760,6 +1760,36 @@ class AppLocalizationsZh extends AppLocalizations {
   String get messageReplyDismiss => '取消回复';
 
   @override
+  String get messageSwipeMore => '更多';
+
+  @override
+  String get messageSwipeReply => '回复';
+
+  @override
+  String get messageSwipeForward => '转发';
+
+  @override
+  String get chatListPinRoom => '置顶聊天';
+
+  @override
+  String get chatListUnpinRoom => '取消置顶';
+
+  @override
+  String get chatListClearLocalData => '清除本地聊天数据';
+
+  @override
+  String get chatListClearLocalDataHint => '这将删除此聊天的所有缓存消息。服务器消息不受影响。继续吗？';
+
+  @override
+  String get chatListClearLocalDataConfirm => '清除';
+
+  @override
+  String get chatListClearLocalDataCancel => '取消';
+
+  @override
+  String get chatListClearLocalDataSuccess => '本地聊天数据已清除';
+
+  @override
   String get chatRoomSettings => '聊天设置';
 
   @override

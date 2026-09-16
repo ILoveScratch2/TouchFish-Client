@@ -19,6 +19,38 @@ class _TouchFishSnackbarOverlayState extends State<TouchFishSnackbarOverlay> {
     super.dispose();
   }
 
+  ({Color background, Color foreground, IconData? icon}) _styleFor(
+    SnackbarType type,
+    ColorScheme colorScheme,
+  ) {
+    switch (type) {
+      case SnackbarType.success:
+        return (
+          background: colorScheme.primary,
+          foreground: colorScheme.onPrimary,
+          icon: Icons.check_circle_outline,
+        );
+      case SnackbarType.error:
+        return (
+          background: colorScheme.error,
+          foreground: colorScheme.onError,
+          icon: Icons.error_outline,
+        );
+      case SnackbarType.warning:
+        return (
+          background: colorScheme.tertiary,
+          foreground: colorScheme.onTertiary,
+          icon: Icons.warning_amber_outlined,
+        );
+      case SnackbarType.info:
+        return (
+          background: colorScheme.inverseSurface,
+          foreground: colorScheme.onInverseSurface,
+          icon: null,
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -29,6 +61,10 @@ class _TouchFishSnackbarOverlayState extends State<TouchFishSnackbarOverlay> {
           _timer?.cancel();
           _timer = Timer(const Duration(seconds: 3), TouchFishSnackbarService.instance.clear);
         }
+        final style = _styleFor(
+          TouchFishSnackbarService.instance.type,
+          Theme.of(context).colorScheme,
+        );
         return Stack(
           children: [
             widget.child,
@@ -45,10 +81,32 @@ class _TouchFishSnackbarOverlayState extends State<TouchFishSnackbarOverlay> {
                       child: Material(
                         elevation: 4,
                         borderRadius: BorderRadius.circular(8),
-                        color: Theme.of(context).colorScheme.inverseSurface,
+                        color: style.background,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          child: Text(message, style: TextStyle(color: Theme.of(context).colorScheme.onInverseSurface)),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (style.icon != null) ...[
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 1),
+                                  child: Icon(
+                                    style.icon,
+                                    size: 18,
+                                    color: style.foreground,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Flexible(
+                                child: Text(
+                                  message,
+                                  style: TextStyle(color: style.foreground),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

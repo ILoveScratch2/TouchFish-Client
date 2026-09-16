@@ -1759,6 +1759,36 @@ class AppLocalizationsOch extends AppLocalizations {
   String get messageReplyDismiss => '罷回覆';
 
   @override
+  String get messageSwipeMore => '更多';
+
+  @override
+  String get messageSwipeReply => '回覆';
+
+  @override
+  String get messageSwipeForward => '轉發';
+
+  @override
+  String get chatListPinRoom => '置頂聊天';
+
+  @override
+  String get chatListUnpinRoom => '罷置頂';
+
+  @override
+  String get chatListClearLocalData => '清除本地聊天資料';
+
+  @override
+  String get chatListClearLocalDataHint => '此操作將刪除該聊天之所有快取消息。伺服器之消息不受影響。繼續乎？';
+
+  @override
+  String get chatListClearLocalDataConfirm => '清';
+
+  @override
+  String get chatListClearLocalDataCancel => '罷';
+
+  @override
+  String get chatListClearLocalDataSuccess => '本地聊天資料已清';
+
+  @override
   String get chatRoomSettings => '聊天之設';
 
   @override

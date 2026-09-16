@@ -672,6 +672,17 @@
     }
   },
   "messageReplyDismiss": "罷回覆",
+  "messageSwipeMore": "更多",
+  "messageSwipeReply": "回覆",
+  "messageSwipeForward": "轉發",
+
+  "chatListPinRoom": "置頂聊天",
+  "chatListUnpinRoom": "罷置頂",
+  "chatListClearLocalData": "清除本地聊天資料",
+  "chatListClearLocalDataHint": "此操作將刪除該聊天之所有快取消息。伺服器之消息不受影響。繼續乎？",
+  "chatListClearLocalDataConfirm": "清",
+  "chatListClearLocalDataCancel": "罷",
+  "chatListClearLocalDataSuccess": "本地聊天資料已清",
 
   "chatRoomSettings": "聊天之設",
   "chatRoomMembers": "聊天成員",

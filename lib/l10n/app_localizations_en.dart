@@ -1845,6 +1845,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageReplyDismiss => 'Cancel reply';
 
   @override
+  String get messageSwipeMore => 'More';
+
+  @override
+  String get messageSwipeReply => 'Reply';
+
+  @override
+  String get messageSwipeForward => 'Forward';
+
+  @override
+  String get chatListPinRoom => 'Pin Chat';
+
+  @override
+  String get chatListUnpinRoom => 'Unpin Chat';
+
+  @override
+  String get chatListClearLocalData => 'Clear Local Chat Data';
+
+  @override
+  String get chatListClearLocalDataHint =>
+      'This will delete all cached messages for this chat. Server messages won\'t be affected. Continue?';
+
+  @override
+  String get chatListClearLocalDataConfirm => 'Clear';
+
+  @override
+  String get chatListClearLocalDataCancel => 'Cancel';
+
+  @override
+  String get chatListClearLocalDataSuccess => 'Local chat data cleared';
+
+  @override
   String get chatRoomSettings => 'Chat Settings';
 
   @override

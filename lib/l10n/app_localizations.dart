@@ -3478,6 +3478,66 @@ abstract class AppLocalizations {
   /// **'Cancel reply'**
   String get messageReplyDismiss;
 
+  /// No description provided for @messageSwipeMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get messageSwipeMore;
+
+  /// No description provided for @messageSwipeReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get messageSwipeReply;
+
+  /// No description provided for @messageSwipeForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward'**
+  String get messageSwipeForward;
+
+  /// No description provided for @chatListPinRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin Chat'**
+  String get chatListPinRoom;
+
+  /// No description provided for @chatListUnpinRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin Chat'**
+  String get chatListUnpinRoom;
+
+  /// No description provided for @chatListClearLocalData.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Local Chat Data'**
+  String get chatListClearLocalData;
+
+  /// No description provided for @chatListClearLocalDataHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This will delete all cached messages for this chat. Server messages won\'t be affected. Continue?'**
+  String get chatListClearLocalDataHint;
+
+  /// No description provided for @chatListClearLocalDataConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get chatListClearLocalDataConfirm;
+
+  /// No description provided for @chatListClearLocalDataCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get chatListClearLocalDataCancel;
+
+  /// No description provided for @chatListClearLocalDataSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Local chat data cleared'**
+  String get chatListClearLocalDataSuccess;
+
   /// No description provided for @chatRoomSettings.
   ///
   /// In en, this message translates to:

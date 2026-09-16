@@ -694,7 +694,18 @@
   "messageReplyingTo": "Replying to {name}",
   "@messageReplyingTo": {"placeholders": {"name": {"type": "String"}}},
   "messageReplyDismiss": "Cancel reply",
-  
+  "messageSwipeMore": "More",
+  "messageSwipeReply": "Reply",
+  "messageSwipeForward": "Forward",
+
+  "chatListPinRoom": "Pin Chat",
+  "chatListUnpinRoom": "Unpin Chat",
+  "chatListClearLocalData": "Clear Local Chat Data",
+  "chatListClearLocalDataHint": "This will delete all cached messages for this chat. Server messages won't be affected. Continue?",
+  "chatListClearLocalDataConfirm": "Clear",
+  "chatListClearLocalDataCancel": "Cancel",
+  "chatListClearLocalDataSuccess": "Local chat data cleared",
+
   "chatRoomSettings": "Chat Settings",
   "chatRoomMembers": "Chat Members",
   "chatRoomEdit": "Edit Chat",

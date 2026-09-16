@@ -682,7 +682,18 @@
   "messageQuoteMissing": "原消息不可用",
   "messageReplyingTo": "回复 {name}",
   "messageReplyDismiss": "取消回复",
-  
+  "messageSwipeMore": "更多",
+  "messageSwipeReply": "回复",
+  "messageSwipeForward": "转发",
+
+  "chatListPinRoom": "置顶聊天",
+  "chatListUnpinRoom": "取消置顶",
+  "chatListClearLocalData": "清除本地聊天数据",
+  "chatListClearLocalDataHint": "这将删除此聊天的所有缓存消息。服务器消息不受影响。继续吗？",
+  "chatListClearLocalDataConfirm": "清除",
+  "chatListClearLocalDataCancel": "取消",
+  "chatListClearLocalDataSuccess": "本地聊天数据已清除",
+
   "chatRoomSettings": "聊天设置",
   "chatRoomMembers": "聊天成员",
   "chatRoomEdit": "编辑聊天",

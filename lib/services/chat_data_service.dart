@@ -75,7 +75,8 @@ class ChatDataService extends ChangeNotifier {
   static ChatDataService get instance => _instance ??= ChatDataService._();
   ChatDataService._();
 
-  final StreamController<({String clientMid, String error})> _ackErrorController =
+  final StreamController<({String clientMid, String error})>
+  _ackErrorController =
       StreamController<({String clientMid, String error})>.broadcast();
   Stream<({String clientMid, String error})> get ackErrorStream =>
       _ackErrorController.stream;
@@ -96,7 +97,7 @@ class ChatDataService extends ChangeNotifier {
   String? _roomPreferencesScope;
   final Set<String> _fetchingGroups = {};
   final Set<String> _fetchingUsers = {}; // 正在加载的用户资料
-  
+
   // 分房间通知回调(河流pod)
   final Map<String, List<VoidCallback>> _roomListeners = {};
   // 每房间只补发一次，
@@ -258,10 +259,10 @@ class ChatDataService extends ChangeNotifier {
     _touchCacheRoom(roomId);
     _evictCacheIfNeeded();
     unawaited(_localStore.saveMessages(roomId, msgs));
-    
+
     // 分房间通知（新增）
     _notifyRoom(roomId);
-    
+
     // 全局通知（保留兼容性）
     notifyListeners();
   }
@@ -511,8 +512,31 @@ class ChatDataService extends ChangeNotifier {
       );
     }
     _sortRooms();
+    _notifyRoom(roomId);
     notifyListeners();
     return true;
+  }
+
+  /// 更新聊天室置顶状态的便捷方法
+  Future<bool> updateRoomPinState(String roomId, bool isPinned) async {
+    return updateRoomPreference(roomId, isPinned: isPinned);
+  }
+
+  /// 清除聊天室本地缓存数据
+  Future<void> clearRoomLocalData(String roomId) async {
+    final generation = _generation;
+    // 清除消息缓存
+    _messageCache.remove(roomId);
+    _cacheAccessOrder.remove(roomId);
+
+    // 清除本地消息存储
+    await _localStore.deleteRoom(roomId);
+
+    if (_generation != generation) return;
+
+    // 保留聊天室列表中的最后消息摘要；它来自服务端，不属于本地消息缓存。
+    _notifyRoom(roomId);
+    notifyListeners();
   }
 
   Future<void> init() async {
@@ -1190,9 +1214,7 @@ class ChatDataService extends ChangeNotifier {
             body: msg.text,
             avatarUrl: msg.senderAvatar ?? room.avatar,
             route: '/chat/$roomId',
-            topic: isGroupRoom(roomId)
-                ? 'message.group'
-                : 'message.private',
+            topic: isGroupRoom(roomId) ? 'message.group' : 'message.private',
             senderKey: roomId,
             roomId: roomId,
           ),
@@ -1256,7 +1278,7 @@ class ChatDataService extends ChangeNotifier {
     if (_userCache[roomId] != null) return;
     // 防止重复加载同一个用户
     if (!_fetchingUsers.add(roomId)) return;
-    
+
     final puid = _parseUid(roomId);
     if (puid == null) {
       _fetchingUsers.remove(roomId);
@@ -1264,36 +1286,38 @@ class ChatDataService extends ChangeNotifier {
     }
     final generation = _generation;
     final uid = AuthState.instance.uid;
-    
-    TfApiClient.instance.getUserByUid(puid).then((profile) {
-      _fetchingUsers.remove(roomId);
-      
-      if (profile == null ||
-          _generation != generation ||
-          AuthState.instance.uid != uid) {
-        return;
-      }
-      _userCache[profile.uid] = profile;
-      // profile.uid 是 "U{uid}" 格式，但是之前有问题
-      _userCache[roomIdFromUid(puid)] = profile;
-      _updateRoomAndContacts(roomId, profile.username, profile.avatar);
-      _fillMsgAvatars(
-        messageRoomId ?? roomId,
-        puid,
-        profile.username,
-        profile.avatar,
-      );
-      // 强制通知UI刷新，确保"User X"被更新
-      notifyListeners();
-    }).catchError((error, stack) {
-      _fetchingUsers.remove(roomId);
-      talker.error('Failed to fetch profile for $roomId', error, stack);
-    });
+
+    TfApiClient.instance
+        .getUserByUid(puid)
+        .then((profile) {
+          _fetchingUsers.remove(roomId);
+
+          if (profile == null ||
+              _generation != generation ||
+              AuthState.instance.uid != uid) {
+            return;
+          }
+          _userCache[profile.uid] = profile;
+          // profile.uid 是 "U{uid}" 格式，但是之前有问题
+          _userCache[roomIdFromUid(puid)] = profile;
+          _updateRoomAndContacts(roomId, profile.username, profile.avatar);
+          _fillMsgAvatars(
+            messageRoomId ?? roomId,
+            puid,
+            profile.username,
+            profile.avatar,
+          );
+          // 强制通知UI刷新，确保"User X"被更新
+          notifyListeners();
+        })
+        .catchError((error, stack) {
+          _fetchingUsers.remove(roomId);
+          talker.error('Failed to fetch profile for $roomId', error, stack);
+        });
   }
 
   /// 为群聊房间补拉群资料（名称/头像）。
-  Future<void> ensureGroupInfo(int gid) =>
-      _ensureGroupInfo('G$gid');
+  Future<void> ensureGroupInfo(int gid) => _ensureGroupInfo('G$gid');
 
   Future<void> _ensureGroupInfo(String roomId) async {
     if (!isGroupRoom(roomId)) return;
@@ -1328,7 +1352,11 @@ class ChatDataService extends ChangeNotifier {
       _updateRoomAndContacts(roomId, groupName, avatarUrl);
       notifyListeners();
     } catch (e, stack) {
-      talker.error('ChatDataService fetch group info failed for $roomId', e, stack);
+      talker.error(
+        'ChatDataService fetch group info failed for $roomId',
+        e,
+        stack,
+      );
     } finally {
       _fetchingGroups.remove(roomId);
     }

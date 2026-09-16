@@ -1818,6 +1818,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.8.24"
+  super_context_menu:
+    dependency: "direct main"
+    description:
+      name: super_context_menu
+      sha256: "2652802b173413f05ec91e21eaa24c8b39e2c9b9168241cc75bfa8be228974c3"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.8.24"
   super_native_extensions:
     dependency: transitive
     description:

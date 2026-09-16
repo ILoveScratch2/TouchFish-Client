@@ -27,6 +27,7 @@ import '../providers/task/task_manager_provider.dart';
 import '../models/file_task.dart';
 import 'sheet_scaffold.dart';
 import 'sticker_text_renderer.dart';
+import 'message_swipeable_wrapper.dart';
 
 final _stickerTestPattern = RegExp(r':[A-Za-z0-9_]+\+[A-Za-z0-9_-]+:');
 
@@ -145,7 +146,8 @@ class _MessageBubbleContent extends StatefulWidget {
   State<_MessageBubbleContent> createState() => _MessageBubbleState();
 }
 
-class _MessageBubbleState extends State<_MessageBubbleContent> with AutomaticKeepAliveClientMixin {
+class _MessageBubbleState extends State<_MessageBubbleContent>
+    with AutomaticKeepAliveClientMixin {
   static _MessageBubbleState? _activeHoverOwner;
 
   final GlobalKey _bubbleKey = GlobalKey();
@@ -409,10 +411,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> with AutomaticKee
       'bubble',
     );
     if (style == 'compact' || style == 'column') {
-      return _buildLinearLayout(
-        context,
-        isCompact: style == 'compact',
-      );
+      return _buildLinearLayout(context, isCompact: style == 'compact');
     }
     return _buildBubbleLayout(context);
   }
@@ -436,7 +435,8 @@ class _MessageBubbleState extends State<_MessageBubbleContent> with AutomaticKee
         widget.message.senderAvatar ??
         (widget.message.isMe ? AuthState.instance.currentUser?.avatar : null);
 
-    return Align(
+    // 滑动手势包装器
+    final bubbleContent = Align(
       key: ValueKey('message-alignment-${widget.message.id}'),
       alignment: widget.message.isMe
           ? Alignment.centerRight
@@ -623,6 +623,24 @@ class _MessageBubbleState extends State<_MessageBubbleContent> with AutomaticKee
         ),
       ),
     );
+
+    // 移动端添加滑动手势支持
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      return MessageSwipeableWrapper(
+        messageId: widget.message.id,
+        isCurrentUser: widget.message.isMe,
+        onReply: widget.onReply == null
+            ? null
+            : () => widget.onReply!(widget.message),
+        onForward: widget.onForward == null
+            ? null
+            : () => widget.onForward!(widget.message),
+        onShowMenu: _showActionSheet,
+        child: bubbleContent,
+      );
+    }
+
+    return bubbleContent;
   }
 
   // ---------- compact / column ----------
@@ -821,13 +839,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> with AutomaticKee
       children: [
         Icon(icon, size: 12, color: color),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 11,
-            color: color,
-          ),
-        ),
+        Text(text, style: TextStyle(fontSize: 11, color: color)),
       ],
     );
   }
@@ -915,7 +927,9 @@ class _MessageBubbleState extends State<_MessageBubbleContent> with AutomaticKee
     try {
       return DateFormat.MMMd(locale.toString()).add_Hm().format(time);
     } catch (e) {
-      return DateFormat.MMMd(locale.languageCode == 'och' ? 'zh' : locale.languageCode).add_Hm().format(time);
+      return DateFormat.MMMd(
+        locale.languageCode == 'och' ? 'zh' : locale.languageCode,
+      ).add_Hm().format(time);
     }
   }
 
@@ -1440,8 +1454,8 @@ class _UploadProgressOverlay extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final progress = task.progress;
-    final isInstantUpload = task.status == FileTaskStatus.preparing && 
-                            progress == null;
+    final isInstantUpload =
+        task.status == FileTaskStatus.preparing && progress == null;
 
     return Container(
       // 柔和半透明遮罩，更优雅的视觉效果
@@ -1477,7 +1491,7 @@ class _UploadProgressOverlay extends ConsumerWidget {
                   child: CircularProgressIndicator(
                     value: progress,
                     strokeWidth: 2,
-                    color: isInstantUpload 
+                    color: isInstantUpload
                         ? colorScheme.tertiary
                         : colorScheme.primary,
                   ),

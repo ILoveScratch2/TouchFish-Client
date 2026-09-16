@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:material_symbols_icons/symbols.dart';
+import 'package:super_context_menu/super_context_menu.dart';
 import '../models/chat_model.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/chat/message_provider.dart';
+import '../services/chat_data_service.dart';
+import '../services/snackbar_service.dart';
 import 'optimized_image.dart';
 
 /// 测试或独立嵌入时可能没有祖先 ProviderScope（应用本体由 main.dart 提供），
@@ -56,41 +60,47 @@ class _ChatListContent extends ConsumerWidget {
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
-        backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        collapsedBackgroundColor: colorScheme.surfaceContainer.withValues(alpha: 0.5),
+        backgroundColor: colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.5,
+        ),
+        collapsedBackgroundColor: colorScheme.surfaceContainer.withValues(
+          alpha: 0.5,
+        ),
         title: Text(l10n.chatPinned),
         leading: const Icon(Icons.push_pin),
         initiallyExpanded: true,
-        children: rooms
-            .map((room) => _ChatRoomTile(room: room))
-            .toList(),
+        children: rooms.map((room) => _ChatRoomTile(room: room)).toList(),
       ),
     );
   }
-
 }
 
-class _ChatRoomTile extends ConsumerWidget {
+class _ChatRoomTile extends ConsumerStatefulWidget {
   final ChatRoom room;
 
   const _ChatRoomTile({required this.room});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ChatRoomTile> createState() => _ChatRoomTileState();
+}
+
+class _ChatRoomTileState extends ConsumerState<_ChatRoomTile> {
+  ChatRoom get room => widget.room;
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final unread = ref.watch(unreadCountProvider(room.id));
     final timeText = room.lastMessageTime != null
         ? _formatRoomTime(room.lastMessageTime!, context)
         : null;
 
-    return ListTile(
+    final listTile = ListTile(
       leading: _buildAvatar(context, room),
       title: Text(
         room.name,
         style: TextStyle(
-          fontWeight: unread > 0
-              ? FontWeight.bold
-              : FontWeight.normal,
+          fontWeight: unread > 0 ? FontWeight.bold : FontWeight.normal,
         ),
       ),
       subtitle: room.lastMessage != null
@@ -142,6 +152,94 @@ class _ChatRoomTile extends ConsumerWidget {
         context.go('/chat/${room.id}');
       },
     );
+
+    return ContextMenuWidget(
+      child: listTile,
+      menuProvider: (_) => _buildContextMenu(context),
+    );
+  }
+
+  Menu _buildContextMenu(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Menu(
+      children: [
+        MenuAction(
+          title: room.isPinned ? l10n.chatListUnpinRoom : l10n.chatListPinRoom,
+          image: MenuImage.icon(Symbols.push_pin),
+          callback: _togglePin,
+        ),
+        MenuAction(
+          title: l10n.chatListClearLocalData,
+          image: MenuImage.icon(Symbols.delete_forever),
+          attributes: const MenuActionAttributes(destructive: true),
+          callback: _clearLocalData,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _togglePin() async {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final snackbar = TouchFishSnackbarService.instance;
+
+    try {
+      final newPinState = !room.isPinned;
+      final success = await ChatDataService.instance.updateRoomPinState(
+        room.id,
+        newPinState,
+      );
+
+      if (success) {
+        snackbar.showSuccess(
+          newPinState ? l10n.chatRoomPinned : l10n.chatRoomUnpinned,
+        );
+      } else {
+        snackbar.showError(l10n.commonFailedOperation);
+      }
+    } catch (e) {
+      snackbar.showError('${l10n.commonFailedOperation}: $e');
+    }
+  }
+
+  Future<void> _clearLocalData() async {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final snackbar = TouchFishSnackbarService.instance;
+
+    try {
+      // 确认对话框
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(l10n.chatListClearLocalData),
+          content: Text(l10n.chatListClearLocalDataHint),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.chatListClearLocalDataCancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              child: Text(l10n.chatListClearLocalDataConfirm),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+
+      // 清除本地缓存
+      await ChatDataService.instance.clearRoomLocalData(room.id);
+
+      snackbar.showSuccess(l10n.chatListClearLocalDataSuccess);
+    } catch (e) {
+      snackbar.showError('${l10n.commonFailedOperation}: $e');
+    }
   }
 
   Widget _buildAvatar(BuildContext context, ChatRoom room) {
@@ -181,8 +279,7 @@ String _formatRoomTime(DateTime time, BuildContext context) {
   } else if (difference.inDays < 7) {
     // 一周内显示星期
     final locale = Localizations.localeOf(context);
-    final dateLocale =
-        locale.languageCode == 'och' ? 'zh' : locale.toString();
+    final dateLocale = locale.languageCode == 'och' ? 'zh' : locale.toString();
     return DateFormat.E(dateLocale).format(time);
   } else {
     // 超过一周显示日期
