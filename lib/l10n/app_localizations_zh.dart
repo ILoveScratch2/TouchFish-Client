@@ -2114,6 +2114,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutDocumentation => '文档';
 
   @override
+  String get aboutClientDocumentation => 'Client 文档';
+
+  @override
   String get aboutServerRepository => '后端服务器';
 
   @override

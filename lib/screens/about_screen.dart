@@ -887,6 +887,14 @@ class _AboutScreenState extends State<AboutScreen>
                           ),
                           _buildListTile(
                             context,
+                            icon: Symbols.menu_book,
+                            title: l10n.aboutClientDocumentation,
+                            onTap: () => _launchURL(
+                              AppConstants.clientDocumentationUrl,
+                            ),
+                          ),
+                          _buildListTile(
+                            context,
                             icon: Symbols.dns,
                             title: l10n.aboutServerRepository,
                             onTap: () =>

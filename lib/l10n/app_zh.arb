@@ -801,6 +801,7 @@
   "aboutBuildNumber": "构建号",
   "aboutLinksSection": "链接",
   "aboutDocumentation": "文档",
+  "aboutClientDocumentation": "Client 文档",
   "aboutServerRepository": "后端服务器",
   "aboutFontLicense": "字体许可",
   "aboutFontLicenseDialogTitle": "字体许可",

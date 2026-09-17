@@ -4162,6 +4162,12 @@ abstract class AppLocalizations {
   /// **'Documentation'**
   String get aboutDocumentation;
 
+  /// No description provided for @aboutClientDocumentation.
+  ///
+  /// In en, this message translates to:
+  /// **'Client Documentation'**
+  String get aboutClientDocumentation;
+
   /// No description provided for @aboutServerRepository.
   ///
   /// In en, this message translates to:

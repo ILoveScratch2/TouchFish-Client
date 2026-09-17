@@ -827,6 +827,7 @@
   "aboutBuildNumber": "Build Number",
   "aboutLinksSection": "Links",
   "aboutDocumentation": "Documentation",
+  "aboutClientDocumentation": "Client Documentation",
   "aboutServerRepository": "Backend Server",
   "aboutFontLicense": "Font License",
   "aboutFontLicenseDialogTitle": "Font License",

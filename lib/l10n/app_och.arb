@@ -807,6 +807,7 @@
   "aboutBuildNumber": "建號",
   "aboutLinksSection": "鏈接",
   "aboutDocumentation": "文檔",
+  "aboutClientDocumentation": "客戶端文檔",
   "aboutServerRepository": "後端服器",
   "aboutFontLicense": "字體許可",
   "aboutFontLicenseDialogTitle": "字之許可",

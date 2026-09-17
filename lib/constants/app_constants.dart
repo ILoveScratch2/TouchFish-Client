@@ -9,6 +9,8 @@ class AppConstants {
 
   // URLs
   static const String documentationUrl = 'https://touchfish.ilovescratch.us.ci';
+  static const String clientDocumentationUrl =
+      'https://touchfishclient.ilovescratch.us.ci/';
   static const String githubRepoUrl =
       'https://github.com/ILoveScratch2/TouchFish-Client';
   static const String githubServerRepoUrl =

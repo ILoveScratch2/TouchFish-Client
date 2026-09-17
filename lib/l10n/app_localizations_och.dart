@@ -2113,6 +2113,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get aboutDocumentation => '文檔';
 
   @override
+  String get aboutClientDocumentation => '客戶端文檔';
+
+  @override
   String get aboutServerRepository => '後端服器';
 
   @override

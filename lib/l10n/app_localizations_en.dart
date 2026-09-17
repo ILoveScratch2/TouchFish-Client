@@ -2207,6 +2207,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutDocumentation => 'Documentation';
 
   @override
+  String get aboutClientDocumentation => 'Client Documentation';
+
+  @override
   String get aboutServerRepository => 'Backend Server';
 
   @override
