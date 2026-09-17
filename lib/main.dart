@@ -19,6 +19,7 @@ import 'routes/app_routes.dart';
 import 'services/auth_state.dart';
 import 'services/api/tf_api_client.dart';
 import 'services/rsa_key_trust_service.dart';
+import 'services/app_foreground_service.dart';
 import 'services/app_notification_service.dart';
 import 'services/chat_data_service.dart';
 import 'services/chat_ws_service.dart';
@@ -95,6 +96,9 @@ Future<void> main() async {
       };
     }
 
+    // 窗口焦点/应用生命周期状态：聊天页靠它区分"失焦期间的未读"与"真的看到了"
+    await AppForegroundService.instance.initialize();
+
     final prefs = await SharedPreferences.getInstance();
 
     if (isDesktop) {
@@ -146,6 +150,8 @@ Future<void> main() async {
         if (!DesktopAppLifecycleService.instance.wasHiddenInTray) {
           await windowManager.show();
           await windowManager.focus();
+          // initialize() 早于窗口显示，这里显式纠正前台状态
+          AppForegroundService.instance.setWindowVisible(true);
         }
       });
     }

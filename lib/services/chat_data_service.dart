@@ -1031,6 +1031,10 @@ class ChatDataService extends ChangeNotifier {
     }
   }
 
+  @visibleForTesting
+  void deliverIncomingMessage(String roomId, ChatMessage msg) =>
+      _addToCache(roomId, msg);
+
   /// 处理 /message/sync 补拉到的消息（静默合并：不发横幅、只累计未读角标）。
   void processSyncedMessages(
     String roomId,
@@ -1087,7 +1091,6 @@ class ChatDataService extends ChangeNotifier {
         listChanged = true;
       }
     }
-    if (listChanged) _notifyRoom(roomId);
 
     // 历史恢复的消息同样参照 _addToCache 的通知判定累计未读角标，
     // 这样在另一平台离线期间的私聊/群聊消息会在聊天列表右侧
@@ -1127,6 +1130,8 @@ class ChatDataService extends ChangeNotifier {
       }
       _rooms[idx] = updated;
     }
+    // 未读早于房间通知
+    if (listChanged) _notifyRoom(roomId);
     unawaited(_ensureGroupInfo(roomId));
     _sortRooms();
     notifyListeners();
@@ -1166,7 +1171,6 @@ class ChatDataService extends ChangeNotifier {
       if (listChanged) _notifyRoom(roomId);
       return;
     }
-    _notifyRoom(roomId);
 
     if (!msg.isMe && msg.senderAvatar == null && msg.senderUid != null) {
       _fetchProfileForRoom(
@@ -1201,6 +1205,8 @@ class ChatDataService extends ChangeNotifier {
     } else {
       _addNewRoom(roomId, msg, unreadCount: shouldNotify ? 1 : 0);
     }
+    // 先记完未读再通知房间，反了会把刚清掉的未读又 +1 回来，什么神金问题
+    _notifyRoom(roomId);
     unawaited(_ensureGroupInfo(roomId));
     _sortRooms();
     notifyListeners();

@@ -8,6 +8,7 @@ import 'package:window_manager/window_manager.dart';
 
 import '../models/app_state.dart';
 import '../models/settings_service.dart';
+import '../services/app_foreground_service.dart';
 import '../services/lock_service.dart';
 import '../utils/l10n.dart';
 import '../utils/talker.dart';
@@ -27,8 +28,6 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
   bool _trayReady = false;
   String? _lastTrayLanguage;
 
-  /// Whether the window was hidden to the tray during the previous session.
-  /// Used on startup to decide whether the window should be shown at all.
   bool get wasHiddenInTray => _wasHiddenInTray;
   bool _wasHiddenInTray = false;
 
@@ -63,10 +62,6 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
     unawaited(_applyTrayLabels());
   }
 
-  /// Sets up the tray icon and intercepts window close. Must be called after
-  /// the native window is fully created (i.e. inside
-  /// [WindowManager.waitUntilReadyToShow]), otherwise the tray icon fails to
-  /// register on Windows because the main window handle is not valid yet.
   Future<void> afterWindowReady() async {
     if (kIsWeb ||
         (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux)) {
@@ -76,8 +71,6 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
     await windowManager.setPreventClose(true);
   }
 
-  /// Restores the persisted window state (maximized) after the window is
-  /// ready to be shown. Called from [main] after the window is displayed.
   Future<void> restoreWindowState() async {
     if (kIsWeb ||
         (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux)) {
@@ -88,8 +81,6 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
 
   Future<void> _setupTray() async {
     try {
-      // Windows only supports .ico via LoadImage, while macOS/Linux work
-      // well with PNG. Use the platform-appropriate icon file.
       final iconAsset = Platform.isWindows ? 'assets/icon.ico' : 'assets/logo.png';
       await trayManager.setIcon(iconAsset);
       await _applyTrayLabels();
@@ -99,11 +90,7 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
     }
   }
 
-  /// 应用当前语言的托盘提示与菜单标签。
-  ///
-  /// 托盘在 runApp() 之前建立，没有 BuildContext；
-  /// 用 [currentAppLocalizations] 按当前语言设置解析。
-  /// 语言切换时（[_onAppStateChanged]）也会重新应用。
+  /// 应用当前语言的托盘提示与菜单标签，托盘在 runApp() 之前建立，没有 BuildContext
   Future<void> _applyTrayLabels() async {
     final l10n = currentAppLocalizations();
     _lastTrayLanguage = l10n.localeName;
@@ -137,11 +124,11 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
     );
   }
 
-  /// Shows and focuses the main window.
   Future<void> showWindow() async {
     try {
       await windowManager.show();
       await windowManager.focus();
+      AppForegroundService.instance.setWindowVisible(true);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(keyWasInTray, false);
       _wasHiddenInTray = false;
@@ -150,11 +137,11 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
     }
   }
 
-  /// Hides the main window to the system tray.
   Future<void> hideWindow() async {
     try {
       await _saveWindowState();
       await windowManager.hide();
+      AppForegroundService.instance.setWindowVisible(false);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(keyWasInTray, true);
       _wasHiddenInTray = true;
@@ -163,7 +150,6 @@ class DesktopAppLifecycleService with TrayListener, WindowListener {
     }
   }
 
-  /// Truly quits the app.
   Future<void> quit() async {
     if (_isQuitting) return;
     _isQuitting = true;

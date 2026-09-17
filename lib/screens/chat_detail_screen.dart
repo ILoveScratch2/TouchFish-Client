@@ -23,6 +23,7 @@ import '../services/api/tf_api_client.dart';
 import '../services/file_service.dart';
 import '../services/snackbar_service.dart';
 import '../services/chat_ws_service.dart';
+import '../services/app_foreground_service.dart';
 import '../services/chat_data_service.dart';
 import '../services/call_service.dart';
 import '../services/draft_service.dart';
@@ -397,6 +398,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     if (_realtimeListenersAttached) return;
     ChatWsService.instance.addListener(_onWsStateChanged);
     ChatDataService.instance.addListener(_onChatDataChanged);
+    AppForegroundService.instance.addListener(_onForegroundChanged);
     _essenceSub = NotificationService.instance.essenceChanges.listen(
       _onEssenceChanged,
     );
@@ -408,6 +410,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     if (!_realtimeListenersAttached) return;
     ChatWsService.instance.removeListener(_onWsStateChanged);
     ChatDataService.instance.removeListener(_onChatDataChanged);
+    AppForegroundService.instance.removeListener(_onForegroundChanged);
     _essenceSub?.cancel();
     _essenceSub = null;
     _typingSub?.cancel();
@@ -483,14 +486,33 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   }
 
   void _markVisibleMessagesRead({String? previousLastId}) {
+    if (!AppForegroundService.instance.isForeground) return;
     if (_messages.isEmpty) return;
     final lastMsg = _messages.last;
     final hasNewVisibleTail =
         previousLastId == null || lastMsg.id != previousLastId;
     if (!hasNewVisibleTail || lastMsg.isMe || lastMsg.mid == null) return;
+    _clearRoomUnread(lastMsg.mid);
+  }
+
+  void _onForegroundChanged() {
+    if (!mounted || !_treeActive) return;
+    if (!AppForegroundService.instance.isForeground) return;
+    if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
+    _clearRoomUnread(_lastIncomingMessage?.mid);
+  }
+
+  ChatMessage? get _lastIncomingMessage {
+    for (final message in _messages.reversed) {
+      if (!message.isMe && message.mid != null) return message;
+    }
+    return null;
+  }
+
+  void _clearRoomUnread(int? lastMid) {
     ChatDataService.instance.clearUnread(_contactUid);
-    if (_wsConnected) {
-      ChatWsService.instance.sendReadReceipt(_contactUid, lastMsg.mid!);
+    if (_wsConnected && lastMid != null) {
+      ChatWsService.instance.sendReadReceipt(_contactUid, lastMid);
     }
   }
 
