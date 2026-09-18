@@ -1882,6 +1882,18 @@ abstract class AppLocalizations {
   /// **'View EXIF info'**
   String get imageExif;
 
+  /// No description provided for @imageViewOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'View original'**
+  String get imageViewOriginal;
+
+  /// No description provided for @imageViewThumbnail.
+  ///
+  /// In en, this message translates to:
+  /// **'View thumbnail'**
+  String get imageViewThumbnail;
+
   /// No description provided for @chatSelectPlaceholder.
   ///
   /// In en, this message translates to:
@@ -3849,6 +3861,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Preview unavailable'**
   String get filePreviewFailed;
+
+  /// No description provided for @mediaTapToLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to load'**
+  String get mediaTapToLoad;
 
   /// No description provided for @fileDownload.
   ///
@@ -6855,6 +6873,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Load media only after you tap it'**
   String get settingsDataSavingDesc;
+
+  /// No description provided for @settingsThumbnailPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use thumbnails in chats'**
+  String get settingsThumbnailPreviewTitle;
+
+  /// No description provided for @settingsThumbnailPreviewDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Load server-generated thumbnails in chat bubbles; the original image loads only when opened (saves data)'**
+  String get settingsThumbnailPreviewDesc;
 
   /// No description provided for @settingsIpOverrideTitle.
   ///

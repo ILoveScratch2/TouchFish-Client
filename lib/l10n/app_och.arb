@@ -322,6 +322,8 @@
   "imageRotateLeft": "左旋",
   "imageRotateRight": "右旋",
   "imageExif": "覽 EXIF",
+  "imageViewOriginal": "覽原圖",
+  "imageViewThumbnail": "覽縮略圖",
 
 
   "chatSelectPlaceholder": "擇一對話以啟談",
@@ -737,6 +739,7 @@
   "mediaPauseAudio": "暫音",
   "filePreview": "預觀",
   "filePreviewFailed": "不可預觀文件",
+  "mediaTapToLoad": "點擊加載",
   "fileDownload": "下載",
   "fileDownloading": "方下載…",
   "fileDownloadStarted": "下載已始",
@@ -1427,6 +1430,8 @@
   "settingsWeakNetworkDesc": "網絡不穩定時使用定時同步",
   "settingsDataSavingTitle": "省流量模式",
   "settingsDataSavingDesc": "點擊後才加載媒體內容",
+  "settingsThumbnailPreviewTitle": "聊天圖片使用縮略圖",
+  "settingsThumbnailPreviewDesc": "氣泡中加載服務端縮略圖，點開後加載原圖（省流量）",
   "settingsIpOverrideTitle": "IP 覆蓋模式",
   "settingsIpOverrideDesc": "連接指定 IP，同時保留原域名用於 TLS",
   "settingsIpOverrideOff": "關閉",

@@ -79,6 +79,8 @@ class TfChatListItem {
   final bool isFriend;
   final bool? isPinned;
   final int? notifyLevel;
+  final String? alias;
+  final String? description;
 
   const TfChatListItem({
     required this.roomId,
@@ -95,6 +97,8 @@ class TfChatListItem {
     required this.isFriend,
     this.isPinned,
     this.notifyLevel,
+    this.alias,
+    this.description,
   });
 
   String? get visibleLastContent => lastDeleted ? null : lastContent;
@@ -115,6 +119,8 @@ class TfChatListItem {
       isFriend: json['is_friend'] as bool? ?? false,
       isPinned: json['is_pinned'] as bool?,
       notifyLevel: (json['notify_level'] as num?)?.toInt(),
+      alias: json['alias'] as String?,
+      description: json['description'] as String?,
     );
   }
 }
@@ -2422,6 +2428,21 @@ class TfApiClient {
     return '$baseUrl/file/get_file/${Uri.encodeComponent(hash)}';
   }
 
+  Future<String> getThumbnailUrl(String hash) async {
+    final baseUrl = await getBaseUrl();
+    return '$baseUrl/file/get_thumbnail/${Uri.encodeComponent(hash)}';
+  }
+
+  /// 从原图 URL 推导缩略图 URL（同一服务器的 /file/get_file/ 换成 /file/get_thumbnail/）。
+  ///
+  /// 非 file/get_file 的 URL（blob:、外链等）返回 null：拿原图当缩略图会导致重复下载。
+  static String? thumbnailUrlFromFileUrl(String fileUrl) {
+    if (fileUrl.contains('/file/get_file/')) {
+      return fileUrl.replaceFirst('/file/get_file/', '/file/get_thumbnail/');
+    }
+    return null;
+  }
+
   Future<String> getStickerUrl(String hash) async {
     final baseUrl = await getBaseUrl();
     return '$baseUrl/sticker/get/${Uri.encodeComponent(hash)}';
@@ -2671,7 +2692,63 @@ class TfApiClient {
     return result?['success'] == true;
   }
 
+  /// 已拉取的文件元数据缓存
+  final Map<String, FileAttachment> _fileMetadataCache = {};
+
+  /// 无 blurhash 结果的拉取时间
+  static const _fileMetadataMissTtl = Duration(minutes: 5);
+  final Map<String, DateTime> _fileMetadataMissedAt = {};
+
+  /// 拉取服务端文件数据
   Future<FileAttachment?> getFileMetadata(String hash) async {
+    if (hash.isEmpty) return null;
+    final cached = _fileMetadataCache[hash];
+    if (cached != null) return cached;
+    final missedAt = _fileMetadataMissedAt[hash];
+    if (missedAt != null &&
+        DateTime.now().difference(missedAt) < _fileMetadataMissTtl) {
+      return null;
+    }
+    final metadata = await _fetchFileInfo(hash) ?? await _headFileMetadata(hash);
+    if (metadata == null) return null;
+    if (metadata.blurhash != null) {
+      if (_fileMetadataCache.length >= 512) _fileMetadataCache.clear();
+      _fileMetadataCache[hash] = metadata;
+      _fileMetadataMissedAt.remove(hash);
+    } else {
+      if (_fileMetadataMissedAt.length >= 512) _fileMetadataMissedAt.clear();
+      _fileMetadataMissedAt[hash] = DateTime.now();
+    }
+    return metadata;
+  }
+
+  Future<FileAttachment?> _fetchFileInfo(String hash) async {
+    try {
+      final baseUrl = await getBaseUrl();
+      final response = await _http
+          .get(
+            Uri.parse(
+              '$baseUrl/file/get_file_info/${Uri.encodeComponent(hash)}',
+            ),
+            headers: {'User-Agent': await _officialUserAgent()},
+          )
+          .timeout(_defaultTimeout);
+      if (response.statusCode < 200 || response.statusCode >= 400) return null;
+      final decoded = jsonDecode(
+        utf8.decode(response.bodyBytes, allowMalformed: true),
+      );
+      if (decoded is! Map || decoded.isEmpty) return null;
+      return FileAttachment.fromMap({
+        ...Map<String, dynamic>.from(decoded),
+        'hash': hash,
+      });
+    } catch (e) {
+      talker.warning('getFileInfo $hash failed', e);
+      return null;
+    }
+  }
+
+  Future<FileAttachment?> _headFileMetadata(String hash) async {
     try {
       final url = await getFileUrl(hash);
       final response = await _http
@@ -2735,10 +2812,14 @@ class TfApiClient {
     String roomId, {
     bool? isPinned,
     int? notifyLevel,
+    String? alias,
+    String? description,
   }) async {
     final body = <String, dynamic>{'room_id': roomId};
     if (isPinned != null) body['is_pinned'] = isPinned;
     if (notifyLevel != null) body['notify_level'] = notifyLevel;
+    if (alias != null) body['alias'] = alias;
+    if (description != null) body['description'] = description;
     final result = await secretPost(
       '/chat/preferences/update',
       body,

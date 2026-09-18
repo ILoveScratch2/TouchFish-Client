@@ -918,6 +918,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get imageExif => '查看 EXIF 信息';
 
   @override
+  String get imageViewOriginal => '查看原图';
+
+  @override
+  String get imageViewThumbnail => '查看缩略图';
+
+  @override
   String get chatSelectPlaceholder => '选择一个聊天开始对话';
 
   @override
@@ -1944,6 +1950,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get filePreviewFailed => '无法预览文件';
+
+  @override
+  String get mediaTapToLoad => '点击加载';
 
   @override
   String get fileDownload => '下载';
@@ -3533,6 +3542,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsDataSavingDesc => '点击后才加载媒体内容';
+
+  @override
+  String get settingsThumbnailPreviewTitle => '聊天图片使用缩略图';
+
+  @override
+  String get settingsThumbnailPreviewDesc => '气泡中加载服务端缩略图，点开后加载原图（省流量）';
 
   @override
   String get settingsIpOverrideTitle => 'IP 覆盖模式';

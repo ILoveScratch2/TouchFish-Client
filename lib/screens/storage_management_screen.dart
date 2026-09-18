@@ -8,6 +8,7 @@ import '../widgets/app_alert_dialog.dart';
 import '../l10n/app_localizations.dart';
 import '../models/file_attachment.dart';
 import '../widgets/file_attachment_view.dart';
+import '../widgets/file_thumbnail.dart';
 import '../widgets/sheet_scaffold.dart';
 
 class StorageManagementScreen extends StatefulWidget {
@@ -422,20 +423,29 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
           '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
     }
 
-    return ListTile(
-      leading: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: _fileIconColor(fileName, colorScheme).withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          _fileIcon(fileName),
-          color: _fileIconColor(fileName, colorScheme),
-          size: 24,
-        ),
+    final leadingFallback = Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: _fileIconColor(fileName, colorScheme).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
       ),
+      child: Icon(
+        _fileIcon(fileName),
+        color: _fileIconColor(fileName, colorScheme),
+        size: 24,
+      ),
+    );
+    final attachment = FileAttachment.fromMap(file);
+    final leading = attachment.isImage && attachment.hasThumb && hash.isNotEmpty
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: FileThumbnail(hash: hash, fallback: leadingFallback),
+          )
+        : leadingFallback;
+
+    return ListTile(
+      leading: leading,
       title: Text(
         fileName,
         maxLines: 1,
@@ -484,3 +494,4 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     );
   }
 }
+

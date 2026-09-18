@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/file_attachment.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../utils/talker.dart';
 import 'file_attachment_view.dart';
+import 'file_thumbnail.dart';
 import 'sheet_scaffold.dart';
 
 /// 选择用户在服务端已上传的文件（免上传直发）。
@@ -174,20 +176,30 @@ class _ServerFilePickerSheetState extends State<_ServerFilePickerSheet> {
           '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
     }
 
-    return ListTile(
-      leading: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: _fileIconColor(fileName, colorScheme).withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          _fileIcon(fileName),
-          color: _fileIconColor(fileName, colorScheme),
-          size: 24,
-        ),
+    final leadingFallback = Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: _fileIconColor(fileName, colorScheme).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
       ),
+      child: Icon(
+        _fileIcon(fileName),
+        color: _fileIconColor(fileName, colorScheme),
+        size: 24,
+      ),
+    );
+    final attachment = FileAttachment.fromMap(file);
+    final hash = attachment.hash;
+    final leading = attachment.isImage && attachment.hasThumb && hash.isNotEmpty
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: FileThumbnail(hash: hash, fallback: leadingFallback),
+          )
+        : leadingFallback;
+
+    return ListTile(
+      leading: leading,
       title: Text(
         fileName,
         maxLines: 1,

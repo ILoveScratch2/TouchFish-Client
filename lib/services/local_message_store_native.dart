@@ -533,6 +533,9 @@ class LocalMessageStore {
     ]);
   }
 
+  /// web 端 localStorage 配额是 hyw
+  Future<void> emergencyTrimForQuota() async {}
+
   Future<List<ChatMessage>> loadAllMessages(String roomId) async {
     return loadMessages(roomId);
   }

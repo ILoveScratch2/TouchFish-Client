@@ -917,6 +917,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get imageExif => '覽 EXIF';
 
   @override
+  String get imageViewOriginal => '覽原圖';
+
+  @override
+  String get imageViewThumbnail => '覽縮略圖';
+
+  @override
   String get chatSelectPlaceholder => '擇一對話以啟談';
 
   @override
@@ -1943,6 +1949,9 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get filePreviewFailed => '不可預觀文件';
+
+  @override
+  String get mediaTapToLoad => '點擊加載';
 
   @override
   String get fileDownload => '下載';
@@ -3531,6 +3540,12 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get settingsDataSavingDesc => '點擊後才加載媒體內容';
+
+  @override
+  String get settingsThumbnailPreviewTitle => '聊天圖片使用縮略圖';
+
+  @override
+  String get settingsThumbnailPreviewDesc => '氣泡中加載服務端縮略圖，點開後加載原圖（省流量）';
 
   @override
   String get settingsIpOverrideTitle => 'IP 覆蓋模式';

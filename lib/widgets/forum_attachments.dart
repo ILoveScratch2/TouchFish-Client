@@ -53,7 +53,10 @@ class _ForumAttachmentsRowState extends State<ForumAttachmentsRow> {
           ...visible.map(
             (attachment) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: FileAttachmentView(attachment: attachment, compact: true),
+              // 图片走缩略图/blurhash 
+              child: attachment.isImage
+                  ? FileAttachmentView(attachment: attachment)
+                  : FileAttachmentView(attachment: attachment, compact: true),
             ),
           ),
           Align(

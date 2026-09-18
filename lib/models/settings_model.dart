@@ -368,6 +368,14 @@ class SettingsData {
           icon: Icons.data_saver_on,
         ),
         SettingItem(
+          key: 'thumbnailPreview',
+          titleKey: 'settingsThumbnailPreviewTitle',
+          descriptionKey: 'settingsThumbnailPreviewDesc',
+          type: SettingType.switchSetting,
+          defaultValue: true,
+          icon: Icons.image_outlined,
+        ),
+        SettingItem(
           key: 'ipOverrideMode',
           titleKey: 'settingsIpOverrideTitle',
           descriptionKey: 'settingsIpOverrideDesc',

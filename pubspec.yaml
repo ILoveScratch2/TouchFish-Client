@@ -89,6 +89,7 @@ dependencies:
   virtual_keypad: ^1.0.1
   cached_network_image: ^3.4.1
   flutter_cache_manager: ^3.4.1
+  flutter_blurhash: ^0.8.2
   flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.6.1
   flutter_webrtc: ^1.6.1

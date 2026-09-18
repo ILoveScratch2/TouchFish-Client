@@ -2164,6 +2164,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsDataSavingTitle;
       case 'settingsDataSavingDesc':
         return l10n.settingsDataSavingDesc;
+      case 'settingsThumbnailPreviewTitle':
+        return l10n.settingsThumbnailPreviewTitle;
+      case 'settingsThumbnailPreviewDesc':
+        return l10n.settingsThumbnailPreviewDesc;
       case 'settingsIpOverrideTitle':
         return l10n.settingsIpOverrideTitle;
       case 'settingsIpOverrideDesc':

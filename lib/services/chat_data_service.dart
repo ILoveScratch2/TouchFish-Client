@@ -472,7 +472,10 @@ class ChatDataService extends ChangeNotifier {
       alias: alias,
       description: description,
     );
-    if (isPinned != null || notifyLevel != null) {
+    if (isPinned != null ||
+        notifyLevel != null ||
+        alias != null ||
+        description != null) {
       if (password == null) return false;
       final saved = await TfApiClient.instance.updateChatPreference(
         uid,
@@ -480,12 +483,28 @@ class ChatDataService extends ChangeNotifier {
         roomId,
         isPinned: isPinned,
         notifyLevel: notifyLevel,
+        alias: alias,
+        description: description,
       );
       if (!saved) return false;
       if (_generation != generation || AuthState.instance.uid != uid) {
         return false;
       }
     }
+    await _applyRoomPreferenceLocally(
+      roomId,
+      updated,
+      resetUnread: notifyLevel != null && notifyLevel != 0,
+    );
+    return true;
+  }
+
+  /// 偏好落到本地缓存、房间/联系人列表并排序通知（本地更新与远端同步共用）。
+  Future<void> _applyRoomPreferenceLocally(
+    String roomId,
+    ChatRoomPreference updated, {
+    required bool resetUnread,
+  }) async {
     _roomPreferences[roomId] = updated;
     await _saveRoomPreferences();
 
@@ -496,9 +515,7 @@ class ChatDataService extends ChangeNotifier {
       _rooms[roomIdx] = currentRoom.copyWith(
         name: displayNameForRoom(roomId, fallbackName),
         isPinned: updated.isPinned,
-        unreadCount: notifyLevel != null && notifyLevel != 0
-            ? 0
-            : currentRoom.unreadCount,
+        unreadCount: resetUnread ? 0 : currentRoom.unreadCount,
       );
     }
     final contactIdx = _contacts.indexWhere((contact) => contact.id == roomId);
@@ -514,7 +531,29 @@ class ChatDataService extends ChangeNotifier {
     _sortRooms();
     _notifyRoom(roomId);
     notifyListeners();
-    return true;
+  }
+
+  /// 处理其它端的房间偏好推送（PREFERENCES.UPDATED / scope=room）
+  Future<void> applyRemoteRoomPreference(Map<String, dynamic> data) async {
+    final roomId = data['room_id']?.toString();
+    if (roomId == null || roomId.isEmpty) return;
+    final uid = AuthState.instance.uid;
+    if (uid == null) return;
+    final generation = _generation;
+    await _ensureRoomPreferencesLoaded();
+    if (_generation != generation || AuthState.instance.uid != uid) return;
+    final current = getRoomPreference(roomId);
+    final updated = current.copyWith(
+      isPinned: data['is_pinned'] as bool?,
+      notifyLevel: (data['notify_level'] as num?)?.toInt(),
+      alias: data['alias'] as String?,
+      description: data['description'] as String?,
+    );
+    await _applyRoomPreferenceLocally(
+      roomId,
+      updated,
+      resetUnread: updated.notifyLevel != 0,
+    );
   }
 
   /// 更新聊天室置顶状态的便捷方法
@@ -788,11 +827,16 @@ class ChatDataService extends ChangeNotifier {
         if (item.partnerUid < 0 && item.roomType != 'group') continue;
         final isGroup = item.roomType == 'group';
         final existingRoom = existingRooms[item.roomId];
-        if (item.isPinned != null || item.notifyLevel != null) {
+        if (item.isPinned != null ||
+            item.notifyLevel != null ||
+            item.alias != null ||
+            item.description != null) {
           final currentPreference = getRoomPreference(item.roomId);
           _roomPreferences[item.roomId] = currentPreference.copyWith(
             isPinned: item.isPinned,
             notifyLevel: item.notifyLevel,
+            alias: item.alias,
+            description: item.description,
           );
         }
         final lastTime = item.lastTime != null
@@ -899,12 +943,32 @@ class ChatDataService extends ChangeNotifier {
 
   List<ChatMessage> _mergeMessages(
     List<ChatMessage> server,
-    List<ChatMessage> local,
-  ) {
+    List<ChatMessage> local, {
+    List<ChatMessage>? keepBytesFrom,
+  }) {
+    // 服务端版本不带 bytes：合并时把内存里已有的原图字节带过去，
+    // 否则发送方重新进房拉历史后自己的图要走网络重新下载
+    final localBytes = <String, List<int>>{};
+    for (final message in [...local, ...?keepBytesFrom]) {
+      final bytes = message.media?.bytes;
+      if (bytes != null && bytes.isNotEmpty) {
+        localBytes[_messageDedupKey(message)] = bytes;
+      }
+    }
     final seen = <String>{};
     var result = <ChatMessage>[];
     for (final m in [...server, ...local]) {
-      if (seen.add(_messageDedupKey(m))) result.add(m);
+      final key = _messageDedupKey(m);
+      if (!seen.add(key)) continue;
+      final bytes = localBytes[key];
+      final media = m.media;
+      if (bytes != null &&
+          media != null &&
+          (media.bytes == null || media.bytes!.isEmpty)) {
+        result.add(m.copyWith(media: media.copyWith(bytes: bytes)));
+      } else {
+        result.add(m);
+      }
     }
     for (final recalled in result.where((message) => message.isDeleted)) {
       final mid = recalled.mid;
@@ -951,6 +1015,22 @@ class ChatDataService extends ChangeNotifier {
           deletedAt: _notificationDateTime(data?['deleted_at']),
           deletedBy: (data?['deleted_by'] as num?)?.toInt(),
         );
+      }
+      return;
+    }
+
+    if (event.type == 'FILE.MEDIA_READY') {
+      final items = event.notification?['items'];
+      if (items is List) {
+        applyMediaMetadataToMessages(items);
+      }
+      return;
+    }
+
+    if (event.type == 'PREFERENCES.UPDATED') {
+      final data = event.notification;
+      if (data != null && data['scope'] == 'room') {
+        unawaited(applyRemoteRoomPreference(data));
       }
       return;
     }
@@ -1549,6 +1629,61 @@ class ChatDataService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 收到 FILE.MEDIA_READY：按 hash 把 blurhash/宽高/缩略图元数据补进缓存消息。
+  void applyMediaMetadataToMessages(List<dynamic> items) {
+    final patches = <String, Map<String, dynamic>>{};
+    for (final raw in items) {
+      if (raw is! Map) continue;
+      final hash = raw['hash']?.toString();
+      if (hash == null || hash.isEmpty) continue;
+      patches[hash] = Map<String, dynamic>.from(raw);
+    }
+    if (patches.isEmpty) return;
+    var changed = false;
+    for (final id in _messageCache.keys.toList()) {
+      final messages = _messageCache[id];
+      if (messages == null) continue;
+      List<ChatMessage>? updated;
+      for (var index = 0; index < messages.length; index++) {
+        final patched = _applyMediaPatch(messages[index], patches);
+        if (patched == null) continue;
+        updated ??= List<ChatMessage>.from(messages);
+        updated[index] = patched;
+      }
+      if (updated == null) continue;
+      _messageCache[id] = updated;
+      unawaited(_localStore.saveMessages(id, updated));
+      _notifyRoom(id);
+      changed = true;
+    }
+    if (changed) notifyListeners();
+  }
+
+  ChatMessage? _applyMediaPatch(
+    ChatMessage message,
+    Map<String, Map<String, dynamic>> patches,
+  ) {
+    final media = message.media;
+    final hash = media?.fileHash;
+    if (media == null || hash == null) return null;
+    final patch = patches[hash];
+    if (patch == null) return null;
+    final width = (patch['width'] as num?)?.toInt();
+    final height = (patch['height'] as num?)?.toInt();
+    final blurhash = patch['blurhash']?.toString();
+    final hasThumb =
+        patch['has_thumb'] == true || (patch['thumb_url'] as String?) != null;
+    final updatedMedia = media.withMediaMetadata(
+      width: width,
+      height: height,
+      blurhash: blurhash,
+      hasThumb: hasThumb ? true : null,
+    );
+    final updatedMessage = message.copyWith(media: updatedMedia);
+    if (ChatMessage.sameRenderedContent(message, updatedMessage)) return null;
+    return updatedMessage;
+  }
+
   void markMessageRecalled(
     int mid, {
     String? roomId,
@@ -1714,7 +1849,11 @@ class ChatDataService extends ChangeNotifier {
     if (_generation != generation || AuthState.instance.uid != uid) {
       return const MessageHistoryPage(messages: [], hasMore: false);
     }
-    final merged = _mergeMessages(serverFilled, localMsgs);
+    final merged = _mergeMessages(
+      serverFilled,
+      localMsgs,
+      keepBytesFrom: _messageCache[roomId],
+    );
     merged.sort(_compareMessages);
     final visible = merged.length <= _messagePageSize
         ? merged

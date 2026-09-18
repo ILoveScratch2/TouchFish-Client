@@ -459,6 +459,28 @@ class AuthState extends ChangeNotifier {
     await prefs.remove(_kTokenExpiresAtKey);
   }
 
+  /// FORK YOU localStorage
+  Future<bool> _persistString(
+    SharedPreferences prefs,
+    String key,
+    String value,
+  ) async {
+    try {
+      await prefs.setString(key, value);
+      return true;
+    } catch (e) {
+      talker.warning('AuthState: 写入 $key 失败，清理本地消息缓存后重试（$e）');
+    }
+    try {
+      await LocalMessageStore.instance.emergencyTrimForQuota();
+      await prefs.setString(key, value);
+      return true;
+    } catch (e) {
+      talker.error('AuthState: 写入 $key 仍然失败 $e');
+      return false;
+    }
+  }
+
   Future<void> _persistCredentials(
     SharedPreferences prefs, {
     required int uid,
@@ -468,7 +490,7 @@ class AuthState extends ChangeNotifier {
     await prefs.setInt('auth_uid', uid);
     await prefs.setString('auth_username', username);
     if (_authMode == TfAuthMode.jwt && _token != null) {
-      await prefs.setString(_kTokenKey, _token!);
+      await _persistString(prefs, _kTokenKey, _token!);
       if (_tokenExpiresAt != null) {
         await prefs.setInt(_kTokenExpiresAtKey, _tokenExpiresAt!);
       } else {
@@ -477,7 +499,7 @@ class AuthState extends ChangeNotifier {
       await prefs.remove('auth_password');
     } else {
       if (password != null) {
-        await prefs.setString('auth_password', password);
+        await _persistString(prefs, 'auth_password', password);
       } else {
         await prefs.remove('auth_password');
       }

@@ -336,6 +336,8 @@
   "imageRotateLeft": "Rotate left",
   "imageRotateRight": "Rotate right",
   "imageExif": "View EXIF info",
+  "imageViewOriginal": "View original",
+  "imageViewThumbnail": "View thumbnail",
 
   "chatSelectPlaceholder": "Select a chat to start talking",
   
@@ -759,6 +761,7 @@
   "mediaPauseAudio": "Pause Audio",
   "filePreview": "Preview",
   "filePreviewFailed": "Preview unavailable",
+  "mediaTapToLoad": "Tap to load",
   "fileDownload": "Download",
   "fileDownloading": "Downloading...",
   "fileDownloadStarted": "Download started",
@@ -1442,6 +1445,8 @@
   "settingsWeakNetworkDesc": "Use periodic synchronization when the connection is unstable",
   "settingsDataSavingTitle": "Data saving mode",
   "settingsDataSavingDesc": "Load media only after you tap it",
+  "settingsThumbnailPreviewTitle": "Use thumbnails in chats",
+  "settingsThumbnailPreviewDesc": "Load server-generated thumbnails in chat bubbles; the original image loads only when opened (saves data)",
   "settingsIpOverrideTitle": "IP override mode",
   "settingsIpOverrideDesc": "Connect to configured IPs while keeping the original host for TLS",
   "settingsIpOverrideOff": "Off",

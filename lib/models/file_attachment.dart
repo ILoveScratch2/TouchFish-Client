@@ -6,11 +6,21 @@ class FileAttachment {
   final int? fileSize;
   final String? mimeType;
 
+  final int? width;
+  final int? height;
+
+  final String? blurhash;
+  final bool hasThumb;
+
   const FileAttachment({
     required this.hash,
     required this.fileName,
     this.fileSize,
     this.mimeType,
+    this.width,
+    this.height,
+    this.blurhash,
+    this.hasThumb = false,
   });
 
   factory FileAttachment.fromMap(Map<String, dynamic> json) {
@@ -25,12 +35,47 @@ class FileAttachment {
     final mimeType = (fileType != null ? _mimeFromFileType(fileType) : null)
         ?? (rawMime != null && rawMime != 'application/octet-stream' ? rawMime : null)
         ?? lookupMimeType(fileName);
+    final hasThumb =
+        json['has_thumb'] == true ||
+        (json['thumb_url'] is String && (json['thumb_url'] as String).isNotEmpty);
     return FileAttachment(
       hash: hash,
       fileName: fileName,
       fileSize: _asInt(json['size'] ?? json['file_size']),
       mimeType: mimeType,
+      width: _asInt(json['width']),
+      height: _asInt(json['height']),
+      blurhash: json['blurhash']?.toString(),
+      hasThumb: hasThumb,
     );
+  }
+
+  FileAttachment copyWith({
+    String? fileName,
+    int? fileSize,
+    String? mimeType,
+    int? width,
+    int? height,
+    String? blurhash,
+    bool? hasThumb,
+  }) {
+    return FileAttachment(
+      hash: hash,
+      fileName: fileName ?? this.fileName,
+      fileSize: fileSize ?? this.fileSize,
+      mimeType: mimeType ?? this.mimeType,
+      width: width ?? this.width,
+      height: height ?? this.height,
+      blurhash: blurhash ?? this.blurhash,
+      hasThumb: hasThumb ?? this.hasThumb,
+    );
+  }
+
+  double? get aspectRatio {
+    final w = width;
+    final h = height;
+    if (w == null || h == null || w <= 0 || h <= 0) return null;
+    return w / h;
   }
 
   static String? _mimeFromFileType(String? fileType) {

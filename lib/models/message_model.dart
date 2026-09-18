@@ -14,6 +14,13 @@ class MessageMedia {
   final List<int>? bytes;
   final String? fileHash; // FILE HASH
 
+  final int? width;
+  final int? height;
+
+  final String? blurhash;
+
+  final bool hasThumb;
+
   const MessageMedia({
     required this.path,
     this.fileName,
@@ -22,7 +29,63 @@ class MessageMedia {
     this.aspectRatio,
     this.bytes,
     this.fileHash,
+    this.width,
+    this.height,
+    this.blurhash,
+    this.hasThumb = false,
   });
+
+  MessageMedia copyWith({
+    String? path,
+    String? fileName,
+    int? fileSize,
+    String? mimeType,
+    double? aspectRatio,
+    List<int>? bytes,
+    String? fileHash,
+    int? width,
+    int? height,
+    String? blurhash,
+    bool? hasThumb,
+  }) {
+    return MessageMedia(
+      path: path ?? this.path,
+      fileName: fileName ?? this.fileName,
+      fileSize: fileSize ?? this.fileSize,
+      mimeType: mimeType ?? this.mimeType,
+      aspectRatio: aspectRatio ?? this.aspectRatio,
+      bytes: bytes ?? this.bytes,
+      fileHash: fileHash ?? this.fileHash,
+      width: width ?? this.width,
+      height: height ?? this.height,
+      blurhash: blurhash ?? this.blurhash,
+      hasThumb: hasThumb ?? this.hasThumb,
+    );
+  }
+
+  MessageMedia withMediaMetadata({
+    int? width,
+    int? height,
+    String? blurhash,
+    bool? hasThumb,
+  }) {
+    final resolvedWidth = width ?? this.width;
+    final resolvedHeight = height ?? this.height;
+    double? resolvedRatio = aspectRatio;
+    if (resolvedRatio == null &&
+        resolvedWidth != null &&
+        resolvedHeight != null &&
+        resolvedHeight > 0) {
+      resolvedRatio = resolvedWidth / resolvedHeight;
+    }
+    return copyWith(
+      width: width,
+      height: height,
+      blurhash: blurhash,
+      hasThumb: hasThumb,
+      aspectRatio: resolvedRatio,
+    );
+  }
 }
 
 class QuotedMessagePreview {
@@ -243,24 +306,31 @@ class ChatMessage {
     final aBytes = a.bytes;
     final bBytes = b.bytes;
     if (aBytes != null && bBytes != null) {
-      final bytesMatch = identical(aBytes, bBytes) || 
+      final bytesMatch = identical(aBytes, bBytes) ||
                         _sameIntList(aBytes, bBytes);
       if (bytesMatch) {
         // bytes 相同时，只比较渲染相关字段（fileName/fileSize/mimeType/aspectRatio）
+        // 媒体元数据（宽高/blurhash/缩略图）变化仍需 rewrite all!
         return a.fileName == b.fileName &&
                a.fileSize == b.fileSize &&
                a.mimeType == b.mimeType &&
-               a.aspectRatio == b.aspectRatio;
+               a.aspectRatio == b.aspectRatio &&
+               a.blurhash == b.blurhash &&
+               a.hasThumb == b.hasThumb;
       }
     }
-    
+
     // bytes 不同或不存在时，比较所有字段
     if (a.path != b.path ||
         a.fileName != b.fileName ||
         a.fileSize != b.fileSize ||
         a.mimeType != b.mimeType ||
         a.aspectRatio != b.aspectRatio ||
-        a.fileHash != b.fileHash) {
+        a.fileHash != b.fileHash ||
+        a.width != b.width ||
+        a.height != b.height ||
+        a.blurhash != b.blurhash ||
+        a.hasThumb != b.hasThumb) {
       return false;
     }
     return identical(aBytes, bBytes) ||
@@ -404,6 +474,11 @@ class ChatMessage {
           fileSize: attachment.fileSize,
           mimeType: attachment.mimeType,
           fileHash: fileHash,
+          width: attachment.width,
+          height: attachment.height,
+          blurhash: attachment.blurhash,
+          hasThumb: attachment.hasThumb,
+          aspectRatio: attachment.aspectRatio,
         ),
         mentionedUids: mentionedUids,
         mentionsMe: json['mentions_me'] as bool? ?? false,
@@ -495,6 +570,11 @@ class ChatMessage {
           fileSize: attachment.fileSize,
           mimeType: attachment.mimeType,
           fileHash: fileHash,
+          width: attachment.width,
+          height: attachment.height,
+          blurhash: attachment.blurhash,
+          hasThumb: attachment.hasThumb,
+          aspectRatio: attachment.aspectRatio,
         ),
         mentionedUids: notification.mentionedUids,
         mentionsMe: notification.mentionsMe,
@@ -634,6 +714,11 @@ class ChatMessage {
           fileSize: attachment.fileSize,
           mimeType: attachment.mimeType,
           fileHash: fileHash,
+          width: attachment.width,
+          height: attachment.height,
+          blurhash: attachment.blurhash,
+          hasThumb: attachment.hasThumb,
+          aspectRatio: attachment.aspectRatio,
         ),
         mentionedUids: mentionedUids,
         mentionsMe: mentionedUids.contains(myUid),
@@ -698,6 +783,12 @@ class ChatMessage {
           'fileSize': media!.fileSize,
           'mimeType': media!.mimeType,
           'fileHash': media!.fileHash,
+          // 媒体元数据持久化：重启/离线时仍能显示 blurhash 占位、缩略图与防跳动布局
+          if (media!.width != null) 'width': media!.width,
+          if (media!.height != null) 'height': media!.height,
+          if (media!.aspectRatio != null) 'aspectRatio': media!.aspectRatio,
+          if (media!.blurhash != null) 'blurhash': media!.blurhash,
+          if (media!.hasThumb) 'hasThumb': true,
         },
     };
   }
@@ -709,9 +800,14 @@ class ChatMessage {
       media = MessageMedia(
         path: m['path'] as String? ?? '',
         fileName: m['fileName'] as String?,
-        fileSize: m['fileSize'] as int?,
+        fileSize: _asInt(m['fileSize']),
         mimeType: m['mimeType'] as String?,
         fileHash: m['fileHash'] as String?,
+        width: _asInt(m['width']),
+        height: _asInt(m['height']),
+        aspectRatio: (m['aspectRatio'] as num?)?.toDouble(),
+        blurhash: m['blurhash'] as String?,
+        hasThumb: m['hasThumb'] == true,
       );
     }
     final rawStatus =

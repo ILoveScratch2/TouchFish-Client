@@ -6,15 +6,20 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart' show KeyDownEvent, LogicalKeyboardKey;
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/message_model.dart';
+import '../../models/settings_service.dart';
 import '../../services/api/tf_api_client.dart';
 import '../../services/file_cache_service.dart';
+import '../../utils/blurhash_utils.dart';
 import '../../utils/talker.dart';
 import 'exif_info_overlay.dart';
+import 'image_error_view.dart';
 
 /// 画廊中的一张图片：由消息气泡收集，聊天详情页按时间序传入。
 class LightboxImageItem {
@@ -85,6 +90,13 @@ class _ImageLightboxState extends State<ImageLightbox> {
   bool _controlsVisible = true;
   Timer? _hideTimer;
 
+  /// 是否已切换到原图；默认展示缩略图
+  bool _showOriginal = false;
+
+  /// 服务端补齐的 blurhash（按 hash 索引）与已发起过的请求
+  final Map<String, String> _blurhashByHash = {};
+  final Set<String> _metadataRequested = {};
+
   @override
   void initState() {
     super.initState();
@@ -101,6 +113,30 @@ class _ImageLightboxState extends State<ImageLightbox> {
     _focusNode = FocusNode();
     _showExif = widget.exifData != null && widget.exifData!.isNotEmpty;
     _restartHideTimer();
+    _ensureBlurhash(_items[_currentIndex]);
+  }
+
+  /// 老消息本地可能没 blurhash
+  void _ensureBlurhash(LightboxImageItem item) {
+    final media = item.media;
+    if (isValidBlurHash(media.blurhash)) return;
+    final hash = media.fileHash ?? media.path;
+    // 本地路径/URL not HASH 服务端查不到
+    if (hash.isEmpty || hash.contains('/') || hash.contains('\\')) return;
+    if (!_metadataRequested.add(hash)) return;
+    TfApiClient.instance.getFileMetadata(hash).then((metadata) {
+      final blurhash = metadata?.blurhash;
+      if (blurhash == null || !isValidBlurHash(blurhash)) return;
+      if (!mounted) return;
+      setState(() => _blurhashByHash[hash] = blurhash);
+    });
+  }
+
+  /// 该条目可用的 blurhash
+  String? _blurhashFor(LightboxImageItem item) {
+    if (isValidBlurHash(item.media.blurhash)) return item.media.blurhash;
+    final hash = item.media.fileHash ?? item.media.path;
+    return _blurhashByHash[hash];
   }
 
   @override
@@ -138,6 +174,43 @@ class _ImageLightboxState extends State<ImageLightbox> {
         () => FileCacheService.instance.getFile(url),
       );
 
+  bool get _thumbnailModeEnabled =>
+      SettingsService.instance.getValue<bool>('thumbnailPreview', true);
+
+  /// 该条目最终展示是否来自网络原图（本地字节/已有本地文件不需要缩略图替代）。
+  bool _isRemoteOriginal(LightboxImageItem item) {
+    if (item.bytes?.isNotEmpty == true) return false;
+    if (item.media.bytes?.isNotEmpty == true) return false;
+    final path = item.media.path;
+    if (path.startsWith('http://') || path.startsWith('https://')) return true;
+    if (kIsWeb) return true;
+    return !File(path).existsSync();
+  }
+
+  /// 是否应展示缩略图而非原图
+  bool _preferThumbnail(LightboxImageItem item) {
+    if (_showOriginal || !_thumbnailModeEnabled) return false;
+    if (!item.media.hasThumb) return false;
+    if (!_isRemoteOriginal(item)) return false;
+    final path = item.media.path;
+    if (path.startsWith('http')) {
+      return TfApiClient.thumbnailUrlFromFileUrl(path) != null;
+    }
+    // 裸 hash
+    return true;
+  }
+
+  ImageProvider _thumbnailProvider(String thumbUrl) =>
+      CachedNetworkImageProvider(
+        thumbUrl,
+        cacheManager: FileCacheService.instance.cacheManager,
+      );
+
+  /// 失败
+  ImageErrorWidgetBuilder _photoErrorBuilder(LightboxImageItem item) =>
+      (context, error, stackTrace) =>
+          ImageErrorView(blurhash: _blurhashFor(item), error: error);
+
   /// 同步可得的 ImageProvider；拿不到（纯 hash）返回 null，由 FutureBuilder 异步解析。
   ImageProvider? _resolveProviderSync(LightboxImageItem item) {
     final bytes = item.bytes ?? (item.media.bytes != null
@@ -166,17 +239,59 @@ class _ImageLightboxState extends State<ImageLightbox> {
     final controller = _controllers[index];
 
     if (syncProvider != null) {
-      return PhotoViewGalleryPageOptions(
-        imageProvider: syncProvider,
+      final heroAttributes = isHero
+          ? PhotoViewHeroAttributes(tag: widget.heroTag)
+          : null;
+      // 缩略图模式：主图直接放缩略图
+      // 向微信学习
+      final thumbUrl = _preferThumbnail(item)
+          ? TfApiClient.thumbnailUrlFromFileUrl(item.media.path)
+          : null;
+      final provider = thumbUrl != null
+          ? _thumbnailProvider(thumbUrl)
+          : syncProvider;
+      // 有 blurhash/缩略图垫 PhotoView
+      final background = _progressiveBackground(
+        item,
+        includeThumb: thumbUrl == null,
+      );
+      if (background != null) {
+        return PhotoViewGalleryPageOptions.customChild(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              background,
+              PhotoView(
+                imageProvider: provider,
+                controller: controller,
+                basePosition: Alignment.center,
+                minScale: PhotoViewComputedScale.contained * 0.9,
+                maxScale: PhotoViewComputedScale.covered * 3,
+                initialScale: PhotoViewComputedScale.contained,
+                onTapUp: (context, details, value) => _toggleControls(),
+                errorBuilder: _photoErrorBuilder(item),
+              ),
+            ],
+          ),
+          controller: controller,
+          heroAttributes: heroAttributes,
+          disableGestures: true,
+        );
+      }
+      return PhotoViewGalleryPageOptions.customChild(
+        child: PhotoView(
+          imageProvider: provider,
+          controller: controller,
+          basePosition: Alignment.center,
+          minScale: PhotoViewComputedScale.contained * 0.9,
+          maxScale: PhotoViewComputedScale.covered * 3,
+          initialScale: PhotoViewComputedScale.contained,
+          onTapUp: (context, details, value) => _toggleControls(),
+          errorBuilder: _photoErrorBuilder(item),
+        ),
         controller: controller,
-        heroAttributes: isHero
-            ? PhotoViewHeroAttributes(tag: widget.heroTag)
-            : null,
-        basePosition: Alignment.center,
-        minScale: PhotoViewComputedScale.contained * 0.9,
-        maxScale: PhotoViewComputedScale.covered * 3,
-        initialScale: PhotoViewComputedScale.contained,
-        onTapUp: (context, details, value) => _toggleControls(),
+        heroAttributes: heroAttributes,
+        disableGestures: true,
       );
     }
 
@@ -189,32 +304,44 @@ class _ImageLightboxState extends State<ImageLightbox> {
         ),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(
-              child: SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white54,
-                ),
-              ),
-            );
+            return _loadingPlaceholder(item);
           }
           final url = snapshot.data!;
+          // 缩略图模式：不拉原图，直接展示缩略图
+          final thumbUrl = _preferThumbnail(item)
+              ? TfApiClient.thumbnailUrlFromFileUrl(url)
+              : null;
+          if (thumbUrl != null) {
+            final background = _progressiveBackground(
+              item,
+              includeThumb: false,
+            );
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                ?background,
+                PhotoView(
+                  imageProvider: _thumbnailProvider(thumbUrl),
+                  controller: controller,
+                  basePosition: Alignment.center,
+                  minScale: PhotoViewComputedScale.contained * 0.9,
+                  maxScale: PhotoViewComputedScale.covered * 3,
+                  initialScale: PhotoViewComputedScale.contained,
+                  onTapUp: (context, details, value) => _toggleControls(),
+                  enableRotation: true,
+                  errorBuilder: _photoErrorBuilder(item),
+                ),
+              ],
+            );
+          }
           // 磁盘缓存命中用本地文件
           return FutureBuilder<File?>(
             future: _cachedFileFor(url),
             builder: (context, fileSnapshot) {
               if (fileSnapshot.connectionState != ConnectionState.done) {
-                return const Center(
-                  child: SizedBox(
-                    width: 28,
-                    height: 28,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white54,
-                    ),
-                  ),
+                return _loadingPlaceholder(
+                  item,
+                  thumbUrl: TfApiClient.thumbnailUrlFromFileUrl(url),
                 );
               }
               final file = fileSnapshot.data;
@@ -227,12 +354,91 @@ class _ImageLightboxState extends State<ImageLightbox> {
                 initialScale: PhotoViewComputedScale.contained,
                 onTapUp: (context, details, value) => _toggleControls(),
                 enableRotation: true,
+                errorBuilder: _photoErrorBuilder(item),
               );
             },
           );
         },
       ),
       disableGestures: true,
+    );
+  }
+
+  /// 同步渲染分支的渐进
+  Widget? _progressiveBackground(
+    LightboxImageItem item, {
+    bool includeThumb = true,
+  }) {
+    final media = item.media;
+    final blurhash = _blurhashFor(item);
+    String? thumbUrl;
+    if (includeThumb && media.hasThumb && media.path.startsWith('http')) {
+      thumbUrl = TfApiClient.thumbnailUrlFromFileUrl(media.path);
+    }
+    final hasBlur = isValidBlurHash(blurhash);
+    final showThumb = thumbUrl != null && thumbUrl.isNotEmpty;
+    if (!hasBlur && !showThumb) return null;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (hasBlur)
+          BlurHash(
+            hash: blurhash!,
+            imageFit: BoxFit.cover,
+            duration: Duration.zero,
+          ),
+        if (showThumb)
+          CachedNetworkImage(
+            imageUrl: thumbUrl,
+            cacheManager: FileCacheService.instance.cacheManager,
+            fit: BoxFit.contain,
+            fadeInDuration: const Duration(milliseconds: 150),
+            placeholder: (context, url) => const SizedBox.shrink(),
+            errorWidget: (context, url, error) => const SizedBox.shrink(),
+          ),
+      ],
+    );
+  }
+
+  /// 加载占位：blurhash 底图 + 服务端缩略图 + 进度圈
+  Widget _loadingPlaceholder(LightboxImageItem item, {String? thumbUrl}) {
+    final blurhash = _blurhashFor(item);
+    Widget base;
+    if (isValidBlurHash(blurhash)) {
+      base = BlurHash(
+        hash: blurhash!,
+        imageFit: BoxFit.cover,
+        duration: Duration.zero,
+      );
+    } else {
+      base = const SizedBox.shrink();
+    }
+    final showThumb =
+        thumbUrl != null && thumbUrl.isNotEmpty && item.media.hasThumb;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        base,
+        if (showThumb)
+          CachedNetworkImage(
+            imageUrl: thumbUrl,
+            cacheManager: FileCacheService.instance.cacheManager,
+            fit: BoxFit.contain,
+            fadeInDuration: const Duration(milliseconds: 150),
+            placeholder: (context, url) => const SizedBox.shrink(),
+            errorWidget: (context, url, error) => const SizedBox.shrink(),
+          ),
+        const Center(
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.white54,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -354,6 +560,7 @@ class _ImageLightboxState extends State<ImageLightbox> {
                 onPageChanged: (index) {
                   setState(() => _currentIndex = index);
                   _revealControls();
+                  _ensureBlurhash(_items[index]);
                 },
                 builder: (context, index) => _pageOptions(index),
                 loadingBuilder: (context, event) {
@@ -567,6 +774,28 @@ class _ImageLightboxState extends State<ImageLightbox> {
                               tooltip: AppLocalizations.of(context)!.imageExif,
                               onPressed: () {
                                 setState(() => _showExif = !_showExif);
+                                _revealControls();
+                              },
+                            ),
+                          ],
+                          // 质量切换：默认缩略图，点按后拉原图（省流量模式友好）
+                          if (_thumbnailModeEnabled &&
+                              _items[_currentIndex].media.hasThumb &&
+                              _isRemoteOriginal(_items[_currentIndex])) ...[
+                            const SizedBox(width: 8),
+                            _iconButton(
+                              icon: _showOriginal
+                                  ? Icons.hd
+                                  : Icons.hd_outlined,
+                              tooltip: _showOriginal
+                                  ? AppLocalizations.of(
+                                      context,
+                                    )!.imageViewThumbnail
+                                  : AppLocalizations.of(
+                                      context,
+                                    )!.imageViewOriginal,
+                              onPressed: () {
+                                setState(() => _showOriginal = !_showOriginal);
                                 _revealControls();
                               },
                             ),

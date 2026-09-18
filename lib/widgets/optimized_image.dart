@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import '../services/file_cache_service.dart';
+import '../utils/blurhash_utils.dart';
+import 'media/image_error_view.dart';
 
 /// 计算图片解码的缓存！
 ({int? width, int? height}) imageDecodeSize(
@@ -48,6 +51,10 @@ class OptimizedImage extends StatefulWidget {
   final ImageErrorWidgetBuilder? errorBuilder;
   final ImageFrameBuilder? frameBuilder;
 
+  final String? thumbnailUrl;
+
+  final String? blurhash;
+
   const OptimizedImage({
     super.key,
     required this.provider,
@@ -55,6 +62,8 @@ class OptimizedImage extends StatefulWidget {
     this.gaplessPlayback = false,
     this.errorBuilder,
     this.frameBuilder,
+    this.thumbnailUrl,
+    this.blurhash,
   });
 
   @override
@@ -118,17 +127,45 @@ class _OptimizedImageState extends State<OptimizedImage> {
     ),
   );
 
-  Widget _broken(BuildContext context) => Container(
-    color: Theme.of(context).colorScheme.errorContainer,
-    child: Icon(
-      Icons.broken_image,
-      color: Theme.of(context).colorScheme.onErrorContainer,
-    ),
-  );
+  /// 渐进占位
+  Widget _progressivePlaceholder(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final blurhash = widget.blurhash;
+    Widget base;
+    if (isValidBlurHash(blurhash)) {
+      base = BlurHash(
+        hash: blurhash!,
+        imageFit: BoxFit.cover,
+        color: colorScheme.surfaceContainerHighest,
+        duration: Duration.zero,
+      );
+    } else {
+      base = Container(color: colorScheme.surfaceContainerHighest);
+    }
+    final thumbUrl = widget.thumbnailUrl;
+    if (thumbUrl == null || thumbUrl.isEmpty || !_cacheManagerReady) {
+      return base;
+    }
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        base,
+        CachedNetworkImage(
+          imageUrl: thumbUrl,
+          cacheManager: _cacheManager,
+          fit: widget.fit,
+          fadeInDuration: const Duration(milliseconds: 150),
+          placeholder: (context, url) => const SizedBox.shrink(),
+          // 缩略图缺失/未生成时静默回退到 blurhash/底色，不显示错误块
+          errorWidget: (context, url, error) => const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
 
   Widget _error(BuildContext context, Object error) => widget.errorBuilder != null
       ? widget.errorBuilder!(context, error, StackTrace.current)
-      : _broken(context);
+      : ImageErrorView(blurhash: widget.blurhash, error: error);
 
   @override
   Widget build(BuildContext context) {
@@ -157,7 +194,10 @@ class _OptimizedImageState extends State<OptimizedImage> {
               fit: widget.fit,
               memCacheWidth: _cachedDecodeSize?.width,
               memCacheHeight: _cachedDecodeSize?.height,
-              placeholder: (context, url) => _placeholder(context),
+              placeholder: (context, url) => (widget.thumbnailUrl != null ||
+                      widget.blurhash != null)
+                  ? _progressivePlaceholder(context)
+                  : _placeholder(context),
               errorWidget: (context, url, error) => _error(context, error),
             );
           }

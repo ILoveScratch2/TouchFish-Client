@@ -965,6 +965,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get imageExif => 'View EXIF info';
 
   @override
+  String get imageViewOriginal => 'View original';
+
+  @override
+  String get imageViewThumbnail => 'View thumbnail';
+
+  @override
   String get chatSelectPlaceholder => 'Select a chat to start talking';
 
   @override
@@ -2036,6 +2042,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get filePreviewFailed => 'Preview unavailable';
+
+  @override
+  String get mediaTapToLoad => 'Tap to load';
 
   @override
   String get fileDownload => 'Download';
@@ -3682,6 +3691,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsDataSavingDesc => 'Load media only after you tap it';
+
+  @override
+  String get settingsThumbnailPreviewTitle => 'Use thumbnails in chats';
+
+  @override
+  String get settingsThumbnailPreviewDesc =>
+      'Load server-generated thumbnails in chat bubbles; the original image loads only when opened (saves data)';
 
   @override
   String get settingsIpOverrideTitle => 'IP override mode';
