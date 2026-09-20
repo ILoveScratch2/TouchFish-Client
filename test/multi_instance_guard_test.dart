@@ -127,4 +127,18 @@ void main() {
       expect(entries.single[MultiInstanceGuard.kUid], 1);
     });
   });
+
+  group('MultiInstanceGuard.acquire (disabled path)', () {
+    test('allows immediately without side effects when disabled', () async {
+      final acquired = await MultiInstanceGuard.instance.acquire(
+        uid: 1,
+        username: 'u1',
+      );
+      expect(acquired, isTrue);
+    });
+
+    test('release is a no-op when disabled', () async {
+      await expectLater(MultiInstanceGuard.instance.release(), completes);
+    });
+  });
 }

@@ -45,8 +45,10 @@ class MultiInstanceGuard {
   static const int _staleAfterMs = 45000;
 
   /// 每个进程唯一的实例 id。pid + 启动时刻可避免快速重启时 pid 复用造成的串扰。
-  final String _instanceId =
-      '$pid-${DateTime.now().microsecondsSinceEpoch}';
+  ///
+  String? _instanceIdCache;
+  String get _instanceId =>
+      _instanceIdCache ??= '$pid-${DateTime.now().microsecondsSinceEpoch}';
 
   Timer? _heartbeatTimer;
   Map<String, dynamic>? _claim;
