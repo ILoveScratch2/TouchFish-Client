@@ -1606,6 +1606,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String chatPlaceholderUploading(int progress) {
+    return '正在上传 $progress%';
+  }
+
+  @override
   String get chatDetailNoMessages => '暂无消息\n发送一条消息开始聊天吧';
 
   @override

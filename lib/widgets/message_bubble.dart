@@ -476,6 +476,9 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
+    if (widget.message.isPlaceholder) {
+      return _buildPlaceholderBubble(context);
+    }
 
     final style = SettingsService.instance.getValue<String>(
       'messageDisplayStyle',
@@ -486,6 +489,125 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
         : _buildBubbleLayout(context);
     // 始终包一层（结构稳定，不会因为动画结束而重建子树的元素）
     return _MessageEntrance(animate: widget.animateEntrance, child: content);
+  }
+  Widget _buildPlaceholderBubble(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final progress = (widget.message.uploadProgress ?? 0.0).clamp(0.0, 1.0);
+
+    final senderName = widget.message.senderName?.trim().isNotEmpty == true
+        ? widget.message.senderName!
+        : 'User ${widget.message.senderUid ?? ''}';
+    final senderAvatar = widget.message.senderAvatar;
+
+    final bubbleContent = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox.square(
+              dimension: 14,
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  progressIndicatorTheme: const ProgressIndicatorThemeData(
+                    circularTrackPadding: EdgeInsets.zero,
+                  ),
+                ),
+                child: CircularProgressIndicator(
+                  value: progress > 0 ? progress : null,
+                  strokeWidth: 2,
+                  color: colorScheme.primary.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              l10n.chatPlaceholderUploading((progress * 100).toInt()),
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+        ),
+        if (progress > 0) ...[
+          const SizedBox(height: 6),
+          SizedBox(
+            width: 180,
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 3,
+              borderRadius: BorderRadius.circular(2),
+              color: colorScheme.primary,
+              backgroundColor: colorScheme.surfaceContainerHighest,
+            ),
+          ),
+        ],
+      ],
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 40, bottom: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    senderName,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _formatTime(widget.message.timestamp, context),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.7,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildAvatar(colorScheme, senderAvatar),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainer,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    child: bubbleContent,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildBubbleLayout(BuildContext context) {

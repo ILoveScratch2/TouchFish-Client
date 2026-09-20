@@ -1684,6 +1684,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String chatPlaceholderUploading(int progress) {
+    return 'Uploading $progress%';
+  }
+
+  @override
   String get chatDetailNoMessages =>
       'No messages yet\nSend a message to start chatting';
 

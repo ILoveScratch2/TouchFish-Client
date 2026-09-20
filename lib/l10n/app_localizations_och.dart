@@ -1605,6 +1605,11 @@ class AppLocalizationsOch extends AppLocalizations {
   }
 
   @override
+  String chatPlaceholderUploading(int progress) {
+    return '正上載 $progress%';
+  }
+
+  @override
   String get chatDetailNoMessages => '暫無消息\n發送一則以啟聊';
 
   @override

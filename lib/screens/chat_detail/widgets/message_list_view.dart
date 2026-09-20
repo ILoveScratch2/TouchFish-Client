@@ -155,6 +155,23 @@ class MessageListView extends StatelessWidget {
         // 不然会 sb reload
         final stableKey = chatMessageStableKey(message);
 
+        // 占位消息（对方上传中）不参与滑动回复等交互，但保留头像/名称展示。
+        if (message.isPlaceholder) {
+          return MessageBubble(
+            key: ValueKey('bubble-$stableKey'),
+            message: message,
+            animateEntrance: false,
+            onReply: onReply,
+            onForward: onForward,
+            onRecall: onRecall,
+            onQuoteTap: onQuoteTap,
+            showAvatar: true,
+            canRecall: false,
+            canPin: false,
+            essenceEnabled: essenceEnabled,
+          );
+        }
+
         return Dismissible(
           key: ValueKey('$_swipeKeyPrefix$stableKey'),
           direction: message.isDeleted

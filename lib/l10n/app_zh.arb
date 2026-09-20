@@ -630,6 +630,8 @@
   "@chatTypingDouble": {"placeholders": {"name1": {"type": "String"}, "name2": {"type": "String"}}},
   "chatTypingMultiple": "{name} 和其他 {count} 人正在输入...",
   "@chatTypingMultiple": {"placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}},
+  "chatPlaceholderUploading": "正在上传 {progress}%",
+  "@chatPlaceholderUploading": {"placeholders": {"progress": {"type": "int"}}},
   "chatDetailNoMessages": "暂无消息\n发送一条消息开始聊天吧",
   "chatBackToBottom": "回到底部",
   

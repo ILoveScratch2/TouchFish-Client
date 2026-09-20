@@ -3202,6 +3202,12 @@ abstract class AppLocalizations {
   /// **'{name} and {count} others are typing...'**
   String chatTypingMultiple(String name, int count);
 
+  /// No description provided for @chatPlaceholderUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading {progress}%'**
+  String chatPlaceholderUploading(int progress);
+
   /// No description provided for @chatDetailNoMessages.
   ///
   /// In en, this message translates to:

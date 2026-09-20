@@ -586,14 +586,23 @@ class ChatWsService extends ChangeNotifier {
     }
   }
 
-  void sendTyping(String roomId, bool isTyping) {
+  void sendTyping(
+    String roomId,
+    bool isTyping, {
+    String scope = 'typing',
+    double? progress,
+  }) {
     if (!isAuthenticated) return;
-    _sendEncrypted(
-      jsonEncode({
-        'type': isTyping ? 'typing.start' : 'typing.stop',
-        'room_id': roomId,
-      }),
-    );
+    final payload = <String, dynamic>{
+      'type': isTyping ? 'typing.start' : 'typing.stop',
+      'room_id': roomId,
+      'scope': scope,
+      'ts': DateTime.now().millisecondsSinceEpoch,
+    };
+    if (progress != null && scope == 'uploading') {
+      payload['progress'] = progress.clamp(0.0, 1.0);
+    }
+    _sendEncrypted(jsonEncode(payload));
   }
 
   Future<void> disconnect() async {

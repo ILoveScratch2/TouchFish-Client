@@ -201,6 +201,10 @@ class ChatMessage {
   final int? deletedBy;
   final int? roomSeq;
 
+  /// 本地合成的"对方上传中"占位消息（显然是假的消息所以我们不需要 存）
+  final bool isPlaceholder;
+  final double? uploadProgress;
+
   ChatMessage({
     required this.id,
     this.mid,
@@ -226,6 +230,8 @@ class ChatMessage {
     this.deletedAt,
     this.deletedBy,
     this.roomSeq,
+    this.isPlaceholder = false,
+    this.uploadProgress,
   });
 
   /// 消息列表排序比较器（服务端序号优先）。
@@ -271,6 +277,8 @@ class ChatMessage {
         a.quoteMid == b.quoteMid &&
         a.forwardedMid == b.forwardedMid &&
         a.mentionsMe == b.mentionsMe &&
+        a.isPlaceholder == b.isPlaceholder &&
+        a.uploadProgress == b.uploadProgress &&
         _sameIntList(a.mentionedUids, b.mentionedUids) &&
         _samePreview(a.quotePreview, b.quotePreview) &&
         _samePreview(a.forwardPreview, b.forwardPreview) &&
@@ -364,6 +372,8 @@ class ChatMessage {
     int? deletedBy,
     int? roomSeq,
     bool clearMedia = false,
+    bool? isPlaceholder,
+    double? uploadProgress,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -390,6 +400,8 @@ class ChatMessage {
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
       roomSeq: roomSeq ?? this.roomSeq,
+      isPlaceholder: isPlaceholder ?? this.isPlaceholder,
+      uploadProgress: uploadProgress ?? this.uploadProgress,
     );
   }
 

@@ -38,6 +38,7 @@ import '../widgets/pinned_messages_sheet.dart';
 import '../widgets/optimized_image.dart';
 import '../widgets/sync_indicator.dart';
 import '../models/typing_status.dart';
+import '../models/file_task.dart';
 import '../widgets/typing_indicator.dart';
 import '../providers/chat/message_provider.dart';
 import '../providers/chat/chat_room_state_provider.dart';
@@ -95,9 +96,14 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   StreamSubscription<int>? _essenceSub;
   bool _fetchingPins = false;
   Timer? _weakNetworkTimer;
-  final Map<int, TypingStatus> _typingUsers = {};
+  /// 复合键 "uid:scope" -> TypingStatus（同一用户可同时 typing + uploading）。
+  final Map<String, TypingStatus> _activityStatuses = {};
   StreamSubscription<ChatWsEvent>? _typingSub;
   Timer? _typingCleanupTimer;
+  // 上传进度桥接状态
+  ProviderSubscription<List<FileTask>>? _uploadProgressSub;
+  DateTime? _lastUploadProgressSentAt;
+  final Map<String, double> _lastUploadProgressByRoom = {};
 
   String get _contactUid {
     final id = widget.roomId;
@@ -158,14 +164,14 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _messageController.addListener(_scheduleDraftSave);
     _typingCleanupTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       final cutoff = DateTime.now().subtract(const Duration(seconds: 5));
-      final expired = _typingUsers.entries
+      final expired = _activityStatuses.entries
           .where((entry) => entry.value.updatedAt.isBefore(cutoff))
           .map((entry) => entry.key)
           .toList();
       if (expired.isEmpty || !mounted) return;
       setState(() {
-        for (final uid in expired) {
-          _typingUsers.remove(uid);
+        for (final key in expired) {
+          _activityStatuses.remove(key);
         }
       });
     });
@@ -235,7 +241,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _essenceMids = [];
     _essenceEnabled = true;
     _fetchingEssenceRoomId = null;
-    _typingUsers.clear();
+    _activityStatuses.clear();
     _lastBuiltMessages = const [];
     _entranceKeysTimer?.cancel();
     _entranceKeys = const {};
@@ -252,9 +258,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _startRealMessaging();
     _initMessageSync();
     _weakNetworkTimer?.cancel();
-    _typingCleanupTimer?.cancel();
-    _typingSub?.cancel();
-    _typingUsers.clear();
+    // 注意：这里不能取消 _typingSub/_typingCleanupTimer，否则会把
+    // _startRealMessaging 刚通过 _attachRealtimeListeners 挂载的打字监听
+    // 立即取消，导致打字/上传状态永远收不到（原版 bug）。
+    _activityStatuses.clear();
     if (SettingsService.instance.getValue<bool>('weakNetworkMode', false)) {
       _weakNetworkTimer = Timer.periodic(const Duration(seconds: 30), (_) {
         unawaited(
@@ -328,6 +335,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _essenceSub?.cancel();
     _draftTimer?.cancel();
     _weakNetworkTimer?.cancel();
+    _typingCleanupTimer?.cancel();
     _entranceKeysTimer?.cancel();
     unawaited(_saveDraft());
     _messageController.dispose();
@@ -403,6 +411,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       _onEssenceChanged,
     );
     _typingSub = ChatWsService.instance.eventStream.listen(_onTypingEvent);
+    _attachUploadProgressListener();
     _realtimeListenersAttached = true;
   }
 
@@ -415,7 +424,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _essenceSub = null;
     _typingSub?.cancel();
     _typingSub = null;
-    _typingUsers.clear();
+    _activityStatuses.clear();
+    _detachUploadProgressListener();
     _realtimeListenersAttached = false;
   }
 
@@ -428,21 +438,117 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     if (data == null || data['room_id']?.toString() != _contactUid) return;
     final uid = (data['uid'] as num?)?.toInt();
     if (uid == null || uid == AuthState.instance.uid) return;
+
+    // 解析新增字段：scope（缺省 typing）、ts（服务器统一）、progress（仅 uploading）。
+    final scope = (data['scope'] as String?) ?? 'typing';
+    final tsMs = (data['ts'] as num?)?.toInt();
+    final progress = (data['progress'] as num?)?.toDouble();
+
+    final serverTime = tsMs != null
+        ? DateTime.fromMillisecondsSinceEpoch(tsMs, isUtc: true)
+        : DateTime.now();
+
+    final compositeKey = '$uid:$scope';
+
     setState(() {
       if (event.type == 'typing.start') {
-        _typingUsers[uid] = TypingStatus(uid: uid, updatedAt: DateTime.now());
+        // 乱序保护！！！！！
+        final existing = _activityStatuses[compositeKey];
+        if (existing != null && serverTime.isBefore(existing.timestamp)) {
+          return;
+        }
+        _activityStatuses[compositeKey] = TypingStatus(
+          uid: uid,
+          scope: scope,
+          updatedAt: DateTime.now(),
+          timestamp: serverTime,
+          progress: scope == 'uploading' ? progress : null,
+        );
       } else {
-        _typingUsers.remove(uid);
+        _activityStatuses.remove(compositeKey);
       }
     });
   }
 
-  List<String> _typingNames() {
+  /// 正在输入（typing）的活跃状态
+  List<TypingStatus> get _typingStatuses => _activityStatuses.values
+      .where((s) => s.scope == 'typing')
+      .toList();
+
+  /// 正在上传（uploading）的活跃状态
+  List<TypingStatus> get _uploadingStatuses => _activityStatuses.values
+      .where((s) => s.scope == 'uploading')
+      .toList();
+
+  /// 将 uploading 弄成假消息
+  List<ChatMessage> _buildUploadPlaceholderMessages() {
     final chatData = ChatDataService.instance;
-    return _typingUsers.keys.map((uid) {
-      final profile = chatData.getUser('U$uid');
-      return profile?.username ?? 'User $uid';
-    }).toList();
+    return [
+      for (final s in _uploadingStatuses)
+        () {
+          final profile = chatData.getUser('U${s.uid}');
+          return ChatMessage(
+            id: 'upload-placeholder-${s.uid}',
+            senderUid: s.uid,
+            text: '',
+            timestamp: DateTime.now(),
+            isMe: false,
+            senderName: profile?.username ?? 'User ${s.uid}',
+            senderAvatar: profile?.avatar,
+            type: MessageType.text,
+            isPlaceholder: true,
+            uploadProgress: s.progress ?? 0.0,
+          );
+        }(),
+    ];
+  }
+
+  void _attachUploadProgressListener() {
+    _uploadProgressSub = ref.listenManual<List<FileTask>>(
+      taskManagerProvider,
+      (previous, next) => _forwardUploadProgress(),
+    );
+  }
+
+  void _detachUploadProgressListener() {
+    _uploadProgressSub?.close();
+    _uploadProgressSub = null;
+    _lastUploadProgressSentAt = null;
+    _lastUploadProgressByRoom.clear();
+  }
+
+  /// 将本房间的上传任务进度桥接为 uploading 活动广播。
+  void _forwardUploadProgress() {
+    if (!mounted) return;
+    final now = DateTime.now();
+    if (_lastUploadProgressSentAt != null &&
+        now.difference(_lastUploadProgressSentAt!) <
+            const Duration(seconds: 1)) {
+      return;
+    }
+    final tasks = ref.read(taskManagerProvider);
+    for (final task in tasks) {
+      if (task.type != FileTaskType.upload ||
+          task.roomId == null ||
+          task.roomId != _contactUid) {
+        continue;
+      }
+      final progress = task.progress;
+      if (progress == null) continue;
+      // 进度变化 < 1% 跳过，避免频繁发包。
+      final lastProgress = _lastUploadProgressByRoom[task.roomId!];
+      if (lastProgress != null && (lastProgress - progress).abs() < 0.01) {
+        continue;
+      }
+      _lastUploadProgressByRoom[task.roomId!] = progress;
+      _lastUploadProgressSentAt = now;
+      ChatWsService.instance.sendTyping(
+        _contactUid,
+        progress < 1.0,
+        scope: 'uploading',
+        progress: progress.clamp(0.0, 1.0),
+      );
+    }
   }
 
   bool get _isRoomSyncing =>
@@ -2356,6 +2462,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     // 父级先构建 → 这一帧里新建的气泡才能拿到入场动画标记
     final entranceKeys = _diffEntranceKeys(messages);
 
+    // 对方上传中的占位消息，合成到消息列表末尾（视觉底部）。
+    final displayMessages = _uploadingStatuses.isEmpty
+        ? messages
+        : [...messages, ..._buildUploadPlaceholderMessages()];
+
     if (_currentRoom == null) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.chatDetailLoading)),
@@ -2507,7 +2618,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                       child: NotificationListener<ScrollNotification>(
                         onNotification: _onUserScroll,
                         child: MessageListView(
-                          messages: messages,
+                          messages: displayMessages,
                           entranceKeys: entranceKeys,
                           scrollController: uiState.scrollController,
                           galleryItems: gallery.items,
@@ -2557,14 +2668,42 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                 ],
               ),
             ),
-            if (_typingUsers.isNotEmpty)
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 150),
-                child: TypingIndicator(
-                  key: ValueKey(_typingUsers.keys.toList()),
-                  userNames: _typingNames(),
-                ),
-              ),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 150),
+              switchInCurve: Curves.fastEaseInToSlowEaseOut,
+              switchOutCurve: Curves.fastEaseInToSlowEaseOut,
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, -0.3),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
+                  child: SizeTransition(
+                    sizeFactor: animation,
+                    axisAlignment: -1.0,
+                    child: FadeTransition(
+                      opacity: animation,
+                      child: child,
+                    ),
+                  ),
+                );
+              },
+              child: _typingStatuses.isNotEmpty
+                  ? TypingIndicator(
+                      key: ValueKey(
+                        _typingStatuses.map((s) => s.compositeKey).toList(),
+                      ),
+                      typingStatuses: _typingStatuses,
+                    )
+                  : const SizedBox.shrink(
+                      key: ValueKey('typing-indicator-none'),
+                    ),
+            ),
             ChatInputBar(
               roomId: _contactUid,
               controller: _messageController,
