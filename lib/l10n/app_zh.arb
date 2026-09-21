@@ -826,6 +826,7 @@
   "aboutCopyright": "© {year} ILoveScratch2。保留所有权利。",
   "aboutMadeWith": "By ILoveScratch2 & TouchFish Dev Team",
   "aboutCopiedToClipboard": "已复制到剪贴板",
+  "copyFailedText": "复制失败，剪贴板需要 HTTPS 或 localhost。",
   "aboutCopyToClipboard": "复制到剪贴板",
   "aboutEasterEggFound": "恭喜你发现了彩蛋！",
   "aboutEasterEggMessage0": "这是一个彩蛋！",

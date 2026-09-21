@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -10,11 +9,13 @@ import '../l10n/app_localizations.dart';
 import '../models/settings_service.dart';
 import '../routes/app_routes.dart';
 import '../utils/talker.dart';
+import '../utils/clipboard_utils.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/untrusted_image_placeholder.dart';
 import 'browser_storage.dart';
 import 'domain_trust_service.dart';
 import 'search_engines.dart';
+import 'snackbar_service.dart';
 
 /// 新的链接打开！
 class BrowserService {
@@ -180,7 +181,11 @@ class BrowserService {
     );
 
     if (result == 'copy') {
-      Clipboard.setData(ClipboardData(text: uri.toString()));
+      final copied = await copyTextToClipboard(uri.toString());
+      TouchFishSnackbarService.instance.show(
+        copied ? l10n.browserCopied : l10n.copyFailedText,
+        type: copied ? SnackbarType.info : SnackbarType.error,
+      );
     }
     if (result == 'open') {
       await trustService.recordConfirmedOpen(uri);

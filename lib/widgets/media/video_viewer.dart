@@ -8,6 +8,8 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../services/media_proxy_service.dart';
 import '../../services/snackbar_service.dart';
+import '../../l10n/app_localizations.dart';
+import '../../utils/clipboard_utils.dart';
 
 class VideoViewer extends StatefulWidget {
   final String videoPath;
@@ -319,12 +321,20 @@ class _VideoErrorWidget extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     OutlinedButton.icon(
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: errorMessage));
-                        TouchFishSnackbarService.instance.show('Error copied to clipboard');
+                      onPressed: () async {
+                        final l10n = AppLocalizations.of(context)!;
+                        final copied = await copyTextToClipboard(errorMessage);
+                        TouchFishSnackbarService.instance.show(
+                          copied
+                              ? l10n.aboutCopiedToClipboard
+                              : l10n.copyFailedText,
+                          type: copied
+                              ? SnackbarType.info
+                              : SnackbarType.error,
+                        );
                       },
                       icon: const Icon(Symbols.content_copy, size: 18),
-                      label: const Text('Copy'),
+                      label: Text(AppLocalizations.of(context)!.messageActionCopy),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white70,
                         side: const BorderSide(color: Colors.white30),

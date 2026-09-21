@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../services/browser_service.dart';
 import '../l10n/app_localizations.dart';
 import '../services/snackbar_service.dart';
 import '../oss_licenses.dart';
+import '../utils/clipboard_utils.dart';
 
 class LicensesScreen extends StatefulWidget {
   const LicensesScreen({super.key});
@@ -17,6 +17,15 @@ class LicensesScreen extends StatefulWidget {
 class _LicensesScreenState extends State<LicensesScreen> {
   String _searchQuery = '';
   List<Package> _filteredPackages = allDependencies;
+
+  Future<void> _copyLicense(String text, String successMessage) async {
+    final l10n = AppLocalizations.of(context)!;
+    final copied = await copyTextToClipboard(text);
+    TouchFishSnackbarService.instance.show(
+      copied ? successMessage : l10n.copyFailedText,
+      type: copied ? SnackbarType.info : SnackbarType.error,
+    );
+  }
 
   void _updateSearch(String query) {
     setState(() {
@@ -354,12 +363,10 @@ class _LicensesScreenState extends State<LicensesScreen> {
                             ),
                             IconButton(
                               icon: const Icon(Symbols.content_copy, size: 20),
-                              onPressed: () {
-                                Clipboard.setData(
-                                  ClipboardData(text: package.license!),
-                                );
-                                TouchFishSnackbarService.instance.show(l10n.licensesLicenseCopied);
-                              },
+                              onPressed: () => _copyLicense(
+                                package.license!,
+                                l10n.licensesLicenseCopied,
+                              ),
                               tooltip: l10n.aboutCopyToClipboard,
                             ),
                           ],

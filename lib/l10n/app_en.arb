@@ -857,6 +857,7 @@
   },
   "aboutMadeWith": "By ILoveScratch2 & TouchFish Dev Team",
   "aboutCopiedToClipboard": "Copied to clipboard",
+  "copyFailedText": "Copy failed. Clipboard needs HTTPS or localhost.",
   "aboutCopyToClipboard": "Copy to clipboard",
   "aboutEasterEggFound": "Congratulations! You found an easter egg!",
   "aboutEasterEggMessage0": "This is a Easter Egg!",

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:super_clipboard/super_clipboard.dart';
 import '../services/clipboard_attachment_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,6 +14,7 @@ import '../services/snackbar_service.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/mention_text_field.dart';
 import '../utils/talker.dart';
+import '../utils/clipboard_utils.dart';
 import '../utils/wide_screen_helper.dart';
 import '../models/file_attachment.dart';
 import '../services/draft_service.dart';
@@ -521,25 +521,19 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     final files = await service.checkAndReadFiles();
     if (files.isEmpty) {
       // Clipboard only has text – insert it manually.
-      final clipboard = SystemClipboard.instance;
-      if (clipboard != null) {
-        try {
-          final reader = await clipboard.read();
-          final text = await reader.readValue(Formats.plainText);
-          if (text != null && text.isNotEmpty && mounted) {
-            final value = _contentController.value;
-            final selection = value.selection;
-            final start =
-                selection.isValid ? selection.start : value.text.length;
-            final end =
-                selection.isValid ? selection.end : value.text.length;
-            _contentController.value = value.copyWith(
-              text: value.text.replaceRange(start, end, text),
-              selection: TextSelection.collapsed(offset: start + text.length),
-              composing: TextRange.empty,
-            );
-          }
-        } catch (_) {}
+      final text = await readTextFromClipboard();
+      if (text != null && text.isNotEmpty && mounted) {
+        final value = _contentController.value;
+        final selection = value.selection;
+        final start =
+            selection.isValid ? selection.start : value.text.length;
+        final end =
+            selection.isValid ? selection.end : value.text.length;
+        _contentController.value = value.copyWith(
+          text: value.text.replaceRange(start, end, text),
+          selection: TextSelection.collapsed(offset: start + text.length),
+          composing: TextRange.empty,
+        );
       }
       return;
     }

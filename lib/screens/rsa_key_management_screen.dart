@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/app_localizations.dart';
@@ -10,6 +9,7 @@ import '../services/snackbar_service.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/code_block.dart';
 import '../utils/talker.dart';
+import '../utils/clipboard_utils.dart';
 
 /// 保护 wyf 数据安全，从 rsa_key_management 做起
 class RsaKeyManagementScreen extends StatefulWidget {
@@ -119,11 +119,13 @@ class _RsaKeyManagementScreenState extends State<RsaKeyManagementScreen> {
   }
 
   Future<void> _copyText(String text) async {
-    await Clipboard.setData(ClipboardData(text: text));
-    if (mounted) {
-      TouchFishSnackbarService.instance
-          .show(AppLocalizations.of(context)!.rsaCopied);
-    }
+    final l10n = AppLocalizations.of(context)!;
+    final copied = await copyTextToClipboard(text);
+    if (!mounted) return;
+    TouchFishSnackbarService.instance.show(
+      copied ? l10n.rsaCopied : l10n.copyFailedText,
+      type: copied ? SnackbarType.info : SnackbarType.error,
+    );
   }
 
   Future<void> _showKeyDialog(

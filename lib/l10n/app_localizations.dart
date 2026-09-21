@@ -4306,6 +4306,12 @@ abstract class AppLocalizations {
   /// **'Copied to clipboard'**
   String get aboutCopiedToClipboard;
 
+  /// No description provided for @copyFailedText.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy failed. Clipboard needs HTTPS or localhost.'**
+  String get copyFailedText;
+
   /// No description provided for @aboutCopyToClipboard.
   ///
   /// In en, this message translates to:

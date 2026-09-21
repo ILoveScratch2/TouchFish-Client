@@ -2286,6 +2286,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutCopiedToClipboard => 'Copied to clipboard';
 
   @override
+  String get copyFailedText =>
+      'Copy failed. Clipboard needs HTTPS or localhost.';
+
+  @override
   String get aboutCopyToClipboard => 'Copy to clipboard';
 
   @override

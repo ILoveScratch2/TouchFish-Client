@@ -19,6 +19,7 @@ import '../widgets/markdown_renderer.dart';
 import '../models/settings_service.dart';
 import 'package:exif/exif.dart';
 import '../utils/talker.dart';
+import '../utils/clipboard_utils.dart';
 import '../models/file_attachment.dart';
 import 'file_attachment_view.dart';
 import '../services/auth_state.dart';
@@ -1431,10 +1432,12 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     );
   }
 
-  void _copyMessageText(ChatMessage message) {
-    Clipboard.setData(ClipboardData(text: message.text));
+  Future<void> _copyMessageText(ChatMessage message) async {
+    final l10n = AppLocalizations.of(context)!;
+    final copied = await copyTextToClipboard(message.text);
     TouchFishSnackbarService.instance.show(
-      AppLocalizations.of(context)!.aboutCopiedToClipboard,
+      copied ? l10n.aboutCopiedToClipboard : l10n.copyFailedText,
+      type: copied ? SnackbarType.info : SnackbarType.error,
     );
   }
 
@@ -1923,10 +1926,7 @@ class _MessageActionSheet extends StatelessWidget {
             label: l10n.messageActionCopy,
             onTap: () {
               Navigator.pop(context);
-              Clipboard.setData(ClipboardData(text: message.text));
-              TouchFishSnackbarService.instance.show(
-                l10n.aboutCopiedToClipboard,
-              );
+              _copyMessage(context, message);
             },
           ),
           if (!message.isDeleted && message.mid != null) ...[
@@ -1996,6 +1996,15 @@ class _MessageActionSheet extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+
+  Future<void> _copyMessage(BuildContext context, ChatMessage message) async {
+    final l10n = AppLocalizations.of(context)!;
+    final copied = await copyTextToClipboard(message.text);
+    TouchFishSnackbarService.instance.show(
+      copied ? l10n.aboutCopiedToClipboard : l10n.copyFailedText,
+      type: copied ? SnackbarType.info : SnackbarType.error,
     );
   }
 }

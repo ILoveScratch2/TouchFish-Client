@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:super_clipboard/super_clipboard.dart';
 import '../services/clipboard_attachment_service.dart';
 import '../services/auth_state.dart';
 import '../services/chat_ws_service.dart';
@@ -16,6 +15,7 @@ import '../l10n/app_localizations.dart';
 import '../models/message_model.dart';
 import '../models/settings_service.dart';
 import '../utils/file_type_detector.dart';
+import '../utils/clipboard_utils.dart';
 import 'mention_text_field.dart';
 
 class ChatInputBar extends StatefulWidget {
@@ -208,25 +208,19 @@ class _ChatInputBarState extends State<ChatInputBar>
         widget.onFilePicked?.call(platformFile, messageType);
       }
     } else {
-      final clipboard = SystemClipboard.instance;
-      if (clipboard != null) {
-        try {
-          final reader = await clipboard.read();
-          final text = await reader.readValue(Formats.plainText);
-          if (text != null && text.isNotEmpty && mounted) {
-            final value = widget.controller.value;
-            final selection = value.selection;
-            final start = selection.isValid
-                ? selection.start
-                : value.text.length;
-            final end = selection.isValid ? selection.end : value.text.length;
-            widget.controller.value = value.copyWith(
-              text: value.text.replaceRange(start, end, text),
-              selection: TextSelection.collapsed(offset: start + text.length),
-              composing: TextRange.empty,
-            );
-          }
-        } catch (_) {}
+      final text = await readTextFromClipboard();
+      if (text != null && text.isNotEmpty && mounted) {
+        final value = widget.controller.value;
+        final selection = value.selection;
+        final start = selection.isValid
+            ? selection.start
+            : value.text.length;
+        final end = selection.isValid ? selection.end : value.text.length;
+        widget.controller.value = value.copyWith(
+          text: value.text.replaceRange(start, end, text),
+          selection: TextSelection.collapsed(offset: start + text.length),
+          composing: TextRange.empty,
+        );
       }
     }
   }

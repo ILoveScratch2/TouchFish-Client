@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
@@ -12,6 +11,7 @@ import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
+import '../utils/clipboard_utils.dart';
 
 const double _kProfileMaxWidth = 680;
 
@@ -75,6 +75,19 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         });
       }
     }
+  }
+
+  Future<void> _copyText(
+    BuildContext context,
+    String text,
+    String successMessage,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final copied = await copyTextToClipboard(text);
+    TouchFishSnackbarService.instance.show(
+      copied ? successMessage : l10n.copyFailedText,
+      type: copied ? SnackbarType.info : SnackbarType.error,
+    );
   }
 
   Future<void> _addFriend(UserProfile target, AppLocalizations l10n) async {
@@ -306,8 +319,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               l10n.userProfileUid,
               profile.uid,
               onTap: () {
-                Clipboard.setData(ClipboardData(text: profile.uid));
-                TouchFishSnackbarService.instance.show(l10n.userProfileUidCopied);
+                _copyText(context, profile.uid, l10n.userProfileUidCopied);
               },
             ),
             const SizedBox(height: 12),
@@ -321,9 +333,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               onTap: profile.email.isEmpty
                   ? null
                   : () {
-                      Clipboard.setData(ClipboardData(text: profile.email));
-                      TouchFishSnackbarService.instance
-                          .show('${l10n.userProfileEmail} ${l10n.userProfileUidCopied}');
+                      _copyText(
+                        context,
+                        profile.email,
+                        '${l10n.userProfileEmail} ${l10n.userProfileUidCopied}',
+                      );
                     },
             ),
             const SizedBox(height: 12),

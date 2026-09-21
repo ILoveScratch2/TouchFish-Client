@@ -2191,6 +2191,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get aboutCopiedToClipboard => '已複至剪貼板';
 
   @override
+  String get copyFailedText => '複製未成，剪貼板需 HTTPS 或本地也。';
+
+  @override
   String get aboutCopyToClipboard => '複至剪貼板';
 
   @override

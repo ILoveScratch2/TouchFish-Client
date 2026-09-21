@@ -2192,6 +2192,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutCopiedToClipboard => '已复制到剪贴板';
 
   @override
+  String get copyFailedText => '复制失败，剪贴板需要 HTTPS 或 localhost。';
+
+  @override
   String get aboutCopyToClipboard => '复制到剪贴板';
 
   @override

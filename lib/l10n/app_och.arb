@@ -837,6 +837,7 @@
   },
   "aboutMadeWith": "By ILoveScratch2 & TouchFish Dev Team",
   "aboutCopiedToClipboard": "已複至剪貼板",
+  "copyFailedText": "複製未成，剪貼板需 HTTPS 或本地也。",
   "aboutCopyToClipboard": "複至剪貼板",
   "aboutEasterEggFound": "賀君得彩蛋！",
   "aboutEasterEggMessage0": "此乃彩蛋也！",

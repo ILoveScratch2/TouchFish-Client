@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
@@ -21,6 +20,7 @@ import '../services/domain_trust_service.dart';
 import '../services/media_proxy_service.dart';
 import '../services/search_engines.dart';
 import '../utils/talker.dart';
+import '../utils/clipboard_utils.dart';
 
 /// Make WebView Great Again
 const String _kThemeColorScript = r'''
@@ -305,11 +305,16 @@ class _BrowserScreenState extends State<BrowserScreen> {
   Future<void> _copyCurrentUrl() async {
     final url = _activeTab.url;
     if (url.isEmpty || url == 'about:blank') return;
-    await Clipboard.setData(ClipboardData(text: url));
+    await _copyLink(url);
+  }
+
+  /// 复制链接并给出成功 / 失败反馈（Web 非安全上下文下会失败）。
+  Future<void> _copyLink(String text) async {
+    final copied = await copyTextToClipboard(text);
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(l10n.browserCopied)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(copied ? l10n.browserCopied : l10n.copyFailedText)),
+    );
   }
 
   void _refreshBookmarkState() {
@@ -632,7 +637,7 @@ class _BrowserScreenState extends State<BrowserScreen> {
       case 'external':
         await _openExternal(Uri.parse(href));
       case 'copy':
-        await Clipboard.setData(ClipboardData(text: href));
+        await _copyLink(href);
     }
   }
 
@@ -670,7 +675,7 @@ class _BrowserScreenState extends State<BrowserScreen> {
       case 'download':
         await _downloadImage(imageUrl);
       case 'copy':
-        await Clipboard.setData(ClipboardData(text: imageUrl));
+        await _copyLink(imageUrl);
     }
   }
 

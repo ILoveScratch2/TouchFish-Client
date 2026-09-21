@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'data_saving_image.dart';
 import 'optimized_image.dart';
 import 'package:flutter_highlight/themes/a11y-dark.dart';
@@ -17,6 +16,7 @@ import '../services/auth_state.dart';
 import '../services/browser_service.dart';
 import '../services/chat_data_service.dart';
 import '../services/domain_trust_service.dart';
+import '../utils/clipboard_utils.dart';
 import 'untrusted_image_placeholder.dart';
 
 /// 等宽字体族：优先 Fira Code，依次回退至各平台常见等宽字体。
@@ -231,14 +231,19 @@ class MarkdownRenderer extends HookWidget {
                     child: IconButton(
                       padding: EdgeInsets.zero,
                       icon: const Icon(Icons.copy, size: 14),
-                      tooltip: '复制代码',
+                      tooltip: AppLocalizations.of(context)!.markdownCopyCode,
                       onPressed: () async {
-                        await Clipboard.setData(ClipboardData(text: code));
+                        final l10n = AppLocalizations.of(context)!;
+                        final copied = await copyTextToClipboard(code);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('代码已复制到剪贴板'),
-                              duration: Duration(milliseconds: 800),
+                            SnackBar(
+                              content: Text(
+                                copied
+                                    ? l10n.markdownCodeCopied
+                                    : l10n.copyFailedText,
+                              ),
+                              duration: const Duration(milliseconds: 800),
                             ),
                           );
                         }

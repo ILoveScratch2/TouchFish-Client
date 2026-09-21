@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../models/forum_model.dart';
@@ -15,6 +14,7 @@ import '../services/auth_state.dart';
 import '../services/snackbar_service.dart';
 import 'forum_post_compose_screen.dart';
 import '../utils/talker.dart';
+import '../utils/clipboard_utils.dart';
 import '../widgets/mention_text_field.dart';
 import '../widgets/forum_attachments.dart';
 import '../services/draft_service.dart';
@@ -479,14 +479,17 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     buffer.writeln('来自 TouchFish 论坛');
 
     // 复制到剪贴板
-    Clipboard.setData(ClipboardData(text: buffer.toString()));
+    _copyText(buffer.toString());
+  }
 
-    // 显示提示
-    if (mounted) {
-      TouchFishSnackbarService.instance.show(
-        AppLocalizations.of(context)!.forumPostCopied,
-      );
-    }
+  Future<void> _copyText(String text) async {
+    final l10n = AppLocalizations.of(context)!;
+    final copied = await copyTextToClipboard(text);
+    if (!mounted) return;
+    TouchFishSnackbarService.instance.show(
+      copied ? l10n.forumPostCopied : l10n.copyFailedText,
+      type: copied ? SnackbarType.info : SnackbarType.error,
+    );
   }
 
   Widget _buildActionButtons(BuildContext context, AppLocalizations l10n) {
