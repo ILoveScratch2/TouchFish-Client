@@ -35,7 +35,7 @@ class _SessionDevicesScreenState extends State<SessionDevicesScreen> {
 
   Future<void> _loadTokens() async {
     setState(() => _isLoading = true);
-    final result = await TfApiClient.instance.listAuthTokens(
+    final result = await TfApiClient.instance.listSessions(
       targetUid: widget.targetUid,
     );
     if (!mounted) return;
@@ -104,8 +104,8 @@ class _SessionDevicesScreenState extends State<SessionDevicesScreen> {
     if (confirmed != true || !mounted) return;
 
     setState(() => _isRemoving = true);
-    final result = await TfApiClient.instance.revokeAuthToken(
-      token.jti,
+    final result = await TfApiClient.instance.revokeSession(
+      token.sessionId,
       targetUid: widget.targetUid,
     );
     if (!mounted) return;

@@ -37,24 +37,34 @@ class TfLoginResult {
   final TfAuthMode mode;
   final String? token;
   final int? expiresAt;
+  final String? refreshToken;
+  final int? refreshExpiresAt;
   final String? error;
   final bool degraded;
 
-  const TfLoginResult.jwt({required this.token, required this.expiresAt})
-    : mode = TfAuthMode.jwt,
-      error = null,
-      degraded = false;
+  const TfLoginResult.jwt({
+    required this.token,
+    required this.expiresAt,
+    this.refreshToken,
+    this.refreshExpiresAt,
+  }) : mode = TfAuthMode.jwt,
+       error = null,
+       degraded = false;
 
   const TfLoginResult.legacy({this.degraded = false})
     : mode = TfAuthMode.legacy,
       token = null,
       expiresAt = null,
+      refreshToken = null,
+      refreshExpiresAt = null,
       error = null;
 
   const TfLoginResult.error(this.error)
     : mode = TfAuthMode.legacy,
       token = null,
       expiresAt = null,
+      refreshToken = null,
+      refreshExpiresAt = null,
       degraded = false;
 }
 
@@ -287,9 +297,10 @@ class TfServerConfig {
   }
 }
 
-/// 当前用户签发的一个 JWT（设备）条目。
+/// 当前用户的一个活跃会话（设备）条目。
 class TfAuthTokenInfo {
   final String jti;
+  final String sessionId;
   final int issuedAt;
   final int expiresAt;
   final String ip;
@@ -298,6 +309,7 @@ class TfAuthTokenInfo {
 
   const TfAuthTokenInfo({
     required this.jti,
+    required this.sessionId,
     required this.issuedAt,
     required this.expiresAt,
     this.ip = '',
@@ -306,9 +318,13 @@ class TfAuthTokenInfo {
   });
 
   factory TfAuthTokenInfo.fromJson(Map<String, dynamic> json) {
+    final sessionId = json['session_id'] as String? ?? '';
     return TfAuthTokenInfo(
-      jti: json['jti'] as String? ?? '',
-      issuedAt: (json['issued_at'] as num?)?.toInt() ?? 0,
+      jti: json['jti'] as String? ?? sessionId,
+      sessionId: sessionId.isNotEmpty ? sessionId : (json['jti'] as String? ?? ''),
+      issuedAt: (json['issued_at'] as num?)?.toInt() ??
+          (json['created_at'] as num?)?.toInt() ??
+          0,
       expiresAt: (json['expires_at'] as num?)?.toInt() ?? 0,
       ip: json['ip'] as String? ?? '',
       ua: json['ua'] as String? ?? '',
@@ -325,7 +341,7 @@ class TfTokenListResult {
   const TfTokenListResult({required this.tokens, required this.maxPerUser});
 
   factory TfTokenListResult.fromJson(Map<String, dynamic> json) {
-    final raw = json['tokens'];
+    final raw = json['sessions'] ?? json['tokens'];
     final tokens = raw is List
         ? raw
               .whereType<Map>()
@@ -1306,9 +1322,18 @@ class TfApiClient {
         }
         final token = data['token'];
         if (token is String && token.isNotEmpty) {
+          final refreshToken = data['refresh_token'];
+          final refreshExpiresIn = (data['refresh_expires_in'] as num?)?.toInt();
+          final expiresAt = (data['expires_at'] as num?)?.toInt();
           return TfLoginResult.jwt(
             token: token,
-            expiresAt: (data['expires_at'] as num?)?.toInt(),
+            expiresAt: expiresAt,
+            refreshToken: refreshToken is String && refreshToken.isNotEmpty
+                ? refreshToken
+                : null,
+            refreshExpiresAt: (expiresAt != null && refreshExpiresIn != null)
+                ? expiresAt + refreshExpiresIn
+                : null,
           );
         }
         return TfLoginResult.error('serverError');
@@ -1320,6 +1345,41 @@ class TfApiClient {
     } catch (e) {
       talker.error('TfApiClient.login failed', e);
       return TfLoginResult.error('networkError');
+    }
+  }
+
+  /// 用 refresh token 轮换会话，换取新的 access token + refresh token。
+  /// 返回 null 表示请求失败（网络/解析/被服务器拒绝）。
+  Future<TfLoginResult?> refreshToken(String refreshToken) async {
+    try {
+      final result = await _secretPostInternal(
+        '/auth/refresh',
+        {'refresh_token': refreshToken},
+        skipToken: true,
+      );
+      final data = _parseJsonMap(result);
+      if (data == null) return null;
+      final token = data['token'];
+      if (token is String && token.isNotEmpty) {
+        final newRefreshToken = data['refresh_token'];
+        final refreshExpiresIn = (data['refresh_expires_in'] as num?)?.toInt();
+        final expiresAt = (data['expires_at'] as num?)?.toInt();
+        return TfLoginResult.jwt(
+          token: token,
+          expiresAt: expiresAt,
+          refreshToken:
+              newRefreshToken is String && newRefreshToken.isNotEmpty
+                  ? newRefreshToken
+                  : null,
+          refreshExpiresAt: (expiresAt != null && refreshExpiresIn != null)
+              ? expiresAt + refreshExpiresIn
+              : null,
+        );
+      }
+      return null;
+    } catch (e) {
+      talker.error('refreshToken failed', e);
+      return null;
     }
   }
 
@@ -1366,6 +1426,54 @@ class TfApiClient {
       return false;
     } catch (e) {
       talker.error('revokeAuthToken failed', e);
+      return null;
+    }
+  }
+
+  /// 列出当前用户的活跃会话（session 粒度）。
+  Future<TfTokenListResult?> listSessions({int? targetUid}) async {
+    try {
+      final result = await secretPost('/auth/sessions/list', {
+        'target_uid': ?targetUid,
+      });
+      final data = _parseJsonMap(result);
+      if (data == null) return null;
+      return TfTokenListResult.fromJson(data);
+    } catch (e) {
+      talker.error('listSessions failed', e);
+      return null;
+    }
+  }
+
+  /// 按 session_id 吊销指定会话（踢出设备）。
+  Future<bool?> revokeSession(String sessionId, {int? targetUid}) async {
+    try {
+      final result = await secretPost('/auth/sessions/revoke', {
+        'session_id': sessionId,
+        'target_uid': ?targetUid,
+      });
+      final data = _parseJsonMap(result);
+      if (data == null) return null;
+      if (data['success'] == true) return true;
+      return false;
+    } catch (e) {
+      talker.error('revokeSession failed', e);
+      return null;
+    }
+  }
+
+  /// 吊销除当前会话外的全部会话（普通用户），或目标用户全部会话（管理员）。
+  Future<bool?> revokeAllOtherSessions({int? targetUid}) async {
+    try {
+      final result = await secretPost('/auth/sessions/revoke_all', {
+        'target_uid': ?targetUid,
+      });
+      final data = _parseJsonMap(result);
+      if (data == null) return null;
+      if (data['success'] == true) return true;
+      return false;
+    } catch (e) {
+      talker.error('revokeAllOtherSessions failed', e);
       return null;
     }
   }

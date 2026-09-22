@@ -24,12 +24,16 @@ class AuthState extends ChangeNotifier {
 
   static const _kTokenKey = 'auth_token';
   static const _kTokenExpiresAtKey = 'auth_token_expires_at';
+  static const _kRefreshTokenKey = 'auth_refresh_token';
+  static const _kRefreshExpiresAtKey = 'auth_refresh_expires_at';
 
   UserProfile? _currentUser;
   int? _uid;
   String? _password;
   String? _token;
   int? _tokenExpiresAt;
+  String? _refreshToken;
+  int? _refreshExpiresAt;
   TfAuthMode _authMode = TfAuthMode.jwt;
   bool _degradedToLegacy = false;
   String? _deprecationNotice;
@@ -52,6 +56,7 @@ class AuthState extends ChangeNotifier {
   String? get password =>
       _password ?? (isJwtMode ? '' : null);
   String? get token => _token;
+  String? get refreshToken => _refreshToken;
   TfAuthMode get authMode => _authMode;
   bool get isJwtMode => _authMode == TfAuthMode.jwt && _token != null;
   bool get degradedToLegacy => _degradedToLegacy;
@@ -84,6 +89,8 @@ class AuthState extends ChangeNotifier {
     _rememberedPassword = prefs.getString('auth_password');
     _token = prefs.getString(_kTokenKey);
     _tokenExpiresAt = prefs.getInt(_kTokenExpiresAtKey);
+    _refreshToken = prefs.getString(_kRefreshTokenKey);
+    _refreshExpiresAt = prefs.getInt(_kRefreshExpiresAtKey);
     _authMode = _token != null ? TfAuthMode.jwt : TfAuthMode.legacy;
     TfApiClient.instance.setAuthContext(
       token: _token,
@@ -116,7 +123,49 @@ class AuthState extends ChangeNotifier {
       if (_token != null && !legacyForced) {
         // JWT 模式：用 token 恢复会话
         TfApiClient.instance.setAuthContext(token: _token, legacyMode: false);
-        final valid = await TfApiClient.instance.validateToken();
+        var valid = await TfApiClient.instance.validateToken();
+        if (valid == null) {
+          // 网络/服务器异常：保留凭据
+          talker.warning(
+            'AuthState.restoreSavedSession: network failure during JWT validation.',
+          );
+          _restoreFailureReason = RestoreFailureReason.network;
+          _savedSessionRestoreStatus = SavedSessionRestoreStatus.failed;
+          _notifySessionChanged();
+          return false;
+        }
+
+        // access token 被拒绝时，尝试用 refresh token 轮换恢复
+        if (valid == false && _refreshToken != null && _refreshToken!.isNotEmpty) {
+          final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          final refreshValid = _refreshExpiresAt == null ||
+              _refreshExpiresAt! > now;
+          if (refreshValid) {
+            final refreshed = await TfApiClient.instance.refreshToken(
+              _refreshToken!,
+            );
+            if (refreshed != null && refreshed.token != null) {
+              _token = refreshed.token;
+              _tokenExpiresAt = refreshed.expiresAt;
+              _refreshToken = refreshed.refreshToken ?? _refreshToken;
+              _refreshExpiresAt =
+                  refreshed.refreshExpiresAt ?? _refreshExpiresAt;
+              TfApiClient.instance.setAuthContext(
+                token: _token,
+                legacyMode: false,
+              );
+              final prefs = await SharedPreferences.getInstance();
+              await _persistCredentials(
+                prefs,
+                uid: savedUid,
+                username: _rememberedUsername ?? profile?.username ?? '',
+                password: null,
+              );
+              valid = true;
+            }
+          }
+        }
+
         if (valid == true && profile != null) {
           // 多开互斥：同一服务器同一账号已被其它实例登录时，不在此实例恢复。
           final acquired = await MultiInstanceGuard.instance.acquire(
@@ -144,17 +193,7 @@ class AuthState extends ChangeNotifier {
           _notifySessionChanged();
           return true;
         }
-        if (valid == null) {
-          // 网络/服务器异常：保留凭据
-          talker.warning(
-            'AuthState.restoreSavedSession: network failure during JWT validation.',
-          );
-          _restoreFailureReason = RestoreFailureReason.network;
-          _savedSessionRestoreStatus = SavedSessionRestoreStatus.failed;
-          _notifySessionChanged();
-          return false;
-        }
-        // token 被服务器明确拒绝（过期/吊销）
+        // token 被服务器明确拒绝（过期/吊销）且无法 refresh
         _restoreFailureReason = RestoreFailureReason.tokenExpired;
         talker.warning(
           'AuthState.restoreSavedSession: saved JWT was rejected by the server.',
@@ -188,6 +227,8 @@ class AuthState extends ChangeNotifier {
           _password = savedPassword;
           _token = null;
           _tokenExpiresAt = null;
+          _refreshToken = null;
+          _refreshExpiresAt = null;
           _currentUser = profile;
           _authMode = TfAuthMode.legacy;
           _rememberedUsername ??= profile.username;
@@ -227,6 +268,8 @@ class AuthState extends ChangeNotifier {
     _password = null;
     _token = null;
     _tokenExpiresAt = null;
+    _refreshToken = null;
+    _refreshExpiresAt = null;
     _currentUser = null;
     TfApiClient.instance.setAuthContext(token: null, legacyMode: true);
     _savedSessionRestoreStatus = SavedSessionRestoreStatus.failed;
@@ -298,10 +341,14 @@ class AuthState extends ChangeNotifier {
       if (result.mode == TfAuthMode.jwt && result.token != null) {
         _token = result.token;
         _tokenExpiresAt = result.expiresAt;
+        _refreshToken = result.refreshToken;
+        _refreshExpiresAt = result.refreshExpiresAt;
         _authMode = TfAuthMode.jwt;
       } else {
         _token = null;
         _tokenExpiresAt = null;
+        _refreshToken = null;
+        _refreshExpiresAt = null;
         _authMode = TfAuthMode.legacy;
       }
       _password = password;
@@ -337,16 +384,12 @@ class AuthState extends ChangeNotifier {
     }
   }
 
-  /// 静默重登（JWT 模式，运行时 token 失效时使用内存密码换新 token）。
-  /// 无法自愈（无内存密码 / 重登被拒）时触发会话过期强制登出。
+  /// 静默重登（JWT 模式，运行时 token 失效时优先用 refresh token 换新 token，
+  /// 无 refresh token 时才回退到内存密码重新登录）。
+  /// 无法自愈时触发会话过期强制登出。
   Future<bool> relogin() async {
     if (_uid == null) return false;
     if (_authMode != TfAuthMode.jwt) return false;
-    if (_password == null) {
-      // JWT 恢复会话：token 已失效且无密码可用，无法自愈
-      unawaited(_handleSessionExpired());
-      return false;
-    }
     final pending = _reloginFuture;
     if (pending != null) return pending;
     final future = _doRelogin();
@@ -369,14 +412,34 @@ class AuthState extends ChangeNotifier {
 
   Future<bool> _doRelogin() async {
     try {
-      final result = await TfApiClient.instance.login(
-        _uid!,
-        _password!,
-        legacyMode: false,
-      );
-      if (result.error != null || result.token == null) return false;
+      TfLoginResult? result;
+
+      // 优先用 refresh token 轮换（无需密码）
+      if (_refreshToken != null && _refreshToken!.isNotEmpty) {
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        final refreshValid = _refreshExpiresAt == null ||
+            _refreshExpiresAt! > now;
+        if (refreshValid) {
+          result = await TfApiClient.instance.refreshToken(_refreshToken!);
+        }
+      }
+
+      // 回退：用内存密码重新登录（仅当仍持有密码时）
+      if ((result == null || result.token == null) && _password != null) {
+        result = await TfApiClient.instance.login(
+          _uid!,
+          _password!,
+          legacyMode: false,
+        );
+      }
+
+      if (result == null || result.error != null || result.token == null) {
+        return false;
+      }
       _token = result.token;
       _tokenExpiresAt = result.expiresAt;
+      _refreshToken = result.refreshToken ?? _refreshToken;
+      _refreshExpiresAt = result.refreshExpiresAt ?? _refreshExpiresAt;
       _authMode = TfAuthMode.jwt;
       _degradedToLegacy = false;
       TfApiClient.instance.setAuthContext(token: _token, legacyMode: false);
@@ -404,6 +467,8 @@ class AuthState extends ChangeNotifier {
     _password = null;
     _token = null;
     _tokenExpiresAt = null;
+    _refreshToken = null;
+    _refreshExpiresAt = null;
     _currentUser = null;
     _authMode = TfAuthMode.jwt;
     _degradedToLegacy = false;
@@ -457,6 +522,8 @@ class AuthState extends ChangeNotifier {
     await prefs.remove('auth_password');
     await prefs.remove(_kTokenKey);
     await prefs.remove(_kTokenExpiresAtKey);
+    await prefs.remove(_kRefreshTokenKey);
+    await prefs.remove(_kRefreshExpiresAtKey);
   }
 
   /// FORK YOU localStorage
@@ -496,6 +563,17 @@ class AuthState extends ChangeNotifier {
       } else {
         await prefs.remove(_kTokenExpiresAtKey);
       }
+      if (_refreshToken != null && _refreshToken!.isNotEmpty) {
+        await _persistString(prefs, _kRefreshTokenKey, _refreshToken!);
+        if (_refreshExpiresAt != null) {
+          await prefs.setInt(_kRefreshExpiresAtKey, _refreshExpiresAt!);
+        } else {
+          await prefs.remove(_kRefreshExpiresAtKey);
+        }
+      } else {
+        await prefs.remove(_kRefreshTokenKey);
+        await prefs.remove(_kRefreshExpiresAtKey);
+      }
       await prefs.remove('auth_password');
     } else {
       if (password != null) {
@@ -505,6 +583,8 @@ class AuthState extends ChangeNotifier {
       }
       await prefs.remove(_kTokenKey);
       await prefs.remove(_kTokenExpiresAtKey);
+      await prefs.remove(_kRefreshTokenKey);
+      await prefs.remove(_kRefreshExpiresAtKey);
     }
   }
 }
