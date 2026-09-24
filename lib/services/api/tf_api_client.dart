@@ -137,6 +137,8 @@ class TfChatListItem {
 
 class TfServerConfig {
   final bool captcha;
+  final String captchaProvider;
+  final String captchaSiteKey;
   final bool emailActivate;
   final int portApi;
   final int portTcp;
@@ -170,6 +172,8 @@ class TfServerConfig {
 
   const TfServerConfig({
     required this.captcha,
+    required this.captchaProvider,
+    required this.captchaSiteKey,
     required this.emailActivate,
     required this.portApi,
     required this.portTcp,
@@ -250,6 +254,8 @@ class TfServerConfig {
 
     return TfServerConfig(
       captcha: json['captcha'] as bool? ?? false,
+      captchaProvider: json['captcha_provider'] as String? ?? 'image',
+      captchaSiteKey: json['captcha_site_key'] as String? ?? '',
       emailActivate: json['email_activate'] as bool? ?? false,
       portApi: _parseIntValue(json['port_api'], 7001),
       portTcp: _parseIntValue(json['port_tcp'], AppConstants.defaultTcpPort),
@@ -295,6 +301,10 @@ class TfServerConfig {
       iceServers: iceServers,
     );
   }
+
+  /// 是否为第三方验证码（turnstile/hcaptcha/recaptcha），而非内置图片验证码。
+  bool get isThirdPartyCaptcha =>
+      captchaProvider != 'image' && captchaProvider.isNotEmpty;
 }
 
 /// 当前用户的一个活跃会话（设备）条目。
@@ -364,6 +374,8 @@ class TfCaptchaInfo {
 
   const TfCaptchaInfo({required this.pic, required this.stamp});
 }
+
+enum RegisterResult { success, captchaInvalid, failed }
 
 enum TfDebugRequestMethod { get, post }
 
@@ -1487,17 +1499,19 @@ class TfApiClient {
     }
   }
 
-  Future<bool> register(
+  Future<RegisterResult> register(
     String username,
     String password, {
     String? email,
     String? captchaStamp,
     String? captchaCode,
+    String? captchaToken,
   }) async {
     final body = <String, dynamic>{'username': username, 'password': password};
     if (email != null && email.isNotEmpty) body['email'] = email;
     if (captchaStamp != null) body['captcha_stamp'] = captchaStamp;
     if (captchaCode != null) body['captcha_code'] = captchaCode;
+    if (captchaToken != null) body['captcha_token'] = captchaToken;
     // 注册为免认证端点，不携带当前 token
     try {
       final result = await _secretPostInternal(
@@ -1505,10 +1519,15 @@ class TfApiClient {
         body,
         skipToken: true,
       );
-      return _parseBool(result);
+      if (_parseBool(result)) return RegisterResult.success;
+      // 验证码错误/过期：服务端返回 CAPTCHA_INVALID，客户端需刷新后重试
+      if (lastApiError?.code == 'CAPTCHA_INVALID') {
+        return RegisterResult.captchaInvalid;
+      }
+      return RegisterResult.failed;
     } catch (e) {
       talker.error('register failed', e);
-      return false;
+      return RegisterResult.failed;
     }
   }
 

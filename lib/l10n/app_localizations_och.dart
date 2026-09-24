@@ -215,6 +215,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get registerErrorCaptchaRequired => '請輸入驗證碼';
 
   @override
+  String get registerErrorCaptchaInvalid => '驗證碼誤，請復輸之';
+
+  @override
   String get registerCaptchaLoad => '方載驗證碼…';
 
   @override
@@ -222,6 +225,15 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get registerCaptchaRefresh => '更之';
+
+  @override
+  String get registerCaptchaVerify => '驗證';
+
+  @override
+  String get registerCaptchaVerifyHint => '請完人機之驗以繼行。';
+
+  @override
+  String get registerCaptchaVerified => '驗證已過';
 
   @override
   String get registerErrorFailed => '註冊未成，請重試';

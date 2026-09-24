@@ -215,6 +215,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get registerErrorCaptchaRequired => '请输入验证码';
 
   @override
+  String get registerErrorCaptchaInvalid => '验证码错误，请重新输入';
+
+  @override
   String get registerCaptchaLoad => '正在加载验证码...';
 
   @override
@@ -222,6 +225,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get registerCaptchaRefresh => '刷新';
+
+  @override
+  String get registerCaptchaVerify => '验证';
+
+  @override
+  String get registerCaptchaVerifyHint => '请完成人机验证以继续。';
+
+  @override
+  String get registerCaptchaVerified => '验证已通过';
 
   @override
   String get registerErrorFailed => '注册失败，请重试';

@@ -229,6 +229,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registerErrorCaptchaRequired => 'Please enter the captcha';
 
   @override
+  String get registerErrorCaptchaInvalid =>
+      'Captcha is incorrect, please try again';
+
+  @override
   String get registerCaptchaLoad => 'Loading captcha...';
 
   @override
@@ -236,6 +240,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get registerCaptchaRefresh => 'Refresh';
+
+  @override
+  String get registerCaptchaVerify => 'Verify';
+
+  @override
+  String get registerCaptchaVerifyHint => 'Complete the captcha to continue.';
+
+  @override
+  String get registerCaptchaVerified => 'Captcha verified';
 
   @override
   String get registerErrorFailed => 'Registration failed, please try again';

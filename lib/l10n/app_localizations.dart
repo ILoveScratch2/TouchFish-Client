@@ -508,6 +508,12 @@ abstract class AppLocalizations {
   /// **'Please enter the captcha'**
   String get registerErrorCaptchaRequired;
 
+  /// No description provided for @registerErrorCaptchaInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Captcha is incorrect, please try again'**
+  String get registerErrorCaptchaInvalid;
+
   /// No description provided for @registerCaptchaLoad.
   ///
   /// In en, this message translates to:
@@ -525,6 +531,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh'**
   String get registerCaptchaRefresh;
+
+  /// No description provided for @registerCaptchaVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get registerCaptchaVerify;
+
+  /// No description provided for @registerCaptchaVerifyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the captcha to continue.'**
+  String get registerCaptchaVerifyHint;
+
+  /// No description provided for @registerCaptchaVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Captcha verified'**
+  String get registerCaptchaVerified;
 
   /// No description provided for @registerErrorFailed.
   ///

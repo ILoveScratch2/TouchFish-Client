@@ -253,7 +253,8 @@ class AppRoutes {
         extra['password'] is String &&
         (extra['requiresEmail'] == null || extra['requiresEmail'] is bool) &&
         (extra['captchaStamp'] == null || extra['captchaStamp'] is String) &&
-        (extra['captchaCode'] == null || extra['captchaCode'] is String);
+        (extra['captchaCode'] == null || extra['captchaCode'] is String) &&
+        (extra['captchaToken'] == null || extra['captchaToken'] is String);
   }
 
   @visibleForTesting
@@ -324,6 +325,7 @@ class AppRoutes {
                   requiresEmail: args['requiresEmail'] as bool? ?? false,
                   captchaStamp: args['captchaStamp'] as String?,
                   captchaCode: args['captchaCode'] as String?,
+                  captchaToken: args['captchaToken'] as String?,
                 );
               },
             ),
