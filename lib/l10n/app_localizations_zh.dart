@@ -3570,6 +3570,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsThumbnailPreviewDesc => '气泡中加载服务端缩略图，点开后加载原图（省流量）';
 
   @override
+  String get settingsImageCompressionTitle => '发送前压缩图片';
+
+  @override
+  String get settingsImageCompressionDesc => '上传前在本地重新编码（最长边 1920、有损压缩），省流量与存储';
+
+  @override
+  String get settingsImageCompressionQualityTitle => '压缩质量';
+
+  @override
+  String get settingsImageCompressionQualityDesc => '数值越低文件越小，画质损失越明显';
+
+  @override
   String get settingsIpOverrideTitle => 'IP 覆盖模式';
 
   @override

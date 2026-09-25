@@ -3568,6 +3568,18 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsThumbnailPreviewDesc => '氣泡中加載服務端縮略圖，點開後加載原圖（省流量）';
 
   @override
+  String get settingsImageCompressionTitle => '送圖前壓縮';
+
+  @override
+  String get settingsImageCompressionDesc => '上傳前於本機重編碼（長邊 1920，有損），以省流量與儲存';
+
+  @override
+  String get settingsImageCompressionQualityTitle => '壓縮品質';
+
+  @override
+  String get settingsImageCompressionQualityDesc => '數值愈低，檔案愈小，畫質之損愈顯';
+
+  @override
   String get settingsIpOverrideTitle => 'IP 覆蓋模式';
 
   @override

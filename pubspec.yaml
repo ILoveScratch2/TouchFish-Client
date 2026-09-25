@@ -69,6 +69,8 @@ dependencies:
   package_info_plus: ^8.1.2
   image_picker: ^1.1.2
   image: ^4.5.4
+  # 原生平台编解码器（Android/iOS 出 WebP）；Windows/Linux 无实现，走 image 包的纯 Dart 回退
+  flutter_image_compress: ^2.5.1
   flutter_colorpicker: ^1.1.0
   talker: ^4.7.1
   talker_flutter: ^4.7.1

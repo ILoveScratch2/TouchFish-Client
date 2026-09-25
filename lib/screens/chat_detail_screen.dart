@@ -21,6 +21,7 @@ import '../widgets/mention_text_field.dart';
 import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/file_service.dart';
+import '../services/image_compression_service.dart';
 import '../services/snackbar_service.dart';
 import '../services/chat_ws_service.dart';
 import '../services/app_foreground_service.dart';
@@ -1651,11 +1652,23 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
     try {
       final taskManager = ref.read(taskManagerProvider.notifier);
+      // 图片先本地压缩再上传（省流量与存储，原图不出本机）。消息已经在上面
+      // 入列，压缩期间气泡的 pending 转圈就是反馈。
+      var uploadBytes = bytes;
+      var uploadName = fileName;
+      if (type == MessageType.image) {
+        final prepared = await ImageCompressionService.instance
+            .prepareForUpload(bytes: bytes, fileName: fileName);
+        if (prepared != null) {
+          uploadBytes = prepared.bytes;
+          uploadName = prepared.fileName;
+        }
+      }
       final hash = await FileService.instance.uploadFile(
         uid: uid,
         password: password,
-        fileName: fileName,
-        bytes: bytes,
+        fileName: uploadName,
+        bytes: uploadBytes,
         filePath: kIsWeb ? null : filePath,
         clientMid: clientMid,
         roomId: _contactUid,
@@ -1671,9 +1684,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         clientMid,
         MessageMedia(
           path: '$baseUrl/file/get_file/$hash',
-          fileName: fileName,
-          fileSize: fileSize,
-          mimeType: lookupMimeType(fileName),
+          fileName: uploadName,
+          fileSize: uploadBytes.length,
+          mimeType: lookupMimeType(uploadName),
+          // 本地预览继续用原图字节：换成压缩后的字节会让 pending→uploaded
+          // 时重建 MemoryImage，图片要重新解一遍（闪一下）。
           bytes: bytes,
           fileHash: hash,
         ),

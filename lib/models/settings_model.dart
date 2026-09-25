@@ -376,6 +376,22 @@ class SettingsData {
           icon: Icons.image_outlined,
         ),
         SettingItem(
+          key: 'imageCompressionEnabled',
+          titleKey: 'settingsImageCompressionTitle',
+          descriptionKey: 'settingsImageCompressionDesc',
+          type: SettingType.switchSetting,
+          defaultValue: true,
+          icon: Icons.compress,
+        ),
+        SettingItem(
+          key: 'imageCompressionQuality',
+          titleKey: 'settingsImageCompressionQualityTitle',
+          descriptionKey: 'settingsImageCompressionQualityDesc',
+          type: SettingType.slider,
+          defaultValue: 0.8,
+          icon: Icons.tune,
+        ),
+        SettingItem(
           key: 'ipOverrideMode',
           titleKey: 'settingsIpOverrideTitle',
           descriptionKey: 'settingsIpOverrideDesc',

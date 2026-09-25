@@ -3722,6 +3722,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Load server-generated thumbnails in chat bubbles; the original image loads only when opened (saves data)';
 
   @override
+  String get settingsImageCompressionTitle => 'Compress images before sending';
+
+  @override
+  String get settingsImageCompressionDesc =>
+      'Re-encode images locally before upload (longest edge 1920, lossy) to save data and storage';
+
+  @override
+  String get settingsImageCompressionQualityTitle => 'Compression quality';
+
+  @override
+  String get settingsImageCompressionQualityDesc =>
+      'Lower values produce smaller files with more visible quality loss';
+
+  @override
   String get settingsIpOverrideTitle => 'IP override mode';
 
   @override

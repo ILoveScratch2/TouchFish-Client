@@ -6922,6 +6922,30 @@ abstract class AppLocalizations {
   /// **'Load server-generated thumbnails in chat bubbles; the original image loads only when opened (saves data)'**
   String get settingsThumbnailPreviewDesc;
 
+  /// No description provided for @settingsImageCompressionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compress images before sending'**
+  String get settingsImageCompressionTitle;
+
+  /// No description provided for @settingsImageCompressionDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-encode images locally before upload (longest edge 1920, lossy) to save data and storage'**
+  String get settingsImageCompressionDesc;
+
+  /// No description provided for @settingsImageCompressionQualityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compression quality'**
+  String get settingsImageCompressionQualityTitle;
+
+  /// No description provided for @settingsImageCompressionQualityDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Lower values produce smaller files with more visible quality loss'**
+  String get settingsImageCompressionQualityDesc;
+
   /// No description provided for @settingsIpOverrideTitle.
   ///
   /// In en, this message translates to:

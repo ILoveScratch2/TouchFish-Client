@@ -2168,6 +2168,14 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsThumbnailPreviewTitle;
       case 'settingsThumbnailPreviewDesc':
         return l10n.settingsThumbnailPreviewDesc;
+      case 'settingsImageCompressionTitle':
+        return l10n.settingsImageCompressionTitle;
+      case 'settingsImageCompressionDesc':
+        return l10n.settingsImageCompressionDesc;
+      case 'settingsImageCompressionQualityTitle':
+        return l10n.settingsImageCompressionQualityTitle;
+      case 'settingsImageCompressionQualityDesc':
+        return l10n.settingsImageCompressionQualityDesc;
       case 'settingsIpOverrideTitle':
         return l10n.settingsIpOverrideTitle;
       case 'settingsIpOverrideDesc':
@@ -2427,10 +2435,19 @@ class _SettingsScreenState extends State<SettingsScreen>
     if (isDesktopOnly && !isDesktop) {
       return const SizedBox.shrink();
     }
+    // 质量滑杆用 10%~100% 的区间，0 没有意义。
+    final usesFractionRange =
+        item.key == 'windowOpacity' || item.key == 'imageCompressionQuality';
 
     return ListenableBuilder(
       listenable: _settingsService,
       builder: (context, _) {
+        // 压缩关掉时质量滑杆没有意义（外层 visibleItems 只在 setState 时重算，
+        // 所以隐藏判断必须放在这个 ListenableBuilder 里）。
+        if (item.key == 'imageCompressionQuality' &&
+            !_settingsService.getValue<bool>('imageCompressionEnabled', true)) {
+          return const SizedBox.shrink();
+        }
         final value = _settingsService.getValue<double>(
           item.key,
           item.defaultValue as double,
@@ -2478,9 +2495,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                   const SizedBox(height: 8),
                   Slider(
                     value: value,
-                    min: item.key == 'windowOpacity' ? 0.1 : 0.0,
+                    min: usesFractionRange ? 0.1 : 0.0,
                     max: 1.0,
-                    divisions: item.key == 'windowOpacity' ? 18 : 20,
+                    divisions: usesFractionRange ? 18 : 20,
                     label: '${(value * 100).round()}%',
                     onChanged: (newValue) async {
                       await _settingsService.setValue(item.key, newValue);
