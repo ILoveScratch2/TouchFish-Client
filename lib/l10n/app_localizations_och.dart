@@ -209,6 +209,78 @@ class AppLocalizationsOch extends AppLocalizations {
   String get sessionDevicesRemoveFailed => '移除敗矣，請復試之';
 
   @override
+  String get sessionDevicesRename => '易名';
+
+  @override
+  String get sessionDevicesRenameTitle => '易設備之名';
+
+  @override
+  String get sessionDevicesRenameLabel => '設備之名';
+
+  @override
+  String get sessionDevicesRenameHint => '如：吾之 iPhone';
+
+  @override
+  String get sessionDevicesRenameHelper => '空之則用默認之名';
+
+  @override
+  String get sessionDevicesRenameSuccess => '易名已成';
+
+  @override
+  String get sessionDevicesRenameFailed => '易名敗矣，請復試之';
+
+  @override
+  String get sessionDevicesLocation => '所在';
+
+  @override
+  String get sessionDevicesLastSeen => '近動';
+
+  @override
+  String get sessionDevicesTabDevices => '設備';
+
+  @override
+  String get sessionDevicesTabSessions => '會話';
+
+  @override
+  String get sessionDevicesSessionCount => '會話之數';
+
+  @override
+  String get sessionDevicesUnknownPlatform => '未知之台';
+
+  @override
+  String get sessionDevicesPlatformIos => 'iOS';
+
+  @override
+  String get sessionDevicesPlatformAndroid => 'Android';
+
+  @override
+  String get sessionDevicesPlatformWeb => '網頁';
+
+  @override
+  String get sessionDevicesPlatformWindows => 'Windows';
+
+  @override
+  String get sessionDevicesPlatformMacos => 'macOS';
+
+  @override
+  String get sessionDevicesPlatformLinux => 'Linux';
+
+  @override
+  String get sessionDevicesRevokeAllOthers => '登出餘會話';
+
+  @override
+  String get sessionDevicesRevokeAllOthersConfirmTitle => '登出餘會話乎？';
+
+  @override
+  String get sessionDevicesRevokeAllOthersConfirmMessage => '餘設備皆即出，惟此設備留登。';
+
+  @override
+  String get sessionDevicesRevokeAllOthersSuccess => '餘會話已出';
+
+  @override
+  String get sessionDevicesRevokeAllOthersFailed => '出餘會話敗矣，請復試之';
+
+  @override
   String get sessionRestoreNetworkError => '網絡連接失敗，請檢查網絡後重試';
 
   @override

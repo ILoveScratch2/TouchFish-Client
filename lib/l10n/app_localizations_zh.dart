@@ -209,6 +209,79 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sessionDevicesRemoveFailed => '移除失败，请重试';
 
   @override
+  String get sessionDevicesRename => '重命名';
+
+  @override
+  String get sessionDevicesRenameTitle => '重命名设备';
+
+  @override
+  String get sessionDevicesRenameLabel => '设备名称';
+
+  @override
+  String get sessionDevicesRenameHint => '例如：我的 iPhone';
+
+  @override
+  String get sessionDevicesRenameHelper => '留空则显示默认设备名称';
+
+  @override
+  String get sessionDevicesRenameSuccess => '重命名成功';
+
+  @override
+  String get sessionDevicesRenameFailed => '重命名失败，请重试';
+
+  @override
+  String get sessionDevicesLocation => '位置';
+
+  @override
+  String get sessionDevicesLastSeen => '最近活跃';
+
+  @override
+  String get sessionDevicesTabDevices => '设备';
+
+  @override
+  String get sessionDevicesTabSessions => '会话';
+
+  @override
+  String get sessionDevicesSessionCount => '会话数';
+
+  @override
+  String get sessionDevicesUnknownPlatform => '未知平台';
+
+  @override
+  String get sessionDevicesPlatformIos => 'iOS';
+
+  @override
+  String get sessionDevicesPlatformAndroid => 'Android';
+
+  @override
+  String get sessionDevicesPlatformWeb => '网页';
+
+  @override
+  String get sessionDevicesPlatformWindows => 'Windows';
+
+  @override
+  String get sessionDevicesPlatformMacos => 'macOS';
+
+  @override
+  String get sessionDevicesPlatformLinux => 'Linux';
+
+  @override
+  String get sessionDevicesRevokeAllOthers => '登出其他全部会话';
+
+  @override
+  String get sessionDevicesRevokeAllOthersConfirmTitle => '登出其他全部会话？';
+
+  @override
+  String get sessionDevicesRevokeAllOthersConfirmMessage =>
+      '其他所有设备将立即退出登录，当前设备保持登录状态。';
+
+  @override
+  String get sessionDevicesRevokeAllOthersSuccess => '已登出其他全部会话';
+
+  @override
+  String get sessionDevicesRevokeAllOthersFailed => '登出其他会话失败，请重试';
+
+  @override
   String get sessionRestoreNetworkError => '网络连接失败，请检查网络后重试';
 
   @override

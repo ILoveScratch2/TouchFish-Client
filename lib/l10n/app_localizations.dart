@@ -496,6 +496,150 @@ abstract class AppLocalizations {
   /// **'Failed to remove device, please try again'**
   String get sessionDevicesRemoveFailed;
 
+  /// No description provided for @sessionDevicesRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get sessionDevicesRename;
+
+  /// No description provided for @sessionDevicesRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename device'**
+  String get sessionDevicesRenameTitle;
+
+  /// No description provided for @sessionDevicesRenameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Device name'**
+  String get sessionDevicesRenameLabel;
+
+  /// No description provided for @sessionDevicesRenameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. My iPhone'**
+  String get sessionDevicesRenameHint;
+
+  /// No description provided for @sessionDevicesRenameHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to use the default device name'**
+  String get sessionDevicesRenameHelper;
+
+  /// No description provided for @sessionDevicesRenameSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Device renamed'**
+  String get sessionDevicesRenameSuccess;
+
+  /// No description provided for @sessionDevicesRenameFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename failed, please try again'**
+  String get sessionDevicesRenameFailed;
+
+  /// No description provided for @sessionDevicesLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get sessionDevicesLocation;
+
+  /// No description provided for @sessionDevicesLastSeen.
+  ///
+  /// In en, this message translates to:
+  /// **'Last active'**
+  String get sessionDevicesLastSeen;
+
+  /// No description provided for @sessionDevicesTabDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get sessionDevicesTabDevices;
+
+  /// No description provided for @sessionDevicesTabSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get sessionDevicesTabSessions;
+
+  /// No description provided for @sessionDevicesSessionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get sessionDevicesSessionCount;
+
+  /// No description provided for @sessionDevicesUnknownPlatform.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown platform'**
+  String get sessionDevicesUnknownPlatform;
+
+  /// No description provided for @sessionDevicesPlatformIos.
+  ///
+  /// In en, this message translates to:
+  /// **'iOS'**
+  String get sessionDevicesPlatformIos;
+
+  /// No description provided for @sessionDevicesPlatformAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Android'**
+  String get sessionDevicesPlatformAndroid;
+
+  /// No description provided for @sessionDevicesPlatformWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Web'**
+  String get sessionDevicesPlatformWeb;
+
+  /// No description provided for @sessionDevicesPlatformWindows.
+  ///
+  /// In en, this message translates to:
+  /// **'Windows'**
+  String get sessionDevicesPlatformWindows;
+
+  /// No description provided for @sessionDevicesPlatformMacos.
+  ///
+  /// In en, this message translates to:
+  /// **'macOS'**
+  String get sessionDevicesPlatformMacos;
+
+  /// No description provided for @sessionDevicesPlatformLinux.
+  ///
+  /// In en, this message translates to:
+  /// **'Linux'**
+  String get sessionDevicesPlatformLinux;
+
+  /// No description provided for @sessionDevicesRevokeAllOthers.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out all other sessions'**
+  String get sessionDevicesRevokeAllOthers;
+
+  /// No description provided for @sessionDevicesRevokeAllOthersConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out all other sessions?'**
+  String get sessionDevicesRevokeAllOthersConfirmTitle;
+
+  /// No description provided for @sessionDevicesRevokeAllOthersConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'All other devices will be signed out immediately. You will stay signed in on this device.'**
+  String get sessionDevicesRevokeAllOthersConfirmMessage;
+
+  /// No description provided for @sessionDevicesRevokeAllOthersSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'All other sessions signed out'**
+  String get sessionDevicesRevokeAllOthersSuccess;
+
+  /// No description provided for @sessionDevicesRevokeAllOthersFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to sign out other sessions, please try again'**
+  String get sessionDevicesRevokeAllOthersFailed;
+
   /// No description provided for @sessionRestoreNetworkError.
   ///
   /// In en, this message translates to:

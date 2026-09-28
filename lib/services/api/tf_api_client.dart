@@ -20,6 +20,7 @@ import '../../models/api_error.dart';
 import '../../models/file_attachment.dart';
 import '../server_connection_status_service.dart';
 import '../rsa_key_trust_service.dart';
+import '../device_identity_service.dart';
 import '../../widgets/server_selector.dart';
 import '../../utils/talker.dart';
 
@@ -313,18 +314,30 @@ class TfAuthTokenInfo {
   final String sessionId;
   final int issuedAt;
   final int expiresAt;
+  final int lastSeen;
   final String ip;
   final String ua;
   final bool isCurrent;
+  final String deviceId;
+  final String deviceName;
+  final String label;
+  final int platform;
+  final String location;
 
   const TfAuthTokenInfo({
     required this.jti,
     required this.sessionId,
     required this.issuedAt,
     required this.expiresAt,
+    this.lastSeen = 0,
     this.ip = '',
     this.ua = '',
     this.isCurrent = false,
+    this.deviceId = '',
+    this.deviceName = '',
+    this.label = '',
+    this.platform = 0,
+    this.location = '',
   });
 
   factory TfAuthTokenInfo.fromJson(Map<String, dynamic> json) {
@@ -336,14 +349,22 @@ class TfAuthTokenInfo {
           (json['created_at'] as num?)?.toInt() ??
           0,
       expiresAt: (json['expires_at'] as num?)?.toInt() ?? 0,
+      lastSeen: (json['last_seen_at'] as num?)?.toInt() ??
+          (json['last_seen'] as num?)?.toInt() ??
+          0,
       ip: json['ip'] as String? ?? '',
       ua: json['ua'] as String? ?? '',
       isCurrent: json['is_current'] == true,
+      deviceId: json['device_id'] as String? ?? '',
+      deviceName: json['device_name'] as String? ?? '',
+      label: json['label'] as String? ?? '',
+      platform: (json['platform'] as num?)?.toInt() ?? 0,
+      location: json['location'] as String? ?? '',
     );
   }
 }
 
-/// /auth/tokens/list 的解析结果。
+/// /auth/tokens/list 或 /auth/sessions/list 的解析结果。
 class TfTokenListResult {
   final List<TfAuthTokenInfo> tokens;
   final int maxPerUser;
@@ -365,6 +386,60 @@ class TfTokenListResult {
       tokens: tokens,
       maxPerUser: (json['max_per_user'] as num?)?.toInt() ?? 0,
     );
+  }
+}
+
+/// 一个设备记录（/auth/devices/list）。
+class TfDeviceInfo {
+  final String deviceId;
+  final String deviceName;
+  final String label;
+  final int platform;
+  final int lastSeen;
+
+  const TfDeviceInfo({
+    required this.deviceId,
+    required this.deviceName,
+    this.label = '',
+    this.platform = 0,
+    this.lastSeen = 0,
+  });
+
+  /// 优先使用自定义标签，其次设备名称。
+  String get displayName => label.isNotEmpty
+      ? label
+      : (deviceName.isNotEmpty ? deviceName : deviceId);
+
+  factory TfDeviceInfo.fromJson(Map<String, dynamic> json) {
+    return TfDeviceInfo(
+      deviceId: json['device_id'] as String? ?? '',
+      deviceName: json['device_name'] as String? ?? '',
+      label: json['label'] as String? ?? '',
+      platform: (json['platform'] as num?)?.toInt() ?? 0,
+      lastSeen: (json['last_seen'] as num?)?.toInt() ??
+          (json['last_seen_at'] as num?)?.toInt() ??
+          0,
+    );
+  }
+}
+
+/// /auth/devices/list 的解析结果。
+class TfDeviceListResult {
+  final List<TfDeviceInfo> devices;
+
+  const TfDeviceListResult({required this.devices});
+
+  factory TfDeviceListResult.fromJson(Map<String, dynamic> json) {
+    final raw = json['devices'];
+    final devices = raw is List
+        ? raw
+              .whereType<Map>()
+              .map(
+                (item) => TfDeviceInfo.fromJson(Map<String, dynamic>.from(item)),
+              )
+              .toList()
+        : const <TfDeviceInfo>[];
+    return TfDeviceListResult(devices: devices);
   }
 }
 
@@ -1310,7 +1385,14 @@ class TfApiClient {
   }) async {
     try {
       final body = <String, dynamic>{};
-      if (!legacyMode) body['jwt'] = true;
+      if (!legacyMode) {
+        body['jwt'] = true;
+        // 仅供新服务器识别设备，旧服务器会忽略多余字段。
+        final device = await DeviceIdentityService.instance.get();
+        body['device_id'] = device.deviceId;
+        body['device_name'] = device.deviceName;
+        body['platform'] = device.platform;
+      }
       final result = await _secretPostInternal(
         '/auth/login',
         body,
@@ -1486,6 +1568,72 @@ class TfApiClient {
       return false;
     } catch (e) {
       talker.error('revokeAllOtherSessions failed', e);
+      return null;
+    }
+  }
+
+  /// 为指定会话的设备设置自定义标签（重命名设备）。
+  Future<bool?> renameSession(String sessionId, String label) async {
+    try {
+      final result = await secretPost('/auth/sessions/rename', {
+        'session_id': sessionId,
+        'label': label,
+      });
+      final data = _parseJsonMap(result);
+      if (data == null) return null;
+      if (data['success'] == true) return true;
+      return false;
+    } catch (e) {
+      talker.error('renameSession failed', e);
+      return null;
+    }
+  }
+
+  /// 列出用户的设备记录（设备粒度，/auth/devices/list）。
+  Future<TfDeviceListResult?> listDevices({int? targetUid}) async {
+    try {
+      final result = await secretPost('/auth/devices/list', {
+        'target_uid': ?targetUid,
+      });
+      final data = _parseJsonMap(result);
+      if (data == null) return null;
+      return TfDeviceListResult.fromJson(data);
+    } catch (e) {
+      talker.error('listDevices failed', e);
+      return null;
+    }
+  }
+
+  /// 更新设备的自定义标签（设备粒度，/auth/devices/update_label）。
+  Future<bool?> updateDeviceLabel(String deviceId, String label) async {
+    try {
+      final result = await secretPost('/auth/devices/update_label', {
+        'device_id': deviceId,
+        'label': label,
+      });
+      final data = _parseJsonMap(result);
+      if (data == null) return null;
+      if (data['success'] == true) return true;
+      return false;
+    } catch (e) {
+      talker.error('updateDeviceLabel failed', e);
+      return null;
+    }
+  }
+
+  /// 吊销指定设备的所有会话（设备粒度，/auth/devices/revoke）。
+  Future<bool?> revokeDevice(String deviceId, {int? targetUid}) async {
+    try {
+      final result = await secretPost('/auth/devices/revoke', {
+        'device_id': deviceId,
+        'target_uid': ?targetUid,
+      });
+      final data = _parseJsonMap(result);
+      if (data == null) return null;
+      if (data['success'] == true) return true;
+      return false;
+    } catch (e) {
+      talker.error('revokeDevice failed', e);
       return null;
     }
   }

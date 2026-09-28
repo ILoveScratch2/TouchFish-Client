@@ -67,6 +67,7 @@ dependencies:
   web: ^1.1.0
   flutter_math_fork: ^0.7.2
   package_info_plus: ^8.1.2
+  device_info_plus: ^10.1.2
   image_picker: ^1.1.2
   image: ^4.5.4
   # 原生平台编解码器（Android/iOS 出 WebP）；Windows/Linux 无实现，走 image 包的纯 Dart 回退

@@ -222,6 +222,83 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to remove device, please try again';
 
   @override
+  String get sessionDevicesRename => 'Rename';
+
+  @override
+  String get sessionDevicesRenameTitle => 'Rename device';
+
+  @override
+  String get sessionDevicesRenameLabel => 'Device name';
+
+  @override
+  String get sessionDevicesRenameHint => 'e.g. My iPhone';
+
+  @override
+  String get sessionDevicesRenameHelper =>
+      'Leave empty to use the default device name';
+
+  @override
+  String get sessionDevicesRenameSuccess => 'Device renamed';
+
+  @override
+  String get sessionDevicesRenameFailed => 'Rename failed, please try again';
+
+  @override
+  String get sessionDevicesLocation => 'Location';
+
+  @override
+  String get sessionDevicesLastSeen => 'Last active';
+
+  @override
+  String get sessionDevicesTabDevices => 'Devices';
+
+  @override
+  String get sessionDevicesTabSessions => 'Sessions';
+
+  @override
+  String get sessionDevicesSessionCount => 'Sessions';
+
+  @override
+  String get sessionDevicesUnknownPlatform => 'Unknown platform';
+
+  @override
+  String get sessionDevicesPlatformIos => 'iOS';
+
+  @override
+  String get sessionDevicesPlatformAndroid => 'Android';
+
+  @override
+  String get sessionDevicesPlatformWeb => 'Web';
+
+  @override
+  String get sessionDevicesPlatformWindows => 'Windows';
+
+  @override
+  String get sessionDevicesPlatformMacos => 'macOS';
+
+  @override
+  String get sessionDevicesPlatformLinux => 'Linux';
+
+  @override
+  String get sessionDevicesRevokeAllOthers => 'Sign out all other sessions';
+
+  @override
+  String get sessionDevicesRevokeAllOthersConfirmTitle =>
+      'Sign out all other sessions?';
+
+  @override
+  String get sessionDevicesRevokeAllOthersConfirmMessage =>
+      'All other devices will be signed out immediately. You will stay signed in on this device.';
+
+  @override
+  String get sessionDevicesRevokeAllOthersSuccess =>
+      'All other sessions signed out';
+
+  @override
+  String get sessionDevicesRevokeAllOthersFailed =>
+      'Failed to sign out other sessions, please try again';
+
+  @override
   String get sessionRestoreNetworkError =>
       'Network connection failed. Please check your network and try again.';
 
