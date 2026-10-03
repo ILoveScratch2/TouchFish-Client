@@ -9,6 +9,8 @@ const String _swipeKeyPrefix = 'swipe-';
 
 const int entranceAnimationBatchLimit = 10;
 
+void _noopMessage(ChatMessage message) {}
+
 String chatMessageStableKey(ChatMessage message) =>
     message.clientMid ?? message.mid?.toString() ?? message.id;
 
@@ -59,6 +61,11 @@ class MessageListView extends StatelessWidget {
   final String noMessagesText;
   final ColorScheme colorScheme;
 
+  final bool isSelectionMode;
+  final Set<String> selectedMessageKeys;
+  final ValueChanged<ChatMessage> onEnterSelectionMode;
+  final ValueChanged<ChatMessage> onToggleSelection;
+
   /// 本轮新增消息（见 [newlyAppendedMessageKeys]），这些气泡播一次入场动画。
   final Set<String> entranceKeys;
 
@@ -85,6 +92,10 @@ class MessageListView extends StatelessWidget {
     required this.canDeleteLocally,
     required this.noMessagesText,
     required this.colorScheme,
+    this.isSelectionMode = false,
+    this.selectedMessageKeys = const {},
+    this.onEnterSelectionMode = _noopMessage,
+    this.onToggleSelection = _noopMessage,
     this.entranceKeys = const {},
   });
 
@@ -172,9 +183,52 @@ class MessageListView extends StatelessWidget {
           );
         }
 
+        final bubble = MessageBubble(
+          key: ValueKey('bubble-$stableKey'),
+          message: message,
+          animateEntrance: entranceKeys.contains(stableKey),
+          onReply: onReply,
+          onForward: onForward,
+          onRecall: onRecall,
+          onDelete: canDeleteLocally(message)
+              ? (_) => onDelete?.call(message)
+              : null,
+          onQuoteTap: onQuoteTap,
+          showAvatar: showAvatar,
+          galleryItems: galleryItems.isEmpty ? null : galleryItems,
+          galleryIndex: imageIndexById[message] ?? 0,
+          canRecall: canRecall(message),
+          isEssence: message.mid != null &&
+              essenceMids.contains(message.mid) &&
+              essenceEnabled,
+          isPinned: message.mid != null &&
+              pinnedMessages.any((p) => p.messageId == message.mid),
+          canPin: currentRoom?.type == ChatType.group &&
+              canModerateGroup &&
+              message.mid != null &&
+              !message.isDeleted,
+          essenceEnabled: essenceEnabled,
+          onPinToggle:
+              message.mid != null ? () => onPinToggle(message) : null,
+          onEssenceToggle: message.mid != null && essenceEnabled
+              ? () => onEssenceToggle(message)
+              : null,
+          isSelectionMode: isSelectionMode,
+          onEnterSelectionMode: isSelectionMode
+              ? null
+              : () => onEnterSelectionMode(message),
+        );
+
+        final selectionWrapped = _SelectionWrapper(
+          isSelectionMode: isSelectionMode,
+          isSelected: isSelectionMode && selectedMessageKeys.contains(stableKey),
+          onTap: () => onToggleSelection(message),
+          child: bubble,
+        );
+
         return Dismissible(
           key: ValueKey('$_swipeKeyPrefix$stableKey'),
-          direction: message.isDeleted
+          direction: message.isDeleted || isSelectionMode
               ? DismissDirection.none
               : DismissDirection.endToStart,
           dismissThresholds: const {
@@ -196,39 +250,143 @@ class MessageListView extends StatelessWidget {
               ),
             ),
           ),
-          child: MessageBubble(
-            key: ValueKey('bubble-$stableKey'),
-            message: message,
-            animateEntrance: entranceKeys.contains(stableKey),
-            onReply: onReply,
-            onForward: onForward,
-            onRecall: onRecall,
-            onDelete: canDeleteLocally(message)
-                ? (_) => onDelete?.call(message)
-                : null,
-            onQuoteTap: onQuoteTap,
-            showAvatar: showAvatar,
-            galleryItems: galleryItems.isEmpty ? null : galleryItems,
-            galleryIndex: imageIndexById[message] ?? 0,
-            canRecall: canRecall(message),
-            isEssence: message.mid != null &&
-                essenceMids.contains(message.mid) &&
-                essenceEnabled,
-            isPinned: message.mid != null &&
-                pinnedMessages.any((p) => p.messageId == message.mid),
-            canPin: currentRoom?.type == ChatType.group &&
-                canModerateGroup &&
-                message.mid != null &&
-                !message.isDeleted,
-            essenceEnabled: essenceEnabled,
-            onPinToggle:
-                message.mid != null ? () => onPinToggle(message) : null,
-            onEssenceToggle: message.mid != null && essenceEnabled
-                ? () => onEssenceToggle(message)
-                : null,
-          ),
+          child: selectionWrapped,
         );
       },
+    );
+  }
+}
+
+class _SelectionWrapper extends StatelessWidget {
+  static const double _paddingLeft = 10;
+  static const double _indicatorSize = 22;
+  static const double _paddingRight = 2;
+
+  final bool isSelectionMode;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Widget child;
+
+  const _SelectionWrapper({
+    required this.isSelectionMode,
+    required this.isSelected,
+    required this.onTap,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final animDuration = reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 200);
+
+    return AnimatedContainer(
+      duration: animDuration,
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: isSelected
+            ? colorScheme.primary.withValues(alpha: 0.10)
+            : colorScheme.surface.withValues(alpha: 0),
+        border: Border(
+          left: BorderSide(
+            color: isSelected ? colorScheme.primary : Colors.transparent,
+            width: 3,
+          ),
+        ),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: isSelectionMode ? onTap : null,
+          splashColor: colorScheme.primary.withValues(alpha: 0.08),
+          highlightColor: colorScheme.primary.withValues(alpha: 0.04),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              AnimatedSize(
+                duration: animDuration,
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.centerLeft,
+                child: isSelectionMode
+                    ? Padding(
+                        padding: const EdgeInsets.only(
+                          left: _paddingLeft,
+                          right: _paddingRight,
+                        ),
+                        child: _SelectionIndicator(isSelected: isSelected),
+                      )
+                    : const SizedBox(width: 0, height: 28),
+              ),
+              Expanded(
+                child: IgnorePointer(
+                  ignoring: isSelectionMode,
+                  child: child,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectionIndicator extends StatelessWidget {
+  final bool isSelected;
+
+  const _SelectionIndicator({required this.isSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+
+    return AnimatedContainer(
+      duration: reduceMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      width: _SelectionWrapper._indicatorSize,
+      height: _SelectionWrapper._indicatorSize,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isSelected ? colorScheme.primary : Colors.transparent,
+        border: Border.all(
+          color: isSelected
+              ? colorScheme.primary
+              : colorScheme.outline.withValues(alpha: 0.7),
+          width: 2,
+        ),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: colorScheme.primary.withValues(alpha: 0.28),
+                  blurRadius: 6,
+                  offset: const Offset(0, 1),
+                ),
+              ]
+            : null,
+      ),
+      child: AnimatedScale(
+        scale: isSelected ? 1 : 0.6,
+        duration: reduceMotion
+            ? Duration.zero
+            : const Duration(milliseconds: 160),
+        curve: Curves.easeOutBack,
+        child: AnimatedOpacity(
+          opacity: isSelected ? 1 : 0,
+          duration: reduceMotion
+              ? Duration.zero
+              : const Duration(milliseconds: 120),
+          child: Icon(
+            Icons.check_rounded,
+            size: 14,
+            color: colorScheme.onPrimary,
+          ),
+        ),
+      ),
     );
   }
 }

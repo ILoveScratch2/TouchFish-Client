@@ -7,6 +7,7 @@ import '../utils/talker.dart';
 import 'api/tf_api_client.dart';
 import 'local_message_store.dart';
 import 'multi_instance_guard.dart';
+import 'token_refresh_manager.dart';
 
 enum SavedSessionRestoreStatus { idle, restoring, succeeded, failed }
 
@@ -190,6 +191,8 @@ class AuthState extends ChangeNotifier {
           _rememberedUsername ??= profile.username;
           _savedSessionRestoreStatus = SavedSessionRestoreStatus.succeeded;
           _restoreFailureReason = RestoreFailureReason.none;
+          // 启动 token 自动刷新
+          TokenRefreshManager.instance.startAutoRefresh(_tokenExpiresAt);
           _notifySessionChanged();
           return true;
         }
@@ -376,6 +379,11 @@ class AuthState extends ChangeNotifier {
         password: _rememberedPassword,
       );
 
+      // 启动 token 自动刷新（JWT 模式）
+      if (_authMode == TfAuthMode.jwt) {
+        TokenRefreshManager.instance.startAutoRefresh(_tokenExpiresAt);
+      }
+
       _notifySessionChanged();
       return null;
     } catch (e) {
@@ -450,6 +458,8 @@ class AuthState extends ChangeNotifier {
         username: _rememberedUsername ?? _currentUser?.username ?? '',
         password: null,
       );
+      // 重新启动 token 自动刷新
+      TokenRefreshManager.instance.startAutoRefresh(_tokenExpiresAt);
       return true;
     } catch (e) {
       talker.error('AuthState.relogin failed', e);
@@ -458,6 +468,8 @@ class AuthState extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    // 停止 token 自动刷新
+    TokenRefreshManager.instance.stop();
     // 先快照当前 token 并请求服务器吊销
     final currentToken = isJwtMode ? _token : null;
     if (currentToken != null) {

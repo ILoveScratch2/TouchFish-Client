@@ -1924,6 +1924,18 @@ abstract class AppLocalizations {
   /// **'Render Markdown and LaTeX formatted text'**
   String get settingsEnableMarkdownDesc;
 
+  /// No description provided for @settingsChatVoiceButtonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice button in input bar'**
+  String get settingsChatVoiceButtonTitle;
+
+  /// No description provided for @settingsChatVoiceButtonDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the microphone button in the message input bar (voice mode is always available from the special tab)'**
+  String get settingsChatVoiceButtonDesc;
+
   /// No description provided for @settingsMessageDisplayStyleTitle.
   ///
   /// In en, this message translates to:
@@ -3549,6 +3561,228 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copy'**
   String get messageActionCopy;
+
+  /// No description provided for @messageActionMergeForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge forward'**
+  String get messageActionMergeForward;
+
+  /// No description provided for @messageActionSelectMultiple.
+  ///
+  /// In en, this message translates to:
+  /// **'Select multiple'**
+  String get messageActionSelectMultiple;
+
+  /// No description provided for @selectionExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit selection'**
+  String get selectionExit;
+
+  /// No description provided for @selectionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 selected} other{{count} selected}}'**
+  String selectionCount(num count);
+
+  /// No description provided for @selectionSelectMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Select messages'**
+  String get selectionSelectMessages;
+
+  /// No description provided for @selectionRedirectToCurrentChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward to this chat'**
+  String get selectionRedirectToCurrentChat;
+
+  /// No description provided for @selectionCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get selectionCopy;
+
+  /// No description provided for @selectionMergeForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge forward'**
+  String get selectionMergeForward;
+
+  /// No description provided for @selectionCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get selectionCancel;
+
+  /// No description provided for @copySelectedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages to copy'**
+  String get copySelectedEmpty;
+
+  /// No description provided for @voiceHoldToRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold to record voice'**
+  String get voiceHoldToRecord;
+
+  /// No description provided for @voiceHoldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Long press to record'**
+  String get voiceHoldHint;
+
+  /// No description provided for @voiceReleaseToCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Release to cancel'**
+  String get voiceReleaseToCancel;
+
+  /// No description provided for @voiceRecordingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording • swipe up to cancel'**
+  String get voiceRecordingHint;
+
+  /// No description provided for @voiceUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading voice message...'**
+  String get voiceUploading;
+
+  /// No description provided for @voiceSending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending audio...'**
+  String get voiceSending;
+
+  /// No description provided for @voiceLeaveVoiceMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave voice mode'**
+  String get voiceLeaveVoiceMode;
+
+  /// No description provided for @voiceRecordVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Record voice'**
+  String get voiceRecordVoice;
+
+  /// No description provided for @voiceStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get voiceStop;
+
+  /// No description provided for @voicePermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission denied'**
+  String get voicePermissionDenied;
+
+  /// No description provided for @voiceRecordFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to record voice message'**
+  String get voiceRecordFailed;
+
+  /// No description provided for @mergedForwardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Merged forward · {title}'**
+  String mergedForwardTitle(String title);
+
+  /// No description provided for @mergedForwardGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Group chat'**
+  String get mergedForwardGroup;
+
+  /// No description provided for @mergedForwardPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get mergedForwardPrivate;
+
+  /// No description provided for @mergedForwardMore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{and 1 more message} other{and {count} more messages}}'**
+  String mergedForwardMore(num count);
+
+  /// No description provided for @redirectCardLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Redirected history from {room}'**
+  String redirectCardLabel(String room);
+
+  /// No description provided for @redirectMessagesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 message} other{{count} messages}}'**
+  String redirectMessagesCount(num count);
+
+  /// No description provided for @redirectFromRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'From {room}'**
+  String redirectFromRoom(String room);
+
+  /// No description provided for @redirectHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Redirected history · {room}'**
+  String redirectHistoryTitle(String room);
+
+  /// No description provided for @redirectNoContent.
+  ///
+  /// In en, this message translates to:
+  /// **'No content'**
+  String get redirectNoContent;
+
+  /// No description provided for @redirectUnknownSender.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get redirectUnknownSender;
+
+  /// No description provided for @mergeForwardConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge forward?'**
+  String get mergeForwardConfirmTitle;
+
+  /// No description provided for @mergeForwardConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward {count} messages to {target}?'**
+  String mergeForwardConfirmBody(int count, String target);
+
+  /// No description provided for @mergeForwardTextOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only text messages can be merged and forwarded'**
+  String get mergeForwardTextOnly;
+
+  /// No description provided for @mergeForwardTooMany.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to 100 messages can be forwarded at once'**
+  String get mergeForwardTooMany;
+
+  /// No description provided for @mergeForwardFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not merge forward messages'**
+  String get mergeForwardFailed;
+
+  /// No description provided for @mergeForwardSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Merged forward sent'**
+  String get mergeForwardSuccess;
 
   /// No description provided for @messageActionPin.
   ///
@@ -8871,6 +9105,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Internal server error'**
   String get errorCodeServerError;
+
+  /// No description provided for @timeAgoJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get timeAgoJustNow;
+
+  /// No description provided for @timeAgoMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}m ago'**
+  String timeAgoMinutes(int minutes);
+
+  /// No description provided for @timeAgoHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h ago'**
+  String timeAgoHours(int hours);
+
+  /// No description provided for @timeAgoDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days}d ago'**
+  String timeAgoDays(int days);
+
+  /// No description provided for @timeAgoWeeks.
+  ///
+  /// In en, this message translates to:
+  /// **'{weeks}w ago'**
+  String timeAgoWeeks(int weeks);
+
+  /// No description provided for @timeAgoMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'{months}mo ago'**
+  String timeAgoMonths(int months);
+
+  /// No description provided for @timeAgoYears.
+  ///
+  /// In en, this message translates to:
+  /// **'{years}y ago'**
+  String timeAgoYears(int years);
+
+  /// No description provided for @suspiciousLoginTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspicious Login Detected'**
+  String get suspiciousLoginTitle;
+
+  /// No description provided for @suspiciousLoginMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Unusual login activity was detected on your account. If this wasn\'t you, please review your login devices immediately.'**
+  String get suspiciousLoginMessage;
+
+  /// No description provided for @suspiciousLoginDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Device'**
+  String get suspiciousLoginDevice;
+
+  /// No description provided for @suspiciousLoginLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get suspiciousLoginLocation;
+
+  /// No description provided for @suspiciousLoginTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get suspiciousLoginTime;
+
+  /// No description provided for @suspiciousLoginDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get suspiciousLoginDismiss;
+
+  /// No description provided for @suspiciousLoginReviewSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Login Devices'**
+  String get suspiciousLoginReviewSessions;
 }
 
 class _AppLocalizationsDelegate

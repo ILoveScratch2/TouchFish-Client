@@ -938,6 +938,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsEnableMarkdownDesc => '將可染之 Markdown/LaTeX 文予以渲染';
 
   @override
+  String get settingsChatVoiceButtonTitle => '輸入欄語音按鈕';
+
+  @override
+  String get settingsChatVoiceButtonDesc => '於輸入欄顯示麥克風按鈕（特殊功能頁恆可入語音模式）';
+
+  @override
   String get settingsMessageDisplayStyleTitle => '消息顯示樣式';
 
   @override
@@ -1779,6 +1785,148 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get messageActionCopy => '複製';
+
+  @override
+  String get messageActionMergeForward => '合併轉發';
+
+  @override
+  String get messageActionSelectMultiple => '多選';
+
+  @override
+  String get selectionExit => '退出多選';
+
+  @override
+  String selectionCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 條已選',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get selectionSelectMessages => '擇訊息';
+
+  @override
+  String get selectionRedirectToCurrentChat => '轉發至此會話';
+
+  @override
+  String get selectionCopy => '複製';
+
+  @override
+  String get selectionMergeForward => '合併轉發';
+
+  @override
+  String get selectionCancel => '取消';
+
+  @override
+  String get copySelectedEmpty => '無可複製之訊息';
+
+  @override
+  String get voiceHoldToRecord => '長按以錄語音';
+
+  @override
+  String get voiceHoldHint => '長按錄音';
+
+  @override
+  String get voiceReleaseToCancel => '鬆手即止';
+
+  @override
+  String get voiceRecordingHint => '錄音中 • 上滑即止';
+
+  @override
+  String get voiceUploading => '語音上傳中⋯';
+
+  @override
+  String get voiceSending => '音訊傳送中⋯';
+
+  @override
+  String get voiceLeaveVoiceMode => '退出語音模式';
+
+  @override
+  String get voiceRecordVoice => '錄語音';
+
+  @override
+  String get voiceStop => '止';
+
+  @override
+  String get voicePermissionDenied => '麥克風權限不許';
+
+  @override
+  String get voiceRecordFailed => '錄音未成';
+
+  @override
+  String mergedForwardTitle(String title) {
+    return '合併轉發 · $title';
+  }
+
+  @override
+  String get mergedForwardGroup => '群聊';
+
+  @override
+  String get mergedForwardPrivate => '聊天';
+
+  @override
+  String mergedForwardMore(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '尚有 $count 條訊息',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String redirectCardLabel(String room) {
+    return '自 $room 之轉發記';
+  }
+
+  @override
+  String redirectMessagesCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 條訊息',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String redirectFromRoom(String room) {
+    return '自 $room';
+  }
+
+  @override
+  String redirectHistoryTitle(String room) {
+    return '轉發記 · $room';
+  }
+
+  @override
+  String get redirectNoContent => '無內容';
+
+  @override
+  String get redirectUnknownSender => '未知';
+
+  @override
+  String get mergeForwardConfirmTitle => '合併轉發？';
+
+  @override
+  String mergeForwardConfirmBody(int count, String target) {
+    return '轉發 $count 條訊息至 $target？';
+  }
+
+  @override
+  String get mergeForwardTextOnly => '僅文本訊息可合併轉發';
+
+  @override
+  String get mergeForwardTooMany => '一次至多轉發一百條訊息';
+
+  @override
+  String get mergeForwardFailed => '合併轉發失敗';
+
+  @override
+  String get mergeForwardSuccess => '合併轉發已發送';
 
   @override
   String get messageActionPin => '置頂';
@@ -4569,4 +4717,59 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get errorCodeServerError => '伺服器內部有誤';
+
+  @override
+  String get timeAgoJustNow => 'Just now';
+
+  @override
+  String timeAgoMinutes(int minutes) {
+    return '${minutes}m ago';
+  }
+
+  @override
+  String timeAgoHours(int hours) {
+    return '${hours}h ago';
+  }
+
+  @override
+  String timeAgoDays(int days) {
+    return '${days}d ago';
+  }
+
+  @override
+  String timeAgoWeeks(int weeks) {
+    return '${weeks}w ago';
+  }
+
+  @override
+  String timeAgoMonths(int months) {
+    return '${months}mo ago';
+  }
+
+  @override
+  String timeAgoYears(int years) {
+    return '${years}y ago';
+  }
+
+  @override
+  String get suspiciousLoginTitle => 'Suspicious Login Detected';
+
+  @override
+  String get suspiciousLoginMessage =>
+      'Unusual login activity was detected on your account. If this wasn\'t you, please review your login devices immediately.';
+
+  @override
+  String get suspiciousLoginDevice => 'Device';
+
+  @override
+  String get suspiciousLoginLocation => 'Location';
+
+  @override
+  String get suspiciousLoginTime => 'Time';
+
+  @override
+  String get suspiciousLoginDismiss => 'Dismiss';
+
+  @override
+  String get suspiciousLoginReviewSessions => 'Review Login Devices';
 }

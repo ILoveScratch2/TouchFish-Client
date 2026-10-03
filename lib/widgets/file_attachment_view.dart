@@ -32,6 +32,9 @@ class FileAttachmentView extends ConsumerStatefulWidget {
   final bool allowAutomaticPreview;
   final bool compact;
 
+  /// 音频时长（毫秒），仅音频附件用于展示。
+  final int? durationMs;
+
   /// 多图灯箱画廊条目（由聊天详情页收集）；为 null 时单图模式。
   final List<LightboxImageItem>? galleryItems;
   final int galleryIndex;
@@ -43,6 +46,7 @@ class FileAttachmentView extends ConsumerStatefulWidget {
     this.bytes,
     this.allowAutomaticPreview = true,
     this.compact = false,
+    this.durationMs,
     this.galleryItems,
     this.galleryIndex = 0,
   });
@@ -307,6 +311,7 @@ class _FileAttachmentViewState extends ConsumerState<FileAttachmentView> {
             attachment: _attachment,
             urlFuture: _urlFuture,
             bytes: widget.bytes,
+            durationMs: widget.durationMs,
             galleryItems: widget.galleryItems,
             galleryIndex: widget.galleryIndex,
           ),
@@ -323,6 +328,7 @@ class _FileAttachmentViewState extends ConsumerState<FileAttachmentView> {
         urlFuture: _urlFuture,
         bytes: widget.bytes,
         onDownload: _download,
+        durationMs: widget.durationMs,
         galleryItems: widget.galleryItems,
         galleryIndex: widget.galleryIndex,
       );
@@ -534,6 +540,7 @@ class _AttachmentPreview extends StatefulWidget {
   final Future<String> urlFuture;
   final Uint8List? bytes;
   final VoidCallback? onDownload;
+  final int? durationMs;
   final List<LightboxImageItem>? galleryItems;
   final int galleryIndex;
 
@@ -542,6 +549,7 @@ class _AttachmentPreview extends StatefulWidget {
     required this.urlFuture,
     this.bytes,
     this.onDownload,
+    this.durationMs,
     this.galleryItems,
     this.galleryIndex = 0,
   });
@@ -700,6 +708,7 @@ class _AttachmentPreviewState extends State<_AttachmentPreview> {
         audioPath: file?.path ?? url,
         audioBytes: file != null ? null : bytes,
         filename: attachment.fileName,
+        durationMs: widget.durationMs,
       );
     } else if (attachment.isText) {
       return Center(

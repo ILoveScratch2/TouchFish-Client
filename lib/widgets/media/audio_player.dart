@@ -15,12 +15,16 @@ class AudioPlayer extends HookWidget {
   final String? filename;
   final bool autoplay;
 
+  /// 已知的音频时长（毫秒，来自消息元数据），在播放器加载出真实时长前用于显示。
+  final int? durationMs;
+
   const AudioPlayer({
     super.key,
     required this.audioPath,
     this.audioBytes,
     this.filename,
     this.autoplay = false,
+    this.durationMs,
   });
 
   @override
@@ -30,7 +34,9 @@ class AudioPlayer extends HookWidget {
       return Player();
     }, []);
 
-    final duration = useState(const Duration(seconds: 1));
+    final duration = useState(
+      Duration(milliseconds: durationMs ?? 1000),
+    );
     final durationBuffered = useState(const Duration(seconds: 1));
     final position = useState(const Duration(seconds: 0));
     final isPlaying = useState(false);
@@ -116,11 +122,15 @@ class AudioPlayer extends HookWidget {
                             width: double.infinity,
                             key: const ValueKey('filename'),
                             child: Text(
-                              filename?.isEmpty ?? true
-                                  ? AppLocalizations.of(
-                                      context,
-                                    )!.mediaAudioMessage
-                                  : filename!,
+                              durationMs != null
+                                  ? formatDuration(
+                                      Duration(milliseconds: durationMs!),
+                                    )
+                                  : (filename?.isEmpty ?? true
+                                        ? AppLocalizations.of(
+                                            context,
+                                          )!.mediaAudioMessage
+                                        : filename!),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

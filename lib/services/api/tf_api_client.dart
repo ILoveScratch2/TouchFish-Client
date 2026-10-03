@@ -2660,6 +2660,7 @@ class TfApiClient {
     String? fileHash,
     int quote = -1,
     int forwarded = -1,
+    int? durationMs,
   }) async {
     final result = await secretPost(
       '/message/send',
@@ -2671,6 +2672,31 @@ class TfApiClient {
         'file_hash': fileHash,
         'quote': quote,
         'forwarded': forwarded,
+        'duration_ms': ?durationMs,
+      },
+      uid: uid,
+      password: password,
+    );
+    try {
+      final data = jsonDecode(result ?? '');
+      if (data is Map<String, dynamic>) return data;
+    } catch (_) {}
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> redirectMessages(
+    int uid,
+    String password, {
+    required String recipient,
+    required List<int> mids,
+    String? clientMid,
+  }) async {
+    final result = await secretPost(
+      '/message/redirect',
+      {
+        'recipient': recipient,
+        'mids': mids,
+        'client_mid': clientMid,
       },
       uid: uid,
       password: password,

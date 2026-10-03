@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/device_identity_service.dart';
 import '../services/snackbar_service.dart';
+import '../utils/time_ago.dart';
 
 /// ~~词元~~会话与设备管理
 class SessionDevicesScreen extends StatefulWidget {
@@ -480,7 +481,7 @@ class _SessionDevicesScreenState extends State<SessionDevicesScreen> {
                       '${l10n.sessionDevicesIssuedAtLabel} '
                       '${_formatTime(token.issuedAt)} · '
                       '${l10n.sessionDevicesLastSeen} '
-                      '${_formatTime(token.lastSeen)}',
+                      '${formatTimeAgo(l10n, token.lastSeen)}',
                     ),
                   ],
                 ),
@@ -568,7 +569,7 @@ class _SessionDevicesScreenState extends State<SessionDevicesScreen> {
               Text(
                 '${l10n.sessionDevicesSessionCount}: $count · '
                 '${l10n.sessionDevicesLastSeen} '
-                '${_formatTime(device.lastSeen)}',
+                '${formatTimeAgo(l10n, device.lastSeen)}',
               ),
             ],
           ),

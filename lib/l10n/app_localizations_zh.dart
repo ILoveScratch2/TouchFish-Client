@@ -940,6 +940,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsEnableMarkdownDesc => '将可渲染的Markdown/LaTeX文本进行渲染';
 
   @override
+  String get settingsChatVoiceButtonTitle => '输入栏语音按钮';
+
+  @override
+  String get settingsChatVoiceButtonDesc => '在消息输入栏显示麦克风按钮（特殊功能页始终可进入语音模式）';
+
+  @override
   String get settingsMessageDisplayStyleTitle => '消息显示样式';
 
   @override
@@ -1781,6 +1787,148 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get messageActionCopy => '复制';
+
+  @override
+  String get messageActionMergeForward => '合并转发';
+
+  @override
+  String get messageActionSelectMultiple => '多选';
+
+  @override
+  String get selectionExit => '退出多选';
+
+  @override
+  String selectionCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 条已选',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get selectionSelectMessages => '选择消息';
+
+  @override
+  String get selectionRedirectToCurrentChat => '转发到当前会话';
+
+  @override
+  String get selectionCopy => '复制';
+
+  @override
+  String get selectionMergeForward => '合并转发';
+
+  @override
+  String get selectionCancel => '取消';
+
+  @override
+  String get copySelectedEmpty => '没有可复制的消息';
+
+  @override
+  String get voiceHoldToRecord => '按住录音';
+
+  @override
+  String get voiceHoldHint => '长按录音';
+
+  @override
+  String get voiceReleaseToCancel => '松开取消';
+
+  @override
+  String get voiceRecordingHint => '录音中 • 上滑取消';
+
+  @override
+  String get voiceUploading => '正在上传语音...';
+
+  @override
+  String get voiceSending => '正在发送音频...';
+
+  @override
+  String get voiceLeaveVoiceMode => '退出语音模式';
+
+  @override
+  String get voiceRecordVoice => '录制语音';
+
+  @override
+  String get voiceStop => '停止';
+
+  @override
+  String get voicePermissionDenied => '麦克风权限被拒绝';
+
+  @override
+  String get voiceRecordFailed => '录音失败';
+
+  @override
+  String mergedForwardTitle(String title) {
+    return '合并转发 · $title';
+  }
+
+  @override
+  String get mergedForwardGroup => '群聊';
+
+  @override
+  String get mergedForwardPrivate => '聊天';
+
+  @override
+  String mergedForwardMore(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '还有 $count 条消息',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String redirectCardLabel(String room) {
+    return '来自 $room 的转发记录';
+  }
+
+  @override
+  String redirectMessagesCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 条消息',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String redirectFromRoom(String room) {
+    return '来自 $room';
+  }
+
+  @override
+  String redirectHistoryTitle(String room) {
+    return '转发记录 · $room';
+  }
+
+  @override
+  String get redirectNoContent => '无内容';
+
+  @override
+  String get redirectUnknownSender => '未知';
+
+  @override
+  String get mergeForwardConfirmTitle => '合并转发？';
+
+  @override
+  String mergeForwardConfirmBody(int count, String target) {
+    return '转发 $count 条消息到 $target？';
+  }
+
+  @override
+  String get mergeForwardTextOnly => '仅文本消息可合并转发';
+
+  @override
+  String get mergeForwardTooMany => '一次最多转发 100 条消息';
+
+  @override
+  String get mergeForwardFailed => '合并转发失败';
+
+  @override
+  String get mergeForwardSuccess => '合并转发已发送';
 
   @override
   String get messageActionPin => '置顶';
@@ -4573,4 +4721,58 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get errorCodeServerError => '服务器内部错误';
+
+  @override
+  String get timeAgoJustNow => '刚刚';
+
+  @override
+  String timeAgoMinutes(int minutes) {
+    return '$minutes分钟前';
+  }
+
+  @override
+  String timeAgoHours(int hours) {
+    return '$hours小时前';
+  }
+
+  @override
+  String timeAgoDays(int days) {
+    return '$days天前';
+  }
+
+  @override
+  String timeAgoWeeks(int weeks) {
+    return '$weeks周前';
+  }
+
+  @override
+  String timeAgoMonths(int months) {
+    return '$months个月前';
+  }
+
+  @override
+  String timeAgoYears(int years) {
+    return '$years年前';
+  }
+
+  @override
+  String get suspiciousLoginTitle => '检测到可疑登录';
+
+  @override
+  String get suspiciousLoginMessage => '您的账号出现了异常登录活动，如果不是您本人操作，请立即检查登录设备。';
+
+  @override
+  String get suspiciousLoginDevice => '设备';
+
+  @override
+  String get suspiciousLoginLocation => '位置';
+
+  @override
+  String get suspiciousLoginTime => '时间';
+
+  @override
+  String get suspiciousLoginDismiss => '知道了';
+
+  @override
+  String get suspiciousLoginReviewSessions => '查看登录设备';
 }

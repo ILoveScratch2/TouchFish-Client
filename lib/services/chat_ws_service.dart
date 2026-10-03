@@ -518,6 +518,7 @@ class ChatWsService extends ChangeNotifier {
     String fileHash, {
     int quote = -1,
     String? clientMid,
+    int? durationMs,
   }) {
     if (!isAuthenticated) return Future.value(false);
     try {
@@ -527,6 +528,7 @@ class ChatWsService extends ChangeNotifier {
           'send_to': 'U$sendToUid',
           'quote': quote,
           'file_hashes': fileHash,
+          'duration_ms': ?durationMs,
         },
       };
       if (clientMid != null) payload['client_mid'] = clientMid;
@@ -543,6 +545,7 @@ class ChatWsService extends ChangeNotifier {
     String fileHash, {
     int quote = -1,
     String? clientMid,
+    int? durationMs,
   }) {
     if (!isAuthenticated) return Future.value(false);
     try {
@@ -552,6 +555,7 @@ class ChatWsService extends ChangeNotifier {
           'send_to': 'G$gid',
           'quote': quote,
           'file_hashes': fileHash,
+          'duration_ms': ?durationMs,
         },
       };
       if (clientMid != null) payload['client_mid'] = clientMid;

@@ -33,9 +33,11 @@ import '../services/message_sync_service.dart';
 import '../services/notification_service.dart';
 import '../utils/wide_screen_helper.dart';
 import '../utils/talker.dart';
+import '../utils/clipboard_utils.dart';
 import 'chat_room_settings_screen.dart';
 import 'group_essence_screen.dart';
 import '../widgets/pinned_messages_sheet.dart';
+import '../widgets/room_selection_mode.dart';
 import '../widgets/optimized_image.dart';
 import '../widgets/sync_indicator.dart';
 import '../models/typing_status.dart';
@@ -129,6 +131,35 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   int get _pinCurrentPage => _uiState.pinnedCurrentPage;
 
   bool get _isJumpingToMessage => _uiState.isJumpingToMessage;
+
+  Set<String> get _selectedMessageKeys => _uiState.selectedMessageIds;
+
+  ChatRoomState get _chatRoomStateNotifier =>
+      ref.read(chatRoomStateProvider(_contactUid).notifier);
+
+  /// 消息的稳定选择键（与 message_list_view 的 chatMessageStableKey 一致）。
+  String _stableKey(ChatMessage m) =>
+      m.clientMid ?? m.mid?.toString() ?? m.id;
+
+  List<ChatMessage> get _selectedMessages {
+    final keys = _selectedMessageKeys;
+    return _messages
+        .where((m) => keys.contains(_stableKey(m)))
+        .toList()
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+  }
+
+  void _enterSelection(ChatMessage message) {
+    _chatRoomStateNotifier.enterSelectionMode(_stableKey(message));
+  }
+
+  void _toggleSelection(ChatMessage message) {
+    _chatRoomStateNotifier.toggleMessageSelection(_stableKey(message));
+  }
+
+  void _exitSelection() {
+    _chatRoomStateNotifier.exitSelectionMode();
+  }
 
   void _setReplyingTo(ChatMessage? message) =>
       ref.read(chatRoomStateProvider(_contactUid).notifier).setReplyingTo(message);
@@ -1038,6 +1069,173 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     context.push(AppRoutes.forward, extra: message);
   }
 
+  /// 复制选中的消息（按时间序，用换行拼接文本与媒体占位）。
+  Future<void> _copySelectedMessages() async {
+    final l10n = AppLocalizations.of(context)!;
+    final selected = _selectedMessages;
+    if (selected.isEmpty) {
+      TouchFishSnackbarService.instance.show(l10n.copySelectedEmpty);
+      return;
+    }
+    final lines = <String>[];
+    for (final m in selected) {
+      if (m.isDeleted) continue;
+      final label = switch (m.type) {
+        MessageType.image => '[${l10n.mediaImageMessage}]',
+        MessageType.video => '[${l10n.mediaVideoMessage}]',
+        MessageType.audio => '[${l10n.mediaAudioMessage}]',
+        MessageType.file => '[${l10n.mediaFileMessage}] ${m.media?.fileName ?? ''}',
+        MessageType.mergedForward => l10n.mergedForwardTitle(
+            m.mergedForward?.sourceRoomName ?? l10n.mergedForwardGroup,
+          ),
+        MessageType.text => m.text,
+      };
+      if (label.trim().isNotEmpty) lines.add(label.trim());
+    }
+    if (lines.isEmpty) {
+      TouchFishSnackbarService.instance.show(l10n.copySelectedEmpty);
+      return;
+    }
+    final copied = await copyTextToClipboard(lines.join('\n'));
+    if (!mounted) return;
+    TouchFishSnackbarService.instance.show(
+      copied ? l10n.aboutCopiedToClipboard : l10n.copyFailedText,
+      type: copied ? SnackbarType.info : SnackbarType.error,
+    );
+  }
+
+  /// 合并转发选中的消息：选目标房间 → 调 /message/redirect。
+  Future<void> _mergeForwardSelected() async {
+    final target = await _pickMergeForwardTarget();
+    if (target == null || !mounted) return;
+    await _redirectSelected(target.roomId, target.name);
+  }
+
+  Future<void> _redirectToCurrentChat() async {
+    final room = _currentRoom;
+    if (room == null) return;
+    await _redirectSelected(_contactUid, room.name);
+  }
+
+  Future<bool> _redirectSelected(
+    String destinationRoomId,
+    String destinationName,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final selected = _selectedMessages;
+    if (selected.isEmpty) return false;
+    if (selected.length > 100) {
+      TouchFishSnackbarService.instance.show(l10n.mergeForwardTooMany);
+      return false;
+    }
+    if (selected.any((m) => m.type != MessageType.text || m.isDeleted)) {
+      TouchFishSnackbarService.instance.show(l10n.mergeForwardTextOnly);
+      return false;
+    }
+    final mids = selected
+        .map((m) => m.mid)
+        .whereType<int>()
+        .toList();
+    if (mids.isEmpty) return false;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.mergeForwardConfirmTitle),
+        content: Text(
+          l10n.mergeForwardConfirmBody(selected.length, destinationName),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.confirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return false;
+
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return false;
+
+    final result = await TfApiClient.instance.redirectMessages(
+      uid,
+      password,
+      recipient: destinationRoomId,
+      mids: mids,
+      clientMid: 'c${DateTime.now().microsecondsSinceEpoch}',
+    );
+    if (!mounted) return false;
+    if (result != null) {
+      _exitSelection();
+      TouchFishSnackbarService.instance.show(l10n.mergeForwardSuccess);
+      return true;
+    }
+    TouchFishSnackbarService.instance.show(l10n.mergeForwardFailed);
+    return false;
+  }
+
+  Future<_MergeForwardTarget?> _pickMergeForwardTarget() async {
+    final l10n = AppLocalizations.of(context)!;
+    final data = ChatDataService.instance;
+    final targets = <_MergeForwardTarget>[];
+    for (final contact in data.contacts) {
+      targets.add(
+        _MergeForwardTarget(roomId: contact.id, name: contact.name),
+      );
+    }
+    for (final room in data.rooms) {
+      if (room.id.startsWith('G')) {
+        targets.add(_MergeForwardTarget(roomId: room.id, name: room.name));
+      }
+    }
+    final seen = <String>{};
+    final unique = targets.where((t) => seen.add(t.roomId)).toList();
+
+    return showModalBottomSheet<_MergeForwardTarget>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final colorScheme = Theme.of(ctx).colorScheme;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text(
+                  l10n.forwardSearchTitle,
+                  style: Theme.of(ctx).textTheme.titleMedium,
+                ),
+              ),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final t in unique)
+                      ListTile(
+                        leading: Icon(
+                          t.roomId.startsWith('G') ? Icons.group : Icons.person,
+                          color: colorScheme.primary,
+                        ),
+                        title: Text(t.name),
+                        onTap: () => Navigator.pop(ctx, t),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   bool _canRecall(ChatMessage message) {
     if (message.mid == null || message.isDeleted) return false;
     if (message.isMe) return true;
@@ -1464,6 +1662,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     String? fileHash,
     required int quoteMid,
     required int forwardedMid,
+    int? durationMs,
   }) async {
     _pendingWsTimers.remove(clientMid);
     if (!mounted) return;
@@ -1494,6 +1693,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       clientMid: clientMid,
       quote: quoteMid,
       forwarded: forwardedMid,
+      durationMs: durationMs,
     );
     if (!mounted) return;
     if (result != null) {
@@ -1539,6 +1739,116 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       final updated = msgs.toList();
       updated[cIdx] = updated[cIdx].copyWith(media: media);
       ChatDataService.instance.setMessages(_contactUid, updated);
+    }
+  }
+
+  Future<void> _sendVoiceMessage(String filePath, int durationMs) async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+    final replyTarget = _replyingTo;
+    final quoteMid = replyTarget?.mid ?? -1;
+
+    final file = File(filePath);
+    if (!await file.exists()) return;
+    final ext = path.extension(filePath).replaceFirst('.', '').toLowerCase();
+    final resolvedExt = ext.isEmpty ? 'm4a' : ext;
+    final fileName = 'voice_${DateTime.now().millisecondsSinceEpoch}.$resolvedExt';
+    final mimeType = lookupMimeType(fileName) ??
+        (resolvedExt == 'wav' ? 'audio/wav' : 'audio/mp4');
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) return;
+
+    final maxSize = await TfApiClient.instance.getMaxFileSize();
+    if (maxSize != null && bytes.length > maxSize) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        TouchFishSnackbarService.instance.show(
+          l10n.storageFileTooLarge((maxSize / (1024 * 1024)).round()),
+        );
+      }
+      return;
+    }
+
+    final clientMid = 'c${DateTime.now().microsecondsSinceEpoch}';
+    final media = MessageMedia(
+      path: filePath,
+      fileName: fileName,
+      fileSize: bytes.length,
+      mimeType: mimeType,
+      bytes: bytes,
+      durationMs: durationMs,
+    );
+    final userMessage = ChatMessage(
+      id: clientMid,
+      clientMid: clientMid,
+      senderUid: uid,
+      text: '[AUDIO]',
+      timestamp: DateTime.now(),
+      isMe: true,
+      type: MessageType.audio,
+      media: media,
+      status: MessageStatus.pending,
+      quoteMid: quoteMid >= 0 ? quoteMid : null,
+      quotePreview: replyTarget == null
+          ? null
+          : QuotedMessagePreview(
+              mid: replyTarget.mid,
+              senderUid: replyTarget.senderUid,
+              senderName: replyTarget.isMe
+                  ? AuthState.instance.currentUser?.username
+                  : replyTarget.senderName,
+              content: replyTarget.text,
+              contentType: replyTarget.type == MessageType.file
+                  ? 'file'
+                  : 'plain',
+            ),
+    );
+
+    if (!mounted) return;
+    _setReplyingTo(null);
+    ChatDataService.instance.addSentMessage(_contactUid, userMessage);
+    _scrollToBottom();
+
+    try {
+      final taskManager = ref.read(taskManagerProvider.notifier);
+      final hash = await FileService.instance.uploadFile(
+        uid: uid,
+        password: password,
+        fileName: fileName,
+        bytes: bytes,
+        filePath: filePath,
+        clientMid: clientMid,
+        roomId: _contactUid,
+        taskManager: taskManager,
+      );
+      if (hash == null) {
+        _updateMessageStatus(clientMid, status: MessageStatus.failed);
+        return;
+      }
+      final baseUrl = await TfApiClient.instance.getBaseUrl();
+      _updateMessageMedia(
+        clientMid,
+        MessageMedia(
+          path: '$baseUrl/file/get_file/$hash',
+          fileName: fileName,
+          fileSize: bytes.length,
+          mimeType: mimeType,
+          bytes: bytes,
+          fileHash: hash,
+          durationMs: durationMs,
+        ),
+      );
+      await _dispatchFileSend(
+        clientMid: clientMid,
+        hash: hash,
+        quoteMid: quoteMid,
+        durationMs: durationMs,
+      );
+    } catch (e) {
+      talker.error('ChatDetail voice send failed', e);
+      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      _showSendFailedSnackBar();
     }
   }
 
@@ -1713,6 +2023,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     required String clientMid,
     required String hash,
     required int quoteMid,
+    int? durationMs,
   }) async {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
@@ -1728,6 +2039,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
             hash,
             clientMid: clientMid,
             quote: quoteMid,
+            durationMs: durationMs,
           );
         }
       } else {
@@ -1738,6 +2050,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
             hash,
             clientMid: clientMid,
             quote: quoteMid,
+            durationMs: durationMs,
           );
         }
       }
@@ -1754,6 +2067,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         clientMid: clientMid,
         fileHash: hash,
         quote: quoteMid,
+        durationMs: durationMs,
       );
       if (result != null) {
         final mid = (result['mid'] as num?)?.toInt();
@@ -1774,6 +2088,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           fileHash: hash,
           quoteMid: quoteMid,
           forwardedMid: -1,
+          durationMs: durationMs,
         ),
       );
     }
@@ -2530,7 +2845,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        leading: !isWide
+        leading: uiState.isSelectionMode
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: l10n.selectionExit,
+                onPressed: _exitSelection,
+              )
+            : !isWide
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => context.go(AppRoutes.chat),
@@ -2539,39 +2860,46 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         automaticallyImplyLeading: false,
         backgroundColor: colorScheme.surfaceContainerHighest,
         surfaceTintColor: Colors.transparent,
-        title: Row(
-          children: [
-            InkWell(
-              onTap: _currentRoom!.type == ChatType.group
-                  ? _openGroupProfile
-                  : null,
-              customBorder: const CircleBorder(),
-              child: _buildAvatar(colorScheme),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+        title: uiState.isSelectionMode
+            ? Text(
+                uiState.selectedMessageIds.isEmpty
+                    ? l10n.selectionSelectMessages
+                    : l10n.selectionCount(uiState.selectedMessageIds.length),
+              )
+            : Row(
                 children: [
-                  Text(
-                    _currentRoom!.name,
-                    style: const TextStyle(fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
+                  InkWell(
+                    onTap: _currentRoom!.type == ChatType.group
+                        ? _openGroupProfile
+                        : null,
+                    customBorder: const CircleBorder(),
+                    child: _buildAvatar(colorScheme),
                   ),
-                  if (_currentRoom!.type == ChatType.group)
-                    Text(
-                      l10n.chatDetailGroupChat,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _currentRoom!.name,
+                          style: const TextStyle(fontSize: 16),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (_currentRoom!.type == ChatType.group)
+                          Text(
+                            l10n.chatDetailGroupChat,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                      ],
                     ),
+                  ),
                 ],
               ),
-            ),
-          ],
-        ),
-        actions: actiontmp,
+        actions: uiState.isSelectionMode ? const [SizedBox.shrink()] : actiontmp,
       ),
       body: SafeArea(
         child: Column(
@@ -2655,6 +2983,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                           canDeleteLocally: _canDeleteLocally,
                           noMessagesText: l10n.chatDetailNoMessages,
                           colorScheme: colorScheme,
+                          isSelectionMode: uiState.isSelectionMode,
+                          selectedMessageKeys: uiState.selectedMessageIds,
+                          onEnterSelectionMode: _enterSelection,
+                          onToggleSelection: _toggleSelection,
                         ),
                       ),
                     ),
@@ -2719,20 +3051,37 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                       key: ValueKey('typing-indicator-none'),
                     ),
             ),
-            ChatInputBar(
-              roomId: _contactUid,
-              controller: _messageController,
-              onSend: _sendMessage,
-              onFilePicked: _sendMediaMessage,
-              onServerFilePicked: _sendServerFile,
-              mentionUsers: _mentionUsers,
-              actionMessage: uiState.replyingTo ?? uiState.forwardingTo,
-              actionIsForward: uiState.forwardingTo != null,
-              onClearAction: _clearReplyAction,
+            RoomSelectionMode(
+              visible: uiState.isSelectionMode,
+              selectedCount: uiState.selectedMessageIds.length,
+              onClose: _exitSelection,
+              onCopy: _copySelectedMessages,
+              onRedirect: _mergeForwardSelected,
+              onRedirectToCurrentChat: _redirectToCurrentChat,
             ),
+            if (!uiState.isSelectionMode)
+              ChatInputBar(
+                roomId: _contactUid,
+                controller: _messageController,
+                onSend: _sendMessage,
+                onFilePicked: _sendMediaMessage,
+                onServerFilePicked: _sendServerFile,
+                onVoiceRecorded: _sendVoiceMessage,
+                mentionUsers: _mentionUsers,
+                actionMessage: uiState.replyingTo ?? uiState.forwardingTo,
+                actionIsForward: uiState.forwardingTo != null,
+                onClearAction: _clearReplyAction,
+              ),
           ],
         ),
       ),
     );
   }
+}
+
+class _MergeForwardTarget {
+  final String roomId;
+  final String name;
+
+  const _MergeForwardTarget({required this.roomId, required this.name});
 }

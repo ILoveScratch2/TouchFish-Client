@@ -158,6 +158,14 @@ class SettingsData {
           ],
         ),
         SettingItem(
+          key: 'chatVoiceButtonInInputBar',
+          titleKey: 'settingsChatVoiceButtonTitle',
+          descriptionKey: 'settingsChatVoiceButtonDesc',
+          type: SettingType.switchSetting,
+          defaultValue: true,
+          icon: Icons.mic,
+        ),
+        SettingItem(
           key: 'automaticPreviewMaxMiB',
           titleKey: 'settingsAutomaticPreviewTitle',
           descriptionKey: 'settingsAutomaticPreviewDesc',

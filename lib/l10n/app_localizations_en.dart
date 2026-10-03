@@ -990,6 +990,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Render Markdown and LaTeX formatted text';
 
   @override
+  String get settingsChatVoiceButtonTitle => 'Voice button in input bar';
+
+  @override
+  String get settingsChatVoiceButtonDesc =>
+      'Show the microphone button in the message input bar (voice mode is always available from the special tab)';
+
+  @override
   String get settingsMessageDisplayStyleTitle => 'Message Display Style';
 
   @override
@@ -1868,6 +1875,153 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get messageActionCopy => 'Copy';
+
+  @override
+  String get messageActionMergeForward => 'Merge forward';
+
+  @override
+  String get messageActionSelectMultiple => 'Select multiple';
+
+  @override
+  String get selectionExit => 'Exit selection';
+
+  @override
+  String selectionCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count selected',
+      one: '1 selected',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get selectionSelectMessages => 'Select messages';
+
+  @override
+  String get selectionRedirectToCurrentChat => 'Forward to this chat';
+
+  @override
+  String get selectionCopy => 'Copy';
+
+  @override
+  String get selectionMergeForward => 'Merge forward';
+
+  @override
+  String get selectionCancel => 'Cancel';
+
+  @override
+  String get copySelectedEmpty => 'No messages to copy';
+
+  @override
+  String get voiceHoldToRecord => 'Hold to record voice';
+
+  @override
+  String get voiceHoldHint => 'Long press to record';
+
+  @override
+  String get voiceReleaseToCancel => 'Release to cancel';
+
+  @override
+  String get voiceRecordingHint => 'Recording • swipe up to cancel';
+
+  @override
+  String get voiceUploading => 'Uploading voice message...';
+
+  @override
+  String get voiceSending => 'Sending audio...';
+
+  @override
+  String get voiceLeaveVoiceMode => 'Leave voice mode';
+
+  @override
+  String get voiceRecordVoice => 'Record voice';
+
+  @override
+  String get voiceStop => 'Stop';
+
+  @override
+  String get voicePermissionDenied => 'Microphone permission denied';
+
+  @override
+  String get voiceRecordFailed => 'Failed to record voice message';
+
+  @override
+  String mergedForwardTitle(String title) {
+    return 'Merged forward · $title';
+  }
+
+  @override
+  String get mergedForwardGroup => 'Group chat';
+
+  @override
+  String get mergedForwardPrivate => 'Chat';
+
+  @override
+  String mergedForwardMore(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'and $count more messages',
+      one: 'and 1 more message',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String redirectCardLabel(String room) {
+    return 'Redirected history from $room';
+  }
+
+  @override
+  String redirectMessagesCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count messages',
+      one: '1 message',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String redirectFromRoom(String room) {
+    return 'From $room';
+  }
+
+  @override
+  String redirectHistoryTitle(String room) {
+    return 'Redirected history · $room';
+  }
+
+  @override
+  String get redirectNoContent => 'No content';
+
+  @override
+  String get redirectUnknownSender => 'Unknown';
+
+  @override
+  String get mergeForwardConfirmTitle => 'Merge forward?';
+
+  @override
+  String mergeForwardConfirmBody(int count, String target) {
+    return 'Forward $count messages to $target?';
+  }
+
+  @override
+  String get mergeForwardTextOnly =>
+      'Only text messages can be merged and forwarded';
+
+  @override
+  String get mergeForwardTooMany =>
+      'Up to 100 messages can be forwarded at once';
+
+  @override
+  String get mergeForwardFailed => 'Could not merge forward messages';
+
+  @override
+  String get mergeForwardSuccess => 'Merged forward sent';
 
   @override
   String get messageActionPin => 'Pin';
@@ -4783,4 +4937,59 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorCodeServerError => 'Internal server error';
+
+  @override
+  String get timeAgoJustNow => 'Just now';
+
+  @override
+  String timeAgoMinutes(int minutes) {
+    return '${minutes}m ago';
+  }
+
+  @override
+  String timeAgoHours(int hours) {
+    return '${hours}h ago';
+  }
+
+  @override
+  String timeAgoDays(int days) {
+    return '${days}d ago';
+  }
+
+  @override
+  String timeAgoWeeks(int weeks) {
+    return '${weeks}w ago';
+  }
+
+  @override
+  String timeAgoMonths(int months) {
+    return '${months}mo ago';
+  }
+
+  @override
+  String timeAgoYears(int years) {
+    return '${years}y ago';
+  }
+
+  @override
+  String get suspiciousLoginTitle => 'Suspicious Login Detected';
+
+  @override
+  String get suspiciousLoginMessage =>
+      'Unusual login activity was detected on your account. If this wasn\'t you, please review your login devices immediately.';
+
+  @override
+  String get suspiciousLoginDevice => 'Device';
+
+  @override
+  String get suspiciousLoginLocation => 'Location';
+
+  @override
+  String get suspiciousLoginTime => 'Time';
+
+  @override
+  String get suspiciousLoginDismiss => 'Dismiss';
+
+  @override
+  String get suspiciousLoginReviewSessions => 'Review Login Devices';
 }

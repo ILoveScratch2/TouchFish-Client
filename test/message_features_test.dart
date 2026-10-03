@@ -13,6 +13,7 @@ import 'package:touchfish_client/services/api/tf_api_client.dart';
 import 'package:touchfish_client/services/chat_data_service.dart';
 import 'package:touchfish_client/widgets/message_bubble.dart';
 import 'package:touchfish_client/widgets/file_attachment_view.dart';
+import 'package:touchfish_client/widgets/redirect_message_view.dart';
 
 void main() {
   setUpAll(() async {
@@ -263,6 +264,184 @@ void main() {
     expect(item.lastDeleted, isTrue);
     expect(item.lastMid, 9);
     expect(item.visibleLastContent, isNull);
+  });
+
+  test('merged forward redirect message parses frozen snapshot', () {
+    final message = ChatMessage.fromMessageRecord({
+      'mid': 20,
+      'sender_uid': 2,
+      'content':
+          '{"version":2,"kind":"history_segment",'
+          '"source_room":{"type":"group","id":"G1","name":"General"},'
+          '"message_count":2,'
+          '"messages":['
+          '{"mid":18,"sender_uid":1,"content":"first","content_type":"plain"},'
+          '{"mid":19,"sender_uid":3,"content":"second","content_type":"plain"}'
+          ']}',
+      'content_type': 'redirect',
+      'send_time': 20,
+      'forwarded': 19,
+    }, 2);
+    expect(message.type, MessageType.mergedForward);
+    expect(message.contentType, 'redirect');
+    expect(message.mergedForward, isNotNull);
+    expect(message.mergedForward!.messageCount, 2);
+    expect(message.mergedForward!.messages.length, 2);
+    expect(message.mergedForward!.messages.first.content, 'first');
+    expect(message.mergedForward!.sourceRoomName, 'General');
+  });
+
+  test('audio message retains duration from history and notifications', () {
+    final history = ChatMessage.fromMessageRecord({
+      'mid': 30,
+      'sender_uid': 2,
+      'content': 'hash',
+      'content_type': 'file',
+      'file_hash': 'hash',
+      'file_name': 'voice.m4a',
+      'duration': 4200,
+      'send_time': 20,
+      'file_metadata': {'mime_type': 'audio/mp4', 'file_name': 'voice.m4a'},
+    }, 2);
+    expect(history.type, MessageType.audio);
+    expect(history.media?.durationMs, 4200);
+
+    final notification = NotificationInfo.fromServerJson({
+      'info': {
+        'event': 'message.file',
+        'content': 'hash',
+        'sender': 'U2',
+        'mid': 31,
+        'file_hash': 'hash',
+        'duration': 1500,
+        'file': {'mime_type': 'audio/mp4', 'file_name': 'voice.m4a', 'size': 10},
+      },
+    });
+    final realtime = ChatMessage.fromNotification(
+      notification: notification,
+      myUid: 1,
+    );
+    expect(realtime.type, MessageType.audio);
+    expect(realtime.media?.durationMs, 1500);
+  });
+
+  test('audio duration survives json roundtrip', () {
+    final original = ChatMessage(
+      id: 'v1',
+      mid: 41,
+      text: '[AUDIO]',
+      timestamp: DateTime(2026),
+      isMe: true,
+      type: MessageType.audio,
+      media: const MessageMedia(
+        path: 'hash',
+        fileHash: 'hash',
+        mimeType: 'audio/mp4',
+        durationMs: 9000,
+      ),
+    );
+    final restored = ChatMessage.fromJson(original.toJson());
+    expect(restored.media?.durationMs, 9000);
+  });
+
+  test('merged forward snapshot survives json roundtrip', () {
+    final original = ChatMessage.fromMessageRecord({
+      'mid': 21,
+      'sender_uid': 2,
+      'content':
+          '{"version":1,"kind":"single",'
+          '"source_room":{"type":"private","id":"U1U2","name":""},'
+          '"message_count":1,'
+          '"messages":[{"mid":22,"sender_uid":2,"content":"solo","content_type":"plain"}]'
+          '}',
+      'content_type': 'redirect',
+      'send_time': 21,
+    }, 2);
+    final restored = ChatMessage.fromJson(original.toJson());
+    expect(restored.type, MessageType.mergedForward);
+    expect(restored.mergedForward?.messages.single.content, 'solo');
+  });
+
+  testWidgets('history redirect segment renders an expandable card', (
+    tester,
+  ) async {
+    final message = ChatMessage(
+      id: 'r2',
+      mid: 50,
+      text: '',
+      timestamp: DateTime(2026),
+      isMe: false,
+      type: MessageType.mergedForward,
+      contentType: 'redirect',
+      mergedForward: const MergedForwardPreview(
+        version: 2,
+        kind: 'history_segment',
+        sourceRoomName: 'General',
+        messageCount: 3,
+        messages: [
+          MergedForwardEntry(mid: 1, senderUid: 1, content: 'alpha'),
+          MergedForwardEntry(mid: 2, senderUid: 2, content: 'beta'),
+          MergedForwardEntry(mid: 3, senderUid: 3, content: 'gamma'),
+        ],
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: MessageBubble(message: message)),
+      ),
+    );
+    expect(
+      find.textContaining('Redirected history from General'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('3 messages'), findsOneWidget);
+    expect(find.byType(RedirectMessageCard), findsOneWidget);
+    expect(find.byType(RedirectInlineContent), findsNothing);
+  });
+
+  testWidgets('single redirect renders inline content', (tester) async {
+    final message = ChatMessage(
+      id: 'r1',
+      mid: 51,
+      text: '',
+      timestamp: DateTime(2026),
+      isMe: false,
+      type: MessageType.mergedForward,
+      contentType: 'redirect',
+      mergedForward: const MergedForwardPreview(
+        version: 1,
+        kind: 'single',
+        sourceRoomName: 'General',
+        messageCount: 1,
+        messages: [
+          MergedForwardEntry(mid: 1, senderUid: 1, content: 'hello forwarded'),
+        ],
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: MessageBubble(message: message)),
+      ),
+    );
+    expect(find.byType(RedirectInlineContent), findsOneWidget);
+    expect(find.byType(RedirectMessageCard), findsNothing);
+    expect(find.textContaining('hello forwarded'), findsOneWidget);
   });
 
   testWidgets('message bubble renders quote and recalled target states', (
@@ -661,5 +840,123 @@ void main() {
     await tester.longPress(find.text('Already essence'));
     await tester.pumpAndSettle();
     expect(find.text('Remove from essence'), findsOneWidget);
+  });
+
+  group('merged forward sender resolution', () {
+    test('entry parses frozen sender name and uid zero', () {
+      final entry = MergedForwardEntry.fromMap({
+        'mid': 1,
+        'sender_uid': 0,
+        'sender_name': 'Root',
+        'content': 'hello',
+        'content_type': 'plain',
+        'send_time': 10,
+      });
+      expect(entry.senderUid, 0);
+      expect(entry.senderName, 'Root');
+    });
+
+    test('entry serializes frozen sender name for cache round-trip', () {
+      const entry = MergedForwardEntry(
+        mid: 1,
+        senderUid: 7,
+        senderName: 'Carol',
+        content: 'hi',
+      );
+      final roundTrip = MergedForwardEntry.fromMap(entry.toJson());
+      expect(roundTrip.senderUid, 7);
+      expect(roundTrip.senderName, 'Carol');
+    });
+
+    test('preview parse keeps frozen sender names', () {
+      final preview = MergedForwardPreview.parse(
+        '{"version":1,"kind":"single","source_room":{"type":"private","id":"U7U9"},"message_count":1,'
+        '"messages":[{"mid":1,"sender_uid":0,"sender_name":"Root","content":"body","content_type":"plain"}]}',
+      );
+      expect(preview, isNotNull);
+      expect(preview!.messages.first.senderUid, 0);
+      expect(preview.messages.first.senderName, 'Root');
+    });
+
+    testWidgets(
+      'frozen sender name shows even when profile is not cached',
+      (tester) async {
+        final message = ChatMessage(
+          id: 'r-frozen',
+          mid: 60,
+          text: '',
+          timestamp: DateTime(2026),
+          isMe: false,
+          type: MessageType.mergedForward,
+          contentType: 'redirect',
+          mergedForward: const MergedForwardPreview(
+            version: 1,
+            kind: 'single',
+            sourceRoomName: 'General',
+            messageCount: 1,
+            messages: [
+              MergedForwardEntry(
+                mid: 1,
+                senderUid: 987654,
+                senderName: 'FrozenCarol',
+                content: 'frozen body',
+              ),
+            ],
+          ),
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('en'),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: MessageBubble(message: message)),
+          ),
+        );
+        expect(find.textContaining('FrozenCarol'), findsOneWidget);
+        expect(find.textContaining('UID:987654'), findsNothing);
+      },
+    );
+
+    testWidgets('uid zero without frozen name falls back to UID:0', (
+      tester,
+    ) async {
+      final message = ChatMessage(
+        id: 'r-uid0',
+        mid: 61,
+        text: '',
+        timestamp: DateTime(2026),
+        isMe: false,
+        type: MessageType.mergedForward,
+        contentType: 'redirect',
+        mergedForward: const MergedForwardPreview(
+          version: 1,
+          kind: 'single',
+          sourceRoomName: 'General',
+          messageCount: 1,
+          messages: [
+            MergedForwardEntry(mid: 1, senderUid: 0, content: 'root body'),
+          ],
+        ),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: MessageBubble(message: message)),
+        ),
+      );
+      expect(find.textContaining('UID:0'), findsOneWidget);
+    });
   });
 }

@@ -319,6 +319,50 @@ class ChatDataService extends ChangeNotifier {
     if (puid != null) _userCache[roomIdFromUid(puid)] = profile;
   }
 
+  /// 把当前登录用户自己的资料登记进用户缓存。
+  ///
+  /// 服务端的用户资料补拉只针对"对方/群成员"，本人资料不在缓存里会导致
+  /// 按 uid 查名字的地方（@ 提及、合并转发记录等）把本人显示成 UID。
+  void _cacheSelfProfile() {
+    final me = AuthState.instance.currentUser;
+    if (me != null) cacheUserProfile(me);
+  }
+
+  final Set<String> _profileFetchesInFlight = {};
+
+  /// 确保某个用户的资料已缓存；缺失时后台拉取并通知刷新。
+  ///
+  /// 合并转发记录里可能包含未缓存（或本人）的发送者，用于补齐昵称/头像。
+  /// 注意：uid 0 是合法用户（如 root），只有负数才视为无效。
+  Future<void> ensureUserProfile(int uid) async {
+    if (uid < 0) return;
+    final key = roomIdFromUid(uid);
+    if (_userCache.containsKey(key)) return;
+
+    // 如果是当前用户自己，直接从 AuthState 缓存，无需网络请求
+    if (AuthState.instance.uid == uid) {
+      final me = AuthState.instance.currentUser;
+      if (me != null) {
+        cacheUserProfile(me);
+        notifyListeners();
+      }
+      return;
+    }
+
+    if (!_profileFetchesInFlight.add(key)) return;
+    try {
+      final profile = await TfApiClient.instance.getUserByUid(uid);
+      if (profile != null) {
+        cacheUserProfile(profile);
+        notifyListeners();
+      }
+    } catch (e) {
+      talker.warning('ensureUserProfile failed uid=$uid', e);
+    } finally {
+      _profileFetchesInFlight.remove(key);
+    }
+  }
+
   Future<void> invalidateAvatarCache({
     required int groupId,
     required Iterable<int> memberUids,
@@ -593,6 +637,7 @@ class ChatDataService extends ChangeNotifier {
     _rooms.clear();
     _contacts.clear();
     _initializedUid = uid;
+    _cacheSelfProfile();
     _wsSubscription = ChatWsService.instance.eventStream.listen(_onWsEvent);
     ChatWsService.instance.addListener(_onWsStateChanged);
     await loadContactsAndRooms();
@@ -789,6 +834,7 @@ class ChatDataService extends ChangeNotifier {
     notifyListeners();
 
     try {
+      _cacheSelfProfile();
       await _ensureRoomPreferencesLoaded();
       if (_generation != generation ||
           _roomListGeneration != roomListGeneration ||

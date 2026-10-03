@@ -324,6 +324,8 @@
   
   "settingsEnableMarkdownTitle": "渲染Markdown/LaTeX内容",
   "settingsEnableMarkdownDesc": "将可渲染的Markdown/LaTeX文本进行渲染",
+  "settingsChatVoiceButtonTitle": "输入栏语音按钮",
+  "settingsChatVoiceButtonDesc": "在消息输入栏显示麦克风按钮（特殊功能页始终可进入语音模式）",
   
   "settingsMessageDisplayStyleTitle": "消息显示样式",
   "settingsMessageDisplayStyleDesc": "选择消息列表的显示风格",
@@ -693,6 +695,57 @@
   "messageActionDelete": "删除",
   "messageActionRecall": "撤回",
   "messageActionCopy": "复制",
+  "messageActionMergeForward": "合并转发",
+  "messageActionSelectMultiple": "多选",
+  "selectionExit": "退出多选",
+  "selectionCount": "{count, plural, other{{count} 条已选}}",
+  "@selectionCount": {"placeholders": {"count": {}}},
+  "selectionSelectMessages": "选择消息",
+  "selectionRedirectToCurrentChat": "转发到当前会话",
+  "selectionCopy": "复制",
+  "selectionMergeForward": "合并转发",
+  "selectionCancel": "取消",
+  "copySelectedEmpty": "没有可复制的消息",
+  "voiceHoldToRecord": "长按录制语音",
+  "voiceHoldHint": "长按录音",
+  "voiceReleaseToCancel": "松手取消",
+  "voiceRecordingHint": "录音中 • 上滑取消",
+  "voiceUploading": "正在上传语音...",
+  "voiceSending": "正在发送音频...",
+  "voiceLeaveVoiceMode": "退出语音模式",
+  "voiceRecordVoice": "录制语音",
+  "voiceStop": "停止",
+  "voicePermissionDenied": "麦克风权限被拒绝",
+  "voiceRecordFailed": "录音失败",
+  "voiceHoldToRecord": "按住录音",
+  "voiceHoldHint": "长按录音",
+  "voiceReleaseToCancel": "松开取消",
+  "voiceStop": "停止",
+  "voicePermissionDenied": "麦克风权限被拒绝",
+  "voiceRecordFailed": "录音失败",
+  "mergedForwardTitle": "合并转发 · {title}",
+  "@mergedForwardTitle": {"placeholders": {"title": {"type": "String"}}},
+  "mergedForwardGroup": "群聊",
+  "mergedForwardPrivate": "聊天",
+  "mergedForwardMore": "{count, plural, other{还有 {count} 条消息}}",
+  "@mergedForwardMore": {"placeholders": {"count": {}}},
+  "redirectCardLabel": "来自 {room} 的转发记录",
+  "@redirectCardLabel": {"placeholders": {"room": {"type": "String"}}},
+  "redirectMessagesCount": "{count, plural, other{{count} 条消息}}",
+  "@redirectMessagesCount": {"placeholders": {"count": {}}},
+  "redirectFromRoom": "来自 {room}",
+  "@redirectFromRoom": {"placeholders": {"room": {"type": "String"}}},
+  "redirectHistoryTitle": "转发记录 · {room}",
+  "@redirectHistoryTitle": {"placeholders": {"room": {"type": "String"}}},
+  "redirectNoContent": "无内容",
+  "redirectUnknownSender": "未知",
+  "mergeForwardConfirmTitle": "合并转发？",
+  "mergeForwardConfirmBody": "转发 {count} 条消息到 {target}？",
+  "@mergeForwardConfirmBody": {"placeholders": {"count": {"type": "int"}, "target": {"type": "String"}}},
+  "mergeForwardTextOnly": "仅文本消息可合并转发",
+  "mergeForwardTooMany": "一次最多转发 100 条消息",
+  "mergeForwardFailed": "合并转发失败",
+  "mergeForwardSuccess": "合并转发已发送",
   "messageActionPin": "置顶",
   "messageActionUnpin": "取消置顶",
   "pinnedMessageLabel": "已置顶",
@@ -1790,5 +1843,63 @@
   "errorCodeMessageAlreadyRecalled": "消息已经撤回",
   "errorCodeRateLimited": "请求过于频繁",
   "errorCodeConflict": "资源冲突",
-  "errorCodeServerError": "服务器内部错误"
+  "errorCodeServerError": "服务器内部错误",
+  
+  "timeAgoJustNow": "刚刚",
+  "timeAgoMinutes": "{minutes}分钟前",
+  "@timeAgoMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoHours": "{hours}小时前",
+  "@timeAgoHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoDays": "{days}天前",
+  "@timeAgoDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoWeeks": "{weeks}周前",
+  "@timeAgoWeeks": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoMonths": "{months}个月前",
+  "@timeAgoMonths": {
+    "placeholders": {
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoYears": "{years}年前",
+  "@timeAgoYears": {
+    "placeholders": {
+      "years": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "suspiciousLoginTitle": "检测到可疑登录",
+  "suspiciousLoginMessage": "您的账号出现了异常登录活动，如果不是您本人操作，请立即检查登录设备。",
+  "suspiciousLoginDevice": "设备",
+  "suspiciousLoginLocation": "位置",
+  "suspiciousLoginTime": "时间",
+  "suspiciousLoginDismiss": "知道了",
+  "suspiciousLoginReviewSessions": "查看登录设备"
 }

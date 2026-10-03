@@ -15,6 +15,7 @@ import '../l10n/app_localizations.dart';
 import '../widgets/media/image_lightbox.dart';
 import '../widgets/media/video_viewer.dart';
 import '../widgets/media/audio_player.dart';
+import '../widgets/media/voice_message_bubble.dart';
 import '../widgets/markdown_renderer.dart';
 import '../models/settings_service.dart';
 import 'package:exif/exif.dart';
@@ -29,6 +30,7 @@ import '../models/file_task.dart';
 import 'sheet_scaffold.dart';
 import 'sticker_text_renderer.dart';
 import 'message_swipeable_wrapper.dart';
+import 'redirect_message_view.dart';
 
 final _stickerTestPattern = RegExp(r':[A-Za-z0-9_]+\+[A-Za-z0-9_-]+:');
 
@@ -55,6 +57,9 @@ class MessageBubble extends HookWidget {
   final int galleryIndex;
   final bool animateEntrance;
 
+  final bool isSelectionMode;
+  final VoidCallback? onEnterSelectionMode;
+
   const MessageBubble({
     super.key,
     required this.message,
@@ -74,6 +79,8 @@ class MessageBubble extends HookWidget {
     this.galleryItems,
     this.galleryIndex = 0,
     this.animateEntrance = false,
+    this.isSelectionMode = false,
+    this.onEnterSelectionMode,
   });
 
   @override
@@ -103,11 +110,13 @@ class MessageBubble extends HookWidget {
       onEssenceToggle: onEssenceToggle,
       galleryItems: galleryItems,
       galleryIndex: galleryIndex,
+      isSelectionMode: isSelectionMode,
+      onEnterSelectionMode: onEnterSelectionMode,
     );
   }
 }
 
-/// 新消息入场：淡入 + 从下方滑入 + 撑开高度（参考 Solian 的发送动画）。
+/// 新消息入场：淡入 + 从下方滑入 + 撑开高度
 ///
 /// 只在 [animate] 首次为 true 时播放一次，元素复用/重建不会重播。
 class _MessageEntrance extends StatefulWidget {
@@ -192,6 +201,8 @@ class _MessageBubbleContent extends StatefulWidget {
   final List<LightboxImageItem>? galleryItems;
   final int galleryIndex;
   final bool animateEntrance;
+  final bool isSelectionMode;
+  final VoidCallback? onEnterSelectionMode;
 
   const _MessageBubbleContent({
     required this.message,
@@ -212,6 +223,8 @@ class _MessageBubbleContent extends StatefulWidget {
     this.onEssenceToggle,
     this.galleryItems,
     this.galleryIndex = 0,
+    this.isSelectionMode = false,
+    this.onEnterSelectionMode,
   });
 
   @override
@@ -244,6 +257,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
   }
 
   void _scheduleShowHoverActions() {
+    if (widget.isSelectionMode) return;
     _hoverHideTimer?.cancel();
     _hoverShowTimer?.cancel();
     if (_activeHoverOwner != null && _activeHoverOwner != this) {
@@ -364,6 +378,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
         canPin: widget.canPin,
         onPinToggle: widget.onPinToggle,
         onEssenceToggle: widget.onEssenceToggle,
+        onEnterSelectionMode: widget.onEnterSelectionMode,
       ),
     );
   }
@@ -491,6 +506,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     // 始终包一层（结构稳定，不会因为动画结束而重建子树的元素）
     return _MessageEntrance(animate: widget.animateEntrance, child: content);
   }
+
   Widget _buildPlaceholderBubble(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
@@ -1142,9 +1158,16 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
       MessageType.video => _buildVideoMessage(context, colorScheme),
       MessageType.audio => _buildAudioMessage(context, colorScheme),
       MessageType.file => _buildFileMessage(context, colorScheme, textTheme),
+      MessageType.mergedForward =>
+        _buildMergedForwardMessage(context, colorScheme, textTheme),
       MessageType.text => _buildTextMessage(context, colorScheme, textTheme),
     };
     final contentWithProgress = _wrapWithUploadProgress(content);
+    // 合并转发消息自带来源卡片/内联内容，且 forwarded 仅作溯源用途，
+    // 不再渲染普通的"转发 / 原消息不可用"引用框。
+    if (widget.message.type == MessageType.mergedForward) {
+      return contentWithProgress;
+    }
     final quote = widget.message.quotePreview ?? widget.message.forwardPreview;
     if (quote == null) return contentWithProgress;
     final isForward = widget.message.forwardPreview != null;
@@ -1578,6 +1601,16 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
       );
     }
 
+    // 语音消息（带时长元数据）用波形气泡渲染。
+    if (media.durationMs != null) {
+      return VoiceMessageBubble(
+        audioPath: media.path,
+        audioBytes: widget.cachedBytes,
+        durationMs: media.durationMs,
+        fileHash: media.fileHash,
+      );
+    }
+
     if (media.fileHash != null && widget.cachedBytes == null) {
       return _buildRemoteAttachment(media);
     }
@@ -1588,6 +1621,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
         audioBytes: widget.cachedBytes,
         filename: media.fileName,
         autoplay: false,
+        durationMs: media.durationMs,
       ),
     );
   }
@@ -1603,6 +1637,29 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     }
 
     return _buildRemoteAttachment(media);
+  }
+
+  Widget _buildMergedForwardMessage(
+    BuildContext context,
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+  ) {
+    final preview = widget.message.mergedForward;
+    if (preview == null) {
+      return _buildTextMessage(context, colorScheme, textTheme);
+    }
+    final textColor = widget.message.isMe
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurface;
+
+    // 单条转发 → 内联展示；多条历史段 → 可展开卡片。
+    final isSingle = preview.version == 1 && preview.messages.length <= 1;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 320),
+      child: isSingle
+          ? RedirectInlineContent(redirect: preview, textColor: textColor)
+          : RedirectMessageCard(redirect: preview, textColor: textColor),
+    );
   }
 
   Widget _buildRemoteAttachment(MessageMedia media) {
@@ -1623,6 +1680,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
         ),
         sourceUrl: sourceUrl,
         bytes: widget.cachedBytes,
+        durationMs: media.durationMs,
         galleryItems: widget.galleryItems,
         galleryIndex: widget.galleryIndex,
       ),
@@ -1896,6 +1954,7 @@ class _MessageActionSheet extends StatelessWidget {
   final bool canPin;
   final VoidCallback? onPinToggle;
   final VoidCallback? onEssenceToggle;
+  final VoidCallback? onEnterSelectionMode;
 
   const _MessageActionSheet({
     required this.message,
@@ -1909,6 +1968,7 @@ class _MessageActionSheet extends StatelessWidget {
     this.canPin = false,
     this.onPinToggle,
     this.onEssenceToggle,
+    this.onEnterSelectionMode,
   });
 
   @override
@@ -1947,6 +2007,15 @@ class _MessageActionSheet extends StatelessWidget {
                 onForward?.call(message);
               },
             ),
+            if (onEnterSelectionMode != null)
+              _ActionListTile(
+                icon: Symbols.select_all,
+                label: l10n.messageActionSelectMultiple,
+                onTap: () {
+                  Navigator.pop(context);
+                  onEnterSelectionMode!.call();
+                },
+              ),
           ],
           if (canPin) ...[
             const Divider(height: 17),

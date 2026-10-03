@@ -2108,6 +2108,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsEnableMarkdownTitle;
       case 'settingsEnableMarkdownDesc':
         return l10n.settingsEnableMarkdownDesc;
+      case 'settingsChatVoiceButtonTitle':
+        return l10n.settingsChatVoiceButtonTitle;
+      case 'settingsChatVoiceButtonDesc':
+        return l10n.settingsChatVoiceButtonDesc;
       case 'settingsMessageDisplayStyleTitle':
         return l10n.settingsMessageDisplayStyleTitle;
       case 'settingsMessageDisplayStyleDesc':

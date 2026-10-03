@@ -1,7 +1,8 @@
+import 'dart:convert';
 import 'notification_model.dart';
 import 'file_attachment.dart';
 
-enum MessageType { text, image, video, audio, file }
+enum MessageType { text, image, video, audio, file, mergedForward }
 
 enum MessageStatus { pending, sent, delivered, failed }
 
@@ -21,6 +22,9 @@ class MessageMedia {
 
   final bool hasThumb;
 
+  /// 语音/音频时长（毫秒）。仅音频消息有意义。
+  final int? durationMs;
+
   const MessageMedia({
     required this.path,
     this.fileName,
@@ -33,6 +37,7 @@ class MessageMedia {
     this.height,
     this.blurhash,
     this.hasThumb = false,
+    this.durationMs,
   });
 
   MessageMedia copyWith({
@@ -47,6 +52,7 @@ class MessageMedia {
     int? height,
     String? blurhash,
     bool? hasThumb,
+    int? durationMs,
   }) {
     return MessageMedia(
       path: path ?? this.path,
@@ -60,6 +66,7 @@ class MessageMedia {
       height: height ?? this.height,
       blurhash: blurhash ?? this.blurhash,
       hasThumb: hasThumb ?? this.hasThumb,
+      durationMs: durationMs ?? this.durationMs,
     );
   }
 
@@ -175,6 +182,130 @@ class QuotedMessagePreview {
   );
 }
 
+/// 合并转发快照中的单条消息条目（冻结于转发时刻）。
+class MergedForwardEntry {
+  final int? mid;
+  final int? senderUid;
+  final String? senderName;
+  final String content;
+  final String contentType;
+  final String? fileHash;
+  final String? fileName;
+  final double sendTime;
+
+  const MergedForwardEntry({
+    this.mid,
+    this.senderUid,
+    this.senderName,
+    this.content = '',
+    this.contentType = 'plain',
+    this.fileHash,
+    this.fileName,
+    this.sendTime = 0,
+  });
+
+  factory MergedForwardEntry.fromMap(Map<String, dynamic> json) {
+    final rawName = json['sender_name'] ?? json['senderName'];
+    return MergedForwardEntry(
+      mid: _asInt(json['mid']),
+      senderUid: _asInt(json['sender_uid'] ?? json['senderUid']),
+      senderName: rawName?.toString(),
+      content: (json['content'] ?? '').toString(),
+      contentType: (json['content_type'] ?? json['contentType'] ?? 'plain')
+          .toString(),
+      fileHash: (json['file_hash'] ?? json['fileHash'])?.toString(),
+      fileName: (json['file_name'] ?? json['fileName'])?.toString(),
+      sendTime:
+          ((json['send_time'] ?? json['sendTime']) as num?)?.toDouble() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'mid': mid,
+    'sender_uid': senderUid,
+    if (senderName != null) 'sender_name': senderName,
+    'content': content,
+    'content_type': contentType,
+    'file_hash': fileHash,
+    'file_name': fileName,
+    'send_time': sendTime,
+  };
+}
+
+/// 合并转发消息的冻结快照（对应服务端 content_type='redirect' 的 content JSON）。
+class MergedForwardPreview {
+  final int version;
+  final String kind;
+  final String? sourceRoomId;
+  final String? sourceRoomName;
+  final bool sourceIsGroup;
+  final int messageCount;
+  final int? redirectedBy;
+  final List<MergedForwardEntry> messages;
+
+  const MergedForwardPreview({
+    this.version = 2,
+    this.kind = 'history_segment',
+    this.sourceRoomId,
+    this.sourceRoomName,
+    this.sourceIsGroup = false,
+    this.messageCount = 0,
+    this.redirectedBy,
+    this.messages = const [],
+  });
+
+  factory MergedForwardPreview.fromMap(Map<String, dynamic> json) {
+    final sourceRoom = json['source_room'] is Map
+        ? Map<String, dynamic>.from(json['source_room'] as Map)
+        : const <String, dynamic>{};
+    final rawMessages = json['messages'] is List ? json['messages'] as List : const [];
+    // 同时兼容服务端下划线键与本地缓存驼峰键（toJson 产物）。
+    final sourceIsGroup = sourceRoom['type'] == 'group' ||
+        json['sourceIsGroup'] == true;
+    return MergedForwardPreview(
+      version: _asInt(json['version']) ?? 2,
+      kind: (json['kind'] ?? 'history_segment').toString(),
+      sourceRoomId:
+          (json['source_room_id'] ?? json['sourceRoomId'] ?? sourceRoom['id'])
+              ?.toString(),
+      sourceRoomName:
+          (sourceRoom['name'] ?? json['sourceRoomName'])?.toString(),
+      sourceIsGroup: sourceIsGroup,
+      messageCount: _asInt(json['message_count'] ?? json['messageCount']) ??
+          rawMessages.length,
+      redirectedBy: _asInt(json['redirected_by'] ?? json['redirectedBy']),
+      messages: rawMessages
+          .whereType<Map>()
+          .map((m) => MergedForwardEntry.fromMap(Map<String, dynamic>.from(m)))
+          .toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'version': version,
+    'kind': kind,
+    'sourceRoomId': sourceRoomId,
+    'sourceRoomName': sourceRoomName,
+    'sourceIsGroup': sourceIsGroup,
+    'messageCount': messageCount,
+    'redirectedBy': redirectedBy,
+    'messages': messages.map((m) => m.toJson()).toList(),
+  };
+
+  /// 从服务端消息的 content（JSON 字符串）解析合并转发快照；失败返回 null。
+  static MergedForwardPreview? parse(String? content) {
+    if (content == null || content.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(content);
+      if (decoded is Map<String, dynamic>) {
+        final mf = MergedForwardPreview.fromMap(decoded);
+        return mf.messages.isEmpty ? null : mf;
+      }
+    } catch (_) {}
+    return null;
+  }
+}
+
 class ChatMessage {
   final String id;
   final int? mid;
@@ -188,6 +319,8 @@ class ChatMessage {
   final String? senderAvatar;
   final MessageType type;
   final MessageMedia? media;
+  final String contentType;
+  final MergedForwardPreview? mergedForward;
   final String? ackError;
   final List<int> mentionedUids;
   final bool mentionsMe;
@@ -218,6 +351,8 @@ class ChatMessage {
     this.senderAvatar,
     this.type = MessageType.text,
     this.media,
+    this.contentType = 'plain',
+    this.mergedForward,
     this.ackError,
     this.mentionedUids = const [],
     this.mentionsMe = false,
@@ -270,6 +405,8 @@ class ChatMessage {
         a.text == b.text &&
         a.isDeleted == b.isDeleted &&
         a.type == b.type &&
+        a.contentType == b.contentType &&
+        _sameMergedForward(a.mergedForward, b.mergedForward) &&
         a.senderUid == b.senderUid &&
         a.senderName == b.senderName &&
         a.senderAvatar == b.senderAvatar &&
@@ -306,6 +443,32 @@ class ChatMessage {
         a.isMissing == b.isMissing;
   }
 
+  static bool _sameMergedForward(
+    MergedForwardPreview? a,
+    MergedForwardPreview? b,
+  ) {
+    if (a == null || b == null) return a == b;
+    if (a.sourceRoomId != b.sourceRoomId ||
+        a.sourceRoomName != b.sourceRoomName ||
+        a.messageCount != b.messageCount ||
+        a.messages.length != b.messages.length) {
+      return false;
+    }
+    for (var i = 0; i < a.messages.length; i++) {
+      final x = a.messages[i];
+      final y = b.messages[i];
+      if (x.mid != y.mid ||
+          x.senderUid != y.senderUid ||
+          x.content != y.content ||
+          x.contentType != y.contentType ||
+          x.fileHash != y.fileHash ||
+          x.fileName != y.fileName) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   static bool _sameMedia(MessageMedia? a, MessageMedia? b) {
     if (a == null || b == null) return a == b;
     
@@ -324,6 +487,7 @@ class ChatMessage {
                a.mimeType == b.mimeType &&
                a.aspectRatio == b.aspectRatio &&
                a.blurhash == b.blurhash &&
+               a.durationMs == b.durationMs &&
                a.hasThumb == b.hasThumb;
       }
     }
@@ -338,6 +502,7 @@ class ChatMessage {
         a.width != b.width ||
         a.height != b.height ||
         a.blurhash != b.blurhash ||
+        a.durationMs != b.durationMs ||
         a.hasThumb != b.hasThumb) {
       return false;
     }
@@ -358,6 +523,8 @@ class ChatMessage {
     String? senderAvatar,
     MessageType? type,
     MessageMedia? media,
+    String? contentType,
+    MergedForwardPreview? mergedForward,
     String? ackError,
     bool clearAckError = false,
     List<int>? mentionedUids,
@@ -388,6 +555,8 @@ class ChatMessage {
       senderAvatar: senderAvatar ?? this.senderAvatar,
       type: type ?? this.type,
       media: clearMedia ? null : media ?? this.media,
+      contentType: contentType ?? this.contentType,
+      mergedForward: mergedForward ?? this.mergedForward,
       ackError: clearAckError ? null : ackError ?? this.ackError,
       mentionedUids: mentionedUids ?? this.mentionedUids,
       mentionsMe: mentionsMe ?? this.mentionsMe,
@@ -451,6 +620,30 @@ class ChatMessage {
         .map((uid) => uid.toInt())
         .toList();
 
+    final rawContentType = (json['content_type'] as String?) ?? '';
+    if (event == 'message.redirect' || rawContentType == 'redirect') {
+      final mergedForward = MergedForwardPreview.parse(content);
+      return ChatMessage(
+        id: id,
+        mid: mid,
+        clientMid: clientMid,
+        senderUid: suid,
+        text: '',
+        timestamp: dt,
+        isMe: isMe,
+        senderName: resolvedName,
+        senderAvatar: senderAvatar,
+        type: MessageType.mergedForward,
+        contentType: 'redirect',
+        mergedForward: mergedForward,
+        mentionedUids: mentionedUids,
+        mentionsMe: json['mentions_me'] as bool? ?? false,
+        shouldAlert: json['should_alert'] as bool?,
+        forwardedMid: forwardedMid,
+        roomSeq: roomSeq,
+      );
+    }
+
     if (event == 'message.file') {
       final fileHash = json['file_hash']?.toString() ?? content;
       final attachment = FileAttachment.fromMap({
@@ -491,6 +684,7 @@ class ChatMessage {
           blurhash: attachment.blurhash,
           hasThumb: attachment.hasThumb,
           aspectRatio: attachment.aspectRatio,
+          durationMs: _asInt(json['duration']),
         ),
         mentionedUids: mentionedUids,
         mentionsMe: json['mentions_me'] as bool? ?? false,
@@ -548,6 +742,28 @@ class ChatMessage {
     final suid = rawSenderUid;
     final resolvedName = isMe ? null : (senderName ?? 'User $senderUid');
 
+    if (event == 'message.redirect') {
+      final mergedForward = MergedForwardPreview.parse(content);
+      return ChatMessage(
+        id: id,
+        mid: serverMid,
+        clientMid: clientMid,
+        senderUid: suid,
+        text: '',
+        timestamp: dt,
+        isMe: isMe,
+        senderName: resolvedName,
+        senderAvatar: senderAvatar,
+        type: MessageType.mergedForward,
+        contentType: 'redirect',
+        mergedForward: mergedForward,
+        mentionedUids: notification.mentionedUids,
+        mentionsMe: notification.mentionsMe,
+        shouldAlert: notification.shouldAlert,
+        forwardedMid: notification.forwardedMid,
+      );
+    }
+
     if (event == 'message.file') {
       final fileHash = notification.fileHash ?? content;
       final attachment = FileAttachment.fromMap({
@@ -587,6 +803,7 @@ class ChatMessage {
           blurhash: attachment.blurhash,
           hasThumb: attachment.hasThumb,
           aspectRatio: attachment.aspectRatio,
+          durationMs: notification.durationMs,
         ),
         mentionedUids: notification.mentionedUids,
         mentionsMe: notification.mentionsMe,
@@ -686,6 +903,31 @@ class ChatMessage {
       );
     }
 
+    if (contentType == 'redirect') {
+      final mergedForward = MergedForwardPreview.parse(content);
+      return ChatMessage(
+        id:
+            mid?.toString() ??
+            '${dt.millisecondsSinceEpoch}-$senderUid-${clientMid ?? roomSeq?.toString() ?? ''}',
+        mid: mid,
+        clientMid: clientMid,
+        senderUid: senderUid,
+        text: '',
+        timestamp: dt,
+        isMe: isMe,
+        type: MessageType.mergedForward,
+        contentType: 'redirect',
+        mergedForward: mergedForward,
+        mentionedUids: mentionedUids,
+        mentionsMe: mentionedUids.contains(myUid),
+        quoteMid: quoteMid,
+        quotePreview: quotePreview,
+        forwardedMid: forwardedMid,
+        forwardPreview: forwardPreview,
+        roomSeq: roomSeq,
+      );
+    }
+
     if (contentType == 'file') {
       final fileHash = json['file_hash'] as String? ?? content;
       final nestedMetadata = json['file_metadata'] is Map
@@ -731,6 +973,7 @@ class ChatMessage {
           blurhash: attachment.blurhash,
           hasThumb: attachment.hasThumb,
           aspectRatio: attachment.aspectRatio,
+          durationMs: _asInt(json['duration']),
         ),
         mentionedUids: mentionedUids,
         mentionsMe: mentionedUids.contains(myUid),
@@ -776,6 +1019,8 @@ class ChatMessage {
       'senderName': senderName,
       'senderAvatar': senderAvatar,
       'type': type.index,
+      'contentType': contentType,
+      if (mergedForward != null) 'mergedForward': mergedForward!.toJson(),
       'ackError': ackError,
       'mentionedUids': mentionedUids,
       'mentionsMe': mentionsMe,
@@ -800,6 +1045,7 @@ class ChatMessage {
           if (media!.height != null) 'height': media!.height,
           if (media!.aspectRatio != null) 'aspectRatio': media!.aspectRatio,
           if (media!.blurhash != null) 'blurhash': media!.blurhash,
+          if (media!.durationMs != null) 'durationMs': media!.durationMs,
           if (media!.hasThumb) 'hasThumb': true,
         },
     };
@@ -819,6 +1065,7 @@ class ChatMessage {
         height: _asInt(m['height']),
         aspectRatio: (m['aspectRatio'] as num?)?.toDouble(),
         blurhash: m['blurhash'] as String?,
+        durationMs: _asInt(m['durationMs']),
         hasThumb: m['hasThumb'] == true,
       );
     }
@@ -853,6 +1100,12 @@ class ChatMessage {
       senderAvatar: json['senderAvatar'] as String?,
       type: type,
       media: media,
+      contentType: json['contentType'] as String? ?? 'plain',
+      mergedForward: json['mergedForward'] is Map
+          ? MergedForwardPreview.fromMap(
+              Map<String, dynamic>.from(json['mergedForward'] as Map),
+            )
+          : null,
       ackError: json['ackError'] as String?,
       mentionedUids: (json['mentionedUids'] as List<dynamic>? ?? const [])
           .whereType<num>()

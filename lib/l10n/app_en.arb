@@ -338,6 +338,8 @@
 
   "settingsEnableMarkdownTitle": "Render Markdown/LaTeX",
   "settingsEnableMarkdownDesc": "Render Markdown and LaTeX formatted text",
+  "settingsChatVoiceButtonTitle": "Voice button in input bar",
+  "settingsChatVoiceButtonDesc": "Show the microphone button in the message input bar (voice mode is always available from the special tab)",
   
   "settingsMessageDisplayStyleTitle": "Message Display Style",
   "settingsMessageDisplayStyleDesc": "Choose the message list display style",
@@ -704,6 +706,51 @@
   "messageActionDelete": "Delete",
   "messageActionRecall": "Recall",
   "messageActionCopy": "Copy",
+  "messageActionMergeForward": "Merge forward",
+  "messageActionSelectMultiple": "Select multiple",
+  "selectionExit": "Exit selection",
+  "selectionCount": "{count, plural, =1{1 selected} other{{count} selected}}",
+  "@selectionCount": {"placeholders": {"count": {}}},
+  "selectionSelectMessages": "Select messages",
+  "selectionRedirectToCurrentChat": "Forward to this chat",
+  "selectionCopy": "Copy",
+  "selectionMergeForward": "Merge forward",
+  "selectionCancel": "Cancel",
+  "copySelectedEmpty": "No messages to copy",
+  "voiceHoldToRecord": "Hold to record voice",
+  "voiceHoldHint": "Long press to record",
+  "voiceReleaseToCancel": "Release to cancel",
+  "voiceRecordingHint": "Recording • swipe up to cancel",
+  "voiceUploading": "Uploading voice message...",
+  "voiceSending": "Sending audio...",
+  "voiceLeaveVoiceMode": "Leave voice mode",
+  "voiceRecordVoice": "Record voice",
+  "voiceStop": "Stop",
+  "voicePermissionDenied": "Microphone permission denied",
+  "voiceRecordFailed": "Failed to record voice message",
+  "mergedForwardTitle": "Merged forward · {title}",
+  "@mergedForwardTitle": {"placeholders": {"title": {"type": "String"}}},
+  "mergedForwardGroup": "Group chat",
+  "mergedForwardPrivate": "Chat",
+  "mergedForwardMore": "{count, plural, =1{and 1 more message} other{and {count} more messages}}",
+  "@mergedForwardMore": {"placeholders": {"count": {}}},
+  "redirectCardLabel": "Redirected history from {room}",
+  "@redirectCardLabel": {"placeholders": {"room": {"type": "String"}}},
+  "redirectMessagesCount": "{count, plural, =1{1 message} other{{count} messages}}",
+  "@redirectMessagesCount": {"placeholders": {"count": {}}},
+  "redirectFromRoom": "From {room}",
+  "@redirectFromRoom": {"placeholders": {"room": {"type": "String"}}},
+  "redirectHistoryTitle": "Redirected history · {room}",
+  "@redirectHistoryTitle": {"placeholders": {"room": {"type": "String"}}},
+  "redirectNoContent": "No content",
+  "redirectUnknownSender": "Unknown",
+  "mergeForwardConfirmTitle": "Merge forward?",
+  "mergeForwardConfirmBody": "Forward {count} messages to {target}?",
+  "@mergeForwardConfirmBody": {"placeholders": {"count": {"type": "int"}, "target": {"type": "String"}}},
+  "mergeForwardTextOnly": "Only text messages can be merged and forwarded",
+  "mergeForwardTooMany": "Up to 100 messages can be forwarded at once",
+  "mergeForwardFailed": "Could not merge forward messages",
+  "mergeForwardSuccess": "Merged forward sent",
   "messageActionPin": "Pin",
   "messageActionUnpin": "Unpin",
   "pinnedMessageLabel": "Pinned",
@@ -1840,5 +1887,63 @@
   "errorCodeMessageAlreadyRecalled": "Message has already been recalled",
   "errorCodeRateLimited": "Too many requests",
   "errorCodeConflict": "Resource conflict",
-  "errorCodeServerError": "Internal server error"
+  "errorCodeServerError": "Internal server error",
+  
+  "timeAgoJustNow": "Just now",
+  "timeAgoMinutes": "{minutes}m ago",
+  "@timeAgoMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoHours": "{hours}h ago",
+  "@timeAgoHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoDays": "{days}d ago",
+  "@timeAgoDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoWeeks": "{weeks}w ago",
+  "@timeAgoWeeks": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoMonths": "{months}mo ago",
+  "@timeAgoMonths": {
+    "placeholders": {
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoYears": "{years}y ago",
+  "@timeAgoYears": {
+    "placeholders": {
+      "years": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "suspiciousLoginTitle": "Suspicious Login Detected",
+  "suspiciousLoginMessage": "Unusual login activity was detected on your account. If this wasn't you, please review your login devices immediately.",
+  "suspiciousLoginDevice": "Device",
+  "suspiciousLoginLocation": "Location",
+  "suspiciousLoginTime": "Time",
+  "suspiciousLoginDismiss": "Dismiss",
+  "suspiciousLoginReviewSessions": "Review Login Devices"
 }

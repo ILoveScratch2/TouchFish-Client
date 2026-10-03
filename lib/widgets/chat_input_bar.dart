@@ -17,6 +17,7 @@ import '../models/settings_service.dart';
 import '../utils/file_type_detector.dart';
 import '../utils/clipboard_utils.dart';
 import 'mention_text_field.dart';
+import 'voice_record_bar.dart';
 
 class ChatInputBar extends StatefulWidget {
   final String roomId;
@@ -30,6 +31,10 @@ class ChatInputBar extends StatefulWidget {
     MessageType type,
   )?
   onServerFilePicked;
+
+  /// 录音完成后回调（临时文件路径 + 时长毫秒）；为 null 时不显示麦克风按钮。
+  final Future<void> Function(String path, int durationMs)? onVoiceRecorded;
+
   final List<MentionUser> mentionUsers;
   final ChatMessage? actionMessage;
   final bool actionIsForward;
@@ -46,6 +51,7 @@ class ChatInputBar extends StatefulWidget {
     required this.onSend,
     this.onFilePicked,
     this.onServerFilePicked,
+    this.onVoiceRecorded,
     this.mentionUsers = const [],
     this.actionMessage,
     this.actionIsForward = false,
@@ -60,6 +66,7 @@ class ChatInputBar extends StatefulWidget {
 class _ChatInputBarState extends State<ChatInputBar>
     with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
+  bool _isVoiceMode = false;
   late final TabController _tabController;
   late final FocusNode _inputFocusNode;
   /// @ 提及与贴纸自动补全共用的定位锚点：都锚定输入框左上角
@@ -265,25 +272,37 @@ class _ChatInputBarState extends State<ChatInputBar>
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // Expand/Collapse button
+                // Expand/Collapse / leave voice mode button
                 IconButton(
                   icon: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
-                    child: Icon(
-                      _isExpanded ? Symbols.close : Symbols.add,
-                      key: ValueKey(_isExpanded),
-                    ),
+                    child: _isVoiceMode
+                        ? const Icon(
+                            Symbols.keyboard_return,
+                            key: ValueKey('voice-leave'),
+                          )
+                        : Icon(
+                            _isExpanded ? Symbols.close : Symbols.add,
+                            key: ValueKey(_isExpanded),
+                          ),
                   ),
-                  tooltip: _isExpanded
+                  tooltip: _isVoiceMode
+                      ? l10n.voiceLeaveVoiceMode
+                      : _isExpanded
                       ? l10n.chatInputCollapse
                       : l10n.chatInputExpand,
                   onPressed: () {
+                    if (_isVoiceMode) {
+                      setState(() => _isVoiceMode = false);
+                      return;
+                    }
                     setState(() {
                       _isExpanded = !_isExpanded;
                     });
                   },
                 ),
-                PopupMenuButton<String>(
+                if (!_isVoiceMode)
+                  PopupMenuButton<String>(
                   icon: const Icon(Symbols.attach_file),
                   tooltip: l10n.chatInputAttachment,
                   onSelected: (value) async {
@@ -333,7 +352,12 @@ class _ChatInputBarState extends State<ChatInputBar>
                   ],
                 ),
                 Expanded(
-                  child: Stack(
+                  child: _isVoiceMode
+                      ? VoiceRecordBar(
+                          onRecorded: widget.onVoiceRecorded!,
+                          enabled: !widget.actionIsForward,
+                        )
+                      : Stack(
                     children: [
                       MentionTextField(
                         controller: widget.controller,
@@ -369,16 +393,28 @@ class _ChatInputBarState extends State<ChatInputBar>
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  color: colorScheme.primary,
-                  onPressed: () {
-                    if (widget.controller.text.trim().isNotEmpty ||
-                        widget.actionIsForward) {
-                      widget.onSend();
-                    }
-                  },
-                ),
+                if (!_isVoiceMode &&
+                    widget.onVoiceRecorded != null &&
+                    SettingsService.instance.getValue<bool>(
+                      'chatVoiceButtonInInputBar',
+                      true,
+                    ))
+                  IconButton(
+                    icon: const Icon(Symbols.mic),
+                    tooltip: l10n.voiceHoldToRecord,
+                    onPressed: _enterVoiceMode,
+                  ),
+                if (!_isVoiceMode)
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    color: colorScheme.primary,
+                    onPressed: () {
+                      if (widget.controller.text.trim().isNotEmpty ||
+                          widget.actionIsForward) {
+                        widget.onSend();
+                      }
+                    },
+                  ),
               ],
             ),
             AnimatedSize(
@@ -702,6 +738,13 @@ class _ChatInputBarState extends State<ChatInputBar>
     }
   }
 
+  void _enterVoiceMode() {
+    setState(() {
+      _isVoiceMode = true;
+      _isExpanded = false;
+    });
+  }
+
   Widget _buildSpecialMessagesTab(
     ColorScheme colorScheme,
     AppLocalizations l10n,
@@ -720,6 +763,14 @@ class _ChatInputBarState extends State<ChatInputBar>
             l10n.chatFunctionTabSpecialHint,
             style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
           ),
+          if (widget.onVoiceRecorded != null) ...[
+            const SizedBox(height: 16),
+            FilledButton.tonalIcon(
+              onPressed: _enterVoiceMode,
+              icon: const Icon(Symbols.mic, size: 18),
+              label: Text(l10n.voiceRecordVoice),
+            ),
+          ],
         ],
       ),
     );
