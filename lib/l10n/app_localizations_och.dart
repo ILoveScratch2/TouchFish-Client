@@ -1366,6 +1366,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminServerSectionAdvanced => '高級配置';
 
   @override
+  String get adminServerSectionLimits => '限與存儲';
+
+  @override
+  String get adminServerLimitsDescription => '名/用戶名/密碼之長、內容之長、存儲之額與限速。';
+
+  @override
   String get adminServerSectionEmailService => '郵箱驗證服務';
 
   @override
@@ -1407,7 +1413,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminServerFieldProxyCount => '信代理之層數';
 
   @override
-  String get adminServerSectionAuth => '認證';
+  String get adminServerSectionAuth => '認證與憑符';
 
   @override
   String get adminServerAuthDescription => '定客戶端登入認證之方式。';
@@ -1434,6 +1440,125 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminServerEmailPasswordRequired => '啟郵箱驗證須填驗證郵箱與郵箱密碼。';
 
   @override
+  String get adminServerFieldCaptchaProvider => '驗證碼之供';
+
+  @override
+  String get adminServerCaptchaProviderDescription =>
+      'image 為內建圖形驗證碼；turnstile / hcaptcha / recaptcha 乃第三方之服務。';
+
+  @override
+  String get adminServerFieldCaptchaSiteKey => '驗證碼 Site Key';
+
+  @override
+  String get adminServerFieldCaptchaSecret => '驗證碼 Secret';
+
+  @override
+  String get adminServerCaptchaSecretHint => '留空則存舊鑰。';
+
+  @override
+  String get adminServerCaptchaSaveSuccess => '驗證碼之設已更';
+
+  @override
+  String get adminServerCaptchaSaveFailed => '驗證碼之設更而未成';
+
+  @override
+  String get adminServerFieldRateLimits => '限速（JSON）';
+
+  @override
+  String get adminServerRateLimitsDescription =>
+      '按端點之請求頻率（JSON），各端點對應 requests 與 range。留空則盡除諸限。';
+
+  @override
+  String get adminServerRateLimitsInvalid => '限速須為合法之 JSON';
+
+  @override
+  String get adminServerRateLimitsSaveSuccess => '限速已更';
+
+  @override
+  String get adminServerRateLimitsSaveFailed => '限速更而未成';
+
+  @override
+  String get adminServerFieldMinGroupNameLength => '群名最短';
+
+  @override
+  String get adminServerFieldMaxGroupNameLength => '群名最長';
+
+  @override
+  String get adminServerFieldMinUsernameLength => '用戶名最短';
+
+  @override
+  String get adminServerFieldMinPasswordLength => '密碼最短';
+
+  @override
+  String get adminServerFieldMaxSignLength => '簽名最長';
+
+  @override
+  String get adminServerFieldMaxIntroductionLength => '簡介最長';
+
+  @override
+  String get adminServerFieldMaxPostContentLength => '帖文最長';
+
+  @override
+  String get adminServerFieldMaxAvatarSize => '頭像最大';
+
+  @override
+  String get adminServerFieldUserStorageQuota => '用戶存儲之額';
+
+  @override
+  String get adminServerFieldMaxUserStorageQuota => '單用戶單傳之上限';
+
+  @override
+  String get adminServerFieldMaxStickerStorageQuota => '表情存儲之額';
+
+  @override
+  String get adminServerFieldJwtRefreshExpires => 'JWT 刷新之期（秒）';
+
+  @override
+  String get adminServerFieldFileDownloadMode => '檔案下載之法';
+
+  @override
+  String get adminServerFileDownloadModeDescription => 'redirect 或 proxy。';
+
+  @override
+  String get adminServerFieldMediaFeatures => '啟媒體之能';
+
+  @override
+  String get adminServerMediaFeaturesDescription => '許縮略圖等媒體之處理。';
+
+  @override
+  String get adminServerSearchHint => '檢索設置';
+
+  @override
+  String get adminServerSearchNoResults => '未得相應之設置';
+
+  @override
+  String get adminServerUnlimited => '無限';
+
+  @override
+  String get adminServerUnsavedChanges => '有未存之更改';
+
+  @override
+  String get adminServerUndoChanges => '復其改易';
+
+  @override
+  String get adminServerDiscardChanges => '棄改';
+
+  @override
+  String get adminServerDiscardAndRefresh => '棄改而重載';
+
+  @override
+  String get adminServerDiscardConfirmTitle => '欲棄未存之改乎？';
+
+  @override
+  String get adminServerDiscardConfirmMessage => '今所改易將盡失。';
+
+  @override
+  String get adminServerSectionRateLimits => '限流之則';
+
+  @override
+  String get adminServerSectionServerInfo => '伺服之訊';
+
+  @override
   String get adminPendingForums => '待審論壇';
 
   @override
@@ -1454,6 +1579,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String adminPendingForumCreator(String uid) {
     return '創者 UID：$uid';
   }
+
+  @override
+  String get adminPendingForumEditBadge => '修訂';
 
   @override
   String get adminPendingForumNoIntroduction => '暫無論壇之介。';
@@ -1791,6 +1919,24 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get messageActionSelectMultiple => '多選';
+
+  @override
+  String get messageActionViewOriginal => '視原文';
+
+  @override
+  String get messageRecalledOriginalTitle => '已撤回消息之原文';
+
+  @override
+  String get messageRecalledOriginalSender => '發者';
+
+  @override
+  String get messageRecalledOriginalContent => '內容';
+
+  @override
+  String get messageRecalledOriginalFailed => '載原文未成';
+
+  @override
+  String get messageRecalledOriginalNone => '無可用之原文';
 
   @override
   String get selectionExit => '退出多選';
@@ -3127,6 +3273,14 @@ class AppLocalizationsOch extends AppLocalizations {
   String get announcementDeleteFailed => '刪告示未成';
 
   @override
+  String get announcementLoadFailed => '載告示未成';
+
+  @override
+  String announcementSenderFallback(String uid) {
+    return '用戶 $uid';
+  }
+
+  @override
   String get adminAnnouncements => '司告示府';
 
   @override
@@ -3187,6 +3341,14 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminAccountEmpty => '暫無用戶';
 
   @override
+  String get adminAccountNoSearchResults => '無相符之用戶';
+
+  @override
+  String adminAccountPageIndicator(int page, int totalPages, int total) {
+    return '第 $page / $totalPages 頁（共 $total 用戶）';
+  }
+
+  @override
   String adminAccountCreated(String date) {
     return '創建時間：$date';
   }
@@ -3196,6 +3358,21 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get adminAccountViewDevices => '視設備';
+
+  @override
+  String get adminAccountEdit => '編輯帳號';
+
+  @override
+  String get adminAccountEditDescription => '留空之欄則存舊不改。';
+
+  @override
+  String get adminAccountNewPassword => '新密碼（可空）';
+
+  @override
+  String get adminAccountEditSuccess => '帳號已更';
+
+  @override
+  String get adminAccountEditFailed => '帳號更而未成';
 
   @override
   String adminAccountChangeRoleTitle(String name) {
@@ -3317,6 +3494,22 @@ class AppLocalizationsOch extends AppLocalizations {
   String get storageDeleteFailed => '刪除未成';
 
   @override
+  String get storageDereference => '釋引用';
+
+  @override
+  String storageDereferenceConfirm(String fileName) {
+    return '確釋汝對「$fileName」之引用乎？必待無引用後乃除其檔。';
+  }
+
+  @override
+  String storageDereferenced(String fileName) {
+    return '已釋引用：$fileName';
+  }
+
+  @override
+  String get storageDereferenceFailed => '釋引用未成';
+
+  @override
   String storageUploaded(String fileName) {
     return '已上傳：$fileName';
   }
@@ -3394,6 +3587,28 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get adminFileSummaryTotal => '總計';
+
+  @override
+  String get adminFileLoadFailed => '載文件未成';
+
+  @override
+  String get adminFileUnknown => '未知';
+
+  @override
+  String adminFileTileMeta(
+    String owner,
+    String uid,
+    String size,
+    int refs,
+    int uploads,
+  ) {
+    return '所有者：$owner（編號 $uid）· $size · 引 $refs · 傳 $uploads';
+  }
+
+  @override
+  String adminFileSummaryStats(int files, int users, String total) {
+    return '文件：$files · 用戶：$users · 總計：$total';
+  }
 
   @override
   String get chatFunctionTabFiles => '文件';
@@ -3553,6 +3768,21 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get groupLeaveOwnerHint => '羣主需先轉讓羣主後方可退出';
+
+  @override
+  String get groupDissolve => '解散羣聊';
+
+  @override
+  String get groupDissolveConfirm => '此將永解羣聊並逐諸成員，不可復也。';
+
+  @override
+  String get groupDissolveAction => '解散';
+
+  @override
+  String get groupDissolveSuccess => '羣聊已解';
+
+  @override
+  String get groupDissolveFailed => '解散羣聊未成';
 
   @override
   String get groupInviteMember => '邀請成員';

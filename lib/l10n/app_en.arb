@@ -519,6 +519,8 @@
   "adminServerFieldVerifyEmail": "Verification Email",
   "adminServerUnlimitedHint": "Use -1 for unlimited.",
   "adminServerSectionAdvanced": "Advanced Configuration",
+  "adminServerSectionLimits": "Limits & Storage",
+  "adminServerLimitsDescription": "Name/username/password length limits, content lengths, storage quotas, and rate limits.",
   "adminServerSectionEmailService": "Email Verification Service",
   "adminServerEmailDescription": "When enabled, new users must provide an email and activate their account with a verification code.",
   "adminServerEmailEnableDescription": "Send a verification code to the user's email during registration.",
@@ -532,7 +534,7 @@
   "adminServerReverseProxyDescription": "Enable when the server runs behind a reverse proxy (e.g. Nginx) so client IPs and HTTPS are detected correctly.",
   "adminServerFieldReverseProxy": "Enable Reverse Proxy",
   "adminServerFieldProxyCount": "Trusted Proxy Count",
-  "adminServerSectionAuth": "Authentication",
+  "adminServerSectionAuth": "Authentication & Tokens",
   "adminServerAuthDescription": "Controls how clients authenticate.",
   "adminServerFieldLegacyAuth": "Allow legacy UID + PASSWORD login",
   "adminServerLegacyAuthDescription": "When off, only JWT authentication is accepted and legacy clients can't log in.",
@@ -541,6 +543,45 @@
   "adminServerFieldJwtMaxPerUser": "Max Tokens per User",
   "adminServerJwtMaxPerUserDescription": "0 or -1 means unlimited.",
   "adminServerEmailPasswordRequired": "Enabling email verification requires a verification email and an email password.",
+  "adminServerFieldCaptchaProvider": "Captcha Provider",
+  "adminServerCaptchaProviderDescription": "image uses the built-in image captcha; turnstile / hcaptcha / recaptcha use a third-party service.",
+  "adminServerFieldCaptchaSiteKey": "Captcha Site Key",
+  "adminServerFieldCaptchaSecret": "Captcha Secret",
+  "adminServerCaptchaSecretHint": "Leave empty to keep the current secret.",
+  "adminServerCaptchaSaveSuccess": "Captcha settings updated",
+  "adminServerCaptchaSaveFailed": "Failed to update captcha settings",
+  "adminServerFieldRateLimits": "Rate Limits (JSON)",
+  "adminServerRateLimitsDescription": "Per-endpoint request limits in JSON, mapping each endpoint to requests and range. Leave empty to clear all limits.",
+  "adminServerRateLimitsInvalid": "Rate limits must be valid JSON",
+  "adminServerRateLimitsSaveSuccess": "Rate limits updated",
+  "adminServerRateLimitsSaveFailed": "Failed to update rate limits",
+  "adminServerFieldMinGroupNameLength": "Min Group Name Length",
+  "adminServerFieldMaxGroupNameLength": "Max Group Name Length",
+  "adminServerFieldMinUsernameLength": "Min Username Length",
+  "adminServerFieldMinPasswordLength": "Min Password Length",
+  "adminServerFieldMaxSignLength": "Max Signature Length",
+  "adminServerFieldMaxIntroductionLength": "Max Introduction Length",
+  "adminServerFieldMaxPostContentLength": "Max Post Content Length",
+  "adminServerFieldMaxAvatarSize": "Max Avatar Size",
+  "adminServerFieldUserStorageQuota": "User Storage Quota",
+  "adminServerFieldMaxUserStorageQuota": "Max Single-User Upload Size",
+  "adminServerFieldMaxStickerStorageQuota": "Max Sticker Storage Quota",
+  "adminServerFieldJwtRefreshExpires": "JWT Refresh Expiry (seconds)",
+  "adminServerFieldFileDownloadMode": "File Download Mode",
+  "adminServerFileDownloadModeDescription": "redirect or proxy.",
+  "adminServerFieldMediaFeatures": "Enable Media Features",
+  "adminServerMediaFeaturesDescription": "Allow media processing such as thumbnails.",
+  "adminServerSearchHint": "Search settings",
+  "adminServerSearchNoResults": "No matching settings found",
+  "adminServerUnlimited": "Unlimited",
+  "adminServerUnsavedChanges": "You have unsaved changes",
+  "adminServerUndoChanges": "Undo changes",
+  "adminServerDiscardChanges": "Discard changes",
+  "adminServerDiscardAndRefresh": "Discard & refresh",
+  "adminServerDiscardConfirmTitle": "Discard unsaved changes?",
+  "adminServerDiscardConfirmMessage": "Your current edits will be lost.",
+  "adminServerSectionRateLimits": "Rate Limits",
+  "adminServerSectionServerInfo": "Server Info",
   "adminPendingForums": "Pending Forums",
   "adminPendingForumsDescription": "Review and approve newly created forums.",
   "adminPendingForumsEmpty": "No forums are waiting for review.",
@@ -561,6 +602,7 @@
       }
     }
   },
+  "adminPendingForumEditBadge": "Edit",
   "adminPendingForumNoIntroduction": "No introduction provided.",
   "adminApproveForumAction": "Approve Forum",
   "adminApproveForumConfirmTitle": "Approve forum",
@@ -708,6 +750,12 @@
   "messageActionCopy": "Copy",
   "messageActionMergeForward": "Merge forward",
   "messageActionSelectMultiple": "Select multiple",
+  "messageActionViewOriginal": "View Original",
+  "messageRecalledOriginalTitle": "Original Recalled Message",
+  "messageRecalledOriginalSender": "Sender",
+  "messageRecalledOriginalContent": "Content",
+  "messageRecalledOriginalFailed": "Failed to load the original message",
+  "messageRecalledOriginalNone": "No original content available",
   "selectionExit": "Exit selection",
   "selectionCount": "{count, plural, =1{1 selected} other{{count} selected}}",
   "@selectionCount": {"placeholders": {"count": {}}},
@@ -1201,6 +1249,13 @@
   "announcementDeleteConfirm": "Delete this announcement?",
   "announcementDeleteSuccess": "Announcement deleted",
   "announcementDeleteFailed": "Failed to delete announcement",
+  "announcementLoadFailed": "Failed to load announcements",
+  "announcementSenderFallback": "User {uid}",
+  "@announcementSenderFallback": {
+    "placeholders": {
+      "uid": {"type": "String"}
+    }
+  },
   "adminAnnouncements": "Announcements",
   "adminAnnouncementsDescription": "Create and manage system announcements",
   "adminAccountManagement": "Account Management",
@@ -1221,6 +1276,15 @@
   "adminAccountCreateFailed": "Could not create account. Check whether the username exists and your permissions.",
   "adminAccountLoadFailed": "Failed to load users",
   "adminAccountEmpty": "No users found",
+  "adminAccountNoSearchResults": "No users match your search",
+  "adminAccountPageIndicator": "Page {page} of {totalPages} ({total} users)",
+  "@adminAccountPageIndicator": {
+    "placeholders": {
+      "page": {"type": "int"},
+      "totalPages": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
   "adminAccountCreated": "Created: {date}",
   "@adminAccountCreated": {
     "placeholders": {
@@ -1229,6 +1293,11 @@
   },
   "adminAccountChangeRole": "Change Role",
   "adminAccountViewDevices": "View Devices",
+  "adminAccountEdit": "Edit Account",
+  "adminAccountEditDescription": "Leave a field empty to keep it unchanged.",
+  "adminAccountNewPassword": "New Password (optional)",
+  "adminAccountEditSuccess": "Account updated",
+  "adminAccountEditFailed": "Failed to update account",
   "adminAccountChangeRoleTitle": "Change role of {name}",
   "@adminAccountChangeRoleTitle": {
     "placeholders": {
@@ -1313,6 +1382,20 @@
     }
   },
   "storageDeleteFailed": "Delete failed",
+  "storageDereference": "Release Reference",
+  "storageDereferenceConfirm": "Release your reference to \"{fileName}\"? The file is removed only after no references remain.",
+  "@storageDereferenceConfirm": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "storageDereferenced": "Reference released: {fileName}",
+  "@storageDereferenced": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "storageDereferenceFailed": "Failed to release reference",
   "storageUploaded": "Uploaded: {fileName}",
   "@storageUploaded": {
     "placeholders": {
@@ -1362,6 +1445,26 @@
   "adminFileSummaryFiles": "Files",
   "adminFileSummaryUsers": "Users",
   "adminFileSummaryTotal": "Total",
+  "adminFileLoadFailed": "Failed to load files",
+  "adminFileUnknown": "Unknown",
+  "adminFileTileMeta": "Owner: {owner} (UID: {uid}) · {size} · Refs: {refs} · Uploads: {uploads}",
+  "@adminFileTileMeta": {
+    "placeholders": {
+      "owner": {"type": "String"},
+      "uid": {"type": "String"},
+      "size": {"type": "String"},
+      "refs": {"type": "int"},
+      "uploads": {"type": "int"}
+    }
+  },
+  "adminFileSummaryStats": "Files: {files} · Users: {users} · Total: {total}",
+  "@adminFileSummaryStats": {
+    "placeholders": {
+      "files": {"type": "int"},
+      "users": {"type": "int"},
+      "total": {"type": "String"}
+    }
+  },
   "chatFunctionTabFiles": "Files",
   "chatFunctionTabEmoji": "Emoji",
   "chatFunctionTabSpecial": "Special",
@@ -1436,6 +1539,11 @@
   "groupLeave": "Leave Group",
   "groupLeaveConfirm": "Are you sure you want to leave this group?",
   "groupLeaveOwnerHint": "Transfer ownership before leaving the group",
+  "groupDissolve": "Dissolve Group",
+  "groupDissolveConfirm": "This permanently dissolves the group and removes all members. This cannot be undone.",
+  "groupDissolveAction": "Dissolve",
+  "groupDissolveSuccess": "Group dissolved",
+  "groupDissolveFailed": "Failed to dissolve group",
   "groupInviteMember": "Invite Member",
   "groupInviteMemberHint": "Enter username or UID of friend",
   "groupInvitePendingReview": "Invitation sent, pending review",

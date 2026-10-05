@@ -168,7 +168,17 @@ class TfServerConfig {
   final List<String> defaultJoinTargets;
   final bool? legacyAuthEnabled;
   final int? jwtExpiresSeconds;
+  final int? jwtRefreshExpiresSeconds;
   final int? jwtMaxPerUser;
+  final int? maxAvatarSize;
+  final int? userStorageQuota;
+  final int? maxUserStorageQuota;
+  final int? maxStickerStorageQuota;
+  final int? maxSignLength;
+  final int? maxIntroductionLength;
+  final int? maxPostContentLength;
+  final String? fileDownloadMode;
+  final bool mediaFeatures;
   final List<Map<String, dynamic>> iceServers;
 
   const TfServerConfig({
@@ -203,7 +213,17 @@ class TfServerConfig {
     this.defaultJoinTargets = const [],
     this.legacyAuthEnabled,
     this.jwtExpiresSeconds,
+    this.jwtRefreshExpiresSeconds,
     this.jwtMaxPerUser,
+    this.maxAvatarSize,
+    this.userStorageQuota,
+    this.maxUserStorageQuota,
+    this.maxStickerStorageQuota,
+    this.maxSignLength,
+    this.maxIntroductionLength,
+    this.maxPostContentLength,
+    this.fileDownloadMode,
+    this.mediaFeatures = true,
     this.iceServers = const [],
   });
 
@@ -298,7 +318,25 @@ class TfServerConfig {
               .toList(),
       legacyAuthEnabled: json['legacy_auth_enabled'] as bool?,
       jwtExpiresSeconds: _parseOptionalIntValue(json['jwt_expires_seconds']),
+      jwtRefreshExpiresSeconds: _parseOptionalIntValue(
+        json['jwt_refresh_expires_seconds'],
+      ),
       jwtMaxPerUser: _parseOptionalIntValue(json['jwt_max_per_user']),
+      maxAvatarSize: _parseOptionalIntValue(json['max_avatar_size']),
+      userStorageQuota: _parseOptionalIntValue(json['user_storage_quota']),
+      maxUserStorageQuota: _parseOptionalIntValue(json['max_user_storage_quota']),
+      maxStickerStorageQuota: _parseOptionalIntValue(
+        json['max_sticker_storage_quota'],
+      ),
+      maxSignLength: _parseOptionalIntValue(json['max_sign_length']),
+      maxIntroductionLength: _parseOptionalIntValue(
+        json['max_introduction_length'],
+      ),
+      maxPostContentLength: _parseOptionalIntValue(
+        json['max_post_content_length'],
+      ),
+      fileDownloadMode: json['file_download_mode'] as String?,
+      mediaFeatures: json['media_features'] as bool? ?? true,
       iceServers: iceServers,
     );
   }
@@ -1232,7 +1270,21 @@ class TfApiClient {
     List<String>? defaultJoinTargets,
     bool? legacyAuthEnabled,
     int? jwtExpiresSeconds,
+    int? jwtRefreshExpiresSeconds,
     int? jwtMaxPerUser,
+    int? minGroupNameLength,
+    int? maxGroupNameLength,
+    int? minUsernameLength,
+    int? minPasswordLength,
+    int? maxSignLength,
+    int? maxIntroductionLength,
+    int? maxPostContentLength,
+    int? maxAvatarSize,
+    int? userStorageQuota,
+    int? maxUserStorageQuota,
+    int? maxStickerStorageQuota,
+    String? fileDownloadMode,
+    bool? mediaFeatures,
   }) async {
     final result = await secretPost(
       '/auth/server_settings/update',
@@ -1256,7 +1308,21 @@ class TfApiClient {
         'default_join_targets': ?defaultJoinTargets,
         'legacy_auth_enabled': ?legacyAuthEnabled,
         'jwt_expires_seconds': ?jwtExpiresSeconds,
+        'jwt_refresh_expires_seconds': ?jwtRefreshExpiresSeconds,
         'jwt_max_per_user': ?jwtMaxPerUser,
+        'min_group_name_length': ?minGroupNameLength,
+        'max_group_name_length': ?maxGroupNameLength,
+        'min_username_length': ?minUsernameLength,
+        'min_password_length': ?minPasswordLength,
+        'max_sign_length': ?maxSignLength,
+        'max_introduction_length': ?maxIntroductionLength,
+        'max_post_content_length': ?maxPostContentLength,
+        'max_avatar_size': ?maxAvatarSize,
+        'user_storage_quota': ?userStorageQuota,
+        'max_user_storage_quota': ?maxUserStorageQuota,
+        'max_sticker_storage_quota': ?maxStickerStorageQuota,
+        'file_download_mode': ?fileDownloadMode,
+        'media_features': ?mediaFeatures,
       },
       uid: uid,
       password: password,
@@ -1268,6 +1334,51 @@ class TfApiClient {
     }
 
     return TfServerConfig.fromJson(data);
+  }
+
+  /// 配置注册验证码供应商与密钥（仅 root）。
+  ///
+  /// [changeTo] 为验证码总开关；[provider] 为 `image` 或第三方
+  /// （`turnstile` / `hcaptcha` / `recaptcha`）。第三方需提供 site key 与
+  /// secret，内置图片验证码则无需。
+  Future<bool> changeCaptcha(
+    int uid,
+    String? password, {
+    required bool changeTo,
+    String? provider,
+    String? siteKey,
+    String? secret,
+  }) async {
+    final result = await secretPost(
+      '/auth/change_captcha',
+      {
+        'change_to': changeTo,
+        'captcha_provider': ?provider,
+        'captcha_site_key': ?siteKey,
+        'captcha_secret': ?secret,
+      },
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  /// 更新各端点的速率限制配置（仅 root）。
+  ///
+  /// [rateLimits] 形如 `{"default": {"requests": 60, "range": 60}}`；
+  /// 传 null 表示清空所有速率限制。
+  Future<bool> changeRateLimits(
+    int uid,
+    String? password,
+    Map<String, dynamic>? rateLimits,
+  ) async {
+    final result = await secretPost(
+      '/auth/change_rate_limits',
+      {'rate_limits': rateLimits},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
   }
 
   Future<bool> changeEmailVerify(
@@ -2724,6 +2835,26 @@ class TfApiClient {
     return Map<String, dynamic>.from(data!['message'] as Map);
   }
 
+  /// 查看已撤回消息的原始记录（仅 root）。
+  ///
+  /// 成功返回消息 JSON（含 `content`、`content_type`、`send_time` 等）；
+  /// 无权限或消息未撤回返回 null。
+  Future<Map<String, dynamic>?> getRecalledOriginal(
+    int uid,
+    String? password,
+    int mid,
+  ) async {
+    final result = await secretPost(
+      '/message/recalled_original',
+      {'mid': mid},
+      uid: uid,
+      password: password,
+    );
+    final data = _parseJsonMap(result);
+    if (data?['success'] != true || data?['message'] is! Map) return null;
+    return Map<String, dynamic>.from(data!['message'] as Map);
+  }
+
   Future<String> getFileUrl(String hash) async {
     final baseUrl = await getBaseUrl();
     return '$baseUrl/file/get_file/${Uri.encodeComponent(hash)}';
@@ -3393,6 +3524,17 @@ class TfApiClient {
     return _parseBool(result);
   }
 
+  /// 解散群聊（仅群主）。服务端会清理群头像并通知全体成员。
+  Future<bool> deleteGroup(int uid, String password, int gid) async {
+    final result = await secretPost(
+      '/group/delete_group',
+      {'gid': gid},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
   Future<bool> pinMessage(int uid, String password, int gid, int mid) async {
     final result = await secretPost(
       '/group/pin_message',
@@ -3653,6 +3795,37 @@ class TfApiClient {
     return _parseBool(result);
   }
 
+  /// 修改目标用户资料（仅管理员）。
+  ///
+  /// 只提交非 null 的字段；`newAuth` 为 null 时不改变权限状态。
+  Future<bool> manageUpdateUser(
+    int uid,
+    String password,
+    int targetUid, {
+    String? newAuth,
+    String? username,
+    String? targetPassword,
+    String? email,
+    String? sign,
+    String? introduction,
+  }) async {
+    final result = await secretPost(
+      '/auth/manage/update',
+      {
+        'change_uid': targetUid,
+        'new_auth': ?newAuth,
+        'username': ?username,
+        'target_password': ?targetPassword,
+        'email': ?email,
+        'sign': ?sign,
+        'introduction': ?introduction,
+      },
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
   // --- file management ---
 
   Future<Map<String, dynamic>?> uploadFile(
@@ -3835,6 +4008,17 @@ class TfApiClient {
   Future<bool> deleteFile(int uid, String password, String hash) async {
     final result = await secretPost(
       '/file/delete_file',
+      {'hash': hash},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  /// 释放当前用户对文件的引用（不会立即删除 blob，仅递减引用计数）。
+  Future<bool> dereferenceFile(int uid, String password, String hash) async {
+    final result = await secretPost(
+      '/file/dereference_file',
       {'hash': hash},
       uid: uid,
       password: password,

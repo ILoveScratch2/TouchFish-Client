@@ -23,6 +23,7 @@ import '../utils/talker.dart';
 import '../utils/clipboard_utils.dart';
 import '../models/file_attachment.dart';
 import 'file_attachment_view.dart';
+import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/snackbar_service.dart';
 import '../providers/task/task_manager_provider.dart';
@@ -33,6 +34,68 @@ import 'message_swipeable_wrapper.dart';
 import 'redirect_message_view.dart';
 
 final _stickerTestPattern = RegExp(r':[A-Za-z0-9_]+\+[A-Za-z0-9_-]+:');
+
+/// 仅 root 可用：查看已撤回消息的服务端原始记录。
+Future<void> _showRecalledOriginalDialog(
+  BuildContext context,
+  ChatMessage message,
+) async {
+  final uid = AuthState.instance.uid;
+  final password = AuthState.instance.password;
+  final mid = message.mid;
+  final l10n = AppLocalizations.of(context)!;
+  if (uid == null || mid == null) return;
+
+  final original = await TfApiClient.instance.getRecalledOriginal(
+    uid,
+    password,
+    mid,
+  );
+  if (!context.mounted) return;
+  if (original == null) {
+    TouchFishSnackbarService.instance.show(l10n.messageRecalledOriginalFailed);
+    return;
+  }
+
+  final senderUid = original['sender_uid']?.toString() ?? '';
+  final contentType = original['content_type']?.toString() ?? 'plain';
+  final content = original['content']?.toString() ?? '';
+  final String body;
+  if (contentType == 'file') {
+    final name = original['file_name']?.toString() ?? content;
+    body = '$name\n$content';
+  } else if (content.isEmpty) {
+    body = l10n.messageRecalledOriginalNone;
+  } else {
+    body = content;
+  }
+
+  await showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(l10n.messageRecalledOriginalTitle),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${l10n.messageRecalledOriginalSender}: $senderUid'),
+            const SizedBox(height: 8),
+            Text('${l10n.messageRecalledOriginalContent}:'),
+            const SizedBox(height: 4),
+            SelectableText(body),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(MaterialLocalizations.of(context).closeButtonLabel),
+        ),
+      ],
+    ),
+  );
+}
 
 class MessageBubble extends HookWidget {
   final ChatMessage message;
@@ -478,6 +541,16 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
               ),
             ),
           ),
+        if (widget.message.isDeleted &&
+            AuthState.instance.currentUser?.isRoot == true)
+          PopupMenuItem(
+            value: 'viewOriginal',
+            child: ListTile(
+              dense: true,
+              leading: const Icon(Symbols.history),
+              title: Text(l10n.messageActionViewOriginal),
+            ),
+          ),
       ],
     );
     if (selected == 'copy') _copyMessageText(widget.message);
@@ -487,6 +560,9 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     if (selected == 'delete') widget.onDelete?.call(widget.message);
     if (selected == 'pin') widget.onPinToggle?.call();
     if (selected == 'essence') widget.onEssenceToggle?.call();
+    if (selected == 'viewOriginal') {
+      _showRecalledOriginalDialog(context, widget.message);
+    }
   }
 
   @override
@@ -1449,6 +1525,17 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
         ),
       );
     }
+    if (message.isDeleted && AuthState.instance.currentUser?.isRoot == true) {
+      items.add(
+        ContextMenuButtonItem(
+          label: l10n.messageActionViewOriginal,
+          onPressed: () {
+            ContextMenuController.removeAny();
+            _showRecalledOriginalDialog(context, message);
+          },
+        ),
+      );
+    }
     return AdaptiveTextSelectionToolbar.buttonItems(
       anchors: state.contextMenuAnchors,
       buttonItems: items,
@@ -2060,6 +2147,18 @@ class _MessageActionSheet extends StatelessWidget {
               onTap: () {
                 Navigator.pop(context);
                 onDelete?.call(message);
+              },
+            ),
+          ],
+          if (message.isDeleted &&
+              AuthState.instance.currentUser?.isRoot == true) ...[
+            const Divider(height: 17),
+            _ActionListTile(
+              icon: Symbols.history,
+              label: l10n.messageActionViewOriginal,
+              onTap: () {
+                Navigator.pop(context);
+                _showRecalledOriginalDialog(context, message);
               },
             ),
           ],

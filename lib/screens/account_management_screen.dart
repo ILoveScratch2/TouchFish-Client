@@ -8,7 +8,8 @@ import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
-import '../widgets/app_alert_dialog.dart';
+import '../utils/wide_screen_helper.dart';
+import '../widgets/admin_ui.dart';
 import '../widgets/optimized_image.dart';
 
 class AccountManagementScreen extends StatefulWidget {
@@ -26,6 +27,7 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
   bool _isCreating = false;
   String? _error;
   String _query = '';
+  final _searchController = TextEditingController();
   int _currentPage = 1;
   static const _pageSize = 50;
 
@@ -33,6 +35,12 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
   void initState() {
     super.initState();
     _loadUsers();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUsers({int page = 1}) async {
@@ -128,28 +136,20 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
 
     final isBanned = user.normalizedStat == 'banned';
 
-    final confirmed = await showTouchFishErrorDialog<bool>(
+    final confirmed = await showAdminConfirmDialog(
       context,
       title: isBanned ? l10n.adminAccountUnbanTitle : l10n.adminAccountBanTitle,
       message: isBanned
           ? l10n.adminAccountUnbanConfirm(user.username)
           : l10n.adminAccountBanConfirm(user.username),
+      confirmLabel: isBanned
+          ? l10n.adminAccountUnbanAction
+          : l10n.adminAccountBanAction,
       icon: isBanned ? Icons.lock_open_outlined : Icons.block_outlined,
-      selectableMessage: false,
-      actions: [
-        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
-        TouchFishDialogAction<bool>(
-          label: isBanned
-              ? l10n.adminAccountUnbanAction
-              : l10n.adminAccountBanAction,
-          result: true,
-          isPrimary: true,
-          isDestructive: !isBanned,
-        ),
-      ],
+      destructive: !isBanned,
     );
 
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
 
     try {
       final success = isBanned
@@ -196,24 +196,16 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
     final targetUid = int.tryParse(user.uid);
     if (targetUid == null) return;
 
-    final confirmed = await showTouchFishErrorDialog<bool>(
+    final confirmed = await showAdminConfirmDialog(
       context,
       title: l10n.adminAccountDeleteTitle,
       message: l10n.adminAccountDeleteConfirm(user.username),
+      confirmLabel: l10n.adminAccountDeleteAction,
       icon: Icons.delete_forever_outlined,
-      selectableMessage: false,
-      actions: [
-        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
-        TouchFishDialogAction<bool>(
-          label: l10n.adminAccountDeleteAction,
-          result: true,
-          isPrimary: true,
-          isDestructive: true,
-        ),
-      ],
+      destructive: true,
     );
 
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
 
     try {
       final success = await TfApiClient.instance.manageDeleteUser(
@@ -539,44 +531,202 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
     }
   }
 
+  Future<void> _showEditAccountDialog(UserProfile user) async {
+    final l10n = AppLocalizations.of(context)!;
+    final formKey = GlobalKey<FormState>();
+    final usernameController = TextEditingController(text: user.username);
+    final passwordController = TextEditingController();
+    final emailController = TextEditingController(text: user.email);
+    final signController = TextEditingController(text: user.personalSign ?? '');
+    final introductionController = TextEditingController(
+      text: user.introduction ?? '',
+    );
+    var obscurePassword = true;
+
+    final data = await showDialog<_EditAccountData>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          icon: const Icon(Icons.edit_outlined),
+          title: Text(l10n.adminAccountEdit),
+          content: SizedBox(
+            width: 520,
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      l10n.adminAccountEditDescription,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: usernameController,
+                      autofocus: true,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: l10n.adminAccountUsername,
+                        prefixIcon: const Icon(Icons.person_outline),
+                      ),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                          ? l10n.adminAccountRequired
+                          : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: passwordController,
+                      obscureText: obscurePassword,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: l10n.adminAccountNewPassword,
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          tooltip: l10n.adminAccountNewPassword,
+                          onPressed: () => setDialogState(
+                            () => obscurePassword = !obscurePassword,
+                          ),
+                          icon: Icon(
+                            obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: l10n.adminAccountEmail,
+                        prefixIcon: const Icon(Icons.mail_outline),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: signController,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: l10n.adminAccountSign,
+                        prefixIcon: const Icon(Icons.short_text),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: introductionController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText: l10n.adminAccountIntroduction,
+                        prefixIcon: const Icon(Icons.notes_outlined),
+                        alignLabelWithHint: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton.icon(
+              onPressed: () {
+                if (formKey.currentState?.validate() != true) return;
+                Navigator.pop(
+                  dialogContext,
+                  _EditAccountData(
+                    username: usernameController.text.trim(),
+                    password: passwordController.text,
+                    email: emailController.text.trim(),
+                    sign: signController.text.trim(),
+                    introduction: introductionController.text.trim(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.save_outlined),
+              label: Text(l10n.save),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    usernameController.dispose();
+    passwordController.dispose();
+    emailController.dispose();
+    signController.dispose();
+    introductionController.dispose();
+    if (data == null || !mounted) return;
+
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final targetUid = int.tryParse(user.uid);
+    if (uid == null || password == null || targetUid == null) return;
+
+    try {
+      final success = await TfApiClient.instance.manageUpdateUser(
+        uid,
+        password,
+        targetUid,
+        username: data.username,
+        targetPassword: data.password.isEmpty ? null : data.password,
+        email: data.email,
+        sign: data.sign,
+        introduction: data.introduction,
+      );
+      if (!mounted) return;
+      TouchFishSnackbarService.instance.show(
+        success ? l10n.adminAccountEditSuccess : l10n.adminAccountEditFailed,
+      );
+      if (success) await _loadUsers(page: _currentPage);
+    } catch (e) {
+      talker.error('AccountManagementScreen: edit user failed', e);
+      if (mounted) {
+        TouchFishSnackbarService.instance.show(l10n.adminAccountEditFailed);
+      }
+    }
+  }
+
   Widget _buildToolbar(AppLocalizations l10n) {
     final total = _pagination?.total ?? _users.length;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960),
-          child: Row(
-            children: [
-              Expanded(
-                child: SearchBar(
-                  hintText: l10n.adminAccountSearch,
-                  leading: const Icon(Icons.search),
-                  constraints: const BoxConstraints(minHeight: 46),
-                  onChanged: (value) => setState(() => _query = value.trim()),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '$total ${l10n.adminAccountTotalUsers}',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(width: 12),
-              FilledButton.icon(
-                onPressed: _isCreating ? null : _showCreateAccountDialog,
-                icon: _isCreating
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.person_add_alt_1, size: 18),
-                label: Text(l10n.adminAccountCreate),
-              ),
-            ],
+      child: Row(
+        children: [
+          Expanded(
+            child: AdminSearchField(
+              controller: _searchController,
+              hintText: l10n.adminAccountSearch,
+              onChanged: (value) => setState(() => _query = value.trim()),
+            ),
           ),
-        ),
+          const SizedBox(width: 12),
+          Text(
+            '$total ${l10n.adminAccountTotalUsers}',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 12),
+          FilledButton.icon(
+            onPressed: _isCreating ? null : _showCreateAccountDialog,
+            icon: _isCreating
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.person_add_alt_1, size: 18),
+            label: Text(l10n.adminAccountCreate),
+          ),
+        ],
       ),
     );
   }
@@ -584,161 +734,154 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
   Widget _buildUserCard(UserProfile user, AppLocalizations l10n) {
     final stat = user.normalizedStat;
     final scheme = Theme.of(context).colorScheme;
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 960),
-        child: Material(
-          color: scheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 22,
-                  backgroundImage: user.avatar == null
-                      ? null
-                      : resizedImageProvider(
-                          NetworkImage(user.avatar!),
-                          MediaQuery.of(context).devicePixelRatio,
-                          width: 44,
-                          height: 44,
-                        ),
-                  child: user.avatar == null
-                      ? Text(user.username.characters.first.toUpperCase())
-                      : null,
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user.username,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'UID ${user.uid}  ${user.email.isEmpty ? '' : '· ${user.email}'}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (MediaQuery.sizeOf(context).width >= 620) ...[
-                  Expanded(
-                    child: Text(
-                      l10n.adminAccountCreated(
-                        _formatCreateTime(user.createTime),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
+    return Material(
+      color: scheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundImage: user.avatar == null
+                  ? null
+                  : resizedImageProvider(
+                      NetworkImage(user.avatar!),
+                      MediaQuery.of(context).devicePixelRatio,
+                      width: 44,
+                      height: 44,
                     ),
-                  ),
-                ],
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _statColor(stat, scheme).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    _statDisplayName(l10n, stat),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: _statColor(stat, scheme),
+              child: user.avatar == null
+                  ? Text(user.username.characters.first.toUpperCase())
+                  : null,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user.username,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'UID ${user.uid}  ${user.email.isEmpty ? '' : '· ${user.email}'}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (WideScreenHelper.isWideWithWidth(
+              MediaQuery.sizeOf(context).width,
+            )) ...[
+              Expanded(
+                child: Text(
+                  l10n.adminAccountCreated(_formatCreateTime(user.createTime)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
-                const SizedBox(width: 4),
-                PopupMenuButton<String>(
-                  tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'role':
-                        _showRoleChangeDialog(user);
-                      case 'ban':
-                        _banUser(user);
-                      case 'delete':
-                        _deleteUser(user);
-                      case 'devices':
-                        context.push(
-                          AppRoutes.sessionDevices,
-                          extra: {
-                            'uid': int.tryParse(user.uid),
-                            'username': user.username,
-                          },
-                        );
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'role',
-                      child: ListTile(
-                        leading: const Icon(Icons.manage_accounts_outlined),
-                        title: Text(l10n.adminAccountChangeRole),
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'ban',
-                      child: ListTile(
-                        leading: Icon(
-                          stat == 'banned'
-                              ? Icons.lock_open_outlined
-                              : Icons.block_outlined,
-                        ),
-                        title: Text(
-                          stat == 'banned'
-                              ? l10n.adminAccountUnbanAction
-                              : l10n.adminAccountBanAction,
-                        ),
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'devices',
-                      child: ListTile(
-                        leading: const Icon(Icons.devices_outlined),
-                        title: Text(l10n.adminAccountViewDevices),
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: ListTile(
-                        leading: Icon(
-                          Icons.delete_outline,
-                          color: scheme.error,
-                        ),
-                        title: Text(
-                          l10n.adminAccountDeleteAction,
-                          style: TextStyle(color: scheme.error),
-                        ),
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                  ],
+              ),
+            ],
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+              decoration: BoxDecoration(
+                color: _statColor(stat, scheme).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                _statDisplayName(l10n, stat),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: _statColor(stat, scheme),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            PopupMenuButton<String>(
+              tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
+              onSelected: (value) {
+                switch (value) {
+                  case 'edit':
+                    _showEditAccountDialog(user);
+                  case 'role':
+                    _showRoleChangeDialog(user);
+                  case 'ban':
+                    _banUser(user);
+                  case 'delete':
+                    _deleteUser(user);
+                  case 'devices':
+                    context.push(
+                      AppRoutes.sessionDevices,
+                      extra: {
+                        'uid': int.tryParse(user.uid),
+                        'username': user.username,
+                      },
+                    );
+                }
+              },
+              itemBuilder: (context) => [
+                _menuItem('edit', Icons.edit_outlined, l10n.adminAccountEdit),
+                _menuItem(
+                  'role',
+                  Icons.manage_accounts_outlined,
+                  l10n.adminAccountChangeRole,
+                ),
+                _menuItem(
+                  'ban',
+                  stat == 'banned'
+                      ? Icons.lock_open_outlined
+                      : Icons.block_outlined,
+                  stat == 'banned'
+                      ? l10n.adminAccountUnbanAction
+                      : l10n.adminAccountBanAction,
+                ),
+                _menuItem(
+                  'devices',
+                  Icons.devices_outlined,
+                  l10n.adminAccountViewDevices,
+                ),
+                _menuItem(
+                  'delete',
+                  Icons.delete_outline,
+                  l10n.adminAccountDeleteAction,
+                  color: scheme.error,
                 ),
               ],
             ),
-          ),
+          ],
         ),
+      ),
+    );
+  }
+
+  PopupMenuItem<String> _menuItem(
+    String value,
+    IconData icon,
+    String label, {
+    Color? color,
+  }) {
+    return PopupMenuItem(
+      value: value,
+      child: ListTile(
+        leading: Icon(icon, color: color),
+        title: Text(
+          label,
+          style: color == null ? null : TextStyle(color: color),
+        ),
+        contentPadding: EdgeInsets.zero,
       ),
     );
   }
@@ -749,115 +892,61 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
     final hasAdminAccess =
         AuthState.instance.currentUser?.hasAdminAccess == true;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.adminAccountManagement),
-            Text(
-              l10n.adminAccountManagementDescription,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AdminPageScaffold(
+      title: l10n.adminAccountManagement,
+      maxWidth: 960,
       body: !hasAdminAccess
-          ? Center(child: Text(l10n.adminAccessDenied))
+          ? AdminEmptyState(
+              message: l10n.adminAccessDenied,
+              icon: Icons.lock_outline_rounded,
+            )
           : _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(l10n.adminAccountLoadFailed),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: () => _loadUsers(page: _currentPage),
-                    child: Text(l10n.retry),
-                  ),
-                ],
-              ),
+          ? AdminErrorState(
+              message: l10n.adminAccountLoadFailed,
+              onRetry: () => _loadUsers(page: _currentPage),
             )
           : Column(
               children: [
                 _buildToolbar(l10n),
-                Expanded(
-                  child: Builder(
-                    builder: (context) {
-                      final query = _query.toLowerCase();
-                      final visibleUsers = query.isEmpty
-                          ? _users
-                          : _users
-                                .where(
-                                  (user) =>
-                                      user.username.toLowerCase().contains(
-                                        query,
-                                      ) ||
-                                      user.email.toLowerCase().contains(
-                                        query,
-                                      ) ||
-                                      user.uid.contains(query),
-                                )
-                                .toList();
-                      return RefreshIndicator(
-                        onRefresh: () => _loadUsers(page: _currentPage),
-                        child: visibleUsers.isEmpty
-                            ? ListView(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                children: [
-                                  SizedBox(
-                                    height:
-                                        MediaQuery.of(context).size.height *
-                                        0.2,
-                                  ),
-                                  Icon(
-                                    Icons.people_outline,
-                                    size: 56,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.outline,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Center(
-                                    child: Text(
-                                      l10n.adminAccountEmpty,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyLarge
-                                          ?.copyWith(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurfaceVariant,
-                                          ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : ListView.separated(
-                                padding: const EdgeInsets.all(12),
-                                itemCount: visibleUsers.length,
-                                separatorBuilder: (_, _) =>
-                                    const SizedBox(height: 8),
-                                itemBuilder: (context, index) {
-                                  return _buildUserCard(
-                                    visibleUsers[index],
-                                    l10n,
-                                  );
-                                },
-                              ),
-                      );
-                    },
-                  ),
-                ),
+                Expanded(child: _buildUserList(l10n)),
               ],
             ),
       bottomNavigationBar: _pagination != null && _pagination!.totalPages > 1
           ? _buildPaginationBar(l10n)
           : null,
+    );
+  }
+
+  Widget _buildUserList(AppLocalizations l10n) {
+    final query = _query.toLowerCase();
+    final visibleUsers = query.isEmpty
+        ? _users
+        : _users
+              .where(
+                (user) =>
+                    user.username.toLowerCase().contains(query) ||
+                    user.email.toLowerCase().contains(query) ||
+                    user.uid.contains(query),
+              )
+              .toList();
+    return RefreshIndicator(
+      onRefresh: () => _loadUsers(page: _currentPage),
+      child: visibleUsers.isEmpty
+          ? AdminEmptyState(
+              message: query.isEmpty
+                  ? l10n.adminAccountEmpty
+                  : l10n.adminAccountNoSearchResults,
+              icon: Icons.people_outline,
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+              itemCount: visibleUsers.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) =>
+                  _buildUserCard(visibleUsers[index], l10n),
+            ),
     );
   }
 
@@ -876,7 +965,7 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
               icon: const Icon(Icons.chevron_left),
             ),
             Text(
-              '${p.page} / ${p.totalPages}  (${p.total} ${l10n.adminAccountTotalUsers})',
+              l10n.adminAccountPageIndicator(p.page, p.totalPages, p.total),
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             IconButton(
@@ -904,6 +993,22 @@ class _CreateAccountData {
     required this.username,
     required this.password,
     required this.role,
+    required this.email,
+    required this.sign,
+    required this.introduction,
+  });
+}
+
+class _EditAccountData {
+  final String username;
+  final String password;
+  final String email;
+  final String sign;
+  final String introduction;
+
+  const _EditAccountData({
+    required this.username,
+    required this.password,
     required this.email,
     required this.sign,
     required this.introduction,

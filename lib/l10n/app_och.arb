@@ -493,6 +493,8 @@
   "adminServerFieldVerifyEmail": "驗證郵箱",
   "adminServerUnlimitedHint": "輸 -1 以示無限。",
   "adminServerSectionAdvanced": "高級配置",
+  "adminServerSectionLimits": "限與存儲",
+  "adminServerLimitsDescription": "名/用戶名/密碼之長、內容之長、存儲之額與限速。",
   "adminServerSectionEmailService": "郵箱驗證服務",
   "adminServerEmailDescription": "開啟後，新用戶註冊須填郵箱，並以驗證碼啟用帳號。",
   "adminServerEmailEnableDescription": "註冊時向用戶郵箱發驗證碼。",
@@ -506,7 +508,7 @@
   "adminServerReverseProxyDescription": "服器居 Nginx 等反向代理之後時啟之，以正識客戶端 IP 與 HTTPS。",
   "adminServerFieldReverseProxy": "啟反向代理",
   "adminServerFieldProxyCount": "信代理之層數",
-  "adminServerSectionAuth": "認證",
+  "adminServerSectionAuth": "認證與憑符",
   "adminServerAuthDescription": "定客戶端登入認證之方式。",
   "adminServerFieldLegacyAuth": "許舊版 UID+PASSWORD 登入",
   "adminServerLegacyAuthDescription": "閉之則唯受 JWT 認證，舊版客戶端不能登。",
@@ -515,6 +517,45 @@
   "adminServerFieldJwtMaxPerUser": "每用戶最多 Token 數",
   "adminServerJwtMaxPerUserDescription": "0 或 -1 為不限。",
   "adminServerEmailPasswordRequired": "啟郵箱驗證須填驗證郵箱與郵箱密碼。",
+  "adminServerFieldCaptchaProvider": "驗證碼之供",
+  "adminServerCaptchaProviderDescription": "image 為內建圖形驗證碼；turnstile / hcaptcha / recaptcha 乃第三方之服務。",
+  "adminServerFieldCaptchaSiteKey": "驗證碼 Site Key",
+  "adminServerFieldCaptchaSecret": "驗證碼 Secret",
+  "adminServerCaptchaSecretHint": "留空則存舊鑰。",
+  "adminServerCaptchaSaveSuccess": "驗證碼之設已更",
+  "adminServerCaptchaSaveFailed": "驗證碼之設更而未成",
+  "adminServerFieldRateLimits": "限速（JSON）",
+  "adminServerRateLimitsDescription": "按端點之請求頻率（JSON），各端點對應 requests 與 range。留空則盡除諸限。",
+  "adminServerRateLimitsInvalid": "限速須為合法之 JSON",
+  "adminServerRateLimitsSaveSuccess": "限速已更",
+  "adminServerRateLimitsSaveFailed": "限速更而未成",
+  "adminServerFieldMinGroupNameLength": "群名最短",
+  "adminServerFieldMaxGroupNameLength": "群名最長",
+  "adminServerFieldMinUsernameLength": "用戶名最短",
+  "adminServerFieldMinPasswordLength": "密碼最短",
+  "adminServerFieldMaxSignLength": "簽名最長",
+  "adminServerFieldMaxIntroductionLength": "簡介最長",
+  "adminServerFieldMaxPostContentLength": "帖文最長",
+  "adminServerFieldMaxAvatarSize": "頭像最大",
+  "adminServerFieldUserStorageQuota": "用戶存儲之額",
+  "adminServerFieldMaxUserStorageQuota": "單用戶單傳之上限",
+  "adminServerFieldMaxStickerStorageQuota": "表情存儲之額",
+  "adminServerFieldJwtRefreshExpires": "JWT 刷新之期（秒）",
+  "adminServerFieldFileDownloadMode": "檔案下載之法",
+  "adminServerFileDownloadModeDescription": "redirect 或 proxy。",
+  "adminServerFieldMediaFeatures": "啟媒體之能",
+  "adminServerMediaFeaturesDescription": "許縮略圖等媒體之處理。",
+  "adminServerSearchHint": "檢索設置",
+  "adminServerSearchNoResults": "未得相應之設置",
+  "adminServerUnlimited": "無限",
+  "adminServerUnsavedChanges": "有未存之更改",
+  "adminServerUndoChanges": "復其改易",
+  "adminServerDiscardChanges": "棄改",
+  "adminServerDiscardAndRefresh": "棄改而重載",
+  "adminServerDiscardConfirmTitle": "欲棄未存之改乎？",
+  "adminServerDiscardConfirmMessage": "今所改易將盡失。",
+  "adminServerSectionRateLimits": "限流之則",
+  "adminServerSectionServerInfo": "伺服之訊",
   "adminPendingForums": "待審論壇",
   "adminPendingForumsDescription": "審核新建之論壇，決其去留。",
   "adminPendingForumsEmpty": "今無待審之論壇。",
@@ -535,6 +576,7 @@
       }
     }
   },
+  "adminPendingForumEditBadge": "修訂",
   "adminPendingForumNoIntroduction": "暫無論壇之介。",
   "adminApproveForumAction": "准論壇",
   "adminApproveForumConfirmTitle": "准論壇之審",
@@ -682,6 +724,12 @@
   "messageActionCopy": "複製",
   "messageActionMergeForward": "合併轉發",
   "messageActionSelectMultiple": "多選",
+  "messageActionViewOriginal": "視原文",
+  "messageRecalledOriginalTitle": "已撤回消息之原文",
+  "messageRecalledOriginalSender": "發者",
+  "messageRecalledOriginalContent": "內容",
+  "messageRecalledOriginalFailed": "載原文未成",
+  "messageRecalledOriginalNone": "無可用之原文",
   "selectionExit": "退出多選",
   "selectionCount": "{count, plural, other{{count} 條已選}}",
   "@selectionCount": {"placeholders": {"count": {}}},
@@ -1183,6 +1231,13 @@
   "announcementDeleteConfirm": "確欲除此告示乎？",
   "announcementDeleteSuccess": "告示已刪",
   "announcementDeleteFailed": "刪告示未成",
+  "announcementLoadFailed": "載告示未成",
+  "announcementSenderFallback": "用戶 {uid}",
+  "@announcementSenderFallback": {
+    "placeholders": {
+      "uid": {"type": "String"}
+    }
+  },
   "adminAnnouncements": "司告示府",
   "adminAnnouncementsDescription": "建而治系統之告示",
   "adminAccountManagement": "賬戶管理",
@@ -1203,6 +1258,15 @@
   "adminAccountCreateFailed": "創建賬戶未成，請察用戶名或權限",
   "adminAccountLoadFailed": "加載用戶列表未成",
   "adminAccountEmpty": "暫無用戶",
+  "adminAccountNoSearchResults": "無相符之用戶",
+  "adminAccountPageIndicator": "第 {page} / {totalPages} 頁（共 {total} 用戶）",
+  "@adminAccountPageIndicator": {
+    "placeholders": {
+      "page": {"type": "int"},
+      "totalPages": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
   "adminAccountCreated": "創建時間：{date}",
   "@adminAccountCreated": {
     "placeholders": {
@@ -1211,6 +1275,11 @@
   },
   "adminAccountChangeRole": "更改角色",
   "adminAccountViewDevices": "視設備",
+  "adminAccountEdit": "編輯帳號",
+  "adminAccountEditDescription": "留空之欄則存舊不改。",
+  "adminAccountNewPassword": "新密碼（可空）",
+  "adminAccountEditSuccess": "帳號已更",
+  "adminAccountEditFailed": "帳號更而未成",
   "adminAccountChangeRoleTitle": "更改 {name} 之角色",
   "@adminAccountChangeRoleTitle": {
     "placeholders": {
@@ -1295,6 +1364,20 @@
     }
   },
   "storageDeleteFailed": "刪除未成",
+  "storageDereference": "釋引用",
+  "storageDereferenceConfirm": "確釋汝對「{fileName}」之引用乎？必待無引用後乃除其檔。",
+  "@storageDereferenceConfirm": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "storageDereferenced": "已釋引用：{fileName}",
+  "@storageDereferenced": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "storageDereferenceFailed": "釋引用未成",
   "storageUploaded": "已上傳：{fileName}",
   "@storageUploaded": {
     "placeholders": {
@@ -1339,6 +1422,26 @@
   "adminFileSummaryFiles": "文件",
   "adminFileSummaryUsers": "用戶",
   "adminFileSummaryTotal": "總計",
+  "adminFileLoadFailed": "載文件未成",
+  "adminFileUnknown": "未知",
+  "adminFileTileMeta": "所有者：{owner}（編號 {uid}）· {size} · 引 {refs} · 傳 {uploads}",
+  "@adminFileTileMeta": {
+    "placeholders": {
+      "owner": {"type": "String"},
+      "uid": {"type": "String"},
+      "size": {"type": "String"},
+      "refs": {"type": "int"},
+      "uploads": {"type": "int"}
+    }
+  },
+  "adminFileSummaryStats": "文件：{files} · 用戶：{users} · 總計：{total}",
+  "@adminFileSummaryStats": {
+    "placeholders": {
+      "files": {"type": "int"},
+      "users": {"type": "int"},
+      "total": {"type": "String"}
+    }
+  },
   "chatFunctionTabFiles": "文件",
   "chatFunctionTabEmoji": "表情",
   "chatFunctionTabSpecial": "特別消息",
@@ -1413,6 +1516,11 @@
   "groupLeave": "退出羣組",
   "groupLeaveConfirm": "確要退出該羣組嗎？",
   "groupLeaveOwnerHint": "羣主需先轉讓羣主後方可退出",
+  "groupDissolve": "解散羣聊",
+  "groupDissolveConfirm": "此將永解羣聊並逐諸成員，不可復也。",
+  "groupDissolveAction": "解散",
+  "groupDissolveSuccess": "羣聊已解",
+  "groupDissolveFailed": "解散羣聊未成",
   "groupInviteMember": "邀請成員",
   "groupInviteMemberHint": "輸入好友的用戶名或 UID",
   "groupInvitePendingReview": "已發送邀請，等待審核",

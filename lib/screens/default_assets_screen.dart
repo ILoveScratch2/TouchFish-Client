@@ -3,13 +3,13 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
+import '../widgets/admin_ui.dart';
 import '../widgets/optimized_image.dart';
 
 class DefaultAssetsScreen extends StatefulWidget {
@@ -20,7 +20,7 @@ class DefaultAssetsScreen extends StatefulWidget {
 }
 
 class _DefaultAssetsScreenState extends State<DefaultAssetsScreen> {
-  static const double _contentMaxWidth = 640;
+  static const _assetTypes = ['logo', 'forum', 'user', 'group'];
 
   TfServerConfig? _serverInfo;
   String? _baseUrl;
@@ -320,7 +320,10 @@ class _DefaultAssetsScreenState extends State<DefaultAssetsScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     if (!_canManageAssets) {
-      return Center(child: Text(l10n.adminAccessDenied));
+      return AdminEmptyState(
+        message: l10n.adminAccessDenied,
+        icon: Icons.lock_outline_rounded,
+      );
     }
 
     if (_isLoading) {
@@ -328,51 +331,27 @@ class _DefaultAssetsScreenState extends State<DefaultAssetsScreen> {
     }
 
     if (_serverInfo == null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(l10n.adminDefaultAssetsLoadFailed),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: () => _loadServerInfo(showError: true),
-              icon: const Icon(Icons.refresh_rounded),
-              label: Text(l10n.retry),
-            ),
-          ],
-        ),
+      return AdminErrorState(
+        message: l10n.adminDefaultAssetsLoadFailed,
+        onRetry: () => _loadServerInfo(showError: true),
       );
     }
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: _contentMaxWidth),
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(
-              l10n.adminDefaultAssets,
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.adminDefaultAssetsDescription,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildAssetCard(context, assetType: 'logo', l10n: l10n),
-            const SizedBox(height: 16),
-            _buildAssetCard(context, assetType: 'forum', l10n: l10n),
-            const SizedBox(height: 16),
-            _buildAssetCard(context, assetType: 'user', l10n: l10n),
-            const SizedBox(height: 16),
-            _buildAssetCard(context, assetType: 'group', l10n: l10n),
-            const SizedBox(height: 24),
-          ],
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        AdminSectionHeader(
+          icon: Icons.image_outlined,
+          title: l10n.adminDefaultAssets,
+          description: l10n.adminDefaultAssetsDescription,
         ),
-      ),
+        const SizedBox(height: 16),
+        for (final assetType in _assetTypes)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _buildAssetCard(context, assetType: assetType, l10n: l10n),
+          ),
+      ],
     );
   }
 
@@ -380,23 +359,16 @@ class _DefaultAssetsScreenState extends State<DefaultAssetsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.adminDefaultAssets),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+    return AdminPageScaffold(
+      title: l10n.adminDefaultAssets,
+      maxWidth: 640,
+      actions: [
+        IconButton(
+          onPressed: _isLoading ? null : () => _loadServerInfo(showError: true),
+          tooltip: l10n.retry,
+          icon: const Icon(Icons.refresh_rounded),
         ),
-        actions: [
-          IconButton(
-            onPressed: _isLoading
-                ? null
-                : () => _loadServerInfo(showError: true),
-            tooltip: l10n.retry,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-        ],
-      ),
+      ],
       body: _buildBody(context),
     );
   }

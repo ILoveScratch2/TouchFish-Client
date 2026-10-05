@@ -7,7 +7,7 @@ import '../services/auth_state.dart';
 import '../services/forum_pending_service.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
-import '../widgets/app_alert_dialog.dart';
+import '../widgets/admin_ui.dart';
 
 enum _PendingForumAction { approve, reject }
 
@@ -75,23 +75,15 @@ class _PendingForumsScreenState extends State<PendingForumsScreen> {
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
 
-    final confirmed = await showTouchFishErrorDialog<bool>(
+    final confirmed = await showAdminConfirmDialog(
       context,
       title: l10n.adminApproveForumConfirmTitle,
       message: l10n.adminApproveForumConfirmMessage(forum.forumName),
+      confirmLabel: l10n.adminApproveForumAction,
       icon: Icons.verified_outlined,
-      selectableMessage: false,
-      actions: [
-        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
-        TouchFishDialogAction<bool>(
-          label: l10n.adminApproveForumAction,
-          result: true,
-          isPrimary: true,
-        ),
-      ],
     );
 
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
 
     setState(() {
       _processingQueueIds[forum.queueId] = _PendingForumAction.approve;
@@ -129,24 +121,16 @@ class _PendingForumsScreenState extends State<PendingForumsScreen> {
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
 
-    final confirmed = await showTouchFishErrorDialog<bool>(
+    final confirmed = await showAdminConfirmDialog(
       context,
       title: l10n.adminRejectForumConfirmTitle,
       message: l10n.adminRejectForumConfirmMessage(forum.forumName),
+      confirmLabel: l10n.adminRejectForumAction,
       icon: Icons.block_outlined,
-      selectableMessage: false,
-      actions: [
-        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
-        TouchFishDialogAction<bool>(
-          label: l10n.adminRejectForumAction,
-          result: true,
-          isPrimary: true,
-          isDestructive: true,
-        ),
-      ],
+      destructive: true,
     );
 
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
 
     setState(() {
       _processingQueueIds[forum.queueId] = _PendingForumAction.reject;
@@ -184,201 +168,126 @@ class _PendingForumsScreenState extends State<PendingForumsScreen> {
     final hasAdminAccess =
         AuthState.instance.currentUser?.hasAdminAccess == true;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.adminPendingForums)),
+    return AdminPageScaffold(
+      title: l10n.adminPendingForums,
+      maxWidth: 720,
       body: !hasAdminAccess
-          ? Center(child: Text(l10n.adminAccessDenied))
+          ? AdminEmptyState(
+              message: l10n.adminAccessDenied,
+              icon: Icons.lock_outline_rounded,
+            )
           : _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(l10n.adminPendingForumsLoadFailed),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: _loadPendingForums,
-                    child: Text(l10n.retry),
-                  ),
-                ],
-              ),
-            )
           : RefreshIndicator(
               onRefresh: _loadPendingForums,
-              child: _forums.isEmpty
-                  ? ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.2,
-                        ),
-                        Icon(
-                          Icons.inbox_outlined,
-                          size: 56,
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                        const SizedBox(height: 16),
-                        Center(
-                          child: Text(
-                            l10n.adminPendingForumsEmpty,
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
-                        ),
-                      ],
+              child: _error != null
+                  ? AdminErrorState(
+                      message: l10n.adminPendingForumsLoadFailed,
+                      onRetry: _loadPendingForums,
                     )
+                  : _forums.isEmpty
+                  ? AdminEmptyState(message: l10n.adminPendingForumsEmpty)
                   : ListView.separated(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(16),
                       itemCount: _forums.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final forum = _forums[index];
-                        final processingAction =
-                            _processingQueueIds[forum.queueId];
-                        final isApproving =
-                            processingAction == _PendingForumAction.approve;
-                        final isRejecting =
-                            processingAction == _PendingForumAction.reject;
-                        final isProcessing = processingAction != null;
-                        return Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 720),
-                            child: Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  spacing: 12,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            forum.forumName,
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.titleLarge,
-                                          ),
-                                        ),
-                                        if (forum.type == 'edit')
-                                          Chip(
-                                            label: Text(
-                                              'EDIT',
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onTertiaryContainer,
-                                              ),
-                                            ),
-                                            backgroundColor: Theme.of(
-                                              context,
-                                            ).colorScheme.tertiaryContainer,
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                            padding: EdgeInsets.zero,
-                                          ),
-                                      ],
-                                    ),
-                                    Text(
-                                      l10n.adminPendingForumQueueId(
-                                        forum.queueId,
-                                      ),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelMedium
-                                          ?.copyWith(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
-                                          ),
-                                    ),
-                                    Text(
-                                      l10n.adminPendingForumCreator(
-                                        forum.creatorUid,
-                                      ),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurfaceVariant,
-                                          ),
-                                    ),
-                                    Text(
-                                      forum.introduction.isEmpty
-                                          ? l10n.adminPendingForumNoIntroduction
-                                          : forum.introduction,
-                                    ),
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: Wrap(
-                                        spacing: 8,
-                                        runSpacing: 8,
-                                        children: [
-                                          TextButton.icon(
-                                            onPressed: isProcessing
-                                                ? null
-                                                : () => _rejectForum(forum),
-                                            style: TextButton.styleFrom(
-                                              foregroundColor: Theme.of(
-                                                context,
-                                              ).colorScheme.error,
-                                            ),
-                                            icon: isRejecting
-                                                ? const SizedBox(
-                                                    width: 18,
-                                                    height: 18,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                        ),
-                                                  )
-                                                : const Icon(
-                                                    Icons.block_outlined,
-                                                  ),
-                                            label: Text(
-                                              l10n.adminRejectForumAction,
-                                            ),
-                                          ),
-                                          FilledButton.icon(
-                                            onPressed: isProcessing
-                                                ? null
-                                                : () => _approveForum(forum),
-                                            icon: isApproving
-                                                ? const SizedBox(
-                                                    width: 18,
-                                                    height: 18,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                        ),
-                                                  )
-                                                : const Icon(
-                                                    Icons.verified_outlined,
-                                                  ),
-                                            label: Text(
-                                              l10n.adminApproveForumAction,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) =>
+                          _buildForumCard(context, l10n, _forums[index]),
                     ),
             ),
     );
+  }
+
+  Widget _buildForumCard(
+    BuildContext context,
+    AppLocalizations l10n,
+    PendingForumApproval forum,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final processingAction = _processingQueueIds[forum.queueId];
+    final isApproving = processingAction == _PendingForumAction.approve;
+    final isRejecting = processingAction == _PendingForumAction.reject;
+    final isProcessing = processingAction != null;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 12,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    forum.forumName,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                if (forum.type == 'edit')
+                  Chip(
+                    label: Text(l10n.adminPendingForumEditBadge),
+                    labelStyle: Theme.of(context).textTheme.labelSmall
+                        ?.copyWith(color: colorScheme.onTertiaryContainer),
+                    backgroundColor: colorScheme.tertiaryContainer,
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                  ),
+              ],
+            ),
+            Text(
+              l10n.adminPendingForumQueueId(forum.queueId),
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: colorScheme.primary,
+              ),
+            ),
+            Text(
+              l10n.adminPendingForumCreator(forum.creatorUid),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            Text(
+              forum.introduction.isEmpty
+                  ? l10n.adminPendingForumNoIntroduction
+                  : forum.introduction,
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  TextButton.icon(
+                    onPressed: isProcessing ? null : () => _rejectForum(forum),
+                    style: TextButton.styleFrom(
+                      foregroundColor: colorScheme.error,
+                    ),
+                    icon: _buttonIcon(Icons.block_outlined, isRejecting),
+                    label: Text(l10n.adminRejectForumAction),
+                  ),
+                  FilledButton.icon(
+                    onPressed: isProcessing ? null : () => _approveForum(forum),
+                    icon: _buttonIcon(Icons.verified_outlined, isApproving),
+                    label: Text(l10n.adminApproveForumAction),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buttonIcon(IconData icon, bool loading) {
+    if (loading) {
+      return const SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    return Icon(icon);
   }
 }

@@ -183,6 +183,43 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     }
   }
 
+  Future<void> _dereferenceFile(String hash, String fileName) async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showTouchFishErrorDialog<bool>(
+      context,
+      title: l10n.storageDereference,
+      message: l10n.storageDereferenceConfirm(fileName),
+      icon: Icons.link_off,
+      selectableMessage: false,
+      actions: [
+        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
+        TouchFishDialogAction<bool>(
+          label: l10n.storageDereference,
+          result: true,
+          isPrimary: true,
+        ),
+      ],
+    );
+    if (confirmed != true || !mounted) return;
+
+    final ok = await TfApiClient.instance.dereferenceFile(uid, password, hash);
+    if (!mounted) return;
+    if (ok) {
+      TouchFishSnackbarService.instance.show(
+        l10n.storageDereferenced(fileName),
+      );
+      await _loadData();
+    } else {
+      TouchFishSnackbarService.instance.show(
+        l10n.storageDereferenceFailed,
+      );
+    }
+  }
+
   IconData _fileIcon(String fileName) {
     final ext = fileName.toLowerCase();
     if (ext.endsWith('.png') ||
@@ -465,11 +502,40 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
             onPressed: () => _showFileActions(file),
             tooltip: l10n.filePreview,
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, size: 20),
-            color: colorScheme.error,
-            onPressed: () => _deleteFile(hash, fileName),
-            tooltip: l10n.storageDeleteFile,
+          PopupMenuButton<String>(
+            tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
+            onSelected: (value) {
+              if (value == 'dereference') {
+                _dereferenceFile(hash, fileName);
+              } else if (value == 'delete') {
+                _deleteFile(hash, fileName);
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'dereference',
+                child: ListTile(
+                  leading: const Icon(Icons.link_off, size: 20),
+                  title: Text(l10n.storageDereference),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: ListTile(
+                  leading: Icon(
+                    Icons.delete_outline,
+                    size: 20,
+                    color: colorScheme.error,
+                  ),
+                  title: Text(
+                    l10n.storageDeleteFile,
+                    style: TextStyle(color: colorScheme.error),
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ],
       ),

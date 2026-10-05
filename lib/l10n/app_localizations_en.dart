@@ -1444,6 +1444,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminServerSectionAdvanced => 'Advanced Configuration';
 
   @override
+  String get adminServerSectionLimits => 'Limits & Storage';
+
+  @override
+  String get adminServerLimitsDescription =>
+      'Name/username/password length limits, content lengths, storage quotas, and rate limits.';
+
+  @override
   String get adminServerSectionEmailService => 'Email Verification Service';
 
   @override
@@ -1488,7 +1495,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminServerFieldProxyCount => 'Trusted Proxy Count';
 
   @override
-  String get adminServerSectionAuth => 'Authentication';
+  String get adminServerSectionAuth => 'Authentication & Tokens';
 
   @override
   String get adminServerAuthDescription => 'Controls how clients authenticate.';
@@ -1518,6 +1525,132 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enabling email verification requires a verification email and an email password.';
 
   @override
+  String get adminServerFieldCaptchaProvider => 'Captcha Provider';
+
+  @override
+  String get adminServerCaptchaProviderDescription =>
+      'image uses the built-in image captcha; turnstile / hcaptcha / recaptcha use a third-party service.';
+
+  @override
+  String get adminServerFieldCaptchaSiteKey => 'Captcha Site Key';
+
+  @override
+  String get adminServerFieldCaptchaSecret => 'Captcha Secret';
+
+  @override
+  String get adminServerCaptchaSecretHint =>
+      'Leave empty to keep the current secret.';
+
+  @override
+  String get adminServerCaptchaSaveSuccess => 'Captcha settings updated';
+
+  @override
+  String get adminServerCaptchaSaveFailed =>
+      'Failed to update captcha settings';
+
+  @override
+  String get adminServerFieldRateLimits => 'Rate Limits (JSON)';
+
+  @override
+  String get adminServerRateLimitsDescription =>
+      'Per-endpoint request limits in JSON, mapping each endpoint to requests and range. Leave empty to clear all limits.';
+
+  @override
+  String get adminServerRateLimitsInvalid => 'Rate limits must be valid JSON';
+
+  @override
+  String get adminServerRateLimitsSaveSuccess => 'Rate limits updated';
+
+  @override
+  String get adminServerRateLimitsSaveFailed => 'Failed to update rate limits';
+
+  @override
+  String get adminServerFieldMinGroupNameLength => 'Min Group Name Length';
+
+  @override
+  String get adminServerFieldMaxGroupNameLength => 'Max Group Name Length';
+
+  @override
+  String get adminServerFieldMinUsernameLength => 'Min Username Length';
+
+  @override
+  String get adminServerFieldMinPasswordLength => 'Min Password Length';
+
+  @override
+  String get adminServerFieldMaxSignLength => 'Max Signature Length';
+
+  @override
+  String get adminServerFieldMaxIntroductionLength => 'Max Introduction Length';
+
+  @override
+  String get adminServerFieldMaxPostContentLength => 'Max Post Content Length';
+
+  @override
+  String get adminServerFieldMaxAvatarSize => 'Max Avatar Size';
+
+  @override
+  String get adminServerFieldUserStorageQuota => 'User Storage Quota';
+
+  @override
+  String get adminServerFieldMaxUserStorageQuota =>
+      'Max Single-User Upload Size';
+
+  @override
+  String get adminServerFieldMaxStickerStorageQuota =>
+      'Max Sticker Storage Quota';
+
+  @override
+  String get adminServerFieldJwtRefreshExpires =>
+      'JWT Refresh Expiry (seconds)';
+
+  @override
+  String get adminServerFieldFileDownloadMode => 'File Download Mode';
+
+  @override
+  String get adminServerFileDownloadModeDescription => 'redirect or proxy.';
+
+  @override
+  String get adminServerFieldMediaFeatures => 'Enable Media Features';
+
+  @override
+  String get adminServerMediaFeaturesDescription =>
+      'Allow media processing such as thumbnails.';
+
+  @override
+  String get adminServerSearchHint => 'Search settings';
+
+  @override
+  String get adminServerSearchNoResults => 'No matching settings found';
+
+  @override
+  String get adminServerUnlimited => 'Unlimited';
+
+  @override
+  String get adminServerUnsavedChanges => 'You have unsaved changes';
+
+  @override
+  String get adminServerUndoChanges => 'Undo changes';
+
+  @override
+  String get adminServerDiscardChanges => 'Discard changes';
+
+  @override
+  String get adminServerDiscardAndRefresh => 'Discard & refresh';
+
+  @override
+  String get adminServerDiscardConfirmTitle => 'Discard unsaved changes?';
+
+  @override
+  String get adminServerDiscardConfirmMessage =>
+      'Your current edits will be lost.';
+
+  @override
+  String get adminServerSectionRateLimits => 'Rate Limits';
+
+  @override
+  String get adminServerSectionServerInfo => 'Server Info';
+
+  @override
   String get adminPendingForums => 'Pending Forums';
 
   @override
@@ -1539,6 +1672,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String adminPendingForumCreator(String uid) {
     return 'Creator UID: $uid';
   }
+
+  @override
+  String get adminPendingForumEditBadge => 'Edit';
 
   @override
   String get adminPendingForumNoIntroduction => 'No introduction provided.';
@@ -1881,6 +2017,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get messageActionSelectMultiple => 'Select multiple';
+
+  @override
+  String get messageActionViewOriginal => 'View Original';
+
+  @override
+  String get messageRecalledOriginalTitle => 'Original Recalled Message';
+
+  @override
+  String get messageRecalledOriginalSender => 'Sender';
+
+  @override
+  String get messageRecalledOriginalContent => 'Content';
+
+  @override
+  String get messageRecalledOriginalFailed =>
+      'Failed to load the original message';
+
+  @override
+  String get messageRecalledOriginalNone => 'No original content available';
 
   @override
   String get selectionExit => 'Exit selection';
@@ -3268,6 +3423,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get announcementDeleteFailed => 'Failed to delete announcement';
 
   @override
+  String get announcementLoadFailed => 'Failed to load announcements';
+
+  @override
+  String announcementSenderFallback(String uid) {
+    return 'User $uid';
+  }
+
+  @override
   String get adminAnnouncements => 'Announcements';
 
   @override
@@ -3332,6 +3495,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminAccountEmpty => 'No users found';
 
   @override
+  String get adminAccountNoSearchResults => 'No users match your search';
+
+  @override
+  String adminAccountPageIndicator(int page, int totalPages, int total) {
+    return 'Page $page of $totalPages ($total users)';
+  }
+
+  @override
   String adminAccountCreated(String date) {
     return 'Created: $date';
   }
@@ -3341,6 +3512,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminAccountViewDevices => 'View Devices';
+
+  @override
+  String get adminAccountEdit => 'Edit Account';
+
+  @override
+  String get adminAccountEditDescription =>
+      'Leave a field empty to keep it unchanged.';
+
+  @override
+  String get adminAccountNewPassword => 'New Password (optional)';
+
+  @override
+  String get adminAccountEditSuccess => 'Account updated';
+
+  @override
+  String get adminAccountEditFailed => 'Failed to update account';
 
   @override
   String adminAccountChangeRoleTitle(String name) {
@@ -3462,6 +3649,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storageDeleteFailed => 'Delete failed';
 
   @override
+  String get storageDereference => 'Release Reference';
+
+  @override
+  String storageDereferenceConfirm(String fileName) {
+    return 'Release your reference to \"$fileName\"? The file is removed only after no references remain.';
+  }
+
+  @override
+  String storageDereferenced(String fileName) {
+    return 'Reference released: $fileName';
+  }
+
+  @override
+  String get storageDereferenceFailed => 'Failed to release reference';
+
+  @override
   String storageUploaded(String fileName) {
     return 'Uploaded: $fileName';
   }
@@ -3540,6 +3743,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminFileSummaryTotal => 'Total';
+
+  @override
+  String get adminFileLoadFailed => 'Failed to load files';
+
+  @override
+  String get adminFileUnknown => 'Unknown';
+
+  @override
+  String adminFileTileMeta(
+    String owner,
+    String uid,
+    String size,
+    int refs,
+    int uploads,
+  ) {
+    return 'Owner: $owner (UID: $uid) · $size · Refs: $refs · Uploads: $uploads';
+  }
+
+  @override
+  String adminFileSummaryStats(int files, int users, String total) {
+    return 'Files: $files · Users: $users · Total: $total';
+  }
 
   @override
   String get chatFunctionTabFiles => 'Files';
@@ -3705,6 +3930,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get groupLeaveOwnerHint =>
       'Transfer ownership before leaving the group';
+
+  @override
+  String get groupDissolve => 'Dissolve Group';
+
+  @override
+  String get groupDissolveConfirm =>
+      'This permanently dissolves the group and removes all members. This cannot be undone.';
+
+  @override
+  String get groupDissolveAction => 'Dissolve';
+
+  @override
+  String get groupDissolveSuccess => 'Group dissolved';
+
+  @override
+  String get groupDissolveFailed => 'Failed to dissolve group';
 
   @override
   String get groupInviteMember => 'Invite Member';

@@ -508,6 +508,8 @@
   "adminServerFieldVerifyEmail": "验证邮箱",
   "adminServerUnlimitedHint": "输入 -1 表示不限制。",
   "adminServerSectionAdvanced": "高级配置",
+  "adminServerSectionLimits": "限制与存储",
+  "adminServerLimitsDescription": "名称/用户名/密码长度、内容长度、存储配额与速率限制。",
   "adminServerSectionEmailService": "邮箱验证服务",
   "adminServerEmailDescription": "开启后，新用户注册需要填写邮箱并通过验证码激活账号。",
   "adminServerEmailEnableDescription": "注册时向用户邮箱发送验证码。",
@@ -521,7 +523,7 @@
   "adminServerReverseProxyDescription": "服务器运行在 Nginx 等反向代理后方时开启，以正确识别客户端 IP 和 HTTPS。",
   "adminServerFieldReverseProxy": "启用反向代理",
   "adminServerFieldProxyCount": "信任的代理层数",
-  "adminServerSectionAuth": "认证",
+  "adminServerSectionAuth": "认证与令牌",
   "adminServerAuthDescription": "控制客户端登录认证方式。",
   "adminServerFieldLegacyAuth": "允许旧版 UID+PASSWORD 登录",
   "adminServerLegacyAuthDescription": "关闭后仅接受 JWT 认证，旧版客户端将无法登录。",
@@ -530,6 +532,45 @@
   "adminServerFieldJwtMaxPerUser": "每用户最大 Token 数",
   "adminServerJwtMaxPerUserDescription": "0 或 -1 表示不限制。",
   "adminServerEmailPasswordRequired": "启用邮箱验证需要填写验证邮箱和邮箱密码。",
+  "adminServerFieldCaptchaProvider": "验证码供应商",
+  "adminServerCaptchaProviderDescription": "image 使用内置图片验证码；turnstile / hcaptcha / recaptcha 使用第三方服务。",
+  "adminServerFieldCaptchaSiteKey": "验证码 Site Key",
+  "adminServerFieldCaptchaSecret": "验证码 Secret",
+  "adminServerCaptchaSecretHint": "留空表示保持当前密钥不变。",
+  "adminServerCaptchaSaveSuccess": "验证码设置已更新",
+  "adminServerCaptchaSaveFailed": "验证码设置更新失败",
+  "adminServerFieldRateLimits": "速率限制（JSON）",
+  "adminServerRateLimitsDescription": "按端点的请求频率限制（JSON），将各端点映射到 requests 与 range。留空表示清空所有限制。",
+  "adminServerRateLimitsInvalid": "速率限制必须是合法 JSON",
+  "adminServerRateLimitsSaveSuccess": "速率限制已更新",
+  "adminServerRateLimitsSaveFailed": "速率限制更新失败",
+  "adminServerFieldMinGroupNameLength": "群名称最小长度",
+  "adminServerFieldMaxGroupNameLength": "群名称最大长度",
+  "adminServerFieldMinUsernameLength": "用户名最小长度",
+  "adminServerFieldMinPasswordLength": "密码最小长度",
+  "adminServerFieldMaxSignLength": "签名最大长度",
+  "adminServerFieldMaxIntroductionLength": "简介最大长度",
+  "adminServerFieldMaxPostContentLength": "帖子内容最大长度",
+  "adminServerFieldMaxAvatarSize": "头像最大大小",
+  "adminServerFieldUserStorageQuota": "用户存储配额",
+  "adminServerFieldMaxUserStorageQuota": "单用户单次上传上限",
+  "adminServerFieldMaxStickerStorageQuota": "表情存储配额",
+  "adminServerFieldJwtRefreshExpires": "JWT 刷新有效期（秒）",
+  "adminServerFieldFileDownloadMode": "文件下载模式",
+  "adminServerFileDownloadModeDescription": "redirect 或 proxy。",
+  "adminServerFieldMediaFeatures": "启用媒体功能",
+  "adminServerMediaFeaturesDescription": "允许缩略图等媒体处理。",
+  "adminServerSearchHint": "搜索设置项",
+  "adminServerSearchNoResults": "未找到匹配的设置项",
+  "adminServerUnlimited": "不限",
+  "adminServerUnsavedChanges": "有未保存的更改",
+  "adminServerUndoChanges": "撤销更改",
+  "adminServerDiscardChanges": "放弃更改",
+  "adminServerDiscardAndRefresh": "放弃并刷新",
+  "adminServerDiscardConfirmTitle": "放弃未保存的更改？",
+  "adminServerDiscardConfirmMessage": "当前编辑的内容将丢失。",
+  "adminServerSectionRateLimits": "限流",
+  "adminServerSectionServerInfo": "服务器信息",
   "adminPendingForums": "待审论坛",
   "adminPendingForumsDescription": "审核新创建的论坛并决定是否通过。",
   "adminPendingForumsEmpty": "当前没有待审批的论坛。",
@@ -550,6 +591,7 @@
       }
     }
   },
+  "adminPendingForumEditBadge": "编辑",
   "adminPendingForumNoIntroduction": "暂无论坛简介。",
   "adminApproveForumAction": "通过论坛",
   "adminApproveForumConfirmTitle": "通过论坛审核",
@@ -697,6 +739,12 @@
   "messageActionCopy": "复制",
   "messageActionMergeForward": "合并转发",
   "messageActionSelectMultiple": "多选",
+  "messageActionViewOriginal": "查看原文",
+  "messageRecalledOriginalTitle": "撤回消息原文",
+  "messageRecalledOriginalSender": "发送者",
+  "messageRecalledOriginalContent": "内容",
+  "messageRecalledOriginalFailed": "加载原文失败",
+  "messageRecalledOriginalNone": "没有可用的原文内容",
   "selectionExit": "退出多选",
   "selectionCount": "{count, plural, other{{count} 条已选}}",
   "@selectionCount": {"placeholders": {"count": {}}},
@@ -1171,6 +1219,13 @@
   "announcementDeleteConfirm": "确认删除此公告？",
   "announcementDeleteSuccess": "公告已删除",
   "announcementDeleteFailed": "删除公告失败",
+  "announcementLoadFailed": "加载公告失败",
+  "announcementSenderFallback": "用户 {uid}",
+  "@announcementSenderFallback": {
+    "placeholders": {
+      "uid": {"type": "String"}
+    }
+  },
   "adminAnnouncements": "公告管理",
   "adminAnnouncementsDescription": "创建和管理系统公告",
   "adminAccountManagement": "账户管理",
@@ -1191,6 +1246,15 @@
   "adminAccountCreateFailed": "创建账户失败，请检查用户名是否已存在或当前账户权限",
   "adminAccountLoadFailed": "加载用户列表失败",
   "adminAccountEmpty": "暂无用户",
+  "adminAccountNoSearchResults": "没有匹配的用户",
+  "adminAccountPageIndicator": "第 {page} / {totalPages} 页（共 {total} 位用户）",
+  "@adminAccountPageIndicator": {
+    "placeholders": {
+      "page": {"type": "int"},
+      "totalPages": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
   "adminAccountCreated": "创建时间：{date}",
   "@adminAccountCreated": {
     "placeholders": {
@@ -1199,6 +1263,11 @@
   },
   "adminAccountChangeRole": "更改角色",
   "adminAccountViewDevices": "查看设备",
+  "adminAccountEdit": "编辑账号",
+  "adminAccountEditDescription": "留空的字段将保持不变。",
+  "adminAccountNewPassword": "新密码（可选）",
+  "adminAccountEditSuccess": "账号已更新",
+  "adminAccountEditFailed": "账号更新失败",
   "adminAccountChangeRoleTitle": "更改 {name} 的角色",
   "@adminAccountChangeRoleTitle": {
     "placeholders": {
@@ -1283,6 +1352,20 @@
     }
   },
   "storageDeleteFailed": "删除失败",
+  "storageDereference": "释放引用",
+  "storageDereferenceConfirm": "确定释放你对“{fileName}”的引用吗？仅当没有任何引用后文件才会被删除。",
+  "@storageDereferenceConfirm": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "storageDereferenced": "已释放引用：{fileName}",
+  "@storageDereferenced": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "storageDereferenceFailed": "释放引用失败",
   "storageUploaded": "已上传：{fileName}",
   "@storageUploaded": {
     "placeholders": {
@@ -1327,6 +1410,26 @@
   "adminFileSummaryFiles": "文件",
   "adminFileSummaryUsers": "用户",
   "adminFileSummaryTotal": "总计",
+  "adminFileLoadFailed": "加载文件失败",
+  "adminFileUnknown": "未知",
+  "adminFileTileMeta": "所有者：{owner}（UID：{uid}）· {size} · 引用 {refs} · 上传者 {uploads}",
+  "@adminFileTileMeta": {
+    "placeholders": {
+      "owner": {"type": "String"},
+      "uid": {"type": "String"},
+      "size": {"type": "String"},
+      "refs": {"type": "int"},
+      "uploads": {"type": "int"}
+    }
+  },
+  "adminFileSummaryStats": "文件：{files} · 用户：{users} · 总计：{total}",
+  "@adminFileSummaryStats": {
+    "placeholders": {
+      "files": {"type": "int"},
+      "users": {"type": "int"},
+      "total": {"type": "String"}
+    }
+  },
   "chatFunctionTabFiles": "文件",
   "chatFunctionTabEmoji": "表情",
   "chatFunctionTabSpecial": "特别消息",
@@ -1401,6 +1504,11 @@
   "groupLeave": "退出群组",
   "groupLeaveConfirm": "确定要退出该群组吗？",
   "groupLeaveOwnerHint": "群主需要先转让群主后才能退出",
+  "groupDissolve": "解散群聊",
+  "groupDissolveConfirm": "这将永久解散群聊并移除所有成员，且无法撤销。",
+  "groupDissolveAction": "解散",
+  "groupDissolveSuccess": "群聊已解散",
+  "groupDissolveFailed": "解散群聊失败",
   "groupInviteMember": "邀请成员",
   "groupInviteMemberHint": "输入好友的用户名或 UID",
   "groupInvitePendingReview": "已发送邀请，等待审核",

@@ -2764,6 +2764,18 @@ abstract class AppLocalizations {
   /// **'Advanced Configuration'**
   String get adminServerSectionAdvanced;
 
+  /// No description provided for @adminServerSectionLimits.
+  ///
+  /// In en, this message translates to:
+  /// **'Limits & Storage'**
+  String get adminServerSectionLimits;
+
+  /// No description provided for @adminServerLimitsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Name/username/password length limits, content lengths, storage quotas, and rate limits.'**
+  String get adminServerLimitsDescription;
+
   /// No description provided for @adminServerSectionEmailService.
   ///
   /// In en, this message translates to:
@@ -2845,7 +2857,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminServerSectionAuth.
   ///
   /// In en, this message translates to:
-  /// **'Authentication'**
+  /// **'Authentication & Tokens'**
   String get adminServerSectionAuth;
 
   /// No description provided for @adminServerAuthDescription.
@@ -2896,6 +2908,240 @@ abstract class AppLocalizations {
   /// **'Enabling email verification requires a verification email and an email password.'**
   String get adminServerEmailPasswordRequired;
 
+  /// No description provided for @adminServerFieldCaptchaProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'Captcha Provider'**
+  String get adminServerFieldCaptchaProvider;
+
+  /// No description provided for @adminServerCaptchaProviderDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'image uses the built-in image captcha; turnstile / hcaptcha / recaptcha use a third-party service.'**
+  String get adminServerCaptchaProviderDescription;
+
+  /// No description provided for @adminServerFieldCaptchaSiteKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Captcha Site Key'**
+  String get adminServerFieldCaptchaSiteKey;
+
+  /// No description provided for @adminServerFieldCaptchaSecret.
+  ///
+  /// In en, this message translates to:
+  /// **'Captcha Secret'**
+  String get adminServerFieldCaptchaSecret;
+
+  /// No description provided for @adminServerCaptchaSecretHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to keep the current secret.'**
+  String get adminServerCaptchaSecretHint;
+
+  /// No description provided for @adminServerCaptchaSaveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Captcha settings updated'**
+  String get adminServerCaptchaSaveSuccess;
+
+  /// No description provided for @adminServerCaptchaSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update captcha settings'**
+  String get adminServerCaptchaSaveFailed;
+
+  /// No description provided for @adminServerFieldRateLimits.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Limits (JSON)'**
+  String get adminServerFieldRateLimits;
+
+  /// No description provided for @adminServerRateLimitsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Per-endpoint request limits in JSON, mapping each endpoint to requests and range. Leave empty to clear all limits.'**
+  String get adminServerRateLimitsDescription;
+
+  /// No description provided for @adminServerRateLimitsInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate limits must be valid JSON'**
+  String get adminServerRateLimitsInvalid;
+
+  /// No description provided for @adminServerRateLimitsSaveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate limits updated'**
+  String get adminServerRateLimitsSaveSuccess;
+
+  /// No description provided for @adminServerRateLimitsSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update rate limits'**
+  String get adminServerRateLimitsSaveFailed;
+
+  /// No description provided for @adminServerFieldMinGroupNameLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Min Group Name Length'**
+  String get adminServerFieldMinGroupNameLength;
+
+  /// No description provided for @adminServerFieldMaxGroupNameLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Group Name Length'**
+  String get adminServerFieldMaxGroupNameLength;
+
+  /// No description provided for @adminServerFieldMinUsernameLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Min Username Length'**
+  String get adminServerFieldMinUsernameLength;
+
+  /// No description provided for @adminServerFieldMinPasswordLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Min Password Length'**
+  String get adminServerFieldMinPasswordLength;
+
+  /// No description provided for @adminServerFieldMaxSignLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Signature Length'**
+  String get adminServerFieldMaxSignLength;
+
+  /// No description provided for @adminServerFieldMaxIntroductionLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Introduction Length'**
+  String get adminServerFieldMaxIntroductionLength;
+
+  /// No description provided for @adminServerFieldMaxPostContentLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Post Content Length'**
+  String get adminServerFieldMaxPostContentLength;
+
+  /// No description provided for @adminServerFieldMaxAvatarSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Avatar Size'**
+  String get adminServerFieldMaxAvatarSize;
+
+  /// No description provided for @adminServerFieldUserStorageQuota.
+  ///
+  /// In en, this message translates to:
+  /// **'User Storage Quota'**
+  String get adminServerFieldUserStorageQuota;
+
+  /// No description provided for @adminServerFieldMaxUserStorageQuota.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Single-User Upload Size'**
+  String get adminServerFieldMaxUserStorageQuota;
+
+  /// No description provided for @adminServerFieldMaxStickerStorageQuota.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Sticker Storage Quota'**
+  String get adminServerFieldMaxStickerStorageQuota;
+
+  /// No description provided for @adminServerFieldJwtRefreshExpires.
+  ///
+  /// In en, this message translates to:
+  /// **'JWT Refresh Expiry (seconds)'**
+  String get adminServerFieldJwtRefreshExpires;
+
+  /// No description provided for @adminServerFieldFileDownloadMode.
+  ///
+  /// In en, this message translates to:
+  /// **'File Download Mode'**
+  String get adminServerFieldFileDownloadMode;
+
+  /// No description provided for @adminServerFileDownloadModeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'redirect or proxy.'**
+  String get adminServerFileDownloadModeDescription;
+
+  /// No description provided for @adminServerFieldMediaFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Media Features'**
+  String get adminServerFieldMediaFeatures;
+
+  /// No description provided for @adminServerMediaFeaturesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow media processing such as thumbnails.'**
+  String get adminServerMediaFeaturesDescription;
+
+  /// No description provided for @adminServerSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search settings'**
+  String get adminServerSearchHint;
+
+  /// No description provided for @adminServerSearchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching settings found'**
+  String get adminServerSearchNoResults;
+
+  /// No description provided for @adminServerUnlimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited'**
+  String get adminServerUnlimited;
+
+  /// No description provided for @adminServerUnsavedChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'You have unsaved changes'**
+  String get adminServerUnsavedChanges;
+
+  /// No description provided for @adminServerUndoChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo changes'**
+  String get adminServerUndoChanges;
+
+  /// No description provided for @adminServerDiscardChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes'**
+  String get adminServerDiscardChanges;
+
+  /// No description provided for @adminServerDiscardAndRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard & refresh'**
+  String get adminServerDiscardAndRefresh;
+
+  /// No description provided for @adminServerDiscardConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard unsaved changes?'**
+  String get adminServerDiscardConfirmTitle;
+
+  /// No description provided for @adminServerDiscardConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your current edits will be lost.'**
+  String get adminServerDiscardConfirmMessage;
+
+  /// No description provided for @adminServerSectionRateLimits.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Limits'**
+  String get adminServerSectionRateLimits;
+
+  /// No description provided for @adminServerSectionServerInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Info'**
+  String get adminServerSectionServerInfo;
+
   /// No description provided for @adminPendingForums.
   ///
   /// In en, this message translates to:
@@ -2931,6 +3177,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Creator UID: {uid}'**
   String adminPendingForumCreator(String uid);
+
+  /// No description provided for @adminPendingForumEditBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get adminPendingForumEditBadge;
 
   /// No description provided for @adminPendingForumNoIntroduction.
   ///
@@ -3573,6 +3825,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select multiple'**
   String get messageActionSelectMultiple;
+
+  /// No description provided for @messageActionViewOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'View Original'**
+  String get messageActionViewOriginal;
+
+  /// No description provided for @messageRecalledOriginalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Original Recalled Message'**
+  String get messageRecalledOriginalTitle;
+
+  /// No description provided for @messageRecalledOriginalSender.
+  ///
+  /// In en, this message translates to:
+  /// **'Sender'**
+  String get messageRecalledOriginalSender;
+
+  /// No description provided for @messageRecalledOriginalContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Content'**
+  String get messageRecalledOriginalContent;
+
+  /// No description provided for @messageRecalledOriginalFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load the original message'**
+  String get messageRecalledOriginalFailed;
+
+  /// No description provided for @messageRecalledOriginalNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No original content available'**
+  String get messageRecalledOriginalNone;
 
   /// No description provided for @selectionExit.
   ///
@@ -6070,6 +6358,18 @@ abstract class AppLocalizations {
   /// **'Failed to delete announcement'**
   String get announcementDeleteFailed;
 
+  /// No description provided for @announcementLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load announcements'**
+  String get announcementLoadFailed;
+
+  /// No description provided for @announcementSenderFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'User {uid}'**
+  String announcementSenderFallback(String uid);
+
   /// No description provided for @adminAnnouncements.
   ///
   /// In en, this message translates to:
@@ -6190,6 +6490,18 @@ abstract class AppLocalizations {
   /// **'No users found'**
   String get adminAccountEmpty;
 
+  /// No description provided for @adminAccountNoSearchResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No users match your search'**
+  String get adminAccountNoSearchResults;
+
+  /// No description provided for @adminAccountPageIndicator.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page} of {totalPages} ({total} users)'**
+  String adminAccountPageIndicator(int page, int totalPages, int total);
+
   /// No description provided for @adminAccountCreated.
   ///
   /// In en, this message translates to:
@@ -6207,6 +6519,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View Devices'**
   String get adminAccountViewDevices;
+
+  /// No description provided for @adminAccountEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Account'**
+  String get adminAccountEdit;
+
+  /// No description provided for @adminAccountEditDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave a field empty to keep it unchanged.'**
+  String get adminAccountEditDescription;
+
+  /// No description provided for @adminAccountNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New Password (optional)'**
+  String get adminAccountNewPassword;
+
+  /// No description provided for @adminAccountEditSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Account updated'**
+  String get adminAccountEditSuccess;
+
+  /// No description provided for @adminAccountEditFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update account'**
+  String get adminAccountEditFailed;
 
   /// No description provided for @adminAccountChangeRoleTitle.
   ///
@@ -6406,6 +6748,30 @@ abstract class AppLocalizations {
   /// **'Delete failed'**
   String get storageDeleteFailed;
 
+  /// No description provided for @storageDereference.
+  ///
+  /// In en, this message translates to:
+  /// **'Release Reference'**
+  String get storageDereference;
+
+  /// No description provided for @storageDereferenceConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Release your reference to \"{fileName}\"? The file is removed only after no references remain.'**
+  String storageDereferenceConfirm(String fileName);
+
+  /// No description provided for @storageDereferenced.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference released: {fileName}'**
+  String storageDereferenced(String fileName);
+
+  /// No description provided for @storageDereferenceFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to release reference'**
+  String get storageDereferenceFailed;
+
   /// No description provided for @storageUploaded.
   ///
   /// In en, this message translates to:
@@ -6543,6 +6909,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total'**
   String get adminFileSummaryTotal;
+
+  /// No description provided for @adminFileLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load files'**
+  String get adminFileLoadFailed;
+
+  /// No description provided for @adminFileUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get adminFileUnknown;
+
+  /// No description provided for @adminFileTileMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner: {owner} (UID: {uid}) · {size} · Refs: {refs} · Uploads: {uploads}'**
+  String adminFileTileMeta(
+    String owner,
+    String uid,
+    String size,
+    int refs,
+    int uploads,
+  );
+
+  /// No description provided for @adminFileSummaryStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Files: {files} · Users: {users} · Total: {total}'**
+  String adminFileSummaryStats(int files, int users, String total);
 
   /// No description provided for @chatFunctionTabFiles.
   ///
@@ -6849,6 +7245,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transfer ownership before leaving the group'**
   String get groupLeaveOwnerHint;
+
+  /// No description provided for @groupDissolve.
+  ///
+  /// In en, this message translates to:
+  /// **'Dissolve Group'**
+  String get groupDissolve;
+
+  /// No description provided for @groupDissolveConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently dissolves the group and removes all members. This cannot be undone.'**
+  String get groupDissolveConfirm;
+
+  /// No description provided for @groupDissolveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Dissolve'**
+  String get groupDissolveAction;
+
+  /// No description provided for @groupDissolveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Group dissolved'**
+  String get groupDissolveSuccess;
+
+  /// No description provided for @groupDissolveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to dissolve group'**
+  String get groupDissolveFailed;
 
   /// No description provided for @groupInviteMember.
   ///

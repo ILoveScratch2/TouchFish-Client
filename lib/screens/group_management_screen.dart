@@ -311,6 +311,45 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
     if (mounted) context.go(AppRoutes.chat);
   }
 
+  Future<void> _dissolveGroup(AppLocalizations l10n) async {
+    if (!_isOwner) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.delete_forever_outlined),
+        title: Text(l10n.groupDissolve),
+        content: Text(l10n.groupDissolveConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.groupDissolveAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final ok = await TfApiClient.instance.deleteGroup(
+      _uid,
+      _password,
+      widget.gid,
+    );
+    if (!mounted) return;
+    if (!ok) {
+      _showSnack(l10n.groupDissolveFailed);
+      return;
+    }
+    await ChatDataService.instance.removeRoom('G${widget.gid}');
+    _showSnack(l10n.groupDissolveSuccess);
+    if (mounted) context.go(AppRoutes.chat);
+  }
+
   Future<void> _inviteMember(AppLocalizations l10n) async {
     final result = await showDialog<String>(
       context: context,
@@ -502,6 +541,16 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
                     title: Text(l10n.groupTransferOwner),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _chooseNewOwner(l10n),
+                  ),
+                if (_isOwner)
+                  ListTile(
+                    leading: Icon(Icons.delete_forever_outlined, color: cs.error),
+                    title: Text(
+                      l10n.groupDissolve,
+                      style: TextStyle(color: cs.error),
+                    ),
+                    subtitle: Text(l10n.groupDissolveConfirm),
+                    onTap: () => _dissolveGroup(l10n),
                   ),
                 ListTile(
                   leading: Icon(Icons.logout, color: cs.error),
