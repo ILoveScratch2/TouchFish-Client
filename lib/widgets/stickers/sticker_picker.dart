@@ -67,7 +67,7 @@ class _StickerPickerPanelState extends State<StickerPickerPanel> {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             scrollDirection: Axis.horizontal,
             itemCount: packs.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 4),
+            separatorBuilder: (_, _) => const SizedBox(width: 4),
             itemBuilder: (_, index) {
               final candidate = packs[index].pack;
               final image = candidate.iconHash ??

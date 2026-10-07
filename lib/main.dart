@@ -2,22 +2,28 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show FlutterView;
-import 'package:flutter/cupertino.dart' show CupertinoLocalizations;
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:virtual_keypad/virtual_keypad.dart';
 import 'l10n/app_localizations.dart';
 import 'models/app_state.dart';
 import 'models/settings_service.dart';
 import 'routes/app_routes.dart';
 import 'services/auth_state.dart';
+import 'services/api/tf_api_client.dart';
+import 'services/rsa_key_trust_service.dart';
+import 'services/app_foreground_service.dart';
 import 'services/app_notification_service.dart';
 import 'services/chat_data_service.dart';
 import 'services/chat_ws_service.dart';
+import 'services/call_service.dart';
 import 'services/app_update_service.dart';
 import 'services/app_update_flow.dart';
 import 'services/background_permission_service.dart';
@@ -27,12 +33,19 @@ import 'services/single_instance_service.dart';
 import 'services/notification_service.dart';
 import 'services/server_connection_status_service.dart';
 import 'services/ip_override_service.dart';
+import 'services/lock_service.dart';
+import 'services/lock_screen_visibility_service.dart';
+import 'services/snackbar_service.dart';
+import 'services/file_cache_service.dart';
 import 'utils/talker.dart';
 import 'widgets/app_alert_dialog.dart';
+import 'widgets/rsa_key_prompts.dart';
+import 'widgets/app_virtual_keyboard.dart';
 import 'widgets/notification_overlay.dart';
 import 'widgets/custom_title_bar.dart';
 import 'widgets/server_connection_banner.dart';
 import 'widgets/snackbar_overlay.dart';
+import 'widgets/task_overlay.dart';
 import 'utils/web_splash_stub.dart'
     if (dart.library.js) 'utils/web_splash_web.dart';
 
@@ -41,39 +54,50 @@ Future<void> main() async {
     WidgetsFlutterBinding.ensureInitialized();
     registerTalkerErrorHandlers();
     MediaKit.ensureInitialized();
+    initializeKeyboardLayouts();
 
     final isDesktop =
         !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
-    // Enforce a single running instance. If another instance is already
-    // running, signal it to show its window and exit this process before any
-    // Flutter window is created.
+    // 我们只能有一个 xsfx is running!（除非在设置里开了“允许多开”）
     if (isDesktop) {
-      final isPrimary =
-          await SingleInstanceService.instance.tryAcquireSingleInstance();
-      if (!isPrimary) {
-        talker.info('Exiting secondary TouchFish instance.');
-        exit(0);
+      final prefs = await SharedPreferences.getInstance();
+      final allowMultipleInstances =
+          prefs.getBool('allowMultipleInstances') ?? false;
+      if (!allowMultipleInstances) {
+        final isPrimary = await SingleInstanceService.instance
+            .tryAcquireSingleInstance();
+        if (!isPrimary) {
+          talker.info('Exiting secondary TouchFish instance.');
+          exit(0);
+        }
+      } else {
+        talker.info(
+          'Multiple instances enabled; skipping single-instance enforcement.',
+        );
       }
     }
 
     final startupRecovery = await _performStartupRecovery(isDesktop: isDesktop);
     await SettingsService.instance.init();
+    await LockService.instance.init();
     await IpOverrideService.instance.ensureDefaultDomain();
     await IpOverrideService.instance.refreshGlobal();
+    // 预热文件缓存（初始化缓存管理器并执行容量检查）
+    unawaited(FileCacheService.instance.warmup());
 
     if (isDesktop) {
       await windowManager.ensureInitialized();
-      // Only registers window/tray listeners now. The native window has not
-      // been created yet, so the tray icon must be set up after the window
-      // is ready (see waitUntilReadyToShow below).
+      // Windows Registry Editor Version 5.00
+      // 直接 reg（注册也是 reg tray）
       await DesktopAppLifecycleService.instance.initialize();
-      // When a second instance is launched, the primary instance shows its
-      // main window (from hidden tray state if necessary).
       SingleInstanceService.instance.onShowWindowRequested = () {
         unawaited(DesktopAppLifecycleService.instance.showWindow());
       };
     }
+
+    // 窗口焦点/应用生命周期状态：聊天页靠它区分"失焦期间的未读"与"真的看到了"
+    await AppForegroundService.instance.initialize();
 
     final prefs = await SharedPreferences.getInstance();
 
@@ -118,8 +142,7 @@ Future<void> main() async {
 
         await windowManager.setMinimumSize(minSize);
         await windowManager.setOpacity(windowOpacity);
-        // Native window is fully created here — set up the tray icon and
-        // intercept close events now that a valid HWND exists.
+        // reactNATIVE
         await DesktopAppLifecycleService.instance.afterWindowReady();
         await DesktopAppLifecycleService.instance.restoreWindowState();
         // 上次退出时窗口隐藏在托盘里：本次启动直接驻留托盘，不显示窗口
@@ -127,6 +150,8 @@ Future<void> main() async {
         if (!DesktopAppLifecycleService.instance.wasHiddenInTray) {
           await windowManager.show();
           await windowManager.focus();
+          // initialize() 早于窗口显示，这里显式纠正前台状态
+          AppForegroundService.instance.setWindowVisible(true);
         }
       });
     }
@@ -138,10 +163,12 @@ Future<void> main() async {
     talker.info('TouchFish Client started!');
 
     runApp(
-      TouchFishApp(
-        isFirstLaunch: isFirstLaunch,
-        hasSavedSession: hasSavedSession,
-        didResetLocalSettings: startupRecovery.didResetSharedPreferences,
+      ProviderScope(
+        child: TouchFishApp(
+          isFirstLaunch: isFirstLaunch,
+          hasSavedSession: hasSavedSession,
+          didResetLocalSettings: startupRecovery.didResetSharedPreferences,
+        ),
       ),
     );
 
@@ -353,7 +380,8 @@ class TouchFishApp extends StatefulWidget {
   State<TouchFishApp> createState() => _TouchFishAppState();
 }
 
-class _TouchFishAppState extends State<TouchFishApp> {
+class _TouchFishAppState extends State<TouchFishApp>
+    with WidgetsBindingObserver {
   final _appState = AppState.instance;
   late final _appListenable = Listenable.merge([
     _appState,
@@ -365,13 +393,22 @@ class _TouchFishAppState extends State<TouchFishApp> {
   );
   bool _didShowStartupResetNotice = false;
   bool _didStartSavedSessionRestore = false;
+  bool _didShowDeprecationNotice = false;
   late bool _wasLoggedIn;
+  RsaKeyCheckResult? _pendingRestoreKeyCheck;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _wasLoggedIn = AuthState.instance.isLoggedIn;
     AuthState.instance.sessionListenable.addListener(_onAuthStateChanged);
+    AuthState.instance.addListener(_onAuthNotice);
+    CallService.instance.onOpenCallScreen =
+        (peerUid, {required bool isIncoming}) async {
+      await _router.push(AppRoutes.callPath(peerUid));
+    };
+    CallService.instance.init();
     unawaited(AppNotificationService.instance.initialize(_router));
     BackgroundPermissionService.instance.installNotificationRouteHandler();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -380,7 +417,17 @@ class _TouchFishAppState extends State<TouchFishApp> {
       _startSavedSessionRestoreIfNeeded();
       _startNotificationPollingIfLoggedIn();
       unawaited(_runStartupChecks());
+      if (!kIsWeb && Platform.isAndroid) {
+        unawaited(LockScreenVisibilityService.instance.applyFromSettings());
+      }
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !kIsWeb && Platform.isAndroid) {
+      unawaited(LockScreenVisibilityService.instance.applyFromSettings());
+    }
   }
 
   Future<void> _runStartupChecks() async {
@@ -395,7 +442,8 @@ class _TouchFishAppState extends State<TouchFishApp> {
     if (!kIsWeb) {
       final result = await AppUpdateService.instance.checkForUpdate();
       if (!mounted || !result.hasUpdate) return;
-      final navigatorContext = _router.routerDelegate.navigatorKey.currentContext;
+      final navigatorContext =
+          _router.routerDelegate.navigatorKey.currentContext;
       if (navigatorContext == null || !navigatorContext.mounted) return;
       await AppUpdateFlow.instance.promptIfNeeded(
         navigatorContext,
@@ -437,13 +485,43 @@ class _TouchFishAppState extends State<TouchFishApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     AuthState.instance.sessionListenable.removeListener(_onAuthStateChanged);
+    AuthState.instance.removeListener(_onAuthNotice);
     NotificationService.instance.stopPolling();
     ForumPendingService.instance.stopPolling();
     super.dispose();
   }
 
+  /// 服务器 deprecation note
+  void _onAuthNotice() {
+    final notice = AuthState.instance.deprecationNotice;
+    if (notice == null || notice.isEmpty) {
+      _didShowDeprecationNotice = false;
+      return;
+    }
+    if (_didShowDeprecationNotice) return;
+    _didShowDeprecationNotice = true;
+    final navigatorContext =
+        _router.routerDelegate.navigatorKey.currentContext;
+    if (navigatorContext == null || !navigatorContext.mounted) return;
+    TouchFishSnackbarService.instance.show(notice);
+  }
+
   void _onAuthStateChanged() {
+    if (AuthState.instance.sessionExpiredNotice) {
+      AuthState.instance.clearSessionExpiredNotice();
+      final navigatorContext =
+          _router.routerDelegate.navigatorKey.currentContext;
+      if (navigatorContext != null && navigatorContext.mounted) {
+        final l10n = AppLocalizations.of(navigatorContext);
+        if (l10n != null) {
+          TouchFishSnackbarService.instance.show(l10n.sessionExpiredMessage);
+        }
+      }
+      _router.go(AppRoutes.login);
+    }
+
     final isLoggedIn = AuthState.instance.isLoggedIn;
     if (isLoggedIn == _wasLoggedIn) return;
     _wasLoggedIn = isLoggedIn;
@@ -465,13 +543,87 @@ class _TouchFishAppState extends State<TouchFishApp> {
     await BackgroundPermissionService.instance.clearBackgroundServiceConfig();
   }
 
-  void _startSavedSessionRestoreIfNeeded() {
+  Future<void> _startSavedSessionRestoreIfNeeded() async {
     if (!widget.hasSavedSession || _didStartSavedSessionRestore) {
       return;
     }
 
     _didStartSavedSessionRestore = true;
-    unawaited(AuthState.instance.restoreSavedSession());
+
+    final navigatorContext = _router.routerDelegate.navigatorKey.currentContext;
+    if (navigatorContext == null || !navigatorContext.mounted) {
+      unawaited(AuthState.instance.restoreSavedSession());
+      return;
+    }
+
+    // RSA 密钥变更时先让用户决策，避免用旧密钥登录失败后无法提示。
+    final canRestore = await _verifyRsaKeyForSessionRestore(navigatorContext);
+    if (!canRestore) return;
+
+    final restored = await AuthState.instance.restoreSavedSession();
+    if (!restored || !mounted) return;
+
+    _maybePromptFirstConnectAfterRestore(navigatorContext);
+  }
+
+  /// 已保存会话恢复前的 RSA 密钥校验；返回 false 表示用户选择断开。
+  Future<bool> _verifyRsaKeyForSessionRestore(BuildContext context) async {
+    try {
+      final livePem = await TfApiClient.instance.fetchRsaPublicKeyPem();
+      final result = await RsaKeyTrustService.instance.checkKey(livePem);
+      result.log();
+      if (result.kind == RsaKeyCheckKind.changed) {
+        final replaced = await promptRsaKeyChanged(
+          context,
+          newSha: result.liveFingerprint!,
+          oldSha: result.savedFingerprint ?? '',
+        );
+        if (replaced) {
+          await RsaKeyTrustService.instance.saveKey(result.livePem!);
+          return true;
+        }
+        return false;
+      }
+      if (result.kind == RsaKeyCheckKind.firstTime) {
+        _pendingRestoreKeyCheck = result;
+      }
+      return true;
+    } catch (e, stackTrace) {
+      talker.warning(
+        'RSA key verification before session restore failed',
+        e,
+        stackTrace,
+      );
+      return true;
+    }
+  }
+
+  /// 恢复成功后若为首次连接，提示保存 RSA 密钥。
+  void _maybePromptFirstConnectAfterRestore(BuildContext context) {
+    final result = _pendingRestoreKeyCheck;
+    _pendingRestoreKeyCheck = null;
+    if (result == null ||
+        result.kind != RsaKeyCheckKind.firstTime ||
+        result.dismissed ||
+        result.livePem == null) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final choice = await promptRsaFirstConnect(
+        context,
+        sha: result.liveFingerprint!,
+      );
+      switch (choice) {
+        case RsaFirstConnectChoice.save:
+          await RsaKeyTrustService.instance.saveKey(result.livePem!);
+        case RsaFirstConnectChoice.dontSave:
+          await RsaKeyTrustService.instance.dismissKey();
+        case RsaFirstConnectChoice.disconnect:
+          await AuthState.instance.logout();
+      }
+    });
   }
 
   void _showStartupResetNoticeIfNeeded(BuildContext context) {
@@ -563,10 +715,19 @@ class _TouchFishAppState extends State<TouchFishApp> {
     BuildContext context,
     AppLocalizations l10n,
   ) {
+    final reason = AuthState.instance.restoreFailureReason;
+    final (message, canRetry) = switch (reason) {
+      RestoreFailureReason.duplicateSession => (
+          l10n.sessionRestoreDuplicateMessage,
+          false,
+        ),
+      RestoreFailureReason.network => (l10n.sessionRestoreNetworkError, true),
+      _ => (l10n.savedSessionRestoreFailedMessage, true),
+    };
     return buildTouchFishErrorDialog(
       context,
       title: l10n.savedSessionRestoreFailedTitle,
-      message: l10n.savedSessionRestoreFailedMessage,
+      message: message,
       icon: Icons.cloud_off_rounded,
       selectableMessage: false,
       addDefaultActionWhenEmpty: false,
@@ -578,12 +739,13 @@ class _TouchFishAppState extends State<TouchFishApp> {
           },
           child: Text(MaterialLocalizations.of(context).okButtonLabel),
         ),
-        FilledButton(
-          onPressed: () {
-            unawaited(AuthState.instance.restoreSavedSession());
-          },
-          child: Text(l10n.retry),
-        ),
+        if (canRetry)
+          FilledButton(
+            onPressed: () {
+              unawaited(AuthState.instance.restoreSavedSession());
+            },
+            child: Text(l10n.retry),
+          ),
       ],
     );
   }
@@ -593,13 +755,29 @@ class _TouchFishAppState extends State<TouchFishApp> {
         !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
     return ListenableBuilder(
-      listenable: ServerConnectionStatusService.instance,
+      listenable: Listenable.merge([
+        ServerConnectionStatusService.instance,
+        AppVirtualKeyboard.keyboardInset,
+      ]),
       builder: (context, _) {
         final service = ServerConnectionStatusService.instance;
+        final keyboardInset = AppVirtualKeyboard.keyboardInset.value;
+        final resizedChild = keyboardInset > 0
+            ? MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  viewInsets: MediaQuery.of(context).viewInsets.copyWith(
+                    bottom:
+                        MediaQuery.of(context).viewInsets.bottom +
+                        keyboardInset,
+                  ),
+                ),
+                child: child,
+              )
+            : child;
 
         return Stack(
           children: [
-            child,
+            resizedChild,
             SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -652,6 +830,7 @@ class _TouchFishAppState extends State<TouchFishApp> {
               ),
             ),
             const AppNotificationOverlay(),
+            const AppVirtualKeyboard(),
           ],
         );
       },
@@ -711,7 +890,7 @@ class _TouchFishAppState extends State<TouchFishApp> {
               ),
               elevation: cardOpacity < 1 ? 0 : null,
             ),
-            pageTransitionsTheme: const PageTransitionsTheme(
+            pageTransitionsTheme: PageTransitionsTheme(
               builders: {
                 TargetPlatform.android: ZoomPageTransitionsBuilder(),
                 TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
@@ -735,7 +914,7 @@ class _TouchFishAppState extends State<TouchFishApp> {
               ),
               elevation: cardOpacity < 1 ? 0 : null,
             ),
-            pageTransitionsTheme: const PageTransitionsTheme(
+            pageTransitionsTheme: PageTransitionsTheme(
               builders: {
                 TargetPlatform.android: ZoomPageTransitionsBuilder(),
                 TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
@@ -753,30 +932,39 @@ class _TouchFishAppState extends State<TouchFishApp> {
               context,
               child ?? const SizedBox.shrink(),
             );
+            final contentWithTasks = Stack(
+              children: [
+                content,
+                TaskOverlay(
+                  navigatorContextProvider: () =>
+                      _router.routerDelegate.navigatorKey.currentContext,
+                ),
+              ],
+            );
             if (hasBackgroundImage && !kIsWeb) {
               return MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  disableAnimations: !_appState.animationsEnabled,
-                ),
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(disableAnimations: !_appState.animationsEnabled),
                 child: TouchFishSnackbarOverlay(
                   child: _buildSavedSessionRestoreOverlay(
                     context,
                     Container(
-                  color: Theme.of(context).colorScheme.surface,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      backgroundBlendMode: BlendMode.darken,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surface.withValues(alpha: 0.85),
-                      image: DecorationImage(
-                        opacity: 0.2,
-                        image: FileImage(File(backgroundImagePath)),
-                        fit: BoxFit.cover,
+                      color: Theme.of(context).colorScheme.surface,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          backgroundBlendMode: BlendMode.darken,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surface.withValues(alpha: 0.85),
+                          image: DecorationImage(
+                            opacity: 0.2,
+                            image: FileImage(File(backgroundImagePath)),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        child: contentWithTasks,
                       ),
-                    ),
-                    child: content,
-                  ),
                     ),
                   ),
                 ),
@@ -784,11 +972,11 @@ class _TouchFishAppState extends State<TouchFishApp> {
             }
             final animationsEnabled = _appState.animationsEnabled;
             return MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                disableAnimations: !animationsEnabled,
-              ),
+              data: MediaQuery.of(
+                context,
+              ).copyWith(disableAnimations: !animationsEnabled),
               child: TouchFishSnackbarOverlay(
-                child: _buildSavedSessionRestoreOverlay(context, content),
+                child: _buildSavedSessionRestoreOverlay(context, contentWithTasks),
               ),
             );
           },

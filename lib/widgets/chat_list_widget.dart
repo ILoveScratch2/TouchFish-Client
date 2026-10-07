@@ -1,8 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:material_symbols_icons/symbols.dart';
+import 'package:super_context_menu/super_context_menu.dart';
 import '../models/chat_model.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/chat/message_provider.dart';
+import '../services/chat_data_service.dart';
+import '../services/snackbar_service.dart';
+import 'optimized_image.dart';
+
+/// 测试或独立嵌入时可能没有祖先 ProviderScope（应用本体由 main.dart 提供），
+/// 缺了就自动补一层，保证 Consumer 后代（未读角标等）可用。
+Widget ensureProviderScope(BuildContext context, Widget child) {
+  try {
+    ProviderScope.containerOf(context, listen: false);
+    return child;
+  } on StateError {
+    return ProviderScope(child: child);
+  }
+}
 
 class ChatListWidget extends StatelessWidget {
   final List<ChatRoom> chatRooms;
@@ -11,6 +29,17 @@ class ChatListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ensureProviderScope(context, _ChatListContent(chatRooms: chatRooms));
+  }
+}
+
+class _ChatListContent extends ConsumerWidget {
+  final List<ChatRoom> chatRooms;
+
+  const _ChatListContent({required this.chatRooms});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final pinnedRooms = chatRooms.where((room) => room.isPinned).toList();
     final unpinnedRooms = chatRooms.where((room) => !room.isPinned).toList();
 
@@ -19,7 +48,7 @@ class ChatListWidget extends StatelessWidget {
         if (pinnedRooms.isNotEmpty) ...[
           _buildPinnedSection(context, pinnedRooms),
         ],
-        ...unpinnedRooms.map((room) => _buildChatRoomTile(context, room)),
+        ...unpinnedRooms.map((room) => _ChatRoomTile(room: room)),
       ],
     );
   }
@@ -31,29 +60,47 @@ class ChatListWidget extends StatelessWidget {
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
-        backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-        collapsedBackgroundColor: colorScheme.surfaceContainer.withOpacity(0.5),
+        backgroundColor: colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.5,
+        ),
+        collapsedBackgroundColor: colorScheme.surfaceContainer.withValues(
+          alpha: 0.5,
+        ),
         title: Text(l10n.chatPinned),
         leading: const Icon(Icons.push_pin),
         initiallyExpanded: true,
-        children: rooms
-            .map((room) => _buildChatRoomTile(context, room))
-            .toList(),
+        children: rooms.map((room) => _ChatRoomTile(room: room)).toList(),
       ),
     );
   }
+}
 
-  Widget _buildChatRoomTile(BuildContext context, ChatRoom room) {
+class _ChatRoomTile extends ConsumerStatefulWidget {
+  final ChatRoom room;
+
+  const _ChatRoomTile({required this.room});
+
+  @override
+  ConsumerState<_ChatRoomTile> createState() => _ChatRoomTileState();
+}
+
+class _ChatRoomTileState extends ConsumerState<_ChatRoomTile> {
+  ChatRoom get room => widget.room;
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final unread = ref.watch(unreadCountProvider(room.id));
+    final timeText = room.lastMessageTime != null
+        ? _formatRoomTime(room.lastMessageTime!, context)
+        : null;
 
-    return ListTile(
+    final listTile = ListTile(
       leading: _buildAvatar(context, room),
       title: Text(
         room.name,
         style: TextStyle(
-          fontWeight: room.unreadCount > 0
-              ? FontWeight.bold
-              : FontWeight.normal,
+          fontWeight: unread > 0 ? FontWeight.bold : FontWeight.normal,
         ),
       ),
       subtitle: room.lastMessage != null
@@ -62,7 +109,7 @@ class ChatListWidget extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: room.unreadCount > 0
+                color: unread > 0
                     ? colorScheme.onSurface
                     : colorScheme.onSurfaceVariant,
               ),
@@ -72,14 +119,14 @@ class ChatListWidget extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (room.lastMessageTime != null)
+          if (timeText != null)
             Text(
-              _formatTime(room.lastMessageTime!, context),
+              timeText,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
-          if (room.unreadCount > 0) ...[
+          if (unread > 0) ...[
             const SizedBox(height: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -89,7 +136,7 @@ class ChatListWidget extends StatelessWidget {
               ),
               constraints: const BoxConstraints(minWidth: 20),
               child: Text(
-                room.unreadCount > 99 ? '99+' : room.unreadCount.toString(),
+                unread > 99 ? '99+' : unread.toString(),
                 style: TextStyle(
                   color: colorScheme.onPrimary,
                   fontSize: 12,
@@ -105,6 +152,94 @@ class ChatListWidget extends StatelessWidget {
         context.go('/chat/${room.id}');
       },
     );
+
+    return ContextMenuWidget(
+      child: listTile,
+      menuProvider: (_) => _buildContextMenu(context),
+    );
+  }
+
+  Menu _buildContextMenu(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Menu(
+      children: [
+        MenuAction(
+          title: room.isPinned ? l10n.chatListUnpinRoom : l10n.chatListPinRoom,
+          image: MenuImage.icon(Symbols.push_pin),
+          callback: _togglePin,
+        ),
+        MenuAction(
+          title: l10n.chatListClearLocalData,
+          image: MenuImage.icon(Symbols.delete_forever),
+          attributes: const MenuActionAttributes(destructive: true),
+          callback: _clearLocalData,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _togglePin() async {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final snackbar = TouchFishSnackbarService.instance;
+
+    try {
+      final newPinState = !room.isPinned;
+      final success = await ChatDataService.instance.updateRoomPinState(
+        room.id,
+        newPinState,
+      );
+
+      if (success) {
+        snackbar.showSuccess(
+          newPinState ? l10n.chatRoomPinned : l10n.chatRoomUnpinned,
+        );
+      } else {
+        snackbar.showError(l10n.commonFailedOperation);
+      }
+    } catch (e) {
+      snackbar.showError('${l10n.commonFailedOperation}: $e');
+    }
+  }
+
+  Future<void> _clearLocalData() async {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final snackbar = TouchFishSnackbarService.instance;
+
+    try {
+      // 确认对话框
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(l10n.chatListClearLocalData),
+          content: Text(l10n.chatListClearLocalDataHint),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.chatListClearLocalDataCancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              child: Text(l10n.chatListClearLocalDataConfirm),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+
+      // 清除本地缓存
+      await ChatDataService.instance.clearRoomLocalData(room.id);
+
+      snackbar.showSuccess(l10n.chatListClearLocalDataSuccess);
+    } catch (e) {
+      snackbar.showError('${l10n.commonFailedOperation}: $e');
+    }
   }
 
   Widget _buildAvatar(BuildContext context, ChatRoom room) {
@@ -112,7 +247,14 @@ class ChatListWidget extends StatelessWidget {
 
     return CircleAvatar(
       backgroundColor: colorScheme.primaryContainer,
-      backgroundImage: room.avatar != null ? NetworkImage(room.avatar!) : null,
+      backgroundImage: room.avatar != null
+          ? resizedImageProvider(
+              NetworkImage(room.avatar!),
+              MediaQuery.of(context).devicePixelRatio,
+              width: 40,
+              height: 40,
+            )
+          : null,
       child: room.avatar == null
           ? Icon(
               room.type == ChatType.direct ? Icons.person : Icons.group,
@@ -121,28 +263,26 @@ class ChatListWidget extends StatelessWidget {
           : null,
     );
   }
+}
 
-  String _formatTime(DateTime time, BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final now = DateTime.now();
-    final difference = now.difference(time);
+String _formatRoomTime(DateTime time, BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
+  final now = DateTime.now();
+  final difference = now.difference(time);
 
-    if (difference.inDays == 0) {
-      // 今天显示时间
-      return DateFormat('HH:mm').format(time);
-    } else if (difference.inDays == 1) {
-      // 昨天就是昨天
-      return l10n.chatYesterday;
-    } else if (difference.inDays < 7) {
-      // 一周内显示星期
-      final locale = Localizations.localeOf(context);
-      final dateLocale = locale.languageCode == 'och'
-          ? 'zh'
-          : locale.toString();
-      return DateFormat.E(dateLocale).format(time);
-    } else {
-      // 超过一周显示日期
-      return DateFormat('MM/dd').format(time);
-    }
+  if (difference.inDays == 0) {
+    // 今天显示时间
+    return DateFormat('HH:mm').format(time);
+  } else if (difference.inDays == 1) {
+    // 昨天就是昨天
+    return l10n.chatYesterday;
+  } else if (difference.inDays < 7) {
+    // 一周内显示星期
+    final locale = Localizations.localeOf(context);
+    final dateLocale = locale.languageCode == 'och' ? 'zh' : locale.toString();
+    return DateFormat.E(dateLocale).format(time);
+  } else {
+    // 超过一周显示日期
+    return DateFormat('MM/dd').format(time);
   }
 }

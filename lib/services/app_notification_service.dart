@@ -12,22 +12,28 @@ import 'package:http/http.dart' as http;
 import '../models/app_notification.dart';
 import '../models/notification_level.dart';
 import '../models/settings_service.dart';
+import '../l10n/app_localizations.dart';
+import '../utils/l10n.dart';
 import '../utils/notification_avatar_attachment.dart';
 import '../utils/talker.dart';
 import 'inline_reply_service.dart';
 
 const appNotificationBaseDuration = Duration(seconds: 5);
 
-const androidInlineReplyActions = [
-  AndroidNotificationAction(
-    'reply',
-    '回复',
-    inputs: [AndroidNotificationActionInput(label: '输入回复')],
-    allowGeneratedReplies: true,
-    cancelNotification: false,
-    semanticAction: SemanticAction.reply,
-  ),
-];
+List<AndroidNotificationAction> buildInlineReplyActions(
+  AppLocalizations l10n,
+) {
+  return [
+    AndroidNotificationAction(
+      'reply',
+      l10n.notificationReplyAction,
+      inputs: [AndroidNotificationActionInput(label: l10n.notificationReplyInputHint)],
+      allowGeneratedReplies: true,
+      cancelNotification: false,
+      semanticAction: SemanticAction.reply,
+    ),
+  ];
+}
 
 @pragma('vm:entry-point')
 void onNotificationActionBackground(NotificationResponse response) {
@@ -117,10 +123,17 @@ class AppNotificationService extends ChangeNotifier
     _router = router;
   }
 
+  /// xsfx，we need you!
+  NotificationVisibility get _lockscreenVisibility =>
+      SettingsService.instance.getValue<bool>('lockscreenReply', true)
+          ? NotificationVisibility.public
+          : NotificationVisibility.private;
+
   /// 当前生效的通知分级。
   ///
   /// 分级只影响横幅展示逻辑，通知中心数据不变。
   /// 仅 Android 支持分级；其他平台始终为 [NotificationLevel.full]（原行为）。
+  /// Only A(ndroid) can do!
   NotificationLevel get notificationLevel {
     if (!kIsWeb &&
         defaultTargetPlatform == TargetPlatform.android &&
@@ -132,15 +145,13 @@ class AppNotificationService extends ChangeNotifier
     return NotificationLevel.full;
   }
 
-  /// 当前是否仅在收集聊天通知（一级/二级），
-  /// 非聊天通知（公告/论坛/系统事件）应始终以完整方式展示。
+  /// 当前是否仅在收集聊天通知
   bool _isChatNotification(AppNotification notification) =>
       notification.topic == 'message.private' ||
       notification.topic == 'message.group';
 
-  /// 抑制应用内横幅一段时间（例如应用刚启动/登录恢复历史通知时），
-  /// 期间新到达的事件只累计到各栏目的角标，不弹横幅轰炸用户；
-  /// 窗口结束后恢复正常横幅提醒。
+  
+  /// 不爆炸死 wyf
   void suppressInAppBanners(Duration duration) {
     _suppressInAppBanners = true;
     _bannerSuppressionTimer?.cancel();
@@ -153,7 +164,6 @@ class AppNotificationService extends ChangeNotifier
     _router = router;
     if (_initialized) return;
     _initialized = true;
-    // 观察者只注册一次，避免初始化失败重试时重复注册导致回调重复触发。
     if (!_observersRegistered) {
       _observersRegistered = true;
       WidgetsBinding.instance.addObserver(this);
@@ -161,17 +171,18 @@ class AppNotificationService extends ChangeNotifier
     }
     if (kIsWeb) return;
 
-    const darwinSettings = DarwinInitializationSettings(
+    final l10n = currentAppLocalizations();
+    final darwinSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
     );
-    const settings = InitializationSettings(
+    final settings = InitializationSettings(
       android: AndroidInitializationSettings('ic_notification'),
       iOS: darwinSettings,
       macOS: darwinSettings,
       linux: LinuxInitializationSettings(
-        defaultActionName: 'Open notification',
+        defaultActionName: l10n.notificationOpenAction,
       ),
       windows: WindowsInitializationSettings(
         appName: 'TouchFish',
@@ -283,7 +294,9 @@ class AppNotificationService extends ChangeNotifier
     // 一级：只显示一条汇总横幅。
     if (level == NotificationLevel.minimal) {
       if (_levelState.senderCount > 0) {
-        final summary = _buildSummaryNotification();
+        final summary = _buildSummaryNotification(
+          currentAppLocalizations(),
+        );
         newItems.add(
           AppNotificationItem(
             notification: summary,
@@ -328,24 +341,25 @@ class AppNotificationService extends ChangeNotifier
     notifyListeners();
   }
 
-  AppNotification _buildSummaryNotification() {
+  AppNotification _buildSummaryNotification(AppLocalizations l10n) {
     final contacts = _levelState.senderCount;
     final messages = _levelState.messageCount;
     return AppNotification(
       id: 'level_summary',
-      title: 'TouchFish Messages',
-      body: '$contacts contacts · $messages messages',
+      title: l10n.notificationSummaryTitle,
+      body: l10n.notificationLevelSummary(contacts, messages),
       route: '/chat',
       topic: 'message.summary',
-      subtitle: 'New chat messages',
+      subtitle: l10n.notificationSummarySubtitle,
     );
   }
 
   /// 聚合模式下的系统通知：将聚合状态直接显示为一条系统通知。
   Future<void> _showAggregatedSystemNotification() async {
     if (_levelState.senderCount == 0) return;
+    final l10n = currentAppLocalizations();
     final level = notificationLevel;
-    final summary = _buildSummaryNotification();
+    final summary = _buildSummaryNotification(l10n);
     final lastEntry = _levelState.latestBySender.entries.last;
     final notification = lastEntry.value;
 
@@ -355,17 +369,18 @@ class AppNotificationService extends ChangeNotifier
 
     final androidDetails = AndroidNotificationDetails(
       'touchfish_notifications',
-      'TouchFish notifications',
-      channelDescription: 'Messages and activity from TouchFish',
+      l10n.notificationChannelName,
+      channelDescription: l10n.notificationChannelDesc,
       importance: Importance.max,
       priority: Priority.high,
       playSound: SettingsService.instance.getValue<bool>(
         'notificationSound',
         true,
       ),
+      visibility: _lockscreenVisibility,
       actions:
           level == NotificationLevel.perSender && notification.canReply
-              ? androidInlineReplyActions
+              ? buildInlineReplyActions(l10n)
               : null,
     );
 
@@ -542,10 +557,11 @@ class AppNotificationService extends ChangeNotifier
         }
       }
     }
-    const androidDetails = AndroidNotificationDetails(
+    final l10n = currentAppLocalizations();
+    final androidDetails = AndroidNotificationDetails(
       'touchfish_notifications',
-      'TouchFish notifications',
-      channelDescription: 'Messages and activity from TouchFish',
+      l10n.notificationChannelName,
+      channelDescription: l10n.notificationChannelDesc,
       importance: Importance.max,
       priority: Priority.high,
     );
@@ -562,8 +578,9 @@ class AppNotificationService extends ChangeNotifier
         priority: androidDetails.priority,
         playSound: playSound,
         largeIcon: senderAvatar,
+        visibility: _lockscreenVisibility,
         actions: notification.canReply
-            ? androidInlineReplyActions
+            ? buildInlineReplyActions(l10n)
             : null,
       ),
       iOS: DarwinNotificationDetails(

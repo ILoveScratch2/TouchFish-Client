@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
@@ -12,6 +11,8 @@ import '../services/snackbar_service.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
 import '../utils/talker.dart';
+import '../utils/clipboard_utils.dart';
+import '../widgets/optimized_image.dart';
 
 const double _kProfileMaxWidth = 680;
 
@@ -224,6 +225,15 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
     }
   }
 
+  Future<void> _copyText(String text, String successMessage) async {
+    final copied = await copyTextToClipboard(text);
+    if (!mounted) return;
+    TouchFishSnackbarService.instance.show(
+      copied ? successMessage : AppLocalizations.of(context)!.copyFailedText,
+      type: copied ? SnackbarType.info : SnackbarType.error,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -334,7 +344,12 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
             radius: 72,
             backgroundColor: colorScheme.primaryContainer,
             backgroundImage: _groupAvatarUrl != null
-                ? NetworkImage(_groupAvatarUrl!)
+                ? resizedImageProvider(
+                    NetworkImage(_groupAvatarUrl!),
+                    MediaQuery.of(context).devicePixelRatio,
+                    width: 144,
+                    height: 144,
+                  )
                 : null,
             onBackgroundImageError: (_, _) {},
           ),
@@ -433,8 +448,7 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
               l10n.groupProfileGroupId,
               widget.gid,
               onTap: () {
-                Clipboard.setData(ClipboardData(text: widget.gid));
-                _showSnack(l10n.groupProfileGroupIdCopied);
+                _copyText(widget.gid, l10n.groupProfileGroupIdCopied);
               },
             ),
             if (_memberCount != null) ...[

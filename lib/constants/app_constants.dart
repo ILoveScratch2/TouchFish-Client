@@ -4,11 +4,13 @@ class AppConstants {
   static const String packageName = 'touchfish_client';
 
   // Default info
-  static const String defaultVersion = '0.0.1';
-  static const String defaultBuildNumber = '1';
+  static const String defaultVersion = '0.0.3';
+  static const String defaultBuildNumber = '3';
 
   // URLs
   static const String documentationUrl = 'https://touchfish.ilovescratch.us.ci';
+  static const String clientDocumentationUrl =
+      'https://touchfishclient.ilovescratch.us.ci/';
   static const String githubRepoUrl =
       'https://github.com/ILoveScratch2/TouchFish-Client';
   static const String githubServerRepoUrl =

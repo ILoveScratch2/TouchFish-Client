@@ -9,6 +9,7 @@ import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
 import '../services/snackbar_service.dart';
+import '../widgets/optimized_image.dart';
 
 /// 转发选择屏幕。
 ///
@@ -352,8 +353,14 @@ class _ForwardScreenState extends State<ForwardScreen> {
       leading: CircleAvatar(
         radius: 24,
         backgroundColor: colorScheme.primaryContainer,
-        backgroundImage:
-            target.avatar != null ? NetworkImage(target.avatar!) : null,
+        backgroundImage: target.avatar != null
+            ? resizedImageProvider(
+                NetworkImage(target.avatar!),
+                MediaQuery.of(context).devicePixelRatio,
+                width: 48,
+                height: 48,
+              )
+            : null,
         onBackgroundImageError: (_, _) {},
         child: target.avatar == null
             ? Icon(

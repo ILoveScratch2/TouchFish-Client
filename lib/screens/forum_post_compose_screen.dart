@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:super_clipboard/super_clipboard.dart';
 import '../services/clipboard_attachment_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,14 +10,17 @@ import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/image_compression_service.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/mention_text_field.dart';
 import '../utils/talker.dart';
+import '../utils/clipboard_utils.dart';
+import '../utils/wide_screen_helper.dart';
 import '../models/file_attachment.dart';
 import '../services/draft_service.dart';
 import '../widgets/file_attachment_view.dart';
-import '../widgets/stickers/sticker_picker.dart';
+import '../widgets/stickers/sticker_picker_enhanced.dart';
 
 class ForumPostComposeSheet extends StatefulWidget {
   final String forumId;
@@ -186,7 +188,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final screenSize = MediaQuery.of(context).size;
-    final isWide = screenSize.width > 600;
+    final isWide = WideScreenHelper.isWide(context);
     final viewInsets = MediaQuery.of(context).viewInsets;
 
     Widget content = Material(
@@ -444,13 +446,13 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => SafeArea(
+      builder: (sheetContext) => SafeArea(
         child: SizedBox(
           height: MediaQuery.of(context).size.height * 0.5,
-          child: StickerPickerPanel(
+          child: StickerPickerEnhanced(
             onPick: (pack, sticker) {
               _insertText(':${pack.prefix}+${sticker.slug}:');
-              Navigator.pop(context);
+              Navigator.pop(sheetContext);
             },
           ),
         ),
@@ -520,25 +522,19 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     final files = await service.checkAndReadFiles();
     if (files.isEmpty) {
       // Clipboard only has text – insert it manually.
-      final clipboard = SystemClipboard.instance;
-      if (clipboard != null) {
-        try {
-          final reader = await clipboard.read();
-          final text = await reader.readValue(Formats.plainText);
-          if (text != null && text.isNotEmpty && mounted) {
-            final value = _contentController.value;
-            final selection = value.selection;
-            final start =
-                selection.isValid ? selection.start : value.text.length;
-            final end =
-                selection.isValid ? selection.end : value.text.length;
-            _contentController.value = value.copyWith(
-              text: value.text.replaceRange(start, end, text),
-              selection: TextSelection.collapsed(offset: start + text.length),
-              composing: TextRange.empty,
-            );
-          }
-        } catch (_) {}
+      final text = await readTextFromClipboard();
+      if (text != null && text.isNotEmpty && mounted) {
+        final value = _contentController.value;
+        final selection = value.selection;
+        final start =
+            selection.isValid ? selection.start : value.text.length;
+        final end =
+            selection.isValid ? selection.end : value.text.length;
+        _contentController.value = value.copyWith(
+          text: value.text.replaceRange(start, end, text),
+          selection: TextSelection.collapsed(offset: start + text.length),
+          composing: TextRange.empty,
+        );
       }
       return;
     }
@@ -563,11 +559,16 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
           }
           continue;
         }
+        // 图片先本地压缩再上传（省流量与存储，原图不出本机）。
+        final prepared = await ImageCompressionService.instance
+            .prepareForUpload(bytes: file.bytes, fileName: file.fileName);
+        final uploadBytes = prepared?.bytes ?? file.bytes;
+        final uploadName = prepared?.fileName ?? file.fileName;
         final uploaded = await TfApiClient.instance.uploadFile(
           uid,
           password,
-          file.fileName,
-          base64Encode(file.bytes),
+          uploadName,
+          base64Encode(uploadBytes),
         );
         final hash =
             (uploaded?['hash'] ?? uploaded?['file_hash'])?.toString();
@@ -576,9 +577,9 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
           _attachments.add(
             FileAttachment(
               hash: hash,
-              fileName: file.fileName,
-              fileSize: file.fileSize,
-              mimeType: lookupMimeType(file.fileName),
+              fileName: uploadName,
+              fileSize: uploadBytes.length,
+              mimeType: lookupMimeType(uploadName),
             ),
           );
         });
@@ -622,11 +623,16 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
           }
           continue;
         }
+        // 图片先本地压缩再上传（省流量与存储，原图不出本机）。
+        final prepared = await ImageCompressionService.instance
+            .prepareForUpload(bytes: bytes, fileName: file.name);
+        final uploadBytes = prepared?.bytes ?? bytes;
+        final uploadName = prepared?.fileName ?? file.name;
         final uploaded = await TfApiClient.instance.uploadFile(
           uid,
           password,
-          file.name,
-          base64Encode(bytes),
+          uploadName,
+          base64Encode(uploadBytes),
         );
         final hash = (uploaded?['hash'] ?? uploaded?['file_hash'])?.toString();
         if (hash == null || hash.isEmpty || !mounted) continue;
@@ -634,9 +640,9 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
           _attachments.add(
             FileAttachment(
               hash: hash,
-              fileName: file.name,
-              fileSize: file.size,
-              mimeType: lookupMimeType(file.name),
+              fileName: uploadName,
+              fileSize: uploadBytes.length,
+              mimeType: lookupMimeType(uploadName),
             ),
           );
         });

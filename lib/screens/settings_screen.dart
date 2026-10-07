@@ -16,12 +16,19 @@ import '../services/font_loader_service.dart';
 import '../services/draft_service.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
+import '../utils/wide_screen_helper.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/local_storage_settings.dart';
 import '../services/media_proxy_service.dart';
 import '../services/ip_override_service.dart';
 import '../services/server_connection_status_service.dart';
+import '../services/domain_trust_service.dart';
+import '../services/browser_service.dart';
+import '../services/search_engines.dart';
+import '../services/lock_service.dart';
+import '../services/lock_screen_visibility_service.dart';
 import 'connectivity_self_check_screen.dart';
+import 'rsa_key_management_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -64,17 +71,24 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWideScreen = constraints.maxWidth >= 600;
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isWideScreen = WideScreenHelper.isWideWithWidth(
+              constraints.maxWidth,
+            );
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(AppLocalizations.of(context)!.settingsTitle),
-          ),
-          body: isWideScreen
-              ? _buildWideLayout(context)
-              : _buildNarrowLayout(context),
+            return Scaffold(
+              appBar: AppBar(
+                title: Text(AppLocalizations.of(context)!.settingsTitle),
+              ),
+              body: isWideScreen
+                  ? _buildWideLayout(context)
+                  : _buildNarrowLayout(context),
+            );
+          },
         );
       },
     );
@@ -243,6 +257,14 @@ class _SettingsScreenState extends State<SettingsScreen>
         defaultTargetPlatform == TargetPlatform.android;
     final visibleItems = categoryData.items.where((item) {
       if (item.key == 'notificationLevel') return isAndroid;
+      if (item.key == 'lockscreenReply') return isAndroid;
+      if (item.key == 'showOnLockScreen') return isAndroid;
+      if (item.key == 'builtInKeyboardMode') return isAndroid;
+      if (item.key == 'linkOpenMode') return isAndroid;
+      if (item.key == 'browserSearchEngine') return isAndroid;
+      if (item.key == 'browserUserAgent') return isAndroid;
+      if (item.key == 'browserMixedContent') return isAndroid;
+      if (item.key == 'launchInAppBrowser') return isAndroid;
       return true;
     }).toList();
     return ListView.builder(
@@ -278,10 +300,18 @@ class _SettingsScreenState extends State<SettingsScreen>
         if (item.key == 'language' ||
            
             item.key == 'themeColor' ||
+            item.key == 'layoutMode' ||
+            item.key == 'messageDisplayStyle' ||
+            item.key == 'builtInKeyboardMode' ||
+            item.key == 'linkOpenMode' ||
+            item.key == 'browserMixedContent' ||
             item.key == 'explicitSyncCooldownSeconds' ||
             item.key == 'ipOverrideMode' ||
             item.key == 'notificationLevel' ||
           return _buildCustomDropdownSetting(context, l10n, item);
+        }
+        if (item.key == 'browserSearchEngine') {
+          return _buildSearchEngineSetting(context, l10n);
         }
         if (item.key == 'theme') {
           return _buildToggleSwitchSetting(context, l10n, item);
@@ -313,7 +343,10 @@ class _SettingsScreenState extends State<SettingsScreen>
           );
         }
         if (item.key == 'maxCachedRooms') {
-          return _buildMaxCachedRoomsSetting(context);
+          return _buildMaxCachedRoomsSetting(context, l10n);
+        }
+        if (item.key == 'wideScreenThreshold') {
+          return _buildWideScreenThresholdSetting(context, l10n);
         }
         if (item.key == 'automaticPreviewMaxMiB') {
           return _buildAutomaticPreviewSetting(context, l10n, item);
@@ -321,14 +354,415 @@ class _SettingsScreenState extends State<SettingsScreen>
         if (item.key == 'localStorage') {
           return const LocalStorageSettings();
         }
-        if (item.key == 'ipOverrideDomains' || item.key == 'ipOverrideEntries') {
+        if (item.key == 'ipOverrideDomains' ||
+            item.key == 'ipOverrideEntries') {
           return _buildIpOverrideEditor(context, l10n, item);
+        }
+        if (item.key == 'trustedDomains') {
+          return _buildTrustedDomainsEditor(context, l10n, item);
         }
         if (item.key == 'connectionStatus') {
           return _buildConnectionStatusPreview(context, l10n, item);
         }
+        if (item.key == 'masterPassword') {
+          return _buildMasterPasswordSetting(context, l10n);
+        }
+        if (item.key == 'browserUserAgent') {
+          return _buildBrowserUserAgentSetting(context, l10n);
+        }
+        if (item.key == 'biometricUnlock') {
+          return _buildBiometricSetting(context, l10n);
+        }
+        if (item.key == 'lockNow') {
+          return _buildLockNowSetting(context, l10n);
+        }
         return const SizedBox.shrink();
     }
+  }
+
+  Widget _buildBrowserUserAgentSetting(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        final value = _settingsService.getValue<String>(
+          'browserUserAgent',
+          '',
+        );
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: ListTile(
+              leading: const Icon(Icons.devices),
+              title: Text(l10n.settingsBrowserUserAgentTitle),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.settingsBrowserUserAgentDesc),
+                  const SizedBox(height: 4),
+                  Text(
+                    value.isEmpty
+                        ? l10n.settingsBrowserUserAgentDefault
+                        : value,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              onTap: () async {
+                final controller = TextEditingController(text: value);
+                final result = await showDialog<String>(
+                  context: context,
+                  builder: (dialogContext) => AlertDialog(
+                    title: Text(l10n.settingsBrowserUserAgentTitle),
+                    content: TextField(
+                      controller: controller,
+                      maxLines: 3,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: l10n.settingsBrowserUserAgentHint,
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: Text(l10n.cancel),
+                      ),
+                      FilledButton(
+                        onPressed: () =>
+                            Navigator.pop(dialogContext, controller.text),
+                        child: Text(l10n.confirm),
+                      ),
+                    ],
+                  ),
+                );
+                controller.dispose();
+                if (result != null) {
+                  await _settingsService.setValue(
+                    'browserUserAgent',
+                    result.trim(),
+                  );
+                }
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _engineLabel(AppLocalizations l10n, SearchEngineConfig engine) {
+    switch (engine.id) {
+      case 'duckduckgo':
+        return l10n.settingsBrowserSearchEngineDuckduckgo;
+      case 'baidu':
+        return l10n.settingsBrowserSearchEngineBaidu;
+      default:
+        return l10n.settingsBrowserSearchEngineBing;
+    }
+  }
+
+  /// 搜索引擎选择（对照 Telegram WebBrowserSettings 的搜索引擎入口）：
+  /// 点击弹出选择对话框，每项可查看隐私政策。
+  Widget _buildSearchEngineSetting(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        final value = _settingsService.getValue<String>(
+          'browserSearchEngine',
+          'bing',
+        );
+        final engine = SearchEngineConfig.byId(value);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: ListTile(
+              leading: const Icon(Icons.search),
+              title: Text(l10n.settingsBrowserSearchEngineTitle),
+              subtitle: Text(
+                engine == null
+                    ? l10n.settingsBrowserSearchEngineBing
+                    : _engineLabel(l10n, engine),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () async {
+                final current = engine?.id ?? 'bing';
+                final selected = await _showSearchEnginePicker(
+                  context,
+                  l10n,
+                  current,
+                );
+                if (selected != null && mounted) {
+                  await _settingsService.setValue(
+                    'browserSearchEngine',
+                    selected,
+                  );
+                }
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 返回 null 表示未选择；否则为引擎 id。
+  Future<String?> _showSearchEnginePicker(
+    BuildContext context,
+    AppLocalizations l10n,
+    String current,
+  ) async {
+    String selected = current;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text(l10n.settingsBrowserSearchEngineTitle),
+          content: RadioGroup<String>(
+            groupValue: selected,
+            onChanged: (v) => setDialogState(() => selected = v ?? selected),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final engine in SearchEngineConfig.all)
+                  ListTile(
+                    leading: Radio<String>(value: engine.id),
+                    title: Text(_engineLabel(l10n, engine)),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.privacy_tip_outlined, size: 20),
+                      tooltip: l10n.settingsBrowserSearchEnginePrivacy,
+                      onPressed: () {
+                        final uri = Uri.tryParse(engine.privacyPolicyUrl);
+                        if (uri != null) {
+                          BrowserService.instance.openUri(dialogContext, uri);
+                        }
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.confirm),
+            ),
+          ],
+        ),
+      ),
+    );
+    return confirmed == true ? selected : null;
+  }
+
+  Widget _buildMasterPasswordSetting(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return ListenableBuilder(
+      listenable: LockService.instance,
+      builder: (context, _) {
+        final enabled = LockService.instance.isEnabled;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.password),
+                  title: Text(l10n.settingsSecurityMasterPasswordTitle),
+                  subtitle: Text(l10n.settingsSecurityMasterPasswordDesc),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.lock_outline),
+                  title: Text(
+                    enabled
+                        ? l10n.settingsSecurityChangePassword
+                        : l10n.settingsSecuritySetPassword,
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _handlePasswordAction(context, change: enabled),
+                ),
+                if (enabled)
+                  ListTile(
+                    leading: const Icon(Icons.lock_open),
+                    title: Text(l10n.settingsSecurityDisablePassword),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _handleDisablePassword(context),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handlePasswordAction(
+    BuildContext context, {
+    required bool change,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showDialog<_SecurityPasswordResult>(
+      context: context,
+      builder: (_) => _SecurityPasswordDialog(
+        mode: change
+            ? _SecurityPasswordDialogMode.change
+            : _SecurityPasswordDialogMode.set,
+        l10n: l10n,
+      ),
+    );
+    if (result == null || !context.mounted) return;
+    try {
+      if (change) {
+        await LockService.instance.changeMasterPassword(
+          result.current!,
+          result.newPassword!,
+        );
+        if (context.mounted) {
+          TouchFishSnackbarService.instance.show(
+            l10n.settingsSecurityPasswordChanged,
+          );
+        }
+      } else {
+        await LockService.instance.enableMasterPassword(result.newPassword!);
+        if (context.mounted) {
+          TouchFishSnackbarService.instance.show(
+            l10n.settingsSecurityPasswordSet,
+          );
+        }
+      }
+    } on LockException {
+      if (context.mounted) {
+        TouchFishSnackbarService.instance.show(
+          l10n.settingsSecurityPasswordIncorrect,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDisablePassword(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showTouchFishErrorDialog<bool>(
+      context,
+      title: l10n.settingsSecurityDisablePassword,
+      message: l10n.settingsSecurityDisablePasswordConfirm,
+      icon: Icons.lock_open_rounded,
+      actions: [
+        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
+        TouchFishDialogAction<bool>(
+          label: l10n.settingsSecurityDisablePassword,
+          result: true,
+          isPrimary: true,
+          isDestructive: true,
+        ),
+      ],
+    );
+    if (confirmed != true || !context.mounted) return;
+    final result = await showDialog<_SecurityPasswordResult>(
+      context: context,
+      builder: (_) => _SecurityPasswordDialog(
+        mode: _SecurityPasswordDialogMode.disable,
+        l10n: l10n,
+      ),
+    );
+    if (result?.current == null || !context.mounted) return;
+    try {
+      await LockService.instance.disableMasterPassword(result!.current!);
+      if (context.mounted) {
+        TouchFishSnackbarService.instance.show(
+          l10n.settingsSecurityPasswordDisabled,
+        );
+      }
+    } on LockException {
+      if (context.mounted) {
+        TouchFishSnackbarService.instance.show(
+          l10n.settingsSecurityPasswordIncorrect,
+        );
+      }
+    }
+  }
+
+  Widget _buildBiometricSetting(BuildContext context, AppLocalizations l10n) {
+    return ListenableBuilder(
+      listenable: LockService.instance,
+      builder: (context, _) {
+        final service = LockService.instance;
+        if (!service.isEnabled) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: SwitchListTile(
+              secondary: const Icon(Icons.fingerprint),
+              title: Text(l10n.settingsSecurityBiometricTitle),
+              subtitle: Text(l10n.settingsSecurityBiometricDesc),
+              value: service.isBiometricEnabled,
+              onChanged: (value) async {
+                try {
+                  if (value) {
+                    await service.enableBiometric();
+                  } else {
+                    await service.disableBiometric();
+                  }
+                } on LockException catch (error) {
+                  if (context.mounted) {
+                    TouchFishSnackbarService.instance.show(
+                      error.code == 'biometricUnavailable'
+                          ? l10n.settingsSecurityBiometricUnavailable
+                          : error.code == 'biometricCancelled'
+                          ? l10n.settingsSecurityBiometricCancelled
+                          : l10n.settingsSecurityBiometricFailed,
+                    );
+                  }
+                } catch (_) {
+                  if (context.mounted) {
+                    TouchFishSnackbarService.instance.show(
+                      l10n.settingsSecurityBiometricFailed,
+                    );
+                  }
+                }
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLockNowSetting(BuildContext context, AppLocalizations l10n) {
+    return ListenableBuilder(
+      listenable: LockService.instance,
+      builder: (context, _) {
+        final enabled = LockService.instance.isEnabled;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: ListTile(
+              enabled: enabled,
+              leading: const Icon(Icons.lock),
+              title: Text(l10n.settingsSecurityLockNowTitle),
+              subtitle: Text(l10n.settingsSecurityLockNowDesc),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => LockService.instance.lock(),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildCustomDropdownSetting(
@@ -383,8 +817,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                   ),
                   const SizedBox(width: 16),
+                  // 宽 170：容纳"列式模式（Discord风格）"级的长选项标签
                   SizedBox(
-                    width: 140,
+                    width: 170,
                     child: CustomDropdown<String>(
                       hintText: '',
                       initialItem: selectedLabel,
@@ -407,14 +842,17 @@ class _SettingsScreenState extends State<SettingsScreen>
                             (o) =>
                                 _getSettingTitle(l10n, o.labelKey) == newValue,
                           );
-                            await _settingsService.setValue(item.key, option.value);
-                           if (item.key == 'ipOverrideMode') {
-                             await IpOverrideService.instance.setMode(
-                               IpOverrideMode.values.firstWhere(
-                                 (mode) => mode.name == option.value,
-                               ),
-                             );
-                           }
+                          await _settingsService.setValue(
+                            item.key,
+                            option.value,
+                          );
+                          if (item.key == 'ipOverrideMode') {
+                            await IpOverrideService.instance.setMode(
+                              IpOverrideMode.values.firstWhere(
+                                (mode) => mode.name == option.value,
+                              ),
+                            );
+                          }
                         }
                       },
                     ),
@@ -826,6 +1264,16 @@ class _SettingsScreenState extends State<SettingsScreen>
               value: value,
               onChanged: (newValue) async {
                 await _settingsService.setValue(item.key, newValue);
+                if (item.key == 'showOnLockScreen') {
+                  final applied = await LockScreenVisibilityService.instance
+                      .setEnabled(newValue);
+                  if (!applied && context.mounted) {
+                    await _settingsService.setValue(item.key, value);
+                    TouchFishSnackbarService.instance.show(
+                      l10n.commonFailedOperation,
+                    );
+                  }
+                }
                 if (!newValue && item.key == 'mediaProxyEnabled') {
                   await MediaProxyService.instance.stop();
                 }
@@ -1053,7 +1501,22 @@ class _SettingsScreenState extends State<SettingsScreen>
             } else if (item.key == 'connectivitySelfCheck') {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ConnectivitySelfCheckScreen()),
+                MaterialPageRoute(
+                  builder: (_) => const ConnectivitySelfCheckScreen(),
+                ),
+              );
+            } else if (item.key == 'launchInAppBrowser') {
+              if (kIsWeb || !Platform.isAndroid) {
+                return;
+              }
+              context.push('/browser');
+            } else if (item.key == 'savedRsaKeys' ||
+                item.key == 'savedRsaKeysSecurity') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const RsaKeyManagementScreen(),
+                ),
               );
             }
           },
@@ -1062,7 +1525,10 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  Widget _buildMaxCachedRoomsSetting(BuildContext context) {
+  Widget _buildMaxCachedRoomsSetting(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
     return ListenableBuilder(
       listenable: _settingsService,
       builder: (context, _) {
@@ -1086,13 +1552,13 @@ class _SettingsScreenState extends State<SettingsScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '消息缓存房间数',
+                              l10n.maxCachedRooms,
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             Padding(
                               padding: const EdgeInsets.only(top: 4.0),
                               child: Text(
-                                '内存中保留的最大聊天房间数，超出后驱逐最久未使用的记录',
+                                l10n.maxCachedRoomsDesc,
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ),
@@ -1100,7 +1566,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                         ),
                       ),
                       Text(
-                        '${currentVal.round()} 个',
+                        l10n.maxCachedRoomsCount(currentVal.round()),
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ],
@@ -1118,6 +1584,80 @@ class _SettingsScreenState extends State<SettingsScreen>
                         v.round(),
                       );
                     },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildWideScreenThresholdSetting(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, _) {
+        final mode = _settingsService.getValue<String>('layoutMode', 'auto');
+        final enabled = mode == 'auto';
+        final currentVal = _settingsService
+            .getValue<int>('wideScreenThreshold', 600)
+            .toDouble()
+            .clamp(400.0, 1200.0);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.vertical_align_center),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.settingsWideThresholdTitle,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Text(
+                                l10n.settingsWideThresholdDesc,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        l10n.settingsWideThresholdValue(currentVal.round()),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Slider(
+                    value: currentVal,
+                    min: 400,
+                    max: 1200,
+                    divisions: 16,
+                    label: l10n.settingsWideThresholdValue(currentVal.round()),
+                    onChanged: enabled
+                        ? (v) async {
+                            await _settingsService.setValue(
+                              'wideScreenThreshold',
+                              v.round(),
+                            );
+                          }
+                        : null,
                   ),
                 ],
               ),
@@ -1245,18 +1785,29 @@ class _SettingsScreenState extends State<SettingsScreen>
       builder: (context, _) {
         final value = item.key == 'ipOverrideDomains'
             ? service.domains.join(', ')
-            : service.entries.map((entry) => '${entry.ip}${entry.port == null ? '' : ':${entry.port}'}').join(', ');
+            : service.entries
+                  .map(
+                    (entry) =>
+                        '${entry.ip}${entry.port == null ? '' : ':${entry.port}'}',
+                  )
+                  .join(', ');
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Card(
             child: ListTile(
               leading: Icon(item.icon),
               title: Text(_getSettingTitle(l10n, item.titleKey)),
-              subtitle: Text(value.isEmpty ? _getSettingTitle(l10n, item.descriptionKey!) : value),
+              subtitle: Text(
+                value.isEmpty
+                    ? _getSettingTitle(l10n, item.descriptionKey!)
+                    : value,
+              ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () async {
                 if (item.key == 'ipOverrideDomains') {
-                  final controller = TextEditingController(text: service.domains.join('\n'));
+                  final controller = TextEditingController(
+                    text: service.domains.join('\n'),
+                  );
                   final result = await showDialog<String>(
                     context: context,
                     builder: (dialogContext) => AlertDialog(
@@ -1264,38 +1815,80 @@ class _SettingsScreenState extends State<SettingsScreen>
                       content: TextField(
                         controller: controller,
                         maxLines: 6,
-                        decoration: InputDecoration(hintText: _getSettingTitle(l10n, item.descriptionKey!)),
+                        decoration: InputDecoration(
+                          hintText: _getSettingTitle(
+                            l10n,
+                            item.descriptionKey!,
+                          ),
+                        ),
                       ),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(l10n.cancel)),
-                        FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text), child: Text(l10n.confirm)),
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: Text(l10n.cancel),
+                        ),
+                        FilledButton(
+                          onPressed: () =>
+                              Navigator.pop(dialogContext, controller.text),
+                          child: Text(l10n.confirm),
+                        ),
                       ],
                     ),
                   );
                   controller.dispose();
                   if (result != null) {
-                    await service.setDomains(result.split(RegExp(r'[\n,]')).map((v) => v.trim()).where((v) => v.isNotEmpty).toList());
+                    await service.setDomains(
+                      result
+                          .split(RegExp(r'[\n,]'))
+                          .map((v) => v.trim())
+                          .where((v) => v.isNotEmpty)
+                          .toList(),
+                    );
                   }
                 } else {
-                  final controller = TextEditingController(text: service.entries.map((entry) => '${entry.ip}${entry.port == null ? '' : ':${entry.port}'}').join('\n'));
+                  final controller = TextEditingController(
+                    text: service.entries
+                        .map(
+                          (entry) =>
+                              '${entry.ip}${entry.port == null ? '' : ':${entry.port}'}',
+                        )
+                        .join('\n'),
+                  );
                   final result = await showDialog<String>(
                     context: context,
                     builder: (dialogContext) => AlertDialog(
                       title: Text(_getSettingTitle(l10n, item.titleKey)),
-                      content: TextField(controller: controller, maxLines: 6, decoration: InputDecoration(hintText: '1.2.3.4:443')),
+                      content: TextField(
+                        controller: controller,
+                        maxLines: 6,
+                        decoration: InputDecoration(hintText: '1.2.3.4:443'),
+                      ),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(l10n.cancel)),
-                        FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text), child: Text(l10n.confirm)),
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: Text(l10n.cancel),
+                        ),
+                        FilledButton(
+                          onPressed: () =>
+                              Navigator.pop(dialogContext, controller.text),
+                          child: Text(l10n.confirm),
+                        ),
                       ],
                     ),
                   );
                   controller.dispose();
                   if (result != null) {
-                    final entries = result.split(RegExp(r'[\n,]')).map((value) {
-                      final parts = value.trim().split(':');
-                      final port = parts.length > 1 ? int.tryParse(parts.last) : null;
-                      return IpOverrideEntry(ip: parts.first, port: port);
-                    }).where((entry) => entry.ip.isNotEmpty).toList();
+                    final entries = result
+                        .split(RegExp(r'[\n,]'))
+                        .map((value) {
+                          final parts = value.trim().split(':');
+                          final port = parts.length > 1
+                              ? int.tryParse(parts.last)
+                              : null;
+                          return IpOverrideEntry(ip: parts.first, port: port);
+                        })
+                        .where((entry) => entry.ip.isNotEmpty)
+                        .toList();
                     await service.setEntries(entries);
                   }
                 }
@@ -1307,24 +1900,115 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
+  Widget _buildTrustedDomainsEditor(
+    BuildContext context,
+    AppLocalizations l10n,
+    SettingItem item,
+  ) {
+    return ListenableBuilder(
+      listenable: DomainTrustService.instance,
+      builder: (context, _) {
+        final domains = DomainTrustService.instance.trustedDomains;
+        final shown = domains.take(3).join(', ');
+        final summary = domains.isEmpty
+            ? ''
+            : shown + (domains.length > 3 ? '  (+${domains.length - 3})' : '');
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Card(
+            child: ListTile(
+              leading: Icon(item.icon),
+              title: Text(_getSettingTitle(l10n, item.titleKey)),
+              subtitle: Text(
+                summary.isEmpty
+                    ? _getSettingTitle(l10n, item.descriptionKey!)
+                    : summary,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _editTrustedDomains(context, l10n, domains),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _editTrustedDomains(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<String> domains,
+  ) async {
+    final controller = TextEditingController(text: domains.join('\n'));
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(_getSettingTitle(l10n, 'settingsTrustedDomainsTitle')),
+        content: TextField(
+          controller: controller,
+          maxLines: 8,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: _getSettingTitle(l10n, 'settingsTrustedDomainsDesc'),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, 'reset'),
+            child: Text(l10n.settingsTrustedDomainsReset),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            child: Text(l10n.confirm),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (result == null) return;
+    if (result == 'reset') {
+      await DomainTrustService.instance.resetTrustedDomains();
+    } else {
+      await DomainTrustService.instance.setTrustedDomains(
+        result
+            .split(RegExp(r'[\n,]'))
+            .map((v) => v.trim())
+            .where((v) => v.isNotEmpty)
+            .toList(),
+      );
+    }
+  }
+
   Widget _buildConnectionStatusPreview(
     BuildContext context,
     AppLocalizations l10n,
     SettingItem item,
   ) {
     return ListenableBuilder(
-      listenable: Listenable.merge([IpOverrideService.instance, ServerConnectionStatusService.instance]),
+      listenable: Listenable.merge([
+        IpOverrideService.instance,
+        ServerConnectionStatusService.instance,
+      ]),
       builder: (context, _) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Card(
           child: ListTile(
             leading: const Icon(Icons.network_check),
             title: Text(_getSettingTitle(l10n, item.titleKey)),
-            subtitle: Text('${ServerConnectionStatusService.instance.phase.name} · ${IpOverrideService.instance.mode.name} · ${IpOverrideService.instance.entries.isEmpty ? l10n.settingsIpOverrideNoEntry : IpOverrideService.instance.entries.first.ip}'),
+            subtitle: Text(
+              '${ServerConnectionStatusService.instance.phase.name} · ${IpOverrideService.instance.mode.name} · ${IpOverrideService.instance.entries.isEmpty ? l10n.settingsIpOverrideNoEntry : IpOverrideService.instance.entries.first.ip}',
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const ConnectivitySelfCheckScreen()),
+              MaterialPageRoute(
+                builder: (_) => const ConnectivitySelfCheckScreen(),
+              ),
             ),
           ),
         ),
@@ -1353,6 +2037,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsCategoryConnection;
       case 'settingsCategoryStorage':
         return l10n.settingsCategoryStorage;
+      case 'settingsCategorySecurity':
+        return l10n.settingsCategorySecurity;
       case 'settingsCategoryAbout':
         return l10n.settingsCategoryAbout;
       default:
@@ -1423,6 +2109,20 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsEnableMarkdownTitle;
       case 'settingsEnableMarkdownDesc':
         return l10n.settingsEnableMarkdownDesc;
+      case 'settingsChatVoiceButtonTitle':
+        return l10n.settingsChatVoiceButtonTitle;
+      case 'settingsChatVoiceButtonDesc':
+        return l10n.settingsChatVoiceButtonDesc;
+      case 'settingsMessageDisplayStyleTitle':
+        return l10n.settingsMessageDisplayStyleTitle;
+      case 'settingsMessageDisplayStyleDesc':
+        return l10n.settingsMessageDisplayStyleDesc;
+      case 'settingsMessageDisplayStyleBubble':
+        return l10n.settingsMessageDisplayStyleBubble;
+      case 'settingsMessageDisplayStyleCompact':
+        return l10n.settingsMessageDisplayStyleCompact;
+      case 'settingsMessageDisplayStyleColumn':
+        return l10n.settingsMessageDisplayStyleColumn;
       case 'settingsAutomaticPreviewTitle':
         return l10n.settingsAutomaticPreviewTitle;
       case 'settingsAutomaticPreviewDesc':
@@ -1447,6 +2147,20 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsEnableAnimationsTitle;
       case 'settingsEnableAnimationsDesc':
         return l10n.settingsEnableAnimationsDesc;
+      case 'settingsLayoutModeTitle':
+        return l10n.settingsLayoutModeTitle;
+      case 'settingsLayoutModeDesc':
+        return l10n.settingsLayoutModeDesc;
+      case 'settingsLayoutModeAuto':
+        return l10n.settingsLayoutModeAuto;
+      case 'settingsLayoutModeForceWide':
+        return l10n.settingsLayoutModeForceWide;
+      case 'settingsLayoutModeForceNarrow':
+        return l10n.settingsLayoutModeForceNarrow;
+      case 'settingsWideThresholdTitle':
+        return l10n.settingsWideThresholdTitle;
+      case 'settingsWideThresholdDesc':
+        return l10n.settingsWideThresholdDesc;
       case 'settingsWeakNetworkTitle':
         return l10n.settingsWeakNetworkTitle;
       case 'settingsWeakNetworkDesc':
@@ -1455,6 +2169,18 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsDataSavingTitle;
       case 'settingsDataSavingDesc':
         return l10n.settingsDataSavingDesc;
+      case 'settingsThumbnailPreviewTitle':
+        return l10n.settingsThumbnailPreviewTitle;
+      case 'settingsThumbnailPreviewDesc':
+        return l10n.settingsThumbnailPreviewDesc;
+      case 'settingsImageCompressionTitle':
+        return l10n.settingsImageCompressionTitle;
+      case 'settingsImageCompressionDesc':
+        return l10n.settingsImageCompressionDesc;
+      case 'settingsImageCompressionQualityTitle':
+        return l10n.settingsImageCompressionQualityTitle;
+      case 'settingsImageCompressionQualityDesc':
+        return l10n.settingsImageCompressionQualityDesc;
       case 'settingsIpOverrideTitle':
         return l10n.settingsIpOverrideTitle;
       case 'settingsIpOverrideDesc':
@@ -1486,6 +2212,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsSystemNotificationsTitle;
       case 'settingsSystemNotificationsDesc':
         return l10n.settingsSystemNotificationsDesc;
+      case 'settingsCloseToTrayTitle':
+        return l10n.settingsCloseToTrayTitle;
+      case 'settingsCloseToTrayDesc':
+        return l10n.settingsCloseToTrayDesc;
       case 'settingsInAppNotificationsTitle':
         return l10n.settingsInAppNotificationsTitle;
       case 'settingsInAppNotificationsDesc':
@@ -1498,6 +2228,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsNotifyWithHaptic;
       case 'settingsNotifyWithHapticDescription':
         return l10n.settingsNotifyWithHapticDescription;
+      case 'settingsLockscreenReplyTitle':
+        return l10n.settingsLockscreenReplyTitle;
+      case 'settingsLockscreenReplyDesc':
+        return l10n.settingsLockscreenReplyDesc;
       case 'settingsMediaProxy':
         return l10n.settingsMediaProxy;
       case 'settingsMediaProxyDescription':
@@ -1512,6 +2246,28 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsExplicitSyncCooldownTitle;
       case 'settingsExplicitSyncCooldownDesc':
         return l10n.settingsExplicitSyncCooldownDesc;
+      case 'settingsDomainTrustImageBlockTitle':
+        return l10n.settingsDomainTrustImageBlockTitle;
+      case 'settingsDomainTrustImageBlockDesc':
+        return l10n.settingsDomainTrustImageBlockDesc;
+      case 'settingsDomainTrustLinkWarningTitle':
+        return l10n.settingsDomainTrustLinkWarningTitle;
+      case 'settingsDomainTrustLinkWarningDesc':
+        return l10n.settingsDomainTrustLinkWarningDesc;
+      case 'settingsTrustedDomainsTitle':
+        return l10n.settingsTrustedDomainsTitle;
+      case 'settingsTrustedDomainsDesc':
+        return l10n.settingsTrustedDomainsDesc;
+      case 'settingsTrustedDomainsReset':
+        return l10n.settingsTrustedDomainsReset;
+      case 'settingsRsaKeysTitle':
+        return l10n.settingsRsaKeysTitle;
+      case 'settingsRsaKeysDesc':
+        return l10n.settingsRsaKeysDesc;
+      case 'settingsLegacyAuthTitle':
+        return l10n.settingsLegacyAuthTitle;
+      case 'settingsLegacyAuthDesc':
+        return l10n.settingsLegacyAuthDesc;
       case 'settingsSeconds10':
         return l10n.settingsSeconds10;
       case 'settingsSeconds30':
@@ -1548,9 +2304,86 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsSaveForumDraftsTitle;
       case 'settingsSaveForumDraftsDesc':
         return l10n.settingsSaveForumDraftsDesc;
+      case 'settingsAutoLoadStickersTitle':
+        return l10n.settingsAutoLoadStickersTitle;
+      case 'settingsAutoLoadStickersDesc':
+        return l10n.settingsAutoLoadStickersDesc;
+      case 'settingsChatStickerRecentTabTitle':
+        return l10n.settingsChatStickerRecentTabTitle;
+      case 'settingsChatStickerRecentTabDesc':
+        return l10n.settingsChatStickerRecentTabDesc;
+      case 'maxCachedRooms':
+        return l10n.maxCachedRooms;
+      case 'maxCachedRoomsDesc':
+        return l10n.maxCachedRoomsDesc;
       // About
       case 'settingsAboutAppTitle':
         return l10n.settingsAboutAppTitle;
+      // Security
+      case 'settingsSecurityMasterPasswordTitle':
+        return l10n.settingsSecurityMasterPasswordTitle;
+      case 'settingsSecurityMasterPasswordDesc':
+        return l10n.settingsSecurityMasterPasswordDesc;
+      case 'settingsSecurityBiometricTitle':
+        return l10n.settingsSecurityBiometricTitle;
+      case 'settingsSecurityBiometricDesc':
+        return l10n.settingsSecurityBiometricDesc;
+      case 'settingsSecurityLockNowTitle':
+        return l10n.settingsSecurityLockNowTitle;
+      case 'settingsSecurityLockNowDesc':
+        return l10n.settingsSecurityLockNowDesc;
+      case 'settingsShowOnLockScreenTitle':
+        return l10n.settingsShowOnLockScreenTitle;
+      case 'settingsShowOnLockScreenDesc':
+        return l10n.settingsShowOnLockScreenDesc;
+      case 'settingsBuiltInKeyboardTitle':
+        return l10n.settingsBuiltInKeyboardTitle;
+      case 'settingsBuiltInKeyboardDesc':
+        return l10n.settingsBuiltInKeyboardDesc;
+      case 'settingsBuiltInKeyboardNever':
+        return l10n.settingsBuiltInKeyboardNever;
+      case 'settingsBuiltInKeyboardLock':
+        return l10n.settingsBuiltInKeyboardLock;
+      case 'settingsBuiltInKeyboardAlways':
+        return l10n.settingsBuiltInKeyboardAlways;
+      case 'settingsBrowserMixedContentBlock':
+        return l10n.settingsBrowserMixedContentBlock;
+      case 'settingsBrowserMixedContentAllow':
+        return l10n.settingsBrowserMixedContentAllow;
+      // Browser
+      case 'settingsBrowserSearchEngineTitle':
+        return l10n.settingsBrowserSearchEngineTitle;
+      case 'settingsBrowserSearchEngineDesc':
+        return l10n.settingsBrowserSearchEngineDesc;
+      case 'settingsBrowserMixedContentTitle':
+        return l10n.settingsBrowserMixedContentTitle;
+      case 'settingsBrowserMixedContentDesc':
+        return l10n.settingsBrowserMixedContentDesc;
+      case 'settingsBrowserUserAgentTitle':
+        return l10n.settingsBrowserUserAgentTitle;
+      case 'settingsBrowserUserAgentDesc':
+        return l10n.settingsBrowserUserAgentDesc;
+      case 'settingsBrowserUserAgentDefault':
+        return l10n.settingsBrowserUserAgentDefault;
+      case 'settingsBrowserUserAgentHint':
+        return l10n.settingsBrowserUserAgentHint;
+      case 'settingsLaunchBrowserTitle':
+        return l10n.settingsLaunchBrowserTitle;
+      case 'settingsLaunchBrowserDesc':
+        return l10n.settingsLaunchBrowserDesc;
+      case 'settingsLinkOpenModeTitle':
+        return l10n.settingsLinkOpenModeTitle;
+      case 'settingsLinkOpenModeDesc':
+        return l10n.settingsLinkOpenModeDesc;
+      case 'settingsLinkOpenModeInapp':
+        return l10n.settingsLinkOpenModeInapp;
+      case 'settingsLinkOpenModeExternal':
+        return l10n.settingsLinkOpenModeExternal;
+      // Multi-instance
+      case 'settingsAllowMultiInstanceTitle':
+        return l10n.settingsAllowMultiInstanceTitle;
+      case 'settingsAllowMultiInstanceDesc':
+        return l10n.settingsAllowMultiInstanceDesc;
       default:
         return key;
     }
@@ -1607,10 +2440,19 @@ class _SettingsScreenState extends State<SettingsScreen>
     if (isDesktopOnly && !isDesktop) {
       return const SizedBox.shrink();
     }
+    // 质量滑杆用 10%~100% 的区间，0 没有意义。
+    final usesFractionRange =
+        item.key == 'windowOpacity' || item.key == 'imageCompressionQuality';
 
     return ListenableBuilder(
       listenable: _settingsService,
       builder: (context, _) {
+        // 压缩关掉时质量滑杆没有意义（外层 visibleItems 只在 setState 时重算，
+        // 所以隐藏判断必须放在这个 ListenableBuilder 里）。
+        if (item.key == 'imageCompressionQuality' &&
+            !_settingsService.getValue<bool>('imageCompressionEnabled', true)) {
+          return const SizedBox.shrink();
+        }
         final value = _settingsService.getValue<double>(
           item.key,
           item.defaultValue as double,
@@ -1658,9 +2500,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                   const SizedBox(height: 8),
                   Slider(
                     value: value,
-                    min: item.key == 'windowOpacity' ? 0.1 : 0.0,
+                    min: usesFractionRange ? 0.1 : 0.0,
                     max: 1.0,
-                    divisions: item.key == 'windowOpacity' ? 18 : 20,
+                    divisions: usesFractionRange ? 18 : 20,
                     label: '${(value * 100).round()}%',
                     onChanged: (newValue) async {
                       await _settingsService.setValue(item.key, newValue);
@@ -2011,7 +2853,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 );
               } else if (result != null) {
                 final newColors = Map<String, dynamic>.from(customColors);
-                newColors[colorKey] = result.value;
+                newColors[colorKey] = result.toARGB32();
                 await _settingsService.setJsonValue('customColors', newColors);
               }
             },
@@ -2037,6 +2879,157 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
         );
       },
+    );
+  }
+}
+
+enum _SecurityPasswordDialogMode { set, change, disable }
+
+class _SecurityPasswordResult {
+  const _SecurityPasswordResult({this.current, this.newPassword});
+  final String? current;
+  final String? newPassword;
+}
+
+class _SecurityPasswordDialog extends StatefulWidget {
+  const _SecurityPasswordDialog({required this.mode, required this.l10n});
+
+  final _SecurityPasswordDialogMode mode;
+  final AppLocalizations l10n;
+
+  @override
+  State<_SecurityPasswordDialog> createState() =>
+      _SecurityPasswordDialogState();
+}
+
+class _SecurityPasswordDialogState extends State<_SecurityPasswordDialog> {
+  final _current = TextEditingController();
+  final _newPassword = TextEditingController();
+  final _confirm = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _current.dispose();
+    _newPassword.dispose();
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  String get _title {
+    switch (widget.mode) {
+      case _SecurityPasswordDialogMode.set:
+        return widget.l10n.settingsSecuritySetPassword;
+      case _SecurityPasswordDialogMode.change:
+        return widget.l10n.settingsSecurityChangePassword;
+      case _SecurityPasswordDialogMode.disable:
+        return widget.l10n.settingsSecurityDisablePassword;
+    }
+  }
+
+  String get _actionLabel {
+    switch (widget.mode) {
+      case _SecurityPasswordDialogMode.set:
+        return widget.l10n.settingsSecuritySetPassword;
+      case _SecurityPasswordDialogMode.change:
+        return widget.l10n.settingsSecurityChangePassword;
+      case _SecurityPasswordDialogMode.disable:
+        return widget.l10n.settingsSecurityDisablePassword;
+    }
+  }
+
+  void _submit() {
+    final l10n = widget.l10n;
+    if (widget.mode != _SecurityPasswordDialogMode.set &&
+        _current.text.isEmpty) {
+      setState(() => _error = l10n.lockPasswordRequired);
+      return;
+    }
+    if (widget.mode != _SecurityPasswordDialogMode.disable) {
+      if (_newPassword.text.length < 4) {
+        setState(() => _error = l10n.settingsSecurityPasswordTooShort);
+        return;
+      }
+      if (_newPassword.text != _confirm.text) {
+        setState(() => _error = l10n.settingsSecurityPasswordMismatch);
+        return;
+      }
+    }
+    Navigator.pop(
+      context,
+      _SecurityPasswordResult(
+        current: widget.mode == _SecurityPasswordDialogMode.set
+            ? null
+            : _current.text,
+        newPassword: widget.mode == _SecurityPasswordDialogMode.disable
+            ? null
+            : _newPassword.text,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
+    final fields = <Widget>[];
+    if (widget.mode != _SecurityPasswordDialogMode.set) {
+      fields.add(
+        TextField(
+          controller: _current,
+          obscureText: true,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: l10n.settingsSecurityCurrentPassword,
+          ),
+          onSubmitted: (_) => _submit(),
+        ),
+      );
+    }
+    if (widget.mode != _SecurityPasswordDialogMode.disable) {
+      fields.add(
+        TextField(
+          controller: _newPassword,
+          obscureText: true,
+          autofocus: widget.mode == _SecurityPasswordDialogMode.set,
+          decoration: InputDecoration(labelText: l10n.lockPasswordLabel),
+          onSubmitted: (_) => _submit(),
+        ),
+      );
+      fields.add(
+        TextField(
+          controller: _confirm,
+          obscureText: true,
+          decoration: InputDecoration(
+            labelText: l10n.settingsSecurityConfirmPassword,
+          ),
+          onSubmitted: (_) => _submit(),
+        ),
+      );
+    }
+
+    return AlertDialog(
+      title: Text(_title),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final field in fields) ...[field, const SizedBox(height: 12)],
+          if (_error != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(onPressed: _submit, child: Text(_actionLabel)),
+      ],
     );
   }
 }

@@ -7,6 +7,7 @@ import '../services/auth_state.dart';
 import '../services/notification_service.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
+import '../widgets/admin_ui.dart';
 import '../widgets/markdown_renderer.dart';
 
 class AnnouncementScreen extends StatefulWidget {
@@ -191,27 +192,23 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
 
   Future<void> _confirmDelete(Announcement a) async {
     final l10n = AppLocalizations.of(context)!;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.announcementDeleteConfirm),
-        content: Text(a.content, maxLines: 3, overflow: TextOverflow.ellipsis),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
-            ),
-            child: Text(l10n.confirm),
-          ),
-        ],
+    final confirmed = await showAdminConfirmDialog(
+      context,
+      title: l10n.announcementDelete,
+      message: l10n.announcementDeleteConfirm,
+      content: Text(
+        a.content,
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
+      confirmLabel: l10n.confirm,
+      icon: Icons.delete_outline,
+      destructive: true,
     );
-    if (ok != true) return;
+    if (!confirmed) return;
 
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
@@ -243,50 +240,49 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final badgeCount = _badgeCount;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.announcementTitle),
-        actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                tooltip: l10n.notificationTabNotifications,
-                onPressed: _showNotificationList,
-              ),
-              if (badgeCount > 0)
-                Positioned(
-                  right: 6,
-                  top: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 5,
-                      vertical: 1,
+    return AdminPageScaffold(
+      title: l10n.announcementTitle,
+      maxWidth: 720,
+      actions: [
+        Stack(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined),
+              tooltip: l10n.notificationTabNotifications,
+              onPressed: _showNotificationList,
+            ),
+            if (badgeCount > 0)
+              Positioned(
+                right: 6,
+                top: 6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.error,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 14,
+                  ),
+                  child: Text(
+                    badgeCount > 99 ? '99+' : '$badgeCount',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onError,
+                      fontWeight: FontWeight.w600,
                     ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.error,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 14,
-                    ),
-                    child: Text(
-                      badgeCount > 99 ? '99+' : '$badgeCount',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onError,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
-            ],
-          ),
-        ],
-      ),
+              ),
+          ],
+        ),
+      ],
       floatingActionButton: _isAdmin
           ? FloatingActionButton(
               onPressed: _showCreateDialog,
@@ -301,37 +297,32 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _error!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-            const SizedBox(height: 8),
-            FilledButton.tonal(onPressed: _load, child: Text(l10n.retry)),
-          ],
-        ),
-      );
-    }
-    final list = _announcements;
-    if (list == null || list.isEmpty) {
-      return Center(child: Text(l10n.announcementNoAnnouncements));
-    }
+    final list = _announcements ?? const <Announcement>[];
     return RefreshIndicator(
       onRefresh: _load,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        itemCount: list.length,
-        itemBuilder: (context, index) => _AnnouncementCard(
-          announcement: list[index],
-          isAdmin: _isAdmin,
-          onEdit: () => _showEditDialog(list[index]),
-          onDelete: () => _confirmDelete(list[index]),
-        ),
-      ),
+      child: _error != null
+          ? AdminErrorState(
+              message: l10n.announcementLoadFailed,
+              onRetry: _load,
+            )
+          : list.isEmpty
+          ? AdminEmptyState(
+              message: l10n.announcementNoAnnouncements,
+              icon: Icons.campaign_outlined,
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+              itemCount: list.length,
+              itemBuilder: (context, index) => _AnnouncementCard(
+                announcement: list[index],
+                isAdmin: _isAdmin,
+                onEdit: () => _showEditDialog(list[index]),
+                onDelete: () => _confirmDelete(list[index]),
+              ),
+            ),
     );
   }
 }
@@ -386,23 +377,9 @@ class _AnnouncementNotificationSheet extends StatelessWidget {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : notifs.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.notifications_none,
-                          size: 64,
-                          color: colorScheme.onSurfaceVariant.withOpacity(0.5),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          l10n.notificationEmpty,
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(color: colorScheme.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
+                ? AdminEmptyState(
+                    message: l10n.notificationEmpty,
+                    icon: Icons.notifications_none,
                   )
                 : ListView.separated(
                     padding: const EdgeInsets.symmetric(
@@ -410,7 +387,7 @@ class _AnnouncementNotificationSheet extends StatelessWidget {
                       vertical: 8,
                     ),
                     itemCount: notifs.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 6),
+                    separatorBuilder: (_, _) => const SizedBox(height: 6),
                     itemBuilder: (context, index) {
                       return _AnnouncementNotificationCard(
                         notification: notifs[index],
@@ -440,9 +417,11 @@ class _AnnouncementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final senderLabel =
-        announcement.senderName ?? 'User ${announcement.sender}';
-    final timeLabel = _formatTime(announcement.dateTime);
+        announcement.senderName ??
+        l10n.announcementSenderFallback('${announcement.sender}');
+    final timeLabel = _formatAnnouncementTime(announcement.dateTime);
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -470,7 +449,7 @@ class _AnnouncementCard extends StatelessWidget {
                 if (isAdmin) ...[
                   IconButton(
                     icon: const Icon(Icons.edit_outlined),
-                    tooltip: '编辑公告',
+                    tooltip: l10n.announcementEdit,
                     iconSize: 18,
                     onPressed: onEdit,
                   ),
@@ -479,7 +458,7 @@ class _AnnouncementCard extends StatelessWidget {
                       Icons.delete_outline,
                       color: theme.colorScheme.error,
                     ),
-                    tooltip: '删除公告',
+                    tooltip: l10n.announcementDelete,
                     iconSize: 18,
                     onPressed: onDelete,
                   ),
@@ -499,11 +478,6 @@ class _AnnouncementCard extends StatelessWidget {
       ),
     );
   }
-
-  String _formatTime(DateTime dt) {
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
-        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-  }
 }
 
 class _AnnouncementNotificationCard extends StatelessWidget {
@@ -514,7 +488,7 @@ class _AnnouncementNotificationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final timeLabel = _formatTime(notification.dateTime);
+    final timeLabel = _formatAnnouncementTime(notification.dateTime);
     final isEdited = notification.event == 'announcement.edited';
     final isDeleted = notification.event == 'announcement.deleted';
 
@@ -564,9 +538,9 @@ class _AnnouncementNotificationCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  String _formatTime(DateTime dt) {
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
-        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-  }
+String _formatAnnouncementTime(DateTime dt) {
+  return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
+      '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 }

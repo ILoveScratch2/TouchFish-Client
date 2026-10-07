@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../services/browser_service.dart';
 import '../l10n/app_localizations.dart';
 import '../services/snackbar_service.dart';
 import '../oss_licenses.dart';
+import '../utils/clipboard_utils.dart';
 
 class LicensesScreen extends StatefulWidget {
   const LicensesScreen({super.key});
@@ -17,6 +17,15 @@ class LicensesScreen extends StatefulWidget {
 class _LicensesScreenState extends State<LicensesScreen> {
   String _searchQuery = '';
   List<Package> _filteredPackages = allDependencies;
+
+  Future<void> _copyLicense(String text, String successMessage) async {
+    final l10n = AppLocalizations.of(context)!;
+    final copied = await copyTextToClipboard(text);
+    TouchFishSnackbarService.instance.show(
+      copied ? successMessage : l10n.copyFailedText,
+      type: copied ? SnackbarType.info : SnackbarType.error,
+    );
+  }
 
   void _updateSearch(String query) {
     setState(() {
@@ -215,7 +224,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -354,12 +363,10 @@ class _LicensesScreenState extends State<LicensesScreen> {
                             ),
                             IconButton(
                               icon: const Icon(Symbols.content_copy, size: 20),
-                              onPressed: () {
-                                Clipboard.setData(
-                                  ClipboardData(text: package.license!),
-                                );
-                                TouchFishSnackbarService.instance.show(l10n.licensesLicenseCopied);
-                              },
+                              onPressed: () => _copyLicense(
+                                package.license!,
+                                l10n.licensesLicenseCopied,
+                              ),
                               tooltip: l10n.aboutCopyToClipboard,
                             ),
                           ],
@@ -391,10 +398,9 @@ class _LicensesScreenState extends State<LicensesScreen> {
         subtitle: Text(url, maxLines: 1, overflow: TextOverflow.ellipsis),
         trailing: const Icon(Symbols.open_in_new, size: 20),
         onTap: () async {
-          final uri = Uri.parse(url);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          }
+          final uri = Uri.tryParse(url);
+          if (uri == null) return;
+          await BrowserService.instance.openUri(context, uri);
         },
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         minLeadingWidth: 24,

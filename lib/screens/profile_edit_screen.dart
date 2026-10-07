@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
+import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/snackbar_service.dart';
@@ -249,7 +250,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: colorScheme.outline.withOpacity(0.2),
+                            color: colorScheme.outline.withValues(alpha: 0.2),
                             width: 3,
                           ),
                         ),
@@ -359,6 +360,15 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     ),
                     controller: _introductionController,
                     maxLines: 6,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Change password
+                  OutlinedButton.icon(
+                    onPressed: () => context.push(AppRoutes.changePassword),
+                    icon: const Icon(Symbols.password),
+                    label: Text(l10n.changePasswordTitle),
                   ),
 
                   const SizedBox(height: 24),

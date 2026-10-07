@@ -9,6 +9,7 @@ import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
 import '../services/forum_pending_service.dart';
 import '../services/notification_service.dart';
+import '../utils/wide_screen_helper.dart';
 
 class MainScreen extends StatefulWidget {
   final Widget child;
@@ -22,6 +23,9 @@ class _MainScreenState extends State<MainScreen> {
   final _notificationService = NotificationService.instance;
   final _forumPendingService = ForumPendingService.instance;
   final _chatDataService = ChatDataService.instance;
+
+  /// 宽/窄布局分支切换时 widget.child 会 reload，显然这是 sb 设计，我们需要用 GlobalKey 保住状态。
+  final _childKey = GlobalKey();
 
   @override
   void initState() {
@@ -141,78 +145,87 @@ class _MainScreenState extends State<MainScreen> {
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= 600;
+            final isWide = WideScreenHelper.isWideWithWidth(
+              constraints.maxWidth,
+            );
 
             if (isWide) {
-              return Container(
-                color: hasBackgroundImage
-                    ? Colors.transparent
-                    : Theme.of(context).colorScheme.surfaceContainer,
-                child: Row(
-                  children: [
-                    Container(
-                      color: hasBackgroundImage
-                          ? Theme.of(context).colorScheme.surfaceContainer
-                                .withValues(alpha: 0.7)
-                          : Colors.transparent,
-                      child: _buildNavRail(
-                        destinations,
-                        selectedIndex,
-                        context,
+              return SafeArea(
+                bottom: false,
+                child: Container(
+                  color: hasBackgroundImage
+                      ? Colors.transparent
+                      : Theme.of(context).colorScheme.surfaceContainer,
+                  child: Row(
+                    children: [
+                      Container(
+                        color: hasBackgroundImage
+                            ? Theme.of(context).colorScheme.surfaceContainer
+                                  .withValues(alpha: 0.7)
+                            : Colors.transparent,
+                        child: _buildNavRail(
+                          destinations,
+                          selectedIndex,
+                          context,
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          if (AuthState.instance.isBanned)
-                            MaterialBanner(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.errorContainer,
-                              leading: Icon(
-                                Icons.block,
-                                color: Theme.of(
+                      Expanded(
+                        child: Column(
+                          children: [
+                            if (AuthState.instance.isBanned)
+                              MaterialBanner(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                backgroundColor: Theme.of(
                                   context,
-                                ).colorScheme.onErrorContainer,
-                              ),
-                              content: Text(
-                                l10n.chatSendFailedBanned,
-                                style: TextStyle(
+                                ).colorScheme.errorContainer,
+                                leading: Icon(
+                                  Icons.block,
                                   color: Theme.of(
                                     context,
                                   ).colorScheme.onErrorContainer,
                                 ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => AuthState.instance.logout(),
-                                  child: Text(
-                                    l10n.accountLogout,
-                                    style: TextStyle(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onErrorContainer,
-                                    ),
+                                content: Text(
+                                  l10n.chatSendFailedBanned,
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onErrorContainer,
                                   ),
                                 ),
-                              ],
-                            ),
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(16),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        AuthState.instance.logout(),
+                                    child: Text(
+                                      l10n.accountLogout,
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onErrorContainer,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              child: widget.child,
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(16),
+                                ),
+                                child: KeyedSubtree(
+                                  key: _childKey,
+                                  child: widget.child,
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             }
@@ -254,7 +267,9 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                       ],
                     ),
-                  Expanded(child: widget.child),
+                  Expanded(
+                    child: KeyedSubtree(key: _childKey, child: widget.child),
+                  ),
                 ],
               ),
               bottomNavigationBar: showBottomNav

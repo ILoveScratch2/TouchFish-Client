@@ -16,14 +16,52 @@ class TfCrypto {
     return Uint8List.fromList(List.generate(16, (_) => rand.nextInt(256)));
   }
 
-  static RSAPublicKey parseRsaPublicKey(String pem) {
+  /// 去除 PEM 头尾标记与空白
+  /// 因为服务器就是这样算的，@wyf
+  static String normalizePem(String pem) {
+    final body = pem
+        .replaceAll('-----BEGIN PUBLIC KEY-----', '')
+        .replaceAll('-----END PUBLIC KEY-----', '')
+        .replaceAll('\n', '')
+        .replaceAll('\r', '')
+        .replaceAll(' ', '')
+        .trim();
+    if (body.isEmpty) return '';
+    final buffer = StringBuffer('-----BEGIN PUBLIC KEY-----\n');
+    for (var i = 0; i < body.length; i += 64) {
+      final end = min(i + 64, body.length);
+      buffer.writeln(body.substring(i, end));
+    }
+    buffer.write('-----END PUBLIC KEY-----\n');
+    return buffer.toString();
+  }
+
+  /// PEM 内容（不含头尾标记）的原始 DER 字节。
+  static Uint8List _pemBodyBytes(String pem) {
     final base64Str = pem
         .replaceAll('-----BEGIN PUBLIC KEY-----', '')
         .replaceAll('-----END PUBLIC KEY-----', '')
         .replaceAll('\n', '')
         .replaceAll('\r', '')
+        .replaceAll(' ', '')
         .trim();
-    final bytes = Uint8List.fromList(base64.decode(base64Str));
+    return Uint8List.fromList(base64.decode(base64Str));
+  }
+
+  /// 计算 RSA 公钥指纹：对规范 PEM 文本（UTF-8 字节）求 SHA-256，
+  /// 返回小写 hex
+  static String rsaPublicKeyFingerprint(String pem) {
+    final normalized = normalizePem(pem);
+    final digest = SHA256Digest();
+    final bytes = Uint8List.fromList(utf8.encode(normalized));
+    final hash = Uint8List(digest.digestSize);
+    digest.update(bytes, 0, bytes.length);
+    digest.doFinal(hash, 0);
+    return hash.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  }
+
+  static RSAPublicKey parseRsaPublicKey(String pem) {
+    final bytes = _pemBodyBytes(pem);
 
     final asn1Parser = ASN1Parser(bytes);
     final spki = asn1Parser.nextObject() as ASN1Sequence;

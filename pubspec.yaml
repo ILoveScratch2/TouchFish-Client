@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.0.1+1
+version: 0.0.3+3
 
 environment:
   sdk: ^3.10.7
@@ -62,10 +62,16 @@ dependencies:
   exif: ^3.3.0
   flutter_highlight: ^0.7.0
   url_launcher: ^6.3.1
+  share_plus: ^11.1.0
+  flutter_inappwebview: ^6.1.5
+  web: ^1.1.0
   flutter_math_fork: ^0.7.2
   package_info_plus: ^8.1.2
+  device_info_plus: ^10.1.2
   image_picker: ^1.1.2
   image: ^4.5.4
+  # 原生平台编解码器（Android/iOS 出 WebP）；Windows/Linux 无实现，走 image 包的纯 Dart 回退
+  flutter_image_compress: ^2.5.1
   flutter_colorpicker: ^1.1.0
   talker: ^4.7.1
   talker_flutter: ^4.7.1
@@ -83,6 +89,19 @@ dependencies:
   archive: ^4.0.7
   tray_manager: ^0.5.3
   permission_handler: ^12.0.1
+  local_auth: ^3.0.2
+  virtual_keypad: ^1.0.1
+  cached_network_image: ^3.4.1
+  flutter_cache_manager: ^3.4.1
+  flutter_blurhash: ^0.8.2
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+  flutter_webrtc: ^1.6.1
+  dio: ^5.7.0
+  crypto: ^3.0.6
+  super_context_menu: ^0.8.0
+  record: ^6.2.1
+  waveform_flutter: ^1.2.0
 
 dev_dependencies:
   flutter_test:
@@ -96,6 +115,8 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.2
   flutter_native_splash: ^2.4.3
+  riverpod_generator: ^2.6.2
+  build_runner: ^2.4.13
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -115,8 +136,6 @@ flutter:
     - assets/icon.ico
     - assets/font/HarmonyOS_Sans_SC.ttf
     - assets/font/LICENSE.txt
-    - assets/font-wenkai/LXGWWenKai.ttf
-    - assets/font-wenkai/LICENSE.txt
     - LICENSE
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -147,9 +166,6 @@ flutter:
     - family: HarmonyOS Sans SC
       fonts:
         - asset: assets/font/HarmonyOS_Sans_SC.ttf
-    - family: LXGW WenKai
-      fonts:
-        - asset: assets/font-wenkai/LXGWWenKai.ttf
 
 # flutter_launcher_icons configuration
 flutter_launcher_icons:

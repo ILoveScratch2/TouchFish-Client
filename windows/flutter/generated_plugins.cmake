@@ -5,11 +5,16 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
   disk_space_2
+  emoji_picker_flutter
   file_selector_windows
+  flutter_inappwebview_windows
+  flutter_webrtc
   irondash_engine_context
+  local_auth_windows
   media_kit_libs_windows_video
   media_kit_video
   permission_handler_windows
+  record_windows
   screen_retriever_windows
   share_plus
   sqlite3_flutter_libs

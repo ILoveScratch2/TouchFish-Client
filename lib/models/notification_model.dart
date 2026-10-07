@@ -11,6 +11,7 @@ class NotificationInfo {
   final String? clientMid; // client message
   final String? roomId; // explicit room id
   final String? fileHash; // file hash
+  final int? durationMs; // audio/voice ms
   final int? groupId; // group ID
   final List<int> mentionedUids;
   final bool mentionsMe;
@@ -37,6 +38,7 @@ class NotificationInfo {
     this.clientMid,
     this.roomId,
     this.fileHash,
+    this.durationMs,
     this.groupId,
     this.mentionedUids = const [],
     this.mentionsMe = false,
@@ -64,6 +66,7 @@ class NotificationInfo {
     clientMid: clientMid,
     roomId: roomId,
     fileHash: fileHash,
+    durationMs: durationMs,
     groupId: groupId,
     mentionedUids: mentionedUids,
     mentionsMe: mentionsMe,
@@ -126,6 +129,7 @@ class NotificationInfo {
       clientMid: info['client_mid'] as String?,
       roomId: info['room_id'] as String?,
       fileHash: info['file_hash'] as String?,
+      durationMs: _notificationInt(info['duration']),
       groupId: (info['group_id'] as num?)?.toInt(),
       mentionedUids: (info['mentioned_uids'] as List<dynamic>? ?? const [])
           .map((uid) => (uid as num).toInt())
@@ -175,6 +179,7 @@ class NotificationInfo {
       clientMid: json['client_mid'] as String?,
       roomId: json['room_id'] as String?,
       fileHash: json['file_hash'] as String?,
+      durationMs: _notificationInt(json['duration']),
       groupId: _notificationInt(json['group_id']),
       mentionedUids: (json['mentioned_uids'] as List<dynamic>? ?? const [])
           .map((uid) => (uid as num).toInt())

@@ -1,42 +1,57 @@
 import 'dart:io' show File, Platform;
-import 'dart:typed_data';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:super_clipboard/super_clipboard.dart';
 import '../services/clipboard_attachment_service.dart';
+import '../services/auth_state.dart';
+import '../services/chat_ws_service.dart';
 import 'server_file_picker_sheet.dart';
-import 'stickers/sticker_picker.dart';
+import 'stickers/sticker_autocomplete.dart';
+import 'stickers/sticker_picker_enhanced.dart';
 import '../l10n/app_localizations.dart';
 import '../models/message_model.dart';
 import '../models/settings_service.dart';
 import '../utils/file_type_detector.dart';
+import '../utils/clipboard_utils.dart';
 import 'mention_text_field.dart';
+import 'voice_record_bar.dart';
 
 class ChatInputBar extends StatefulWidget {
+  final String roomId;
   final TextEditingController controller;
   final VoidCallback onSend;
   final Function(PlatformFile file, MessageType type)? onFilePicked;
 
   /// 选择服务端已上传的文件直接发送（免二次上传）。
-  final Future<void> Function(Map<String, dynamic> serverFile, MessageType type)?
-      onServerFilePicked;
+  final Future<void> Function(
+    Map<String, dynamic> serverFile,
+    MessageType type,
+  )?
+  onServerFilePicked;
+
+  /// 录音完成后回调（临时文件路径 + 时长毫秒）；为 null 时不显示麦克风按钮。
+  final Future<void> Function(String path, int durationMs)? onVoiceRecorded;
+
   final List<MentionUser> mentionUsers;
   final ChatMessage? actionMessage;
   final bool actionIsForward;
   final VoidCallback? onClearAction;
+
   /// When true (default), Ctrl+V / Cmd+V will automatically detect and upload
   /// files from the clipboard instead of pasting text.
   final bool enableClipboardUpload;
 
   const ChatInputBar({
     super.key,
+    this.roomId = '',
     required this.controller,
     required this.onSend,
     this.onFilePicked,
     this.onServerFilePicked,
+    this.onVoiceRecorded,
     this.mentionUsers = const [],
     this.actionMessage,
     this.actionIsForward = false,
@@ -51,21 +66,78 @@ class ChatInputBar extends StatefulWidget {
 class _ChatInputBarState extends State<ChatInputBar>
     with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
+  bool _isVoiceMode = false;
   late final TabController _tabController;
   late final FocusNode _inputFocusNode;
+  /// @ 提及与贴纸自动补全共用的定位锚点：都锚定输入框左上角
+  final LayerLink _inputLayerLink = LayerLink();
+  Timer? _typingTimer;
+  bool _typingActive = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _inputFocusNode = FocusNode(onKeyEvent: _handleInputKeyEvent);
+    widget.controller.addListener(_handleTypingChanged);
+    // 表情面板「最近使用」开关等设置变化时刷新
+    SettingsService.instance.addListener(_onSettingsChanged);
   }
 
   @override
   void dispose() {
+    SettingsService.instance.removeListener(_onSettingsChanged);
+    widget.controller.removeListener(_handleTypingChanged);
+    _typingTimer?.cancel();
+    if (_typingActive) ChatWsService.instance.sendTyping(widget.roomId, false);
     _tabController.dispose();
     _inputFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onSettingsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didUpdateWidget(covariant ChatInputBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.roomId != widget.roomId) {
+      _typingTimer?.cancel();
+      if (_typingActive) {
+        ChatWsService.instance.sendTyping(oldWidget.roomId, false);
+        _typingActive = false;
+      }
+      if (widget.controller.text.trim().isNotEmpty) {
+        _handleTypingChanged();
+      }
+    }
+  }
+
+  void _handleTypingChanged() {
+    if (!AuthState.instance.isLoggedIn) return;
+    final hasText = widget.controller.text.trim().isNotEmpty;
+    if (hasText && !_typingActive) {
+      ChatWsService.instance.sendTyping(widget.roomId, true);
+      _typingActive = true;
+    }
+    _typingTimer?.cancel();
+    if (!hasText) {
+      _stopTyping();
+      return;
+    }
+    _typingTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (_typingActive) {
+        ChatWsService.instance.sendTyping(widget.roomId, true);
+      }
+    });
+  }
+
+  void _stopTyping() {
+    _typingTimer?.cancel();
+    if (!_typingActive) return;
+    ChatWsService.instance.sendTyping(widget.roomId, false);
+    _typingActive = false;
   }
 
   KeyEventResult _handleInputKeyEvent(FocusNode node, KeyEvent event) {
@@ -132,8 +204,7 @@ class _ChatInputBarState extends State<ChatInputBar>
           DetectedFileType.svg ||
           DetectedFileType.tgs ||
           DetectedFileType.webp => MessageType.image,
-          DetectedFileType.unknown =>
-            _messageTypeFromExtension(file.fileName),
+          DetectedFileType.unknown => _messageTypeFromExtension(file.fileName),
         };
 
         final platformFile = PlatformFile(
@@ -144,25 +215,19 @@ class _ChatInputBarState extends State<ChatInputBar>
         widget.onFilePicked?.call(platformFile, messageType);
       }
     } else {
-      final clipboard = SystemClipboard.instance;
-      if (clipboard != null) {
-        try {
-          final reader = await clipboard.read();
-          final text = await reader.readValue(Formats.plainText);
-          if (text != null && text.isNotEmpty && mounted) {
-            final value = widget.controller.value;
-            final selection = value.selection;
-            final start =
-                selection.isValid ? selection.start : value.text.length;
-            final end =
-                selection.isValid ? selection.end : value.text.length;
-            widget.controller.value = value.copyWith(
-              text: value.text.replaceRange(start, end, text),
-              selection: TextSelection.collapsed(offset: start + text.length),
-              composing: TextRange.empty,
-            );
-          }
-        } catch (_) {}
+      final text = await readTextFromClipboard();
+      if (text != null && text.isNotEmpty && mounted) {
+        final value = widget.controller.value;
+        final selection = value.selection;
+        final start = selection.isValid
+            ? selection.start
+            : value.text.length;
+        final end = selection.isValid ? selection.end : value.text.length;
+        widget.controller.value = value.copyWith(
+          text: value.text.replaceRange(start, end, text),
+          selection: TextSelection.collapsed(offset: start + text.length),
+          composing: TextRange.empty,
+        );
       }
     }
   }
@@ -191,7 +256,7 @@ class _ChatInputBarState extends State<ChatInputBar>
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -207,25 +272,37 @@ class _ChatInputBarState extends State<ChatInputBar>
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // Expand/Collapse button
+                // Expand/Collapse / leave voice mode button
                 IconButton(
                   icon: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
-                    child: Icon(
-                      _isExpanded ? Symbols.close : Symbols.add,
-                      key: ValueKey(_isExpanded),
-                    ),
+                    child: _isVoiceMode
+                        ? const Icon(
+                            Symbols.keyboard_return,
+                            key: ValueKey('voice-leave'),
+                          )
+                        : Icon(
+                            _isExpanded ? Symbols.close : Symbols.add,
+                            key: ValueKey(_isExpanded),
+                          ),
                   ),
-                  tooltip: _isExpanded
+                  tooltip: _isVoiceMode
+                      ? l10n.voiceLeaveVoiceMode
+                      : _isExpanded
                       ? l10n.chatInputCollapse
                       : l10n.chatInputExpand,
                   onPressed: () {
+                    if (_isVoiceMode) {
+                      setState(() => _isVoiceMode = false);
+                      return;
+                    }
                     setState(() {
                       _isExpanded = !_isExpanded;
                     });
                   },
                 ),
-                PopupMenuButton<String>(
+                if (!_isVoiceMode)
+                  PopupMenuButton<String>(
                   icon: const Icon(Symbols.attach_file),
                   tooltip: l10n.chatInputAttachment,
                   onSelected: (value) async {
@@ -275,36 +352,69 @@ class _ChatInputBarState extends State<ChatInputBar>
                   ],
                 ),
                 Expanded(
-                  child: MentionTextField(
-                    controller: widget.controller,
-                    focusNode: _inputFocusNode,
-                    mentionUsers: widget.mentionUsers,
-                    maxLines: 5,
-                    minLines: 1,
-                    keyboardType: TextInputType.multiline,
-                    textInputAction: TextInputAction.newline,
-                    textAlign: TextAlign.left,
-                    decoration: InputDecoration(
-                      hintText: l10n.chatInputPlaceholder,
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
+                  child: _isVoiceMode
+                      ? VoiceRecordBar(
+                          onRecorded: widget.onVoiceRecorded!,
+                          enabled: !widget.actionIsForward,
+                        )
+                      : Stack(
+                    children: [
+                      MentionTextField(
+                        controller: widget.controller,
+                        focusNode: _inputFocusNode,
+                        mentionUsers: widget.mentionUsers,
+                        layerLink: _inputLayerLink,
+                        maxLines: 5,
+                        minLines: 1,
+                        keyboardType: TextInputType.multiline,
+                        textInputAction: TextInputAction.newline,
+                        textAlign: TextAlign.left,
+                        decoration: InputDecoration(
+                          hintText: l10n.chatInputPlaceholder,
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                        ),
                       ),
-                    ),
+                      // 贴纸自动补全 稳定锚（）（）（）（:prefix+ ）
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: StickerInputHelper(
+                            controller: widget.controller,
+                            focusNode: _inputFocusNode,
+                            layerLink: _inputLayerLink,
+                            onStickerSelected: (_) {},
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  color: colorScheme.primary,
-                  onPressed: () {
-                    if (widget.controller.text.trim().isNotEmpty ||
-                        widget.actionIsForward) {
-                      widget.onSend();
-                    }
-                  },
-                ),
+                if (!_isVoiceMode &&
+                    widget.onVoiceRecorded != null &&
+                    SettingsService.instance.getValue<bool>(
+                      'chatVoiceButtonInInputBar',
+                      true,
+                    ))
+                  IconButton(
+                    icon: const Icon(Symbols.mic),
+                    tooltip: l10n.voiceHoldToRecord,
+                    onPressed: _enterVoiceMode,
+                  ),
+                if (!_isVoiceMode)
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    color: colorScheme.primary,
+                    onPressed: () {
+                      if (widget.controller.text.trim().isNotEmpty ||
+                          widget.actionIsForward) {
+                        widget.onSend();
+                      }
+                    },
+                  ),
               ],
             ),
             AnimatedSize(
@@ -312,12 +422,12 @@ class _ChatInputBarState extends State<ChatInputBar>
               curve: Curves.easeInOut,
               child: _isExpanded
                   ? Container(
-                      height: 200,
+                      height: 300,
                       margin: const EdgeInsets.only(top: 8, bottom: 3),
                       decoration: BoxDecoration(
                         border: Border.all(
                           width: 1,
-                          color: colorScheme.outline.withOpacity(0.3),
+                          color: colorScheme.outline.withValues(alpha: 0.3),
                         ),
                         borderRadius: const BorderRadius.all(
                           Radius.circular(24),
@@ -359,7 +469,7 @@ class _ChatInputBarState extends State<ChatInputBar>
                               controller: _tabController,
                               children: [
                                 _buildFilesTab(colorScheme, l10n),
-                                _buildEmojiTab(colorScheme, l10n),
+                                _buildEmojiTab(),
                                 _buildSpecialMessagesTab(colorScheme, l10n),
                               ],
                             ),
@@ -433,7 +543,8 @@ class _ChatInputBarState extends State<ChatInputBar>
                               : l10n.messageReplyingTo(
                                   message.isMe
                                       ? 'Me'
-                                      : message.senderName ?? l10n.commonUnknown,
+                                      : message.senderName ??
+                                            l10n.commonUnknown,
                                 ),
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(fontWeight: FontWeight.w500),
@@ -479,7 +590,7 @@ class _ChatInputBarState extends State<ChatInputBar>
           Icon(
             Icons.folder_open,
             size: 40,
-            color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
           ),
           const SizedBox(height: 8),
           Text(
@@ -563,25 +674,31 @@ class _ChatInputBarState extends State<ChatInputBar>
   Future<void> _handleServerFilePick() async {
     final file = await showServerFilePicker(context);
     if (file == null || !mounted || widget.onServerFilePicked == null) return;
-    await widget.onServerFilePicked!(
-      file,
-      _messageTypeFromServerFile(file),
-    );
+    await widget.onServerFilePicked!(file, _messageTypeFromServerFile(file));
   }
 
-  Widget _buildEmojiTab(ColorScheme colorScheme, AppLocalizations l10n) {
-    return StickerPickerPanel(
+  Widget _buildEmojiTab() {
+    final showRecent = SettingsService.instance.getValue<bool>(
+      'chatStickerRecentTab',
+      true,
+    );
+    return StickerPickerEnhanced(
+      showRecentTab: showRecent,
+      compact: true,
       onPick: (pack, sticker) {
         _insertText(':${pack.prefix}+${sticker.slug}:');
       },
-      onLongPress: (pack, sticker) => _insertText(':${pack.prefix}+${sticker.slug}:'),
     );
   }
 
   void _insertText(String value) {
     final selection = widget.controller.selection;
-    final start = selection.start < 0 ? widget.controller.text.length : selection.start;
-    final end = selection.end < 0 ? widget.controller.text.length : selection.end;
+    final start = selection.start < 0
+        ? widget.controller.text.length
+        : selection.start;
+    final end = selection.end < 0
+        ? widget.controller.text.length
+        : selection.end;
     widget.controller.value = widget.controller.value.copyWith(
       text: widget.controller.text.replaceRange(start, end, value),
       selection: TextSelection.collapsed(offset: start + value.length),
@@ -591,16 +708,41 @@ class _ChatInputBarState extends State<ChatInputBar>
   MessageType _messageTypeFromExtension(String fileName) {
     final ext = fileName.split('.').last.toLowerCase();
     switch (ext) {
-      case 'png': case 'jpg': case 'jpeg': case 'gif': case 'bmp':
-      case 'svg': case 'tgs': case 'webp':
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+      case 'gif':
+      case 'bmp':
+      case 'svg':
+      case 'tgs':
+      case 'webp':
         return MessageType.image;
-      case 'mp4': case 'webm': case 'mkv': case 'avi': case 'mov': case 'flv': case 'wmv':
+      case 'mp4':
+      case 'webm':
+      case 'mkv':
+      case 'avi':
+      case 'mov':
+      case 'flv':
+      case 'wmv':
         return MessageType.video;
-      case 'mp3': case 'wav': case 'flac': case 'ogg': case 'aac': case 'm4a': case 'wma':
+      case 'mp3':
+      case 'wav':
+      case 'flac':
+      case 'ogg':
+      case 'aac':
+      case 'm4a':
+      case 'wma':
         return MessageType.audio;
       default:
         return MessageType.file;
     }
+  }
+
+  void _enterVoiceMode() {
+    setState(() {
+      _isVoiceMode = true;
+      _isExpanded = false;
+    });
   }
 
   Widget _buildSpecialMessagesTab(
@@ -614,13 +756,21 @@ class _ChatInputBarState extends State<ChatInputBar>
           Icon(
             Icons.smart_toy_outlined,
             size: 40,
-            color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
           ),
           const SizedBox(height: 8),
           Text(
             l10n.chatFunctionTabSpecialHint,
             style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
           ),
+          if (widget.onVoiceRecorded != null) ...[
+            const SizedBox(height: 16),
+            FilledButton.tonalIcon(
+              onPressed: _enterVoiceMode,
+              icon: const Icon(Symbols.mic, size: 18),
+              label: Text(l10n.voiceRecordVoice),
+            ),
+          ],
         ],
       ),
     );
@@ -704,7 +854,9 @@ class _ChatInputBarState extends State<ChatInputBar>
               (!kIsWeb && file.path != null)) {
             final Uint8List header = kIsWeb
                 ? file.bytes!
-                : Uint8List.fromList(await File(file.path!).openRead(0, 4096).first);
+                : Uint8List.fromList(
+                    await File(file.path!).openRead(0, 4096).first,
+                  );
             final detected = detectFileType(header, fallbackName: file.name);
             final messageType = switch (detected) {
               DetectedFileType.png ||

@@ -102,12 +102,12 @@ class UserProfileDemoData {
 
 ## 代码示例
 
-\`\`\`dart
+```dart
 void main() {
   print('Hello, TouchFish!');
   runApp(MyApp());
 }
-\`\`\`
+```
 
 
 ## 数学公式
@@ -145,12 +145,12 @@ void main() {
 
 ### 代码片段
 
-\`\`\`javascript
+```javascript
 const greeting = (name) => {
-  console.log(\`Hello, \${name}!\`);
+  console.log(`Hello, \${name}!`);
 };
 greeting('TouchFish');
-\`\`\`
+```
 
 **粗体文本** 和 *斜体文本*
 ''',
@@ -169,7 +169,7 @@ Working on **TouchFish V5**
 
 ### Tech Stack
 
-\`\`\`python
+```python
 # Python backend
 from flask import Flask
 app = Flask(__name__)
@@ -177,7 +177,7 @@ app = Flask(__name__)
 @app.route('/')
 def hello():
     return 'Hello, TouchFish!'
-\`\`\`
+```
 
 ''',
         avatar: null,

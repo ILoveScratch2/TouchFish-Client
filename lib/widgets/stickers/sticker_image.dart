@@ -39,6 +39,9 @@ class _StickerImageState extends State<StickerImage> {
 
   Future<_StickerPayload>? _payload;
   bool _loading = false;
+  // 缓存 Lottie widget 
+  // 当时我为啥要支持 TGS 来着，搞这么麻烦
+  Widget? _lottieWidget;
 
   bool get _autoLoad {
     return SettingsService.instance.getValue<bool>('autoLoadingStickers', true);
@@ -56,6 +59,7 @@ class _StickerImageState extends State<StickerImage> {
     if (oldWidget.hash != widget.hash || oldWidget.fileType != widget.fileType) {
       _payload = _autoLoad ? _load() : null;
       _loading = false;
+      _lottieWidget = null;
     }
   }
 
@@ -82,7 +86,7 @@ class _StickerImageState extends State<StickerImage> {
     final cached = await StickerCache.instance.get(widget.hash);
     if (cached != null) {
       final bytes = await File(cached).readAsBytes();
-      return _StickerPayload(bytes, detectFileType(bytes));
+      return _StickerPayload.fromBytes(bytes);
     }
 
     await _acquireDownloadSlot();
@@ -95,7 +99,7 @@ class _StickerImageState extends State<StickerImage> {
       }
       final bytes = response.bodyBytes;
       unawaited(StickerCache.instance.put(widget.hash, bytes));
-      return _StickerPayload(bytes, detectFileType(bytes));
+      return _StickerPayload.fromBytes(bytes);
     } finally {
       _releaseDownloadSlot();
     }
@@ -140,8 +144,8 @@ class _StickerImageState extends State<StickerImage> {
           case DetectedFileType.svg:
             return SvgPicture.memory(payload.bytes, fit: widget.fit);
           case DetectedFileType.tgs:
-            return Lottie.memory(
-              Uint8List.fromList(GZipDecoder().decodeBytes(payload.bytes)),
+            return _lottieWidget ??= Lottie.memory(
+              payload.decodedLottieBytes!,
               fit: widget.fit,
               repeat: true,
             );
@@ -184,7 +188,20 @@ class _StickerImageState extends State<StickerImage> {
 class _StickerPayload {
   final Uint8List bytes;
   final DetectedFileType type;
-  const _StickerPayload(this.bytes, this.type);
+  final Uint8List? decodedLottieBytes;
+
+  const _StickerPayload(this.bytes, this.type, {this.decodedLottieBytes});
+
+  factory _StickerPayload.fromBytes(Uint8List bytes) {
+    final type = detectFileType(bytes);
+    return _StickerPayload(
+      bytes,
+      type,
+      decodedLottieBytes: type == DetectedFileType.tgs
+          ? Uint8List.fromList(GZipDecoder().decodeBytes(bytes))
+          : null,
+    );
+  }
 }
 
 class StickerTile extends StatelessWidget {

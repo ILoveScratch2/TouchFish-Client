@@ -3,14 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
+import '../services/browser_service.dart';
 import '../l10n/app_localizations.dart';
 import '../constants/app_constants.dart';
 import 'debug/debug_options_screen.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
+import '../utils/clipboard_utils.dart';
 import '../widgets/app_alert_dialog.dart';
 
 class AboutScreen extends StatefulWidget {
@@ -356,15 +357,18 @@ class _AboutScreenState extends State<AboutScreen>
   }
 
   Future<void> _launchURL(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    await BrowserService.instance.openUri(context, uri);
   }
 
-  void _copyToClipboard(String text, String message) {
-    Clipboard.setData(ClipboardData(text: text));
-    TouchFishSnackbarService.instance.show(message);
+  Future<void> _copyToClipboard(String text, String message) async {
+    final l10n = AppLocalizations.of(context)!;
+    final copied = await copyTextToClipboard(text);
+    TouchFishSnackbarService.instance.show(
+      copied ? message : l10n.copyFailedText,
+      type: copied ? SnackbarType.info : SnackbarType.error,
+    );
   }
 
   Future<void> _showLicenseDialog(BuildContext context) async {
@@ -461,10 +465,8 @@ class _AboutScreenState extends State<AboutScreen>
                           IconButton(
                             icon: const Icon(Symbols.content_copy, size: 20),
                             onPressed: () {
-                              Clipboard.setData(
-                                ClipboardData(text: licenseText),
-                              );
-                              TouchFishSnackbarService.instance.show(
+                              _copyToClipboard(
+                                licenseText,
                                 l10n.aboutCopiedToClipboard,
                               );
                             },
@@ -555,12 +557,6 @@ class _AboutScreenState extends State<AboutScreen>
                       context,
                       fontName: 'HarmonyOS Sans SC',
                       licensePath: 'assets/font/LICENSE.txt',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildFontLicenseOption(
-                      context,
-                      fontName: 'LXGW WenKai',
-                      licensePath: 'assets/font-wenkai/LICENSE.txt',
                     ),
                   ],
                 ),
@@ -711,10 +707,8 @@ class _AboutScreenState extends State<AboutScreen>
                           IconButton(
                             icon: const Icon(Symbols.content_copy, size: 20),
                             onPressed: () {
-                              Clipboard.setData(
-                                ClipboardData(text: licenseText),
-                              );
-                              TouchFishSnackbarService.instance.show(
+                              _copyToClipboard(
+                                licenseText,
                                 l10n.aboutCopiedToClipboard,
                               );
                             },
@@ -799,7 +793,7 @@ class _AboutScreenState extends State<AboutScreen>
                           child: CircleAvatar(
                             radius: 50,
                             backgroundColor: theme.colorScheme.primary
-                                .withOpacity(0.1),
+                                .withValues(alpha: 0.1),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(50),
                               child: Image.asset(
@@ -891,6 +885,14 @@ class _AboutScreenState extends State<AboutScreen>
                             title: l10n.aboutDocumentation,
                             onTap: () =>
                                 _launchURL(AppConstants.documentationUrl),
+                          ),
+                          _buildListTile(
+                            context,
+                            icon: Symbols.menu_book,
+                            title: l10n.aboutClientDocumentation,
+                            onTap: () => _launchURL(
+                              AppConstants.clientDocumentationUrl,
+                            ),
                           ),
                           _buildListTile(
                             context,

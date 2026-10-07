@@ -12,6 +12,7 @@ class RegisterStep2Screen extends StatefulWidget {
   final bool requiresEmail;
   final String? captchaStamp;
   final String? captchaCode;
+  final String? captchaToken;
 
   const RegisterStep2Screen({
     super.key,
@@ -20,6 +21,7 @@ class RegisterStep2Screen extends StatefulWidget {
     this.requiresEmail = false,
     this.captchaStamp,
     this.captchaCode,
+    this.captchaToken,
   });
 
   @override
@@ -41,33 +43,39 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
     setState(() => _isLoading = true);
 
     if (!widget.requiresEmail) {
-      final success = await TfApiClient.instance.register(
+      final result = await TfApiClient.instance.register(
         widget.username,
         widget.password,
         captchaStamp: widget.captchaStamp,
         captchaCode: widget.captchaCode,
+        captchaToken: widget.captchaToken,
       );
       if (!mounted) return;
       setState(() => _isLoading = false);
-      if (success) {
+      if (result == RegisterResult.success) {
         context.go(AppRoutes.registerSuccess);
+      } else if (result == RegisterResult.captchaInvalid) {
+        // 验证码错误返回上一步刷新
+        TouchFishSnackbarService.instance.show(l10n.registerErrorCaptchaInvalid);
+        context.pop(true);
       } else {
         TouchFishSnackbarService.instance.show(l10n.registerErrorFailed);
       }
       return;
     }
 
-    final success = await TfApiClient.instance.register(
+    final result = await TfApiClient.instance.register(
       widget.username,
       widget.password,
       email: _emailController.text,
       captchaStamp: widget.captchaStamp,
       captchaCode: widget.captchaCode,
+      captchaToken: widget.captchaToken,
     );
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    if (success) {
+    if (result == RegisterResult.success) {
       final profile = await TfApiClient.instance.getUserByUsername(
         widget.username,
       );
@@ -80,6 +88,9 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
         AppRoutes.registerStep3,
         extra: {'username': widget.username, 'uid': int.parse(profile.uid)},
       );
+    } else if (result == RegisterResult.captchaInvalid) {
+      TouchFishSnackbarService.instance.show(l10n.registerErrorCaptchaInvalid);
+      context.pop(true);
     } else {
       TouchFishSnackbarService.instance.show(l10n.registerErrorFailed);
     }

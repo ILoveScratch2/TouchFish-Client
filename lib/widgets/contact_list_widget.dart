@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../models/chat_model.dart';
+import 'optimized_image.dart';
 
 class ContactListWidget extends StatelessWidget {
   final List<Contact> contacts;
@@ -25,7 +26,12 @@ class ContactListWidget extends StatelessWidget {
       leading: CircleAvatar(
         backgroundColor: colorScheme.primaryContainer,
         backgroundImage: contact.avatar != null
-            ? NetworkImage(contact.avatar!)
+            ? resizedImageProvider(
+                NetworkImage(contact.avatar!),
+                MediaQuery.of(context).devicePixelRatio,
+                width: 40,
+                height: 40,
+              )
             : null,
         child: contact.avatar == null
             ? Icon(Icons.person, color: colorScheme.onPrimaryContainer)

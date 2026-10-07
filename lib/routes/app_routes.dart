@@ -8,6 +8,8 @@ import '../screens/register_screen.dart';
 import '../screens/register_step2_screen.dart';
 import '../screens/register_step3_screen.dart';
 import '../screens/register_success_screen.dart';
+import '../screens/forgot_password_screen.dart';
+import '../screens/change_password_screen.dart';
 import '../screens/chat_screen.dart';
 import '../screens/chat_detail_screen.dart';
 import '../screens/announcement_screen.dart';
@@ -23,17 +25,23 @@ import '../screens/about_screen.dart';
 import '../screens/licenses_screen.dart';
 import '../screens/profile_edit_screen.dart';
 import '../screens/server_settings_screen.dart';
+import '../screens/session_devices_screen.dart';
 import '../screens/account_management_screen.dart';
 import '../screens/sticker_screens.dart';
 import '../screens/forum_search_screen.dart';
 import '../screens/group_search_screen.dart';
 import '../screens/group_profile_screen.dart';
+import '../screens/browser_screen.dart';
+import '../screens/browser_history_screen.dart';
+import '../screens/call_screen.dart';
 import '../l10n/app_localizations.dart';
 import '../screens/forward_screen.dart';
 import '../models/message_model.dart';
 import '../services/auth_state.dart';
 import '../widgets/window_frame.dart';
+import '../widgets/lock_gate.dart';
 import '../utils/talker.dart';
+import '../utils/wide_screen_helper.dart';
 
 class AppRoutes {
   static const String welcome = '/welcome';
@@ -60,12 +68,21 @@ class AppRoutes {
   static const String registerStep2 = '/register/step2';
   static const String registerStep3 = '/register/step3';
   static const String registerSuccess = '/register/success';
+  static const String forgotPassword = '/forgot-password';
+  static const String changePassword = '/change-password';
   static const String userProfile = '/user/:userId';
   static const String about = '/about';
   static const String licenses = '/licenses';
   static const String profileEdit = '/profile/edit';
+  static const String sessionDevices = '/session-devices';
   static const String stickerMarket = '/stickers';
   static const String myStickers = '/stickers/mine';
+  static const String browser = '/browser';
+  static const String browserHistory = '/browser/history';
+  static const String browserBookmarks = '/browser/bookmarks';
+  static const String call = '/call';
+
+  static String callPath(int peerUid) => '$call/$peerUid';
 
   static const _publicPaths = {
     welcome,
@@ -75,6 +92,7 @@ class AppRoutes {
     registerStep2,
     registerStep3,
     registerSuccess,
+    forgotPassword,
     about,
     licenses,
   };
@@ -102,13 +120,40 @@ class AppRoutes {
     return -1;
   }
 
+  /// 判断是否为子页面导航（同一 Section 内的页面切换）。
+  ///
+  /// 他妈的不要叠加主 Section 切换动画
+  /// 神秘 dsv4f 给我 debug 半天，梁文锋你死定了过拟合这么严重的 fw ds
+  @visibleForTesting
+  static bool isSubPageNavigation(String path) {
+    // 聊天页面内的导航
+    if (path.startsWith('/chat/') && path != '/chat') {
+      return true;
+    }
+    // 论坛页面内的导航
+    if (path.startsWith('/forum/') && path != '/forum') {
+      return true;
+    }
+    return false;
+  }
+
   static Page<void> _mainSectionPage(
     BuildContext context,
     GoRouterState state,
     Widget child,
   ) {
+    final path = state.uri.path;
+    
+    // 如果是子页面导航，不使用动画
+    if (isSubPageNavigation(path)) {
+      return NoTransitionPage<void>(
+        key: state.pageKey,
+        child: child,
+      );
+    }
+    
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final currentIndex = _sectionIndexOf(state.uri.path);
+    final currentIndex = _sectionIndexOf(path);
     final lastIndex = _lastMainSectionIndex;
     final isForward = lastIndex == null || currentIndex >= lastIndex;
     if (currentIndex >= 0) {
@@ -125,7 +170,7 @@ class AppRoutes {
       child: child,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         if (reduceMotion) return child;
-        final isWide = MediaQuery.sizeOf(context).width >= 600;
+        final isWide = WideScreenHelper.isWide(context);
         final curved = CurvedAnimation(
           parent: animation,
           curve: Curves.easeOutCubic,
@@ -151,6 +196,44 @@ class AppRoutes {
     );
   }
 
+  /// 聊天区占位页（宽屏右侧未选会话时显示）。
+  static Widget _chatPlaceholder(BuildContext context) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: Center(
+        child: Text(
+          AppLocalizations.of(context)!.chatSelectPlaceholder,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 聊天区索引页（URL 为 `/chat`）。
+  ///
+  /// 宽屏：列表常驻在 ChatShellScreen 左侧，这里只提供"选择会话"占位；
+  /// 窄屏：显示全屏聊天列表。
+  ///
+  /// 索引页自身不做转场动画：进入聊天 Section 的整体过渡由 ChatShellScreen
+  /// 整壳入场动画承担；从详情返回列表时索引页常驻栈底（或被静默补入），
+  /// 不会重放"列表滑入"动画。
+  static Page<void> _chatIndexPage(
+    BuildContext context,
+    GoRouterState state,
+  ) {
+    final isWide = WideScreenHelper.isWide(context);
+    final Widget page = isWide
+        ? _chatPlaceholder(context)
+        : const ChatListScreen(
+            isAside: false,
+            isCollapsed: false,
+            isHovering: false,
+          );
+    return NoTransitionPage<void>(key: state.pageKey, child: page);
+  }
+
   @visibleForTesting
   static String? authRedirect({
     required String path,
@@ -170,7 +253,8 @@ class AppRoutes {
         extra['password'] is String &&
         (extra['requiresEmail'] == null || extra['requiresEmail'] is bool) &&
         (extra['captchaStamp'] == null || extra['captchaStamp'] is String) &&
-        (extra['captchaCode'] == null || extra['captchaCode'] is String);
+        (extra['captchaCode'] == null || extra['captchaCode'] is String) &&
+        (extra['captchaToken'] == null || extra['captchaToken'] is String);
   }
 
   @visibleForTesting
@@ -202,7 +286,7 @@ class AppRoutes {
       routes: [
         ShellRoute(
           builder: (context, state, child) {
-            return WindowFrame(child: child);
+            return WindowFrame(child: LockGate(child: child));
           },
           routes: [
             GoRoute(
@@ -241,6 +325,7 @@ class AppRoutes {
                   requiresEmail: args['requiresEmail'] as bool? ?? false,
                   captchaStamp: args['captchaStamp'] as String?,
                   captchaCode: args['captchaCode'] as String?,
+                  captchaToken: args['captchaToken'] as String?,
                 );
               },
             ),
@@ -261,6 +346,14 @@ class AppRoutes {
               builder: (context, state) => const RegisterSuccessScreen(),
             ),
             GoRoute(
+              path: forgotPassword,
+              builder: (context, state) => const ForgotPasswordScreen(),
+            ),
+            GoRoute(
+              path: changePassword,
+              builder: (context, state) => const ChangePasswordScreen(),
+            ),
+            GoRoute(
               path: '/user/:userId',
               builder: (context, state) {
                 final userId = state.pathParameters['userId']!;
@@ -272,12 +365,59 @@ class AppRoutes {
               builder: (context, state) => const AboutScreen(),
             ),
             GoRoute(
+              path: browser,
+              builder: (context, state) {
+                final extra = state.extra;
+                return BrowserScreen(
+                  initialUrl: extra is String ? extra : null,
+                );
+              },
+            ),
+            GoRoute(
+              path: browserHistory,
+              builder: (context, state) =>
+                  const BrowserListScreen(mode: BrowserListMode.history),
+            ),
+            GoRoute(
+              path: browserBookmarks,
+              builder: (context, state) =>
+                  const BrowserListScreen(mode: BrowserListMode.bookmarks),
+            ),
+            GoRoute(
               path: licenses,
               builder: (context, state) => const LicensesScreen(),
             ),
             GoRoute(
+              path: '/call/:peerUid',
+              builder: (context, state) {
+                final peerUid = int.tryParse(
+                  state.pathParameters['peerUid'] ?? '',
+                );
+                if (peerUid == null) {
+                  return Scaffold(
+                    body: Center(
+                      child: Text(AppLocalizations.of(context)!.callInvalidRequest),
+                    ),
+                  );
+                }
+                return CallScreen(peerUid: peerUid);
+              },
+            ),
+            GoRoute(
               path: profileEdit,
               builder: (context, state) => const ProfileEditScreen(),
+            ),
+            GoRoute(
+              path: sessionDevices,
+              builder: (context, state) {
+                final args = state.extra;
+                final uid = args is Map ? args['uid'] : null;
+                final username = args is Map ? args['username'] : null;
+                return SessionDevicesScreen(
+                  targetUid: uid is int ? uid : null,
+                  targetUsername: username is String ? username : null,
+                );
+              },
             ),
             GoRoute(
               path: forumSearch,
@@ -340,78 +480,108 @@ class AppRoutes {
                 return MainScreen(child: child);
               },
               routes: [
-                GoRoute(
-                  path: main,
-                  pageBuilder: (context, state) {
-                    final isWide = MediaQuery.of(context).size.width >= 600;
-                    final placeholder = ChatShellScreen(
-                      child: Container(
-                        color: Theme.of(context).scaffoldBackgroundColor,
-                        child: Center(
-                          child: Text(
-                            '选择一个聊天开始对话',
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
+                // 聊天区使用常驻 Shell：ChatShellScreen（左侧列表、拖动栏等
+                // 状态）跨 /chat、/chat/:roomId 切换保持不重建；详情页作为
+                // /chat 的嵌套子路由，在壳内子导航中 push 播放转场动画——
+                // 宽屏=右侧面板区域动画，窄屏=整屏 push 动画
+
+                // what the fuck
+                ShellRoute(
+                  builder: (context, state, child) {
+                    return ChatShellScreen(child: child);
+                  },
+                  routes: [
+                    // CHAT NB!
+                    GoRoute(
+                      path: main,
+                      redirect: (context, state) => chat,
+                    ),
+                    GoRoute(
+                      path: chat,
+                      pageBuilder: (context, state) =>
+                          _chatIndexPage(context, state),
+                      routes: [
+                        GoRoute(
+                          path: ':roomId',
+                          pageBuilder: (context, state) {
+                            final roomId = state.pathParameters['roomId']!;
+                            final reduceMotion =
+                                MediaQuery.disableAnimationsOf(context);
+                            final detail = ChatDetailScreen(
+                              key: ValueKey(roomId),
+                              roomId: roomId,
+                            );
+                            if (reduceMotion) {
+                              return NoTransitionPage<void>(
+                                key: state.pageKey,
+                                child: detail,
+                              );
+                            }
+                            // 统一使用 opaque:false 的自定义转场：
+                            // 聊天列表页全程保持在 overlay 上（不做 offstage），
+                            // 不然他妈的 opaque 路由 pop 时恢复下层就会他妈的报错
+
+                            // 气死我了，不要管文不文明了
+                            if (!WideScreenHelper.isWide(context)) {
+                              // 窄屏：整屏从右滑入
+                              return CustomTransitionPage<void>(
+                                key: state.pageKey,
+                                opaque: false,
+                                transitionDuration:
+                                    const Duration(milliseconds: 300),
+                                reverseTransitionDuration:
+                                    const Duration(milliseconds: 260),
+                                child: detail,
+                                transitionsBuilder: (context, animation,
+                                        secondaryAnimation, child) {
+                                  final curved = CurvedAnimation(
+                                    parent: animation,
+                                    curve: Curves.easeOutCubic,
+                                    reverseCurve: Curves.easeInCubic,
+                                  );
+                                  return SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(1, 0),
+                                      end: Offset.zero,
+                                    ).animate(curved),
+                                    child: child,
+                                  );
+                                },
+                              );
+                            }
+                            // 宽屏：仅在右侧面板区域内轻量过渡
+                            return CustomTransitionPage<void>(
+                              key: state.pageKey,
+                              opaque: false,
+                              transitionDuration:
+                                  const Duration(milliseconds: 260),
+                              reverseTransitionDuration:
+                                  const Duration(milliseconds: 240),
+                              child: detail,
+                              transitionsBuilder: (context, animation,
+                                      secondaryAnimation, child) {
+                                final curved = CurvedAnimation(
+                                  parent: animation,
+                                  curve: Curves.easeOutCubic,
+                                  reverseCurve: Curves.easeInCubic,
+                                );
+                                return FadeTransition(
+                                  opacity: curved,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(0.05, 0),
+                                      end: Offset.zero,
+                                    ).animate(curved),
+                                    child: child,
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         ),
-                      ),
-                    );
-                    // 宽的时候没动画（不然很奇怪）
-                    return isWide
-                        ? NoTransitionPage(
-                            key: state.pageKey,
-                            child: placeholder,
-                          )
-                        : _mainSectionPage(context, state, placeholder);
-                  },
-                ),
-                GoRoute(
-                  path: chat,
-                  pageBuilder: (context, state) {
-                    final isWide = MediaQuery.of(context).size.width >= 600;
-                    final placeholder = ChatShellScreen(
-                      child: Container(
-                        color: Theme.of(context).scaffoldBackgroundColor,
-                        child: Center(
-                          child: Text(
-                            '选择一个聊天开始对话',
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                    return isWide
-                        ? NoTransitionPage(
-                            key: state.pageKey,
-                            child: placeholder,
-                          )
-                        : _mainSectionPage(context, state, placeholder);
-                  },
-                ),
-                GoRoute(
-                  path: '/chat/:roomId',
-                  pageBuilder: (context, state) {
-                    final roomId = state.pathParameters['roomId']!;
-                    final isWide = MediaQuery.of(context).size.width >= 600;
-                    final shell = ChatShellScreen(
-                      child: ChatDetailScreen(
-                        key: ValueKey(roomId),
-                        roomId: roomId,
-                      ),
-                    );
-                    // 宽的时候没动画（不然很奇怪）
-                    // 窄的时候才能德芙纵享丝滑
-                    return isWide
-                        ? NoTransitionPage(key: state.pageKey, child: shell)
-                        : MaterialPage(child: shell);
-                  },
+                      ],
+                    ),
+                  ],
                 ),
                 GoRoute(
                   path: announcement,

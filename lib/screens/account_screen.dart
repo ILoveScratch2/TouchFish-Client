@@ -12,6 +12,7 @@ import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/notification_service.dart';
 import '../services/snackbar_service.dart';
+import '../services/lock_service.dart';
 import '../widgets/app_alert_dialog.dart';
 import 'debug/debug_options_screen.dart';
 import 'storage_management_screen.dart';
@@ -435,6 +436,29 @@ class _AccountScreenState extends State<AccountScreen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 24),
         trailing: const Icon(Symbols.chevron_right),
         dense: true,
+        leading: const Icon(Symbols.devices, size: 24),
+        title: Text(l10n.accountSessionDevices),
+        onTap: () => context.push(AppRoutes.sessionDevices),
+      ),
+      ListenableBuilder(
+        listenable: LockService.instance,
+        builder: (context, _) {
+          final enabled = LockService.instance.isEnabled;
+          return ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+            trailing: const Icon(Symbols.chevron_right),
+            dense: true,
+            enabled: enabled,
+            leading: const Icon(Symbols.lock, size: 24),
+            title: Text(l10n.accountLockNow),
+            onTap: () => LockService.instance.lock(),
+          );
+        },
+      ),
+      ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+        trailing: const Icon(Symbols.chevron_right),
+        dense: true,
         leading: const Icon(Symbols.cloud, size: 24),
         title: Text(l10n.storageTitle),
         onTap: () {
@@ -599,7 +623,7 @@ class _AccountNotificationSheet extends StatelessWidget {
                         Icon(
                           Icons.notifications_none,
                           size: 64,
-                          color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -616,7 +640,7 @@ class _AccountNotificationSheet extends StatelessWidget {
                       vertical: 8,
                     ),
                     itemCount: notifs.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 6),
+                    separatorBuilder: (_, _) => const SizedBox(height: 6),
                     itemBuilder: (context, index) {
                       final notif = notifs[index];
                       return _NotificationCard(notification: notif);

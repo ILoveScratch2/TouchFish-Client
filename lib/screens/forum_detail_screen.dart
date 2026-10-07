@@ -5,6 +5,7 @@ import '../models/forum_model.dart';
 import '../models/user_profile.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/markdown_renderer.dart';
+import '../widgets/optimized_image.dart';
 import '../widgets/sticker_text_renderer.dart';
 import '../models/settings_service.dart';
 import '../services/api/tf_api_client.dart';
@@ -13,6 +14,7 @@ import '../services/snackbar_service.dart';
 import 'forum_members_screen.dart';
 import 'forum_post_compose_screen.dart';
 import '../utils/talker.dart';
+import '../utils/wide_screen_helper.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/forum_attachments.dart';
 import '../routes/app_routes.dart';
@@ -193,7 +195,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
     final forum = _forum!;
 
-    final isWide = MediaQuery.of(context).size.width >= 600;
+    final isWide = WideScreenHelper.isWide(context);
 
     return Scaffold(
       body: Stack(
@@ -351,7 +353,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
               fit: StackFit.expand,
               children: [
                 if (forum.avatarUrl != null)
-                  Image.network(forum.avatarUrl!, fit: BoxFit.cover)
+                  OptimizedImage(
+                    provider: NetworkImage(forum.avatarUrl!),
+                    fit: BoxFit.cover,
+                  )
                 else ...[
                   ColoredBox(color: colorScheme.surfaceContainerHighest),
                   DecoratedBox(
@@ -359,7 +364,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Colors.black.withOpacity(0.36), Colors.black.withOpacity(0.7)],
+                        colors: [Colors.black.withValues(alpha: 0.36), Colors.black.withValues(alpha: 0.7)],
                       ),
                     ),
                   ),
@@ -742,6 +747,7 @@ class _ForumActionMenu extends StatelessWidget {
       itemBuilder: (context) => [
         if ((identity?.role ?? 0) >= 50) ...[
           PopupMenuItem(
+            onTap: onEditForum,
             child: Row(
               children: [
                 Icon(
@@ -752,9 +758,9 @@ class _ForumActionMenu extends StatelessWidget {
                 Text(l10n.forumEdit),
               ],
             ),
-            onTap: onEditForum,
           ),
           PopupMenuItem(
+            onTap: onPinPost,
             child: Row(
               children: [
                 Icon(
@@ -765,7 +771,6 @@ class _ForumActionMenu extends StatelessWidget {
                 Text(l10n.forumPinPost),
               ],
             ),
-            onTap: onPinPost,
           ),
         ],
         if (isAdmin)

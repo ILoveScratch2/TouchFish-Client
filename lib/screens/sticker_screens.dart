@@ -206,7 +206,7 @@ class _StickerMarketplaceScreenState extends State<StickerMarketplaceScreen>
             if (!ok) await _load();
           }
         },
-        proxyDecorator: (child, _, __) => Material(
+        proxyDecorator: (child, _, _) => Material(
           elevation: 4,
           borderRadius: BorderRadius.circular(16),
           child: child,
@@ -260,7 +260,7 @@ class _MarketplacePackCard extends StatelessWidget {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: previewCount,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
                 itemBuilder: (_, index) {
                   if (index < previews.length) {
                     final sticker = previews[index];
@@ -445,7 +445,7 @@ class _OwnedPackCardState extends State<_OwnedPackCard> {
                     const EdgeInsets.only(left: 16, right: 16, bottom: 12),
                 scrollDirection: Axis.horizontal,
                 itemCount: widget.pack.stickers.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
                 itemBuilder: (_, index) {
                   final sticker = widget.pack.stickers[index];
                   return ClipRRect(
@@ -937,7 +937,7 @@ class _StickerPackEditorScreenState extends State<StickerPackEditorScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
                     itemCount: _pack.stickers.length,
                     onReorder: _reorder,
-                    proxyDecorator: (child, _, __) => Material(
+                    proxyDecorator: (child, _, _) => Material(
                       elevation: 4,
                       borderRadius: BorderRadius.circular(12),
                       child: child,

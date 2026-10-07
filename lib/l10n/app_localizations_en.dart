@@ -146,6 +146,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginErrorNetwork => 'Network error, please try again';
 
   @override
+  String get loginErrorSessionLimit => 'Too many logged-in devices';
+
+  @override
+  String get loginDegradedToLegacy =>
+      'This server does not support JWT auth. Automatically fell back to legacy login (UID + PASSWORD)';
+
+  @override
+  String get sessionExpiredMessage =>
+      'Login session expired, please sign in again';
+
+  @override
   String get savedSessionRestoreConnectingTitle => 'Connecting';
 
   @override
@@ -160,7 +171,143 @@ class AppLocalizationsEn extends AppLocalizations {
       'This session can\'t be used on the server. Check your network connection or login credentials.';
 
   @override
+  String get sessionDevicesTitle => 'Session Devices';
+
+  @override
+  String get sessionDevicesUnsupported =>
+      'This server doesn\'t support JWT authentication. Device management is unavailable.';
+
+  @override
+  String get sessionDevicesCountLabel => 'Logged in';
+
+  @override
+  String get sessionDevicesUnlimited => 'Unlimited';
+
+  @override
+  String get sessionDevicesUnknownDevice => 'Unknown device';
+
+  @override
+  String get sessionDevicesEmpty => 'No logged-in devices';
+
+  @override
+  String get sessionDevicesLoadFailed => 'Failed to load devices';
+
+  @override
+  String get sessionDevicesCurrent => 'Current device';
+
+  @override
+  String get sessionDevicesIpLabel => 'IP:';
+
+  @override
+  String get sessionDevicesIssuedAtLabel => 'Issued at';
+
+  @override
+  String get sessionDevicesExpiresAtLabel => 'Expires at';
+
+  @override
+  String get sessionDevicesRemove => 'Remove device';
+
+  @override
+  String get sessionDevicesRemoveConfirmTitle => 'Remove device?';
+
+  @override
+  String get sessionDevicesRemoveConfirmMessage =>
+      'This device will be signed out immediately. Sign in again to restore access.';
+
+  @override
+  String get sessionDevicesRemoveSuccess => 'Device removed';
+
+  @override
+  String get sessionDevicesRemoveFailed =>
+      'Failed to remove device, please try again';
+
+  @override
+  String get sessionDevicesRename => 'Rename';
+
+  @override
+  String get sessionDevicesRenameTitle => 'Rename device';
+
+  @override
+  String get sessionDevicesRenameLabel => 'Device name';
+
+  @override
+  String get sessionDevicesRenameHint => 'e.g. My iPhone';
+
+  @override
+  String get sessionDevicesRenameHelper =>
+      'Leave empty to use the default device name';
+
+  @override
+  String get sessionDevicesRenameSuccess => 'Device renamed';
+
+  @override
+  String get sessionDevicesRenameFailed => 'Rename failed, please try again';
+
+  @override
+  String get sessionDevicesLocation => 'Location';
+
+  @override
+  String get sessionDevicesLastSeen => 'Last active';
+
+  @override
+  String get sessionDevicesTabDevices => 'Devices';
+
+  @override
+  String get sessionDevicesTabSessions => 'Sessions';
+
+  @override
+  String get sessionDevicesSessionCount => 'Sessions';
+
+  @override
+  String get sessionDevicesUnknownPlatform => 'Unknown platform';
+
+  @override
+  String get sessionDevicesPlatformIos => 'iOS';
+
+  @override
+  String get sessionDevicesPlatformAndroid => 'Android';
+
+  @override
+  String get sessionDevicesPlatformWeb => 'Web';
+
+  @override
+  String get sessionDevicesPlatformWindows => 'Windows';
+
+  @override
+  String get sessionDevicesPlatformMacos => 'macOS';
+
+  @override
+  String get sessionDevicesPlatformLinux => 'Linux';
+
+  @override
+  String get sessionDevicesRevokeAllOthers => 'Sign out all other sessions';
+
+  @override
+  String get sessionDevicesRevokeAllOthersConfirmTitle =>
+      'Sign out all other sessions?';
+
+  @override
+  String get sessionDevicesRevokeAllOthersConfirmMessage =>
+      'All other devices will be signed out immediately. You will stay signed in on this device.';
+
+  @override
+  String get sessionDevicesRevokeAllOthersSuccess =>
+      'All other sessions signed out';
+
+  @override
+  String get sessionDevicesRevokeAllOthersFailed =>
+      'Failed to sign out other sessions, please try again';
+
+  @override
+  String get sessionRestoreNetworkError =>
+      'Network connection failed. Please check your network and try again.';
+
+  @override
   String get registerErrorCaptchaRequired => 'Please enter the captcha';
+
+  @override
+  String get registerErrorCaptchaInvalid =>
+      'Captcha is incorrect, please try again';
 
   @override
   String get registerCaptchaLoad => 'Loading captcha...';
@@ -170,6 +317,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get registerCaptchaRefresh => 'Refresh';
+
+  @override
+  String get registerCaptchaVerify => 'Verify';
+
+  @override
+  String get registerCaptchaVerifyHint => 'Complete the captcha to continue.';
+
+  @override
+  String get registerCaptchaVerified => 'Captcha verified';
 
   @override
   String get registerErrorFailed => 'Registration failed, please try again';
@@ -233,6 +389,417 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsCategoryAbout => 'About';
+
+  @override
+  String get settingsCategorySecurity => 'Security';
+
+  @override
+  String get settingsSecurityMasterPasswordTitle => 'Master Password';
+
+  @override
+  String get settingsSecurityMasterPasswordDesc =>
+      'Unlock the app with a master password.';
+
+  @override
+  String get settingsSecuritySetPassword => 'Set Master Password';
+
+  @override
+  String get settingsSecurityChangePassword => 'Change Master Password';
+
+  @override
+  String get settingsSecurityCurrentPassword => 'Current Master Password';
+
+  @override
+  String get settingsSecurityConfirmPassword => 'Confirm Master Password';
+
+  @override
+  String get settingsSecurityPasswordTooShort =>
+      'Master password must be at least 4 characters';
+
+  @override
+  String get settingsSecurityPasswordMismatch =>
+      'The two passwords do not match';
+
+  @override
+  String get settingsSecurityPasswordSet => 'Master password set';
+
+  @override
+  String get settingsSecurityPasswordChanged => 'Master password changed';
+
+  @override
+  String get settingsSecurityPasswordDisabled => 'Master password disabled';
+
+  @override
+  String get settingsSecurityPasswordIncorrect => 'Incorrect master password';
+
+  @override
+  String get settingsSecurityDisablePassword => 'Disable Master Password';
+
+  @override
+  String get settingsSecurityDisablePasswordConfirm =>
+      'Disable the master password? This also disables biometric unlock and the app will no longer be locked.';
+
+  @override
+  String get settingsSecurityBiometricTitle => 'Biometric Unlock';
+
+  @override
+  String get settingsSecurityBiometricDesc =>
+      'Unlock the app with fingerprint or face on supported devices';
+
+  @override
+  String get settingsSecurityBiometricUnavailable =>
+      'Biometrics are unavailable on this device';
+
+  @override
+  String get settingsSecurityBiometricCancelled =>
+      'Biometric authentication was cancelled';
+
+  @override
+  String get settingsSecurityBiometricFailed =>
+      'Failed to enable biometric unlock';
+
+  @override
+  String get settingsSecurityLockNowTitle => 'Lock Now';
+
+  @override
+  String get settingsSecurityLockNowDesc =>
+      'Lock the app immediately; a master password or biometrics is required to unlock';
+
+  @override
+  String get settingsShowOnLockScreenTitle => 'Show Above Lock Screen';
+
+  @override
+  String get settingsShowOnLockScreenDesc =>
+      'When enabled the app can appear above the Android lock screen, letting you view and use content without unlocking (some systems may restrict typing or secure actions)';
+
+  @override
+  String get settingsBuiltInKeyboardTitle => 'Use Built-in Soft Keyboard';
+
+  @override
+  String get settingsBuiltInKeyboardDesc =>
+      'Use the built-in soft keyboard provided by TouchFish-Client to type. English input only';
+
+  @override
+  String get settingsBuiltInKeyboardNever => 'Never';
+
+  @override
+  String get settingsBuiltInKeyboardLock => 'Only when locked';
+
+  @override
+  String get settingsBuiltInKeyboardAlways => 'Always';
+
+  @override
+  String get settingsLinkOpenModeTitle => 'Open Links In';
+
+  @override
+  String get settingsLinkOpenModeDesc =>
+      'Choose how links are opened on Android: in the built-in browser or in an external browser';
+
+  @override
+  String get settingsLinkOpenModeInapp => 'Built-in browser';
+
+  @override
+  String get settingsLinkOpenModeExternal => 'External browser';
+
+  @override
+  String get settingsBrowserSearchEngineTitle => 'Search Engine';
+
+  @override
+  String get settingsBrowserSearchEngineDesc =>
+      'Search engine used when typing a search term in the browser address bar';
+
+  @override
+  String get settingsBrowserSearchEngineBing => 'Bing';
+
+  @override
+  String get settingsBrowserSearchEngineDuckduckgo => 'DuckDuckGo';
+
+  @override
+  String get settingsBrowserSearchEngineBaidu => 'Baidu';
+
+  @override
+  String get browserNewTab => 'New Tab';
+
+  @override
+  String get browserCloseTab => 'Close Tab';
+
+  @override
+  String get browserAddressHint => 'Type a URL or search the web';
+
+  @override
+  String get browserGo => 'Go';
+
+  @override
+  String get browserBack => 'Back';
+
+  @override
+  String get browserForward => 'Forward';
+
+  @override
+  String get browserRefresh => 'Refresh';
+
+  @override
+  String get browserStop => 'Stop';
+
+  @override
+  String get browserOpenInExternal => 'Open in external browser';
+
+  @override
+  String get browserOpenInNewTab => 'Open in new tab';
+
+  @override
+  String get browserCopyLink => 'Copy link';
+
+  @override
+  String get browserCopied => 'Link copied';
+
+  @override
+  String get browserOpenFailed => 'No app found to open this link';
+
+  @override
+  String get browserFindOnPage => 'Find on page';
+
+  @override
+  String get browserFindHint => 'Find on page';
+
+  @override
+  String get browserNoResults => 'No results';
+
+  @override
+  String get browserShare => 'Share';
+
+  @override
+  String get browserLoadingFailed => 'Failed to load page';
+
+  @override
+  String get browserRetry => 'Retry';
+
+  @override
+  String get browserTabLimitReached => 'Too many tabs open. Close a tab first';
+
+  @override
+  String get browserRememberDomainTitle => 'Open in external browser?';
+
+  @override
+  String browserRememberDomainMessage(Object domain) {
+    return 'Always open $domain links in the external browser and add it to the trusted domains?';
+  }
+
+  @override
+  String get browserOpenAnyway => 'Open anyway';
+
+  @override
+  String get browserDownloadTitle => 'Download';
+
+  @override
+  String get browserDownloadMessage =>
+      'This link downloads a file. Open it in the external browser to download?';
+
+  @override
+  String get browserDownloadOpen => 'Open in browser';
+
+  @override
+  String get browserAddBookmark => 'Add bookmark';
+
+  @override
+  String get browserRemoveBookmark => 'Remove bookmark';
+
+  @override
+  String get browserBookmarkAdded => 'Bookmark added';
+
+  @override
+  String get browserBookmarkRemoved => 'Bookmark removed';
+
+  @override
+  String get browserBookmarks => 'Bookmarks';
+
+  @override
+  String get browserBookmarksEmpty => 'No bookmarks yet';
+
+  @override
+  String get browserHistory => 'History';
+
+  @override
+  String get browserHistoryEmpty => 'No history yet';
+
+  @override
+  String get browserHistoryClear => 'Clear history';
+
+  @override
+  String get browserExitBrowser => 'Exit browser';
+
+  @override
+  String get browserClearDataTitle => 'Clear browsing data';
+
+  @override
+  String get browserClearDataDesc =>
+      'Choose a time range and the data types to clear';
+
+  @override
+  String get browserClearDataRangeHour => 'Last hour';
+
+  @override
+  String get browserClearDataRangeDay => 'Last 24 hours';
+
+  @override
+  String get browserClearDataRangeWeek => 'Last 7 days';
+
+  @override
+  String get browserClearDataRangeAll => 'All time';
+
+  @override
+  String get browserClearDataTypeHistory => 'Browsing history';
+
+  @override
+  String get browserClearDataTypeCookies => 'Cookies and site data';
+
+  @override
+  String get browserClearDataTypeCache => 'Cached files';
+
+  @override
+  String get browserClearDataCookiesWarning =>
+      'Clearing cookies will sign you out of some websites';
+
+  @override
+  String get browserClearDataConfirm => 'Clear';
+
+  @override
+  String get browserClearDataDone => 'Browsing data cleared';
+
+  @override
+  String get browserHistorySearchHint => 'Search history';
+
+  @override
+  String get browserBookmarksSearchHint => 'Search bookmarks';
+
+  @override
+  String get browserNoSearchResults => 'No results found';
+
+  @override
+  String get browserDeleteEntry => 'Delete';
+
+  @override
+  String get browserHistoryToday => 'Today';
+
+  @override
+  String get browserHistoryYesterday => 'Yesterday';
+
+  @override
+  String get browserNewTabRecent => 'Recent';
+
+  @override
+  String get browserNewTabOpenBookmarks => 'Bookmarks';
+
+  @override
+  String get browserNewTabOpenHistory => 'History';
+
+  @override
+  String get browserNewTabSearchPlaceholder => 'Search or enter address';
+
+  @override
+  String get settingsBrowserUserAgentTitle => 'Custom User-Agent';
+
+  @override
+  String get settingsBrowserUserAgentDesc =>
+      'Leave empty for default. Enter a custom User-Agent (e.g. a desktop Chrome one)';
+
+  @override
+  String get settingsBrowserUserAgentHint => 'Custom User-Agent string';
+
+  @override
+  String get settingsBrowserUserAgentDefault => 'Default (automatic)';
+
+  @override
+  String get settingsBrowserMixedContentTitle => 'Mixed Content';
+
+  @override
+  String get settingsBrowserMixedContentDesc =>
+      'Allow secure pages to load insecure (http) resources inside the built-in browser';
+
+  @override
+  String get settingsBrowserMixedContentBlock => 'Block (default)';
+
+  @override
+  String get settingsBrowserMixedContentAllow => 'Allow';
+
+  @override
+  String get settingsBrowserSearchEnginePrivacy => 'Privacy Policy';
+
+  @override
+  String get settingsLaunchBrowserTitle => 'Open Built-in Browser';
+
+  @override
+  String get settingsLaunchBrowserDesc =>
+      'Open the built-in browser page for testing';
+
+  @override
+  String get browserImageMenuDownload => 'Download image';
+
+  @override
+  String get browserDownloading => 'Downloading image…';
+
+  @override
+  String get browserDownloadFailed => 'Failed to download image';
+
+  @override
+  String get browserRendererGoneTitle => 'Page crashed';
+
+  @override
+  String get browserRendererGoneMessage =>
+      'The page\'s render process has crashed. Reload the page or close this tab.';
+
+  @override
+  String get browserCancelAlwaysExternalTitle => 'Stop opening externally?';
+
+  @override
+  String browserCancelAlwaysExternalMessage(Object domain) {
+    return '$domain links are currently always opened in the external browser. Stop opening this domain in the external browser?';
+  }
+
+  @override
+  String browserAlwaysExternalEnabled(Object domain) {
+    return '$domain will always open in the external browser';
+  }
+
+  @override
+  String browserAlwaysExternalDisabled(Object domain) {
+    return '$domain links will no longer be forced to open in the external browser';
+  }
+
+  @override
+  String get lockTitle => 'TouchFish is locked';
+
+  @override
+  String get lockSubtitle => 'Enter your master password to unlock';
+
+  @override
+  String get lockPasswordLabel => 'Master Password';
+
+  @override
+  String get lockPasswordRequired => 'Please enter your master password';
+
+  @override
+  String get lockUnlock => 'Unlock';
+
+  @override
+  String get lockBiometricAction => 'Unlock with biometrics';
+
+  @override
+  String get lockErrorInvalidPassword => 'Incorrect master password';
+
+  @override
+  String get lockErrorBiometricUnavailable =>
+      'Biometrics are unavailable on this device';
+
+  @override
+  String get lockErrorBiometricCancelled =>
+      'Biometric authentication was cancelled';
+
+  @override
+  String get lockErrorBiometricNotEnabled => 'Biometric unlock is not enabled';
+
+  @override
+  String get lockErrorUnknown => 'Unlock failed, please try again';
 
   @override
   String get settingsLanguageTitle => 'Language';
@@ -401,7 +968,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter the name of the system font to use';
 
   @override
-  String get settingsCustomFontHint => 'e.g. LXGW WenKai Screen';
+  String get settingsCustomFontHint => 'e.g. Segoe UI';
 
   @override
   String get settingsSendModeTitle => 'Send Mode';
@@ -423,6 +990,29 @@ class AppLocalizationsEn extends AppLocalizations {
       'Render Markdown and LaTeX formatted text';
 
   @override
+  String get settingsChatVoiceButtonTitle => 'Voice button in input bar';
+
+  @override
+  String get settingsChatVoiceButtonDesc =>
+      'Show the microphone button in the message input bar (voice mode is always available from the special tab)';
+
+  @override
+  String get settingsMessageDisplayStyleTitle => 'Message Display Style';
+
+  @override
+  String get settingsMessageDisplayStyleDesc =>
+      'Choose the message list display style';
+
+  @override
+  String get settingsMessageDisplayStyleBubble => 'Bubble';
+
+  @override
+  String get settingsMessageDisplayStyleCompact => 'Compact(TF-style)';
+
+  @override
+  String get settingsMessageDisplayStyleColumn => 'Column (TF-style+)';
+
+  @override
   String get settingsCloseToTrayTitle => 'Minimize to Tray on Close';
 
   @override
@@ -437,6 +1027,48 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trayQuit => 'Quit';
+
+  @override
+  String get trayLock => 'Lock';
+
+  @override
+  String get trayTooltip => 'TouchFish Client';
+
+  @override
+  String get titleBarMinimize => 'Minimize';
+
+  @override
+  String get titleBarMaximize => 'Maximize';
+
+  @override
+  String get titleBarRestore => 'Restore';
+
+  @override
+  String get titleBarClose => 'Close';
+
+  @override
+  String get imageZoomIn => 'Zoom in';
+
+  @override
+  String get imageZoomOut => 'Zoom out';
+
+  @override
+  String get imageRotateLeft => 'Rotate left';
+
+  @override
+  String get imageRotateRight => 'Rotate right';
+
+  @override
+  String get imageExif => 'View EXIF info';
+
+  @override
+  String get imageViewOriginal => 'View original';
+
+  @override
+  String get imageViewThumbnail => 'View thumbnail';
+
+  @override
+  String get chatSelectPlaceholder => 'Select a chat to start talking';
 
   @override
   String get settingsSystemNotificationsTitle => 'System Notifications';
@@ -466,6 +1098,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String notificationLevelSummary(int contacts, int messages) {
     return '$contacts contacts sent $messages messages';
   }
+
+  @override
+  String get notificationReplyAction => 'Reply';
+
+  @override
+  String get notificationReplyInputHint => 'Type your reply';
+
+  @override
+  String get notificationSummaryTitle => 'TouchFish Messages';
+
+  @override
+  String get notificationSummarySubtitle => 'New chat messages';
+
+  @override
+  String get notificationChannelName => 'TouchFish notifications';
+
+  @override
+  String get notificationChannelDesc => 'Messages and activity from TouchFish';
+
+  @override
+  String get notificationOpenAction => 'Open notification';
 
   @override
   String get settingsInAppNotificationsTitle => 'In-App Notifications';
@@ -791,6 +1444,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminServerSectionAdvanced => 'Advanced Configuration';
 
   @override
+  String get adminServerSectionLimits => 'Limits & Storage';
+
+  @override
+  String get adminServerLimitsDescription =>
+      'Name/username/password length limits, content lengths, storage quotas, and rate limits.';
+
+  @override
   String get adminServerSectionEmailService => 'Email Verification Service';
 
   @override
@@ -835,8 +1495,160 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminServerFieldProxyCount => 'Trusted Proxy Count';
 
   @override
+  String get adminServerSectionAuth => 'Authentication & Tokens';
+
+  @override
+  String get adminServerAuthDescription => 'Controls how clients authenticate.';
+
+  @override
+  String get adminServerFieldLegacyAuth => 'Allow legacy UID + PASSWORD login';
+
+  @override
+  String get adminServerLegacyAuthDescription =>
+      'When off, only JWT authentication is accepted and legacy clients can\'t log in.';
+
+  @override
+  String get adminServerFieldJwtExpires => 'JWT Expiry (seconds)';
+
+  @override
+  String get adminServerJwtExpiresDescription =>
+      'Default 604800 (7 days), minimum 60.';
+
+  @override
+  String get adminServerFieldJwtMaxPerUser => 'Max Tokens per User';
+
+  @override
+  String get adminServerJwtMaxPerUserDescription => '0 or -1 means unlimited.';
+
+  @override
   String get adminServerEmailPasswordRequired =>
       'Enabling email verification requires a verification email and an email password.';
+
+  @override
+  String get adminServerFieldCaptchaProvider => 'Captcha Provider';
+
+  @override
+  String get adminServerCaptchaProviderDescription =>
+      'image uses the built-in image captcha; turnstile / hcaptcha / recaptcha use a third-party service.';
+
+  @override
+  String get adminServerFieldCaptchaSiteKey => 'Captcha Site Key';
+
+  @override
+  String get adminServerFieldCaptchaSecret => 'Captcha Secret';
+
+  @override
+  String get adminServerCaptchaSecretHint =>
+      'Leave empty to keep the current secret.';
+
+  @override
+  String get adminServerCaptchaSaveSuccess => 'Captcha settings updated';
+
+  @override
+  String get adminServerCaptchaSaveFailed =>
+      'Failed to update captcha settings';
+
+  @override
+  String get adminServerFieldRateLimits => 'Rate Limits (JSON)';
+
+  @override
+  String get adminServerRateLimitsDescription =>
+      'Per-endpoint request limits in JSON, mapping each endpoint to requests and range. Leave empty to clear all limits.';
+
+  @override
+  String get adminServerRateLimitsInvalid => 'Rate limits must be valid JSON';
+
+  @override
+  String get adminServerRateLimitsSaveSuccess => 'Rate limits updated';
+
+  @override
+  String get adminServerRateLimitsSaveFailed => 'Failed to update rate limits';
+
+  @override
+  String get adminServerFieldMinGroupNameLength => 'Min Group Name Length';
+
+  @override
+  String get adminServerFieldMaxGroupNameLength => 'Max Group Name Length';
+
+  @override
+  String get adminServerFieldMinUsernameLength => 'Min Username Length';
+
+  @override
+  String get adminServerFieldMinPasswordLength => 'Min Password Length';
+
+  @override
+  String get adminServerFieldMaxSignLength => 'Max Signature Length';
+
+  @override
+  String get adminServerFieldMaxIntroductionLength => 'Max Introduction Length';
+
+  @override
+  String get adminServerFieldMaxPostContentLength => 'Max Post Content Length';
+
+  @override
+  String get adminServerFieldMaxAvatarSize => 'Max Avatar Size';
+
+  @override
+  String get adminServerFieldUserStorageQuota => 'User Storage Quota';
+
+  @override
+  String get adminServerFieldMaxUserStorageQuota =>
+      'Max Single-User Upload Size';
+
+  @override
+  String get adminServerFieldMaxStickerStorageQuota =>
+      'Max Sticker Storage Quota';
+
+  @override
+  String get adminServerFieldJwtRefreshExpires =>
+      'JWT Refresh Expiry (seconds)';
+
+  @override
+  String get adminServerFieldFileDownloadMode => 'File Download Mode';
+
+  @override
+  String get adminServerFileDownloadModeDescription => 'redirect or proxy.';
+
+  @override
+  String get adminServerFieldMediaFeatures => 'Enable Media Features';
+
+  @override
+  String get adminServerMediaFeaturesDescription =>
+      'Allow media processing such as thumbnails.';
+
+  @override
+  String get adminServerSearchHint => 'Search settings';
+
+  @override
+  String get adminServerSearchNoResults => 'No matching settings found';
+
+  @override
+  String get adminServerUnlimited => 'Unlimited';
+
+  @override
+  String get adminServerUnsavedChanges => 'You have unsaved changes';
+
+  @override
+  String get adminServerUndoChanges => 'Undo changes';
+
+  @override
+  String get adminServerDiscardChanges => 'Discard changes';
+
+  @override
+  String get adminServerDiscardAndRefresh => 'Discard & refresh';
+
+  @override
+  String get adminServerDiscardConfirmTitle => 'Discard unsaved changes?';
+
+  @override
+  String get adminServerDiscardConfirmMessage =>
+      'Your current edits will be lost.';
+
+  @override
+  String get adminServerSectionRateLimits => 'Rate Limits';
+
+  @override
+  String get adminServerSectionServerInfo => 'Server Info';
 
   @override
   String get adminPendingForums => 'Pending Forums';
@@ -860,6 +1672,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String adminPendingForumCreator(String uid) {
     return 'Creator UID: $uid';
   }
+
+  @override
+  String get adminPendingForumEditBadge => 'Edit';
 
   @override
   String get adminPendingForumNoIntroduction => 'No introduction provided.';
@@ -964,6 +1779,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountAppSettings => 'App Settings';
+
+  @override
+  String get accountSessionDevices => 'Session Devices';
+
+  @override
+  String get accountLockNow => 'Lock Now';
 
   @override
   String get accountUpdateYourProfile => 'Update Your Profile';
@@ -1081,6 +1902,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatDetailGroupChat => 'Group Chat';
 
   @override
+  String chatTypingSingle(String name) {
+    return '$name is typing...';
+  }
+
+  @override
+  String chatTypingDouble(String name1, String name2) {
+    return '$name1 and $name2 are typing...';
+  }
+
+  @override
+  String chatTypingMultiple(String name, int count) {
+    return '$name and $count others are typing...';
+  }
+
+  @override
+  String chatPlaceholderUploading(int progress) {
+    return 'Uploading $progress%';
+  }
+
+  @override
   String get chatDetailNoMessages =>
       'No messages yet\nSend a message to start chatting';
 
@@ -1169,6 +2010,175 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageActionRecall => 'Recall';
 
   @override
+  String get messageActionCopy => 'Copy';
+
+  @override
+  String get messageActionMergeForward => 'Merge forward';
+
+  @override
+  String get messageActionSelectMultiple => 'Select multiple';
+
+  @override
+  String get messageActionViewOriginal => 'View Original';
+
+  @override
+  String get messageRecalledOriginalTitle => 'Original Recalled Message';
+
+  @override
+  String get messageRecalledOriginalSender => 'Sender';
+
+  @override
+  String get messageRecalledOriginalContent => 'Content';
+
+  @override
+  String get messageRecalledOriginalFailed =>
+      'Failed to load the original message';
+
+  @override
+  String get messageRecalledOriginalNone => 'No original content available';
+
+  @override
+  String get selectionExit => 'Exit selection';
+
+  @override
+  String selectionCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count selected',
+      one: '1 selected',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get selectionSelectMessages => 'Select messages';
+
+  @override
+  String get selectionRedirectToCurrentChat => 'Forward to this chat';
+
+  @override
+  String get selectionCopy => 'Copy';
+
+  @override
+  String get selectionMergeForward => 'Merge forward';
+
+  @override
+  String get selectionCancel => 'Cancel';
+
+  @override
+  String get copySelectedEmpty => 'No messages to copy';
+
+  @override
+  String get voiceHoldToRecord => 'Hold to record voice';
+
+  @override
+  String get voiceHoldHint => 'Long press to record';
+
+  @override
+  String get voiceReleaseToCancel => 'Release to cancel';
+
+  @override
+  String get voiceRecordingHint => 'Recording • swipe up to cancel';
+
+  @override
+  String get voiceUploading => 'Uploading voice message...';
+
+  @override
+  String get voiceSending => 'Sending audio...';
+
+  @override
+  String get voiceLeaveVoiceMode => 'Leave voice mode';
+
+  @override
+  String get voiceRecordVoice => 'Record voice';
+
+  @override
+  String get voiceStop => 'Stop';
+
+  @override
+  String get voicePermissionDenied => 'Microphone permission denied';
+
+  @override
+  String get voiceRecordFailed => 'Failed to record voice message';
+
+  @override
+  String mergedForwardTitle(String title) {
+    return 'Merged forward · $title';
+  }
+
+  @override
+  String get mergedForwardGroup => 'Group chat';
+
+  @override
+  String get mergedForwardPrivate => 'Chat';
+
+  @override
+  String mergedForwardMore(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'and $count more messages',
+      one: 'and 1 more message',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String redirectCardLabel(String room) {
+    return 'Redirected history from $room';
+  }
+
+  @override
+  String redirectMessagesCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count messages',
+      one: '1 message',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String redirectFromRoom(String room) {
+    return 'From $room';
+  }
+
+  @override
+  String redirectHistoryTitle(String room) {
+    return 'Redirected history · $room';
+  }
+
+  @override
+  String get redirectNoContent => 'No content';
+
+  @override
+  String get redirectUnknownSender => 'Unknown';
+
+  @override
+  String get mergeForwardConfirmTitle => 'Merge forward?';
+
+  @override
+  String mergeForwardConfirmBody(int count, String target) {
+    return 'Forward $count messages to $target?';
+  }
+
+  @override
+  String get mergeForwardTextOnly =>
+      'Only text messages can be merged and forwarded';
+
+  @override
+  String get mergeForwardTooMany =>
+      'Up to 100 messages can be forwarded at once';
+
+  @override
+  String get mergeForwardFailed => 'Could not merge forward messages';
+
+  @override
+  String get mergeForwardSuccess => 'Merged forward sent';
+
+  @override
   String get messageActionPin => 'Pin';
 
   @override
@@ -1243,6 +2253,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get messageReplyDismiss => 'Cancel reply';
+
+  @override
+  String get messageSwipeMore => 'More';
+
+  @override
+  String get messageSwipeReply => 'Reply';
+
+  @override
+  String get messageSwipeForward => 'Forward';
+
+  @override
+  String get chatListPinRoom => 'Pin Chat';
+
+  @override
+  String get chatListUnpinRoom => 'Unpin Chat';
+
+  @override
+  String get chatListClearLocalData => 'Clear Local Chat Data';
+
+  @override
+  String get chatListClearLocalDataHint =>
+      'This will delete all cached messages for this chat. Server messages won\'t be affected. Continue?';
+
+  @override
+  String get chatListClearLocalDataConfirm => 'Clear';
+
+  @override
+  String get chatListClearLocalDataCancel => 'Cancel';
+
+  @override
+  String get chatListClearLocalDataSuccess => 'Local chat data cleared';
 
   @override
   String get chatRoomSettings => 'Chat Settings';
@@ -1407,6 +2448,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get filePreviewFailed => 'Preview unavailable';
 
   @override
+  String get mediaTapToLoad => 'Tap to load';
+
+  @override
   String get fileDownload => 'Download';
 
   @override
@@ -1422,6 +2466,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fileDownloadFailed => 'Download failed';
+
+  @override
+  String get taskSheetTitle => 'Transfer tasks';
+
+  @override
+  String get taskNoTasks => 'No tasks yet';
+
+  @override
+  String taskTotalCount(int count) {
+    return '($count tasks in total)';
+  }
+
+  @override
+  String get taskClearFinished => 'Clear finished';
+
+  @override
+  String get taskClearAll => 'Clear all';
+
+  @override
+  String get taskStatusPreparing => 'Preparing';
+
+  @override
+  String get taskStatusUploading => 'Uploading';
+
+  @override
+  String get taskStatusDownloading => 'Downloading';
+
+  @override
+  String get taskStatusCompleted => 'Completed';
+
+  @override
+  String get taskStatusFailed => 'Failed';
+
+  @override
+  String taskMoreCount(int count) {
+    return '+$count more';
+  }
+
+  @override
+  String chatUploadingProgress(String percent) {
+    return 'Uploading $percent';
+  }
+
+  @override
+  String get chatInstantUploadProgress => 'Checking instant upload...';
 
   @override
   String get forumAttachments => 'Attachments';
@@ -1531,6 +2620,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutDocumentation => 'Documentation';
 
   @override
+  String get aboutClientDocumentation => 'Client Documentation';
+
+  @override
   String get aboutServerRepository => 'Backend Server';
 
   @override
@@ -1541,7 +2633,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutFontLicenseDescription =>
-      'This application uses HarmonyOS Sans SC  & LXGW WenKai fonts, provided by Huawei Device Co., Ltd. under the HarmonyOS Sans Fonts License Agreement and LXGW under the SIL Open Font License 1.1. The use of these fonts is subject to their respective license agreements.';
+      'This application uses HarmonyOS Sans SC font, provided by Huawei Device Co., Ltd. under the HarmonyOS Sans Fonts License Agreement. The use of this font is subject to its license agreement.';
 
   @override
   String get aboutFontLicenseFullText => 'Full License Text';
@@ -1591,6 +2683,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutCopiedToClipboard => 'Copied to clipboard';
+
+  @override
+  String get copyFailedText =>
+      'Copy failed. Clipboard needs HTTPS or localhost.';
 
   @override
   String get aboutCopyToClipboard => 'Copy to clipboard';
@@ -1953,6 +3049,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Current login credentials are unavailable.';
 
   @override
+  String get debugApiTesterUseToken => 'Attach JWT token';
+
+  @override
+  String get debugApiTesterUseTokenDescription =>
+      'Attaches the current JWT in JWT sessions; turn off to test auth-free requests like login.';
+
+  @override
+  String get debugApiTesterUseTokenUnavailable =>
+      'Only available in JWT sessions.';
+
+  @override
   String get debugApiTesterEncryptRequest => 'Encrypt request body';
 
   @override
@@ -2147,7 +3254,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forumMemberRole => 'Role';
 
   @override
-  String get forumMemberRoleHint => '0=Member, 50=Admin, 100=Owner';
+  String get forumMemberRoleHint => '0=Member, 50=Admin';
 
   @override
   String get forumRoleOwner => 'Owner';
@@ -2178,6 +3285,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forumCopyLink => 'Copy Link';
+
+  @override
+  String get forumCopyPost => 'Copy Post';
+
+  @override
+  String get forumPostCopied => 'Post content copied';
 
   @override
   String get forumCommentSend => 'Send';
@@ -2298,6 +3411,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get announcementEditEmpty => 'Content cannot be empty';
 
   @override
+  String get announcementDelete => 'Delete announcement';
+
+  @override
   String get announcementDeleteConfirm => 'Delete this announcement?';
 
   @override
@@ -2305,6 +3421,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get announcementDeleteFailed => 'Failed to delete announcement';
+
+  @override
+  String get announcementLoadFailed => 'Failed to load announcements';
+
+  @override
+  String announcementSenderFallback(String uid) {
+    return 'User $uid';
+  }
 
   @override
   String get adminAnnouncements => 'Announcements';
@@ -2371,12 +3495,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminAccountEmpty => 'No users found';
 
   @override
+  String get adminAccountNoSearchResults => 'No users match your search';
+
+  @override
+  String adminAccountPageIndicator(int page, int totalPages, int total) {
+    return 'Page $page of $totalPages ($total users)';
+  }
+
+  @override
   String adminAccountCreated(String date) {
     return 'Created: $date';
   }
 
   @override
   String get adminAccountChangeRole => 'Change Role';
+
+  @override
+  String get adminAccountViewDevices => 'View Devices';
+
+  @override
+  String get adminAccountEdit => 'Edit Account';
+
+  @override
+  String get adminAccountEditDescription =>
+      'Leave a field empty to keep it unchanged.';
+
+  @override
+  String get adminAccountNewPassword => 'New Password (optional)';
+
+  @override
+  String get adminAccountEditSuccess => 'Account updated';
+
+  @override
+  String get adminAccountEditFailed => 'Failed to update account';
 
   @override
   String adminAccountChangeRoleTitle(String name) {
@@ -2498,6 +3649,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storageDeleteFailed => 'Delete failed';
 
   @override
+  String get storageDereference => 'Release Reference';
+
+  @override
+  String storageDereferenceConfirm(String fileName) {
+    return 'Release your reference to \"$fileName\"? The file is removed only after no references remain.';
+  }
+
+  @override
+  String storageDereferenced(String fileName) {
+    return 'Reference released: $fileName';
+  }
+
+  @override
+  String get storageDereferenceFailed => 'Failed to release reference';
+
+  @override
   String storageUploaded(String fileName) {
     return 'Uploaded: $fileName';
   }
@@ -2576,6 +3743,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminFileSummaryTotal => 'Total';
+
+  @override
+  String get adminFileLoadFailed => 'Failed to load files';
+
+  @override
+  String get adminFileUnknown => 'Unknown';
+
+  @override
+  String adminFileTileMeta(
+    String owner,
+    String uid,
+    String size,
+    int refs,
+    int uploads,
+  ) {
+    return 'Owner: $owner (UID: $uid) · $size · Refs: $refs · Uploads: $uploads';
+  }
+
+  @override
+  String adminFileSummaryStats(int files, int users, String total) {
+    return 'Files: $files · Users: $users · Total: $total';
+  }
 
   @override
   String get chatFunctionTabFiles => 'Files';
@@ -2743,6 +3932,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Transfer ownership before leaving the group';
 
   @override
+  String get groupDissolve => 'Dissolve Group';
+
+  @override
+  String get groupDissolveConfirm =>
+      'This permanently dissolves the group and removes all members. This cannot be undone.';
+
+  @override
+  String get groupDissolveAction => 'Dissolve';
+
+  @override
+  String get groupDissolveSuccess => 'Group dissolved';
+
+  @override
+  String get groupDissolveFailed => 'Failed to dissolve group';
+
+  @override
   String get groupInviteMember => 'Invite Member';
 
   @override
@@ -2846,6 +4051,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Trigger haptic feedback when a new in-app notification arrives';
 
   @override
+  String get settingsLockscreenReplyTitle => 'Quick Reply on Lock Screen';
+
+  @override
+  String get settingsLockscreenReplyDesc =>
+      'Reply to messages directly from the notification while the device is locked. Message content will be visible on the lock screen';
+
+  @override
   String get settingsMediaProxy => 'Media Proxy';
 
   @override
@@ -2935,6 +4147,33 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable page and interface animations';
 
   @override
+  String get settingsLayoutModeTitle => 'Layout Mode';
+
+  @override
+  String get settingsLayoutModeDesc => 'Choose between wide or narrow layout';
+
+  @override
+  String get settingsLayoutModeAuto => 'Auto';
+
+  @override
+  String get settingsLayoutModeForceWide => 'Force Wide';
+
+  @override
+  String get settingsLayoutModeForceNarrow => 'Force Narrow';
+
+  @override
+  String get settingsWideThresholdTitle => 'Wide Screen Threshold';
+
+  @override
+  String get settingsWideThresholdDesc =>
+      'Switch to the wide layout when the window width reaches this value (only in Auto mode)';
+
+  @override
+  String settingsWideThresholdValue(Object px) {
+    return '$px px';
+  }
+
+  @override
   String get settingsWeakNetworkTitle => 'Weak network mode';
 
   @override
@@ -2946,6 +4185,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsDataSavingDesc => 'Load media only after you tap it';
+
+  @override
+  String get settingsThumbnailPreviewTitle => 'Use thumbnails in chats';
+
+  @override
+  String get settingsThumbnailPreviewDesc =>
+      'Load server-generated thumbnails in chat bubbles; the original image loads only when opened (saves data)';
+
+  @override
+  String get settingsImageCompressionTitle => 'Compress images before sending';
+
+  @override
+  String get settingsImageCompressionDesc =>
+      'Re-encode images locally before upload (longest edge 1920, lossy) to save data and storage';
+
+  @override
+  String get settingsImageCompressionQualityTitle => 'Compression quality';
+
+  @override
+  String get settingsImageCompressionQualityDesc =>
+      'Lower values produce smaller files with more visible quality loss';
 
   @override
   String get settingsIpOverrideTitle => 'IP override mode';
@@ -3061,11 +4321,31 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get maxCachedRooms => 'Cached chat rooms';
+
+  @override
+  String get maxCachedRoomsDesc =>
+      'Maximum chat rooms kept in memory. When exceeded, the least recently used room is evicted';
+
+  @override
+  String maxCachedRoomsCount(Object count) {
+    return '$count rooms';
+  }
+
+  @override
   String get settingsAutoLoadStickersTitle => 'Auto-load stickers';
 
   @override
   String get settingsAutoLoadStickersDesc =>
       'Download and cache sticker images automatically. When off, tap a sticker to load it.';
+
+  @override
+  String get settingsChatStickerRecentTabTitle =>
+      'Show recent tab in chat sticker panel';
+
+  @override
+  String get settingsChatStickerRecentTabDesc =>
+      'When off, the sticker panel in chat hides the recent tab and shows only sticker packs.';
 
   @override
   String get settingsClearStickerCache => 'Clear sticker cache';
@@ -3151,6 +4431,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stickerNoPacks => 'No sticker packs';
+
+  @override
+  String get stickerRecent => 'Recent';
+
+  @override
+  String get stickerPacks => 'Packs';
+
+  @override
+  String get stickerNoRecentStickers => 'No recently used stickers';
+
+  @override
+  String get stickerBrowseMarket => 'Browse sticker market';
+
+  @override
+  String get stickerLoadError => 'Failed to load, tap to retry';
 
   @override
   String get commonUnknown => 'Unknown';
@@ -3294,4 +4589,648 @@ class AppLocalizationsEn extends AppLocalizations {
   String updateApkSaveHint(String apkPath) {
     return 'The APK will be saved to:\n$apkPath';
   }
+
+  @override
+  String get domainTrustLinkWarningTitle => 'Confirm Navigation';
+
+  @override
+  String get domainTrustLinkUntrustedMessage =>
+      'This link points to an untrusted domain. Only continue if you are sure the link is safe.';
+
+  @override
+  String get domainTrustLinkHttpWarning =>
+      'This link uses insecure HTTP (not HTTPS). Data may be intercepted or tampered with.';
+
+  @override
+  String get domainTrustOpenAnyway => 'Open Anyway';
+
+  @override
+  String get domainTrustCopyLink => 'Copy Link';
+
+  @override
+  String get domainTrustAddToTrustedDomains =>
+      'Add this domain to trusted domains';
+
+  @override
+  String get domainTrustImageBlockedTitle =>
+      'Image from untrusted domain blocked';
+
+  @override
+  String get domainTrustImageBlockedDesc =>
+      'To protect your privacy, images from untrusted domains are not loaded.';
+
+  @override
+  String get domainTrustLoadImage => 'Load Image';
+
+  @override
+  String get domainTrustInfoTitle => 'About Domain Protection';
+
+  @override
+  String get domainTrustInfoBody =>
+      'Third-party sites may record or leak your visit data (such as your IP address) and engage in violations; they are not managed by TouchFish.\n\nEven if you do not actively visit a link, TouchFish Client\'s automatic loading may still generate network requests.\n\nTo protect your data, starting from version 0.0.2, TouchFish Client no longer loads external images or opens external links by default.\n\nIf you trust a site, you can configure it as a trusted domain under Settings - Connection to allow TouchFish Client to load it automatically.\n\nIf you do not need this protection, you can disable it under Settings - Connection.';
+
+  @override
+  String get settingsDomainTrustImageBlockTitle => 'Image loading protection';
+
+  @override
+  String get settingsDomainTrustImageBlockDesc =>
+      'Block images loaded from untrusted domains';
+
+  @override
+  String get settingsDomainTrustLinkWarningTitle =>
+      'Link navigation protection';
+
+  @override
+  String get settingsDomainTrustLinkWarningDesc =>
+      'Warn before opening links from untrusted domains';
+
+  @override
+  String get settingsTrustedDomainsTitle => 'Trusted Domains';
+
+  @override
+  String get settingsTrustedDomainsDesc =>
+      'One domain per line, e.g. example.com or *.example.com. The current server is always trusted.';
+
+  @override
+  String get settingsTrustedDomainsReset => 'Reset to Default';
+
+  @override
+  String get settingsRsaKeysTitle => 'RSA Key Management';
+
+  @override
+  String get settingsRsaKeysDesc =>
+      'Manage saved server RSA public keys and view the current server key SHA';
+
+  @override
+  String get settingsLegacyAuthTitle =>
+      'Compatibility: use UID and PASSWORD as login option (not recommended)';
+
+  @override
+  String get settingsLegacyAuthDesc =>
+      'Uses the legacy authentication flow for login and requests. Only needed with old servers or servers without JWT support';
+
+  @override
+  String get rsaKeyManagement => 'RSA Key Management';
+
+  @override
+  String get rsaKeyManagementDescription =>
+      'Manage saved server RSA public keys and key SHAs. Saving the server key on first connection is recommended; the client verifies the key on every connection to protect against man-in-the-middle attacks.';
+
+  @override
+  String get rsaCurrentServerSection => 'Current Server';
+
+  @override
+  String get rsaSavedKeysSection => 'Saved Keys';
+
+  @override
+  String get rsaUnknownServer => 'Unknown server';
+
+  @override
+  String get rsaSavedKeySha => 'Saved key SHA';
+
+  @override
+  String get rsaViewCurrentSha => 'View Current Key SHA';
+
+  @override
+  String get rsaSaveCurrentKey => 'Save Current Key';
+
+  @override
+  String rsaSaveCurrentKeySuccess(String sha) {
+    return 'Current server key saved. SHA: $sha';
+  }
+
+  @override
+  String get rsaFetchFailed =>
+      'Failed to fetch the server RSA key. Check your network connection.';
+
+  @override
+  String get rsaNoSavedKeys => 'No RSA keys saved yet';
+
+  @override
+  String get rsaViewPublicKey => 'View Public Key';
+
+  @override
+  String get rsaCopySha => 'Copy SHA';
+
+  @override
+  String get rsaCopyPublicKey => 'Copy Public Key';
+
+  @override
+  String get rsaDeleteKey => 'Delete Key';
+
+  @override
+  String rsaDeleteKeyConfirm(String authority) {
+    return 'Delete the saved RSA key for server $authority? The key will no longer be verified after deletion.';
+  }
+
+  @override
+  String get rsaCopied => 'Copied';
+
+  @override
+  String get rsaPublicKey => 'Public Key';
+
+  @override
+  String get rsaKeySha => 'Key SHA';
+
+  @override
+  String get rsaSaveKey => 'Save Key';
+
+  @override
+  String get rsaDontSave => 'Don\'t Save';
+
+  @override
+  String get rsaDisconnectServer => 'Disconnect from Server';
+
+  @override
+  String get rsaFirstConnectTitle =>
+      'This appears to be your first connection to this server. Save the RSA encryption key?';
+
+  @override
+  String get rsaFirstConnectMessage =>
+      'Once saved, the client verifies the server key on every connection to protect against man-in-the-middle attacks.';
+
+  @override
+  String get rsaKeyChangedTitle => 'Warning: Server RSA Encryption Key Changed';
+
+  @override
+  String get rsaNewKeySha => 'New RSA key SHA';
+
+  @override
+  String get rsaOldKeySha => 'Old RSA key SHA';
+
+  @override
+  String get rsaKeyChangedMessage =>
+      'Note: A MitM attacker could tamper with the RSA key to intercept communications between you and the server. Please confirm the key change with the server administrator!';
+
+  @override
+  String get rsaReplaceKey => 'Replace with New Key';
+
+  @override
+  String get rsaInvalidPem => 'Invalid RSA public key (PEM format)';
+
+  @override
+  String get rsaPemFieldLabel => 'RSA Public Key (PEM)';
+
+  @override
+  String get rsaPemFieldHint =>
+      'Paste the server RSA public key (optional). Once bound, the client uses this key for encrypted communication and no longer fetches it from the server.';
+
+  @override
+  String get loginForgotPassword => 'Forgot password?';
+
+  @override
+  String get forgotPasswordTitle => 'Forgot Password';
+
+  @override
+  String get forgotPasswordHint =>
+      'Enter the email registered to your account. We will send a verification code to reset your password.';
+
+  @override
+  String get forgotPasswordEmailLabel => 'Registered email';
+
+  @override
+  String get forgotPasswordEmailRequired => 'Please enter your email';
+
+  @override
+  String get forgotPasswordSendCode => 'Send Code';
+
+  @override
+  String get forgotPasswordResend => 'Resend';
+
+  @override
+  String get forgotPasswordCodeSent =>
+      'Verification code sent. Check your email.';
+
+  @override
+  String get forgotPasswordCodeSendFailed => 'Failed to send verification code';
+
+  @override
+  String get forgotPasswordCodeLabel => 'Verification code';
+
+  @override
+  String get forgotPasswordCodeRequired => 'Please enter the verification code';
+
+  @override
+  String get forgotPasswordSubmit => 'Reset Password';
+
+  @override
+  String get forgotPasswordSuccess => 'Password reset successfully';
+
+  @override
+  String get forgotPasswordFailed =>
+      'Password reset failed. Check the code or email.';
+
+  @override
+  String get changePasswordTitle => 'Change Password';
+
+  @override
+  String get changePasswordOldPwd => 'Current password';
+
+  @override
+  String get changePasswordOldPwdRequired =>
+      'Please enter your current password';
+
+  @override
+  String get changePasswordNewPwd => 'New password';
+
+  @override
+  String get changePasswordNewPwdRequired => 'Please enter a new password';
+
+  @override
+  String get changePasswordConfirmPwd => 'Confirm new password';
+
+  @override
+  String get changePasswordConfirmPwdRequired =>
+      'Please confirm the new password';
+
+  @override
+  String get changePasswordMismatch => 'Passwords do not match';
+
+  @override
+  String get changePasswordSubmit => 'Change Password';
+
+  @override
+  String get changePasswordSuccess => 'Password changed';
+
+  @override
+  String get changePasswordFailed =>
+      'Failed to change password. Check your current password.';
+
+  @override
+  String get groupIntroductionLabel => 'Group Introduction';
+
+  @override
+  String get groupIntroductionHelp => 'Shown on the group profile page';
+
+  @override
+  String get groupIntroductionUpdated => 'Group introduction updated';
+
+  @override
+  String get forumRemoveMemberFailed => 'Failed to remove member';
+
+  @override
+  String get forumMemberRoleFailed => 'Failed to update role';
+
+  @override
+  String get fileCacheTitle => 'File cache (offline ready)';
+
+  @override
+  String fileCacheCountSummary(String size, int count) {
+    return '$size · $count files';
+  }
+
+  @override
+  String get fileCacheSettingsTitle => 'File cache settings';
+
+  @override
+  String get fileCacheLimitTitle => 'Cache size limit';
+
+  @override
+  String get fileCacheUnlimited => 'Unlimited';
+
+  @override
+  String get fileCacheDescription =>
+      'The file cache stores images, videos and other files so they can be viewed offline. You can set a size cap or turn the limit off.';
+
+  @override
+  String get fileCacheLimitDialogTitle => 'Set cache size limit';
+
+  @override
+  String get fileCacheLimitFieldLabel => 'Cache size (MB)';
+
+  @override
+  String get fileCacheLimitFieldHint => 'Enter 0 for no limit';
+
+  @override
+  String get fileSaveToLocal => 'Save to local';
+
+  @override
+  String get fileSaveToLocalDescription =>
+      'Save into the downloads folder; not affected by cache cleanup';
+
+  @override
+  String get callCalling => 'Calling…';
+
+  @override
+  String get callStartVideo => 'Video call';
+
+  @override
+  String get callConnecting => 'Connecting…';
+
+  @override
+  String get callIncoming => 'Incoming video call';
+
+  @override
+  String get callWaitingForPeer => 'Waiting for the peer…';
+
+  @override
+  String get callAccept => 'Accept';
+
+  @override
+  String get callDecline => 'Decline';
+
+  @override
+  String get callMute => 'Mute';
+
+  @override
+  String get callUnmute => 'Unmute';
+
+  @override
+  String get callCameraOff => 'Camera off';
+
+  @override
+  String get callCameraOn => 'Camera on';
+
+  @override
+  String get callHangup => 'Hang up';
+
+  @override
+  String get callClose => 'Close';
+
+  @override
+  String get callNoActiveCall => 'No active call';
+
+  @override
+  String get callEnded => 'Call ended';
+
+  @override
+  String get callPeerOffline => 'Peer is offline';
+
+  @override
+  String get callPeerBusy => 'Peer is in another call';
+
+  @override
+  String get callPeerDeclined => 'Peer declined the call';
+
+  @override
+  String get callNoAnswer => 'No one answered';
+
+  @override
+  String get callNotFriends => 'You are not friends with this user';
+
+  @override
+  String get callServerLimited => 'Too many requests, please try later';
+
+  @override
+  String get callInvalidRequest => 'Invalid call request';
+
+  @override
+  String get callConnectFailed => 'Connection failed';
+
+  @override
+  String get callMediaUnavailable => 'Camera or microphone unavailable';
+
+  @override
+  String get callCancelled => 'Call cancelled';
+
+  @override
+  String get callEndError => 'Call failed';
+
+  @override
+  String get callSwitchCamera => 'Switch camera';
+
+  @override
+  String get settingsAllowMultiInstanceTitle => 'Allow multiple instances';
+
+  @override
+  String get settingsAllowMultiInstanceDesc =>
+      'Allow running several app instances at once. The same account on the same server can still only be signed in by one instance. Takes effect after restart.';
+
+  @override
+  String get loginErrorDuplicateInstance =>
+      'This account is already signed in on this server by another instance.';
+
+  @override
+  String get sessionRestoreDuplicateMessage =>
+      'This account is already signed in on this server by another instance, so the saved session was not restored here.';
+
+  @override
+  String get errorCodeAuthTokenExpired => 'Login session has expired';
+
+  @override
+  String get errorCodeAuthFailed => 'Authentication failed';
+
+  @override
+  String get errorCodeAuthTokenLimitReached =>
+      'Maximum number of active sessions reached';
+
+  @override
+  String get errorCodeAuthNotAuthenticated => 'Authentication required';
+
+  @override
+  String get errorCodePermissionDenied =>
+      'You do not have permission to perform this action';
+
+  @override
+  String get errorCodeValidationInvalidRequest =>
+      'Request parameters are invalid';
+
+  @override
+  String get errorCodeResourceNotFound => 'Requested resource was not found';
+
+  @override
+  String get errorCodeResourceUserNotFound => 'User does not exist';
+
+  @override
+  String get errorCodeResourceUnavailable => 'Resource is unavailable';
+
+  @override
+  String get errorCodeAuthCannotRevokeCurrent =>
+      'Cannot revoke the current session token';
+
+  @override
+  String get errorCodePermissionNotFriends => 'Users are not friends';
+
+  @override
+  String get errorCodePermissionNotGroupMember =>
+      'User is not a member of this group';
+
+  @override
+  String get errorCodeResourceGroupNotFound => 'Group does not exist';
+
+  @override
+  String get errorCodeResourceUserBanned => 'User account is banned';
+
+  @override
+  String get errorCodeValidationInvalidUid => 'User ID is invalid';
+
+  @override
+  String get errorCodeValidationInvalidFilename => 'Filename is invalid';
+
+  @override
+  String get errorCodeValidationExtensionNotAllowed =>
+      'File extension is not allowed';
+
+  @override
+  String get errorCodeValidationInvalidFileHash => 'File hash is invalid';
+
+  @override
+  String get errorCodeValidationInvalidChunkParameters =>
+      'Chunk parameters are invalid';
+
+  @override
+  String get errorCodeValidationInvalidBase64 => 'Base64 data is invalid';
+
+  @override
+  String get errorCodeValidationInvalidTarget => 'Message target is invalid';
+
+  @override
+  String get errorCodeValidationInvalidQuote => 'Quoted message is invalid';
+
+  @override
+  String get errorCodeValidationInvalidCallId => 'Call ID is invalid';
+
+  @override
+  String get errorCodeValidationMessageTooLong => 'Message is too long';
+
+  @override
+  String get errorCodeValidationMissingParameter =>
+      'A required parameter is missing';
+
+  @override
+  String get errorCodeFileNotOwned => 'You do not own this file';
+
+  @override
+  String get errorCodeFileUnavailable => 'File is unavailable';
+
+  @override
+  String get errorCodeFileTooLarge => 'File exceeds the maximum size';
+
+  @override
+  String get errorCodeFileChunkTooLarge => 'Chunk exceeds the maximum size';
+
+  @override
+  String get errorCodeFileStorageQuotaExceeded =>
+      'Storage quota has been exceeded';
+
+  @override
+  String get errorCodeFileTooManyUploads => 'Too many concurrent uploads';
+
+  @override
+  String get errorCodeFileDecodeFailed => 'File data could not be decoded';
+
+  @override
+  String get errorCodeFileMissingFileId => 'file_id is required';
+
+  @override
+  String get errorCodeFileInvalidFileId => 'File ID is invalid';
+
+  @override
+  String get errorCodeFileChunkTotalMismatch =>
+      'Chunk total does not match the upload';
+
+  @override
+  String get errorCodeFileMissingChunk => 'One or more file chunks are missing';
+
+  @override
+  String get errorCodeFileWriteFailed => 'File could not be written';
+
+  @override
+  String get errorCodeFileDirectoryCreationFailed =>
+      'Upload directory could not be created';
+
+  @override
+  String get errorCodeFileChunkInfoFailed =>
+      'Chunk information could not be recorded';
+
+  @override
+  String get errorCodeFileChunkReadFailed =>
+      'Chunk information could not be read';
+
+  @override
+  String get errorCodeFileHashVerificationFailed =>
+      'File hash verification failed';
+
+  @override
+  String get errorCodeFileFinalizationFailed =>
+      'File upload finalization failed';
+
+  @override
+  String get errorCodeFileReferenceFailed =>
+      'File reference could not be created';
+
+  @override
+  String get errorCodeFileUploadFailed => 'File upload failed';
+
+  @override
+  String get errorCodeStickerUnsupportedType => 'Sticker type is not supported';
+
+  @override
+  String get errorCodeStickerTooLarge => 'Sticker exceeds the maximum size';
+
+  @override
+  String get errorCodeStickerQuotaExceeded =>
+      'Sticker storage quota has been exceeded';
+
+  @override
+  String get errorCodeMessageClientMidConflict =>
+      'Message client ID conflicts with existing content';
+
+  @override
+  String get errorCodeMessageAlreadyRecalled =>
+      'Message has already been recalled';
+
+  @override
+  String get errorCodeRateLimited => 'Too many requests';
+
+  @override
+  String get errorCodeConflict => 'Resource conflict';
+
+  @override
+  String get errorCodeServerError => 'Internal server error';
+
+  @override
+  String get timeAgoJustNow => 'Just now';
+
+  @override
+  String timeAgoMinutes(int minutes) {
+    return '${minutes}m ago';
+  }
+
+  @override
+  String timeAgoHours(int hours) {
+    return '${hours}h ago';
+  }
+
+  @override
+  String timeAgoDays(int days) {
+    return '${days}d ago';
+  }
+
+  @override
+  String timeAgoWeeks(int weeks) {
+    return '${weeks}w ago';
+  }
+
+  @override
+  String timeAgoMonths(int months) {
+    return '${months}mo ago';
+  }
+
+  @override
+  String timeAgoYears(int years) {
+    return '${years}y ago';
+  }
+
+  @override
+  String get suspiciousLoginTitle => 'Suspicious Login Detected';
+
+  @override
+  String get suspiciousLoginMessage =>
+      'Unusual login activity was detected on your account. If this wasn\'t you, please review your login devices immediately.';
+
+  @override
+  String get suspiciousLoginDevice => 'Device';
+
+  @override
+  String get suspiciousLoginLocation => 'Location';
+
+  @override
+  String get suspiciousLoginTime => 'Time';
+
+  @override
+  String get suspiciousLoginDismiss => 'Dismiss';
+
+  @override
+  String get suspiciousLoginReviewSessions => 'Review Login Devices';
 }

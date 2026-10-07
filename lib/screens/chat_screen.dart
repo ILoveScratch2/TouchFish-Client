@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../models/chat_model.dart';
+import '../providers/chat/message_provider.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/chat_data_service.dart';
 import '../services/chat_ws_service.dart';
@@ -12,13 +14,15 @@ import '../widgets/chat_list_widget.dart';
 import '../widgets/contact_list_widget.dart';
 import '../widgets/invite_sheet.dart';
 import '../widgets/text_entry_dialog.dart';
+import '../widgets/optimized_image.dart';
 import '../services/notification_service.dart';
 import '../services/snackbar_service.dart';
 import '../routes/app_routes.dart';
-import 'chat_detail_screen.dart';
+import '../utils/wide_screen_helper.dart';
 import 'group_create_screen.dart';
 
 class ChatShellScreen extends StatefulWidget {
+  /// 聊天区内容（宽屏下为右侧嵌套导航区域，窄屏下整屏直通）。
   final Widget child;
 
   const ChatShellScreen({super.key, required this.child});
@@ -27,7 +31,8 @@ class ChatShellScreen extends StatefulWidget {
   State<ChatShellScreen> createState() => _ChatShellScreenState();
 }
 
-class _ChatShellScreenState extends State<ChatShellScreen> {
+class _ChatShellScreenState extends State<ChatShellScreen>
+    with SingleTickerProviderStateMixin {
   static const String _dividerPositionKey = 'chat_divider_position';
   static const String _collapsedStateKey = 'chat_list_collapsed';
   static const double _collapsedWidth = 80.0;
@@ -41,10 +46,54 @@ class _ChatShellScreenState extends State<ChatShellScreen> {
   bool _isCollapsed = false;
   double _sidebarWidth = 320.0;
 
+  /// 整壳入场动画：仅当从其它主 Section 切进聊天区（壳重新挂载）时播放。
+  /// 聊天是导航栏最左的 tab，从任何其它 tab 回来都固定从左侧滑入；
+  /// 列表/详情在壳内部路由切换时壳保持常驻，不会重播。
+  late final AnimationController _enterController;
+  late final Animation<double> _enterAnimation;
+
   @override
   void initState() {
     super.initState();
     _loadDividerPosition();
+    _enterController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+    _enterAnimation = CurvedAnimation(
+      parent: _enterController,
+      curve: Curves.easeOutCubic,
+    );
+    // 初始帧后再启动，避免冷启动首屏也被过渡一次
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !MediaQuery.disableAnimationsOf(context)) {
+        _enterController.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _enterController.dispose();
+    super.dispose();
+  }
+
+  Widget _enterWrapper(
+    BuildContext context,
+    Widget child, {
+    bool vertical = false,
+  }) {
+    if (MediaQuery.disableAnimationsOf(context)) return child;
+    return FadeTransition(
+      opacity: _enterAnimation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: vertical ? const Offset(0, 0.02) : const Offset(-0.06, 0),
+          end: Offset.zero,
+        ).animate(_enterAnimation),
+        child: child,
+      ),
+    );
   }
 
   Future<void> _loadDividerPosition() async {
@@ -92,80 +141,85 @@ class _ChatShellScreenState extends State<ChatShellScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.of(context).size.width >= 600;
+    final isWide = WideScreenHelper.isWide(context);
 
     if (isWide) {
       final currentWidth = _isCollapsed ? _collapsedWidth : _sidebarWidth;
 
-      return Scaffold(
-        body: Row(
-          children: [
-            SizedBox(
-              width: currentWidth,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
-                child: MouseRegion(
-                  onEnter: (_) {
-                    setState(() {
-                      _isHovering = true;
-                    });
-                  },
-                  onExit: (_) {
-                    setState(() {
-                      _isHovering = false;
-                    });
-                  },
-                  child: ChatListScreen(
-                    isAside: true,
-                    isCollapsed: _isCollapsed,
-                    isHovering: _isHovering,
-                    onToggleCollapse: () {
-                      setState(() {
-                        _isCollapsed = !_isCollapsed;
-                      });
-                      _saveDividerPosition();
-                    },
-                    onDragUpdate: (dx) {
-                      _updateDividerPosition(
-                        dx,
-                        MediaQuery.of(context).size.width,
-                      );
-                    },
-                    onDragEnd: () {
-                      if (_sidebarWidth <= _collapseThreshold) {
+      // 宽屏：左侧聊天列表常驻，右侧为聊天区子路由（列表页/详情页带转场动画）
+      return _enterWrapper(
+        context,
+        Scaffold(
+          body: SafeArea(
+            bottom: false,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: currentWidth,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+                    child: MouseRegion(
+                      onEnter: (_) {
                         setState(() {
-                          _isCollapsed = true;
-                          _sidebarWidth = _minSidebarWidth;
+                          _isHovering = true;
                         });
-                      }
-                      _saveDividerPosition();
-                    },
+                      },
+                      onExit: (_) {
+                        setState(() {
+                          _isHovering = false;
+                        });
+                      },
+                      child: ChatListScreen(
+                        isAside: true,
+                        isCollapsed: _isCollapsed,
+                        isHovering: _isHovering,
+                        onToggleCollapse: () {
+                          setState(() {
+                            _isCollapsed = !_isCollapsed;
+                          });
+                          _saveDividerPosition();
+                        },
+                        onDragUpdate: (dx) {
+                          _updateDividerPosition(
+                            dx,
+                            MediaQuery.of(context).size.width,
+                          );
+                        },
+                        onDragEnd: () {
+                          if (_sidebarWidth <= _collapseThreshold) {
+                            setState(() {
+                              _isCollapsed = true;
+                              _sidebarWidth = _minSidebarWidth;
+                            });
+                          }
+                          _saveDividerPosition();
+                        },
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(8),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(8),
+                      ),
+                      child: widget.child,
+                    ),
                   ),
-                  child: widget.child,
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
+        vertical: true,
       );
     }
-    return widget.child is ChatDetailScreen
-        ? widget.child
-        : const ChatListScreen(
-            isAside: false,
-            isCollapsed: false,
-            isHovering: false,
-          );
+    // 窄屏：整个聊天区（列表/详情）都由内嵌子路由承载，
+    // 保持 ChatShellScreen 常驻可以让切换房间不重建列表。
+    // 进入聊天区（壳重新挂载）时从左侧滑入：聊天是导航栏最左的 tab。
+    return _enterWrapper(context, widget.child);
   }
 }
 
@@ -267,11 +321,10 @@ class _ChatListScreenState extends State<ChatListScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (widget.isAside) {
-      return _buildAsideView(context);
-    }
-
-    return _buildFullScreenView(context);
+    final content = widget.isAside
+        ? _buildAsideView(context)
+        : _buildFullScreenView(context);
+    return ensureProviderScope(context, content);
   }
 
   Widget _buildAsideView(BuildContext context) {
@@ -419,7 +472,7 @@ class _ChatListScreenState extends State<ChatListScreen>
             Positioned(
               bottom: 16,
               right: 16,
-              child: FloatingActionButton.small(
+              child: FloatingActionButton(
                 heroTag: 'chat-fab',
                 onPressed: () => _showAddMenu(context),
                 child: const Icon(Icons.add),
@@ -510,69 +563,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
-        for (final room in items.take(10))
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-            child: IconButton(
-              tooltip: room.name,
-              onPressed: () {
-                context.go('/chat/${room.id}');
-              },
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-              splashRadius: 24,
-              icon: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor: colorScheme.primaryContainer,
-                    backgroundImage: room.avatar != null
-                        ? NetworkImage(room.avatar!)
-                        : null,
-                    child: room.avatar == null
-                        ? Icon(
-                            room.type == ChatType.direct
-                                ? Icons.person
-                                : Icons.group,
-                            color: colorScheme.onPrimaryContainer,
-                            size: 18,
-                          )
-                        : null,
-                  ),
-                  if (room.unreadCount > 0)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: colorScheme.error,
-                          shape: BoxShape.circle,
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Center(
-                          child: Text(
-                            room.unreadCount > 99
-                                ? '99+'
-                                : room.unreadCount.toString(),
-                            style: TextStyle(
-                              color: colorScheme.onError,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              height: 1.0,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
+        for (final room in items.take(10)) _CollapsedRoomButton(room: room),
         for (final contact in contactItems.take(10))
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -591,7 +582,12 @@ class _ChatListScreenState extends State<ChatListScreen>
                 radius: 18,
                 backgroundColor: colorScheme.primaryContainer,
                 backgroundImage: contact.avatar != null
-                    ? NetworkImage(contact.avatar!)
+                    ? resizedImageProvider(
+                        NetworkImage(contact.avatar!),
+                        MediaQuery.of(context).devicePixelRatio,
+                        width: 36,
+                        height: 36,
+                      )
                     : null,
                 child: contact.avatar == null
                     ? Icon(
@@ -670,7 +666,7 @@ class _ChatListScreenState extends State<ChatListScreen>
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.small(
+      floatingActionButton: FloatingActionButton(
         heroTag: 'chat-fab',
         onPressed: () => _showAddMenu(context),
         child: const Icon(Icons.add),
@@ -787,5 +783,83 @@ class _ChatListScreenState extends State<ChatListScreen>
       return;
     }
     context.push('/user/$targetUid');
+  }
+}
+
+class _CollapsedRoomButton extends ConsumerWidget {
+  final ChatRoom room;
+
+  const _CollapsedRoomButton({required this.room});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final unread = ref.watch(unreadCountProvider(room.id));
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      child: IconButton(
+        tooltip: room.name,
+        onPressed: () {
+          context.go('/chat/${room.id}');
+        },
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+        splashRadius: 24,
+        icon: Stack(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: colorScheme.primaryContainer,
+              backgroundImage: room.avatar != null
+                  ? resizedImageProvider(
+                      NetworkImage(room.avatar!),
+                      MediaQuery.of(context).devicePixelRatio,
+                      width: 36,
+                      height: 36,
+                    )
+                  : null,
+              child: room.avatar == null
+                  ? Icon(
+                      room.type == ChatType.direct
+                          ? Icons.person
+                          : Icons.group,
+                      color: colorScheme.onPrimaryContainer,
+                      size: 18,
+                    )
+                  : null,
+            ),
+            if (unread > 0)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: colorScheme.error,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Center(
+                    child: Text(
+                      unread > 99 ? '99+' : unread.toString(),
+                      style: TextStyle(
+                        color: colorScheme.onError,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        height: 1.0,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }

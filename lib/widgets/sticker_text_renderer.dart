@@ -166,11 +166,13 @@ class _InlineStickerState extends State<_InlineSticker> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return SizedBox(
+    if (_loading) {
+      return SizedBox(
       width: widget.size,
       height: widget.size,
       child: const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))),
     );
+    }
     final item = _item;
     if (item == null) return Text(widget.fallback, style: widget.style);
     return GestureDetector(

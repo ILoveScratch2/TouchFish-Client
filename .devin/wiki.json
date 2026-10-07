@@ -1,0 +1,301 @@
+{
+  "repo_notes": [
+    {
+      "content": ""
+    }
+  ],
+  "pages": [
+    {
+      "title": "TouchFish Client — Overview",
+      "purpose": "High-level introduction to the TouchFish Client: what it is, its key features, supported platforms, how to get started, and a map to all other wiki sections.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Getting Started — Installation & Building",
+      "purpose": "How to install pre-built releases on each platform (Windows, macOS, Linux, Android, iOS, Web) and how to build from source with Flutter. Covers system requirements and the pubspec.yaml dependency list",
+      "parent": "TouchFish Client — Overview",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Application Architecture Overview",
+      "purpose": "Bird's-eye view of the Flutter app structure: entry point, widget tree root (TouchFishApp), routing shell, state management approach (ChangeNotifier singletons), and how the major subsystems (auth, API, settings, screens) relate to each other.",
+      "parent": "TouchFish Client — Overview",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Core Services & State Management",
+      "purpose": "Overview of the singleton services that power the application: authentication, settings persistence, server connection monitoring, and font loading. Links to child pages for each service.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Authentication & Session Management (AuthState)",
+      "purpose": "Deep dive into AuthState: login/logout flow, saved-session restoration, credential persistence via SharedPreferences, and how AuthState integrates with GoRouter redirects and the LoginScreen.",
+      "parent": "Core Services & State Management",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Settings Service & App State",
+      "purpose": "How SettingsService persists user preferences with SharedPreferences, the SettingsModel data structure (SettingItem, SettingCategory, SettingsData), and how AppState exposes reactive settings to the widget tree.",
+      "parent": "Core Services & State Management",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Server Connection Status Service",
+      "purpose": "How ServerConnectionStatusService monitors connectivity, the ServerConnectionBannerPhase state machine (hidden → connecting → disconnected → connected), and how the banner widget is displayed in the app shell.",
+      "parent": "Core Services & State Management",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "API Layer — TfApiClient & Cryptography",
+      "purpose": "Overview of how the client communicates with the TouchFish backend: the TfApiClient singleton, encrypted requests, and the data models returned. Links to child pages for the API client and the crypto layer.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "TfApiClient — Endpoints & Data Models",
+      "purpose": "Comprehensive reference for all TfApiClient methods: user management (getUserByUid, login, register, profile updates), forum operations (getForumList, createForum, posts, comments, members), server config (fetchServerInfo, updateServerSettings), and admin operations (approveForum, rejectForum). Covers UserProfile, Forum, ForumPost, ForumComment, TfServerConfig data models.",
+      "parent": "API Layer — TfApiClient & Cryptography",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "TfCrypto — RSA+AES Encrypted Communication",
+      "purpose": "How the client secures API requests: RSA public-key parsing, AES-CBC encryption of request bodies, RSA-OAEP encryption of the AES key, and decryption of server responses. Explains why secretPost exists and when it is used.",
+      "parent": "API Layer — TfApiClient & Cryptography",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Navigation & Routing",
+      "purpose": "How the app uses go_router: AppRoutes constants, ShellRoute hierarchy (WindowFrame → MainScreen → ChatShellScreen), route parameters, redirect guards for admin access, and how AuthState drives navigation refreshes.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Route Definitions & Access Control",
+      "purpose": "Full list of named routes (AppRoutes constants), path parameters (/chat/:roomId, /forum/:forumId/post/:postId, /user/:userId), redirect logic for admin-only routes, and the first-launch / saved-session initial route selection.",
+      "parent": "Navigation & Routing",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Shell Layout — MainScreen, WindowFrame & Custom Title Bar",
+      "purpose": "How the responsive shell works: NavigationRail on wide screens vs. NavigationBar on mobile, the WindowFrame that adds a custom title bar on desktop, window size persistence, and the ServerConnectionBanner overlay.",
+      "parent": "Navigation & Routing",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Screens & User Flows",
+      "purpose": "Overview of all application screens grouped by feature area. Links to child pages covering onboarding, chat, forum, account, and admin flows.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Onboarding — Welcome, Login & Registration",
+      "purpose": "User journey from first launch: WelcomeScreen feature highlights, LoginScreen authentication flow, multi-step registration (RegisterScreen → Step2 → Step3 → RegisterSuccessScreen), server selector widget, and network status indicator.",
+      "parent": "Screens & User Flows",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Chat — Messaging Screens & Widgets",
+      "purpose": "How the chat feature works: ChatShellScreen split-pane layout, ChatListWidget, ChatDetailScreen message rendering, ChatInputBar (text, attachments, media), MessageBubble, MentionTextField, ChatRoomSettingsScreen, InviteSheet, and message search.",
+      "parent": "Screens & User Flows",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Forum — Boards, Posts & Members",
+      "purpose": "Forum feature: ForumScreen (joined/explore tabs, create forum dialog), ForumDetailScreen, ForumPostDetailScreen (comments, pinning), ForumPostComposeScreen (Markdown editor), ForumMembersScreen (roles: owner/admin/member), and the underlying Forum/ForumPost/ForumComment models.",
+      "parent": "Screens & User Flows",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Account & User Profile Screens",
+      "purpose": "AccountScreen layout for authenticated vs. unauthenticated users, role badges (root/admin/moderator/user), signature editing, ProfileEditScreen (avatar upload, bio, email), UserProfileScreen for viewing other users, and the profile picture/account-name/signature-editor widgets.",
+      "parent": "Screens & User Flows",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Admin Panel — Server Management & Moderation",
+      "purpose": "AdminScreen dashboard, PendingForumsScreen (approve/reject forum queue), DefaultAssetsScreen (logo/avatar uploads), ServerSettingsScreen (captcha, file retention, group limits), and access-control guards (hasAdminAccess, isRoot).",
+      "parent": "Screens & User Flows",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Announcement & About Screens",
+      "purpose": "AnnouncementScreen for server-wide notices, AboutScreen (version info, easter egg, copyright), LicensesScreen (OSS package list via oss_licenses.dart), and the AppConstants URLs.",
+      "parent": "Screens & User Flows",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "UI Widgets & Rendering",
+      "purpose": "Overview of shared widgets used across the app: Markdown/LaTeX renderer, media viewers, alert dialogs, and the server selector. Links to child pages for each widget group.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Markdown & LaTeX Renderer",
+      "purpose": "How MarkdownRenderer works: markdown_widget integration, flutter_math_fork for LaTeX, syntax highlighting (flutter_highlight), spoiler blocks, @mention chips with profile navigation, image lightbox (photo_view), and the MarkdownTestScreen debug tool.",
+      "parent": "UI Widgets & Rendering",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Media Widgets — Image, Video & Audio",
+      "purpose": "ImageLightbox (dismissible full-screen photo viewer), VideoViewer (media_kit integration), AudioPlayer widget, and how MessageMedia model carries file paths, MIME types, aspect ratios, and durations.",
+      "parent": "UI Widgets & Rendering",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Shared UI Components",
+      "purpose": "Reusable widgets: AppAlertDialog (showTouchFishInfoDialog / showTouchFishErrorDialog), SheetScaffold, ContactListWidget, InviteSheet, NetworkIndicator, and ServerConnectionBanner.",
+      "parent": "UI Widgets & Rendering",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Internationalization (i18n)",
+      "purpose": "Overview of the localization system: ARB source files, generated Dart classes, supported locales, and how to add a new language. Links to child pages for the framework and each locale.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Localization Framework — AppLocalizations",
+      "purpose": "How AppLocalizations works: the abstract base class, _AppLocalizationsDelegate, lookupAppLocalizations factory, supportedLocales (en, zh, och), integration with MaterialApp via localizationsDelegates, and the l10n.yaml code-generation config.",
+      "parent": "Internationalization (i18n)",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Locale Files — English, Chinese & Old Chinese",
+      "purpose": "Content and structure of the three ARB source files (app_en.arb, app_zh.arb, app_och.arb) and their generated Dart implementations (AppLocalizationsEn, AppLocalizationsZh, AppLocalizationsOch). Covers parameterized strings and how to add new keys.",
+      "parent": "Internationalization (i18n)",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Settings & Appearance Customization",
+      "purpose": "How users customize the app: SettingsScreen UI generation from SettingsData, all available settings (theme, color, opacity, background image, font, send mode, Markdown, notifications), and the FontLoaderService for system and bundled fonts.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Settings Screen & Settings Model",
+      "purpose": "How SettingsScreen dynamically renders categories and items from SettingsData: SettingType enum (switch, dropdown, radio, slider, navigation, customWidget), SettingItem/SettingOption/SettingCategoryData classes, and how values are read/written via SettingsService.",
+      "parent": "Settings & Appearance Customization",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Font Loader Service",
+      "purpose": "How FontLoaderService provides system font enumeration on desktop (font_loader_service_desktop.dart) and a stub for other platforms (font_loader_service_stub.dart), and how the bundled HarmonyOS Sans SC and LXGW WenKai fonts are declared in pubspec.yaml.",
+      "parent": "Settings & Appearance Customization",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    }
+  ]
+}

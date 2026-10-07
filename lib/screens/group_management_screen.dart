@@ -12,6 +12,7 @@ import '../services/snackbar_service.dart';
 import '../routes/app_routes.dart';
 import '../utils/talker.dart';
 import '../widgets/account/profile_picture.dart';
+import '../widgets/optimized_image.dart';
 import '../widgets/text_entry_dialog.dart';
 
 class GroupManagementScreen extends StatefulWidget {
@@ -219,6 +220,34 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
     }
   }
 
+  Future<void> _editIntroduction(AppLocalizations l10n) async {
+    final value = await showDialog<String>(
+      context: context,
+      builder: (_) => TextEntryDialog(
+        title: l10n.groupIntroductionLabel,
+        hintText: l10n.groupIntroductionHelp,
+        cancelLabel: l10n.commonCancel,
+        confirmLabel: l10n.save,
+        icon: Icons.article_outlined,
+        initialValue: _settings?['introduction'] as String? ?? '',
+        maxLines: 6,
+        allowEmpty: true,
+      ),
+    );
+    if (value == null) return;
+    final ok = await TfApiClient.instance.updateGroupSettings(
+      _uid,
+      _password,
+      widget.gid,
+      {'introduction': value},
+    );
+    if (!mounted) return;
+    _showSnack(
+      ok ? l10n.groupIntroductionUpdated : l10n.commonFailedOperation,
+    );
+    if (ok) _load();
+  }
+
   Future<void> _editEnterHint(AppLocalizations l10n) async {
     final value = await showDialog<String>(
       context: context,
@@ -279,6 +308,45 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
       return;
     }
     await ChatDataService.instance.removeRoom('G${widget.gid}');
+    if (mounted) context.go(AppRoutes.chat);
+  }
+
+  Future<void> _dissolveGroup(AppLocalizations l10n) async {
+    if (!_isOwner) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.delete_forever_outlined),
+        title: Text(l10n.groupDissolve),
+        content: Text(l10n.groupDissolveConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.groupDissolveAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final ok = await TfApiClient.instance.deleteGroup(
+      _uid,
+      _password,
+      widget.gid,
+    );
+    if (!mounted) return;
+    if (!ok) {
+      _showSnack(l10n.groupDissolveFailed);
+      return;
+    }
+    await ChatDataService.instance.removeRoom('G${widget.gid}');
+    _showSnack(l10n.groupDissolveSuccess);
     if (mounted) context.go(AppRoutes.chat);
   }
 
@@ -402,9 +470,14 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
                         radius: 48,
                         backgroundColor: cs.primaryContainer,
                         backgroundImage: _groupAvatarUrl != null
-                            ? NetworkImage(_groupAvatarUrl!)
+                            ? resizedImageProvider(
+                                NetworkImage(_groupAvatarUrl!),
+                                MediaQuery.of(context).devicePixelRatio,
+                                width: 96,
+                                height: 96,
+                              )
                             : null,
-                        onBackgroundImageError: (_, __) {},
+                        onBackgroundImageError: (_, _) {},
                         child: const Icon(
                           Icons.group,
                           size: 48,
@@ -469,6 +542,16 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _chooseNewOwner(l10n),
                   ),
+                if (_isOwner)
+                  ListTile(
+                    leading: Icon(Icons.delete_forever_outlined, color: cs.error),
+                    title: Text(
+                      l10n.groupDissolve,
+                      style: TextStyle(color: cs.error),
+                    ),
+                    subtitle: Text(l10n.groupDissolveConfirm),
+                    onTap: () => _dissolveGroup(l10n),
+                  ),
                 ListTile(
                   leading: Icon(Icons.logout, color: cs.error),
                   title: Text(
@@ -498,6 +581,17 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
   List<Widget> _buildSettingsTiles(AppLocalizations l10n) {
     final settings = _settings ?? {};
     return [
+      ListTile(
+        leading: const Icon(Icons.article_outlined),
+        title: Text(l10n.groupIntroductionLabel),
+        subtitle: Text(
+          (_settings?['introduction'] as String?)?.trim().isNotEmpty == true
+              ? _settings!['introduction'] as String
+              : l10n.groupIntroductionHelp,
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => _editIntroduction(l10n),
+      ),
       ListTile(
         leading: const Icon(Icons.info_outline),
         title: Text(l10n.groupEnterHintLabel),

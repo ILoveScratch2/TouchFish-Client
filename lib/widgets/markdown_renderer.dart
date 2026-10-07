@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'data_saving_image.dart';
+import 'optimized_image.dart';
 import 'package:flutter_highlight/themes/a11y-dark.dart';
 import 'package:flutter_highlight/themes/a11y-light.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -8,26 +9,30 @@ import 'package:go_router/go_router.dart';
 import 'package:markdown/markdown.dart' as markdown;
 import 'package:markdown_widget/markdown_widget.dart';
 import 'package:photo_view/photo_view.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/browser_service.dart';
 import '../services/chat_data_service.dart';
+import '../services/domain_trust_service.dart';
+import '../utils/clipboard_utils.dart';
+import 'untrusted_image_placeholder.dart';
 
-/// 等宽字体族：优先 Consolas，依次回退至各平台常见等宽字体。
-const String _codeFontFamily = 'Consolas';
+/// 等宽字体族：优先 Fira Code，依次回退至各平台常见等宽字体。
+const String _codeFontFamily = 'Fira Code';
 const List<String> _codeFontFamilyFallback = [
   'Menlo',
   'Monaco',
   'Courier New',
   'Courier',
+  'Ubuntu Mono',
   'DejaVu Sans Mono',
   'Liberation Mono',
   'Noto Sans Mono',
   'Droid Sans Mono',
   'Source Code Pro',
-  'Fira Code',
+  'Consolas',
   'JetBrains Mono',
   'monospace',
 ];
@@ -44,11 +49,14 @@ class MarkdownRenderer extends HookWidget {
   final bool selectable;
   final bool fitContent;
 
+  final SelectableRegionContextMenuBuilder? selectionContextMenuBuilder;
+
   const MarkdownRenderer({
     super.key,
     required this.data,
     this.selectable = false,
     this.fitContent = true,
+    this.selectionContextMenuBuilder,
   });
 
   @override
@@ -92,20 +100,25 @@ class MarkdownRenderer extends HookWidget {
       onToggle: () => spoilerRevealed.value = !spoilerRevealed.value,
     );
 
+    final useCustomSelectionMenu =
+        selectable && selectionContextMenuBuilder != null;
     final markdown = MarkdownBlock(
       data: data,
-      selectable: selectable,
+      selectable: selectable && !useCustomSelectionMenu,
       config: config.copy(
         configs: [
           CodeConfig(
-            style: _codeTextStyle(
-              fontSize: 13,
-              color: isDark ? const Color(0xffe0e0e0) : const Color(0xff283237),
-            ).copyWith(
-              backgroundColor: isDark
-                  ? const Color(0x33ffffff)
-                  : const Color(0x33eff1f3),
-            ),
+            style:
+                _codeTextStyle(
+                  fontSize: 13,
+                  color: isDark
+                      ? const Color(0xffe0e0e0)
+                      : const Color(0xff283237),
+                ).copyWith(
+                  backgroundColor: isDark
+                      ? const Color(0x33ffffff)
+                      : const Color(0x33eff1f3),
+                ),
           ),
           isDark
               ? PreConfig.darkConfig.copy(
@@ -170,36 +183,75 @@ class MarkdownRenderer extends HookWidget {
             textStyle: _codeTextStyle(),
             styleNotMatched: _codeTextStyle(),
             decoration: codeBlockDecoration,
-            builder: (code, language) => Container(
-              decoration: codeBlockDecoration,
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              padding: const EdgeInsets.all(16),
-              width: double.infinity,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: RichText(
-                  text: TextSpan(
-                    style: _codeTextStyle(
-                      color: isDark
-                          ? const Color(0xffd6d6d6)
-                          : const Color(0xff24292f),
-                    ),
-                    children: highLightSpans(
-                      code,
-                      // 与 markdown_widget 原行为一致：未指定语言时默认按 dart 高亮，
-                      // 传 null 会导致 highlight 完全不做语法着色。
-                      language: language.isEmpty ? 'dart' : language,
-                      theme: isDark ? a11yDarkTheme : a11yLightTheme,
-                      // 注意：textStyle / styleNotMatched 不能带 color。
-                      // highLightSpans 内部做 nodeStyle.merge(textStyle)，
-                      // textStyle 里的 color 会覆盖每个语法 token 的高亮颜色，
-                      // 导致所有代码变成单色、看起来没有语法高亮。
-                      textStyle: _codeTextStyle(),
-                      styleNotMatched: _codeTextStyle(),
+            builder: (code, language) => Stack(
+              children: [
+                Container(
+                  decoration: codeBlockDecoration,
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.all(16),
+                  width: double.infinity,
+                  child: SelectionArea(  // 支持可以选中的 markdown 代码渲染
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Text.rich(
+                        TextSpan(
+                          style: _codeTextStyle(
+                            color: isDark
+                                ? const Color(0xffd6d6d6)
+                                : const Color(0xff24292f),
+                          ),
+                          children: highLightSpans(
+                            code,
+                            // wyf 你为什么这么喜欢dart
+                            //
+                            //
+                            //
+                            // 与 markdown_widget 原行为一致：未指定语言时默认按 dart 高亮，
+                            // 传 null 会导致 highlight 完全不做语法着色。
+                            language: language.isEmpty ? 'dart' : language,
+                            theme: isDark ? a11yDarkTheme : a11yLightTheme,
+                            // 注意：textStyle / styleNotMatched 不能带 color。
+                            // highLightSpans 内部做 nodeStyle.merge(textStyle)，
+                            // textStyle 里的 color 会覆盖每个语法 token 的高亮颜色，
+                            // 导致所有代码变成单色、看起来没有语法高亮。
+                            textStyle: _codeTextStyle(),
+                            styleNotMatched: _codeTextStyle(),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+                Positioned(
+                  top: 12,
+                  right: 8,
+                  child: SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.copy, size: 14),
+                      tooltip: AppLocalizations.of(context)!.markdownCopyCode,
+                      onPressed: () async {
+                        final l10n = AppLocalizations.of(context)!;
+                        final copied = await copyTextToClipboard(code);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                copied
+                                    ? l10n.markdownCodeCopied
+                                    : l10n.copyFailedText,
+                              ),
+                              duration: const Duration(milliseconds: 800),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           TableConfig(
@@ -232,11 +284,19 @@ class MarkdownRenderer extends HookWidget {
       ),
     );
 
-    if (fitContent) {
-      return markdown;
+    Widget rendered = markdown;
+    if (useCustomSelectionMenu) {
+      rendered = SelectionArea(
+        contextMenuBuilder: selectionContextMenuBuilder,
+        child: markdown,
+      );
     }
 
-    return SizedBox(width: double.infinity, child: markdown);
+    if (fitContent) {
+      return rendered;
+    }
+
+    return SizedBox(width: double.infinity, child: rendered);
   }
 
   static MarkdownGenerator buildGenerator({
@@ -267,8 +327,7 @@ class MarkdownRenderer extends HookWidget {
     if (uri == null) {
       return;
     }
-
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    await BrowserService.instance.openUri(context, uri);
   }
 }
 
@@ -412,7 +471,12 @@ class _MentionChipContent extends StatelessWidget {
               radius: 9,
               backgroundColor: chipColor.withValues(alpha: 0.35),
               backgroundImage: avatarUrl != null
-                  ? NetworkImage(avatarUrl)
+                  ? resizedImageProvider(
+                      NetworkImage(avatarUrl),
+                      MediaQuery.of(context).devicePixelRatio,
+                      width: 18,
+                      height: 18,
+                    )
                   : null,
               // Fallback: show '@' when no avatar is available.
               child: avatarUrl == null
@@ -561,8 +625,7 @@ class LatexSyntax extends markdown.InlineSyntax {
   // 块公式允许空内容（*?），行内公式内容至少 1 个非 $ 非换行字符。
   // 避免 "$$$$"（空块公式）被行内分支误匹配成 "$$$" 导致
   // substring(2, 1) 抛 RangeError。
-  LatexSyntax(this.isDark)
-      : super(r'(\$\$[\s\S]*?\$\$)|(\$[^$\n]+\$)');
+  LatexSyntax(this.isDark) : super(r'(\$\$[\s\S]*?\$\$)|(\$[^$\n]+\$)');
 
   @override
   bool onMatch(markdown.InlineParser parser, Match match) {
@@ -694,32 +757,70 @@ class Heading3Config extends HeadingConfig {
   String get tag => MarkdownTag.h3.name;
 }
 
-class _MarkdownRemoteImage extends StatelessWidget {
+class _MarkdownRemoteImage extends StatefulWidget {
   final Uri uri;
 
   const _MarkdownRemoteImage({required this.uri});
 
   @override
+  State<_MarkdownRemoteImage> createState() => _MarkdownRemoteImageState();
+}
+
+class _MarkdownRemoteImageState extends State<_MarkdownRemoteImage> {
+  bool _confirmed = false;
+
+  Future<void> _openPreview() async {
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => _ImagePreviewScreen(uri: widget.uri),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => _ImagePreviewScreen(uri: uri),
+    return FutureBuilder<bool>(
+      future: DomainTrustService.instance.requiresImageBlock(widget.uri),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done ||
+            snapshot.data == null) {
+          return Container(
+            constraints: const BoxConstraints(minHeight: 120, maxWidth: 320),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Center(
+              child: SizedBox.square(
+                dimension: 24,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+            ),
+          );
+        }
+        final blocked = snapshot.data!;
+        if (blocked && !_confirmed) {
+          return UntrustedImagePlaceholder(
+            uri: widget.uri,
+            onProceed: () => setState(() => _confirmed = true),
+          );
+        }
+        return GestureDetector(
+          onTap: _openPreview,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.all(Radius.circular(8)),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 360),
+              child: DataSavingImage(
+                url: widget.uri.toString(),
+                fit: BoxFit.contain,
+              ),
+            ),
           ),
         );
       },
-      child: ClipRRect(
-        borderRadius: const BorderRadius.all(Radius.circular(8)),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 360),
-          child: DataSavingImage(
-            url: uri.toString(),
-            fit: BoxFit.contain,
-          ),
-        ),
-      ),
     );
   }
 }

@@ -370,12 +370,18 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                     final navigator = Navigator.of(context);
                     final alias = nameController.text.trim();
                     final description = descController.text.trim();
-                    await _chatData.updateRoomPreference(
+                    final saved = await _chatData.updateRoomPreference(
                       widget.chatRoom.id,
                       alias: alias,
                       description: description,
                     );
                     if (!mounted) return;
+                    if (!saved) {
+                      TouchFishSnackbarService.instance.show(
+                        l10n.commonFailedOperation,
+                      );
+                      return;
+                    }
                     setState(() {
                       _chatName = _chatData.displayNameForRoom(
                         widget.chatRoom.id,

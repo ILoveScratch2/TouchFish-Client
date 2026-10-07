@@ -8,6 +8,7 @@ import '../widgets/app_alert_dialog.dart';
 import '../l10n/app_localizations.dart';
 import '../models/file_attachment.dart';
 import '../widgets/file_attachment_view.dart';
+import '../widgets/file_thumbnail.dart';
 import '../widgets/sheet_scaffold.dart';
 
 class StorageManagementScreen extends StatefulWidget {
@@ -182,6 +183,43 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     }
   }
 
+  Future<void> _dereferenceFile(String hash, String fileName) async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showTouchFishErrorDialog<bool>(
+      context,
+      title: l10n.storageDereference,
+      message: l10n.storageDereferenceConfirm(fileName),
+      icon: Icons.link_off,
+      selectableMessage: false,
+      actions: [
+        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
+        TouchFishDialogAction<bool>(
+          label: l10n.storageDereference,
+          result: true,
+          isPrimary: true,
+        ),
+      ],
+    );
+    if (confirmed != true || !mounted) return;
+
+    final ok = await TfApiClient.instance.dereferenceFile(uid, password, hash);
+    if (!mounted) return;
+    if (ok) {
+      TouchFishSnackbarService.instance.show(
+        l10n.storageDereferenced(fileName),
+      );
+      await _loadData();
+    } else {
+      TouchFishSnackbarService.instance.show(
+        l10n.storageDereferenceFailed,
+      );
+    }
+  }
+
   IconData _fileIcon(String fileName) {
     final ext = fileName.toLowerCase();
     if (ext.endsWith('.png') ||
@@ -224,15 +262,19 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
         ext.endsWith('.jpg') ||
         ext.endsWith('.jpeg') ||
         ext.endsWith('.gif') ||
-        ext.endsWith('.webp'))
+        ext.endsWith('.webp')) {
       return cs.tertiary;
-    if (ext.endsWith('.mp4') || ext.endsWith('.mov') || ext.endsWith('.avi'))
+    }
+    if (ext.endsWith('.mp4') || ext.endsWith('.mov') || ext.endsWith('.avi')) {
       return cs.error;
-    if (ext.endsWith('.mp3') || ext.endsWith('.wav') || ext.endsWith('.ogg'))
+    }
+    if (ext.endsWith('.mp3') || ext.endsWith('.wav') || ext.endsWith('.ogg')) {
       return cs.secondary;
+    }
     if (ext.endsWith('.pdf')) return cs.error;
-    if (ext.endsWith('.zip') || ext.endsWith('.rar') || ext.endsWith('.7z'))
+    if (ext.endsWith('.zip') || ext.endsWith('.rar') || ext.endsWith('.7z')) {
       return cs.primary;
+    }
     return cs.onSurfaceVariant;
   }
 
@@ -390,7 +432,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
       onRefresh: _loadData,
       child: ListView.separated(
         itemCount: _files.length,
-        separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
+        separatorBuilder: (_, _) => const Divider(height: 1, indent: 72),
         itemBuilder: (context, index) =>
             _buildFileTile(_files[index], l10n, colorScheme),
       ),
@@ -418,20 +460,29 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
           '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
     }
 
-    return ListTile(
-      leading: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: _fileIconColor(fileName, colorScheme).withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          _fileIcon(fileName),
-          color: _fileIconColor(fileName, colorScheme),
-          size: 24,
-        ),
+    final leadingFallback = Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: _fileIconColor(fileName, colorScheme).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
       ),
+      child: Icon(
+        _fileIcon(fileName),
+        color: _fileIconColor(fileName, colorScheme),
+        size: 24,
+      ),
+    );
+    final attachment = FileAttachment.fromMap(file);
+    final leading = attachment.isImage && attachment.hasThumb && hash.isNotEmpty
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: FileThumbnail(hash: hash, fallback: leadingFallback),
+          )
+        : leadingFallback;
+
+    return ListTile(
+      leading: leading,
       title: Text(
         fileName,
         maxLines: 1,
@@ -451,11 +502,40 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
             onPressed: () => _showFileActions(file),
             tooltip: l10n.filePreview,
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, size: 20),
-            color: colorScheme.error,
-            onPressed: () => _deleteFile(hash, fileName),
-            tooltip: l10n.storageDeleteFile,
+          PopupMenuButton<String>(
+            tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
+            onSelected: (value) {
+              if (value == 'dereference') {
+                _dereferenceFile(hash, fileName);
+              } else if (value == 'delete') {
+                _deleteFile(hash, fileName);
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'dereference',
+                child: ListTile(
+                  leading: const Icon(Icons.link_off, size: 20),
+                  title: Text(l10n.storageDereference),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: ListTile(
+                  leading: Icon(
+                    Icons.delete_outline,
+                    size: 20,
+                    color: colorScheme.error,
+                  ),
+                  title: Text(
+                    l10n.storageDeleteFile,
+                    style: TextStyle(color: colorScheme.error),
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -480,3 +560,4 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     );
   }
 }
+

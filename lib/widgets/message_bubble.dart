@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'data_saving_image.dart';
+import 'optimized_image.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -13,23 +15,94 @@ import '../l10n/app_localizations.dart';
 import '../widgets/media/image_lightbox.dart';
 import '../widgets/media/video_viewer.dart';
 import '../widgets/media/audio_player.dart';
+import '../widgets/media/voice_message_bubble.dart';
 import '../widgets/markdown_renderer.dart';
 import '../models/settings_service.dart';
 import 'package:exif/exif.dart';
 import '../utils/talker.dart';
+import '../utils/clipboard_utils.dart';
 import '../models/file_attachment.dart';
 import 'file_attachment_view.dart';
+import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/snackbar_service.dart';
+import '../providers/task/task_manager_provider.dart';
+import '../models/file_task.dart';
 import 'sheet_scaffold.dart';
 import 'sticker_text_renderer.dart';
+import 'message_swipeable_wrapper.dart';
+import 'redirect_message_view.dart';
 
 final _stickerTestPattern = RegExp(r':[A-Za-z0-9_]+\+[A-Za-z0-9_-]+:');
+
+/// 仅 root 可用：查看已撤回消息的服务端原始记录。
+Future<void> _showRecalledOriginalDialog(
+  BuildContext context,
+  ChatMessage message,
+) async {
+  final uid = AuthState.instance.uid;
+  final password = AuthState.instance.password;
+  final mid = message.mid;
+  final l10n = AppLocalizations.of(context)!;
+  if (uid == null || mid == null) return;
+
+  final original = await TfApiClient.instance.getRecalledOriginal(
+    uid,
+    password,
+    mid,
+  );
+  if (!context.mounted) return;
+  if (original == null) {
+    TouchFishSnackbarService.instance.show(l10n.messageRecalledOriginalFailed);
+    return;
+  }
+
+  final senderUid = original['sender_uid']?.toString() ?? '';
+  final contentType = original['content_type']?.toString() ?? 'plain';
+  final content = original['content']?.toString() ?? '';
+  final String body;
+  if (contentType == 'file') {
+    final name = original['file_name']?.toString() ?? content;
+    body = '$name\n$content';
+  } else if (content.isEmpty) {
+    body = l10n.messageRecalledOriginalNone;
+  } else {
+    body = content;
+  }
+
+  await showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(l10n.messageRecalledOriginalTitle),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${l10n.messageRecalledOriginalSender}: $senderUid'),
+            const SizedBox(height: 8),
+            Text('${l10n.messageRecalledOriginalContent}:'),
+            const SizedBox(height: 4),
+            SelectableText(body),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(MaterialLocalizations.of(context).closeButtonLabel),
+        ),
+      ],
+    ),
+  );
+}
 
 class MessageBubble extends HookWidget {
   final ChatMessage message;
   final ValueChanged<ChatMessage>? onReply;
   final ValueChanged<ChatMessage>? onForward;
   final ValueChanged<ChatMessage>? onRecall;
+  final ValueChanged<ChatMessage>? onDelete;
   final ValueChanged<int>? onQuoteTap;
   final bool showAvatar;
   final bool canRecall;
@@ -45,6 +118,10 @@ class MessageBubble extends HookWidget {
 
   /// 本条消息在画廊中的下标。
   final int galleryIndex;
+  final bool animateEntrance;
+
+  final bool isSelectionMode;
+  final VoidCallback? onEnterSelectionMode;
 
   const MessageBubble({
     super.key,
@@ -52,6 +129,7 @@ class MessageBubble extends HookWidget {
     this.onReply,
     this.onForward,
     this.onRecall,
+    this.onDelete,
     this.onQuoteTap,
     this.showAvatar = true,
     this.canRecall = false,
@@ -63,6 +141,9 @@ class MessageBubble extends HookWidget {
     this.onEssenceToggle,
     this.galleryItems,
     this.galleryIndex = 0,
+    this.animateEntrance = false,
+    this.isSelectionMode = false,
+    this.onEnterSelectionMode,
   });
 
   @override
@@ -76,9 +157,11 @@ class MessageBubble extends HookWidget {
     return _MessageBubbleContent(
       message: message,
       cachedBytes: cachedBytes,
+      animateEntrance: animateEntrance,
       onReply: onReply,
       onForward: onForward,
       onRecall: onRecall,
+      onDelete: onDelete,
       onQuoteTap: onQuoteTap,
       showAvatar: showAvatar,
       canRecall: canRecall,
@@ -90,6 +173,74 @@ class MessageBubble extends HookWidget {
       onEssenceToggle: onEssenceToggle,
       galleryItems: galleryItems,
       galleryIndex: galleryIndex,
+      isSelectionMode: isSelectionMode,
+      onEnterSelectionMode: onEnterSelectionMode,
+    );
+  }
+}
+
+/// 新消息入场：淡入 + 从下方滑入 + 撑开高度
+///
+/// 只在 [animate] 首次为 true 时播放一次，元素复用/重建不会重播。
+class _MessageEntrance extends StatefulWidget {
+  final bool animate;
+  final Widget child;
+
+  const _MessageEntrance({required this.animate, required this.child});
+
+  @override
+  State<_MessageEntrance> createState() => _MessageEntranceState();
+}
+
+class _MessageEntranceState extends State<_MessageEntrance>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 400),
+  );
+  late final CurvedAnimation _progress = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOutQuart,
+  );
+  late final Animation<double> _fade = CurvedAnimation(
+    parent: _controller,
+    curve: const Interval(0.1, 1, curve: Curves.easeOut),
+  );
+  late final Animation<Offset> _slide = Tween<Offset>(
+    begin: const Offset(0, 0.12),
+    end: Offset.zero,
+  ).animate(_progress);
+
+  /// 播过动画后一直保持包装层，避免动画结束换结构把子树元素重建掉。
+  bool _entered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _entered = widget.animate;
+    if (_entered) {
+      _controller.forward();
+    } else {
+      _controller.value = 1;
+    }
+  }
+
+  @override
+  void dispose() {
+    _progress.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_entered) return widget.child;
+    return FadeTransition(
+      opacity: _fade,
+      child: SizeTransition(
+        sizeFactor: _progress,
+        child: SlideTransition(position: _slide, child: widget.child),
+      ),
     );
   }
 }
@@ -100,6 +251,7 @@ class _MessageBubbleContent extends StatefulWidget {
   final ValueChanged<ChatMessage>? onReply;
   final ValueChanged<ChatMessage>? onForward;
   final ValueChanged<ChatMessage>? onRecall;
+  final ValueChanged<ChatMessage>? onDelete;
   final ValueChanged<int>? onQuoteTap;
   final bool showAvatar;
   final bool canRecall;
@@ -111,13 +263,18 @@ class _MessageBubbleContent extends StatefulWidget {
   final VoidCallback? onEssenceToggle;
   final List<LightboxImageItem>? galleryItems;
   final int galleryIndex;
+  final bool animateEntrance;
+  final bool isSelectionMode;
+  final VoidCallback? onEnterSelectionMode;
 
   const _MessageBubbleContent({
     required this.message,
     this.cachedBytes,
+    this.animateEntrance = false,
     this.onReply,
     this.onForward,
     this.onRecall,
+    this.onDelete,
     this.onQuoteTap,
     required this.showAvatar,
     required this.canRecall,
@@ -129,13 +286,16 @@ class _MessageBubbleContent extends StatefulWidget {
     this.onEssenceToggle,
     this.galleryItems,
     this.galleryIndex = 0,
+    this.isSelectionMode = false,
+    this.onEnterSelectionMode,
   });
 
   @override
   State<_MessageBubbleContent> createState() => _MessageBubbleState();
 }
 
-class _MessageBubbleState extends State<_MessageBubbleContent> {
+class _MessageBubbleState extends State<_MessageBubbleContent>
+    with AutomaticKeepAliveClientMixin {
   static _MessageBubbleState? _activeHoverOwner;
 
   final GlobalKey _bubbleKey = GlobalKey();
@@ -145,6 +305,10 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
   Offset? _secondaryTapPosition;
   Offset? _longPressOrigin;
   Timer? _longPressTimer;
+
+  // 媒体消息需要保留状态！！！！！！！！！！！！！！！！！！！！！
+  @override
+  bool get wantKeepAlive => widget.message.media != null;
 
   @override
   void dispose() {
@@ -156,6 +320,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
   }
 
   void _scheduleShowHoverActions() {
+    if (widget.isSelectionMode) return;
     _hoverHideTimer?.cancel();
     _hoverShowTimer?.cancel();
     if (_activeHoverOwner != null && _activeHoverOwner != this) {
@@ -212,6 +377,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
     }
     if (widget.canPin) width += 64;
     if (widget.canRecall) width += 41;
+    if (widget.onDelete != null && !widget.message.isDeleted) width += 41;
     return width;
   }
 
@@ -262,17 +428,20 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
   void _showActionSheet() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       builder: (context) => _MessageActionSheet(
         message: widget.message,
         onReply: widget.onReply,
         onForward: widget.onForward,
         onRecall: widget.onRecall,
+        onDelete: widget.onDelete,
         canRecall: widget.canRecall,
         isPinned: widget.isPinned,
         isEssence: widget.isEssence,
         canPin: widget.canPin,
         onPinToggle: widget.onPinToggle,
         onEssenceToggle: widget.onEssenceToggle,
+        onEnterSelectionMode: widget.onEnterSelectionMode,
       ),
     );
   }
@@ -292,23 +461,31 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
       ),
       items: [
         PopupMenuItem(
-          value: 'reply',
-          enabled: !widget.message.isDeleted && widget.message.mid != null,
+          value: 'copy',
           child: ListTile(
             dense: true,
-            leading: const Icon(Symbols.reply),
-            title: Text(l10n.messageActionReply),
+            leading: const Icon(Symbols.content_copy),
+            title: Text(l10n.messageActionCopy),
           ),
         ),
-        PopupMenuItem(
-          value: 'forward',
-          enabled: !widget.message.isDeleted && widget.message.mid != null,
-          child: ListTile(
-            dense: true,
-            leading: const Icon(Symbols.forward),
-            title: Text(l10n.messageActionForward),
+        if (!widget.message.isDeleted && widget.message.mid != null)
+          PopupMenuItem(
+            value: 'reply',
+            child: ListTile(
+              dense: true,
+              leading: const Icon(Symbols.reply),
+              title: Text(l10n.messageActionReply),
+            ),
           ),
-        ),
+        if (!widget.message.isDeleted && widget.message.mid != null)
+          PopupMenuItem(
+            value: 'forward',
+            child: ListTile(
+              dense: true,
+              leading: const Icon(Symbols.forward),
+              title: Text(l10n.messageActionForward),
+            ),
+          ),
         if (widget.canRecall)
           PopupMenuItem(
             value: 'recall',
@@ -319,6 +496,18 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                 color: Theme.of(context).colorScheme.error,
               ),
               title: Text(l10n.messageActionRecall),
+            ),
+          ),
+        if (widget.onDelete != null && !widget.message.isDeleted)
+          PopupMenuItem(
+            value: 'delete',
+            child: ListTile(
+              dense: true,
+              leading: Icon(
+                Symbols.delete_forever,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(l10n.messageActionDelete),
             ),
           ),
         if (widget.canPin)
@@ -340,31 +529,181 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
         // 这个是 xsfx 手写的注释（，显然一个消息能被置顶就可以被设为精华
         if (widget.canPin && widget.essenceEnabled)
           PopupMenuItem(
-            value : 'essence',
-            child : ListTile(
+            value: 'essence',
+            child: ListTile(
               dense: true,
-              leading : Icon(
+              leading: Icon(
                 Symbols.auto_awesome,
                 color: Theme.of(context).colorScheme.primary,
               ),
-              title : Text(
-                widget.isEssence
-                  ? l10n.essenceRemove
-                  : l10n.essenceAdd,
-              )
-            )
-          )
+              title: Text(
+                widget.isEssence ? l10n.essenceRemove : l10n.essenceAdd,
+              ),
+            ),
+          ),
+        if (widget.message.isDeleted &&
+            AuthState.instance.currentUser?.isRoot == true)
+          PopupMenuItem(
+            value: 'viewOriginal',
+            child: ListTile(
+              dense: true,
+              leading: const Icon(Symbols.history),
+              title: Text(l10n.messageActionViewOriginal),
+            ),
+          ),
       ],
     );
+    if (selected == 'copy') _copyMessageText(widget.message);
     if (selected == 'reply') widget.onReply?.call(widget.message);
     if (selected == 'forward') widget.onForward?.call(widget.message);
     if (selected == 'recall') widget.onRecall?.call(widget.message);
+    if (selected == 'delete') widget.onDelete?.call(widget.message);
     if (selected == 'pin') widget.onPinToggle?.call();
     if (selected == 'essence') widget.onEssenceToggle?.call();
+    if (selected == 'viewOriginal') {
+      _showRecalledOriginalDialog(context, widget.message);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    if (widget.message.isPlaceholder) {
+      return _buildPlaceholderBubble(context);
+    }
+
+    final style = SettingsService.instance.getValue<String>(
+      'messageDisplayStyle',
+      'bubble',
+    );
+    final content = style == 'compact' || style == 'column'
+        ? _buildLinearLayout(context, isCompact: style == 'compact')
+        : _buildBubbleLayout(context);
+    // 始终包一层（结构稳定，不会因为动画结束而重建子树的元素）
+    return _MessageEntrance(animate: widget.animateEntrance, child: content);
+  }
+
+  Widget _buildPlaceholderBubble(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final progress = (widget.message.uploadProgress ?? 0.0).clamp(0.0, 1.0);
+
+    final senderName = widget.message.senderName?.trim().isNotEmpty == true
+        ? widget.message.senderName!
+        : 'User ${widget.message.senderUid ?? ''}';
+    final senderAvatar = widget.message.senderAvatar;
+
+    final bubbleContent = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox.square(
+              dimension: 14,
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  progressIndicatorTheme: const ProgressIndicatorThemeData(
+                    circularTrackPadding: EdgeInsets.zero,
+                  ),
+                ),
+                child: CircularProgressIndicator(
+                  value: progress > 0 ? progress : null,
+                  strokeWidth: 2,
+                  color: colorScheme.primary.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              l10n.chatPlaceholderUploading((progress * 100).toInt()),
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+        ),
+        if (progress > 0) ...[
+          const SizedBox(height: 6),
+          SizedBox(
+            width: 180,
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 3,
+              borderRadius: BorderRadius.circular(2),
+              color: colorScheme.primary,
+              backgroundColor: colorScheme.surfaceContainerHighest,
+            ),
+          ),
+        ],
+      ],
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 40, bottom: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    senderName,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _formatTime(widget.message.timestamp, context),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.7,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildAvatar(colorScheme, senderAvatar),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainer,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    child: bubbleContent,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBubbleLayout(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
@@ -383,7 +722,8 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
         widget.message.senderAvatar ??
         (widget.message.isMe ? AuthState.instance.currentUser?.avatar : null);
 
-    return Align(
+    // 滑动手势包装器
+    final bubbleContent = Align(
       key: ValueKey('message-alignment-${widget.message.id}'),
       alignment: widget.message.isMe
           ? Alignment.centerRight
@@ -430,9 +770,10 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                                 const SizedBox(width: 4),
                                 Text(
                                   l10n.pinnedMessageLabel,
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: textColor.withValues(alpha: 0.6),
-                                  ),
+                                  style: Theme.of(context).textTheme.labelSmall
+                                      ?.copyWith(
+                                        color: textColor.withValues(alpha: 0.6),
+                                      ),
                                 ),
                               ],
                             ),
@@ -454,9 +795,10 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                                 const SizedBox(width: 4),
                                 Text(
                                   l10n.essenceName,
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: textColor.withValues(alpha: 0.6),
-                                  ),
+                                  style: Theme.of(context).textTheme.labelSmall
+                                      ?.copyWith(
+                                        color: textColor.withValues(alpha: 0.6),
+                                      ),
                                 ),
                               ],
                             ),
@@ -478,7 +820,10 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  _formatTime(widget.message.timestamp, context),
+                                  _formatTime(
+                                    widget.message.timestamp,
+                                    context,
+                                  ),
                                   style: TextStyle(
                                     fontSize: 10,
                                     color: textColor.withValues(alpha: 0.7),
@@ -565,6 +910,225 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
         ),
       ),
     );
+
+    // 移动端添加滑动手势支持
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      return MessageSwipeableWrapper(
+        messageId: widget.message.id,
+        isCurrentUser: widget.message.isMe,
+        onReply: widget.onReply == null
+            ? null
+            : () => widget.onReply!(widget.message),
+        onForward: widget.onForward == null
+            ? null
+            : () => widget.onForward!(widget.message),
+        onShowMenu: _showActionSheet,
+        child: bubbleContent,
+      );
+    }
+
+    return bubbleContent;
+  }
+
+  // ---------- compact / column ----------
+
+  bool get _linearMine => widget.message.isMe;
+
+  String get _linearSenderName {
+    final message = widget.message;
+    if (message.senderName?.trim().isNotEmpty == true) {
+      return message.senderName!;
+    }
+    if (message.isMe) {
+      return AuthState.instance.currentUser?.username ?? 'Me';
+    }
+    return 'User ${message.senderUid ?? ''}';
+  }
+
+  String? get _linearSenderAvatar {
+    final message = widget.message;
+    return message.senderAvatar ??
+        (message.isMe ? AuthState.instance.currentUser?.avatar : null);
+  }
+
+  /// 弄点区分色
+  Color _linearSenderColor(ColorScheme colorScheme) {
+    if (_linearMine) return colorScheme.primary;
+    final uid = widget.message.senderUid ?? 0;
+    final hue = (uid.abs() * 137.508) % 360.0;
+    final dark = colorScheme.brightness == Brightness.dark;
+    return HSLColor.fromAHSL(
+      1,
+      hue,
+      dark ? 0.55 : 0.6,
+      dark ? 0.78 : 0.34,
+    ).toColor();
+  }
+
+  Widget _buildLinearLayout(BuildContext context, {required bool isCompact}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
+    final mine = _linearMine;
+    final showHeader = widget.showAvatar;
+    final textColor = mine
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurface;
+    final nameColor = _linearSenderColor(colorScheme);
+    final timeColor = colorScheme.onSurfaceVariant.withValues(alpha: 0.75);
+
+    final header = <Widget>[
+      if (widget.isPinned)
+        _linearBadge(
+          text: l10n.pinnedMessageLabel,
+          icon: Symbols.push_pin,
+          color: timeColor,
+        ),
+      if (widget.isEssence && widget.essenceEnabled)
+        _linearBadge(
+          text: l10n.essenceName,
+          icon: Symbols.auto_awesome,
+          color: timeColor,
+        ),
+    ];
+
+    final content = _buildMessageContent(
+      context,
+      colorScheme,
+      textTheme,
+      textColor,
+    );
+
+    return Align(
+      key: ValueKey('message-alignment-${widget.message.id}'),
+      alignment: Alignment.centerLeft,
+      child: Material(
+        color: Colors.transparent,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: isCompact ? 1 : 3,
+          ),
+          child: Stack(
+            children: [
+              MouseRegion(
+                onEnter: (_) => _scheduleShowHoverActions(),
+                onExit: (_) => _scheduleHideHoverActions(),
+                child: Listener(
+                  onPointerDown: _handlePointerDown,
+                  onPointerMove: _handlePointerMove,
+                  onPointerUp: _cancelLongPress,
+                  onPointerCancel: _cancelLongPress,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onSecondaryTapDown: (details) =>
+                        _secondaryTapPosition = details.globalPosition,
+                    onSecondaryTap: _showDesktopMenu,
+                    child: Row(
+                      crossAxisAlignment: mine
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
+                      children: [
+                        if (!isCompact)
+                          showHeader
+                              ? Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: _buildAvatar(
+                                    colorScheme,
+                                    _linearSenderAvatar,
+                                  ),
+                                )
+                              : const SizedBox(width: 40),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (header.isNotEmpty) ...[
+                                for (final badge in header)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 2),
+                                    child: badge,
+                                  ),
+                                const SizedBox(height: 2),
+                              ],
+                              if (showHeader)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 2),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.max,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.baseline,
+                                    textBaseline: TextBaseline.alphabetic,
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          _linearSenderName,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: textTheme.bodySmall?.copyWith(
+                                            color: nameColor,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        _formatTime(
+                                          widget.message.timestamp,
+                                          context,
+                                        ),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: timeColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              // 消息内容宽度封顶
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 720,
+                                ),
+                                child: KeyedSubtree(
+                                  key: _bubbleKey,
+                                  child: content,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (mine &&
+                            widget.message.status != MessageStatus.sent) ...[
+                          const SizedBox(width: 6),
+                          _buildStatusIndicator(timeColor),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _linearBadge({
+    required String text,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 4),
+        Text(text, style: TextStyle(fontSize: 11, color: color)),
+      ],
+    );
   }
 
   Widget _buildHoverActionMenu() {
@@ -578,6 +1142,11 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
       onRecall: widget.canRecall
           ? () => widget.onRecall?.call(widget.message)
           : null,
+      onDelete: widget.message.isDeleted
+          ? null
+          : widget.onDelete == null
+          ? null
+          : () => widget.onDelete?.call(widget.message),
       isPinned: widget.isPinned,
       isEssence: widget.isEssence,
       canPin: widget.canPin,
@@ -592,12 +1161,12 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
       backgroundColor: colorScheme.primaryContainer,
       child: senderAvatar != null
           ? ClipOval(
-               child: DataSavingImage(
-                 url: senderAvatar,
-                 width: 32,
-                 height: 32,
-                 fit: BoxFit.cover,
-               ),
+              child: DataSavingImage(
+                url: senderAvatar,
+                width: 32,
+                height: 32,
+                fit: BoxFit.cover,
+              ),
             )
           : Icon(Icons.person, size: 18, color: colorScheme.onPrimaryContainer),
     );
@@ -636,9 +1205,19 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
       return '${l10n.chatYesterday} ${DateFormat.Hm().format(time)}';
     }
     if (now.difference(time).inDays < 7) {
-      return '${DateFormat.E(locale.toString()).format(time)} ${DateFormat.Hm().format(time)}';
+      try {
+        return '${DateFormat.E(locale.toString()).format(time)} ${DateFormat.Hm().format(time)}';
+      } catch (e) {
+        return '${DateFormat.E(locale.languageCode == 'och' ? 'zh' : locale.languageCode).format(time)} ${DateFormat.Hm().format(time)}';
+      }
     }
-    return DateFormat.MMMd(locale.toString()).add_Hm().format(time);
+    try {
+      return DateFormat.MMMd(locale.toString()).add_Hm().format(time);
+    } catch (e) {
+      return DateFormat.MMMd(
+        locale.languageCode == 'och' ? 'zh' : locale.languageCode,
+      ).add_Hm().format(time);
+    }
   }
 
   Widget _buildMessageContent(
@@ -655,10 +1234,18 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
       MessageType.video => _buildVideoMessage(context, colorScheme),
       MessageType.audio => _buildAudioMessage(context, colorScheme),
       MessageType.file => _buildFileMessage(context, colorScheme, textTheme),
+      MessageType.mergedForward =>
+        _buildMergedForwardMessage(context, colorScheme, textTheme),
       MessageType.text => _buildTextMessage(context, colorScheme, textTheme),
     };
+    final contentWithProgress = _wrapWithUploadProgress(content);
+    // 合并转发消息自带来源卡片/内联内容，且 forwarded 仅作溯源用途，
+    // 不再渲染普通的"转发 / 原消息不可用"引用框。
+    if (widget.message.type == MessageType.mergedForward) {
+      return contentWithProgress;
+    }
     final quote = widget.message.quotePreview ?? widget.message.forwardPreview;
-    if (quote == null) return content;
+    if (quote == null) return contentWithProgress;
     final isForward = widget.message.forwardPreview != null;
     return Column(
       crossAxisAlignment: widget.message.isMe
@@ -674,7 +1261,30 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
             textColor: textColor,
           ),
         ),
+        contentWithProgress,
+      ],
+    );
+  }
+
+  /// 若该消息是"自己正在上传"的 pending 消息，则叠加上传进度遮罩。
+  Widget _wrapWithUploadProgress(Widget content) {
+    final message = widget.message;
+    // 只有自己发送、处于 pending 且带附件的消息才可能正在上传。
+    if (!message.isMe || message.status != MessageStatus.pending) {
+      return content;
+    }
+    if (message.media == null) return content;
+    final clientMid = message.clientMid;
+    if (clientMid == null) return content;
+
+    return Stack(
+      children: [
         content,
+        Positioned.fill(
+          child: IgnorePointer(
+            child: _UploadProgressOverlay(clientMid: clientMid),
+          ),
+        ),
       ],
     );
   }
@@ -819,29 +1429,140 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
 
     return enableMarkdown
         ? Theme(
-            data: Theme.of(context).copyWith(
-              textTheme: textTheme.copyWith(
-                bodyMedium: textStyle,
-              ),
-            ),
+            data: Theme.of(
+              context,
+            ).copyWith(textTheme: textTheme.copyWith(bodyMedium: textStyle)),
             child: MarkdownRenderer(
               data: widget.message.text,
               selectable: true,
+              selectionContextMenuBuilder: _buildMessageTextContextMenu,
             ),
           )
         : Text(widget.message.text, style: textStyle);
   }
 
+  Widget _buildMessageTextContextMenu(
+    BuildContext context,
+    SelectableRegionState state,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final message = widget.message;
+    final canAct = !message.isDeleted && message.mid != null;
+    final items = <ContextMenuButtonItem>[...state.contextMenuButtonItems];
+    if (canAct) {
+      items
+        ..add(
+          ContextMenuButtonItem(
+            label: l10n.messageActionCopy,
+            onPressed: () {
+              ContextMenuController.removeAny();
+              _copyMessageText(message);
+            },
+          ),
+        )
+        ..add(
+          ContextMenuButtonItem(
+            label: l10n.messageActionReply,
+            onPressed: () {
+              ContextMenuController.removeAny();
+              widget.onReply?.call(message);
+            },
+          ),
+        )
+        ..add(
+          ContextMenuButtonItem(
+            label: l10n.messageActionForward,
+            onPressed: () {
+              ContextMenuController.removeAny();
+              widget.onForward?.call(message);
+            },
+          ),
+        );
+    }
+    if (widget.canPin) {
+      items.add(
+        ContextMenuButtonItem(
+          label: widget.isPinned
+              ? l10n.messageActionUnpin
+              : l10n.messageActionPin,
+          onPressed: () {
+            ContextMenuController.removeAny();
+            widget.onPinToggle?.call();
+          },
+        ),
+      );
+    }
+    if (widget.canPin && widget.essenceEnabled) {
+      items.add(
+        ContextMenuButtonItem(
+          label: widget.isEssence ? l10n.essenceRemove : l10n.essenceAdd,
+          onPressed: () {
+            ContextMenuController.removeAny();
+            widget.onEssenceToggle?.call();
+          },
+        ),
+      );
+    }
+    if (widget.canRecall) {
+      items.add(
+        ContextMenuButtonItem(
+          label: l10n.messageActionRecall,
+          onPressed: () {
+            ContextMenuController.removeAny();
+            widget.onRecall?.call(message);
+          },
+        ),
+      );
+    }
+    if (widget.onDelete != null && !message.isDeleted) {
+      items.add(
+        ContextMenuButtonItem(
+          label: l10n.messageActionDelete,
+          onPressed: () {
+            ContextMenuController.removeAny();
+            widget.onDelete?.call(message);
+          },
+        ),
+      );
+    }
+    if (message.isDeleted && AuthState.instance.currentUser?.isRoot == true) {
+      items.add(
+        ContextMenuButtonItem(
+          label: l10n.messageActionViewOriginal,
+          onPressed: () {
+            ContextMenuController.removeAny();
+            _showRecalledOriginalDialog(context, message);
+          },
+        ),
+      );
+    }
+    return AdaptiveTextSelectionToolbar.buttonItems(
+      anchors: state.contextMenuAnchors,
+      buttonItems: items,
+    );
+  }
+
+  Future<void> _copyMessageText(ChatMessage message) async {
+    final l10n = AppLocalizations.of(context)!;
+    final copied = await copyTextToClipboard(message.text);
+    TouchFishSnackbarService.instance.show(
+      copied ? l10n.aboutCopiedToClipboard : l10n.copyFailedText,
+      type: copied ? SnackbarType.info : SnackbarType.error,
+    );
+  }
+
   Widget _buildImageMessage(BuildContext context, ColorScheme colorScheme) {
     final media = widget.message.media;
-    if (media == null)
+    if (media == null) {
       return _buildTextMessage(
         context,
         colorScheme,
         Theme.of(context).textTheme,
       );
+    }
 
-    if (media.fileHash != null) {
+    // 本地字节仍在，which means 自己刚发送的图片！
+    if (media.fileHash != null && widget.cachedBytes == null) {
       return _buildRemoteAttachment(media);
     }
     return GestureDetector(
@@ -912,15 +1633,15 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
           borderRadius: BorderRadius.circular(12),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 300, maxHeight: 400),
-            child: widget.cachedBytes != null
-                ? Image.memory(
-                    widget.cachedBytes!,
-                    fit: BoxFit.cover,
-                    gaplessPlayback: true,
-                  )
-                : _isRemotePath(media.path)
-                ? Image.network(media.path, fit: BoxFit.cover)
-                : Image.file(File(media.path), fit: BoxFit.cover),
+            child: OptimizedImage(
+              provider: widget.cachedBytes != null
+                  ? MemoryImage(widget.cachedBytes!)
+                  : _isRemotePath(media.path)
+                  ? NetworkImage(media.path)
+                  : FileImage(File(media.path)),
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+            ),
           ),
         ),
       ),
@@ -929,14 +1650,17 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
 
   Widget _buildVideoMessage(BuildContext context, ColorScheme colorScheme) {
     final media = widget.message.media;
-    if (media == null)
+    if (media == null) {
       return _buildTextMessage(
         context,
         colorScheme,
         Theme.of(context).textTheme,
       );
+    }
 
-    if (media.fileHash != null) return _buildRemoteAttachment(media);
+    if (media.fileHash != null && widget.cachedBytes == null) {
+      return _buildRemoteAttachment(media);
+    }
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: ConstrainedBox(
@@ -956,14 +1680,27 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
 
   Widget _buildAudioMessage(BuildContext context, ColorScheme colorScheme) {
     final media = widget.message.media;
-    if (media == null)
+    if (media == null) {
       return _buildTextMessage(
         context,
         colorScheme,
         Theme.of(context).textTheme,
       );
+    }
 
-    if (media.fileHash != null) return _buildRemoteAttachment(media);
+    // 语音消息（带时长元数据）用波形气泡渲染。
+    if (media.durationMs != null) {
+      return VoiceMessageBubble(
+        audioPath: media.path,
+        audioBytes: widget.cachedBytes,
+        durationMs: media.durationMs,
+        fileHash: media.fileHash,
+      );
+    }
+
+    if (media.fileHash != null && widget.cachedBytes == null) {
+      return _buildRemoteAttachment(media);
+    }
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 300),
       child: AudioPlayer(
@@ -971,6 +1708,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
         audioBytes: widget.cachedBytes,
         filename: media.fileName,
         autoplay: false,
+        durationMs: media.durationMs,
       ),
     );
   }
@@ -981,10 +1719,34 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
     TextTheme textTheme,
   ) {
     final media = widget.message.media;
-    if (media == null)
+    if (media == null) {
       return _buildTextMessage(context, colorScheme, textTheme);
+    }
 
     return _buildRemoteAttachment(media);
+  }
+
+  Widget _buildMergedForwardMessage(
+    BuildContext context,
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+  ) {
+    final preview = widget.message.mergedForward;
+    if (preview == null) {
+      return _buildTextMessage(context, colorScheme, textTheme);
+    }
+    final textColor = widget.message.isMe
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurface;
+
+    // 单条转发 → 内联展示；多条历史段 → 可展开卡片。
+    final isSingle = preview.version == 1 && preview.messages.length <= 1;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 320),
+      child: isSingle
+          ? RedirectInlineContent(redirect: preview, textColor: textColor)
+          : RedirectMessageCard(redirect: preview, textColor: textColor),
+    );
   }
 
   Widget _buildRemoteAttachment(MessageMedia media) {
@@ -998,11 +1760,120 @@ class _MessageBubbleState extends State<_MessageBubbleContent> {
           fileName: media.fileName ?? hash,
           fileSize: media.fileSize,
           mimeType: media.mimeType,
+          width: media.width,
+          height: media.height,
+          blurhash: media.blurhash,
+          hasThumb: media.hasThumb,
         ),
         sourceUrl: sourceUrl,
         bytes: widget.cachedBytes,
+        durationMs: media.durationMs,
         galleryItems: widget.galleryItems,
         galleryIndex: widget.galleryIndex,
+      ),
+    );
+  }
+}
+
+class _UploadProgressOverlay extends ConsumerWidget {
+  final String clientMid;
+
+  const _UploadProgressOverlay({required this.clientMid});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final task = ref.watch(
+      taskManagerProvider.select((tasks) {
+        for (final t in tasks) {
+          if (t.clientMid == clientMid) return t;
+        }
+        return null;
+      }),
+    );
+
+    if (task == null ||
+        (task.status != FileTaskStatus.preparing &&
+            task.status != FileTaskStatus.transferring)) {
+      return const SizedBox.shrink();
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final progress = task.progress;
+    final isInstantUpload =
+        task.status == FileTaskStatus.preparing && progress == null;
+
+    return Container(
+      // 柔和半透明遮罩，更优雅的视觉效果
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            colorScheme.surface.withValues(alpha: 0.0),
+            colorScheme.surface.withValues(alpha: 0.92),
+          ],
+          stops: const [0.3, 1.0],
+        ),
+      ),
+      alignment: Alignment.bottomCenter,
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox.square(
+                dimension: 14,
+                child: Theme(
+                  data: Theme.of(context).copyWith(
+                    progressIndicatorTheme: const ProgressIndicatorThemeData(
+                      circularTrackPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  child: CircularProgressIndicator(
+                    value: progress,
+                    strokeWidth: 2,
+                    color: isInstantUpload
+                        ? colorScheme.tertiary
+                        : colorScheme.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  isInstantUpload
+                      ? l10n.chatInstantUploadProgress
+                      : l10n.chatUploadingProgress(task.progressLabel),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          if (progress != null && progress > 0) ...[
+            const SizedBox(height: 6),
+            SizedBox(
+              width: 180,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 3,
+                  color: colorScheme.primary,
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -1012,6 +1883,7 @@ class _MessageHoverActionMenu extends StatelessWidget {
   final VoidCallback? onReply;
   final VoidCallback? onForward;
   final VoidCallback? onRecall;
+  final VoidCallback? onDelete;
   final bool isPinned;
   final bool isEssence;
   final bool canPin;
@@ -1022,6 +1894,7 @@ class _MessageHoverActionMenu extends StatelessWidget {
     required this.onReply,
     required this.onForward,
     this.onRecall,
+    this.onDelete,
     this.isPinned = false,
     this.isEssence = false,
     this.canPin = false,
@@ -1081,13 +1954,12 @@ class _MessageHoverActionMenu extends StatelessWidget {
                 icon: Icon(
                   Symbols.push_pin,
                   size: 16,
-                  color: isPinned
-                      ? Theme.of(context).colorScheme.error
-                      : null,
+                  color: isPinned ? Theme.of(context).colorScheme.error : null,
                 ),
                 onPressed: onPinToggle,
-                tooltip:
-                    isPinned ? l10n.messageActionUnpin : l10n.messageActionPin,
+                tooltip: isPinned
+                    ? l10n.messageActionUnpin
+                    : l10n.messageActionPin,
                 padding: EdgeInsets.zero,
               ),
             ),
@@ -1105,13 +1977,10 @@ class _MessageHoverActionMenu extends StatelessWidget {
                 icon: Icon(
                   Symbols.auto_awesome,
                   size: 16,
-                  color: isEssence
-                      ? Theme.of(context).colorScheme.error
-                      : null,
+                  color: isEssence ? Theme.of(context).colorScheme.error : null,
                 ),
                 onPressed: onEssenceToggle,
-                tooltip:
-                    isEssence ? l10n.essenceRemove : l10n.essenceAdd,
+                tooltip: isEssence ? l10n.essenceRemove : l10n.essenceAdd,
                 padding: EdgeInsets.zero,
               ),
             ),
@@ -1133,6 +2002,27 @@ class _MessageHoverActionMenu extends StatelessWidget {
               ),
             ),
           ],
+          if (onDelete != null) ...[
+            Container(
+              width: 1,
+              height: 24,
+              color: Theme.of(context).colorScheme.outlineVariant,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+            ),
+            SizedBox.square(
+              dimension: 32,
+              child: IconButton(
+                icon: const Icon(
+                  Symbols.delete_forever,
+                  size: 16,
+                  color: Colors.red,
+                ),
+                onPressed: onDelete,
+                tooltip: l10n.messageActionDelete,
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1144,24 +2034,28 @@ class _MessageActionSheet extends StatelessWidget {
   final ValueChanged<ChatMessage>? onReply;
   final ValueChanged<ChatMessage>? onForward;
   final ValueChanged<ChatMessage>? onRecall;
+  final ValueChanged<ChatMessage>? onDelete;
   final bool canRecall;
   final bool isPinned;
   final bool isEssence;
   final bool canPin;
   final VoidCallback? onPinToggle;
   final VoidCallback? onEssenceToggle;
+  final VoidCallback? onEnterSelectionMode;
 
   const _MessageActionSheet({
     required this.message,
     this.onReply,
     this.onForward,
     this.onRecall,
+    this.onDelete,
     required this.canRecall,
     this.isPinned = false,
     this.isEssence = false,
     this.canPin = false,
     this.onPinToggle,
     this.onEssenceToggle,
+    this.onEnterSelectionMode,
   });
 
   @override
@@ -1170,11 +2064,20 @@ class _MessageActionSheet extends StatelessWidget {
 
     return SheetScaffold(
       titleText: l10n.messageActions,
-      heightFactor: 0.55,
+      heightFactor: 0.7,
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
+          _ActionListTile(
+            icon: Symbols.content_copy,
+            label: l10n.messageActionCopy,
+            onTap: () {
+              Navigator.pop(context);
+              _copyMessage(context, message);
+            },
+          ),
           if (!message.isDeleted && message.mid != null) ...[
+            const Divider(height: 17),
             _ActionListTile(
               icon: Symbols.reply,
               label: l10n.messageActionReply,
@@ -1191,13 +2094,21 @@ class _MessageActionSheet extends StatelessWidget {
                 onForward?.call(message);
               },
             ),
+            if (onEnterSelectionMode != null)
+              _ActionListTile(
+                icon: Symbols.select_all,
+                label: l10n.messageActionSelectMultiple,
+                onTap: () {
+                  Navigator.pop(context);
+                  onEnterSelectionMode!.call();
+                },
+              ),
           ],
           if (canPin) ...[
             const Divider(height: 17),
             _ActionListTile(
               icon: Symbols.push_pin,
-              label:
-                  isPinned ? l10n.messageActionUnpin : l10n.messageActionPin,
+              label: isPinned ? l10n.messageActionUnpin : l10n.messageActionPin,
               onTap: () {
                 Navigator.pop(context);
                 onPinToggle?.call();
@@ -1227,8 +2138,41 @@ class _MessageActionSheet extends StatelessWidget {
               },
             ),
           ],
+          if (onDelete != null && !message.isDeleted) ...[
+            const Divider(height: 17),
+            _ActionListTile(
+              icon: Symbols.delete_forever,
+              label: l10n.messageActionDelete,
+              color: Theme.of(context).colorScheme.error,
+              onTap: () {
+                Navigator.pop(context);
+                onDelete?.call(message);
+              },
+            ),
+          ],
+          if (message.isDeleted &&
+              AuthState.instance.currentUser?.isRoot == true) ...[
+            const Divider(height: 17),
+            _ActionListTile(
+              icon: Symbols.history,
+              label: l10n.messageActionViewOriginal,
+              onTap: () {
+                Navigator.pop(context);
+                _showRecalledOriginalDialog(context, message);
+              },
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  Future<void> _copyMessage(BuildContext context, ChatMessage message) async {
+    final l10n = AppLocalizations.of(context)!;
+    final copied = await copyTextToClipboard(message.text);
+    TouchFishSnackbarService.instance.show(
+      copied ? l10n.aboutCopiedToClipboard : l10n.copyFailedText,
+      type: copied ? SnackbarType.info : SnackbarType.error,
     );
   }
 }

@@ -149,8 +149,8 @@ void main() {
                   hasMore: false,
                 );
         },
-        processMessages: (_, __) {},
-        saveSyncPoint: (_, __) async {},
+        processMessages: (_, _) {},
+        saveSyncPoint: (_, _) async {},
       );
 
       await service.syncRoomFromMid('G2', 200);
@@ -174,7 +174,7 @@ void main() {
             hasMore: false,
           );
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(service.clear);
       service.queueMissingForTesting('U3', [2, 3]);
@@ -207,7 +207,7 @@ void main() {
             hasMore: false,
           );
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(service.clear);
       service.queueMissingForTesting(
@@ -234,7 +234,7 @@ void main() {
             hasMore: false,
           );
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(service.clear);
       service.queueMissingForTesting('U7', [2, 3]);
@@ -259,7 +259,7 @@ void main() {
             hasMore: false,
           );
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(() {
         gate.complete();
@@ -287,7 +287,7 @@ void main() {
             hasMore: false,
           );
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(service.clear);
       service.queueMissingForTesting('U6', [2, 3]);
@@ -311,7 +311,7 @@ void main() {
             hasMore: false,
           );
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(service.clear);
       service.queueMissingForTesting('U8', [2, 3]);
@@ -327,7 +327,7 @@ void main() {
         fetchMessages: (_) async {
           return (messages: <ChatMessage>[], currentSeq: 9, hasMore: false);
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(service.clear);
       service.queueMissingForTesting('U9', [5]);
@@ -351,7 +351,7 @@ void main() {
           await gate.future;
           return (messages: <ChatMessage>[], currentSeq: 12, hasMore: false);
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(() {
         gate.complete();
@@ -378,7 +378,7 @@ void main() {
         fetchMessages: (_) async {
           return (messages: <ChatMessage>[], currentSeq: 1, hasMore: false);
         },
-        processMessages: (_, __) {},
+        processMessages: (_, _) {},
       );
       addTearDown(service.clear);
       service.registerRoomSeq('U11', 1);
@@ -515,6 +515,78 @@ void main() {
       expect(message.isDeleted, isTrue);
       expect(message.roomSeq, 15);
       expect(message.deletedBy, 2);
+    });
+
+    test('file records infer image/video/audio/file type from mime', () {
+      final image = ChatMessage.fromMessageRecord({
+        'mid': 10,
+        'sender_uid': 2,
+        'content':
+            'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2',
+        'content_type': 'file',
+        'file_hash':
+            'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2',
+        'send_time': 1700000000.0,
+        'room_seq': 20,
+        'deleted': 0,
+        'file_metadata': {'file_name': 'photo.png', 'mime_type': 'image/png'},
+      }, 1);
+      expect(image.type, MessageType.image);
+      expect(image.media?.mimeType, 'image/png');
+
+      final video = ChatMessage.fromMessageRecord({
+        'mid': 11,
+        'sender_uid': 2,
+        'content': 'v1',
+        'content_type': 'file',
+        'file_hash': 'v1',
+        'send_time': 1700000000.0,
+        'room_seq': 21,
+        'deleted': 0,
+        'file': {'file_name': 'clip.mp4', 'mime_type': 'video/mp4'},
+      }, 1);
+      expect(video.type, MessageType.video);
+
+      final audio = ChatMessage.fromMessageRecord({
+        'mid': 12,
+        'sender_uid': 2,
+        'content': 'a1',
+        'content_type': 'file',
+        'file_hash': 'a1',
+        'send_time': 1700000000.0,
+        'room_seq': 22,
+        'deleted': 0,
+        'file_metadata': {'file_name': 'voice.mp3', 'mime_type': 'audio/mpeg'},
+      }, 1);
+      expect(audio.type, MessageType.audio);
+
+      final plain = ChatMessage.fromMessageRecord({
+        'mid': 13,
+        'sender_uid': 2,
+        'content': 'd1',
+        'content_type': 'file',
+        'file_hash': 'd1',
+        'send_time': 1700000000.0,
+        'room_seq': 23,
+        'deleted': 0,
+        'file_metadata': {
+          'file_name': 'doc.zip',
+          'mime_type': 'application/zip',
+        },
+      }, 1);
+      expect(plain.type, MessageType.file);
+
+      final unknown = ChatMessage.fromMessageRecord({
+        'mid': 14,
+        'sender_uid': 2,
+        'content': 'u1',
+        'content_type': 'file',
+        'file_hash': 'u1',
+        'send_time': 1700000000.0,
+        'room_seq': 24,
+        'deleted': 0,
+      }, 1);
+      expect(unknown.type, MessageType.file);
     });
   });
 }
