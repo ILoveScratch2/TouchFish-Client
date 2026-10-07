@@ -32,26 +32,25 @@ jobs:
 
   build-windows:
     needs: quality
-    # cannot VS 18.6/MSVC 14.51 windows-latest 
-    runs-on: windows-2022
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
           channel: 'stable'
-      
+
       - name: Install dependencies
         run: flutter pub get
 
       - name: Generate licenses file
         run: dart run dart_pubspec_licenses:generate
-      
+
       - name: Build Windows
         run: flutter build windows --release
-      
+
       - name: Create Windows archive
         run: |
           Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath touchfish-windows-x64.zip
@@ -72,7 +71,7 @@ jobs:
         with:
           name: windows-msix
           path: build/windows/x64/runner/Release/*.msix
-      
+
       - name: Upload Windows ZIP artifact
         uses: actions/upload-artifact@v4
         with:
@@ -90,31 +89,31 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
           channel: 'stable'
-      
+
       - name: Install dependencies
         run: flutter pub get
 
       - name: Generate licenses file
         run: dart run dart_pubspec_licenses:generate
-      
+
       - name: Install dmg package
         run: flutter pub add --dev dmg
-      
+
       - name: Install dmgbuild
         run: pip3 install dmgbuild --break-system-packages
-      
+
       - name: Build macOS
         run: flutter build macos --release
-      
+
       - name: Create macOS DMG
         run: dart run dmg --no-sign --no-notarization --license-path "./LICENSE"
-      
+
       - name: Create macOS archive
         run: |
           cd build/macos/Build/Products/Release
@@ -125,7 +124,7 @@ jobs:
         with:
           name: macos-dmg
           path: build/macos/Build/Products/Release/*.dmg
-      
+
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
@@ -137,13 +136,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
           channel: 'stable'
-      
+
       - name: Install Linux dependencies
         run: |
           sudo apt-get update -y
@@ -151,10 +150,10 @@ jobs:
       
       - name: Install dependencies
         run: flutter pub get
-      
+
       - name: Build Linux
         run: flutter build linux --release
-      
+
       - name: Create Linux archive
         run: |
           cd build/linux/x64/release/bundle
@@ -171,32 +170,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-      
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
           channel: 'stable'
-      
+
       - name: Install dependencies
         run: flutter pub get
-      
+
       - name: Generate licenses file
         run: dart run dart_pubspec_licenses:generate
-      
+
 
       - name: Build Android APK
         run: flutter build apk --release --split-per-abi
-      
+
       - name: Build Android App Bundle
         run: flutter build appbundle --release
-      
+
       - name: Rename builds
         run: |
           mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk touchfish-android-armeabi-v7a.apk
@@ -223,22 +222,22 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
           channel: 'stable'
-      
+
       - name: Install dependencies
         run: flutter pub get
-      
+
       - name: Generate licenses file
         run: dart run dart_pubspec_licenses:generate
-      
+
       - name: Build iOS (debug, no codesign)
         run: flutter build ios --debug --no-codesign
-      
+
       - name: Create IPA
         run: |
           cd build/ios/iphoneos
@@ -257,13 +256,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.7'
           channel: 'stable'
-      
+
       - name: Install dependencies
         run: flutter pub get
       

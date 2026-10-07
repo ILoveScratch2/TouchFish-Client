@@ -276,10 +276,11 @@ class _SettingsScreenState extends State<SettingsScreen>
           return _buildFontDropdownSetting(context, l10n, item);
         }
         if (item.key == 'language' ||
+           
             item.key == 'themeColor' ||
             item.key == 'explicitSyncCooldownSeconds' ||
             item.key == 'ipOverrideMode' ||
-            item.key == 'notificationLevel') {
+            item.key == 'notificationLevel' ||
           return _buildCustomDropdownSetting(context, l10n, item);
         }
         if (item.key == 'theme') {
