@@ -2704,6 +2704,96 @@ abstract class AppLocalizations {
   /// **'Stickers'**
   String get adminServerSectionStickers;
 
+  /// No description provided for @adminServerSectionFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'Feature Toggles'**
+  String get adminServerSectionFeatures;
+
+  /// No description provided for @adminFeaturePrivateChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Private chat'**
+  String get adminFeaturePrivateChat;
+
+  /// No description provided for @adminFeaturePrivateChatDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow users to send one-to-one messages.'**
+  String get adminFeaturePrivateChatDescription;
+
+  /// No description provided for @adminFeatureGroupChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Group chat'**
+  String get adminFeatureGroupChat;
+
+  /// No description provided for @adminFeatureGroupChatDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow sending messages in groups, and joining or inviting to groups.'**
+  String get adminFeatureGroupChatDescription;
+
+  /// No description provided for @adminFeatureGroupCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create groups'**
+  String get adminFeatureGroupCreate;
+
+  /// No description provided for @adminFeatureGroupCreateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow users to create new groups.'**
+  String get adminFeatureGroupCreateDescription;
+
+  /// No description provided for @adminFeatureFriendRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend requests'**
+  String get adminFeatureFriendRequest;
+
+  /// No description provided for @adminFeatureFriendRequestDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow sending friend requests and adding friends.'**
+  String get adminFeatureFriendRequestDescription;
+
+  /// No description provided for @adminFeatureForum.
+  ///
+  /// In en, this message translates to:
+  /// **'Forum'**
+  String get adminFeatureForum;
+
+  /// No description provided for @adminFeatureForumDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable the forum feature.'**
+  String get adminFeatureForumDescription;
+
+  /// No description provided for @adminFeatureSticker.
+  ///
+  /// In en, this message translates to:
+  /// **'Stickers'**
+  String get adminFeatureSticker;
+
+  /// No description provided for @adminFeatureStickerDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable sticker packs and the sticker picker.'**
+  String get adminFeatureStickerDescription;
+
+  /// No description provided for @adminFeatureAnnouncement.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements'**
+  String get adminFeatureAnnouncement;
+
+  /// No description provided for @adminFeatureAnnouncementDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable server announcements.'**
+  String get adminFeatureAnnouncementDescription;
+
   /// No description provided for @adminServerFieldMaxStickerPacks.
   ///
   /// In en, this message translates to:
@@ -3423,6 +3513,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Email'**
   String get profileEditEmail;
+
+  /// No description provided for @accountPublicEmailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Public Email'**
+  String get accountPublicEmailTitle;
+
+  /// No description provided for @accountPublicEmailDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Others cannot see your email when disabled (public by default)'**
+  String get accountPublicEmailDesc;
 
   /// No description provided for @profileEditBio.
   ///
@@ -4821,6 +4923,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add Friend'**
   String get userProfileAddFriend;
+
+  /// No description provided for @friendRequestsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend Requests'**
+  String get friendRequestsTitle;
+
+  /// No description provided for @friendRequestEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending friend requests'**
+  String get friendRequestEmpty;
+
+  /// No description provided for @friendRequestBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'This user is not accepting friend requests'**
+  String get friendRequestBlocked;
+
+  /// No description provided for @friendBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get friendBlock;
+
+  /// No description provided for @friendUnblock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock'**
+  String get friendUnblock;
+
+  /// No description provided for @friendBlockConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocking removes the friendship and prevents this user from sending you friend requests. Block?'**
+  String get friendBlockConfirm;
 
   /// No description provided for @userProfileUnknownEmail.
   ///
@@ -7204,6 +7342,18 @@ abstract class AppLocalizations {
   /// **'Allow admins to mark essence messages'**
   String get groupEssenceFeatureDesc;
 
+  /// No description provided for @groupPublicMessagesFeature.
+  ///
+  /// In en, this message translates to:
+  /// **'Public Message Preview'**
+  String get groupPublicMessagesFeature;
+
+  /// No description provided for @groupPublicMessagesFeatureDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow non-members to read group messages'**
+  String get groupPublicMessagesFeatureDesc;
+
   /// No description provided for @groupTransferOwner.
   ///
   /// In en, this message translates to:
@@ -7701,6 +7851,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use periodic synchronization when the connection is unstable'**
   String get settingsWeakNetworkDesc;
+
+  /// No description provided for @settingsSyncModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync mode'**
+  String get settingsSyncModeTitle;
+
+  /// No description provided for @settingsSyncModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Full sync keeps every chat complete offline. Browsing mode syncs only the chats you open (offline completeness not guaranteed).'**
+  String get settingsSyncModeDesc;
+
+  /// No description provided for @settingsSyncModeFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Full sync'**
+  String get settingsSyncModeFull;
+
+  /// No description provided for @settingsSyncModeBrowsing.
+  ///
+  /// In en, this message translates to:
+  /// **'Browsing only'**
+  String get settingsSyncModeBrowsing;
 
   /// No description provided for @settingsDataSavingTitle.
   ///
@@ -8302,6 +8476,30 @@ abstract class AppLocalizations {
   /// **'Application submitted, pending admin approval'**
   String get groupProfileJoinPending;
 
+  /// No description provided for @groupJoinMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Request Message'**
+  String get groupJoinMessageTitle;
+
+  /// No description provided for @groupJoinMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional: tell admins why you want to join'**
+  String get groupJoinMessageHint;
+
+  /// No description provided for @groupInviteMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation Message'**
+  String get groupInviteMessageTitle;
+
+  /// No description provided for @groupInviteMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional: note for reviewers'**
+  String get groupInviteMessageHint;
+
   /// No description provided for @groupProfileJoinFailed.
   ///
   /// In en, this message translates to:
@@ -8325,6 +8523,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Group Creator'**
   String get groupProfileCreator;
+
+  /// No description provided for @groupProfileInviteOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite only'**
+  String get groupProfileInviteOnly;
+
+  /// No description provided for @groupProfilePreviewSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Message preview'**
+  String get groupProfilePreviewSection;
+
+  /// No description provided for @groupProfilePreviewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only public messages are shown. Join the group to chat.'**
+  String get groupProfilePreviewHint;
+
+  /// No description provided for @groupProfilePreviewEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages to preview yet'**
+  String get groupProfilePreviewEmpty;
+
+  /// No description provided for @groupProfilePreviewLoadOlder.
+  ///
+  /// In en, this message translates to:
+  /// **'Load earlier messages'**
+  String get groupProfilePreviewLoadOlder;
 
   /// No description provided for @forwardSearchTitle.
   ///
@@ -9364,6 +9592,12 @@ abstract class AppLocalizations {
   /// **'Message is too long'**
   String get errorCodeValidationMessageTooLong;
 
+  /// No description provided for @errorCodeValidationRequestMessageTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Request message is too long'**
+  String get errorCodeValidationRequestMessageTooLong;
+
   /// No description provided for @errorCodeValidationMissingParameter.
   ///
   /// In en, this message translates to:
@@ -9615,6 +9849,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review Login Devices'**
   String get suspiciousLoginReviewSessions;
+
+  /// No description provided for @searchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get searchTitle;
+
+  /// No description provided for @searchTabUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Users'**
+  String get searchTabUsers;
+
+  /// No description provided for @searchTabGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups'**
+  String get searchTabGroups;
+
+  /// No description provided for @searchTabMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get searchTabMessages;
+
+  /// No description provided for @searchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search users, groups or messages'**
+  String get searchHint;
+
+  /// No description provided for @searchStartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter keywords to start searching'**
+  String get searchStartHint;
+
+  /// No description provided for @searchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No results found'**
+  String get searchNoResults;
+
+  /// No description provided for @searchMinLengthHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at least {count} characters'**
+  String searchMinLengthHint(int count);
+
+  /// No description provided for @searchGroupJoinDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Open to join'**
+  String get searchGroupJoinDirect;
+
+  /// No description provided for @searchGroupNeedReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval required'**
+  String get searchGroupNeedReview;
+
+  /// No description provided for @searchGroupInviteOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite only'**
+  String get searchGroupInviteOnly;
+
+  /// No description provided for @searchGroupMemberCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} members'**
+  String searchGroupMemberCount(int count);
+
+  /// No description provided for @errorCodeValidationSearchKeywordTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Search keyword is too short'**
+  String get errorCodeValidationSearchKeywordTooShort;
+
+  /// No description provided for @errorCodeFeatureDisabledPrivateChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Private chat is disabled on this server'**
+  String get errorCodeFeatureDisabledPrivateChat;
+
+  /// No description provided for @errorCodeFeatureDisabledGroupChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Group chat is disabled on this server'**
+  String get errorCodeFeatureDisabledGroupChat;
+
+  /// No description provided for @errorCodeFeatureDisabledGroupCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating groups is disabled on this server'**
+  String get errorCodeFeatureDisabledGroupCreate;
+
+  /// No description provided for @errorCodeFeatureDisabledFriendRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend requests are disabled on this server'**
+  String get errorCodeFeatureDisabledFriendRequest;
+
+  /// No description provided for @errorCodeFeatureDisabledForum.
+  ///
+  /// In en, this message translates to:
+  /// **'The forum is disabled on this server'**
+  String get errorCodeFeatureDisabledForum;
+
+  /// No description provided for @errorCodeFeatureDisabledSticker.
+  ///
+  /// In en, this message translates to:
+  /// **'Stickers are disabled on this server'**
+  String get errorCodeFeatureDisabledSticker;
+
+  /// No description provided for @errorCodeFeatureDisabledAnnouncement.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements are disabled on this server'**
+  String get errorCodeFeatureDisabledAnnouncement;
 }
 
 class _AppLocalizationsDelegate

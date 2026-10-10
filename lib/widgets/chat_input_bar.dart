@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import '../services/clipboard_attachment_service.dart';
 import '../services/auth_state.dart';
 import '../services/chat_ws_service.dart';
+import '../services/feature_flags.dart';
 import 'server_file_picker_sheet.dart';
 import 'stickers/sticker_autocomplete.dart';
 import 'stickers/sticker_picker_enhanced.dart';
@@ -63,11 +64,9 @@ class ChatInputBar extends StatefulWidget {
   State<ChatInputBar> createState() => _ChatInputBarState();
 }
 
-class _ChatInputBarState extends State<ChatInputBar>
-    with SingleTickerProviderStateMixin {
+class _ChatInputBarState extends State<ChatInputBar> {
   bool _isExpanded = false;
   bool _isVoiceMode = false;
-  late final TabController _tabController;
   late final FocusNode _inputFocusNode;
   /// @ 提及与贴纸自动补全共用的定位锚点：都锚定输入框左上角
   final LayerLink _inputLayerLink = LayerLink();
@@ -77,25 +76,30 @@ class _ChatInputBarState extends State<ChatInputBar>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _inputFocusNode = FocusNode(onKeyEvent: _handleInputKeyEvent);
     widget.controller.addListener(_handleTypingChanged);
     // 表情面板「最近使用」开关等设置变化时刷新
     SettingsService.instance.addListener(_onSettingsChanged);
+    // 贴纸功能开关变化时刷新「表情/贴纸」标签页
+    FeatureFlags.instance.addListener(_onFlagsChanged);
   }
 
   @override
   void dispose() {
     SettingsService.instance.removeListener(_onSettingsChanged);
+    FeatureFlags.instance.removeListener(_onFlagsChanged);
     widget.controller.removeListener(_handleTypingChanged);
     _typingTimer?.cancel();
     if (_typingActive) ChatWsService.instance.sendTyping(widget.roomId, false);
-    _tabController.dispose();
     _inputFocusNode.dispose();
     super.dispose();
   }
 
   void _onSettingsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _onFlagsChanged() {
     if (mounted) setState(() {});
   }
 
@@ -248,6 +252,7 @@ class _ChatInputBarState extends State<ChatInputBar>
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
+    final showSticker = FeatureFlags.instance.sticker;
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -421,60 +426,62 @@ class _ChatInputBarState extends State<ChatInputBar>
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeInOut,
               child: _isExpanded
-                  ? Container(
-                      height: 300,
-                      margin: const EdgeInsets.only(top: 8, bottom: 3),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          width: 1,
-                          color: colorScheme.outline.withValues(alpha: 0.3),
-                        ),
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(24),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: TabBar(
-                              controller: _tabController,
-                              tabs: [
-                                Tab(text: l10n.chatFunctionTabFiles),
-                                Tab(text: l10n.chatFunctionTabEmoji),
-                                Tab(text: l10n.chatFunctionTabSpecial),
-                              ],
-                              labelStyle: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              unselectedLabelStyle: const TextStyle(
-                                fontSize: 13,
-                              ),
-                              indicatorSize: TabBarIndicatorSize.label,
-                              labelColor: colorScheme.primary,
-                              unselectedLabelColor:
-                                  colorScheme.onSurfaceVariant,
-                              indicatorPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              dividerColor: Colors.transparent,
-                              tabAlignment: TabAlignment.center,
-                              splashFactory: NoSplash.splashFactory,
-                            ),
+                  ? DefaultTabController(
+                      length: showSticker ? 3 : 2,
+                      child: Container(
+                        height: 300,
+                        margin: const EdgeInsets.only(top: 8, bottom: 3),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            width: 1,
+                            color: colorScheme.outline.withValues(alpha: 0.3),
                           ),
-                          const Divider(height: 1),
-                          Expanded(
-                            child: TabBarView(
-                              controller: _tabController,
-                              children: [
-                                _buildFilesTab(colorScheme, l10n),
-                                _buildEmojiTab(),
-                                _buildSpecialMessagesTab(colorScheme, l10n),
-                              ],
-                            ),
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(24),
                           ),
-                        ],
+                        ),
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: TabBar(
+                                tabs: [
+                                  Tab(text: l10n.chatFunctionTabFiles),
+                                  if (showSticker)
+                                    Tab(text: l10n.chatFunctionTabEmoji),
+                                  Tab(text: l10n.chatFunctionTabSpecial),
+                                ],
+                                labelStyle: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                unselectedLabelStyle: const TextStyle(
+                                  fontSize: 13,
+                                ),
+                                indicatorSize: TabBarIndicatorSize.label,
+                                labelColor: colorScheme.primary,
+                                unselectedLabelColor:
+                                    colorScheme.onSurfaceVariant,
+                                indicatorPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                dividerColor: Colors.transparent,
+                                tabAlignment: TabAlignment.center,
+                                splashFactory: NoSplash.splashFactory,
+                              ),
+                            ),
+                            const Divider(height: 1),
+                            Expanded(
+                              child: TabBarView(
+                                children: [
+                                  _buildFilesTab(colorScheme, l10n),
+                                  if (showSticker) _buildEmojiTab(),
+                                  _buildSpecialMessagesTab(colorScheme, l10n),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     )
                   : const SizedBox.shrink(),

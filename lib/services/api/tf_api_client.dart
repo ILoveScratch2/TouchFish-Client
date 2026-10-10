@@ -12,6 +12,8 @@ import 'tf_crypto.dart';
 import '../../models/message_model.dart';
 import '../../constants/app_constants.dart';
 import '../../models/user_profile.dart';
+import '../../models/friend_request.dart';
+import '../../models/search_result.dart';
 import '../../models/forum_model.dart';
 import '../../models/sticker_model.dart';
 import '../../models/announcement_model.dart';
@@ -19,6 +21,7 @@ import '../../models/notification_model.dart';
 import '../../models/api_error.dart';
 import '../../models/file_attachment.dart';
 import '../server_connection_status_service.dart';
+import '../feature_flags.dart';
 import '../rsa_key_trust_service.dart';
 import '../device_identity_service.dart';
 import '../../widgets/server_selector.dart';
@@ -86,12 +89,14 @@ class TfChatListItem {
   final double? lastTime;
   final int? lastSenderUid;
   final int? lastMid;
+  final int? lastSeq;
   final bool lastDeleted;
   final bool isFriend;
   final bool? isPinned;
   final int? notifyLevel;
   final String? alias;
   final String? description;
+  final int unreadCount;
 
   const TfChatListItem({
     required this.roomId,
@@ -104,12 +109,14 @@ class TfChatListItem {
     this.lastTime,
     this.lastSenderUid,
     this.lastMid,
+    this.lastSeq,
     this.lastDeleted = false,
     required this.isFriend,
     this.isPinned,
     this.notifyLevel,
     this.alias,
     this.description,
+    this.unreadCount = 0,
   });
 
   String? get visibleLastContent => lastDeleted ? null : lastContent;
@@ -126,12 +133,178 @@ class TfChatListItem {
       lastTime: (json['last_time'] as num?)?.toDouble(),
       lastSenderUid: (json['last_sender_uid'] as num?)?.toInt(),
       lastMid: (json['last_mid'] as num?)?.toInt(),
+      lastSeq: (json['last_seq'] as num?)?.toInt(),
       lastDeleted: json['last_deleted'] as bool? ?? false,
       isFriend: json['is_friend'] as bool? ?? false,
       isPinned: json['is_pinned'] as bool?,
       notifyLevel: (json['notify_level'] as num?)?.toInt(),
       alias: json['alias'] as String?,
       description: json['description'] as String?,
+      unreadCount: (json['unread_count'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+/// 服务器功能开关（`/info` 下发的归一化结果）。缺省/类型不对时按开启处理。
+class TfFeatureFlags {
+  final bool privateChat;
+  final bool groupChat;
+  final bool groupCreate;
+  final bool friendRequest;
+  final bool forum;
+  final bool sticker;
+  final bool announcement;
+
+  const TfFeatureFlags({
+    this.privateChat = true,
+    this.groupChat = true,
+    this.groupCreate = true,
+    this.friendRequest = true,
+    this.forum = true,
+    this.sticker = true,
+    this.announcement = true,
+  });
+
+  static bool _read(dynamic value) => value is bool ? value : true;
+
+  factory TfFeatureFlags.fromJson(Map<String, dynamic>? json) {
+    final chatRaw = json?['chat'];
+    final chat = chatRaw is Map ? chatRaw : const {};
+    return TfFeatureFlags(
+      privateChat: _read(chat['private_chat']),
+      groupChat: _read(chat['group_chat']),
+      groupCreate: _read(chat['group_create']),
+      friendRequest: _read(chat['friend_request']),
+      forum: _read(json?['forum']),
+      sticker: _read(json?['sticker']),
+      announcement: _read(json?['announcement']),
+    );
+  }
+
+  /// 提交给 `/auth/server_settings/update` 的完整快照。
+  Map<String, dynamic> toJson() => {
+    'chat': {
+      'private_chat': privateChat,
+      'group_chat': groupChat,
+      'group_create': groupCreate,
+      'friend_request': friendRequest,
+    },
+    'forum': forum,
+    'sticker': sticker,
+    'announcement': announcement,
+  };
+}
+
+/// 服务器可配置项规格（`/auth/server_settings/query` 的 `settings_spec`）。
+class TfSettingSpec {
+  final String key;
+  final String type;
+  final int? min;
+  final int? max;
+  final bool allowUnlimited;
+  final dynamic defaultValue;
+  final String category;
+  final List<String> options;
+
+  const TfSettingSpec({
+    required this.key,
+    required this.type,
+    this.min,
+    this.max,
+    this.allowUnlimited = false,
+    this.defaultValue,
+    this.category = '',
+    this.options = const [],
+  });
+
+  factory TfSettingSpec.fromJson(Map<String, dynamic> json) {
+    return TfSettingSpec(
+      key: json['key'] as String? ?? '',
+      type: json['type'] as String? ?? 'str',
+      min: (json['min'] as num?)?.toInt(),
+      max: (json['max'] as num?)?.toInt(),
+      allowUnlimited: json['allow_unlimited'] == true,
+      defaultValue: json['default'],
+      category: json['category'] as String? ?? '',
+      options: (json['options'] as List<dynamic>? ?? const [])
+          .map((value) => value.toString())
+          .toList(),
+    );
+  }
+}
+
+/// 群组预览成员（`/group/preview` 的 `members` 项）。
+class TfGroupPreviewMember {
+  final int uid;
+  final String username;
+  final String role;
+
+  const TfGroupPreviewMember({
+    required this.uid,
+    required this.username,
+    required this.role,
+  });
+
+  static TfGroupPreviewMember? fromJson(dynamic json) {
+    if (json is! Map) return null;
+    final uid = (json['uid'] as num?)?.toInt();
+    if (uid == null) return null;
+    return TfGroupPreviewMember(
+      uid: uid,
+      username: (json['username'] as String?) ?? 'User $uid',
+      role: (json['role'] as String?) ?? 'member',
+    );
+  }
+}
+
+/// 群组预览（`/group/preview`）。非成员时 `enterHint` 为空。
+class TfGroupPreview {
+  final int gid;
+  final String groupname;
+  final String introduction;
+  final String enterHint;
+  final int memberCount;
+  final bool isMember;
+  final bool allowDirectJoin;
+  final bool requireReview;
+  final bool publicMessages;
+  final bool essenceEnabled;
+  final List<TfGroupPreviewMember> members;
+
+  const TfGroupPreview({
+    required this.gid,
+    required this.groupname,
+    required this.introduction,
+    required this.enterHint,
+    required this.memberCount,
+    required this.isMember,
+    required this.allowDirectJoin,
+    required this.requireReview,
+    required this.publicMessages,
+    required this.essenceEnabled,
+    required this.members,
+  });
+
+  factory TfGroupPreview.fromJson(Map<String, dynamic> json) {
+    final rawMembers = json['members'];
+    final members = rawMembers is List
+        ? rawMembers
+              .map(TfGroupPreviewMember.fromJson)
+              .whereType<TfGroupPreviewMember>()
+              .toList()
+        : const <TfGroupPreviewMember>[];
+    return TfGroupPreview(
+      gid: (json['gid'] as num?)?.toInt() ?? 0,
+      groupname: (json['groupname'] as String?) ?? '',
+      introduction: (json['introduction'] as String?) ?? '',
+      enterHint: (json['enter_hint'] as String?) ?? '',
+      memberCount: (json['member_count'] as num?)?.toInt() ?? 0,
+      isMember: json['is_member'] == true,
+      allowDirectJoin: json['allow_direct_join'] == true,
+      requireReview: json['require_review'] == true,
+      publicMessages: json['public_messages'] == true,
+      essenceEnabled: json['essence_enabled'] != false,
+      members: members,
     );
   }
 }
@@ -149,6 +322,8 @@ class TfServerConfig {
   final int? singleGroupMaxPeople;
   final int? maxFileSize;
   final int? maxMessageLength;
+  final int maxRequestMessageLength;
+  final int minSearchLength;
   final int minGroupNameLength;
   final int maxGroupNameLength;
   final String? verifyEmail;
@@ -180,6 +355,8 @@ class TfServerConfig {
   final String? fileDownloadMode;
   final bool mediaFeatures;
   final List<Map<String, dynamic>> iceServers;
+  final TfFeatureFlags features;
+  final List<TfSettingSpec> settingsSpec;
 
   const TfServerConfig({
     required this.captcha,
@@ -194,6 +371,8 @@ class TfServerConfig {
     this.singleGroupMaxPeople,
     this.maxFileSize,
     this.maxMessageLength,
+    this.maxRequestMessageLength = 200,
+    this.minSearchLength = 2,
     this.minGroupNameLength = 1,
     this.maxGroupNameLength = 50,
     this.verifyEmail,
@@ -225,6 +404,8 @@ class TfServerConfig {
     this.fileDownloadMode,
     this.mediaFeatures = true,
     this.iceServers = const [],
+    this.features = const TfFeatureFlags(),
+    this.settingsSpec = const [],
   });
 
   static int _parseIntValue(dynamic value, int fallback) {
@@ -288,6 +469,11 @@ class TfServerConfig {
       ),
       maxFileSize: _parseOptionalIntValue(json['max_file_size']),
       maxMessageLength: _parseOptionalIntValue(json['max_message_length']),
+      maxRequestMessageLength: _parseIntValue(
+        json['max_request_message_length'],
+        200,
+      ),
+      minSearchLength: _parseIntValue(json['min_search_length'], 2),
       minGroupNameLength: _parseIntValue(json['min_group_name_length'], 1),
       maxGroupNameLength: _parseIntValue(json['max_group_name_length'], 50),
       verifyEmail: json['verify_email'] as String?,
@@ -338,6 +524,15 @@ class TfServerConfig {
       fileDownloadMode: json['file_download_mode'] as String?,
       mediaFeatures: json['media_features'] as bool? ?? true,
       iceServers: iceServers,
+      features: TfFeatureFlags.fromJson(
+        json['features'] is Map
+            ? Map<String, dynamic>.from(json['features'] as Map)
+            : null,
+      ),
+      settingsSpec: (json['settings_spec'] as List<dynamic>? ?? const [])
+          .whereType<Map>()
+          .map((raw) => TfSettingSpec.fromJson(Map<String, dynamic>.from(raw)))
+          .toList(),
     );
   }
 
@@ -1225,6 +1420,7 @@ class TfApiClient {
         jsonDecode(response.body) as Map<String, dynamic>,
       );
       _cachedServerConfig = config;
+      unawaited(FeatureFlags.instance.apply(config.features));
       return config;
     } catch (e) {
       talker.error('fetchServerInfo failed', e);
@@ -1285,6 +1481,7 @@ class TfApiClient {
     int? maxStickerStorageQuota,
     String? fileDownloadMode,
     bool? mediaFeatures,
+    TfFeatureFlags? features,
   }) async {
     final result = await secretPost(
       '/auth/server_settings/update',
@@ -1323,6 +1520,7 @@ class TfApiClient {
         'max_sticker_storage_quota': ?maxStickerStorageQuota,
         'file_download_mode': ?fileDownloadMode,
         'media_features': ?mediaFeatures,
+        'features': ?features?.toJson(),
       },
       uid: uid,
       password: password,
@@ -1857,6 +2055,51 @@ class TfApiClient {
       password: password,
     );
     return _parseBool(result);
+  }
+
+  /// 设置邮箱是否对外公开（默认公开）。公开查询接口会按此裁剪 email。
+  Future<bool> changePublicEmail(
+    int uid,
+    String password,
+    bool publicEmail,
+  ) async {
+    final result = await secretPost(
+      '/auth/change_public_email',
+      {'public_email': publicEmail},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  /// 查询自己的完整资料（含被隐藏的邮箱与 public_email 开关）。
+  /// 失败（如旧服务器无此端点）返回 null，调用方回退 [getUserByUid]。
+  Future<UserProfile?> getSelfProfile({
+    int avatarVersion = 0,
+    int? uid,
+    String? password,
+  }) async {
+    final result = await secretPost(
+      '/auth/query_self',
+      {},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return null;
+    try {
+      final data = jsonDecode(result) as Map<String, dynamic>;
+      if (data.isEmpty || data['uid'] == null) return null;
+      final baseUrl = await getBaseUrl();
+      final selfUid = (data['uid'] as num).toInt();
+      return UserProfile.fromServerJson(
+        data,
+        '$baseUrl/avatar/get_avatar/user/$selfUid',
+        avatarVersion: avatarVersion,
+      );
+    } catch (e) {
+      talker.error('getSelfProfile parse failed', e);
+      return null;
+    }
   }
 
   Future<bool> changePassword(
@@ -2665,6 +2908,9 @@ class TfApiClient {
         'room_id': roomId,
         'last_seq': lastSeq,
         'last_mid': ?lastMid,
+        // 声明事件轨道能力：sync 会返回事件行（撤回/置顶等变更），
+        // 未声明的旧客户端拿不到（被服务端过滤成永久空洞）。
+        'capabilities': const ['event_stream_v1'],
         if (missingSequences.isNotEmpty) 'missing_sequences': missingSequences,
         if (missingSequenceRanges.isNotEmpty)
           'missing_sequence_ranges': missingSequenceRanges,
@@ -2740,6 +2986,54 @@ class TfApiClient {
     );
     talker.info(
       'dealFriendShip: uid=$uid dealt=$dealtUid stat=$stat rawResult=$result parsed=${_parseBool(result)}',
+    );
+    return _parseBool(result);
+  }
+
+  /// 待处理的好友申请列表（含申请留言）。
+  Future<List<FriendRequestEntry>> queryFriendRequests(
+    int uid,
+    String password,
+  ) async {
+    final result = await secretPost(
+      '/friend/requests',
+      {},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return [];
+    try {
+      return (jsonDecode(result) as List<dynamic>)
+          .map(
+            (e) => FriendRequestEntry.fromJson(
+              Map<String, dynamic>.from(e as Map),
+            ),
+          )
+          .toList();
+    } catch (e) {
+      talker.error('queryFriendRequests parse failed', e);
+      return [];
+    }
+  }
+
+  /// 拉黑用户（会覆盖现有好友关系，破坏性）。
+  Future<bool> blockUser(int uid, String password, int target) async {
+    final result = await secretPost(
+      '/friend/block',
+      {'target': target},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  /// 解除拉黑（幂等）。
+  Future<bool> unblockUser(int uid, String password, int target) async {
+    final result = await secretPost(
+      '/friend/unblock',
+      {'target': target},
+      uid: uid,
+      password: password,
     );
     return _parseBool(result);
   }
@@ -3396,6 +3690,82 @@ class TfApiClient {
     return groups;
   }
 
+  /// 群组预览（secret）。任意登录用户可调用，用于加入前查看。
+  Future<TfGroupPreview?> previewGroup(
+    int uid,
+    String password,
+    int gid,
+  ) async {
+    final result = await secretPost(
+      '/group/preview',
+      {'gid': gid},
+      uid: uid,
+      password: password,
+    );
+    final data = _parseJsonMap(result);
+    if (data == null) return null;
+    return TfGroupPreview.fromJson(data);
+  }
+
+  /// 按用户名搜索用户（secret）。服务端不返回 email。
+  Future<List<UserSearchEntry>> searchUsers(
+    int uid,
+    String password,
+    String keyword, {
+    int limit = 20,
+  }) async {
+    final result = await secretPost(
+      '/user/search',
+      {'keyword': keyword, 'limit': limit},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) {
+      throw StateError('searchUsers request failed');
+    }
+    final decoded = jsonDecode(result);
+    if (decoded is List) {
+      return decoded
+          .whereType<Map>()
+          .map((e) => UserSearchEntry.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+    if (decoded is Map) {
+      throw ApiErrorException(
+        ApiError.fromResponse(Map<String, dynamic>.from(decoded)),
+      );
+    }
+    return [];
+  }
+
+  /// 按群名搜索群组（secret，分页）。仅返回公开字段。
+  Future<GroupSearchPage> searchGroups(
+    int uid,
+    String password,
+    String keyword, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final result = await secretPost(
+      '/group/search',
+      {'keyword': keyword, 'limit': limit, 'offset': offset},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) {
+      throw StateError('searchGroups request failed');
+    }
+    final decoded = jsonDecode(result);
+    if (decoded is Map) {
+      final map = Map<String, dynamic>.from(decoded);
+      if (map['success'] == false || map['error'] != null) {
+        throw ApiErrorException(ApiError.fromResponse(map));
+      }
+      return GroupSearchPage.fromJson(map);
+    }
+    return const GroupSearchPage(groups: [], hasMore: false);
+  }
+
   Future<int?> createGroup(
     int uid,
     String password, {
@@ -3626,11 +3996,16 @@ class TfApiClient {
   Future<Map<String, dynamic>?> joinGroup(
     int uid,
     String password,
-    int gid,
-  ) async {
+    int gid, {
+    String? message,
+  }) async {
     final result = await secretPost(
       '/group/join',
-      {'gid': gid},
+      {
+        'gid': gid,
+        if (message != null && message.trim().isNotEmpty)
+          'message': message.trim(),
+      },
       uid: uid,
       password: password,
     );
@@ -3641,11 +4016,17 @@ class TfApiClient {
     int uid,
     String password,
     int gid,
-    int invitedUid,
-  ) async {
+    int invitedUid, {
+    String? message,
+  }) async {
     final result = await secretPost(
       '/group/invite',
-      {'gid': gid, 'invited_uid': invitedUid},
+      {
+        'gid': gid,
+        'invited_uid': invitedUid,
+        if (message != null && message.trim().isNotEmpty)
+          'message': message.trim(),
+      },
       uid: uid,
       password: password,
     );

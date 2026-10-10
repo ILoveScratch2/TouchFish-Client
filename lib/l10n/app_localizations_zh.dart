@@ -1338,6 +1338,51 @@ class AppLocalizationsZh extends AppLocalizations {
   String get adminServerSectionStickers => '贴图';
 
   @override
+  String get adminServerSectionFeatures => '功能开关';
+
+  @override
+  String get adminFeaturePrivateChat => '私聊';
+
+  @override
+  String get adminFeaturePrivateChatDescription => '允许用户发送一对一消息。';
+
+  @override
+  String get adminFeatureGroupChat => '群聊';
+
+  @override
+  String get adminFeatureGroupChatDescription => '允许在群聊中发消息、申请入群或邀请他人入群。';
+
+  @override
+  String get adminFeatureGroupCreate => '创建群聊';
+
+  @override
+  String get adminFeatureGroupCreateDescription => '允许用户创建新的群聊。';
+
+  @override
+  String get adminFeatureFriendRequest => '好友申请';
+
+  @override
+  String get adminFeatureFriendRequestDescription => '允许发送好友申请与添加好友。';
+
+  @override
+  String get adminFeatureForum => '论坛';
+
+  @override
+  String get adminFeatureForumDescription => '启用论坛功能。';
+
+  @override
+  String get adminFeatureSticker => '贴图';
+
+  @override
+  String get adminFeatureStickerDescription => '启用贴图包与贴图选择器。';
+
+  @override
+  String get adminFeatureAnnouncement => '公告';
+
+  @override
+  String get adminFeatureAnnouncementDescription => '启用服务器公告。';
+
+  @override
   String get adminServerFieldMaxStickerPacks => '每用户贴图包上限';
 
   @override
@@ -1712,6 +1757,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get profileEditEmail => '邮箱';
+
+  @override
+  String get accountPublicEmailTitle => '公开邮箱';
+
+  @override
+  String get accountPublicEmailDesc => '关闭后其他人将看不到你的邮箱（默认公开）';
 
   @override
   String get profileEditBio => '个性签名';
@@ -2476,6 +2527,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get userProfileAddFriend => '添加好友';
+
+  @override
+  String get friendRequestsTitle => '好友申请';
+
+  @override
+  String get friendRequestEmpty => '暂无好友申请';
+
+  @override
+  String get friendRequestBlocked => '对方已设置不接受好友申请';
+
+  @override
+  String get friendBlock => '拉黑';
+
+  @override
+  String get friendUnblock => '解除拉黑';
+
+  @override
+  String get friendBlockConfirm => '拉黑后将解除好友关系，且对方无法再向你发送好友申请。确定拉黑？';
 
   @override
   String get userProfileUnknownEmail => '未知';
@@ -3752,6 +3821,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get groupEssenceFeatureDesc => '允许管理员标记精华消息';
 
   @override
+  String get groupPublicMessagesFeature => '公开消息预览';
+
+  @override
+  String get groupPublicMessagesFeatureDesc => '允许非群成员只读查看群消息';
+
+  @override
   String get groupTransferOwner => '转让群主';
 
   @override
@@ -4007,6 +4082,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsWeakNetworkDesc => '网络不稳定时使用定时同步';
+
+  @override
+  String get settingsSyncModeTitle => '同步模式';
+
+  @override
+  String get settingsSyncModeDesc =>
+      '完整同步会离线保存全部聊天记录；仅浏览模式只同步你打开过的会话（不保证离线完整）。';
+
+  @override
+  String get settingsSyncModeFull => '完整同步';
+
+  @override
+  String get settingsSyncModeBrowsing => '仅浏览';
 
   @override
   String get settingsDataSavingTitle => '省流量模式';
@@ -4319,6 +4407,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get groupProfileJoinPending => '已提交入群申请，等待管理员审核';
 
   @override
+  String get groupJoinMessageTitle => '入群申请留言';
+
+  @override
+  String get groupJoinMessageHint => '选填：向管理员说明你为什么想加入';
+
+  @override
+  String get groupInviteMessageTitle => '邀请留言';
+
+  @override
+  String get groupInviteMessageHint => '选填：给审核人的说明';
+
+  @override
   String get groupProfileJoinFailed => '加入群聊失败';
 
   @override
@@ -4329,6 +4429,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get groupProfileCreator => '群主';
+
+  @override
+  String get groupProfileInviteOnly => '仅限邀请';
+
+  @override
+  String get groupProfilePreviewSection => '消息预览';
+
+  @override
+  String get groupProfilePreviewHint => '仅展示公开消息，加入群聊后可参与聊天。';
+
+  @override
+  String get groupProfilePreviewEmpty => '暂无可预览的消息';
+
+  @override
+  String get groupProfilePreviewLoadOlder => '加载更早的消息';
 
   @override
   String get forwardSearchTitle => '转发';
@@ -4869,6 +4984,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get errorCodeValidationMessageTooLong => '消息过长';
 
   @override
+  String get errorCodeValidationRequestMessageTooLong => '申请留言过长';
+
+  @override
   String get errorCodeValidationMissingParameter => '缺少必要参数';
 
   @override
@@ -5005,4 +5123,68 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get suspiciousLoginReviewSessions => '查看登录设备';
+
+  @override
+  String get searchTitle => '搜索';
+
+  @override
+  String get searchTabUsers => '用户';
+
+  @override
+  String get searchTabGroups => '群组';
+
+  @override
+  String get searchTabMessages => '消息';
+
+  @override
+  String get searchHint => '搜索用户、群组或消息';
+
+  @override
+  String get searchStartHint => '输入关键词开始搜索';
+
+  @override
+  String get searchNoResults => '没有找到结果';
+
+  @override
+  String searchMinLengthHint(int count) {
+    return '至少输入 $count 个字符';
+  }
+
+  @override
+  String get searchGroupJoinDirect => '可直接加入';
+
+  @override
+  String get searchGroupNeedReview => '需审核';
+
+  @override
+  String get searchGroupInviteOnly => '仅邀请';
+
+  @override
+  String searchGroupMemberCount(int count) {
+    return '$count 位成员';
+  }
+
+  @override
+  String get errorCodeValidationSearchKeywordTooShort => '搜索关键词过短';
+
+  @override
+  String get errorCodeFeatureDisabledPrivateChat => '本服务器已关闭私聊';
+
+  @override
+  String get errorCodeFeatureDisabledGroupChat => '本服务器已关闭群聊';
+
+  @override
+  String get errorCodeFeatureDisabledGroupCreate => '本服务器已关闭创建群聊';
+
+  @override
+  String get errorCodeFeatureDisabledFriendRequest => '本服务器已关闭好友申请';
+
+  @override
+  String get errorCodeFeatureDisabledForum => '本服务器已关闭论坛';
+
+  @override
+  String get errorCodeFeatureDisabledSticker => '本服务器已关闭贴图';
+
+  @override
+  String get errorCodeFeatureDisabledAnnouncement => '本服务器已关闭公告';
 }

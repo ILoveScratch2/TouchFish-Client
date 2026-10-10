@@ -24,6 +24,7 @@ class ProfileEditScreen extends StatefulWidget {
 class _ProfileEditScreenState extends State<ProfileEditScreen> {
   UserProfile? _currentUser;
   bool _isSubmitting = false;
+  bool _publicEmail = true;
 
   // File picker
   PlatformFile? _selectedAvatar;
@@ -50,6 +51,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       _emailController.text = user.email;
       _bioController.text = user.personalSign ?? '';
       _introductionController.text = user.introduction ?? '';
+      _publicEmail = user.publicEmail;
     });
   }
 
@@ -168,6 +170,16 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           uid,
           password,
           newEmail,
+        );
+        if (!ok) allOk = false;
+      }
+
+      // 邮箱是否对外公开（默认公开）
+      if (_publicEmail != _currentUser!.publicEmail) {
+        final ok = await TfApiClient.instance.changePublicEmail(
+          uid,
+          password,
+          _publicEmail,
         );
         if (!ok) allOk = false;
       }
@@ -336,7 +348,19 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     keyboardType: TextInputType.emailAddress,
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
+
+                  // 邮箱是否公开
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.accountPublicEmailTitle),
+                    subtitle: Text(l10n.accountPublicEmailDesc),
+                    value: _publicEmail,
+                    onChanged: (value) =>
+                        setState(() => _publicEmail = value),
+                  ),
+
+                  const SizedBox(height: 8),
 
                   // Bio / Personal Sign
                   TextField(

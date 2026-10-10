@@ -46,14 +46,6 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
     super.dispose();
   }
 
-  static bool _allowsDirectJoin(dynamic value) {
-    if (value == null) return false;
-    if (value is bool) return value;
-    if (value is num) return value != 0;
-    if (value is String) return value == '1' || value.toLowerCase() == 'true';
-    return false;
-  }
-
   Future<void> _search() async {
     final keyword = _controller.text.trim();
     if (keyword.isEmpty) {
@@ -77,9 +69,7 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
       }
       if (!mounted) return;
       setState(() {
-        _results = results
-            .where((g) => _allowsDirectJoin(g['allow_direct_join']))
-            .toList();
+        _results = results;
         _loading = false;
       });
     } catch (e) {
@@ -169,6 +159,35 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
   }
 
 
+  static bool _truthy(dynamic value) {
+    if (value == null) return false;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) return value == '1' || value.toLowerCase() == 'true';
+    return false;
+  }
+
+  String _joinLabel(AppLocalizations l10n, Map<String, dynamic> group) {
+    if (_truthy(group['allow_direct_join'])) return l10n.searchGroupJoinDirect;
+    if (_truthy(group['require_review'])) return l10n.searchGroupNeedReview;
+    return l10n.searchGroupInviteOnly;
+  }
+
+  Widget _joinBadge(ColorScheme colorScheme, String text) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 12, color: colorScheme.onSecondaryContainer),
+      ),
+    );
+  }
+
   Widget _buildResultList(
     BuildContext context,
     AppLocalizations l10n,
@@ -211,6 +230,7 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _joinBadge(colorScheme, _joinLabel(l10n, group)),
               if (enterHint.isNotEmpty)
                 Text(
                   enterHint,

@@ -194,6 +194,8 @@ class AuthState extends ChangeNotifier {
           // 启动 token 自动刷新
           TokenRefreshManager.instance.startAutoRefresh(_tokenExpiresAt);
           _notifySessionChanged();
+          // 恢复成功后补一次本人资料刷新（含被隐藏的邮箱与 public_email 开关）
+          unawaited(refreshProfile());
           return true;
         }
         // token 被服务器明确拒绝（过期/吊销）且无法 refresh
@@ -251,6 +253,8 @@ class AuthState extends ChangeNotifier {
           );
 
           _notifySessionChanged();
+          // 恢复成功后补一次本人资料刷新（含被隐藏的邮箱与 public_email 开关）
+          unawaited(refreshProfile());
           return true;
         }
         _restoreFailureReason = RestoreFailureReason.credentials;
@@ -503,10 +507,18 @@ class AuthState extends ChangeNotifier {
   Future<void> refreshProfile() async {
     if (_uid == null) return;
     try {
-      final profile = await TfApiClient.instance.getUserByUid(
-        _uid!,
-        avatarVersion: _avatarVersion,
-      );
+      // 本人资料优先走鉴权端点：能看到被隐藏的真实邮箱与 public_email 开关；
+      // 旧服务器没有该端点时回退到公开查询（行为与以前一致）。
+      final profile =
+          await TfApiClient.instance.getSelfProfile(
+            uid: _uid,
+            password: _password,
+            avatarVersion: _avatarVersion,
+          ) ??
+          await TfApiClient.instance.getUserByUid(
+            _uid!,
+            avatarVersion: _avatarVersion,
+          );
       if (profile != null) {
         _currentUser = profile;
         notifyListeners();

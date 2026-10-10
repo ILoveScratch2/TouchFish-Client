@@ -1412,6 +1412,57 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminServerSectionStickers => 'Stickers';
 
   @override
+  String get adminServerSectionFeatures => 'Feature Toggles';
+
+  @override
+  String get adminFeaturePrivateChat => 'Private chat';
+
+  @override
+  String get adminFeaturePrivateChatDescription =>
+      'Allow users to send one-to-one messages.';
+
+  @override
+  String get adminFeatureGroupChat => 'Group chat';
+
+  @override
+  String get adminFeatureGroupChatDescription =>
+      'Allow sending messages in groups, and joining or inviting to groups.';
+
+  @override
+  String get adminFeatureGroupCreate => 'Create groups';
+
+  @override
+  String get adminFeatureGroupCreateDescription =>
+      'Allow users to create new groups.';
+
+  @override
+  String get adminFeatureFriendRequest => 'Friend requests';
+
+  @override
+  String get adminFeatureFriendRequestDescription =>
+      'Allow sending friend requests and adding friends.';
+
+  @override
+  String get adminFeatureForum => 'Forum';
+
+  @override
+  String get adminFeatureForumDescription => 'Enable the forum feature.';
+
+  @override
+  String get adminFeatureSticker => 'Stickers';
+
+  @override
+  String get adminFeatureStickerDescription =>
+      'Enable sticker packs and the sticker picker.';
+
+  @override
+  String get adminFeatureAnnouncement => 'Announcements';
+
+  @override
+  String get adminFeatureAnnouncementDescription =>
+      'Enable server announcements.';
+
+  @override
   String get adminServerFieldMaxStickerPacks => 'Sticker packs per user';
 
   @override
@@ -1803,6 +1854,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileEditEmail => 'Email';
+
+  @override
+  String get accountPublicEmailTitle => 'Public Email';
+
+  @override
+  String get accountPublicEmailDesc =>
+      'Others cannot see your email when disabled (public by default)';
 
   @override
   String get profileEditBio => 'Bio';
@@ -2589,6 +2647,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get userProfileAddFriend => 'Add Friend';
+
+  @override
+  String get friendRequestsTitle => 'Friend Requests';
+
+  @override
+  String get friendRequestEmpty => 'No pending friend requests';
+
+  @override
+  String get friendRequestBlocked =>
+      'This user is not accepting friend requests';
+
+  @override
+  String get friendBlock => 'Block';
+
+  @override
+  String get friendUnblock => 'Unblock';
+
+  @override
+  String get friendBlockConfirm =>
+      'Blocking removes the friendship and prevents this user from sending you friend requests. Block?';
 
   @override
   String get userProfileUnknownEmail => 'Unknown';
@@ -3909,6 +3987,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupEssenceFeatureDesc => 'Allow admins to mark essence messages';
 
   @override
+  String get groupPublicMessagesFeature => 'Public Message Preview';
+
+  @override
+  String get groupPublicMessagesFeatureDesc =>
+      'Allow non-members to read group messages';
+
+  @override
   String get groupTransferOwner => 'Transfer Ownership';
 
   @override
@@ -4179,6 +4264,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsWeakNetworkDesc =>
       'Use periodic synchronization when the connection is unstable';
+
+  @override
+  String get settingsSyncModeTitle => 'Sync mode';
+
+  @override
+  String get settingsSyncModeDesc =>
+      'Full sync keeps every chat complete offline. Browsing mode syncs only the chats you open (offline completeness not guaranteed).';
+
+  @override
+  String get settingsSyncModeFull => 'Full sync';
+
+  @override
+  String get settingsSyncModeBrowsing => 'Browsing only';
 
   @override
   String get settingsDataSavingTitle => 'Data saving mode';
@@ -4502,6 +4600,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Application submitted, pending admin approval';
 
   @override
+  String get groupJoinMessageTitle => 'Join Request Message';
+
+  @override
+  String get groupJoinMessageHint =>
+      'Optional: tell admins why you want to join';
+
+  @override
+  String get groupInviteMessageTitle => 'Invitation Message';
+
+  @override
+  String get groupInviteMessageHint => 'Optional: note for reviewers';
+
+  @override
   String get groupProfileJoinFailed => 'Failed to join the group';
 
   @override
@@ -4512,6 +4623,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupProfileCreator => 'Group Creator';
+
+  @override
+  String get groupProfileInviteOnly => 'Invite only';
+
+  @override
+  String get groupProfilePreviewSection => 'Message preview';
+
+  @override
+  String get groupProfilePreviewHint =>
+      'Only public messages are shown. Join the group to chat.';
+
+  @override
+  String get groupProfilePreviewEmpty => 'No messages to preview yet';
+
+  @override
+  String get groupProfilePreviewLoadOlder => 'Load earlier messages';
 
   @override
   String get forwardSearchTitle => 'Forward';
@@ -5084,6 +5211,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorCodeValidationMessageTooLong => 'Message is too long';
 
   @override
+  String get errorCodeValidationRequestMessageTooLong =>
+      'Request message is too long';
+
+  @override
   String get errorCodeValidationMissingParameter =>
       'A required parameter is missing';
 
@@ -5233,4 +5364,76 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get suspiciousLoginReviewSessions => 'Review Login Devices';
+
+  @override
+  String get searchTitle => 'Search';
+
+  @override
+  String get searchTabUsers => 'Users';
+
+  @override
+  String get searchTabGroups => 'Groups';
+
+  @override
+  String get searchTabMessages => 'Messages';
+
+  @override
+  String get searchHint => 'Search users, groups or messages';
+
+  @override
+  String get searchStartHint => 'Enter keywords to start searching';
+
+  @override
+  String get searchNoResults => 'No results found';
+
+  @override
+  String searchMinLengthHint(int count) {
+    return 'Enter at least $count characters';
+  }
+
+  @override
+  String get searchGroupJoinDirect => 'Open to join';
+
+  @override
+  String get searchGroupNeedReview => 'Approval required';
+
+  @override
+  String get searchGroupInviteOnly => 'Invite only';
+
+  @override
+  String searchGroupMemberCount(int count) {
+    return '$count members';
+  }
+
+  @override
+  String get errorCodeValidationSearchKeywordTooShort =>
+      'Search keyword is too short';
+
+  @override
+  String get errorCodeFeatureDisabledPrivateChat =>
+      'Private chat is disabled on this server';
+
+  @override
+  String get errorCodeFeatureDisabledGroupChat =>
+      'Group chat is disabled on this server';
+
+  @override
+  String get errorCodeFeatureDisabledGroupCreate =>
+      'Creating groups is disabled on this server';
+
+  @override
+  String get errorCodeFeatureDisabledFriendRequest =>
+      'Friend requests are disabled on this server';
+
+  @override
+  String get errorCodeFeatureDisabledForum =>
+      'The forum is disabled on this server';
+
+  @override
+  String get errorCodeFeatureDisabledSticker =>
+      'Stickers are disabled on this server';
+
+  @override
+  String get errorCodeFeatureDisabledAnnouncement =>
+      'Announcements are disabled on this server';
 }

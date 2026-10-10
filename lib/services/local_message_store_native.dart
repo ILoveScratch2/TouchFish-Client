@@ -175,6 +175,32 @@ class LocalMessageStore {
     ]);
   }
 
+  /// 房间是否被标记为"完整同步"（仅浏览模式用，已打开的会话升级后持久化）。
+  Future<Set<String>> loadSyncEnabledRooms() async {
+    final scope = _requireScope();
+    final db = await _db(scope.server, scope.uid);
+    final rows = db.select(
+      "SELECT key FROM metadata WHERE key LIKE 'sync_enabled:%'",
+    );
+    const prefix = 'sync_enabled:';
+    return {
+      for (final row in rows) (row['key'] as String).substring(prefix.length),
+    };
+  }
+
+  Future<void> setRoomSyncEnabled(String roomId, bool enabled) async {
+    final scope = _requireScope();
+    final db = await _db(scope.server, scope.uid);
+    if (enabled) {
+      db.execute('INSERT OR REPLACE INTO metadata(key, value) VALUES (?, ?)', [
+        'sync_enabled:$roomId',
+        '1',
+      ]);
+    } else {
+      db.execute('DELETE FROM metadata WHERE key = ?', ['sync_enabled:$roomId']);
+    }
+  }
+
   Future<void> _importSharedDatabase(
     Database db,
     Directory dir,
@@ -398,6 +424,46 @@ class LocalMessageStore {
       _upsert(db, server, uid, roomId, message);
     } catch (e) {
       talker.error('LocalMessageStore appendMessage error', e);
+    }
+  }
+
+  /// 单条 upsert（含已存在消息的字段升级，如 ack 回填/撤回）。
+  Future<void> saveMessage(String roomId, ChatMessage message) async {
+    final scope = _requireScope();
+    final server = scope.server;
+    final uid = scope.uid;
+    try {
+      final db = await _db(server, uid);
+      _upsert(db, server, uid, roomId, message);
+    } catch (e) {
+      talker.error('LocalMessageStore saveMessage error', e);
+    }
+  }
+
+  /// 事务批量 upsert，用于同步补拉等成批写入。
+  Future<void> appendMessages(
+    String roomId,
+    List<ChatMessage> messages,
+  ) async {
+    if (messages.isEmpty) return;
+    final scope = _requireScope();
+    final server = scope.server;
+    final uid = scope.uid;
+    try {
+      final db = await _db(server, uid);
+      db.execute('BEGIN IMMEDIATE');
+      var inTransaction = true;
+      try {
+        for (final message in messages) {
+          _upsert(db, server, uid, roomId, message);
+        }
+        db.execute('COMMIT');
+        inTransaction = false;
+      } finally {
+        if (inTransaction) db.execute('ROLLBACK');
+      }
+    } catch (e) {
+      talker.error('LocalMessageStore appendMessages error', e);
     }
   }
 

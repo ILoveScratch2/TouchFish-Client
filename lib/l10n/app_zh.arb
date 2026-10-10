@@ -498,6 +498,21 @@
   "adminServerSectionFiles": "文件",
   "adminServerSectionGroups": "群组",
   "adminServerSectionStickers": "贴图",
+  "adminServerSectionFeatures": "功能开关",
+  "adminFeaturePrivateChat": "私聊",
+  "adminFeaturePrivateChatDescription": "允许用户发送一对一消息。",
+  "adminFeatureGroupChat": "群聊",
+  "adminFeatureGroupChatDescription": "允许在群聊中发消息、申请入群或邀请他人入群。",
+  "adminFeatureGroupCreate": "创建群聊",
+  "adminFeatureGroupCreateDescription": "允许用户创建新的群聊。",
+  "adminFeatureFriendRequest": "好友申请",
+  "adminFeatureFriendRequestDescription": "允许发送好友申请与添加好友。",
+  "adminFeatureForum": "论坛",
+  "adminFeatureForumDescription": "启用论坛功能。",
+  "adminFeatureSticker": "贴图",
+  "adminFeatureStickerDescription": "启用贴图包与贴图选择器。",
+  "adminFeatureAnnouncement": "公告",
+  "adminFeatureAnnouncementDescription": "启用服务器公告。",
   "adminServerFieldMaxStickerPacks": "每用户贴图包上限",
   "adminServerFieldMaxStickersPerPack": "每贴图包贴图上限",
   "adminServerFieldMaxStickerSize": "贴图最大大小（字节，-1 不限）",
@@ -662,6 +677,8 @@
   "profileEditBasicInfo": "基本信息",
   "profileEditUsername": "用户名",
   "profileEditEmail": "邮箱",
+  "accountPublicEmailTitle": "公开邮箱",
+  "accountPublicEmailDesc": "关闭后其他人将看不到你的邮箱（默认公开）",
   "profileEditBio": "个性签名",
   "profileEditBioPlaceholder": "介绍一下自己...",
   "profileEditIntroduction": "个人简介",
@@ -925,6 +942,12 @@
   "userProfileSendMessage": "发送消息",
   "userProfileLoading": "加载用户资料中...",
   "userProfileAddFriend": "添加好友",
+  "friendRequestsTitle": "好友申请",
+  "friendRequestEmpty": "暂无好友申请",
+  "friendRequestBlocked": "对方已设置不接受好友申请",
+  "friendBlock": "拉黑",
+  "friendUnblock": "解除拉黑",
+  "friendBlockConfirm": "拉黑后将解除好友关系，且对方无法再向你发送好友申请。确定拉黑？",
   "userProfileUnknownEmail": "未知",
   
   "aboutTitle": "关于",
@@ -1497,6 +1520,8 @@
   "groupFeaturesSection": "群功能",
   "groupEssenceFeature": "精华消息",
   "groupEssenceFeatureDesc": "允许管理员标记精华消息",
+  "groupPublicMessagesFeature": "公开消息预览",
+  "groupPublicMessagesFeatureDesc": "允许非群成员只读查看群消息",
   "groupTransferOwner": "转让群主",
   "groupTransferOwnerConfirm": "转让后你将失去群主权限，确定继续吗？",
   "groupTransferOwnerConfirmAction": "确认转让",
@@ -1594,6 +1619,10 @@
 
   "settingsWeakNetworkTitle": "弱网模式",
   "settingsWeakNetworkDesc": "网络不稳定时使用定时同步",
+  "settingsSyncModeTitle": "同步模式",
+  "settingsSyncModeDesc": "完整同步会离线保存全部聊天记录；仅浏览模式只同步你打开过的会话（不保证离线完整）。",
+  "settingsSyncModeFull": "完整同步",
+  "settingsSyncModeBrowsing": "仅浏览",
   "settingsDataSavingTitle": "省流量模式",
   "settingsDataSavingDesc": "点击后才加载媒体内容",
   "settingsThumbnailPreviewTitle": "聊天图片使用缩略图",
@@ -1711,10 +1740,19 @@
   "groupProfileJoin": "加入群聊",
   "groupProfileJoinSuccess": "已加入群聊",
   "groupProfileJoinPending": "已提交入群申请，等待管理员审核",
+  "groupJoinMessageTitle": "入群申请留言",
+  "groupJoinMessageHint": "选填：向管理员说明你为什么想加入",
+  "groupInviteMessageTitle": "邀请留言",
+  "groupInviteMessageHint": "选填：给审核人的说明",
   "groupProfileJoinFailed": "加入群聊失败",
   "groupProfileAlreadyMember": "已在群中",
   "groupProfileNotFound": "群聊未找到",
   "groupProfileCreator": "群主",
+  "groupProfileInviteOnly": "仅限邀请",
+  "groupProfilePreviewSection": "消息预览",
+  "groupProfilePreviewHint": "仅展示公开消息，加入群聊后可参与聊天。",
+  "groupProfilePreviewEmpty": "暂无可预览的消息",
+  "groupProfilePreviewLoadOlder": "加载更早的消息",
 
   "forwardSearchTitle": "转发",
   "forwardSearchHint": "请搜索用户和群聊",
@@ -1924,6 +1962,7 @@
   "errorCodeValidationInvalidQuote": "引用的消息无效",
   "errorCodeValidationInvalidCallId": "通话 ID 无效",
   "errorCodeValidationMessageTooLong": "消息过长",
+  "errorCodeValidationRequestMessageTooLong": "申请留言过长",
   "errorCodeValidationMissingParameter": "缺少必要参数",
   "errorCodeFileNotOwned": "你不拥有此文件",
   "errorCodeFileUnavailable": "文件不可用",
@@ -2009,5 +2048,39 @@
   "suspiciousLoginLocation": "位置",
   "suspiciousLoginTime": "时间",
   "suspiciousLoginDismiss": "知道了",
-  "suspiciousLoginReviewSessions": "查看登录设备"
+  "suspiciousLoginReviewSessions": "查看登录设备",
+  "searchTitle": "搜索",
+  "searchTabUsers": "用户",
+  "searchTabGroups": "群组",
+  "searchTabMessages": "消息",
+  "searchHint": "搜索用户、群组或消息",
+  "searchStartHint": "输入关键词开始搜索",
+  "searchNoResults": "没有找到结果",
+  "searchMinLengthHint": "至少输入 {count} 个字符",
+  "@searchMinLengthHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchGroupJoinDirect": "可直接加入",
+  "searchGroupNeedReview": "需审核",
+  "searchGroupInviteOnly": "仅邀请",
+  "searchGroupMemberCount": "{count} 位成员",
+  "@searchGroupMemberCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errorCodeValidationSearchKeywordTooShort": "搜索关键词过短",
+  "errorCodeFeatureDisabledPrivateChat": "本服务器已关闭私聊",
+  "errorCodeFeatureDisabledGroupChat": "本服务器已关闭群聊",
+  "errorCodeFeatureDisabledGroupCreate": "本服务器已关闭创建群聊",
+  "errorCodeFeatureDisabledFriendRequest": "本服务器已关闭好友申请",
+  "errorCodeFeatureDisabledForum": "本服务器已关闭论坛",
+  "errorCodeFeatureDisabledSticker": "本服务器已关闭贴图",
+  "errorCodeFeatureDisabledAnnouncement": "本服务器已关闭公告"
 }

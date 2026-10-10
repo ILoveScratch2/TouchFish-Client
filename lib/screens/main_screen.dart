@@ -8,6 +8,7 @@ import '../models/app_state.dart';
 import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
 import '../services/forum_pending_service.dart';
+import '../services/feature_flags.dart';
 import '../services/notification_service.dart';
 import '../utils/wide_screen_helper.dart';
 
@@ -85,6 +86,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   List<_NavDestinationConfig> _buildDestinations(AppLocalizations l10n) {
+    final flags = FeatureFlags.instance;
     return [
       _NavDestinationConfig(
         route: AppRoutes.chat,
@@ -92,18 +94,20 @@ class _MainScreenState extends State<MainScreen> {
         icon: Icons.chat_bubble_outline,
         selectedIcon: Icons.chat_bubble,
       ),
-      _NavDestinationConfig(
-        route: AppRoutes.announcement,
-        label: l10n.navAnnouncement,
-        icon: Icons.campaign_outlined,
-        selectedIcon: Icons.campaign,
-      ),
-      _NavDestinationConfig(
-        route: AppRoutes.forum,
-        label: l10n.navForum,
-        icon: Icons.forum_outlined,
-        selectedIcon: Icons.forum,
-      ),
+      if (flags.announcement)
+        _NavDestinationConfig(
+          route: AppRoutes.announcement,
+          label: l10n.navAnnouncement,
+          icon: Icons.campaign_outlined,
+          selectedIcon: Icons.campaign,
+        ),
+      if (flags.forum)
+        _NavDestinationConfig(
+          route: AppRoutes.forum,
+          label: l10n.navForum,
+          icon: Icons.forum_outlined,
+          selectedIcon: Icons.forum,
+        ),
       _NavDestinationConfig(
         route: AppRoutes.account,
         label: l10n.navAccount,
@@ -133,7 +137,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: AuthState.instance,
+      animation: Listenable.merge([AuthState.instance, FeatureFlags.instance]),
       builder: (context, _) {
         final l10n = AppLocalizations.of(context)!;
         final destinations = _buildDestinations(l10n);

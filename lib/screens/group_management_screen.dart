@@ -370,12 +370,33 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
         invitedUid = int.tryParse(profile.uid);
       }
     }
+    if (!mounted) return;
     if (invitedUid != null) {
+      // 走审核流程的邀请：可选填写留言给审核人（管理员免审直入则跳过）
+      String? inviteMessage;
+      final needsReview = _settings?['require_review'] == true && !_isAdmin;
+      if (needsReview) {
+        final input = await showDialog<String>(
+          context: context,
+          builder: (ctx) => TextEntryDialog(
+            title: l10n.groupInviteMessageTitle,
+            hintText: l10n.groupInviteMessageHint,
+            cancelLabel: l10n.commonCancel,
+            confirmLabel: l10n.confirm,
+            icon: Icons.message_outlined,
+            maxLines: 3,
+            allowEmpty: true,
+          ),
+        );
+        if (input == null) return; // 用户取消
+        inviteMessage = input.isEmpty ? null : input;
+      }
       final ok = await TfApiClient.instance.inviteToGroup(
         _uid,
         _password,
         widget.gid,
         invitedUid,
+        message: inviteMessage,
       );
       if (ok != null) {
         _showSnack(
@@ -633,6 +654,14 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
             ? null
             : (v) => _toggleSetting('essence_enabled', v),
       ),
+      SwitchListTile.adaptive(
+        value: settings['public_messages'] == true,
+        title: Text(l10n.groupPublicMessagesFeature),
+        subtitle: Text(l10n.groupPublicMessagesFeatureDesc),
+        onChanged: _updatingSettings.contains('public_messages')
+            ? null
+            : (v) => _toggleSetting('public_messages', v),
+      ),
     ];
   }
 
@@ -707,6 +736,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
     final desc = inviter != null && inviter.isNotEmpty
         ? l10n.groupJoinInvitedBy(inviter)
         : l10n.groupJoinDirectRequest;
+    final message = (req['message'] as String? ?? '').trim();
 
     return ListTile(
       leading: CircleAvatar(
@@ -714,7 +744,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
         child: Icon(Icons.person_add, color: cs.onSecondaryContainer),
       ),
       title: Text(username),
-      subtitle: Text(desc),
+      subtitle: Text(message.isEmpty ? desc : '$desc\n$message'),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

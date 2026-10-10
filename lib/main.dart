@@ -30,6 +30,7 @@ import 'services/background_permission_service.dart';
 import 'services/desktop_app_lifecycle_service.dart';
 import 'services/forum_pending_service.dart';
 import 'services/single_instance_service.dart';
+import 'services/feature_flags.dart';
 import 'services/notification_service.dart';
 import 'services/server_connection_status_service.dart';
 import 'services/ip_override_service.dart';
@@ -80,6 +81,7 @@ Future<void> main() async {
 
     final startupRecovery = await _performStartupRecovery(isDesktop: isDesktop);
     await SettingsService.instance.init();
+    await FeatureFlags.instance.init();
     await LockService.instance.init();
     await IpOverrideService.instance.ensureDefaultDomain();
     await IpOverrideService.instance.refreshGlobal();

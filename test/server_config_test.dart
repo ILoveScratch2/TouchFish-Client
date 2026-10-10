@@ -53,6 +53,94 @@ void main() {
       expect(config.maxSignLength, isNull);
       expect(config.maxAvatarSize, isNull);
       expect(config.userStorageQuota, isNull);
+      expect(config.maxRequestMessageLength, 200);
+    });
+
+    test('parses max_request_message_length', () {
+      final config = TfServerConfig.fromJson(const {
+        'server_name': 'X',
+        'max_request_message_length': 500,
+      });
+      expect(config.maxRequestMessageLength, 500);
+    });
+
+    test('parses min_search_length with default 2', () {
+      final config = TfServerConfig.fromJson(const {
+        'server_name': 'X',
+        'min_search_length': 3,
+      });
+      expect(config.minSearchLength, 3);
+
+      final fallback = TfServerConfig.fromJson(const {'server_name': 'X'});
+      expect(fallback.minSearchLength, 2);
+    });
+
+    test('parses features and settings_spec', () {
+      final config = TfServerConfig.fromJson(const {
+        'server_name': 'X',
+        'features': {
+          'chat': {'private_chat': false, 'group_chat': true},
+          'forum': false,
+        },
+        'settings_spec': [
+          {
+            'key': 'max_message_length',
+            'type': 'int',
+            'min': 1,
+            'default': 10000,
+            'category': 'limits',
+          },
+          {
+            'key': 'file_download_mode',
+            'type': 'enum',
+            'options': ['redirect', 'proxy'],
+            'default': 'redirect',
+            'category': 'storage',
+          },
+        ],
+      });
+
+      expect(config.features.privateChat, isFalse);
+      expect(config.features.groupChat, isTrue);
+      expect(config.features.forum, isFalse);
+      expect(config.features.sticker, isTrue, reason: '缺省按开启');
+      expect(config.settingsSpec, hasLength(2));
+      expect(config.settingsSpec.first.key, 'max_message_length');
+      expect(config.settingsSpec.first.type, 'int');
+      expect(config.settingsSpec.first.min, 1);
+      expect(config.settingsSpec.last.options, ['redirect', 'proxy']);
+    });
+
+    test('features default to all enabled when absent', () {
+      final config = TfServerConfig.fromJson(const {'server_name': 'X'});
+      expect(config.features.privateChat, isTrue);
+      expect(config.features.groupChat, isTrue);
+      expect(config.features.groupCreate, isTrue);
+      expect(config.features.friendRequest, isTrue);
+      expect(config.features.forum, isTrue);
+      expect(config.features.sticker, isTrue);
+      expect(config.features.announcement, isTrue);
+      expect(config.settingsSpec, isEmpty);
+    });
+
+    test('features toJson round-trips', () {
+      const flags = TfFeatureFlags(
+        privateChat: false,
+        groupChat: true,
+        groupCreate: false,
+        friendRequest: true,
+        forum: false,
+        sticker: true,
+        announcement: false,
+      );
+      final round = TfFeatureFlags.fromJson(flags.toJson());
+      expect(round.privateChat, isFalse);
+      expect(round.groupChat, isTrue);
+      expect(round.groupCreate, isFalse);
+      expect(round.friendRequest, isTrue);
+      expect(round.forum, isFalse);
+      expect(round.sticker, isTrue);
+      expect(round.announcement, isFalse);
     });
   });
 }

@@ -509,6 +509,21 @@
   "adminServerSectionFiles": "Files",
   "adminServerSectionGroups": "Groups",
   "adminServerSectionStickers": "Stickers",
+  "adminServerSectionFeatures": "Feature Toggles",
+  "adminFeaturePrivateChat": "Private chat",
+  "adminFeaturePrivateChatDescription": "Allow users to send one-to-one messages.",
+  "adminFeatureGroupChat": "Group chat",
+  "adminFeatureGroupChatDescription": "Allow sending messages in groups, and joining or inviting to groups.",
+  "adminFeatureGroupCreate": "Create groups",
+  "adminFeatureGroupCreateDescription": "Allow users to create new groups.",
+  "adminFeatureFriendRequest": "Friend requests",
+  "adminFeatureFriendRequestDescription": "Allow sending friend requests and adding friends.",
+  "adminFeatureForum": "Forum",
+  "adminFeatureForumDescription": "Enable the forum feature.",
+  "adminFeatureSticker": "Stickers",
+  "adminFeatureStickerDescription": "Enable sticker packs and the sticker picker.",
+  "adminFeatureAnnouncement": "Announcements",
+  "adminFeatureAnnouncementDescription": "Enable server announcements.",
   "adminServerFieldMaxStickerPacks": "Sticker packs per user",
   "adminServerFieldMaxStickersPerPack": "Stickers per pack",
   "adminServerFieldMaxStickerSize": "Max sticker size (bytes, -1 unlimited)",
@@ -673,6 +688,8 @@
   "profileEditBasicInfo": "Basic Information",
   "profileEditUsername": "Username",
   "profileEditEmail": "Email",
+  "accountPublicEmailTitle": "Public Email",
+  "accountPublicEmailDesc": "Others cannot see your email when disabled (public by default)",
   "profileEditBio": "Bio",
   "profileEditBioPlaceholder": "Tell us about yourself...",
   "profileEditIntroduction": "Introduction",
@@ -939,6 +956,12 @@
   "userProfileSendMessage": "Send Message",
   "userProfileLoading": "Loading profile...",
   "userProfileAddFriend": "Add Friend",
+  "friendRequestsTitle": "Friend Requests",
+  "friendRequestEmpty": "No pending friend requests",
+  "friendRequestBlocked": "This user is not accepting friend requests",
+  "friendBlock": "Block",
+  "friendUnblock": "Unblock",
+  "friendBlockConfirm": "Blocking removes the friendship and prevents this user from sending you friend requests. Block?",
   "userProfileUnknownEmail": "Unknown",
   
   "aboutTitle": "About",
@@ -1532,6 +1555,8 @@
   "groupFeaturesSection": "Group Features",
   "groupEssenceFeature": "Essence Messages",
   "groupEssenceFeatureDesc": "Allow admins to mark essence messages",
+  "groupPublicMessagesFeature": "Public Message Preview",
+  "groupPublicMessagesFeatureDesc": "Allow non-members to read group messages",
   "groupTransferOwner": "Transfer Ownership",
   "groupTransferOwnerConfirm": "After transfer, you will lose owner permissions. Continue?",
   "groupTransferOwnerConfirmAction": "Confirm Transfer",
@@ -1629,6 +1654,10 @@
 
   "settingsWeakNetworkTitle": "Weak network mode",
   "settingsWeakNetworkDesc": "Use periodic synchronization when the connection is unstable",
+  "settingsSyncModeTitle": "Sync mode",
+  "settingsSyncModeDesc": "Full sync keeps every chat complete offline. Browsing mode syncs only the chats you open (offline completeness not guaranteed).",
+  "settingsSyncModeFull": "Full sync",
+  "settingsSyncModeBrowsing": "Browsing only",
   "settingsDataSavingTitle": "Data saving mode",
   "settingsDataSavingDesc": "Load media only after you tap it",
   "settingsThumbnailPreviewTitle": "Use thumbnails in chats",
@@ -1746,10 +1775,19 @@
   "groupProfileJoin": "Join Group",
   "groupProfileJoinSuccess": "Joined the group",
   "groupProfileJoinPending": "Application submitted, pending admin approval",
+  "groupJoinMessageTitle": "Join Request Message",
+  "groupJoinMessageHint": "Optional: tell admins why you want to join",
+  "groupInviteMessageTitle": "Invitation Message",
+  "groupInviteMessageHint": "Optional: note for reviewers",
   "groupProfileJoinFailed": "Failed to join the group",
   "groupProfileAlreadyMember": "Already a member",
   "groupProfileNotFound": "Group not found",
   "groupProfileCreator": "Group Creator",
+  "groupProfileInviteOnly": "Invite only",
+  "groupProfilePreviewSection": "Message preview",
+  "groupProfilePreviewHint": "Only public messages are shown. Join the group to chat.",
+  "groupProfilePreviewEmpty": "No messages to preview yet",
+  "groupProfilePreviewLoadOlder": "Load earlier messages",
 
   "forwardSearchTitle": "Forward",
   "forwardSearchHint": "Search users and groups",
@@ -1968,6 +2006,7 @@
   "errorCodeValidationInvalidQuote": "Quoted message is invalid",
   "errorCodeValidationInvalidCallId": "Call ID is invalid",
   "errorCodeValidationMessageTooLong": "Message is too long",
+  "errorCodeValidationRequestMessageTooLong": "Request message is too long",
   "errorCodeValidationMissingParameter": "A required parameter is missing",
   "errorCodeFileNotOwned": "You do not own this file",
   "errorCodeFileUnavailable": "File is unavailable",
@@ -2053,5 +2092,39 @@
   "suspiciousLoginLocation": "Location",
   "suspiciousLoginTime": "Time",
   "suspiciousLoginDismiss": "Dismiss",
-  "suspiciousLoginReviewSessions": "Review Login Devices"
+  "suspiciousLoginReviewSessions": "Review Login Devices",
+  "searchTitle": "Search",
+  "searchTabUsers": "Users",
+  "searchTabGroups": "Groups",
+  "searchTabMessages": "Messages",
+  "searchHint": "Search users, groups or messages",
+  "searchStartHint": "Enter keywords to start searching",
+  "searchNoResults": "No results found",
+  "searchMinLengthHint": "Enter at least {count} characters",
+  "@searchMinLengthHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchGroupJoinDirect": "Open to join",
+  "searchGroupNeedReview": "Approval required",
+  "searchGroupInviteOnly": "Invite only",
+  "searchGroupMemberCount": "{count} members",
+  "@searchGroupMemberCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errorCodeValidationSearchKeywordTooShort": "Search keyword is too short",
+  "errorCodeFeatureDisabledPrivateChat": "Private chat is disabled on this server",
+  "errorCodeFeatureDisabledGroupChat": "Group chat is disabled on this server",
+  "errorCodeFeatureDisabledGroupCreate": "Creating groups is disabled on this server",
+  "errorCodeFeatureDisabledFriendRequest": "Friend requests are disabled on this server",
+  "errorCodeFeatureDisabledForum": "The forum is disabled on this server",
+  "errorCodeFeatureDisabledSticker": "Stickers are disabled on this server",
+  "errorCodeFeatureDisabledAnnouncement": "Announcements are disabled on this server"
 }

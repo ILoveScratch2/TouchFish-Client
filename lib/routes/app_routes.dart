@@ -21,6 +21,7 @@ import '../screens/account_screen.dart';
 import '../screens/pending_forums_screen.dart';
 import '../screens/default_assets_screen.dart';
 import '../screens/user_profile_screen.dart';
+import '../screens/friend_requests_screen.dart';
 import '../screens/about_screen.dart';
 import '../screens/licenses_screen.dart';
 import '../screens/profile_edit_screen.dart';
@@ -30,6 +31,7 @@ import '../screens/account_management_screen.dart';
 import '../screens/sticker_screens.dart';
 import '../screens/forum_search_screen.dart';
 import '../screens/group_search_screen.dart';
+import '../screens/universal_search_screen.dart';
 import '../screens/group_profile_screen.dart';
 import '../screens/browser_screen.dart';
 import '../screens/browser_history_screen.dart';
@@ -38,6 +40,7 @@ import '../l10n/app_localizations.dart';
 import '../screens/forward_screen.dart';
 import '../models/message_model.dart';
 import '../services/auth_state.dart';
+import '../services/feature_flags.dart';
 import '../widgets/window_frame.dart';
 import '../widgets/lock_gate.dart';
 import '../utils/talker.dart';
@@ -55,6 +58,7 @@ class AppRoutes {
   static const String forumPostDetail = '/forum/:forumId/post/:postId';
   static const String forumSearch = '/forum/search';
   static const String groupSearch = '/group/search';
+  static const String universalSearch = '/search';
   static const String groupProfile = '/group/:gid';
   static const String forward = '/forward';
   static const String account = '/account';
@@ -71,6 +75,7 @@ class AppRoutes {
   static const String forgotPassword = '/forgot-password';
   static const String changePassword = '/change-password';
   static const String userProfile = '/user/:userId';
+  static const String friendRequests = '/friends/requests';
   static const String about = '/about';
   static const String licenses = '/licenses';
   static const String profileEdit = '/profile/edit';
@@ -274,6 +279,12 @@ class AppRoutes {
           : (hasSavedSession ? main : login),
       refreshListenable: AuthState.instance.sessionListenable,
       redirect: (context, state) {
+        final path = state.uri.path;
+        final flags = FeatureFlags.instance;
+        if (path.startsWith(forum) && !flags.forum) return main;
+        if (path.startsWith(announcement) && !flags.announcement) return main;
+        if (path.startsWith('$chat/U') && !flags.privateChat) return main;
+        if (path.startsWith('$chat/G') && !flags.groupChat) return main;
         final auth = AuthState.instance;
         final restoringSavedSession =
             auth.hasStoredCredentials && !auth.isLoggedIn;
@@ -408,6 +419,10 @@ class AppRoutes {
               builder: (context, state) => const ProfileEditScreen(),
             ),
             GoRoute(
+              path: friendRequests,
+              builder: (context, state) => const FriendRequestsScreen(),
+            ),
+            GoRoute(
               path: sessionDevices,
               builder: (context, state) {
                 final args = state.extra;
@@ -426,6 +441,10 @@ class AppRoutes {
             GoRoute(
               path: groupSearch,
               builder: (context, state) => const GroupSearchScreen(),
+            ),
+            GoRoute(
+              path: universalSearch,
+              builder: (context, state) => const UniversalSearchScreen(),
             ),
             GoRoute(
               path: forward,

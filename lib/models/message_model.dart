@@ -334,6 +334,11 @@ class ChatMessage {
   final int? deletedBy;
   final int? roomSeq;
 
+  /// 事件行（content_type='event'）的信封解析结果；仅同步流中出现，
+  /// 不进入消息时间线，也不会被本地存储。
+  final String? eventKind;
+  final int? eventTargetMid;
+
   /// 本地合成的"对方上传中"占位消息（显然是假的消息所以我们不需要 存）
   final bool isPlaceholder;
   final double? uploadProgress;
@@ -365,6 +370,8 @@ class ChatMessage {
     this.deletedAt,
     this.deletedBy,
     this.roomSeq,
+    this.eventKind,
+    this.eventTargetMid,
     this.isPlaceholder = false,
     this.uploadProgress,
   });
@@ -538,6 +545,8 @@ class ChatMessage {
     DateTime? deletedAt,
     int? deletedBy,
     int? roomSeq,
+    String? eventKind,
+    int? eventTargetMid,
     bool clearMedia = false,
     bool? isPlaceholder,
     double? uploadProgress,
@@ -569,6 +578,8 @@ class ChatMessage {
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
       roomSeq: roomSeq ?? this.roomSeq,
+      eventKind: eventKind ?? this.eventKind,
+      eventTargetMid: eventTargetMid ?? this.eventTargetMid,
       isPlaceholder: isPlaceholder ?? this.isPlaceholder,
       uploadProgress: uploadProgress ?? this.uploadProgress,
     );
@@ -852,6 +863,23 @@ class ChatMessage {
     );
   }
 
+  /// 解析事件行信封（content_type='event' 的 content）。
+  /// 格式：{"v": 1, "kind": "message.recalled", "target_mid": 123}
+  static ({String kind, int? targetMid})? parseEventEnvelope(String content) {
+    try {
+      final decoded = jsonDecode(content);
+      if (decoded is! Map) return null;
+      final kind = decoded['kind'];
+      if (kind is! String || kind.isEmpty) return null;
+      return (
+        kind: kind,
+        targetMid: (decoded['target_mid'] as num?)?.toInt(),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   factory ChatMessage.fromMessageRecord(Map<String, dynamic> json, int myUid) {
     final mid = (json['mid'] as num?)?.toInt();
     final clientMid = json['client_mid'] as String?;
@@ -981,6 +1009,25 @@ class ChatMessage {
         quotePreview: quotePreview,
         forwardedMid: forwardedMid,
         forwardPreview: forwardPreview,
+        roomSeq: roomSeq,
+      );
+    }
+
+    if (contentType == 'event') {
+      final envelope = parseEventEnvelope(content);
+      return ChatMessage(
+        id:
+            mid?.toString() ??
+            '${dt.millisecondsSinceEpoch}-$senderUid-${clientMid ?? roomSeq?.toString() ?? ''}',
+        mid: mid,
+        clientMid: clientMid,
+        senderUid: senderUid,
+        text: '',
+        timestamp: dt,
+        isMe: isMe,
+        contentType: 'event',
+        eventKind: envelope?.kind,
+        eventTargetMid: envelope?.targetMid,
         roomSeq: roomSeq,
       );
     }

@@ -1336,6 +1336,51 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminServerSectionStickers => '貼圖';
 
   @override
+  String get adminServerSectionFeatures => '功能開關';
+
+  @override
+  String get adminFeaturePrivateChat => '私聊';
+
+  @override
+  String get adminFeaturePrivateChatDescription => '許用戶傳一對一之信。';
+
+  @override
+  String get adminFeatureGroupChat => '羣聊';
+
+  @override
+  String get adminFeatureGroupChatDescription => '許於羣中傳信、乞入羣或邀人入羣。';
+
+  @override
+  String get adminFeatureGroupCreate => '立羣';
+
+  @override
+  String get adminFeatureGroupCreateDescription => '許用戶新立羣聊。';
+
+  @override
+  String get adminFeatureFriendRequest => '好友之請';
+
+  @override
+  String get adminFeatureFriendRequestDescription => '許發好友之請與加友。';
+
+  @override
+  String get adminFeatureForum => '論壇';
+
+  @override
+  String get adminFeatureForumDescription => '開論壇之能。';
+
+  @override
+  String get adminFeatureSticker => '貼圖';
+
+  @override
+  String get adminFeatureStickerDescription => '開貼圖包與貼圖擇器。';
+
+  @override
+  String get adminFeatureAnnouncement => '告示';
+
+  @override
+  String get adminFeatureAnnouncementDescription => '開伺服之告示。';
+
+  @override
   String get adminServerFieldMaxStickerPacks => '每用戶貼圖包之限';
 
   @override
@@ -1710,6 +1755,12 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get profileEditEmail => '郵箱';
+
+  @override
+  String get accountPublicEmailTitle => '公開郵箱';
+
+  @override
+  String get accountPublicEmailDesc => '閉之則他人不見君之郵箱（預設公開）';
 
   @override
   String get profileEditBio => '個性簽名';
@@ -2474,6 +2525,24 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get userProfileAddFriend => '結好友';
+
+  @override
+  String get friendRequestsTitle => '好友申請';
+
+  @override
+  String get friendRequestEmpty => '暫無好友申請';
+
+  @override
+  String get friendRequestBlocked => '對方已設不受好友申請';
+
+  @override
+  String get friendBlock => '拉黑';
+
+  @override
+  String get friendUnblock => '解除拉黑';
+
+  @override
+  String get friendBlockConfirm => '拉黑後將解好友之誼，對方亦不得復申。確乎？';
 
   @override
   String get userProfileUnknownEmail => '未知';
@@ -3749,6 +3818,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get groupEssenceFeatureDesc => '允許管理員標記精華訊息';
 
   @override
+  String get groupPublicMessagesFeature => '公開訊息預覽';
+
+  @override
+  String get groupPublicMessagesFeatureDesc => '允許非羣員唯讀覽羣訊息';
+
+  @override
   String get groupTransferOwner => '轉讓羣主';
 
   @override
@@ -4004,6 +4079,18 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get settingsWeakNetworkDesc => '網絡不穩定時使用定時同步';
+
+  @override
+  String get settingsSyncModeTitle => '同步之式';
+
+  @override
+  String get settingsSyncModeDesc => '全量同步者，離線存諸會話之記錄；僅閱之式惟同步所啟之會話（不保證離線皆全）。';
+
+  @override
+  String get settingsSyncModeFull => '全量同步';
+
+  @override
+  String get settingsSyncModeBrowsing => '僅閱';
 
   @override
   String get settingsDataSavingTitle => '省流量模式';
@@ -4315,6 +4402,18 @@ class AppLocalizationsOch extends AppLocalizations {
   String get groupProfileJoinPending => '申請已投，候群管審核';
 
   @override
+  String get groupJoinMessageTitle => '入群申請留言';
+
+  @override
+  String get groupJoinMessageHint => '選填：向群管說明欲入之由';
+
+  @override
+  String get groupInviteMessageTitle => '邀請留言';
+
+  @override
+  String get groupInviteMessageHint => '選填：致審核者之說明';
+
+  @override
   String get groupProfileJoinFailed => '入群未成';
 
   @override
@@ -4325,6 +4424,21 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get groupProfileCreator => '群主';
+
+  @override
+  String get groupProfileInviteOnly => '僅限邀';
+
+  @override
+  String get groupProfilePreviewSection => '訊息預覽';
+
+  @override
+  String get groupProfilePreviewHint => '僅示公開訊息，入群乃可與談。';
+
+  @override
+  String get groupProfilePreviewEmpty => '暫無可覽之訊息';
+
+  @override
+  String get groupProfilePreviewLoadOlder => '載更早之訊息';
 
   @override
   String get forwardSearchTitle => '轉發';
@@ -4865,6 +4979,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get errorCodeValidationMessageTooLong => '消息過長';
 
   @override
+  String get errorCodeValidationRequestMessageTooLong => '申請留言過長';
+
+  @override
   String get errorCodeValidationMissingParameter => '缺必要參數';
 
   @override
@@ -4949,57 +5066,120 @@ class AppLocalizationsOch extends AppLocalizations {
   String get errorCodeServerError => '伺服器內部有誤';
 
   @override
-  String get timeAgoJustNow => 'Just now';
+  String get timeAgoJustNow => '方纔';
 
   @override
   String timeAgoMinutes(int minutes) {
-    return '${minutes}m ago';
+    return '$minutes 分前';
   }
 
   @override
   String timeAgoHours(int hours) {
-    return '${hours}h ago';
+    return '$hours 小時前';
   }
 
   @override
   String timeAgoDays(int days) {
-    return '${days}d ago';
+    return '$days 日前';
   }
 
   @override
   String timeAgoWeeks(int weeks) {
-    return '${weeks}w ago';
+    return '$weeks 週前';
   }
 
   @override
   String timeAgoMonths(int months) {
-    return '${months}mo ago';
+    return '$months 月前';
   }
 
   @override
   String timeAgoYears(int years) {
-    return '${years}y ago';
+    return '$years 年前';
   }
 
   @override
-  String get suspiciousLoginTitle => 'Suspicious Login Detected';
+  String get suspiciousLoginTitle => '察有可疑之登入';
 
   @override
-  String get suspiciousLoginMessage =>
-      'Unusual login activity was detected on your account. If this wasn\'t you, please review your login devices immediately.';
+  String get suspiciousLoginMessage => '察覺君之賬戶有異常之登入。若非君所為，請即察君之登入設備。';
 
   @override
-  String get suspiciousLoginDevice => 'Device';
+  String get suspiciousLoginDevice => '設備';
 
   @override
-  String get suspiciousLoginLocation => 'Location';
+  String get suspiciousLoginLocation => '位置';
 
   @override
-  String get suspiciousLoginTime => 'Time';
+  String get suspiciousLoginTime => '時間';
 
   @override
-  String get suspiciousLoginDismiss => 'Dismiss';
+  String get suspiciousLoginDismiss => '略之';
 
   @override
-  String get suspiciousLoginReviewSessions => 'Review Login Devices';
+  String get suspiciousLoginReviewSessions => '審視登入設備';
+
+  @override
+  String get searchTitle => '尋';
+
+  @override
+  String get searchTabUsers => '用戶';
+
+  @override
+  String get searchTabGroups => '群聊';
+
+  @override
+  String get searchTabMessages => '消息';
+
+  @override
+  String get searchHint => '尋用戶、群聊或消息';
+
+  @override
+  String get searchStartHint => '輸入關鍵詞始尋';
+
+  @override
+  String get searchNoResults => '未尋得';
+
+  @override
+  String searchMinLengthHint(int count) {
+    return '至少輸入 $count 字';
+  }
+
+  @override
+  String get searchGroupJoinDirect => '可直接入';
+
+  @override
+  String get searchGroupNeedReview => '須審';
+
+  @override
+  String get searchGroupInviteOnly => '僅邀';
+
+  @override
+  String searchGroupMemberCount(int count) {
+    return '$count 人';
+  }
+
+  @override
+  String get errorCodeValidationSearchKeywordTooShort => '尋的關鍵詞過短';
+
+  @override
+  String get errorCodeFeatureDisabledPrivateChat => '本伺服已閉私聊';
+
+  @override
+  String get errorCodeFeatureDisabledGroupChat => '本伺服已閉羣聊';
+
+  @override
+  String get errorCodeFeatureDisabledGroupCreate => '本伺服已閉立羣';
+
+  @override
+  String get errorCodeFeatureDisabledFriendRequest => '本伺服已閉好友之請';
+
+  @override
+  String get errorCodeFeatureDisabledForum => '本伺服已閉論壇';
+
+  @override
+  String get errorCodeFeatureDisabledSticker => '本伺服已閉貼圖';
+
+  @override
+  String get errorCodeFeatureDisabledAnnouncement => '本伺服已閉告示';
 }

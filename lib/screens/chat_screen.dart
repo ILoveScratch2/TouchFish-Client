@@ -9,6 +9,7 @@ import '../providers/chat/message_provider.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/chat_data_service.dart';
 import '../services/chat_ws_service.dart';
+import '../services/feature_flags.dart';
 import '../services/auth_state.dart';
 import '../widgets/chat_list_widget.dart';
 import '../widgets/contact_list_widget.dart';
@@ -444,9 +445,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                         children: [
                           IconButton(
                             icon: const Icon(Icons.search),
-                            tooltip: l10n.groupSearchTooltip,
+                            tooltip: l10n.searchTitle,
                             onPressed: () =>
-                                context.push(AppRoutes.groupSearch),
+                                context.push(AppRoutes.universalSearch),
                           ),
                           _buildInviteButton(context, l10n),
                         ],
@@ -462,7 +463,15 @@ class _ChatListScreenState extends State<ChatListScreen>
                     controller: _tabController,
                     children: [
                       ChatListWidget(chatRooms: _chatRooms),
-                      ContactListWidget(contacts: _contacts),
+                      Column(
+                        children: [
+                          _buildFriendRequestsEntry(context, l10n),
+                          const Divider(height: 1),
+                          Expanded(
+                            child: ContactListWidget(contacts: _contacts),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -654,8 +663,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                     children: [
                       IconButton(
                         icon: const Icon(Icons.search),
-                        tooltip: l10n.groupSearchTooltip,
-                        onPressed: () => context.push(AppRoutes.groupSearch),
+                        tooltip: l10n.searchTitle,
+                        onPressed: () =>
+                            context.push(AppRoutes.universalSearch),
                       ),
                       _buildInviteButton(context, l10n),
                     ],
@@ -666,11 +676,15 @@ class _ChatListScreenState extends State<ChatListScreen>
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'chat-fab',
-        onPressed: () => _showAddMenu(context),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton:
+          (FeatureFlags.instance.friendRequest ||
+              FeatureFlags.instance.groupCreate)
+          ? FloatingActionButton(
+              heroTag: 'chat-fab',
+              onPressed: () => _showAddMenu(context),
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: Column(
         children: [
           if (_chatData.isLoading) const LinearProgressIndicator(minHeight: 2),
@@ -679,7 +693,15 @@ class _ChatListScreenState extends State<ChatListScreen>
               controller: _tabController,
               children: [
                 ChatListWidget(chatRooms: _chatRooms),
-                ContactListWidget(contacts: _contacts),
+                Column(
+                  children: [
+                    _buildFriendRequestsEntry(context, l10n),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: ContactListWidget(contacts: _contacts),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -713,6 +735,27 @@ class _ChatListScreenState extends State<ChatListScreen>
     );
   }
 
+  /// 联系人页顶部的“好友申请”入口（服务端持久列表，不依赖通知）。
+  Widget _buildFriendRequestsEntry(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    final unread = _notificationService.friendUnreadCount;
+    return ListTile(
+      leading: const Icon(Icons.person_add_alt),
+      title: Text(l10n.friendRequestsTitle),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (unread > 0) Badge(label: Text(unread > 99 ? '99+' : '$unread')),
+          const SizedBox(width: 8),
+          const Icon(Icons.chevron_right),
+        ],
+      ),
+      onTap: () => context.push(AppRoutes.friendRequests),
+    );
+  }
+
   Future<void> _createGroup() async {
     final result = await Navigator.push<bool>(
       context,
@@ -725,6 +768,10 @@ class _ChatListScreenState extends State<ChatListScreen>
 
   void _showAddMenu(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final flags = FeatureFlags.instance;
+    final showAddFriend = flags.friendRequest;
+    final showCreateGroup = flags.groupCreate;
+    if (!showAddFriend && !showCreateGroup) return;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -735,22 +782,24 @@ class _ChatListScreenState extends State<ChatListScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 8),
-            ListTile(
-              leading: const Icon(Icons.person_add),
-              title: Text(l10n.chatAddFriend),
-              onTap: () {
-                Navigator.pop(ctx);
-                _showAddFriendDialog();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.group_add),
-              title: Text(l10n.chatCreateGroup),
-              onTap: () {
-                Navigator.pop(ctx);
-                _createGroup();
-              },
-            ),
+            if (showAddFriend)
+              ListTile(
+                leading: const Icon(Icons.person_add),
+                title: Text(l10n.chatAddFriend),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showAddFriendDialog();
+                },
+              ),
+            if (showCreateGroup)
+              ListTile(
+                leading: const Icon(Icons.group_add),
+                title: Text(l10n.chatCreateGroup),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _createGroup();
+                },
+              ),
             const SizedBox(height: 8),
           ],
         ),

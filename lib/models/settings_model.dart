@@ -368,6 +368,21 @@ class SettingsData {
           icon: Icons.network_check,
         ),
         SettingItem(
+          key: 'syncMode',
+          titleKey: 'settingsSyncModeTitle',
+          descriptionKey: 'settingsSyncModeDesc',
+          type: SettingType.radio,
+          defaultValue: 'full',
+          icon: Icons.sync,
+          options: [
+            SettingOption(value: 'full', labelKey: 'settingsSyncModeFull'),
+            SettingOption(
+              value: 'browsing',
+              labelKey: 'settingsSyncModeBrowsing',
+            ),
+          ],
+        ),
+        SettingItem(
           key: 'dataSavingMode',
           titleKey: 'settingsDataSavingTitle',
           descriptionKey: 'settingsDataSavingDesc',

@@ -307,6 +307,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   void _initMessageSync() {
     final roomId = _contactUid;
     MessageSyncService.instance.activeRoomId = roomId;
+    // 打开过的会话持久升级为完整同步（浏览模式下再次进入也照常补拉）
+    unawaited(MessageSyncService.instance.markRoomFullySynced(roomId));
     unawaited(_syncRoomIfNeeded(roomId));
   }
 

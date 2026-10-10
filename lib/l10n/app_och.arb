@@ -483,6 +483,21 @@
   "adminServerSectionFiles": "文件",
   "adminServerSectionGroups": "羣組",
   "adminServerSectionStickers": "貼圖",
+  "adminServerSectionFeatures": "功能開關",
+  "adminFeaturePrivateChat": "私聊",
+  "adminFeaturePrivateChatDescription": "許用戶傳一對一之信。",
+  "adminFeatureGroupChat": "羣聊",
+  "adminFeatureGroupChatDescription": "許於羣中傳信、乞入羣或邀人入羣。",
+  "adminFeatureGroupCreate": "立羣",
+  "adminFeatureGroupCreateDescription": "許用戶新立羣聊。",
+  "adminFeatureFriendRequest": "好友之請",
+  "adminFeatureFriendRequestDescription": "許發好友之請與加友。",
+  "adminFeatureForum": "論壇",
+  "adminFeatureForumDescription": "開論壇之能。",
+  "adminFeatureSticker": "貼圖",
+  "adminFeatureStickerDescription": "開貼圖包與貼圖擇器。",
+  "adminFeatureAnnouncement": "告示",
+  "adminFeatureAnnouncementDescription": "開伺服之告示。",
   "adminServerFieldMaxStickerPacks": "每用戶貼圖包之限",
   "adminServerFieldMaxStickersPerPack": "每貼圖包貼圖之限",
   "adminServerFieldMaxStickerSize": "貼圖至大之量（字節，-1 不限）",
@@ -647,6 +662,8 @@
   "profileEditBasicInfo": "基本之資",
   "profileEditUsername": "名號",
   "profileEditEmail": "郵箱",
+  "accountPublicEmailTitle": "公開郵箱",
+  "accountPublicEmailDesc": "閉之則他人不見君之郵箱（預設公開）",
   "profileEditBio": "個性簽名",
   "profileEditBioPlaceholder": "略介自己…",
   "profileEditIntroduction": "個人之介",
@@ -919,6 +936,12 @@
   "userProfileSendMessage": "發送消息",
   "userProfileLoading": "方載用戶之資…",
   "userProfileAddFriend": "結好友",
+  "friendRequestsTitle": "好友申請",
+  "friendRequestEmpty": "暫無好友申請",
+  "friendRequestBlocked": "對方已設不受好友申請",
+  "friendBlock": "拉黑",
+  "friendUnblock": "解除拉黑",
+  "friendBlockConfirm": "拉黑後將解好友之誼，對方亦不得復申。確乎？",
   "userProfileUnknownEmail": "未知",
 
   "aboutTitle": "關於",
@@ -1509,6 +1532,8 @@
   "groupFeaturesSection": "羣功能",
   "groupEssenceFeature": "精華訊息",
   "groupEssenceFeatureDesc": "允許管理員標記精華訊息",
+  "groupPublicMessagesFeature": "公開訊息預覽",
+  "groupPublicMessagesFeatureDesc": "允許非羣員唯讀覽羣訊息",
   "groupTransferOwner": "轉讓羣主",
   "groupTransferOwnerConfirm": "轉讓後你將失去羣主權限，確要繼續嗎？",
   "groupTransferOwnerConfirmAction": "確認轉讓",
@@ -1614,6 +1639,10 @@
 
   "settingsWeakNetworkTitle": "弱網模式",
   "settingsWeakNetworkDesc": "網絡不穩定時使用定時同步",
+  "settingsSyncModeTitle": "同步之式",
+  "settingsSyncModeDesc": "全量同步者，離線存諸會話之記錄；僅閱之式惟同步所啟之會話（不保證離線皆全）。",
+  "settingsSyncModeFull": "全量同步",
+  "settingsSyncModeBrowsing": "僅閱",
   "settingsDataSavingTitle": "省流量模式",
   "settingsDataSavingDesc": "點擊後才加載媒體內容",
   "settingsThumbnailPreviewTitle": "聊天圖片使用縮略圖",
@@ -1728,10 +1757,19 @@
   "groupProfileJoin": "入群",
   "groupProfileJoinSuccess": "已入群矣",
   "groupProfileJoinPending": "申請已投，候群管審核",
+  "groupJoinMessageTitle": "入群申請留言",
+  "groupJoinMessageHint": "選填：向群管說明欲入之由",
+  "groupInviteMessageTitle": "邀請留言",
+  "groupInviteMessageHint": "選填：致審核者之說明",
   "groupProfileJoinFailed": "入群未成",
   "groupProfileAlreadyMember": "已在群中矣",
   "groupProfileNotFound": "群不存",
   "groupProfileCreator": "群主",
+  "groupProfileInviteOnly": "僅限邀",
+  "groupProfilePreviewSection": "訊息預覽",
+  "groupProfilePreviewHint": "僅示公開訊息，入群乃可與談。",
+  "groupProfilePreviewEmpty": "暫無可覽之訊息",
+  "groupProfilePreviewLoadOlder": "載更早之訊息",
 
   "forwardSearchTitle": "轉發",
   "forwardSearchHint": "請尋用戶與群聊",
@@ -1935,6 +1973,7 @@
   "errorCodeValidationInvalidQuote": "所引消息有誤",
   "errorCodeValidationInvalidCallId": "通話 ID 有誤",
   "errorCodeValidationMessageTooLong": "消息過長",
+  "errorCodeValidationRequestMessageTooLong": "申請留言過長",
   "errorCodeValidationMissingParameter": "缺必要參數",
   "errorCodeFileNotOwned": "此文件非汝所有",
   "errorCodeFileUnavailable": "文件不可用",
@@ -1962,5 +2001,95 @@
   "errorCodeMessageAlreadyRecalled": "消息已撤回",
   "errorCodeRateLimited": "所請過頻",
   "errorCodeConflict": "資源相衝",
-  "errorCodeServerError": "伺服器內部有誤"
+  "errorCodeServerError": "伺服器內部有誤",
+  "timeAgoJustNow": "方纔",
+  "timeAgoMinutes": "{minutes} 分前",
+  "@timeAgoMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoHours": "{hours} 小時前",
+  "@timeAgoHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoDays": "{days} 日前",
+  "@timeAgoDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoWeeks": "{weeks} 週前",
+  "@timeAgoWeeks": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoMonths": "{months} 月前",
+  "@timeAgoMonths": {
+    "placeholders": {
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoYears": "{years} 年前",
+  "@timeAgoYears": {
+    "placeholders": {
+      "years": {
+        "type": "int"
+      }
+    }
+  },
+  "suspiciousLoginTitle": "察有可疑之登入",
+  "suspiciousLoginMessage": "察覺君之賬戶有異常之登入。若非君所為，請即察君之登入設備。",
+  "suspiciousLoginDevice": "設備",
+  "suspiciousLoginLocation": "位置",
+  "suspiciousLoginTime": "時間",
+  "suspiciousLoginDismiss": "略之",
+  "suspiciousLoginReviewSessions": "審視登入設備",
+  "searchTitle": "尋",
+  "searchTabUsers": "用戶",
+  "searchTabGroups": "群聊",
+  "searchTabMessages": "消息",
+  "searchHint": "尋用戶、群聊或消息",
+  "searchStartHint": "輸入關鍵詞始尋",
+  "searchNoResults": "未尋得",
+  "searchMinLengthHint": "至少輸入 {count} 字",
+  "@searchMinLengthHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchGroupJoinDirect": "可直接入",
+  "searchGroupNeedReview": "須審",
+  "searchGroupInviteOnly": "僅邀",
+  "searchGroupMemberCount": "{count} 人",
+  "@searchGroupMemberCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errorCodeValidationSearchKeywordTooShort": "尋的關鍵詞過短",
+  "errorCodeFeatureDisabledPrivateChat": "本伺服已閉私聊",
+  "errorCodeFeatureDisabledGroupChat": "本伺服已閉羣聊",
+  "errorCodeFeatureDisabledGroupCreate": "本伺服已閉立羣",
+  "errorCodeFeatureDisabledFriendRequest": "本伺服已閉好友之請",
+  "errorCodeFeatureDisabledForum": "本伺服已閉論壇",
+  "errorCodeFeatureDisabledSticker": "本伺服已閉貼圖",
+  "errorCodeFeatureDisabledAnnouncement": "本伺服已閉告示"
 }

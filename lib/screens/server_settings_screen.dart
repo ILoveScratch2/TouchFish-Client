@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/feature_flags.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../utils/wide_screen_helper.dart';
@@ -59,6 +61,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
 
   TfServerConfig? _settings;
   bool _captcha = false;
+  TfFeatureFlags _features = const TfFeatureFlags();
   String _captchaProvider = 'image';
   String _fileDownloadMode = 'redirect';
   bool _mediaFeatures = true;
@@ -80,6 +83,51 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
 
   static const _captchaProviders = ['image', 'turnstile', 'hcaptcha', 'recaptcha'];
   static const _fileDownloadModes = ['redirect', 'proxy'];
+
+  /// 客户端字段 key → 服务端 `settings_spec` 的 snake_case key。
+  /// 未列出的字段（客户端本地管理，如验证码密钥/端口/限流）不受 spec 过滤。
+  static const Map<String, String> _specKeyMap = {
+    'serverName': 'server_name',
+    'captcha': 'captcha',
+    'maxMessageLength': 'max_message_length',
+    'fileLastTime': 'file_last_time',
+    'maxFileSize': 'max_file_size',
+    'fileDownloadMode': 'file_download_mode',
+    'mediaFeatures': 'media_features',
+    'groupsLimit': 'groups_limit',
+    'singleGroupMaxPeople': 'single_group_max_people',
+    'maxStickerPacks': 'max_sticker_packs_per_user',
+    'maxStickersPerPack': 'max_stickers_per_pack',
+    'dailyStickerPackLimit': 'daily_sticker_pack_creation_limit',
+    'maxStickerSize': 'max_sticker_size',
+    'smtpHost': 'smtp_host',
+    'smtpPort': 'smtp_port',
+    'smtpUseSsl': 'smtp_use_ssl',
+    'reverseProxyEnabled': 'reverse_proxy_enabled',
+    'proxyCount': 'proxy_count',
+    'legacyAuthEnabled': 'legacy_auth_enabled',
+    'jwtExpiresSeconds': 'jwt_expires_seconds',
+    'jwtRefreshExpiresSeconds': 'jwt_refresh_expires_seconds',
+    'jwtMaxPerUser': 'jwt_max_per_user',
+    'minGroupNameLength': 'min_group_name_length',
+    'maxGroupNameLength': 'max_group_name_length',
+    'minUsernameLength': 'min_username_length',
+    'minPasswordLength': 'min_password_length',
+    'maxSignLength': 'max_sign_length',
+    'maxIntroductionLength': 'max_introduction_length',
+    'maxPostContentLength': 'max_post_content_length',
+    'maxAvatarSize': 'max_avatar_size',
+    'userStorageQuota': 'user_storage_quota',
+    'maxUserStorageQuota': 'max_user_storage_quota',
+    'maxStickerStorageQuota': 'max_sticker_storage_quota',
+    'featurePrivateChat': 'features',
+    'featureGroupChat': 'features',
+    'featureGroupCreate': 'features',
+    'featureFriendRequest': 'features',
+    'featureForum': 'features',
+    'featureSticker': 'features',
+    'featureAnnouncement': 'features',
+  };
 
   List<TextEditingController> get _allControllers => [
     _serverNameController,
@@ -206,6 +254,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         settings.dailyStickerPackCreationLimit.toString();
     _maxStickerSizeController.text = settings.maxStickerSize.toString();
     _captcha = settings.captcha;
+    _features = settings.features;
     _captchaProvider = settings.captchaProvider.isEmpty
         ? 'image'
         : settings.captchaProvider;
@@ -285,6 +334,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
 
   Map<String, Object?> _scalarSnapshot() => {
     'captcha': _captcha,
+    'features': jsonEncode(_features.toJson()),
     'captchaProvider': _captchaProvider,
     'fileDownloadMode': _fileDownloadMode,
     'mediaFeatures': _mediaFeatures,
@@ -694,6 +744,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         maxStickerStorageQuota: maxStickerStorageQuota,
         fileDownloadMode: _fileDownloadMode,
         mediaFeatures: _mediaFeatures,
+        features: _features,
       );
 
       if (!mounted) {
@@ -744,6 +795,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       }
 
       setState(() => _isSaving = false);
+      unawaited(FeatureFlags.instance.apply(_features));
       await _loadSettings();
       if (!mounted) return;
 
@@ -823,6 +875,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       _SettingsSection.files => l10n.adminServerSectionFiles,
       _SettingsSection.groups => l10n.adminServerSectionGroups,
       _SettingsSection.stickers => l10n.adminServerSectionStickers,
+      _SettingsSection.features => l10n.adminServerSectionFeatures,
       _SettingsSection.email => l10n.adminServerSectionEmailService,
       _SettingsSection.proxy => l10n.adminServerSectionReverseProxy,
       _SettingsSection.auth => l10n.adminServerSectionAuth,
@@ -839,6 +892,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       _SettingsSection.files => Icons.folder_outlined,
       _SettingsSection.groups => Icons.groups_outlined,
       _SettingsSection.stickers => Icons.emoji_emotions_outlined,
+      _SettingsSection.features => Icons.toggle_on_outlined,
       _SettingsSection.email => Icons.mark_email_read_outlined,
       _SettingsSection.proxy => Icons.hub_outlined,
       _SettingsSection.auth => Icons.security_outlined,
@@ -1019,7 +1073,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
 
   /// 全部设置字段的注册表：分区视图与搜索结果共用，visible 按当前状态求值。
   List<_SettingField> _buildRegistry(AppLocalizations l10n) {
-    return [
+    final fields = <_SettingField>[
       // 常规
       _SettingField(
         key: 'serverName',
@@ -1568,6 +1622,112 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           icon: Icons.emoji_emotions_outlined,
         ),
       ),
+      // 功能开关
+      _SettingField(
+        key: 'featurePrivateChat',
+        section: _SettingsSection.features,
+        label: (l10n) => l10n.adminFeaturePrivateChat,
+        keywords: const ['feature', 'private', 'chat', 'dm'],
+        build: (context, l10n) => _switchField(
+          value: _features.privateChat,
+          title: l10n.adminFeaturePrivateChat,
+          subtitle: l10n.adminFeaturePrivateChatDescription,
+          onChanged: (value) {
+            setState(() => _features = _copyFeatures(privateChat: value));
+            _handleFieldChanged();
+          },
+        ),
+      ),
+      _SettingField(
+        key: 'featureGroupChat',
+        section: _SettingsSection.features,
+        label: (l10n) => l10n.adminFeatureGroupChat,
+        keywords: const ['feature', 'group', 'chat'],
+        build: (context, l10n) => _switchField(
+          value: _features.groupChat,
+          title: l10n.adminFeatureGroupChat,
+          subtitle: l10n.adminFeatureGroupChatDescription,
+          onChanged: (value) {
+            setState(() => _features = _copyFeatures(groupChat: value));
+            _handleFieldChanged();
+          },
+        ),
+      ),
+      _SettingField(
+        key: 'featureGroupCreate',
+        section: _SettingsSection.features,
+        label: (l10n) => l10n.adminFeatureGroupCreate,
+        keywords: const ['feature', 'group', 'create'],
+        build: (context, l10n) => _switchField(
+          value: _features.groupCreate,
+          title: l10n.adminFeatureGroupCreate,
+          subtitle: l10n.adminFeatureGroupCreateDescription,
+          onChanged: (value) {
+            setState(() => _features = _copyFeatures(groupCreate: value));
+            _handleFieldChanged();
+          },
+        ),
+      ),
+      _SettingField(
+        key: 'featureFriendRequest',
+        section: _SettingsSection.features,
+        label: (l10n) => l10n.adminFeatureFriendRequest,
+        keywords: const ['feature', 'friend', 'request'],
+        build: (context, l10n) => _switchField(
+          value: _features.friendRequest,
+          title: l10n.adminFeatureFriendRequest,
+          subtitle: l10n.adminFeatureFriendRequestDescription,
+          onChanged: (value) {
+            setState(() => _features = _copyFeatures(friendRequest: value));
+            _handleFieldChanged();
+          },
+        ),
+      ),
+      _SettingField(
+        key: 'featureForum',
+        section: _SettingsSection.features,
+        label: (l10n) => l10n.adminFeatureForum,
+        keywords: const ['feature', 'forum'],
+        build: (context, l10n) => _switchField(
+          value: _features.forum,
+          title: l10n.adminFeatureForum,
+          subtitle: l10n.adminFeatureForumDescription,
+          onChanged: (value) {
+            setState(() => _features = _copyFeatures(forum: value));
+            _handleFieldChanged();
+          },
+        ),
+      ),
+      _SettingField(
+        key: 'featureSticker',
+        section: _SettingsSection.features,
+        label: (l10n) => l10n.adminFeatureSticker,
+        keywords: const ['feature', 'sticker'],
+        build: (context, l10n) => _switchField(
+          value: _features.sticker,
+          title: l10n.adminFeatureSticker,
+          subtitle: l10n.adminFeatureStickerDescription,
+          onChanged: (value) {
+            setState(() => _features = _copyFeatures(sticker: value));
+            _handleFieldChanged();
+          },
+        ),
+      ),
+      _SettingField(
+        key: 'featureAnnouncement',
+        section: _SettingsSection.features,
+        label: (l10n) => l10n.adminFeatureAnnouncement,
+        keywords: const ['feature', 'announcement'],
+        build: (context, l10n) => _switchField(
+          value: _features.announcement,
+          title: l10n.adminFeatureAnnouncement,
+          subtitle: l10n.adminFeatureAnnouncementDescription,
+          onChanged: (value) {
+            setState(() => _features = _copyFeatures(announcement: value));
+            _handleFieldChanged();
+          },
+        ),
+      ),
       // 服务器信息（只读）
       _SettingField(
         key: 'portApi',
@@ -1596,6 +1756,40 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         ),
       ),
     ];
+    return _filterBySpec(fields);
+  }
+
+  /// 按服务端下发的 settings_spec 过滤字段：spec 为空（老服务端）时全部展示；
+  /// 未在映射表中的客户端本地字段始终展示。
+  List<_SettingField> _filterBySpec(List<_SettingField> fields) {
+    final spec = _settings?.settingsSpec ?? const <TfSettingSpec>[];
+    if (spec.isEmpty) return fields;
+    final specKeys = spec.map((s) => s.key).toSet();
+    return fields.where((field) {
+      final specKey = _specKeyMap[field.key];
+      if (specKey == null) return true;
+      return specKeys.contains(specKey);
+    }).toList();
+  }
+
+  TfFeatureFlags _copyFeatures({
+    bool? privateChat,
+    bool? groupChat,
+    bool? groupCreate,
+    bool? friendRequest,
+    bool? forum,
+    bool? sticker,
+    bool? announcement,
+  }) {
+    return TfFeatureFlags(
+      privateChat: privateChat ?? _features.privateChat,
+      groupChat: groupChat ?? _features.groupChat,
+      groupCreate: groupCreate ?? _features.groupCreate,
+      friendRequest: friendRequest ?? _features.friendRequest,
+      forum: forum ?? _features.forum,
+      sticker: sticker ?? _features.sticker,
+      announcement: announcement ?? _features.announcement,
+    );
   }
 
   Widget _buildSectionNav(BuildContext context) {
@@ -2147,6 +2341,7 @@ enum _SettingsSection {
   files,
   groups,
   stickers,
+  features,
   email,
   proxy,
   auth,

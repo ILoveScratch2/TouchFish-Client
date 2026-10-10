@@ -225,6 +225,30 @@ class LocalMessageStore {
     }
   }
 
+  Future<void> saveMessage(String roomId, ChatMessage message) async {
+    await appendMessages(roomId, [message]);
+  }
+
+  /// 批量 upsert（按消息键覆盖已存在消息，用于 ack 回填/撤回/媒体元数据）。
+  Future<void> appendMessages(
+    String roomId,
+    List<ChatMessage> messages,
+  ) async {
+    if (messages.isEmpty) return;
+    final scope = _requireScope();
+    final prefs = await SharedPreferences.getInstance();
+    final existing = await _loadMessages(prefs, scope, roomId);
+    final merged = <String, ChatMessage>{
+      for (final message in existing) _messageKey(message): message,
+      for (final message in messages) _messageKey(message): message,
+    }.values.toList()..sort(_compareMessages);
+    await _write(
+      prefs,
+      _key(scope, roomId),
+      jsonEncode(_trimNewest(merged).map((e) => e.toJson()).toList()),
+    );
+  }
+
   Future<void> deleteMessage(String roomId, ChatMessage message) async {
     final scope = _requireScope();
     final prefs = await SharedPreferences.getInstance();
@@ -321,6 +345,28 @@ class LocalMessageStore {
     final scope = _requireScope();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('touchfish_sync_seq/$scope/$roomId', '$seq');
+  }
+
+  /// 房间是否被标记为"完整同步"（仅浏览模式用，已打开的会话升级后持久化）。
+  Future<Set<String>> loadSyncEnabledRooms() async {
+    final scope = _requireScope();
+    final prefs = await SharedPreferences.getInstance();
+    final prefix = 'touchfish_sync_enabled/$scope/';
+    return {
+      for (final key in prefs.getKeys().where((k) => k.startsWith(prefix)))
+        key.substring(prefix.length),
+    };
+  }
+
+  Future<void> setRoomSyncEnabled(String roomId, bool enabled) async {
+    final scope = _requireScope();
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'touchfish_sync_enabled/$scope/$roomId';
+    if (enabled) {
+      await prefs.setString(key, '1');
+    } else {
+      await prefs.remove(key);
+    }
   }
 
   Future<void> clearDatabase() async {

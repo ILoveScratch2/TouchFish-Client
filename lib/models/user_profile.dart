@@ -6,6 +6,10 @@ class UserProfile {
   final String createTime; // 时间戳字符串
   final String? personalSign; // 个性签名
   final String? introduction; // 介绍
+
+  /// 邮箱是否对外公开（仅本人资料从 /auth/query_self 拿到真实值；
+  /// 他人资料受服务端裁剪，恒为默认 true）。
+  final bool publicEmail;
   final String? _avatarBase;
   final int avatarVersion;
 
@@ -20,6 +24,7 @@ class UserProfile {
     required this.createTime,
     this.personalSign,
     this.introduction,
+    this.publicEmail = true,
     String? avatar,
     this.avatarVersion = 0,
   }) : _avatarBase = avatar;
@@ -33,6 +38,7 @@ class UserProfile {
       createTime: json['create_time'].toString(),
       personalSign: json['personal_sign'] as String?,
       introduction: json['introduction'] as String?,
+      publicEmail: json['public_email'] as bool? ?? true,
       avatar: json['avatar'] as String?,
     );
   }
@@ -50,6 +56,7 @@ class UserProfile {
       createTime: json['create_time'].toString(),
       personalSign: json['personal_sign'] as String?,
       introduction: json['introduction'] as String?,
+      publicEmail: json['public_email'] as bool? ?? true,
       avatar: avatarUrl,
       avatarVersion: avatarVersion,
     );
@@ -64,6 +71,7 @@ class UserProfile {
       'create_time': createTime,
       if (personalSign != null) 'personal_sign': personalSign,
       if (introduction != null) 'introduction': introduction,
+      'public_email': publicEmail,
       if (_avatarBase != null) 'avatar': _avatarBase,
     };
   }

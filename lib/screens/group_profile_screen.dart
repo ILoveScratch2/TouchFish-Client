@@ -4,15 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
+import '../models/message_model.dart';
 import '../models/settings_service.dart';
 import '../widgets/markdown_renderer.dart';
 import '../services/api/tf_api_client.dart';
+import '../services/chat_data_service.dart';
 import '../services/snackbar_service.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
 import '../utils/talker.dart';
 import '../utils/clipboard_utils.dart';
 import '../widgets/optimized_image.dart';
+import '../widgets/text_entry_dialog.dart';
 
 const double _kProfileMaxWidth = 680;
 
@@ -51,14 +54,33 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
   bool _isMember = false;
   bool _isJoining = false;
   bool _joinPending = false;
+  bool _allowDirectJoin = false;
+  bool _publicMessages = false;
+  List<TfGroupPreviewMember> _previewMembers = const [];
+  List<ChatMessage>? _previewMessages;
+  bool _previewMessagesLoading = false;
+  int? _previewOldestMid;
+  bool _previewHasMore = false;
   String? _groupAvatarUrl;
+  String? _baseUrl;
 
   int get _gid => int.tryParse(widget.gid) ?? 0;
 
   @override
   void initState() {
     super.initState();
+    ChatDataService.instance.addListener(_onChatDataChanged);
     _load();
+  }
+
+  @override
+  void dispose() {
+    ChatDataService.instance.removeListener(_onChatDataChanged);
+    super.dispose();
+  }
+
+  void _onChatDataChanged() {
+    if (mounted) setState(() {});
   }
 
   static bool? _asBool(dynamic value) {
@@ -76,6 +98,7 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
     });
     try {
       final baseUrl = await TfApiClient.instance.getBaseUrl();
+      _baseUrl = baseUrl;
       _groupAvatarUrl = '$baseUrl/avatar/get_avatar/group/$_gid';
 
       final uid = AuthState.instance.uid;
@@ -101,71 +124,83 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
 
       if (_creatorUid != null) _creator = _creatorUid.toString();
 
-      // 群成员可拉取完整设置与成员列表
+      // 群组预览：任意登录用户可访问，作为基础资料与成员数来源
       if (uid != null && password != null) {
         try {
-          final result = await TfApiClient.instance.getGroupMembers(
+          final preview = await TfApiClient.instance.previewGroup(
             uid,
             password,
             _gid,
           );
-          if (result != null && mounted) {
-            final settings = result['settings'] as Map<String, dynamic>?;
-            final memberList =
-                (result['members'] as List<dynamic>?)
-                        ?.cast<Map<String, dynamic>>() ??
-                    const <Map<String, dynamic>>[];
-            _memberCount = memberList.length;
-            _isMember = memberList.any(
-              (m) => (m['uid'] as num?)?.toInt() == uid,
-            );
-            if (settings != null) {
-              final hint = settings['enter_hint'] as String?;
-              final intro = settings['introduction'] as String?;
-              final review = _asBool(settings['require_review']);
-              if (hint != null && hint.isNotEmpty) _enterHint = hint;
-              if (intro != null && intro.isNotEmpty) _introduction = intro;
-              if (review != null) _requireReview = review;
+          if (preview != null && mounted) {
+            if (preview.groupname.isNotEmpty) _groupName = preview.groupname;
+            if (preview.introduction.isNotEmpty) {
+              _introduction = preview.introduction;
             }
-            final owner = memberList.firstWhere(
-              (m) => m['role'] == 'owner',
-              orElse: () => const <String, dynamic>{},
+            _memberCount = preview.memberCount;
+            _isMember = preview.isMember;
+            _allowDirectJoin = preview.allowDirectJoin;
+            _publicMessages = preview.publicMessages;
+            _requireReview = preview.requireReview;
+            if (preview.enterHint.isNotEmpty) _enterHint = preview.enterHint;
+            _previewMembers = preview.members;
+            final owner = _previewMembers.firstWhere(
+              (m) => m.role == 'owner',
+              orElse: () => const TfGroupPreviewMember(
+                uid: 0,
+                username: '',
+                role: '',
+              ),
             );
-            final ownerUid = (owner['uid'] as num?)?.toInt();
-            final ownerName = owner['username'] as String?;
-            if (ownerUid != null) _creatorUid = ownerUid;
-            if (ownerName != null && ownerName.isNotEmpty) {
-              _creator = ownerName;
-            } else if (_creatorUid != null) {
-              _creator = _creatorUid.toString();
-            }
+            if (owner.uid != 0) _creatorUid = owner.uid;
+            if (owner.username.isNotEmpty) _creator = owner.username;
           }
         } catch (e) {
-          talker.debug(
-            'GroupProfile: getGroupMembers failed (not a member?)',
-            e,
-          );
+          talker.debug('GroupProfile: previewGroup failed', e);
         }
 
-        // 非群成员时尝试拉取群设置（用于展示是否需管理员审核）
-        if (!_isMember) {
+        // 群成员额外拉取完整成员列表与设置
+        if (_isMember) {
           try {
-            final settings = await TfApiClient.instance.getGroupSettings(
+            final result = await TfApiClient.instance.getGroupMembers(
               uid,
               password,
               _gid,
             );
-            if (settings != null && mounted) {
-              final review = _asBool(settings['require_review']);
-              final hint = settings['enter_hint'] as String?;
-              final intro = settings['introduction'] as String?;
-              if (review != null) _requireReview = review;
-              if (hint != null && hint.isNotEmpty) _enterHint = hint;
-              if (intro != null && intro.isNotEmpty) _introduction = intro;
+            if (result != null && mounted) {
+              final settings = result['settings'] as Map<String, dynamic>?;
+              final memberList =
+                  (result['members'] as List<dynamic>?)
+                          ?.cast<Map<String, dynamic>>() ??
+                      const <Map<String, dynamic>>[];
+              _memberCount = memberList.length;
+              if (settings != null) {
+                final hint = settings['enter_hint'] as String?;
+                final intro = settings['introduction'] as String?;
+                final review = _asBool(settings['require_review']);
+                if (hint != null && hint.isNotEmpty) _enterHint = hint;
+                if (intro != null && intro.isNotEmpty) _introduction = intro;
+                if (review != null) _requireReview = review;
+                _publicMessages = _asBool(settings['public_messages']) ?? _publicMessages;
+              }
+              final owner = memberList.firstWhere(
+                (m) => m['role'] == 'owner',
+                orElse: () => const <String, dynamic>{},
+              );
+              final ownerUid = (owner['uid'] as num?)?.toInt();
+              final ownerName = owner['username'] as String?;
+              if (ownerUid != null) _creatorUid = ownerUid;
+              if (ownerName != null && ownerName.isNotEmpty) {
+                _creator = ownerName;
+              } else if (_creatorUid != null) {
+                _creator = _creatorUid.toString();
+              }
             }
           } catch (e) {
-            talker.debug('GroupProfile: getGroupSettings failed', e);
+            talker.debug('GroupProfile: getGroupMembers failed', e);
           }
+        } else if (_publicMessages) {
+          unawaited(_loadPreviewMessages(uid, password));
         }
       }
 
@@ -186,6 +221,96 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
     }
   }
 
+  static const int _kPreviewPageSize = 50;
+
+  Future<void> _loadPreviewMessages(int uid, String password) async {
+    setState(() => _previewMessagesLoading = true);
+    try {
+      final msgs = await TfApiClient.instance.queryMessageHistory(
+        uid,
+        password,
+        0,
+        groupId: _gid,
+        limit: _kPreviewPageSize,
+      );
+      if (!mounted) return;
+      _applyPreviewPage(msgs, replace: true);
+    } catch (e) {
+      talker.debug('GroupProfile: preview messages failed', e);
+      if (mounted) setState(() => _previewMessages = const []);
+    } finally {
+      if (mounted) setState(() => _previewMessagesLoading = false);
+    }
+  }
+
+  Future<void> _loadOlderPreviewMessages() async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final beforeMid = _previewOldestMid;
+    if (uid == null || password == null || beforeMid == null) return;
+    setState(() => _previewMessagesLoading = true);
+    try {
+      final msgs = await TfApiClient.instance.queryMessageHistory(
+        uid,
+        password,
+        0,
+        groupId: _gid,
+        beforeMid: beforeMid,
+        limit: _kPreviewPageSize,
+      );
+      if (!mounted) return;
+      _applyPreviewPage(msgs, replace: false);
+    } catch (e) {
+      talker.debug('GroupProfile: preview older messages failed', e);
+    } finally {
+      if (mounted) setState(() => _previewMessagesLoading = false);
+    }
+  }
+
+  void _applyPreviewPage(List<ChatMessage> page, {required bool replace}) {
+    final merged = replace
+        ? List<ChatMessage>.from(page)
+        : <ChatMessage>[...page, ...?_previewMessages];
+    final mids = merged.map((m) => m.mid ?? 0).where((m) => m > 0);
+    setState(() {
+      _previewMessages = merged;
+      _previewOldestMid = mids.isEmpty ? null : mids.reduce((a, b) => a < b ? a : b);
+      _previewHasMore = page.length >= _kPreviewPageSize;
+    });
+    _prefetchPreviewSenders(merged.map((m) => m.senderUid));
+  }
+
+  /// 解析预览消息发送者昵称。
+  ///
+  /// 历史消息不携带昵称：优先取本地用户缓存，其次用预览成员列表兜底，
+  /// 都缺失时回退到 UID。
+  String _previewSenderName(int? uid) {
+    if (uid == null || uid < 0) return '';
+    final cached =
+        ChatDataService.instance.getUser('U$uid')?.username.trim() ?? '';
+    if (cached.isNotEmpty) return cached;
+    for (final m in _previewMembers) {
+      if (m.uid == uid) {
+        final name = m.username.trim();
+        if (name.isNotEmpty) return name;
+      }
+    }
+    return 'U$uid';
+  }
+
+  /// 为缓存与预览成员都缺失的发送者补拉资料（完成后通知刷新）。
+  void _prefetchPreviewSenders(Iterable<int?> uids) {
+    final known = _previewMembers.map((m) => m.uid).toSet();
+    for (final uid in uids.toSet()) {
+      if (uid == null || uid < 0) continue;
+      if (known.contains(uid)) continue;
+      if (ChatDataService.instance.getUser('U$uid') != null) continue;
+      ChatDataService.instance.ensureUserProfile(uid).catchError((e) {
+        talker.debug('GroupProfile: ensureUserProfile failed uid=$uid', e);
+      });
+    }
+  }
+
   Future<void> _joinGroup(AppLocalizations l10n) async {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
@@ -193,12 +318,31 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
       _showSnack(l10n.storageNotLoggedIn);
       return;
     }
+    // 需要审核的群：可选填写申请留言（留空直接提交）
+    String? requestMessage;
+    if (_requireReview == true) {
+      final input = await showDialog<String>(
+        context: context,
+        builder: (ctx) => TextEntryDialog(
+          title: l10n.groupJoinMessageTitle,
+          hintText: l10n.groupJoinMessageHint,
+          cancelLabel: l10n.commonCancel,
+          confirmLabel: l10n.confirm,
+          icon: Icons.message_outlined,
+          maxLines: 3,
+          allowEmpty: true,
+        ),
+      );
+      if (input == null) return; // 用户取消
+      requestMessage = input.isEmpty ? null : input;
+    }
     setState(() => _isJoining = true);
     try {
       final result = await TfApiClient.instance.joinGroup(
         uid,
         password,
         _gid,
+        message: requestMessage,
       );
       if (!mounted) return;
       if (result == null) {
@@ -314,6 +458,14 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
                         const SizedBox(height: 16),
                       ],
                       _buildDetailsCard(context, l10n, colorScheme),
+                      if (!_isMember && _previewMembers.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        _buildMembersPreview(context, l10n, colorScheme),
+                      ],
+                      if (!_isMember && _publicMessages) ...[
+                        const SizedBox(height: 16),
+                        _buildMessagePreview(context, l10n, colorScheme),
+                      ],
                       const SizedBox(height: 16),
                     ],
                   ),
@@ -530,6 +682,188 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
     return content;
   }
 
+  Widget _buildMembersPreview(
+    BuildContext context,
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.groupMembersSection,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 16,
+              runSpacing: 12,
+              children: [
+                for (final member in _previewMembers)
+                  _buildPreviewMemberChip(context, l10n, member, colorScheme),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreviewMemberChip(
+    BuildContext context,
+    AppLocalizations l10n,
+    TfGroupPreviewMember member,
+    ColorScheme colorScheme,
+  ) {
+    final muid = member.uid;
+    final name = member.username.isNotEmpty ? member.username : 'U$muid';
+    final role = member.role;
+    final avatarUrl = _baseUrl != null
+        ? '$_baseUrl/avatar/get_avatar/user/$muid'
+        : null;
+    return SizedBox(
+      width: 72,
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: colorScheme.primaryContainer,
+            backgroundImage: avatarUrl != null
+                ? resizedImageProvider(
+                    NetworkImage(avatarUrl),
+                    MediaQuery.of(context).devicePixelRatio,
+                    width: 48,
+                    height: 48,
+                  )
+                : null,
+            onBackgroundImageError: (_, _) {},
+          ),
+          const SizedBox(height: 6),
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12),
+          ),
+          if (role == 'owner' || role == 'admin')
+            Text(
+              role == 'owner' ? l10n.roleOwner : l10n.roleAdmin,
+              style: TextStyle(fontSize: 10, color: colorScheme.primary),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessagePreview(
+    BuildContext context,
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
+    final msgs = _previewMessages;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Symbols.visibility,
+                  size: 18,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.groupProfilePreviewSection,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              l10n.groupProfilePreviewHint,
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (msgs == null)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (msgs.isEmpty)
+              Text(
+                l10n.groupProfilePreviewEmpty,
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
+              )
+            else ...[
+              if (_previewHasMore)
+                Center(
+                  child: TextButton(
+                    onPressed: _previewMessagesLoading
+                        ? null
+                        : _loadOlderPreviewMessages,
+                    child: Text(l10n.groupProfilePreviewLoadOlder),
+                  ),
+                ),
+              for (final msg in msgs.reversed)
+                _buildPreviewMessageRow(context, msg, colorScheme),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreviewMessageRow(
+    BuildContext context,
+    ChatMessage msg,
+    ColorScheme colorScheme,
+  ) {
+    final sender = _previewSenderName(msg.senderUid);
+    final String body;
+    if (msg.isDeleted) {
+      body = AppLocalizations.of(context)!.messageRecalled;
+    } else if (msg.type == MessageType.text) {
+      body = msg.text;
+    } else {
+      body = '[${msg.contentType}]';
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (sender.isNotEmpty)
+            Text(
+              sender,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.primary,
+              ),
+            ),
+          const SizedBox(height: 2),
+          Text(body, style: Theme.of(context).textTheme.bodyMedium),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionButtons(BuildContext context, AppLocalizations l10n) {
     if (_isMember) {
       return Row(
@@ -554,6 +888,10 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
     if (_joinPending) {
       label = l10n.groupProfileJoinPending;
       icon = const Icon(Symbols.hourglass);
+      onPressed = null;
+    } else if (!_allowDirectJoin) {
+      label = l10n.groupProfileInviteOnly;
+      icon = const Icon(Symbols.lock);
       onPressed = null;
     } else {
       label = l10n.groupProfileJoin;

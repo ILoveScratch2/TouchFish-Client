@@ -23,3 +23,13 @@ class ApiError {
   @override
   String toString() => '$code: $message';
 }
+
+/// 携带 [ApiError] 的异常，供上层用 [localizeApiError] 本地化后提示。
+class ApiErrorException implements Exception {
+  final ApiError error;
+
+  const ApiErrorException(this.error);
+
+  @override
+  String toString() => 'ApiErrorException($error)';
+}

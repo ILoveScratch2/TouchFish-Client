@@ -9,9 +9,11 @@ import '../widgets/account/profile_picture.dart';
 import '../services/api/tf_api_client.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
+import '../services/feature_flags.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../utils/clipboard_utils.dart';
+import '../widgets/text_entry_dialog.dart';
 
 const double _kProfileMaxWidth = 680;
 
@@ -30,6 +32,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   String? _error;
   bool _isAddingFriend = false;
   bool? _isFriend;
+  // null = 未知：服务端未提供拉黑状态查询接口，默认按"未拉黑"展示
+  bool? _isBlocked;
 
   @override
   void initState() {
@@ -101,22 +105,103 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final targetUid = int.tryParse(target.uid);
     if (targetUid == null) return;
 
+    // 可选申请留言（留空直接申请；重复申请会覆盖为最新留言）
+    final message = await showDialog<String>(
+      context: context,
+      builder: (ctx) => TextEntryDialog(
+        title: l10n.userProfileAddFriend,
+        hintText: l10n.userProfileFriendRequestHint,
+        cancelLabel: l10n.commonCancel,
+        confirmLabel: l10n.userProfileAddFriend,
+        icon: Icons.person_add_alt,
+        maxLines: 3,
+        allowEmpty: true,
+      ),
+    );
+    if (message == null || !mounted) return;
+
     setState(() => _isAddingFriend = true);
     try {
       final ok = await TfApiClient.instance.addFriend(
         myUid,
         password,
         targetUid,
-        '',
+        message,
       );
       if (!mounted) return;
+      final blocked =
+          TfApiClient.instance.lastApiError?.code == 'FRIEND_BLOCKED';
       TouchFishSnackbarService.instance.show(
-          ok
-              ? l10n.userProfileFriendRequestSent(target.username)
-              : l10n.userProfileFriendRequestFailed,
-        );
+        ok
+            ? l10n.userProfileFriendRequestSent(target.username)
+            : blocked
+            ? l10n.friendRequestBlocked
+            : l10n.userProfileFriendRequestFailed,
+      );
     } finally {
       if (mounted) setState(() => _isAddingFriend = false);
+    }
+  }
+
+  Future<void> _blockUser(UserProfile profile, AppLocalizations l10n) async {
+    final myUid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final targetUid = int.tryParse(profile.uid);
+    if (myUid == null || password == null || targetUid == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.friendBlock),
+        content: Text(l10n.friendBlockConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.friendBlock),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final ok = await TfApiClient.instance.blockUser(
+      myUid,
+      password,
+      targetUid,
+    );
+    if (!mounted) return;
+    TouchFishSnackbarService.instance.show(
+      ok ? l10n.friendBlock : l10n.commonFailedOperation,
+    );
+    if (ok) {
+      setState(() {
+        _isFriend = false;
+        _isBlocked = true;
+      });
+    }
+  }
+
+  Future<void> _unblockUser(UserProfile profile, AppLocalizations l10n) async {
+    final myUid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final targetUid = int.tryParse(profile.uid);
+    if (myUid == null || password == null || targetUid == null) return;
+
+    final ok = await TfApiClient.instance.unblockUser(
+      myUid,
+      password,
+      targetUid,
+    );
+    if (!mounted) return;
+    TouchFishSnackbarService.instance.show(
+      ok ? l10n.friendUnblock : l10n.commonFailedOperation,
+    );
+    if (ok) {
+      setState(() => _isBlocked = false);
     }
   }
 
@@ -172,6 +257,28 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   TouchFishSnackbarService.instance.show('Share ${profile.username}');
                 },
               ),
+              if (AuthState.instance.uid?.toString() != profile.uid)
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'block') {
+                      _blockUser(profile, l10n);
+                    } else if (value == 'unblock') {
+                      _unblockUser(profile, l10n);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    if (_isBlocked == true)
+                      PopupMenuItem(
+                        value: 'unblock',
+                        child: Text(l10n.friendUnblock),
+                      )
+                    else
+                      PopupMenuItem(
+                        value: 'block',
+                        child: Text(l10n.friendBlock),
+                      ),
+                  ],
+                ),
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
@@ -322,24 +429,23 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 _copyText(context, profile.uid, l10n.userProfileUidCopied);
               },
             ),
-            const SizedBox(height: 12),
-            _buildDetailRow(
-              context,
-              Symbols.email,
-              l10n.userProfileEmail,
-              profile.email.isEmpty
-                  ? l10n.userProfileUnknownEmail
-                  : profile.email,
-              onTap: profile.email.isEmpty
-                  ? null
-                  : () {
-                      _copyText(
-                        context,
-                        profile.email,
-                        '${l10n.userProfileEmail} ${l10n.userProfileUidCopied}',
-                      );
-                    },
-            ),
+            // 邮箱未公开（服务端裁剪为空）或未设置时不占位展示
+            if (profile.email.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _buildDetailRow(
+                context,
+                Symbols.email,
+                l10n.userProfileEmail,
+                profile.email,
+                onTap: () {
+                  _copyText(
+                    context,
+                    profile.email,
+                    '${l10n.userProfileEmail} ${l10n.userProfileUidCopied}',
+                  );
+                },
+              ),
+            ],
             const SizedBox(height: 12),
             _buildDetailRow(
               context,
@@ -452,9 +558,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final isSelf = myUid != null && myUid.toString() == profile.uid;
     if (isSelf || _isFriend == null) return const SizedBox.shrink();
 
+    final flags = FeatureFlags.instance;
     return Row(
       children: [
-        if (!_isFriend!) ...[
+        if (!_isFriend! && flags.friendRequest) ...[
           Expanded(
             child: OutlinedButton.icon(
               onPressed: _isAddingFriend
@@ -474,7 +581,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
           ),
         ],
-        if (_isFriend!)
+        if (_isFriend! && flags.privateChat)
           Expanded(
             child: FilledButton.icon(
               onPressed: () => context.go('/chat/U${profile.uid}'),

@@ -589,6 +589,55 @@ void main() {
       expect(unknown.type, MessageType.file);
     });
   });
+
+  group('adoptServerBaseline', () {
+    test('uses the server seq without any network round trip', () async {
+      var fetchCalls = 0;
+      int? savedSeq;
+      final service = MessageSyncService.forTesting(
+        fetchMessages: (_) async {
+          fetchCalls++;
+          return (
+            messages: const <ChatMessage>[],
+            currentSeq: 0,
+            hasMore: false,
+          );
+        },
+        processMessages: (_, _) {},
+        saveSyncPoint: (_, seq) async => savedSeq = seq,
+      );
+      addTearDown(service.clear);
+
+      await service.adoptServerBaseline('U1', 42);
+
+      expect(service.lastSeqOf('U1'), 42);
+      expect(savedSeq, 42);
+      expect(fetchCalls, 0);
+    });
+
+    test('rejects invalid seq and never regresses an existing baseline',
+        () async {
+      final saved = <int>[];
+      final service = MessageSyncService.forTesting(
+        fetchMessages: (_) async => (
+          messages: const <ChatMessage>[],
+          currentSeq: 0,
+          hasMore: false,
+        ),
+        processMessages: (_, _) {},
+        saveSyncPoint: (_, seq) async => saved.add(seq),
+      );
+      addTearDown(service.clear);
+
+      await service.adoptServerBaseline('U1', 0);
+      expect(service.lastSeqOf('U1'), isNull);
+
+      service.registerRoomSeq('U1', 10);
+      await service.adoptServerBaseline('U1', 42);
+      expect(service.lastSeqOf('U1'), 10);
+      expect(saved, isEmpty);
+    });
+  });
 }
 
 ChatMessage _messageWithSeq(int seq) => ChatMessage(

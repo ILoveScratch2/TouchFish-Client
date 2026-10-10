@@ -2164,6 +2164,14 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsWeakNetworkTitle;
       case 'settingsWeakNetworkDesc':
         return l10n.settingsWeakNetworkDesc;
+      case 'settingsSyncModeTitle':
+        return l10n.settingsSyncModeTitle;
+      case 'settingsSyncModeDesc':
+        return l10n.settingsSyncModeDesc;
+      case 'settingsSyncModeFull':
+        return l10n.settingsSyncModeFull;
+      case 'settingsSyncModeBrowsing':
+        return l10n.settingsSyncModeBrowsing;
       case 'settingsDataSavingTitle':
         return l10n.settingsDataSavingTitle;
       case 'settingsDataSavingDesc':
