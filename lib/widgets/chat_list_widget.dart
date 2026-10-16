@@ -10,6 +10,9 @@ import '../providers/chat/message_provider.dart';
 import '../services/chat_data_service.dart';
 import '../services/snackbar_service.dart';
 import 'optimized_image.dart';
+import 'account/online_avatar_badge.dart';
+import 'ui/empty_state.dart';
+import 'ui/refreshable.dart';
 
 /// 测试或独立嵌入时可能没有祖先 ProviderScope（应用本体由 main.dart 提供），
 /// 缺了就自动补一层，保证 Consumer 后代（未读角标等）可用。
@@ -40,10 +43,19 @@ class _ChatListContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (chatRooms.isEmpty) {
+      return ScrollableFill(
+        child: EmptyState(
+          icon: Icons.chat_bubble_outline,
+          title: AppLocalizations.of(context)!.chatListEmpty,
+        ),
+      );
+    }
     final pinnedRooms = chatRooms.where((room) => room.isPinned).toList();
     final unpinnedRooms = chatRooms.where((room) => !room.isPinned).toList();
 
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       children: [
         if (pinnedRooms.isNotEmpty) ...[
           _buildPinnedSection(context, pinnedRooms),
@@ -245,7 +257,7 @@ class _ChatRoomTileState extends ConsumerState<_ChatRoomTile> {
   Widget _buildAvatar(BuildContext context, ChatRoom room) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return CircleAvatar(
+    final avatar = CircleAvatar(
       backgroundColor: colorScheme.primaryContainer,
       backgroundImage: room.avatar != null
           ? resizedImageProvider(
@@ -262,6 +274,11 @@ class _ChatRoomTileState extends ConsumerState<_ChatRoomTile> {
             )
           : null,
     );
+
+    // 仅私聊展示对方在线点；群聊无单一 uid。
+    if (room.type != ChatType.direct) return avatar;
+    final peerUid = int.tryParse(room.id.replaceFirst('U', ''));
+    return OnlineAvatarBadge(uid: peerUid, radius: 20, child: avatar);
   }
 }
 

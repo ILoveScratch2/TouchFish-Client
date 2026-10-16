@@ -14,6 +14,7 @@ import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../utils/clipboard_utils.dart';
 import '../widgets/text_entry_dialog.dart';
+import '../widgets/ui/loading_indicator.dart';
 
 const double _kProfileMaxWidth = 680;
 
@@ -32,8 +33,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   String? _error;
   bool _isAddingFriend = false;
   bool? _isFriend;
-  // null = 未知：服务端未提供拉黑状态查询接口，默认按"未拉黑"展示
+
+  /// 自己拉黑了对方（服务端 `/friend/relationship` 的 `blocked_by_me`）。
   bool? _isBlocked;
+
+  /// 对方拉黑了自己：只能等对方解除。
+  bool? _blockedByPeer;
 
   @override
   void initState() {
@@ -51,22 +56,39 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       if (uid == null) throw Exception('Invalid userId');
       final profile = await TfApiClient.instance.getUserByUid(uid);
       bool? isFriend;
+      bool? isBlocked;
+      bool? blockedByPeer;
       final myUid = AuthState.instance.uid;
       final password = AuthState.instance.password;
       if (profile != null &&
           myUid != null &&
           password != null &&
           uid != myUid) {
-        final friendUids = await TfApiClient.instance.getFriendList(
+        // 关系一次性查全（含拉黑方向），这样菜单能直接显示「解除拉黑」。
+        final rel = await TfApiClient.instance.queryRelationship(
           myUid,
           password,
+          uid,
         );
-        if (friendUids != null) isFriend = friendUids.contains(uid);
+        if (rel != null) {
+          isFriend = rel.isFriend;
+          isBlocked = rel.blockedByMe;
+          blockedByPeer = rel.blockedByPeer;
+        } else {
+          // 旧服务器没有 /friend/relationship：退回好友列表判断
+          final friendUids = await TfApiClient.instance.getFriendList(
+            myUid,
+            password,
+          );
+          if (friendUids != null) isFriend = friendUids.contains(uid);
+        }
       }
       if (mounted) {
         setState(() {
           _profile = profile;
           _isFriend = isFriend;
+          _isBlocked = isBlocked;
+          _blockedByPeer = blockedByPeer;
           _isLoading = false;
         });
       }
@@ -135,7 +157,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         ok
             ? l10n.userProfileFriendRequestSent(target.username)
             : blocked
-            ? l10n.friendRequestBlocked
+            // 拉黑是双向共用一个关系行：是自己拉黑的话，得先解除拉黑。
+            ? (_isBlocked == true
+                  ? l10n.friendRequestBlockedByMe
+                  : l10n.friendRequestBlocked)
             : l10n.userProfileFriendRequestFailed,
       );
     } finally {
@@ -198,9 +223,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
     if (!mounted) return;
     TouchFishSnackbarService.instance.show(
-      ok ? l10n.friendUnblock : l10n.commonFailedOperation,
+      ok ? l10n.friendUnblockDone : l10n.commonFailedOperation,
     );
     if (ok) {
+      // 只清自己的拉黑标记：解除拉黑是单向的，对方那一侧仍然拉黑时
+      // 申请必然被拒，所以 _blockedByPeer 不能跟着一起清（否则按钮会
+      // 从「已被拉黑」变回可点，用户点一次吃一次 friend_blocked）。
       setState(() => _isBlocked = false);
     }
   }
@@ -213,7 +241,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const LoadingIndicator(),
       );
     }
 
@@ -559,26 +587,42 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     if (isSelf || _isFriend == null) return const SizedBox.shrink();
 
     final flags = FeatureFlags.instance;
+    // 对方拉黑了我：申请必然被拒，直接把按钮置灰并写明原因。
+    final blockedByPeer = _blockedByPeer == true;
     return Row(
       children: [
         if (!_isFriend! && flags.friendRequest) ...[
           Expanded(
-            child: OutlinedButton.icon(
-              onPressed: _isAddingFriend
-                  ? null
-                  : () => _addFriend(profile, l10n),
-              icon: _isAddingFriend
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Symbols.person_add),
-              label: Text(l10n.userProfileAddFriend),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-            ),
+            child: blockedByPeer
+                ? OutlinedButton.icon(
+                    onPressed: null,
+                    icon: const Icon(Symbols.block),
+                    label: Text(
+                      l10n.friendRequestBlocked,
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  )
+                : OutlinedButton.icon(
+                    onPressed: _isAddingFriend
+                        ? null
+                        : () => _addFriend(profile, l10n),
+                    icon: _isAddingFriend
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Symbols.person_add),
+                    label: Text(l10n.userProfileAddFriend),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
           ),
         ],
         if (_isFriend! && flags.privateChat)

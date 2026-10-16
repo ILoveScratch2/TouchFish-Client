@@ -8,6 +8,7 @@ import '../services/rsa_key_trust_service.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/code_block.dart';
+import '../widgets/ui/loading_indicator.dart';
 import '../utils/talker.dart';
 import '../utils/clipboard_utils.dart';
 
@@ -373,7 +374,7 @@ class _RsaKeyManagementScreenState extends State<RsaKeyManagementScreen> {
   Widget _buildBody(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
     return Center(
       child: ConstrainedBox(

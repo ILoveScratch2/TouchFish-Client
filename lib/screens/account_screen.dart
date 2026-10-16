@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
 import '../models/notification_model.dart';
 import '../widgets/account/account_name.dart';
+import '../widgets/account/account_friends_section.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/account/signature_editor.dart';
 import '../routes/app_routes.dart';
@@ -14,6 +15,8 @@ import '../services/notification_service.dart';
 import '../services/snackbar_service.dart';
 import '../services/lock_service.dart';
 import '../widgets/app_alert_dialog.dart';
+import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/loading_indicator.dart';
 import 'debug/debug_options_screen.dart';
 import 'storage_management_screen.dart';
 
@@ -146,6 +149,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 spacing: 4,
                 children: [
                   _buildProfileCard(context),
+                  const AccountFriendsSection(),
                   _buildMenuItems(context),
                   const Divider(height: 1),
                   _buildAdditionalOptions(context),
@@ -614,25 +618,11 @@ class _AccountNotificationSheet extends StatelessWidget {
           const Divider(height: 1),
           Expanded(
             child: isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const LoadingIndicator()
                 : notifs.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.notifications_none,
-                          size: 64,
-                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          l10n.notificationEmpty,
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(color: colorScheme.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
+                ? EmptyState(
+                    icon: Icons.notifications_none,
+                    title: l10n.notificationEmpty,
                   )
                 : ListView.separated(
                     padding: const EdgeInsets.symmetric(

@@ -12,6 +12,7 @@ import 'debug/debug_options_screen.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../utils/clipboard_utils.dart';
+import '../widgets/ui/loading_indicator.dart';
 import '../widgets/app_alert_dialog.dart';
 
 class AboutScreen extends StatefulWidget {
@@ -768,7 +769,7 @@ class _AboutScreenState extends State<AboutScreen>
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingIndicator()
           : _errorMessage != null
           ? Center(child: Text(_errorMessage!))
           : Center(

@@ -6,6 +6,10 @@ import '../services/api/tf_api_client.dart';
 import '../services/device_identity_service.dart';
 import '../services/snackbar_service.dart';
 import '../utils/time_ago.dart';
+import '../widgets/app_alert_dialog.dart';
+import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/loading_indicator.dart';
+import '../widgets/ui/refreshable.dart';
 
 /// ~~词元~~会话与设备管理
 class SessionDevicesScreen extends StatefulWidget {
@@ -158,24 +162,22 @@ class _SessionDevicesScreenState extends State<SessionDevicesScreen> {
     required String title,
     required String message,
     required String confirmLabel,
+    bool isDestructive = false,
   }) async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(confirmLabel),
-          ),
-        ],
-      ),
+    final confirmed = await showTouchFishInfoDialog<bool>(
+      context,
+      title: title,
+      message: message,
+      actions: [
+        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
+        TouchFishDialogAction<bool>(
+          label: confirmLabel,
+          result: true,
+          isPrimary: true,
+          isDestructive: isDestructive,
+        ),
+      ],
     );
     return confirmed == true;
   }
@@ -239,6 +241,7 @@ class _SessionDevicesScreenState extends State<SessionDevicesScreen> {
       title: l10n.sessionDevicesRevokeAllOthersConfirmTitle,
       message: l10n.sessionDevicesRevokeAllOthersConfirmMessage,
       confirmLabel: l10n.sessionDevicesRevokeAllOthers,
+      isDestructive: true,
     );
     if (!confirmed || !mounted) return;
 
@@ -420,95 +423,99 @@ class _SessionDevicesScreenState extends State<SessionDevicesScreen> {
 
     final hasOthers = tokens.any((token) => !token.isCurrent);
 
-    return Column(
-      children: [
-        _buildUsageBar(l10n, result),
-        if (hasOthers)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton.tonalIcon(
-                onPressed: _isBusy ? null : _confirmRevokeAllOthers,
-                icon: const Icon(Icons.logout_rounded),
-                label: Text(l10n.sessionDevicesRevokeAllOthers),
+    return PullToRefresh.list(
+      onRefresh: _load,
+      child: Column(
+        children: [
+          _buildUsageBar(l10n, result),
+          if (hasOthers)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  onPressed: _isBusy ? null : _confirmRevokeAllOthers,
+                  icon: const Icon(Icons.logout_rounded),
+                  label: Text(l10n.sessionDevicesRevokeAllOthers),
+                ),
               ),
             ),
-          ),
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: tokens.length,
-            separatorBuilder: (context, index) =>
-                const Divider(height: 1, indent: 16, endIndent: 16),
-            itemBuilder: (context, index) {
-              final token = tokens[index];
-              final isCurrent = token.isCurrent;
-              return ListTile(
-                leading: Icon(
-                  _platformIcon(token.platform, token.ua),
-                  size: 28,
-                ),
-                title: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _deviceLabel(l10n, token),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+          Expanded(
+            child: ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: tokens.length,
+              separatorBuilder: (context, index) =>
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+              itemBuilder: (context, index) {
+                final token = tokens[index];
+                final isCurrent = token.isCurrent;
+                return ListTile(
+                  leading: Icon(
+                    _platformIcon(token.platform, token.ua),
+                    size: 28,
+                  ),
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _deviceLabel(l10n, token),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    if (isCurrent) ...[
-                      const SizedBox(width: 8),
-                      _buildCurrentBadge(l10n),
+                      if (isCurrent) ...[
+                        const SizedBox(width: 8),
+                        _buildCurrentBadge(l10n),
+                      ],
                     ],
-                  ],
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _platformLabel(l10n, token.platform, token.ua),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    if (token.ip.isNotEmpty)
-                      Text('${l10n.sessionDevicesIpLabel} ${token.ip}'),
-                    if (token.location.isNotEmpty)
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        '${l10n.sessionDevicesLocation}: ${token.location}',
+                        _platformLabel(l10n, token.platform, token.ua),
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
-                    Text(
-                      '${l10n.sessionDevicesIssuedAtLabel} '
-                      '${_formatTime(token.issuedAt)} · '
-                      '${l10n.sessionDevicesLastSeen} '
-                      '${formatTimeAgo(l10n, token.lastSeen)}',
-                    ),
-                  ],
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      tooltip: l10n.sessionDevicesRename,
-                      icon: const Icon(Icons.edit_outlined),
-                      onPressed: _isBusy
-                          ? null
-                          : () => _renameSessionDevice(token),
-                    ),
-                    IconButton(
-                      tooltip: l10n.sessionDevicesRemove,
-                      icon: const Icon(Icons.logout_rounded),
-                      onPressed: isCurrent || _isBusy
-                          ? null
-                          : () => _confirmRemove(token),
-                    ),
-                  ],
-                ),
-              );
-            },
+                      if (token.ip.isNotEmpty)
+                        Text('${l10n.sessionDevicesIpLabel} ${token.ip}'),
+                      if (token.location.isNotEmpty)
+                        Text(
+                          '${l10n.sessionDevicesLocation}: ${token.location}',
+                        ),
+                      Text(
+                        '${l10n.sessionDevicesIssuedAtLabel} '
+                        '${_formatTime(token.issuedAt)} · '
+                        '${l10n.sessionDevicesLastSeen} '
+                        '${formatTimeAgo(l10n, token.lastSeen)}',
+                      ),
+                    ],
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: l10n.sessionDevicesRename,
+                        icon: const Icon(Icons.edit_outlined),
+                        onPressed: _isBusy
+                            ? null
+                            : () => _renameSessionDevice(token),
+                      ),
+                      IconButton(
+                        tooltip: l10n.sessionDevicesRemove,
+                        icon: const Icon(Icons.logout_rounded),
+                        onPressed: isCurrent || _isBusy
+                            ? null
+                            : () => _confirmRemove(token),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -522,8 +529,9 @@ class _SessionDevicesScreenState extends State<SessionDevicesScreen> {
   }
 
   bool _isCurrentDevice(TfDeviceInfo device) {
-    return (_result?.tokens ?? const <TfAuthTokenInfo>[])
-        .any((token) => token.isCurrent && token.deviceId == device.deviceId);
+    return (_result?.tokens ?? const <TfAuthTokenInfo>[]).any(
+      (token) => token.isCurrent && token.deviceId == device.deviceId,
+    );
   }
 
   Widget _buildDevicesTab(AppLocalizations l10n) {
@@ -533,68 +541,71 @@ class _SessionDevicesScreenState extends State<SessionDevicesScreen> {
     }
     final counts = _sessionCountByDevice();
 
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: devices.length,
-      separatorBuilder: (context, index) =>
-          const Divider(height: 1, indent: 16, endIndent: 16),
-      itemBuilder: (context, index) {
-        final device = devices[index];
-        final isCurrent = _isCurrentDevice(device);
-        final count = counts[device.deviceId] ?? 0;
-        return ListTile(
-          leading: Icon(_platformIcon(device.platform, ''), size: 28),
-          title: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  device.displayName,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+    return PullToRefresh.list(
+      onRefresh: _load,
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: devices.length,
+        separatorBuilder: (context, index) =>
+            const Divider(height: 1, indent: 16, endIndent: 16),
+        itemBuilder: (context, index) {
+          final device = devices[index];
+          final isCurrent = _isCurrentDevice(device);
+          final count = counts[device.deviceId] ?? 0;
+          return ListTile(
+            leading: Icon(_platformIcon(device.platform, ''), size: 28),
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    device.displayName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-              if (isCurrent) ...[
-                const SizedBox(width: 8),
-                _buildCurrentBadge(l10n),
+                if (isCurrent) ...[
+                  const SizedBox(width: 8),
+                  _buildCurrentBadge(l10n),
+                ],
               ],
-            ],
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _platformLabel(l10n, device.platform, ''),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              Text(
-                '${l10n.sessionDevicesSessionCount}: $count · '
-                '${l10n.sessionDevicesLastSeen} '
-                '${formatTimeAgo(l10n, device.lastSeen)}',
-              ),
-            ],
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                tooltip: l10n.sessionDevicesRename,
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: _isBusy ? null : () => _renameDevice(device),
-              ),
-              IconButton(
-                tooltip: l10n.sessionDevicesRemove,
-                icon: const Icon(Icons.logout_rounded),
-                onPressed: isCurrent || _isBusy
-                    ? null
-                    : () => _confirmRevokeDevice(device),
-              ),
-            ],
-          ),
-        );
-      },
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _platformLabel(l10n, device.platform, ''),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                Text(
+                  '${l10n.sessionDevicesSessionCount}: $count · '
+                  '${l10n.sessionDevicesLastSeen} '
+                  '${formatTimeAgo(l10n, device.lastSeen)}',
+                ),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: l10n.sessionDevicesRename,
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: _isBusy ? null : () => _renameDevice(device),
+                ),
+                IconButton(
+                  tooltip: l10n.sessionDevicesRemove,
+                  icon: const Icon(Icons.logout_rounded),
+                  onPressed: isCurrent || _isBusy
+                      ? null
+                      : () => _confirmRevokeDevice(device),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
-
 
   Widget _buildUnsupported(AppLocalizations l10n) {
     // 请求失败：服务器不支持 JWT/设备管理，或网络异常
@@ -621,19 +632,9 @@ class _SessionDevicesScreenState extends State<SessionDevicesScreen> {
   }
 
   Widget _buildEmpty(AppLocalizations l10n, String message) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.devices_other_outlined,
-            size: 48,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const SizedBox(height: 12),
-          Text(message),
-        ],
-      ),
+    return PullToRefresh.content(
+      onRefresh: _load,
+      child: EmptyState(icon: Icons.devices_other_outlined, title: message),
     );
   }
 
@@ -668,12 +669,9 @@ class _SessionDevicesScreenState extends State<SessionDevicesScreen> {
           ),
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const LoadingIndicator()
             : TabBarView(
-                children: [
-                  _buildDevicesTab(l10n),
-                  _buildSessionsTab(l10n),
-                ],
+                children: [_buildDevicesTab(l10n), _buildSessionsTab(l10n)],
               ),
       ),
     );

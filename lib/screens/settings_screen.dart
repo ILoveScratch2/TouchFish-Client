@@ -344,8 +344,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         if (item.key == 'maxCachedRooms') {
           return _buildMaxCachedRoomsSetting(context, l10n);
         }
-        if (item.key == 'wideScreenThreshold') {
-          return _buildWideScreenThresholdSetting(context, l10n);
+        if (item.key == 'wideScreenThreshold' ||
+            item.key == 'splitScreenThreshold') {
+          return _buildThresholdSetting(context, l10n, item);
         }
         if (item.key == 'automaticPreviewMaxMiB') {
           return _buildAutomaticPreviewSetting(context, l10n, item);
@@ -1593,9 +1594,15 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  Widget _buildWideScreenThresholdSetting(
+  /// 断点滑杆（窗口宽度，px）：导航形态一个、「列表 + 详情」分栏一个。
+  /// 两者都只在自动模式下可调——强制宽/窄屏时断点不参与判断。
+  static const double _thresholdMin = 400;
+  static const double _thresholdMax = 1200;
+
+  Widget _buildThresholdSetting(
     BuildContext context,
     AppLocalizations l10n,
+    SettingItem item,
   ) {
     return ListenableBuilder(
       listenable: _settingsService,
@@ -1603,9 +1610,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         final mode = _settingsService.getValue<String>('layoutMode', 'auto');
         final enabled = mode == 'auto';
         final currentVal = _settingsService
-            .getValue<int>('wideScreenThreshold', 600)
+            .getValue<int>(item.key, item.defaultValue as int)
             .toDouble()
-            .clamp(400.0, 1200.0);
+            .clamp(_thresholdMin, _thresholdMax);
         return Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
           child: Card(
@@ -1616,20 +1623,20 @@ class _SettingsScreenState extends State<SettingsScreen>
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.vertical_align_center),
+                      Icon(item.icon),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              l10n.settingsWideThresholdTitle,
+                              _getSettingTitle(l10n, item.titleKey),
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             Padding(
                               padding: const EdgeInsets.only(top: 4.0),
                               child: Text(
-                                l10n.settingsWideThresholdDesc,
+                                _getSettingTitle(l10n, item.descriptionKey!),
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ),
@@ -1645,16 +1652,13 @@ class _SettingsScreenState extends State<SettingsScreen>
                   const SizedBox(height: 8),
                   Slider(
                     value: currentVal,
-                    min: 400,
-                    max: 1200,
+                    min: _thresholdMin,
+                    max: _thresholdMax,
                     divisions: 16,
                     label: l10n.settingsWideThresholdValue(currentVal.round()),
                     onChanged: enabled
                         ? (v) async {
-                            await _settingsService.setValue(
-                              'wideScreenThreshold',
-                              v.round(),
-                            );
+                            await _settingsService.setValue(item.key, v.round());
                           }
                         : null,
                   ),
@@ -2160,6 +2164,22 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsWideThresholdTitle;
       case 'settingsWideThresholdDesc':
         return l10n.settingsWideThresholdDesc;
+      case 'settingsSplitThresholdTitle':
+        return l10n.settingsSplitThresholdTitle;
+      case 'settingsSplitThresholdDesc':
+        return l10n.settingsSplitThresholdDesc;
+      case 'settingsSinglePageStyleTitle':
+        return l10n.settingsSinglePageStyleTitle;
+      case 'settingsSinglePageStyleDesc':
+        return l10n.settingsSinglePageStyleDesc;
+      case 'settingsForumHideEmptyPaneTitle':
+        return l10n.settingsForumHideEmptyPaneTitle;
+      case 'settingsForumHideEmptyPaneDesc':
+        return l10n.settingsForumHideEmptyPaneDesc;
+      case 'settingsCommandPaletteTitle':
+        return l10n.settingsCommandPaletteTitle;
+      case 'settingsCommandPaletteDesc':
+        return l10n.settingsCommandPaletteDesc;
       case 'settingsWeakNetworkTitle':
         return l10n.settingsWeakNetworkTitle;
       case 'settingsWeakNetworkDesc':

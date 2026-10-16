@@ -1016,6 +1016,18 @@ class AppLocalizationsOch extends AppLocalizations {
   String get chatSelectPlaceholder => '擇一對話以啟談';
 
   @override
+  String get forumSelectPlaceholder => '擇一論壇以觀之';
+
+  @override
+  String get forumSelectPostPlaceholder => '擇一帖以閱之';
+
+  @override
+  String get forumPostFullScreen => '全屏覽之';
+
+  @override
+  String get forumPostRestoreSplitView => '復分欄';
+
+  @override
   String get settingsSystemNotificationsTitle => '系統通知';
 
   @override
@@ -1363,6 +1375,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminFeatureFriendRequestDescription => '許發好友之請與加友。';
 
   @override
+  String get adminFeatureReadReceipt => '已讀之報';
+
+  @override
+  String get adminFeatureReadReceiptDescription => '向私談之對方報已讀，且許客問已讀之狀。';
+
+  @override
   String get adminFeatureForum => '論壇';
 
   @override
@@ -1379,6 +1397,12 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get adminFeatureAnnouncementDescription => '開伺服之告示。';
+
+  @override
+  String get adminFeaturePresence => '在線之狀';
+
+  @override
+  String get adminFeaturePresenceDescription => '許好友互見在線之狀，並受上下線之事。';
 
   @override
   String get adminServerFieldMaxStickerPacks => '每用戶貼圖包之限';
@@ -1742,6 +1766,31 @@ class AppLocalizationsOch extends AppLocalizations {
   String get accountUpdateYourProfile => '纂個人資料';
 
   @override
+  String get accountFriends => '好友';
+
+  @override
+  String get accountFriendsEmpty => '尚無好友';
+
+  @override
+  String accountFriendsOnlineCount(int count) {
+    return '$count 人在線';
+  }
+
+  @override
+  String get accountBlocked => '已拉黑';
+
+  @override
+  String get accountBlockedEmpty => '未拉黑任何人';
+
+  @override
+  String accountBlockedCount(int count) {
+    return '$count 人';
+  }
+
+  @override
+  String get accountBlockedHint => '開之可解拉黑';
+
+  @override
   String get profileEditTitle => '纂資料';
 
   @override
@@ -1761,6 +1810,26 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get accountPublicEmailDesc => '閉之則他人不見君之郵箱（預設公開）';
+
+  @override
+  String get accountReadStatusTitle => '顯示已讀狀態';
+
+  @override
+  String get accountReadStatusDesc => '閉之則他人不見君之已讀（預設顯示）';
+
+  @override
+  String get accountOnlineStatusTitle => '顯示在線狀態';
+
+  @override
+  String get accountOnlineStatusDesc => '閉之則友人不見君之在線（預設顯示）';
+
+  @override
+  String get chatReadReceiptRead => '已讀';
+
+  @override
+  String chatReadReceiptCount(int count) {
+    return '$count 人已讀';
+  }
 
   @override
   String get profileEditBio => '個性簽名';
@@ -2533,13 +2602,19 @@ class AppLocalizationsOch extends AppLocalizations {
   String get friendRequestEmpty => '暫無好友申請';
 
   @override
-  String get friendRequestBlocked => '對方已設不受好友申請';
+  String get friendRequestBlocked => '彼已拉黑爾，不得申';
+
+  @override
+  String get friendRequestBlockedByMe => '爾已拉黑彼，宜先解之';
 
   @override
   String get friendBlock => '拉黑';
 
   @override
   String get friendUnblock => '解除拉黑';
+
+  @override
+  String get friendUnblockDone => '已解拉黑';
 
   @override
   String get friendBlockConfirm => '拉黑後將解好友之誼，對方亦不得復申。確乎？';
@@ -4070,9 +4145,33 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsWideThresholdDesc => '窗寬至此值則易寬屏佈局（惟自動模式生效）';
 
   @override
+  String get settingsSplitThresholdTitle => '分欄之限';
+
+  @override
+  String get settingsSplitThresholdDesc => '窗寬至此值，列表與詳情方並列而陳（惟自動模式生效）';
+
+  @override
   String settingsWideThresholdValue(Object px) {
     return '$px px';
   }
+
+  @override
+  String get settingsSinglePageStyleTitle => '單頁之風';
+
+  @override
+  String get settingsSinglePageStyleDesc => '論壇區不設寬屏分欄，復整屏列表以至詳情之單頁導覽';
+
+  @override
+  String get settingsForumHideEmptyPaneTitle => '論壇空欄則隱';
+
+  @override
+  String get settingsForumHideEmptyPaneDesc => '論壇列與論壇詳情獨占全屏，惟開帖時分欄，出帖即復';
+
+  @override
+  String get settingsCommandPaletteTitle => '命令之板';
+
+  @override
+  String get settingsCommandPaletteDesc => '桌面按 Ctrl/Cmd+K 以呼命令之板（預設開；閉之則不可呼）';
 
   @override
   String get settingsWeakNetworkTitle => '弱網模式';
@@ -5182,4 +5281,25 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get errorCodeFeatureDisabledAnnouncement => '本伺服已閉告示';
+
+  @override
+  String get listNoMore => '無復更多';
+
+  @override
+  String get chatListEmpty => '尚無會話';
+
+  @override
+  String get contactListEmpty => '尚無聯絡';
+
+  @override
+  String get forumMembersEmpty => '尚無成員';
+
+  @override
+  String get messageRetrySend => '送信失敗，點擊重發';
+
+  @override
+  String get commandPaletteHint => '尋會話、頁面與操作';
+
+  @override
+  String get commandPaletteEmpty => '無相符之果';
 }

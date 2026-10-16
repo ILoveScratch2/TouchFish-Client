@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../models/local_message_search_result.dart';
 import '../services/chat_data_service.dart';
+import '../widgets/ui/empty_state.dart';
 
 class GlobalChatSearchScreen extends StatefulWidget {
   const GlobalChatSearchScreen({super.key});
@@ -61,19 +62,32 @@ class _GlobalChatSearchScreenState extends State<GlobalChatSearchScreen> {
             ),
           ),
           Expanded(
-            child: ListView.separated(
-              itemCount: _results.length,
-              separatorBuilder: (_, _) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final result = _results[index];
-                return ListTile(
-                  leading: const Icon(Symbols.forum),
-                  title: Text(rooms[result.roomId] ?? result.roomId),
-                  subtitle: Text(result.message.text, maxLines: 2, overflow: TextOverflow.ellipsis),
-                  onTap: () => Navigator.pop(context, result),
-                );
-              },
-            ),
+            child: _results.isEmpty
+                ? EmptyState(
+                    icon: _controller.text.trim().isEmpty
+                        ? Symbols.search
+                        : Symbols.search_off,
+                    title: _controller.text.trim().isEmpty
+                        ? l10n.chatSearchMessagesHint
+                        : l10n.chatSearchMessagesNoResults,
+                  )
+                : ListView.separated(
+                    itemCount: _results.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final result = _results[index];
+                      return ListTile(
+                        leading: const Icon(Symbols.forum),
+                        title: Text(rooms[result.roomId] ?? result.roomId),
+                        subtitle: Text(
+                          result.message.text,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () => Navigator.pop(context, result),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

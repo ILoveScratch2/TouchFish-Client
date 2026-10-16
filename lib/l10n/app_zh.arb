@@ -359,6 +359,10 @@
   "announcementDelete": "删除公告",
 
   "chatSelectPlaceholder": "选择一个聊天开始对话",
+  "forumSelectPlaceholder": "选择一个论坛查看",
+  "forumSelectPostPlaceholder": "选择一篇帖子查看",
+  "forumPostFullScreen": "整屏查看",
+  "forumPostRestoreSplitView": "恢复分栏",
   
   "settingsSystemNotificationsTitle": "系统通知",
   "settingsSystemNotificationsDesc": "使用操作系统通知进行消息通知",
@@ -507,12 +511,16 @@
   "adminFeatureGroupCreateDescription": "允许用户创建新的群聊。",
   "adminFeatureFriendRequest": "好友申请",
   "adminFeatureFriendRequestDescription": "允许发送好友申请与添加好友。",
+  "adminFeatureReadReceipt": "已读回执",
+  "adminFeatureReadReceiptDescription": "向私聊对方推送已读回执，并允许客户端查询已读状态。",
   "adminFeatureForum": "论坛",
   "adminFeatureForumDescription": "启用论坛功能。",
   "adminFeatureSticker": "贴图",
   "adminFeatureStickerDescription": "启用贴图包与贴图选择器。",
   "adminFeatureAnnouncement": "公告",
   "adminFeatureAnnouncementDescription": "启用服务器公告。",
+  "adminFeaturePresence": "在线状态",
+  "adminFeaturePresenceDescription": "允许好友互相看到在线状态，并接收上下线事件。",
   "adminServerFieldMaxStickerPacks": "每用户贴图包上限",
   "adminServerFieldMaxStickersPerPack": "每贴图包贴图上限",
   "adminServerFieldMaxStickerSize": "贴图最大大小（字节，-1 不限）",
@@ -671,6 +679,23 @@
   "accountSessionDevices": "设备管理",
   "accountLockNow": "立即锁定",
   "accountUpdateYourProfile": "编辑个人资料",
+  "accountFriends": "好友",
+  "accountFriendsEmpty": "还没有好友",
+  "accountFriendsOnlineCount": "{count} 人在线",
+  "@accountFriendsOnlineCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "accountBlocked": "已拉黑",
+  "accountBlockedEmpty": "没有拉黑任何人",
+  "accountBlockedCount": "{count} 人",
+  "@accountBlockedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "accountBlockedHint": "点开可解除拉黑",
   
   "profileEditTitle": "编辑资料",
   "profileEditAvatar": "头像",
@@ -679,6 +704,12 @@
   "profileEditEmail": "邮箱",
   "accountPublicEmailTitle": "公开邮箱",
   "accountPublicEmailDesc": "关闭后其他人将看不到你的邮箱（默认公开）",
+  "accountReadStatusTitle": "展示已读状态",
+  "accountReadStatusDesc": "关闭后其他人将看不到你是否已读（默认展示）",
+  "accountOnlineStatusTitle": "展示在线状态",
+  "accountOnlineStatusDesc": "关闭后好友将看不到你是否在线（默认展示）",
+  "chatReadReceiptRead": "已读",
+  "chatReadReceiptCount": "{count} 人已读",
   "profileEditBio": "个性签名",
   "profileEditBioPlaceholder": "介绍一下自己...",
   "profileEditIntroduction": "个人简介",
@@ -944,9 +975,11 @@
   "userProfileAddFriend": "添加好友",
   "friendRequestsTitle": "好友申请",
   "friendRequestEmpty": "暂无好友申请",
-  "friendRequestBlocked": "对方已设置不接受好友申请",
+  "friendRequestBlocked": "对方已把你拉黑，无法发送好友申请",
+  "friendRequestBlockedByMe": "你已拉黑对方，先解除拉黑再申请",
   "friendBlock": "拉黑",
   "friendUnblock": "解除拉黑",
+  "friendUnblockDone": "已解除拉黑",
   "friendBlockConfirm": "拉黑后将解除好友关系，且对方无法再向你发送好友申请。确定拉黑？",
   "userProfileUnknownEmail": "未知",
   
@@ -1615,7 +1648,15 @@
   "settingsLayoutModeForceNarrow": "强制窄屏",
   "settingsWideThresholdTitle": "宽屏切换阈值",
   "settingsWideThresholdDesc": "窗口宽度达到该值时切换为宽屏布局（仅自动模式生效）",
+  "settingsSplitThresholdTitle": "分栏阈值",
+  "settingsSplitThresholdDesc": "窗口宽度达到该值时，列表与详情才并排显示（仅自动模式生效）",
   "settingsWideThresholdValue": "{px} px",
+  "settingsSinglePageStyleTitle": "单页风格",
+  "settingsSinglePageStyleDesc": "论坛区不使用宽屏分栏，恢复整屏列表→详情的单页导航",
+  "settingsForumHideEmptyPaneTitle": "论坛展开栏为空时隐藏",
+  "settingsForumHideEmptyPaneDesc": "论坛列表和论坛详情独占整屏，仅在打开帖子时分屏，退出帖子即恢复",
+  "settingsCommandPaletteTitle": "命令面板",
+  "settingsCommandPaletteDesc": "桌面端用 Ctrl/Cmd+K 呼出命令面板（默认开启；关闭后无法呼出）",
 
   "settingsWeakNetworkTitle": "弱网模式",
   "settingsWeakNetworkDesc": "网络不稳定时使用定时同步",
@@ -2082,5 +2123,12 @@
   "errorCodeFeatureDisabledFriendRequest": "本服务器已关闭好友申请",
   "errorCodeFeatureDisabledForum": "本服务器已关闭论坛",
   "errorCodeFeatureDisabledSticker": "本服务器已关闭贴图",
-  "errorCodeFeatureDisabledAnnouncement": "本服务器已关闭公告"
+  "errorCodeFeatureDisabledAnnouncement": "本服务器已关闭公告",
+  "listNoMore": "没有更多了",
+  "chatListEmpty": "还没有会话",
+  "contactListEmpty": "还没有联系人",
+  "forumMembersEmpty": "还没有成员",
+  "messageRetrySend": "发送失败，点击重发",
+  "commandPaletteHint": "搜索会话、页面和操作",
+  "commandPaletteEmpty": "没有匹配结果"
 }

@@ -370,6 +370,10 @@
   "imageViewThumbnail": "View thumbnail",
 
   "chatSelectPlaceholder": "Select a chat to start talking",
+  "forumSelectPlaceholder": "Select a forum to view it",
+  "forumSelectPostPlaceholder": "Select a post to read it",
+  "forumPostFullScreen": "View full screen",
+  "forumPostRestoreSplitView": "Restore split view",
   
   "settingsSystemNotificationsTitle": "System Notifications",
   "settingsSystemNotificationsDesc": "Use system notifications for messages",
@@ -518,12 +522,16 @@
   "adminFeatureGroupCreateDescription": "Allow users to create new groups.",
   "adminFeatureFriendRequest": "Friend requests",
   "adminFeatureFriendRequestDescription": "Allow sending friend requests and adding friends.",
+  "adminFeatureReadReceipt": "Read receipts",
+  "adminFeatureReadReceiptDescription": "Send private-chat read receipts and let clients query read status.",
   "adminFeatureForum": "Forum",
   "adminFeatureForumDescription": "Enable the forum feature.",
   "adminFeatureSticker": "Stickers",
   "adminFeatureStickerDescription": "Enable sticker packs and the sticker picker.",
   "adminFeatureAnnouncement": "Announcements",
   "adminFeatureAnnouncementDescription": "Enable server announcements.",
+  "adminFeaturePresence": "Online presence",
+  "adminFeaturePresenceDescription": "Let friends see each other's online status and receive online / offline events.",
   "adminServerFieldMaxStickerPacks": "Sticker packs per user",
   "adminServerFieldMaxStickersPerPack": "Stickers per pack",
   "adminServerFieldMaxStickerSize": "Max sticker size (bytes, -1 unlimited)",
@@ -682,6 +690,23 @@
   "accountSessionDevices": "Session Devices",
   "accountLockNow": "Lock Now",
   "accountUpdateYourProfile": "Update Your Profile",
+  "accountFriends": "Friends",
+  "accountFriendsEmpty": "No friends yet",
+  "accountFriendsOnlineCount": "{count} online",
+  "@accountFriendsOnlineCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "accountBlocked": "Blocked",
+  "accountBlockedEmpty": "Nobody is blocked",
+  "accountBlockedCount": "{count} blocked",
+  "@accountBlockedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "accountBlockedHint": "Open the list to unblock",
   
   "profileEditTitle": "Edit Profile",
   "profileEditAvatar": "Avatar",
@@ -690,6 +715,13 @@
   "profileEditEmail": "Email",
   "accountPublicEmailTitle": "Public Email",
   "accountPublicEmailDesc": "Others cannot see your email when disabled (public by default)",
+  "accountReadStatusTitle": "Show Read Status",
+  "accountReadStatusDesc": "Others can see when you have read their messages (shown by default)",
+  "accountOnlineStatusTitle": "Show Online Status",
+  "accountOnlineStatusDesc": "Friends can see when you are online (shown by default)",
+  "chatReadReceiptRead": "Read",
+  "chatReadReceiptCount": "{count} read",
+  "@chatReadReceiptCount": {"placeholders": {"count": {"type": "int"}}},
   "profileEditBio": "Bio",
   "profileEditBioPlaceholder": "Tell us about yourself...",
   "profileEditIntroduction": "Introduction",
@@ -958,9 +990,11 @@
   "userProfileAddFriend": "Add Friend",
   "friendRequestsTitle": "Friend Requests",
   "friendRequestEmpty": "No pending friend requests",
-  "friendRequestBlocked": "This user is not accepting friend requests",
+  "friendRequestBlocked": "This user has blocked you, so you cannot send a friend request",
+  "friendRequestBlockedByMe": "You blocked this user — unblock first",
   "friendBlock": "Block",
   "friendUnblock": "Unblock",
+  "friendUnblockDone": "Unblocked",
   "friendBlockConfirm": "Blocking removes the friendship and prevents this user from sending you friend requests. Block?",
   "userProfileUnknownEmail": "Unknown",
   
@@ -1650,7 +1684,15 @@
   "settingsLayoutModeForceNarrow": "Force Narrow",
   "settingsWideThresholdTitle": "Wide Screen Threshold",
   "settingsWideThresholdDesc": "Switch to the wide layout when the window width reaches this value (only in Auto mode)",
+  "settingsSplitThresholdTitle": "Split View Threshold",
+  "settingsSplitThresholdDesc": "Place the list and the detail side by side only once the window is this wide (only in Auto mode)",
   "settingsWideThresholdValue": "{px} px",
+  "settingsSinglePageStyleTitle": "Single-page style",
+  "settingsSinglePageStyleDesc": "Do not split the forum section: use the single-page list-to-detail navigation instead",
+  "settingsForumHideEmptyPaneTitle": "Hide the forum pane when empty",
+  "settingsForumHideEmptyPaneDesc": "Keep the forum list and the forum detail full-width; split only while a post is open, and restore when it closes",
+  "settingsCommandPaletteTitle": "Command palette",
+  "settingsCommandPaletteDesc": "Open the command palette with Ctrl/Cmd+K on desktop (on by default; nothing can summon it once off)",
 
   "settingsWeakNetworkTitle": "Weak network mode",
   "settingsWeakNetworkDesc": "Use periodic synchronization when the connection is unstable",
@@ -2126,5 +2168,21 @@
   "errorCodeFeatureDisabledFriendRequest": "Friend requests are disabled on this server",
   "errorCodeFeatureDisabledForum": "The forum is disabled on this server",
   "errorCodeFeatureDisabledSticker": "Stickers are disabled on this server",
-  "errorCodeFeatureDisabledAnnouncement": "Announcements are disabled on this server"
+  "errorCodeFeatureDisabledAnnouncement": "Announcements are disabled on this server",
+  "@listNoMore": {
+    "description": "Shown at the end of a paginated list when there are no more items"
+  },
+  "listNoMore": "No more",
+  "chatListEmpty": "No chats yet",
+  "contactListEmpty": "No contacts yet",
+  "forumMembersEmpty": "No members yet",
+  "@messageRetrySend": {
+    "description": "Tooltip on a failed message's status icon; tapping the icon resends it"
+  },
+  "messageRetrySend": "Send failed, tap to retry",
+  "@commandPaletteHint": {
+    "description": "Placeholder of the command palette search field"
+  },
+  "commandPaletteHint": "Search chats, pages and actions",
+  "commandPaletteEmpty": "No matching results"
 }

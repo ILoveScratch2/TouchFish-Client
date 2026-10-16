@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../models/message_model.dart';
 import '../../../models/chat_model.dart';
 import '../../../models/settings_service.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../widgets/message_bubble.dart';
 import '../../../widgets/media/image_lightbox.dart';
+import '../../../widgets/ui/empty_state.dart';
+import '../../../widgets/ui/refreshable.dart';
 
 const String _swipeKeyPrefix = 'swipe-';
 
@@ -53,6 +56,7 @@ class MessageListView extends StatelessWidget {
   final Function(ChatMessage) onForward;
   final Function(ChatMessage) onRecall;
   final Function(ChatMessage)? onDelete;
+  final Function(ChatMessage) onRetry;
   final ValueChanged<int> onQuoteTap;
   final Function(ChatMessage) onPinToggle;
   final Function(ChatMessage) onEssenceToggle;
@@ -65,6 +69,13 @@ class MessageListView extends StatelessWidget {
   final Set<String> selectedMessageKeys;
   final ValueChanged<ChatMessage> onEnterSelectionMode;
   final ValueChanged<ChatMessage> onToggleSelection;
+
+  /// 已读回执：全服开关是否开启。
+  final bool readReceiptEnabled;
+
+  /// 私聊：对方已读水位序号；群聊：mid -> 已读人数。
+  final int? peerReadSeq;
+  final Map<int, int> groupReadCounts;
 
   /// 本轮新增消息（见 [newlyAppendedMessageKeys]），这些气泡播一次入场动画。
   final Set<String> entranceKeys;
@@ -85,6 +96,7 @@ class MessageListView extends StatelessWidget {
     required this.onForward,
     required this.onRecall,
     this.onDelete,
+    this.onRetry = _noopMessage,
     required this.onQuoteTap,
     required this.onPinToggle,
     required this.onEssenceToggle,
@@ -96,6 +108,9 @@ class MessageListView extends StatelessWidget {
     this.selectedMessageKeys = const {},
     this.onEnterSelectionMode = _noopMessage,
     this.onToggleSelection = _noopMessage,
+    this.readReceiptEnabled = false,
+    this.peerReadSeq,
+    this.groupReadCounts = const {},
     this.entranceKeys = const {},
   });
 
@@ -109,23 +124,11 @@ class MessageListView extends StatelessWidget {
 
   Widget _buildList(BuildContext context) {
     if (messages.isEmpty) {
-      return RefreshIndicator(
+      return PullToRefresh.content(
         onRefresh: () async => onRefresh(),
-        child: ListView(
-          children: [
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.4,
-              child: Center(
-                child: Text(
-                  noMessagesText,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ),
-          ],
+        child: EmptyState(
+          icon: Icons.chat_bubble_outline,
+          title: noMessagesText,
         ),
       );
     }
@@ -144,6 +147,22 @@ class MessageListView extends StatelessWidget {
           indexByStableKey![raw.substring(_swipeKeyPrefix.length)];
       if (messageIndex == null) return null;
       return messages.length - 1 - messageIndex;
+    }
+
+    // 已读回执只显示一处（避免每条都刷屏），落点是**已被对方读到的、最新的那条
+    // 自己的消息**。
+    //
+    // 不能挂在「最后一条自己的消息」上：对方只读到一半时那里什么都没有，等于
+    // 部分已读完全不可见；而自己再发一条，标记还会整个消失（新消息尚未被读）。
+    var readMarkerIndex = -1;
+    if (readReceiptEnabled) {
+      for (var i = messages.length - 1; i >= 0; i--) {
+        final m = messages[i];
+        if (m.isMe && !m.isDeleted && m.mid != null && _isReadByPeer(m)) {
+          readMarkerIndex = i;
+          break;
+        }
+      }
     }
 
     return ListView.builder(
@@ -193,6 +212,7 @@ class MessageListView extends StatelessWidget {
           onDelete: canDeleteLocally(message)
               ? (_) => onDelete?.call(message)
               : null,
+          onRetry: () => onRetry(message),
           onQuoteTap: onQuoteTap,
           showAvatar: showAvatar,
           galleryItems: galleryItems.isEmpty ? null : galleryItems,
@@ -217,6 +237,12 @@ class MessageListView extends StatelessWidget {
           onEnterSelectionMode: isSelectionMode
               ? null
               : () => onEnterSelectionMode(message),
+          readReceiptLabel: _readReceiptLabelFor(
+            context,
+            messageIndex,
+            message,
+            readMarkerIndex,
+          ),
         );
 
         final selectionWrapped = _SelectionWrapper(
@@ -254,6 +280,35 @@ class MessageListView extends StatelessWidget {
         );
       },
     );
+  }
+
+  /// 对方是否已读到我这条消息。
+  ///
+  /// 私聊看对方的水位序号；群聊看「N 人已读」的计数（>=1 即算读到）。
+  bool _isReadByPeer(ChatMessage message) {
+    if (currentRoom?.type == ChatType.group) {
+      return (groupReadCounts[message.mid!] ?? 0) > 0;
+    }
+    final seq = message.roomSeq;
+    return seq != null && peerReadSeq != null && peerReadSeq! >= seq;
+  }
+
+  /// 计算某条消息下的已读回执文案；只有 [readMarkerIndex] 那一条会返回非空。
+  String? _readReceiptLabelFor(
+    BuildContext context,
+    int index,
+    ChatMessage message,
+    int readMarkerIndex,
+  ) {
+    if (!readReceiptEnabled || index != readMarkerIndex) return null;
+    if (!message.isMe || message.isDeleted || message.mid == null) return null;
+    final l10n = AppLocalizations.of(context)!;
+    if (currentRoom?.type == ChatType.group) {
+      final count = groupReadCounts[message.mid!];
+      if (count == null || count <= 0) return null;
+      return l10n.chatReadReceiptCount(count);
+    }
+    return l10n.chatReadReceiptRead;
   }
 }
 

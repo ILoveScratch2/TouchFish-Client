@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:file_picker/file_picker.dart';
+import '../models/file_task.dart';
+import '../providers/task/task_manager_provider.dart';
 import '../services/clipboard_attachment_service.dart';
 import '../services/auth_state.dart';
 import '../services/chat_ws_service.dart';
@@ -273,6 +276,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildMessageActionPreview(context),
+            _UploadProgressStrip(roomId: widget.roomId),
             // Main input row
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -307,55 +311,11 @@ class _ChatInputBarState extends State<ChatInputBar> {
                   },
                 ),
                 if (!_isVoiceMode)
-                  PopupMenuButton<String>(
-                  icon: const Icon(Symbols.attach_file),
-                  tooltip: l10n.chatInputAttachment,
-                  onSelected: (value) async {
-                    await _handleAttachment(value);
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'image',
-                      child: Row(
-                        children: [
-                          const Icon(Symbols.image),
-                          const SizedBox(width: 12),
-                          Text(l10n.mediaPickImage),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'video',
-                      child: Row(
-                        children: [
-                          const Icon(Symbols.videocam),
-                          const SizedBox(width: 12),
-                          Text(l10n.mediaPickVideo),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'audio',
-                      child: Row(
-                        children: [
-                          const Icon(Symbols.audiotrack),
-                          const SizedBox(width: 12),
-                          Text(l10n.mediaPickAudio),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'file',
-                      child: Row(
-                        children: [
-                          const Icon(Symbols.file_upload),
-                          const SizedBox(width: 12),
-                          Text(l10n.chatInputUploadFile),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  IconButton(
+                    icon: const Icon(Symbols.attach_file),
+                    tooltip: l10n.chatInputAttachment,
+                    onPressed: _showAttachmentSheet,
+                  ),
                 Expanded(
                   child: _isVoiceMode
                       ? VoiceRecordBar(
@@ -605,57 +565,10 @@ class _ChatInputBarState extends State<ChatInputBar> {
             style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
           ),
           const SizedBox(height: 12),
-          PopupMenuButton<String>(
-            onSelected: (value) async {
-              await _handleAttachment(value);
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'image',
-                child: Row(
-                  children: [
-                    const Icon(Icons.image),
-                    const SizedBox(width: 12),
-                    Text(l10n.mediaPickImage),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'video',
-                child: Row(
-                  children: [
-                    const Icon(Icons.videocam),
-                    const SizedBox(width: 12),
-                    Text(l10n.mediaPickVideo),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'audio',
-                child: Row(
-                  children: [
-                    const Icon(Icons.audiotrack),
-                    const SizedBox(width: 12),
-                    Text(l10n.mediaPickAudio),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'file',
-                child: Row(
-                  children: [
-                    const Icon(Icons.file_upload),
-                    const SizedBox(width: 12),
-                    Text(l10n.chatInputUploadFile),
-                  ],
-                ),
-              ),
-            ],
-            child: ElevatedButton.icon(
-              onPressed: null,
-              icon: const Icon(Icons.add, size: 18),
-              label: Text(l10n.chatFunctionPickFile),
-            ),
+          ElevatedButton.icon(
+            onPressed: _showAttachmentSheet,
+            icon: const Icon(Icons.add, size: 18),
+            label: Text(l10n.chatFunctionPickFile),
           ),
           if (widget.onServerFilePicked != null) ...[
             const SizedBox(height: 12),
@@ -783,6 +696,42 @@ class _ChatInputBarState extends State<ChatInputBar> {
     );
   }
 
+  Future<void> _showAttachmentSheet() async {
+    final l10n = AppLocalizations.of(context)!;
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Symbols.image),
+              title: Text(l10n.mediaPickImage),
+              onTap: () => Navigator.pop(sheetContext, 'image'),
+            ),
+            ListTile(
+              leading: const Icon(Symbols.videocam),
+              title: Text(l10n.mediaPickVideo),
+              onTap: () => Navigator.pop(sheetContext, 'video'),
+            ),
+            ListTile(
+              leading: const Icon(Symbols.audiotrack),
+              title: Text(l10n.mediaPickAudio),
+              onTap: () => Navigator.pop(sheetContext, 'audio'),
+            ),
+            ListTile(
+              leading: const Icon(Symbols.file_upload),
+              title: Text(l10n.chatInputUploadFile),
+              onTap: () => Navigator.pop(sheetContext, 'file'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (selected != null) await _handleAttachment(selected);
+  }
+
   Future<void> _handleAttachment(String type) async {
     FilePickerResult? result;
 
@@ -881,5 +830,81 @@ class _ChatInputBarState extends State<ChatInputBar> {
         }
         break;
     }
+  }
+}
+
+/// 输入框上方的附件上传进度条：复用 [taskManagerProvider]（消息气泡
+/// 内进度同源），仅展示当前房间进行中的上传任务。
+class _UploadProgressStrip extends ConsumerWidget {
+  final String roomId;
+
+  const _UploadProgressStrip({required this.roomId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final active = ref.watch(taskManagerProvider).where((task) {
+      return task.roomId == roomId &&
+          task.type == FileTaskType.upload &&
+          (task.status == FileTaskStatus.preparing ||
+              task.status == FileTaskStatus.transferring);
+    }).toList();
+    if (active.isEmpty) return const SizedBox.shrink();
+
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final task in active)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  Icon(
+                    Symbols.file_upload,
+                    size: 16,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          task.fileName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        const SizedBox(height: 2),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: task.progress,
+                            minHeight: 3,
+                            backgroundColor:
+                                colorScheme.surfaceContainerHighest,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    task.progressLabel,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

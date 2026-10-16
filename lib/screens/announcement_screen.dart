@@ -9,6 +9,7 @@ import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../widgets/admin_ui.dart';
 import '../widgets/markdown_renderer.dart';
+import '../widgets/text_entry_dialog.dart';
 
 class AnnouncementScreen extends StatefulWidget {
   const AnnouncementScreen({super.key});
@@ -88,105 +89,75 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
 
   Future<void> _showCreateDialog() async {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
-    final ok = await showDialog<bool>(
+    // 输入框用 TextEntryDialog 自带的控制器：这里手工 dispose 会在弹窗退场
+    // 动画还没结束时把仍挂在 TextField 上的控制器销毁。
+    final content = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.announcementCreate),
-        content: TextField(
-          controller: controller,
-          maxLines: 5,
-          decoration: InputDecoration(
-            hintText: l10n.announcementCreateHint,
-            border: const OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l10n.confirm),
-          ),
-        ],
+      builder: (_) => TextEntryDialog(
+        title: l10n.announcementCreate,
+        hintText: l10n.announcementCreateHint,
+        cancelLabel: l10n.cancel,
+        confirmLabel: l10n.confirm,
+        icon: Icons.campaign,
+        maxLines: 5,
+        allowEmpty: true,
       ),
     );
-    if (ok != true) return;
-
-    final content = controller.text.trim();
+    if (content == null || !mounted) return;
+    if (content.isEmpty) {
+      TouchFishSnackbarService.instance.show(l10n.announcementCreateEmpty);
+      return;
+    }
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+    final success = await TfApiClient.instance.createAnnouncement(
+      uid,
+      password,
+      content,
+    );
     if (mounted) {
-      if (content.isEmpty) {
-        TouchFishSnackbarService.instance.show(l10n.announcementCreateEmpty);
-        return;
-      }
-      final uid = AuthState.instance.uid;
-      final password = AuthState.instance.password;
-      if (uid == null || password == null) return;
-      final success = await TfApiClient.instance.createAnnouncement(
-        uid,
-        password,
-        content,
+      TouchFishSnackbarService.instance.show(
+        success ? l10n.announcementCreateSuccess : l10n.announcementCreateFailed,
       );
-      if (mounted) {
-        TouchFishSnackbarService.instance
-            .show(success ? l10n.announcementCreateSuccess : l10n.announcementCreateFailed);
-        if (success) _load();
-      }
+      if (success) _load();
     }
   }
 
   Future<void> _showEditDialog(Announcement a) async {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: a.content);
-    final ok = await showDialog<bool>(
+    final content = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.announcementEdit),
-        content: TextField(
-          controller: controller,
-          maxLines: 5,
-          decoration: InputDecoration(
-            hintText: l10n.announcementEditHint,
-            border: const OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l10n.confirm),
-          ),
-        ],
+      builder: (_) => TextEntryDialog(
+        title: l10n.announcementEdit,
+        hintText: l10n.announcementEditHint,
+        cancelLabel: l10n.cancel,
+        confirmLabel: l10n.confirm,
+        icon: Icons.edit,
+        initialValue: a.content,
+        maxLines: 5,
+        allowEmpty: true,
       ),
     );
-    if (ok != true) return;
-
-    final content = controller.text.trim();
+    if (content == null || !mounted) return;
+    if (content.isEmpty) {
+      TouchFishSnackbarService.instance.show(l10n.announcementEditEmpty);
+      return;
+    }
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+    final success = await TfApiClient.instance.editAnnouncement(
+      uid,
+      password,
+      a.timeStamp,
+      content,
+    );
     if (mounted) {
-      if (content.isEmpty) {
-        TouchFishSnackbarService.instance.show(l10n.announcementEditEmpty);
-        return;
-      }
-      final uid = AuthState.instance.uid;
-      final password = AuthState.instance.password;
-      if (uid == null || password == null) return;
-      final success = await TfApiClient.instance.editAnnouncement(
-        uid,
-        password,
-        a.timeStamp,
-        content,
+      TouchFishSnackbarService.instance.show(
+        success ? l10n.announcementEditSuccess : l10n.announcementEditFailed,
       );
-      if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        TouchFishSnackbarService.instance
-            .show(success ? l10n.announcementEditSuccess : l10n.announcementEditFailed);
-        if (success) _load();
-      }
+      if (success) _load();
     }
   }
 

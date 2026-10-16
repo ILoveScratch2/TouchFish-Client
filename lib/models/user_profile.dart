@@ -10,6 +10,12 @@ class UserProfile {
   /// 邮箱是否对外公开（仅本人资料从 /auth/query_self 拿到真实值；
   /// 他人资料受服务端裁剪，恒为默认 true）。
   final bool publicEmail;
+
+  /// 是否向他人展示自己的已读状态
+  final bool showReadStatus;
+
+  /// 是否向好友展示自己的在线状态
+  final bool showOnlineStatus;
   final String? _avatarBase;
   final int avatarVersion;
 
@@ -25,6 +31,8 @@ class UserProfile {
     this.personalSign,
     this.introduction,
     this.publicEmail = true,
+    this.showReadStatus = true,
+    this.showOnlineStatus = true,
     String? avatar,
     this.avatarVersion = 0,
   }) : _avatarBase = avatar;
@@ -39,6 +47,8 @@ class UserProfile {
       personalSign: json['personal_sign'] as String?,
       introduction: json['introduction'] as String?,
       publicEmail: json['public_email'] as bool? ?? true,
+      showReadStatus: json['show_read_status'] as bool? ?? true,
+      showOnlineStatus: json['show_online_status'] as bool? ?? true,
       avatar: json['avatar'] as String?,
     );
   }
@@ -57,6 +67,8 @@ class UserProfile {
       personalSign: json['personal_sign'] as String?,
       introduction: json['introduction'] as String?,
       publicEmail: json['public_email'] as bool? ?? true,
+      showReadStatus: json['show_read_status'] as bool? ?? true,
+      showOnlineStatus: json['show_online_status'] as bool? ?? true,
       avatar: avatarUrl,
       avatarVersion: avatarVersion,
     );
@@ -72,6 +84,8 @@ class UserProfile {
       if (personalSign != null) 'personal_sign': personalSign,
       if (introduction != null) 'introduction': introduction,
       'public_email': publicEmail,
+      'show_read_status': showReadStatus,
+      'show_online_status': showOnlineStatus,
       if (_avatarBase != null) 'avatar': _avatarBase,
     };
   }

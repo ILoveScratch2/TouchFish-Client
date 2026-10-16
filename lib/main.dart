@@ -32,6 +32,7 @@ import 'services/forum_pending_service.dart';
 import 'services/single_instance_service.dart';
 import 'services/feature_flags.dart';
 import 'services/notification_service.dart';
+import 'services/presence_service.dart';
 import 'services/server_connection_status_service.dart';
 import 'services/ip_override_service.dart';
 import 'services/lock_service.dart';
@@ -458,6 +459,7 @@ class _TouchFishAppState extends State<TouchFishApp>
   void _startNotificationPollingIfLoggedIn() {
     if (AuthState.instance.isLoggedIn) {
       unawaited(ChatDataService.instance.init());
+      PresenceService.instance.start();
       unawaited(ChatWsService.instance.connect());
       NotificationService.instance.startPolling();
       ForumPendingService.instance.startPolling();
@@ -534,6 +536,7 @@ class _TouchFishAppState extends State<TouchFishApp>
       NotificationService.instance.stopPolling();
       ForumPendingService.instance.stopPolling();
       AppNotificationService.instance.clear();
+      PresenceService.instance.clear();
       unawaited(ChatWsService.instance.disconnect());
       unawaited(ChatDataService.instance.reset());
       unawaited(_stopAndroidBackgroundService());

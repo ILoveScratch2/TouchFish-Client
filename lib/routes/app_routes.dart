@@ -14,6 +14,7 @@ import '../screens/chat_screen.dart';
 import '../screens/chat_detail_screen.dart';
 import '../screens/announcement_screen.dart';
 import '../screens/forum_screen.dart';
+import '../screens/forum_section_shell.dart';
 import '../screens/forum_detail_screen.dart';
 import '../screens/forum_post_detail_screen.dart';
 import '../screens/admin_screen.dart';
@@ -54,9 +55,6 @@ class AppRoutes {
   static const String chatDetail = '/chat/:roomId';
   static const String announcement = '/announcement';
   static const String forum = '/forum';
-  static const String forumDetail = '/forum/:forumId';
-  static const String forumPostDetail = '/forum/:forumId/post/:postId';
-  static const String forumSearch = '/forum/search';
   static const String groupSearch = '/group/search';
   static const String universalSearch = '/search';
   static const String groupProfile = '/group/:gid';
@@ -129,7 +127,9 @@ class AppRoutes {
   ///
   /// 他妈的不要叠加主 Section 切换动画
   /// 神秘 dsv4f 给我 debug 半天，梁文锋你死定了过拟合这么严重的 fw ds
-  @visibleForTesting
+  ///
+  /// 同时也决定底部导航的显隐：子页面（聊天详情、论坛详情 / 帖子 / 搜索）
+  /// 是整屏页面，不显示底部导航。
   static bool isSubPageNavigation(String path) {
     // 聊天页面内的导航
     if (path.startsWith('/chat/') && path != '/chat') {
@@ -148,15 +148,12 @@ class AppRoutes {
     Widget child,
   ) {
     final path = state.uri.path;
-    
+
     // 如果是子页面导航，不使用动画
     if (isSubPageNavigation(path)) {
-      return NoTransitionPage<void>(
-        key: state.pageKey,
-        child: child,
-      );
+      return NoTransitionPage<void>(key: state.pageKey, child: child);
     }
-    
+
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final currentIndex = _sectionIndexOf(path);
     final lastIndex = _lastMainSectionIndex;
@@ -175,7 +172,8 @@ class AppRoutes {
       child: child,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         if (reduceMotion) return child;
-        final isWide = WideScreenHelper.isWide(context);
+        // 分栏时详情是右侧栏位的纵向淡入，单栏时才是整页横向推入。
+        final isWide = WideScreenHelper.isExpanded(context);
         final curved = CurvedAnimation(
           parent: animation,
           curve: Curves.easeOutCubic,
@@ -224,11 +222,9 @@ class AppRoutes {
   /// 索引页自身不做转场动画：进入聊天 Section 的整体过渡由 ChatShellScreen
   /// 整壳入场动画承担；从详情返回列表时索引页常驻栈底（或被静默补入），
   /// 不会重放"列表滑入"动画。
-  static Page<void> _chatIndexPage(
-    BuildContext context,
-    GoRouterState state,
-  ) {
-    final isWide = WideScreenHelper.isWide(context);
+  static Page<void> _chatIndexPage(BuildContext context, GoRouterState state) {
+    // 与 ChatShellScreen 的分栏判断一致。
+    final isWide = WideScreenHelper.isExpanded(context);
     final Widget page = isWide
         ? _chatPlaceholder(context)
         : const ChatListScreen(
@@ -236,6 +232,29 @@ class AppRoutes {
             isCollapsed: false,
             isHovering: false,
           );
+    return NoTransitionPage<void>(key: state.pageKey, child: page);
+  }
+
+  /// 论坛区占位页（宽屏右侧未选论坛时显示）
+  static Widget _forumPlaceholder(BuildContext context) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: Center(
+        child: Text(
+          AppLocalizations.of(context)!.forumSelectPlaceholder,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 论坛区索引页（URL 为 `/forum`）
+  static Page<void> _forumIndexPage(BuildContext context, GoRouterState state) {
+    final Widget page = WideScreenHelper.forumKeepsListPane(context)
+        ? _forumPlaceholder(context)
+        : const ForumScreen(isAside: false);
     return NoTransitionPage<void>(key: state.pageKey, child: page);
   }
 
@@ -268,6 +287,51 @@ class AppRoutes {
         extra['username'] is String &&
         extra['uid'] is int;
   }
+
+  @visibleForTesting
+  static List<RouteBase> forumSectionRoutes() => [
+    ShellRoute(
+      builder: (context, state, child) {
+        return ForumSectionShell(location: state.uri.path, child: child);
+      },
+      routes: [
+        GoRoute(
+          path: forum,
+          pageBuilder: (context, state) => _forumIndexPage(context, state),
+          routes: [
+            GoRoute(
+              path: 'search',
+              builder: (context, state) => const ForumSearchScreen(),
+            ),
+            GoRoute(
+              path: ':forumId',
+              builder: (context, state) {
+                final forumId = state.pathParameters['forumId']!;
+                return ForumDetailScreen(
+                  key: ValueKey('forum-$forumId'),
+                  forumId: forumId,
+                );
+              },
+              routes: [
+                GoRoute(
+                  path: 'post/:postId',
+                  builder: (context, state) {
+                    final forumId = state.pathParameters['forumId']!;
+                    final postId = state.pathParameters['postId']!;
+                    return ForumPostDetailScreen(
+                      key: ValueKey('post-$forumId-$postId'),
+                      forumId: forumId,
+                      postId: postId,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    ),
+  ];
 
   static GoRouter createRouter({
     required bool isFirstLaunch,
@@ -407,7 +471,9 @@ class AppRoutes {
                 if (peerUid == null) {
                   return Scaffold(
                     body: Center(
-                      child: Text(AppLocalizations.of(context)!.callInvalidRequest),
+                      child: Text(
+                        AppLocalizations.of(context)!.callInvalidRequest,
+                      ),
                     ),
                   );
                 }
@@ -433,10 +499,6 @@ class AppRoutes {
                   targetUsername: username is String ? username : null,
                 );
               },
-            ),
-            GoRoute(
-              path: forumSearch,
-              builder: (context, state) => const ForumSearchScreen(),
             ),
             GoRoute(
               path: groupSearch,
@@ -470,28 +532,14 @@ class AppRoutes {
                 final Map<String, dynamic>? initialData = args is Map
                     ? args['initialData'] as Map<String, dynamic>?
                     : null;
-                final String? groupName =
-                    args is Map ? args['groupName'] as String? : null;
+                final String? groupName = args is Map
+                    ? args['groupName'] as String?
+                    : null;
                 return GroupProfileScreen(
                   gid: gid,
                   initialData: initialData,
                   initialGroupName: groupName,
                 );
-              },
-            ),
-            GoRoute(
-              path: '/forum/:forumId',
-              builder: (context, state) {
-                final forumId = state.pathParameters['forumId']!;
-                return ForumDetailScreen(forumId: forumId);
-              },
-            ),
-            GoRoute(
-              path: '/forum/:forumId/post/:postId',
-              builder: (context, state) {
-                final forumId = state.pathParameters['forumId']!;
-                final postId = state.pathParameters['postId']!;
-                return ForumPostDetailScreen(forumId: forumId, postId: postId);
               },
             ),
             ShellRoute(
@@ -511,10 +559,7 @@ class AppRoutes {
                   },
                   routes: [
                     // CHAT NB!
-                    GoRoute(
-                      path: main,
-                      redirect: (context, state) => chat,
-                    ),
+                    GoRoute(path: main, redirect: (context, state) => chat),
                     GoRoute(
                       path: chat,
                       pageBuilder: (context, state) =>
@@ -524,8 +569,9 @@ class AppRoutes {
                           path: ':roomId',
                           pageBuilder: (context, state) {
                             final roomId = state.pathParameters['roomId']!;
-                            final reduceMotion =
-                                MediaQuery.disableAnimationsOf(context);
+                            final reduceMotion = MediaQuery.disableAnimationsOf(
+                              context,
+                            );
                             final detail = ChatDetailScreen(
                               key: ValueKey(roomId),
                               roomId: roomId,
@@ -541,60 +587,74 @@ class AppRoutes {
                             // 不然他妈的 opaque 路由 pop 时恢复下层就会他妈的报错
 
                             // 气死我了，不要管文不文明了
-                            if (!WideScreenHelper.isWide(context)) {
-                              // 窄屏：整屏从右滑入
+                            if (!WideScreenHelper.isExpanded(context)) {
+                              // 单栏（窄屏或 medium）：整屏从右滑入
                               return CustomTransitionPage<void>(
                                 key: state.pageKey,
                                 opaque: false,
-                                transitionDuration:
-                                    const Duration(milliseconds: 300),
-                                reverseTransitionDuration:
-                                    const Duration(milliseconds: 260),
+                                transitionDuration: const Duration(
+                                  milliseconds: 300,
+                                ),
+                                reverseTransitionDuration: const Duration(
+                                  milliseconds: 260,
+                                ),
                                 child: detail,
-                                transitionsBuilder: (context, animation,
-                                        secondaryAnimation, child) {
-                                  final curved = CurvedAnimation(
-                                    parent: animation,
-                                    curve: Curves.easeOutCubic,
-                                    reverseCurve: Curves.easeInCubic,
-                                  );
-                                  return SlideTransition(
-                                    position: Tween<Offset>(
-                                      begin: const Offset(1, 0),
-                                      end: Offset.zero,
-                                    ).animate(curved),
-                                    child: child,
-                                  );
-                                },
+                                transitionsBuilder:
+                                    (
+                                      context,
+                                      animation,
+                                      secondaryAnimation,
+                                      child,
+                                    ) {
+                                      final curved = CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOutCubic,
+                                        reverseCurve: Curves.easeInCubic,
+                                      );
+                                      return SlideTransition(
+                                        position: Tween<Offset>(
+                                          begin: const Offset(1, 0),
+                                          end: Offset.zero,
+                                        ).animate(curved),
+                                        child: child,
+                                      );
+                                    },
                               );
                             }
                             // 宽屏：仅在右侧面板区域内轻量过渡
                             return CustomTransitionPage<void>(
                               key: state.pageKey,
                               opaque: false,
-                              transitionDuration:
-                                  const Duration(milliseconds: 260),
-                              reverseTransitionDuration:
-                                  const Duration(milliseconds: 240),
+                              transitionDuration: const Duration(
+                                milliseconds: 260,
+                              ),
+                              reverseTransitionDuration: const Duration(
+                                milliseconds: 240,
+                              ),
                               child: detail,
-                              transitionsBuilder: (context, animation,
-                                      secondaryAnimation, child) {
-                                final curved = CurvedAnimation(
-                                  parent: animation,
-                                  curve: Curves.easeOutCubic,
-                                  reverseCurve: Curves.easeInCubic,
-                                );
-                                return FadeTransition(
-                                  opacity: curved,
-                                  child: SlideTransition(
-                                    position: Tween<Offset>(
-                                      begin: const Offset(0.05, 0),
-                                      end: Offset.zero,
-                                    ).animate(curved),
-                                    child: child,
-                                  ),
-                                );
-                              },
+                              transitionsBuilder:
+                                  (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) {
+                                    final curved = CurvedAnimation(
+                                      parent: animation,
+                                      curve: Curves.easeOutCubic,
+                                      reverseCurve: Curves.easeInCubic,
+                                    );
+                                    return FadeTransition(
+                                      opacity: curved,
+                                      child: SlideTransition(
+                                        position: Tween<Offset>(
+                                          begin: const Offset(0.05, 0),
+                                          end: Offset.zero,
+                                        ).animate(curved),
+                                        child: child,
+                                      ),
+                                    );
+                                  },
                             );
                           },
                         ),
@@ -602,6 +662,7 @@ class AppRoutes {
                     ),
                   ],
                 ),
+                // 公告区：整屏单页——列表即详情（卡片内联内容），不设常驻分栏。
                 GoRoute(
                   path: announcement,
                   pageBuilder: (context, state) => _mainSectionPage(
@@ -610,11 +671,10 @@ class AppRoutes {
                     const AnnouncementScreen(),
                   ),
                 ),
-                GoRoute(
-                  path: forum,
-                  pageBuilder: (context, state) =>
-                      _mainSectionPage(context, state, const ForumScreen()),
-                ),
+                // 论坛区使用常驻 Shell：ForumSectionShell（宽屏左栏常驻 +
+                // 右侧详情面板）。详情/发帖/搜索作为 /forum 的嵌套子路由，在
+                // 壳内子导航中切换——宽屏只换右侧面板，窄屏/单页风格整屏 push。
+                ...forumSectionRoutes(),
                 GoRoute(
                   path: account,
                   pageBuilder: (context, state) =>

@@ -7,6 +7,7 @@ import '../l10n/app_localizations.dart';
 import '../models/message_model.dart';
 import '../models/settings_service.dart';
 import '../widgets/markdown_renderer.dart';
+import '../widgets/ui/loading_indicator.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/chat_data_service.dart';
 import '../services/snackbar_service.dart';
@@ -386,7 +387,7 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const LoadingIndicator(),
       );
     }
 

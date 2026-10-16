@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -117,6 +118,25 @@ class ChatDataService extends ChangeNotifier {
   // 服务端未读的重定基序号：以某房间 last_seq 为界，<= 该序号的同步消息
   // 已在服务端未读计数内，不再本地重复累计（防双计）。
   final Map<String, int> _unreadRebaseSeq = {};
+
+  // 已读回执：私聊对方已读水位（roomId -> peer last_read_seq）；
+  // 群聊按消息 mid 记录已读人数（无实时推送，按需查询）。
+  final Map<String, int> _peerReadSeq = {};
+  final Map<int, int> _groupReadCounts = {};
+
+  /// 群聊已读人数缓存的条目上限。它只服务「当前会话最后一条自己的消息」，
+  /// 老条目不会再被读到——不设上限就会随会话里的消息数一直长。
+  static const int _groupReadCountCap = 500;
+
+  /// 已读回执缓存的修订号：[_peerReadSeq] / [_groupReadCounts] 每变一次 +1。
+  ///
+  /// 已读回执**不改变消息列表**，所以 [roomMessagesProvider] 的 _sameContent 会
+  /// 判定「无变化」而不发新 state，渲染「已读」的那层因此收不到任何通知（全局
+  /// notifyListeners 也到不了它，那个 provider 挂的是房间级监听）。这个
+  /// ValueNotifier 只承载这一件事，让 UI 能只订阅它、只重建气泡列表。
+  final ValueNotifier<int> readReceiptRevision = ValueNotifier<int>(0);
+
+  void _bumpReadReceiptRevision() => readReceiptRevision.value++;
 
   /// 从设置读取消息缓存的最大会话房间数（默认 50）
   int get _maxCachedRooms =>
@@ -795,6 +815,11 @@ class ChatDataService extends ChangeNotifier {
     _userCache.clear();
     _clearMessageIndexes();
     _roomPreferences.clear();
+    // roomId/mid 全局共享，不随账号隔离：登出必须丢掉已读缓存，
+    // 否则换账号后会把上一账号的水位当成新账号的已读状态渲染。
+    _peerReadSeq.clear();
+    _groupReadCounts.clear();
+    _bumpReadReceiptRevision();
     _rooms.clear();
     _contacts.clear();
     _roomListeners.clear(); // 清理所有监听器，防止内存泄漏
@@ -1193,6 +1218,23 @@ class ChatDataService extends ChangeNotifier {
       final lastSeq = (data['last_seq'] as num?)?.toInt();
       if (roomId == null || roomId.isEmpty || lastSeq == null) return;
       applyRemoteReadReceipt(roomId, lastSeq);
+      return;
+    }
+
+    if (event.type == 'message.read_receipt') {
+      // 私聊：对方（好友）已读到某个水位，服务端已按对方视角重写 room_id
+      final data = event.notification;
+      if (data == null) return;
+      final roomId = data['room_id'] as String?;
+      final lastSeq = (data['last_seq'] as num?)?.toInt();
+      if (roomId == null || roomId.isEmpty || lastSeq == null) return;
+      applyPeerReadReceipt(roomId, lastSeq);
+      return;
+    }
+
+    if (event.type == 'PRIVACY.UPDATED') {
+      // 同账号其它设备修改了隐私开关，刷新本地缓存的本人资料
+      unawaited(AuthState.instance.refreshProfile());
       return;
     }
 
@@ -2075,6 +2117,81 @@ class ChatDataService extends ChangeNotifier {
       _rooms[idx] = _rooms[idx].copyWith(unreadCount: updated);
       notifyListeners();
     }
+  }
+
+  /// 私聊：对方当前已读到的房间水位序号（未收到回执则 null）。
+  int? peerReadSeq(String roomId) => _peerReadSeq[roomId];
+
+  /// 群聊：某条消息的已读人数（未查询过则 null）。
+  int? groupReadCount(int mid) => _groupReadCounts[mid];
+
+  /// 群聊：mid -> 已读人数。返回只读视图，外部改不动内部缓存。
+  Map<int, int> get groupReadCounts => UnmodifiableMapView(_groupReadCounts);
+
+  /// 收到私聊已读回执（roomId 为对方视角，服务端已重写）。
+  void applyPeerReadReceipt(String roomId, int lastSeq) {
+    if (roomId.isEmpty || lastSeq <= 0) return;
+    final prev = _peerReadSeq[roomId];
+    if (prev != null && prev >= lastSeq) return;
+    _peerReadSeq[roomId] = lastSeq;
+    notifyListeners();
+    _bumpReadReceiptRevision();
+  }
+
+  /// 丢弃私聊对方的已读水位（对方关闭「展示已读状态」时调用）。
+  ///
+  /// 必须真的丢掉而不是「不再更新」：服务端在对方关闭开关的那一刻就停止推送
+  /// `message.read_receipt`，此后没有任何事件会来纠正旧水位，UI 会一直挂着
+  /// 上一次查到的「已读」——恰恰是对方关机那个开关想阻止的展示。
+  void clearPeerReadReceipt(String roomId) {
+    if (_peerReadSeq.remove(roomId) == null) return;
+    notifyListeners();
+    _bumpReadReceiptRevision();
+  }
+
+  /// 按需查询某条消息的已读情况并缓存（打开房间/发送后调用，兼作离线补拉）。
+  Future<void> refreshReadReceipt(String roomId, int mid) async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+    final result = await TfApiClient.instance.queryReadReceipt(
+      uid,
+      password,
+      roomId,
+      mid,
+    );
+    if (result == null || AuthState.instance.uid != uid) return;
+    applyReadReceiptResult(roomId, mid, result);
+  }
+
+  /// 应用一次 `/message/read_receipt` 的查询结果。
+  @visibleForTesting
+  void applyReadReceiptResult(String roomId, int mid, TfReadReceipt result) {
+    if (roomId.startsWith('U')) {
+      if (result.hidden) {
+        // 对方关闭了「展示已读状态」：连旧水位一起清掉。只「不再更新」不够
+        // ——服务端此刻已停止推送 `message.read_receipt`，没有任何后续事件会
+        // 来纠正它，UI 会永远挂着上一次查到的「已读」。
+        clearPeerReadReceipt(roomId);
+      } else {
+        applyPeerReadReceipt(roomId, result.readerLastSeq);
+      }
+    } else if (roomId.startsWith('G')) {
+      setGroupReadCount(mid, result.readCount);
+    }
+  }
+
+  void setGroupReadCount(int mid, int count) {
+    if (count < 0 || _groupReadCounts[mid] == count) return;
+    // 先删再插把键挪到末尾：Dart 的 Map 保序，于是队首是最久没变化的条目，
+    // 超限就丢它（值没变过的老消息自然沉底）。
+    _groupReadCounts.remove(mid);
+    _groupReadCounts[mid] = count;
+    while (_groupReadCounts.length > _groupReadCountCap) {
+      _groupReadCounts.remove(_groupReadCounts.keys.first);
+    }
+    notifyListeners();
+    _bumpReadReceiptRevision();
   }
 
   Future<void> removeRoom(String roomId) async {

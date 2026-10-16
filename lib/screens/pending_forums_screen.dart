@@ -8,6 +8,7 @@ import '../services/forum_pending_service.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../widgets/admin_ui.dart';
+import '../widgets/ui/loading_indicator.dart';
 
 enum _PendingForumAction { approve, reject }
 
@@ -177,7 +178,7 @@ class _PendingForumsScreenState extends State<PendingForumsScreen> {
               icon: Icons.lock_outline_rounded,
             )
           : _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingIndicator()
           : RefreshIndicator(
               onRefresh: _loadPendingForums,
               child: _error != null

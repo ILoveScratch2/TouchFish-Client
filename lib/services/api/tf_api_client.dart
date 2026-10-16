@@ -151,18 +151,22 @@ class TfFeatureFlags {
   final bool groupChat;
   final bool groupCreate;
   final bool friendRequest;
+  final bool readReceipt;
   final bool forum;
   final bool sticker;
   final bool announcement;
+  final bool presence;
 
   const TfFeatureFlags({
     this.privateChat = true,
     this.groupChat = true,
     this.groupCreate = true,
     this.friendRequest = true,
+    this.readReceipt = true,
     this.forum = true,
     this.sticker = true,
     this.announcement = true,
+    this.presence = true,
   });
 
   static bool _read(dynamic value) => value is bool ? value : true;
@@ -175,11 +179,40 @@ class TfFeatureFlags {
       groupChat: _read(chat['group_chat']),
       groupCreate: _read(chat['group_create']),
       friendRequest: _read(chat['friend_request']),
+      readReceipt: _read(chat['read_receipt']),
       forum: _read(json?['forum']),
       sticker: _read(json?['sticker']),
       announcement: _read(json?['announcement']),
+      presence: _read(json?['presence']),
     );
   }
+
+  /// 只改指定字段，其余原样保留。
+  ///
+  /// 管理端保存时提交的是 [toJson] 的**完整快照**，所以任何一处手写的
+  /// 「拷一份再改一个字段」一旦漏掉某个开关，就会把它回落成构造默认值 true，
+  /// 把服务端已关掉的开关静默打开。新增开关必须同时接进这里。
+  TfFeatureFlags copyWith({
+    bool? privateChat,
+    bool? groupChat,
+    bool? groupCreate,
+    bool? friendRequest,
+    bool? readReceipt,
+    bool? forum,
+    bool? sticker,
+    bool? announcement,
+    bool? presence,
+  }) => TfFeatureFlags(
+    privateChat: privateChat ?? this.privateChat,
+    groupChat: groupChat ?? this.groupChat,
+    groupCreate: groupCreate ?? this.groupCreate,
+    friendRequest: friendRequest ?? this.friendRequest,
+    readReceipt: readReceipt ?? this.readReceipt,
+    forum: forum ?? this.forum,
+    sticker: sticker ?? this.sticker,
+    announcement: announcement ?? this.announcement,
+    presence: presence ?? this.presence,
+  );
 
   /// 提交给 `/auth/server_settings/update` 的完整快照。
   Map<String, dynamic> toJson() => {
@@ -188,11 +221,107 @@ class TfFeatureFlags {
       'group_chat': groupChat,
       'group_create': groupCreate,
       'friend_request': friendRequest,
+      'read_receipt': readReceipt,
     },
     'forum': forum,
     'sticker': sticker,
     'announcement': announcement,
+    'presence': presence,
   };
+}
+
+/// 单条消息的已读回执查询结果（`/message/read_receipt`）。
+class TfReadReceipt {
+  /// 对方（私聊）关闭了已读展示，回执不可见。
+  final bool hidden;
+
+  /// 私聊：对方是否已读到该消息。
+  final bool read;
+
+  /// 群聊：已读人数。
+  final int readCount;
+
+  /// 私聊：对方当前已读水位序号。
+  final int readerLastSeq;
+
+  const TfReadReceipt({
+    this.hidden = false,
+    this.read = false,
+    this.readCount = 0,
+    this.readerLastSeq = 0,
+  });
+
+  factory TfReadReceipt.fromJson(Map<String, dynamic> json) => TfReadReceipt(
+    hidden: json['hidden'] == true,
+    read: json['read'] == true,
+    readCount: (json['read_count'] as num?)?.toInt() ?? 0,
+    readerLastSeq: (json['reader_last_seq'] as num?)?.toInt() ?? 0,
+  );
+}
+
+/// 自己与某个用户的关系查询结果（`/friend/relationship`）。
+///
+/// 拉黑在服务端是双向共用一个关系行，申请失败只会回 `friend_blocked`，
+/// 所以资料页要靠 [blockedByMe] / [blockedByPeer] 分清是谁拉黑了谁。
+class TfRelationship {
+  /// `none` / `pending` / `friend` / `blocked`。
+  final String relationship;
+
+  final bool isFriend;
+
+  /// 自己拉黑了对方（资料页应显示「解除拉黑」）。
+  final bool blockedByMe;
+
+  /// 对方拉黑了自己（自己无法解除，只能等对方）。
+  final bool blockedByPeer;
+
+  const TfRelationship({
+    this.relationship = 'none',
+    this.isFriend = false,
+    this.blockedByMe = false,
+    this.blockedByPeer = false,
+  });
+
+  bool get hasBlock => blockedByMe || blockedByPeer;
+
+  factory TfRelationship.fromJson(Map<String, dynamic> json) => TfRelationship(
+    relationship: json['relationship'] as String? ?? 'none',
+    isFriend: json['is_friend'] == true,
+    blockedByMe: json['blocked_by_me'] == true,
+    blockedByPeer: json['blocked_by_peer'] == true,
+  );
+}
+
+/// 判定 `/friend/blocked` 的响应。
+///
+/// 抽出成纯函数只为一件事：把「服务端不认识这个端点（404/405）」与「这次请求
+/// 失败了」分开。[TfApiClient.secretPost] 用同一个 null 表示两者，写错一处就会
+/// 让一次网络抖动被渲染成「没有拉黑任何人」。
+///
+/// 返回 null 表示**服务端不支持该端点**；请求失败 / 响应异常则抛异常。
+@visibleForTesting
+List<int>? decodeBlockedUsersResponse(int status, String? plain) {
+  // 旧服务器没有这个路由：Flask 直接回 404/405 的 HTML，连密文都不是，
+  // secretPost 因此也返回 null。
+  if (status == 404 || status == 405) return null;
+  if (plain == null) {
+    throw StateError('getBlockedUsers: request failed (status=$status)');
+  }
+  dynamic decoded;
+  try {
+    decoded = jsonDecode(plain);
+  } catch (_) {
+    throw StateError('getBlockedUsers: undecodable response');
+  }
+  if (decoded is! Map<String, dynamic> || decoded['success'] != true) {
+    throw StateError('getBlockedUsers: rejected');
+  }
+  final raw = decoded['blocked'];
+  if (raw is! List) return const [];
+  return [
+    for (final entry in raw)
+      if (entry is num) entry.toInt(),
+  ];
 }
 
 /// 服务器可配置项规格（`/auth/server_settings/query` 的 `settings_spec`）。
@@ -1205,6 +1334,10 @@ class TfApiClient {
     Map<String, dynamic> body, {
     int? uid,
     String? password,
+    // 收到响应时回调 HTTP 状态码；传输层就失败时不会回调（调用方据此保持 0）。
+    // 有了它才能把「服务端不认识这个路由（404）」和「这次请求失败了」分开——
+    // 两者在下方的 catch 里都塌成 null。
+    void Function(int statusCode)? onStatus,
   }) async {
     try {
       var result = await _secretPostInternal(
@@ -1212,6 +1345,7 @@ class TfApiClient {
         body,
         uid: uid,
         password: password,
+        onStatus: onStatus,
       );
       final data = _parseJsonMap(result);
       if (data != null && ApiError.fromResponse(data).isTokenExpired) {
@@ -1224,6 +1358,7 @@ class TfApiClient {
               body,
               uid: uid,
               password: password,
+              onStatus: onStatus,
             );
           }
         }
@@ -1243,6 +1378,7 @@ class TfApiClient {
     String? password,
     bool skipToken = false,
     String? tokenOverride,
+    void Function(int statusCode)? onStatus,
   }) async {
     final preparedRequest = await _prepareSecretPostRequest(
       path,
@@ -1260,6 +1396,7 @@ class TfApiClient {
       timeout: _secretPostTimeout,
     );
 
+    onStatus?.call(response.statusCode);
     final plain = _decryptSecretResponse(response.body, preparedRequest.aesKey);
     final responseData = _parseJsonMap(plain);
     lastApiError = responseData != null && responseData['error'] != null
@@ -2070,6 +2207,84 @@ class TfApiClient {
       password: password,
     );
     return _parseBool(result);
+  }
+
+  /// 修改隐私开关（已读状态、在线状态等）。缺省字段表示不改动。旧服务器无此端点返回 false。
+  Future<bool> changePrivacy(
+    int uid,
+    String password, {
+    bool? showReadStatus,
+    bool? showOnlineStatus,
+  }) async {
+    final body = <String, dynamic>{};
+    if (showReadStatus != null) body['show_read_status'] = showReadStatus;
+    if (showOnlineStatus != null) body['show_online_status'] = showOnlineStatus;
+    if (body.isEmpty) return false;
+    final result = await secretPost(
+      '/auth/change_privacy',
+      body,
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  /// 按需查询某条消息的已读情况（私聊：对方是否已读；群聊：已读人数）。
+  /// 失败（如旧服务器无此端点或功能关闭）返回 null。
+  Future<TfReadReceipt?> queryReadReceipt(
+    int uid,
+    String password,
+    String roomId,
+    int mid,
+  ) async {
+    final result = await secretPost(
+      '/message/read_receipt',
+      {'room_id': roomId, 'mid': mid},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return null;
+    try {
+      final data = jsonDecode(result) as Map<String, dynamic>;
+      if (data['success'] != true) return null;
+      return TfReadReceipt.fromJson(data);
+    } catch (e) {
+      talker.error('queryReadReceipt parse failed', e);
+      return null;
+    }
+  }
+
+  /// 批量查询好友在线状态；uids 缺省表示全部好友。
+  /// 返回 {uid: "online"|"offline"}；失败（旧服务器无此端点或功能关闭）返回 null。
+  Future<Map<int, String>?> queryFriendPresence(
+    int uid,
+    String? password, {
+    List<int>? uids,
+  }) async {
+    final body = <String, dynamic>{};
+    if (uids != null) body['uids'] = uids;
+    final result = await secretPost(
+      '/friend/presence',
+      body,
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return null;
+    try {
+      final data = jsonDecode(result) as Map<String, dynamic>;
+      if (data['success'] != true) return null;
+      final raw = data['presence'];
+      if (raw is! Map) return const {};
+      final out = <int, String>{};
+      raw.forEach((key, value) {
+        final id = int.tryParse(key.toString());
+        if (id != null && value is String) out[id] = value;
+      });
+      return out;
+    } catch (e) {
+      talker.error('queryFriendPresence parse failed', e);
+      return null;
+    }
   }
 
   /// 查询自己的完整资料（含被隐藏的邮箱与 public_email 开关）。
@@ -2929,8 +3144,27 @@ class TfApiClient {
         hasMore: false,
       );
     }
+    Map<String, dynamic>? data;
     try {
-      final data = jsonDecode(result) as Map<String, dynamic>;
+      data = jsonDecode(result) as Map<String, dynamic>;
+    } catch (_) {
+      data = null;
+    }
+    if (data == null || data['success'] == false) {
+      // 服务端拒绝同步（尚未成为好友 / 不是群成员 / 参数不合法）时，老版本会回
+      // bool 接口的纯文本 "<时间戳>False"——那是「这个房间这次没同步到东西」，
+      // 不是解析崩溃，所以按信息级记录。
+      talker.info('syncMessages: 未返回消息数据 ($roomId)');
+      if (throwOnFailure) {
+        throw StateError('Message sync rejected for $roomId');
+      }
+      return (
+        messages: const <ChatMessage>[],
+        currentSeq: lastSeq,
+        hasMore: false,
+      );
+    }
+    try {
       final list = (data['messages'] as List<dynamic>? ?? const [])
           .map(
             (e) => ChatMessage.fromMessageRecord(
@@ -3036,6 +3270,47 @@ class TfApiClient {
       password: password,
     );
     return _parseBool(result);
+  }
+
+  /// 查询自己与目标的关系（含拉黑方向）。失败（旧服务器无此端点）返回 null。
+  Future<TfRelationship?> queryRelationship(
+    int uid,
+    String? password,
+    int target,
+  ) async {
+    final result = await secretPost(
+      '/friend/relationship',
+      {'target': target},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return null;
+    try {
+      final data = jsonDecode(result) as Map<String, dynamic>;
+      if (data['success'] != true) return null;
+      return TfRelationship.fromJson(data);
+    } catch (e) {
+      talker.error('queryRelationship parse failed', e);
+      return null;
+    }
+  }
+
+  /// 列出自己拉黑的用户。
+  ///
+  /// 返回 null **只表示服务端不认识这个端点**（旧服务器）。请求失败会抛异常，
+  /// 调用方据此把「没有拉黑任何人」和「这次没拉到」分开显示——过去两者都返回
+  /// null，一次网络抖动就会被渲染成「Nobody is blocked」。
+  Future<List<int>?> getBlockedUsers(int uid, String? password) async {
+    var status = 0;
+    final result = await secretPost(
+      '/friend/blocked',
+      {},
+      uid: uid,
+      password: password,
+      // 传输层就失败时不会回调，status 保持 0。
+      onStatus: (code) => status = code,
+    );
+    return decodeBlockedUsersResponse(status, result);
   }
 
   Future<List<int>?> getFriendList(int uid, String password) async {
@@ -3578,7 +3853,16 @@ class TfApiClient {
     );
     if (result == null) return [];
     try {
-      final list = jsonDecode(result) as List<dynamic>;
+      final decoded = jsonDecode(result);
+      // 服务端拒绝（非好友 / 不是群成员等）现在回 JSON 错误对象：这是正常拒绝，
+      // 不是解析失败，按 warning 记一笔即可。
+      if (decoded is Map<String, dynamic> && decoded.containsKey('error')) {
+        talker.warning(
+          'queryMessageHistory server error: ${decoded['error']}',
+        );
+        return [];
+      }
+      final list = decoded as List<dynamic>;
       return list
           .map(
             (e) =>

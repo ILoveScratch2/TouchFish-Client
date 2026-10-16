@@ -15,6 +15,7 @@ import '../models/settings_service.dart';
 import '../models/user_profile.dart';
 import '../widgets/chat_input_bar.dart';
 import '../routes/app_routes.dart';
+import 'chat_detail/widgets/chat_detail_banners.dart';
 import 'chat_detail/widgets/message_list_view.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/mention_text_field.dart';
@@ -26,6 +27,7 @@ import '../services/snackbar_service.dart';
 import '../services/chat_ws_service.dart';
 import '../services/app_foreground_service.dart';
 import '../services/chat_data_service.dart';
+import '../services/feature_flags.dart';
 import '../services/call_service.dart';
 import '../services/draft_service.dart';
 import '../services/local_message_store.dart';
@@ -33,12 +35,16 @@ import '../services/message_sync_service.dart';
 import '../services/notification_service.dart';
 import '../utils/wide_screen_helper.dart';
 import '../utils/talker.dart';
+import '../utils/read_receipt_throttle.dart';
 import '../utils/clipboard_utils.dart';
 import 'chat_room_settings_screen.dart';
 import 'group_essence_screen.dart';
 import '../widgets/pinned_messages_sheet.dart';
+import '../widgets/ui/loading_indicator.dart';
 import '../widgets/room_selection_mode.dart';
 import '../widgets/optimized_image.dart';
+import '../widgets/account/online_avatar_badge.dart';
+import '../services/presence_service.dart';
 import '../widgets/sync_indicator.dart';
 import '../models/typing_status.dart';
 import '../models/file_task.dart';
@@ -107,6 +113,14 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   ProviderSubscription<List<FileTask>>? _uploadProgressSub;
   DateTime? _lastUploadProgressSentAt;
   final Map<String, double> _lastUploadProgressByRoom = {};
+
+  /// 回执补查的节流（见 _refreshReadReceipt）。
+  final ReadReceiptThrottle _readReceiptThrottle = ReadReceiptThrottle();
+
+  /// 已上报过的最高已读 mid（换房间 / WS 重连时清空）。
+  ///
+  /// 滚动会高频触发上报判定，靠它把「同一条只报一次」做成幂等，不必再引入定时器。
+  int? _lastReportedReadMid;
 
   String get _contactUid {
     final id = widget.roomId;
@@ -274,6 +288,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _essenceEnabled = true;
     _fetchingEssenceRoomId = null;
     _activityStatuses.clear();
+    // 换房间后旧房间的回执节流状态不能让新房间的首次查询被跳过。
+    _readReceiptThrottle.reset();
+    _lastReportedReadMid = null;
     _lastBuiltMessages = const [];
     _entranceKeysTimer?.cancel();
     _entranceKeys = const {};
@@ -625,28 +642,48 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     });
   }
 
+  /// 消息是否**真的被看到**——三个条件缺一不可，否则不该替用户上报已读：
+  ///
+  /// - 页面在前台（切到后台不该继续读）
+  /// - 当前就是本会话（可能已 push 到别的整屏页面，本页还在树上）
+  /// - 视图停在最新一条（正滚上去翻历史时到达的新消息不算已读）
+  ///
+  /// 少了最后一条就会出现「你翻历史，对方看到『已读』，而你根本没看到那条」。
+  bool get _readReportAllowed =>
+      AppForegroundService.instance.isForeground &&
+      (ModalRoute.of(context)?.isCurrent ?? true) &&
+      _isNearBottom;
+
+  /// 把「已看到最新一条」上报给服务端并清掉本地未读（幂等：同一条 mid 只发一次）。
+  ///
+  /// 调用点覆盖所有「此刻真的看到了最新一条」的时机：首屏加载完成、尾部有新消息、
+  /// 用户滚回最新处、回到前台、WS 重连。任一时刻只要条件满足就会补上——尤其是
+  /// 滚上去期间到达的消息，之前那条路径会让它永远不被上报。
+  void _reportVisibleRead() {
+    if (!_readReportAllowed) return;
+    final last = _messages.isNotEmpty ? _messages.last : null;
+    if (last == null || last.isMe || last.mid == null) return;
+    final mid = last.mid!;
+    if (_lastReportedReadMid != null && mid <= _lastReportedReadMid!) return;
+    _lastReportedReadMid = mid;
+    _clearRoomUnread(mid);
+  }
+
+  /// 尾部消息变化时的判定（其余时机由 [_reportVisibleRead] 覆盖）。
   void _markVisibleMessagesRead({String? previousLastId}) {
-    if (!AppForegroundService.instance.isForeground) return;
     if (_messages.isEmpty) return;
-    final lastMsg = _messages.last;
-    final hasNewVisibleTail =
-        previousLastId == null || lastMsg.id != previousLastId;
-    if (!hasNewVisibleTail || lastMsg.isMe || lastMsg.mid == null) return;
-    _clearRoomUnread(lastMsg.mid);
+    if (previousLastId != null && _messages.last.id == previousLastId) return;
+    _reportVisibleRead();
   }
 
   void _onForegroundChanged() {
     if (!mounted || !_treeActive) return;
     if (!AppForegroundService.instance.isForeground) return;
     if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
-    _clearRoomUnread(_lastIncomingMessage?.mid);
-  }
-
-  ChatMessage? get _lastIncomingMessage {
-    for (final message in _messages.reversed) {
-      if (!message.isMe && message.mid != null) return message;
-    }
-    return null;
+    // 回前台补一次回执：群聊期间别人读了不会推送。
+    _refreshReadReceipt();
+    // 未读则只在真的看到最新一条时才清（滚上去翻历史时不该被吞掉）。
+    _reportVisibleRead();
   }
 
   void _clearRoomUnread(int? lastMid) {
@@ -678,6 +715,42 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     });
     _followBottom = true;
     _markVisibleMessagesRead();
+    _refreshReadReceipt();
+    _refreshPresence();
+  }
+
+  /// 打开私聊时批量拉取对方在线状态（群聊无单一 uid）。
+  void _refreshPresence() {
+    if (_currentRoom?.type != ChatType.direct) return;
+    final peerUid = int.tryParse(_contactUid.replaceFirst('U', ''));
+    if (peerUid == null) return;
+    unawaited(PresenceService.instance.refreshFriends(uids: [peerUid]));
+  }
+
+  /// 按需查询自己最后一条消息的已读情况（群聊无实时推送，兼作离线补拉）。
+  ///
+  /// 消息列表每变一次都会调到这里（群聊刷屏时一秒好几条），节流交给
+  /// [ReadReceiptThrottle]：换了自己最后一条消息立刻查，同一条消息按冷却查。
+  void _refreshReadReceipt() {
+    if (!FeatureFlags.instance.readReceipt) return;
+    final mid = _lastOwnMessageMid;
+    if (mid == null) return;
+    if (!_readReceiptThrottle.shouldQuery(mid, DateTime.now())) return;
+    unawaited(
+      ChatDataService.instance
+          .refreshReadReceipt(_contactUid, mid)
+          .whenComplete(_readReceiptThrottle.done),
+    );
+  }
+
+  /// 自己最后一条可查回执的消息 id（撤回的不算）。
+  int? get _lastOwnMessageMid {
+    for (final message in _messages.reversed) {
+      if (message.isMe && !message.isDeleted && message.mid != null) {
+        return message.mid;
+      }
+    }
+    return null;
   }
 
   Future<void> _onRefresh() async {
@@ -691,6 +764,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       setState(() => _showBackToBottom = showBackToBottom);
     }
     if (_isAtBottom) _followBottom = true;
+
+    // 滚回最新处时把「到达时因为不可见而没上报」的已读补上（幂等，按 mid 去重）。
+    _reportVisibleRead();
 
     _updatePinnedPageFromScroll();
 
@@ -850,7 +926,15 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
   void _onWsStateChanged() {
     if (!mounted) return;
-    setState(() => _wsConnected = ChatWsService.instance.isAuthenticated);
+    final connected = ChatWsService.instance.isAuthenticated;
+    final wasConnected = _wsConnected;
+    setState(() => _wsConnected = connected);
+    if (!connected || wasConnected) return;
+    // 断线期间的上报和回执都丢了：message.read 没有 ACK，回执也不持久化。
+    // 重连后把自己的已读重报一次，并补查对方的，否则两边都会停在断线前的状态。
+    _lastReportedReadMid = null;
+    _reportVisibleRead();
+    _refreshReadReceipt();
   }
 
   bool get _isNearBottom {
@@ -915,6 +999,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     if (_currentRoom?.type == ChatType.group) {
       unawaited(_fetchPinnedMessages());
       unawaited(_fetchEssenceMessages());
+      // 群聊没有实时回执推送：消息列表一变（自己发出 / 收到新消息）就补查一次，
+      // 否则「N 人已读」会停在打开会话时的那次结果。
+      _refreshReadReceipt();
     }
   }
 
@@ -1656,6 +1743,164 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _messageController.selection = TextSelection.collapsed(offset: text.length);
   }
 
+  /// 重发失败的消息：沿用原 clientMid，避免服务端产生重复。
+  Future<void> _resendMessage(ChatMessage message) async {
+    final clientMid = message.clientMid;
+    if (clientMid == null || message.status != MessageStatus.failed) return;
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+
+    _pendingWsTimers.remove(clientMid)?.cancel();
+    _restFallbackAttempted.remove(clientMid);
+    _updateMessageStatus(clientMid, status: MessageStatus.pending);
+
+    final quoteMid = message.quoteMid ?? -1;
+    final forwardedMid = message.forwardedMid ?? -1;
+
+    try {
+      final media = message.media;
+      if (media != null) {
+        final existingHash = media.fileHash;
+        if (existingHash != null && existingHash.isNotEmpty) {
+          // 文件已在服务器，直接重发消息即可。
+          await _dispatchFileSend(
+            clientMid: clientMid,
+            hash: existingHash,
+            quoteMid: quoteMid,
+            durationMs: media.durationMs,
+            forwardedMid: forwardedMid,
+          );
+        } else {
+          await _reuploadFailedMedia(
+            message,
+            clientMid: clientMid,
+            quoteMid: quoteMid,
+            forwardedMid: forwardedMid,
+          );
+        }
+        return;
+      }
+
+      final text = message.text;
+      bool wsSent = false;
+      // 转发消息必须走 REST：WS 载荷带不了 forwarded，否则会退化成普通消息。
+      if (_wsConnected && forwardedMid < 0) {
+        if (_contactUid.startsWith('G')) {
+          final gid = int.tryParse(_contactUid.substring(1));
+          if (gid != null) {
+            wsSent = await ChatWsService.instance.sendGroupTextMessage(
+              gid,
+              text,
+              clientMid: clientMid,
+              quote: quoteMid,
+            );
+          }
+        } else {
+          final targetUid = int.tryParse(_contactUid.substring(1));
+          if (targetUid != null) {
+            wsSent = await ChatWsService.instance.sendTextMessage(
+              targetUid.toString(),
+              text,
+              clientMid: clientMid,
+              quote: quoteMid,
+            );
+          }
+        }
+      }
+      if (!wsSent) {
+        final result = await TfApiClient.instance.sendMessage(
+          uid,
+          password,
+          recipient: _contactUid,
+          content: text,
+          contentType: 'plain',
+          clientMid: clientMid,
+          quote: quoteMid,
+          forwarded: forwardedMid,
+        );
+        if (result != null) {
+          final mid = (result['mid'] as num?)?.toInt();
+          _updateMessageStatus(clientMid, mid: mid, status: MessageStatus.sent);
+        } else {
+          _updateMessageStatus(clientMid, status: MessageStatus.failed);
+          _showSendFailedSnackBar();
+        }
+      } else {
+        _pendingWsTimers[clientMid]?.cancel();
+        _pendingWsTimers[clientMid] = Timer(
+          const Duration(seconds: 15),
+          () => _wsAckFallback(
+            clientMid: clientMid,
+            content: text,
+            contentType: 'plain',
+            quoteMid: quoteMid,
+            forwardedMid: forwardedMid,
+          ),
+        );
+      }
+    } catch (e) {
+      talker.error('ChatDetail resend failed', e);
+      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      _showSendFailedSnackBar();
+    }
+  }
+
+  /// 媒体消息上传失败（无 hash）时重传：从本地字节/路径重新上传后再发送。
+  Future<void> _reuploadFailedMedia(
+    ChatMessage message, {
+    required String clientMid,
+    required int quoteMid,
+    int forwardedMid = -1,
+  }) async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+    final media = message.media;
+    if (media == null) return;
+
+    List<int>? bytes = media.bytes;
+    if (bytes == null && !kIsWeb && media.path.isNotEmpty) {
+      final file = File(media.path);
+      if (await file.exists()) bytes = await file.readAsBytes();
+    }
+    if (bytes == null || bytes.isEmpty) {
+      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      _showSendFailedSnackBar();
+      return;
+    }
+
+    final taskManager = ref.read(taskManagerProvider.notifier);
+    final hash = await FileService.instance.uploadFile(
+      uid: uid,
+      password: password,
+      fileName: media.fileName ?? 'file',
+      bytes: bytes,
+      filePath: kIsWeb ? null : media.path,
+      clientMid: clientMid,
+      roomId: _contactUid,
+      taskManager: taskManager,
+    );
+    if (hash == null) {
+      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      _showSendFailedSnackBar();
+      return;
+    }
+
+    final baseUrl = await TfApiClient.instance.getBaseUrl();
+    _updateMessageMedia(
+      clientMid,
+      media.copyWith(path: '$baseUrl/file/get_file/$hash', fileHash: hash),
+    );
+    await _dispatchFileSend(
+      clientMid: clientMid,
+      hash: hash,
+      quoteMid: quoteMid,
+      durationMs: media.durationMs,
+      forwardedMid: forwardedMid,
+    );
+  }
+
   /// REST 回退使用相同的 client mid 避免 dup
   Future<void> _wsAckFallback({
     required String clientMid,
@@ -2026,13 +2271,16 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     required String hash,
     required int quoteMid,
     int? durationMs,
+    int forwardedMid = -1,
   }) async {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
 
     bool wsSent = false;
-    if (_wsConnected) {
+    // WS 的 message.file 载荷不支持转发标记：转发来的媒体只能走 REST，
+    // 否则对方收到的是普通消息（与 _sendMessageAsync 对转发消息跳过 WS 同理）。
+    if (_wsConnected && forwardedMid < 0) {
       if (_contactUid.startsWith('G')) {
         final gid = int.tryParse(_contactUid.substring(1));
         if (gid != null) {
@@ -2069,6 +2317,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         clientMid: clientMid,
         fileHash: hash,
         quote: quoteMid,
+        forwarded: forwardedMid,
         durationMs: durationMs,
       );
       if (result != null) {
@@ -2089,7 +2338,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           contentType: 'file',
           fileHash: hash,
           quoteMid: quoteMid,
-          forwardedMid: -1,
+          forwardedMid: forwardedMid,
           durationMs: durationMs,
         ),
       );
@@ -2462,8 +2711,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
   Widget _buildAvatar(ColorScheme colorScheme) {
     final avatarUrl = _currentRoom!.avatar;
+    final Widget avatar;
     if (avatarUrl == null || _avatarLoadFailed) {
-      return CircleAvatar(
+      avatar = CircleAvatar(
         radius: 18,
         backgroundColor: colorScheme.primaryContainer,
         child: Icon(
@@ -2472,23 +2722,28 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           color: colorScheme.onPrimaryContainer,
         ),
       );
+    } else {
+      avatar = CircleAvatar(
+        radius: 18,
+        backgroundColor: colorScheme.primaryContainer,
+        backgroundImage: resizedImageProvider(
+          NetworkImage(avatarUrl),
+          MediaQuery.of(context).devicePixelRatio,
+          width: 36,
+          height: 36,
+        ),
+        onBackgroundImageError: (_, error) {
+          talker.warning(
+            'Avatar load failed for ${_currentRoom!.id}: $avatarUrl',
+          );
+          if (mounted) setState(() => _avatarLoadFailed = true);
+        },
+      );
     }
-    return CircleAvatar(
-      radius: 18,
-      backgroundColor: colorScheme.primaryContainer,
-      backgroundImage: resizedImageProvider(
-        NetworkImage(avatarUrl),
-        MediaQuery.of(context).devicePixelRatio,
-        width: 36,
-        height: 36,
-      ),
-      onBackgroundImageError: (_, error) {
-        talker.warning(
-          'Avatar load failed for ${_currentRoom!.id}: $avatarUrl',
-        );
-        if (mounted) setState(() => _avatarLoadFailed = true);
-      },
-    );
+    // 仅私聊展示对方在线点；群聊无单一 uid。
+    if (_currentRoom!.type == ChatType.group) return avatar;
+    final peerUid = int.tryParse(_currentRoom!.id.replaceFirst('U', ''));
+    return OnlineAvatarBadge(uid: peerUid, radius: 18, child: avatar);
   }
 
   Widget _buildPinnedMessagesBar() {
@@ -2802,12 +3057,18 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     if (_currentRoom == null) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.chatDetailLoading)),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const LoadingIndicator(),
       );
     }
 
+    // 捕获成局部量：下面那个 ValueListenableBuilder 会**独立于本方法**重建
+    // （已读回执到达时），那时 _currentRoom 可能正被 _initRoom 置空，直接读
+    // 字段会撞空断言。父级一换房间就会重建并给出新闭包，所以捕获是安全的。
+    final room = _currentRoom!;
+
     final colorScheme = Theme.of(context).colorScheme;
-    final isWide = WideScreenHelper.isWide(context);
+    // 与 ChatShellScreen 的分栏判断保持一致：分栏时「关闭」，单栏时「返回」。
+    final isWide = WideScreenHelper.isExpanded(context);
     final essenceButton = IconButton(
       icon: const Icon(Icons.auto_awesome),
       onPressed: _openEssenceScreen,
@@ -2853,12 +3114,22 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                 tooltip: l10n.selectionExit,
                 onPressed: _exitSelection,
               )
-            : !isWide
+            : isWide
             ? IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                onPressed: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go(AppRoutes.chat);
+                  }
+                },
+              )
+            : IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => context.go(AppRoutes.chat),
-              )
-            : null,
+              ),
         automaticallyImplyLeading: false,
         backgroundColor: colorScheme.surfaceContainerHighest,
         surfaceTintColor: Colors.transparent,
@@ -2906,54 +3177,50 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // 只重建指示器自身，不触发整页 setState（同步分页会多次通知进度）。
-            ListenableBuilder(
-              listenable: MessageSyncService.instance,
-              builder: (context, _) =>
-                  SyncIndicator(isSyncing: _isRoomSyncing, hint: _syncHint),
+            ChatDetailBanners(
+              // 只重建指示器自身，不触发整页 setState（同步分页会多次通知进度）。
+              syncIndicator: ListenableBuilder(
+                listenable: MessageSyncService.instance,
+                builder: (context, _) =>
+                    SyncIndicator(isSyncing: _isRoomSyncing, hint: _syncHint),
+              ),
+              progress: (_isLoadingMessages || _isLoadingOlder)
+                  ? LinearProgressIndicator(
+                      minHeight: 2,
+                      color: Theme.of(context).colorScheme.primary,
+                      backgroundColor: Colors.transparent,
+                    )
+                  : null,
+              pinnedBar:
+                  _currentRoom!.type == ChatType.group &&
+                      _pinnedMessages.isNotEmpty
+                  ? _buildPinnedMessagesBar()
+                  : null,
+              essenceBar:
+                  _currentRoom!.type == ChatType.group &&
+                      _essenceMids.isNotEmpty &&
+                      _essenceEnabled
+                  ? _buildEssenceBar()
+                  : null,
+              notice:
+                  _currentRoom!.type == ChatType.group &&
+                      _groupEnterHint.isNotEmpty &&
+                      _showGroupEnterHint
+                  ? ChatDetailNotice(
+                      text: _groupEnterHint,
+                      onDismiss: () {
+                        setState(() => _showGroupEnterHint = false);
+                        unawaited(
+                          DraftService.instance.acknowledge(
+                            'group_enter_hint',
+                            _contactUid.substring(1),
+                            _groupEnterHint,
+                          ),
+                        );
+                      },
+                    )
+                  : null,
             ),
-            if (_isLoadingMessages || _isLoadingOlder)
-              LinearProgressIndicator(
-                minHeight: 2,
-                color: Theme.of(context).colorScheme.primary,
-                backgroundColor: Colors.transparent,
-              ),
-            if (_currentRoom!.type == ChatType.group &&
-                _pinnedMessages.isNotEmpty)
-              _buildPinnedMessagesBar(),
-            if (_currentRoom!.type == ChatType.group &&
-                _essenceMids.isNotEmpty &&
-                _essenceEnabled)
-              _buildEssenceBar(),
-            if (_currentRoom!.type == ChatType.group &&
-                _groupEnterHint.isNotEmpty &&
-                _showGroupEnterHint)
-              Material(
-                color: colorScheme.secondaryContainer,
-                child: ListTile(
-                  leading: Icon(
-                    Icons.info_outline,
-                    color: colorScheme.onSecondaryContainer,
-                  ),
-                  title: Text(
-                    _groupEnterHint,
-                    style: TextStyle(color: colorScheme.onSecondaryContainer),
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () {
-                      setState(() => _showGroupEnterHint = false);
-                      unawaited(
-                        DraftService.instance.acknowledge(
-                          'group_enter_hint',
-                          _contactUid.substring(1),
-                          _groupEnterHint,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
             Expanded(
               child: Stack(
                 children: [
@@ -2962,33 +3229,48 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                       onNotification: _onScrollMetricsChanged,
                       child: NotificationListener<ScrollNotification>(
                         onNotification: _onUserScroll,
-                        child: MessageListView(
-                          messages: displayMessages,
-                          entranceKeys: entranceKeys,
-                          scrollController: uiState.scrollController,
-                          galleryItems: gallery.items,
-                          imageIndexById: gallery.indexById,
-                          essenceMids: _essenceMids,
-                          pinnedMessages: _pinnedMessages,
-                          essenceEnabled: _essenceEnabled,
-                          currentRoom: _currentRoom,
-                          canModerateGroup: _canModerateGroup,
-                          onRefresh: _onRefresh,
-                          onReply: _startReply,
-                          onForward: _startForward,
-                          onRecall: _recallMessage,
-                          onDelete: _deleteLocalMessage,
-                          onQuoteTap: _scrollToQuotedMessage,
-                          onPinToggle: _togglePin,
-                          onEssenceToggle: _toggleEssence,
-                          canRecall: _canRecall,
-                          canDeleteLocally: _canDeleteLocally,
-                          noMessagesText: l10n.chatDetailNoMessages,
-                          colorScheme: colorScheme,
-                          isSelectionMode: uiState.isSelectionMode,
-                          selectedMessageKeys: uiState.selectedMessageIds,
-                          onEnterSelectionMode: _enterSelection,
-                          onToggleSelection: _toggleSelection,
+                        // 已读回执不改变消息列表，roomMessagesProvider 判定
+                        // 「无变化」就不会发新 state，所以必须单独订阅已读缓存
+                        // 的修订号，否则「已读」根本不会随回执出现。
+                        child: ValueListenableBuilder<int>(
+                          valueListenable:
+                              ChatDataService.instance.readReceiptRevision,
+                          builder: (context, _, _) => MessageListView(
+                            messages: displayMessages,
+                            entranceKeys: entranceKeys,
+                            scrollController: uiState.scrollController,
+                            galleryItems: gallery.items,
+                            imageIndexById: gallery.indexById,
+                            essenceMids: _essenceMids,
+                            pinnedMessages: _pinnedMessages,
+                            essenceEnabled: _essenceEnabled,
+                            currentRoom: room,
+                            canModerateGroup: _canModerateGroup,
+                            onRefresh: _onRefresh,
+                            onReply: _startReply,
+                            onForward: _startForward,
+                            onRecall: _recallMessage,
+                            onDelete: _deleteLocalMessage,
+                            onRetry: _resendMessage,
+                            onQuoteTap: _scrollToQuotedMessage,
+                            onPinToggle: _togglePin,
+                            onEssenceToggle: _toggleEssence,
+                            canRecall: _canRecall,
+                            canDeleteLocally: _canDeleteLocally,
+                            noMessagesText: l10n.chatDetailNoMessages,
+                            colorScheme: colorScheme,
+                            isSelectionMode: uiState.isSelectionMode,
+                            selectedMessageKeys: uiState.selectedMessageIds,
+                            onEnterSelectionMode: _enterSelection,
+                            onToggleSelection: _toggleSelection,
+                            readReceiptEnabled: FeatureFlags.instance.readReceipt,
+                            peerReadSeq: room.type == ChatType.group
+                                ? null
+                                : ChatDataService.instance.peerReadSeq(_contactUid),
+                            groupReadCounts: room.type == ChatType.group
+                                ? ChatDataService.instance.groupReadCounts
+                                : const {},
+                          ),
                         ),
                       ),
                     ),

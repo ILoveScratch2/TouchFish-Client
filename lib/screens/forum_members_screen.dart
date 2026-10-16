@@ -7,6 +7,8 @@ import '../widgets/app_alert_dialog.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/snackbar_service.dart';
+import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/loading_indicator.dart';
 
 class ForumMemberListSheet extends StatefulWidget {
   final String forumId;
@@ -82,15 +84,11 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
           const Divider(height: 1),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const LoadingIndicator()
                 : _members.isEmpty
-                ? Center(
-                    child: Text(
-                      l10n.adminPendingForumsEmpty,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+                ? EmptyState(
+                    icon: Icons.people_outline,
+                    title: l10n.forumMembersEmpty,
                   )
                 : ListView.builder(
                     itemCount: _members.length,

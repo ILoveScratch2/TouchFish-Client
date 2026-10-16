@@ -13,6 +13,7 @@ import '../utils/talker.dart';
 import '../utils/wide_screen_helper.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/code_block.dart';
+import '../widgets/ui/loading_indicator.dart';
 
 class ServerSettingsScreen extends StatefulWidget {
   const ServerSettingsScreen({super.key});
@@ -124,9 +125,11 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     'featureGroupChat': 'features',
     'featureGroupCreate': 'features',
     'featureFriendRequest': 'features',
+    'featureReadReceipt': 'features',
     'featureForum': 'features',
     'featureSticker': 'features',
     'featureAnnouncement': 'features',
+    'featurePresence': 'features',
   };
 
   List<TextEditingController> get _allControllers => [
@@ -1633,7 +1636,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           title: l10n.adminFeaturePrivateChat,
           subtitle: l10n.adminFeaturePrivateChatDescription,
           onChanged: (value) {
-            setState(() => _features = _copyFeatures(privateChat: value));
+            setState(() => _features = _features.copyWith(privateChat: value));
             _handleFieldChanged();
           },
         ),
@@ -1648,7 +1651,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           title: l10n.adminFeatureGroupChat,
           subtitle: l10n.adminFeatureGroupChatDescription,
           onChanged: (value) {
-            setState(() => _features = _copyFeatures(groupChat: value));
+            setState(() => _features = _features.copyWith(groupChat: value));
             _handleFieldChanged();
           },
         ),
@@ -1663,7 +1666,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           title: l10n.adminFeatureGroupCreate,
           subtitle: l10n.adminFeatureGroupCreateDescription,
           onChanged: (value) {
-            setState(() => _features = _copyFeatures(groupCreate: value));
+            setState(() => _features = _features.copyWith(groupCreate: value));
             _handleFieldChanged();
           },
         ),
@@ -1678,7 +1681,22 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           title: l10n.adminFeatureFriendRequest,
           subtitle: l10n.adminFeatureFriendRequestDescription,
           onChanged: (value) {
-            setState(() => _features = _copyFeatures(friendRequest: value));
+            setState(() => _features = _features.copyWith(friendRequest: value));
+            _handleFieldChanged();
+          },
+        ),
+      ),
+      _SettingField(
+        key: 'featureReadReceipt',
+        section: _SettingsSection.features,
+        label: (l10n) => l10n.adminFeatureReadReceipt,
+        keywords: const ['feature', 'read', 'receipt'],
+        build: (context, l10n) => _switchField(
+          value: _features.readReceipt,
+          title: l10n.adminFeatureReadReceipt,
+          subtitle: l10n.adminFeatureReadReceiptDescription,
+          onChanged: (value) {
+            setState(() => _features = _features.copyWith(readReceipt: value));
             _handleFieldChanged();
           },
         ),
@@ -1693,7 +1711,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           title: l10n.adminFeatureForum,
           subtitle: l10n.adminFeatureForumDescription,
           onChanged: (value) {
-            setState(() => _features = _copyFeatures(forum: value));
+            setState(() => _features = _features.copyWith(forum: value));
             _handleFieldChanged();
           },
         ),
@@ -1708,7 +1726,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           title: l10n.adminFeatureSticker,
           subtitle: l10n.adminFeatureStickerDescription,
           onChanged: (value) {
-            setState(() => _features = _copyFeatures(sticker: value));
+            setState(() => _features = _features.copyWith(sticker: value));
             _handleFieldChanged();
           },
         ),
@@ -1723,7 +1741,22 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           title: l10n.adminFeatureAnnouncement,
           subtitle: l10n.adminFeatureAnnouncementDescription,
           onChanged: (value) {
-            setState(() => _features = _copyFeatures(announcement: value));
+            setState(() => _features = _features.copyWith(announcement: value));
+            _handleFieldChanged();
+          },
+        ),
+      ),
+      _SettingField(
+        key: 'featurePresence',
+        section: _SettingsSection.features,
+        label: (l10n) => l10n.adminFeaturePresence,
+        keywords: const ['feature', 'presence', 'online'],
+        build: (context, l10n) => _switchField(
+          value: _features.presence,
+          title: l10n.adminFeaturePresence,
+          subtitle: l10n.adminFeaturePresenceDescription,
+          onChanged: (value) {
+            setState(() => _features = _features.copyWith(presence: value));
             _handleFieldChanged();
           },
         ),
@@ -1770,26 +1803,6 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       if (specKey == null) return true;
       return specKeys.contains(specKey);
     }).toList();
-  }
-
-  TfFeatureFlags _copyFeatures({
-    bool? privateChat,
-    bool? groupChat,
-    bool? groupCreate,
-    bool? friendRequest,
-    bool? forum,
-    bool? sticker,
-    bool? announcement,
-  }) {
-    return TfFeatureFlags(
-      privateChat: privateChat ?? _features.privateChat,
-      groupChat: groupChat ?? _features.groupChat,
-      groupCreate: groupCreate ?? _features.groupCreate,
-      friendRequest: friendRequest ?? _features.friendRequest,
-      forum: forum ?? _features.forum,
-      sticker: sticker ?? _features.sticker,
-      announcement: announcement ?? _features.announcement,
-    );
   }
 
   Widget _buildSectionNav(BuildContext context) {
@@ -2237,7 +2250,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     }
 
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     if (_settings == null) {

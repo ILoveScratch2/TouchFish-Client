@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
+import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/refreshable.dart';
 
 class ForumSearchScreen extends StatefulWidget {
   final int? forumId;
@@ -33,12 +35,12 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
     body: Column(children: [
       Padding(padding: const EdgeInsets.all(12), child: SearchBar(controller: _controller, autoFocus: true, hintText: widget.forumId == null ? l10n.forumSearchHint : l10n.forumSearchCurrentForumHint, leading: const Icon(Icons.search), onChanged: (value) { _debounce?.cancel(); _debounce = Timer(const Duration(milliseconds: 350), () => _search(value)); })),
       if (_loading) const LinearProgressIndicator(),
-      Expanded(child: ListView(children: [
+      Expanded(child: (_forums.isEmpty && _posts.isEmpty) ? EmptyState(icon: _controller.text.trim().isEmpty ? Icons.search : Icons.search_off, title: _controller.text.trim().isEmpty ? l10n.forumSearchHint : l10n.searchNoResults) : PullToRefresh.list(onRefresh: () => _search(_controller.text), child: ListView(physics: const AlwaysScrollableScrollPhysics(), children: [
         if (_forums.isNotEmpty) Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 4), child: Text(l10n.forumSearchForumsHeader, style: const TextStyle(fontWeight: FontWeight.bold))),
         for (final forum in _forums) ListTile(leading: const Icon(Icons.forum_outlined), title: Text((forum['forum_name'] ?? '').toString()), subtitle: Text((forum['introduction'] ?? '').toString(), maxLines: 1, overflow: TextOverflow.ellipsis), onTap: () => context.push('/forum/${forum['fid']}')),
         if (_posts.isNotEmpty) Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 4), child: Text(l10n.forumSearchPostsHeader, style: const TextStyle(fontWeight: FontWeight.bold))),
         for (final post in _posts) ListTile(leading: const Icon(Icons.article_outlined), title: Text((post['title'] ?? '').toString()), subtitle: Text((post['content'] ?? '').toString().replaceAll('\n', ' '), maxLines: 2, overflow: TextOverflow.ellipsis), onTap: () => context.push('/forum/${post['fid']}/post/${post['pid']}')),
-      ])),
+      ]))),
     ]),
   );}
 }

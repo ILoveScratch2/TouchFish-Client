@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,8 +18,11 @@ import '../widgets/contact_list_widget.dart';
 import '../widgets/invite_sheet.dart';
 import '../widgets/text_entry_dialog.dart';
 import '../widgets/optimized_image.dart';
+import '../widgets/ui/refreshable.dart';
 import '../services/notification_service.dart';
+import '../services/presence_service.dart';
 import '../services/snackbar_service.dart';
+import '../models/settings_service.dart';
 import '../routes/app_routes.dart';
 import '../utils/wide_screen_helper.dart';
 import 'group_create_screen.dart';
@@ -57,6 +62,9 @@ class _ChatShellScreenState extends State<ChatShellScreen>
   void initState() {
     super.initState();
     _loadDividerPosition();
+    // 断点在设置页可调（导航阈值 / 分栏阈值）：改了要立刻重排，
+    // 而不是等下一次数据变化才生效。
+    SettingsService.instance.addListener(_onSettingsChanged);
     _enterController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 320),
@@ -73,8 +81,13 @@ class _ChatShellScreenState extends State<ChatShellScreen>
     });
   }
 
+  void _onSettingsChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    SettingsService.instance.removeListener(_onSettingsChanged);
     _enterController.dispose();
     super.dispose();
   }
@@ -142,7 +155,8 @@ class _ChatShellScreenState extends State<ChatShellScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isWide = WideScreenHelper.isWide(context);
+    // 「列表 + 详情」两栏：只有 expanded 档并排，medium 仍是单栏。
+    final isWide = WideScreenHelper.isExpanded(context);
 
     if (isWide) {
       final currentWidth = _isCollapsed ? _collapsedWidth : _sidebarWidth;
@@ -316,8 +330,17 @@ class _ChatListScreenState extends State<ChatListScreen>
       }
       if (!AuthState.instance.isLoggedIn) return;
       _chatData.init();
+      PresenceService.instance.start();
       ChatWsService.instance.connect();
+      unawaited(PresenceService.instance.refreshFriends());
     }
+  }
+
+  Future<void> _refreshData() async {
+    await Future.wait([
+      _chatData.loadContactsAndRooms(),
+      PresenceService.instance.refreshFriends(),
+    ]);
   }
 
   @override
@@ -462,15 +485,21 @@ class _ChatListScreenState extends State<ChatListScreen>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      ChatListWidget(chatRooms: _chatRooms),
-                      Column(
-                        children: [
-                          _buildFriendRequestsEntry(context, l10n),
-                          const Divider(height: 1),
-                          Expanded(
-                            child: ContactListWidget(contacts: _contacts),
-                          ),
-                        ],
+                      PullToRefresh.list(
+                        onRefresh: _refreshData,
+                        child: ChatListWidget(chatRooms: _chatRooms),
+                      ),
+                      PullToRefresh.list(
+                        onRefresh: _refreshData,
+                        child: Column(
+                          children: [
+                            _buildFriendRequestsEntry(context, l10n),
+                            const Divider(height: 1),
+                            Expanded(
+                              child: ContactListWidget(contacts: _contacts),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -692,15 +721,21 @@ class _ChatListScreenState extends State<ChatListScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                ChatListWidget(chatRooms: _chatRooms),
-                Column(
-                  children: [
-                    _buildFriendRequestsEntry(context, l10n),
-                    const Divider(height: 1),
-                    Expanded(
-                      child: ContactListWidget(contacts: _contacts),
-                    ),
-                  ],
+                PullToRefresh.list(
+                  onRefresh: _refreshData,
+                  child: ChatListWidget(chatRooms: _chatRooms),
+                ),
+                PullToRefresh.list(
+                  onRefresh: _refreshData,
+                  child: Column(
+                    children: [
+                      _buildFriendRequestsEntry(context, l10n),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: ContactListWidget(contacts: _contacts),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

@@ -7,6 +7,9 @@ import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../utils/talker.dart';
 import '../widgets/optimized_image.dart';
+import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/loading_indicator.dart';
+import '../widgets/ui/refreshable.dart';
 
 /// 群聊搜索界面。
 ///
@@ -124,9 +127,9 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
           if (_loading) const LinearProgressIndicator(),
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? const LoadingIndicator()
                 : _results.isEmpty
-                    ? _buildEmptyState(context, l10n, colorScheme)
+                    ? _buildEmptyState(context, l10n)
                     : _buildResultList(context, l10n, colorScheme),
           ),
         ],
@@ -134,27 +137,10 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
     );
   }
 
-  Widget _buildEmptyState(
-    BuildContext context,
-    AppLocalizations l10n,
-    ColorScheme colorScheme,
-  ) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.search, size: 96, color: colorScheme.outlineVariant),
-          const SizedBox(height: 16),
-          Text(
-            _hasSearched ? l10n.groupSearchNotFound : l10n.groupSearchStartHint,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
+  Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
+    return EmptyState(
+      icon: Icons.search,
+      title: _hasSearched ? l10n.groupSearchNotFound : l10n.groupSearchStartHint,
     );
   }
 
@@ -193,7 +179,10 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
     AppLocalizations l10n,
     ColorScheme colorScheme,
   ) {
-    return ListView.separated(
+    return PullToRefresh.list(
+      onRefresh: _search,
+      child: ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: _results.length,
       separatorBuilder: (_, _) => const Divider(height: 1, indent: 76),
@@ -257,6 +246,7 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
           },
         );
       },
+      ),
     );
   }
 }

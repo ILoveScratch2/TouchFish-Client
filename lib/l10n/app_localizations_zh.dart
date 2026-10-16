@@ -1018,6 +1018,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatSelectPlaceholder => '选择一个聊天开始对话';
 
   @override
+  String get forumSelectPlaceholder => '选择一个论坛查看';
+
+  @override
+  String get forumSelectPostPlaceholder => '选择一篇帖子查看';
+
+  @override
+  String get forumPostFullScreen => '整屏查看';
+
+  @override
+  String get forumPostRestoreSplitView => '恢复分栏';
+
+  @override
   String get settingsSystemNotificationsTitle => '系统通知';
 
   @override
@@ -1365,6 +1377,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get adminFeatureFriendRequestDescription => '允许发送好友申请与添加好友。';
 
   @override
+  String get adminFeatureReadReceipt => '已读回执';
+
+  @override
+  String get adminFeatureReadReceiptDescription => '向私聊对方推送已读回执，并允许客户端查询已读状态。';
+
+  @override
   String get adminFeatureForum => '论坛';
 
   @override
@@ -1381,6 +1399,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get adminFeatureAnnouncementDescription => '启用服务器公告。';
+
+  @override
+  String get adminFeaturePresence => '在线状态';
+
+  @override
+  String get adminFeaturePresenceDescription => '允许好友互相看到在线状态，并接收上下线事件。';
 
   @override
   String get adminServerFieldMaxStickerPacks => '每用户贴图包上限';
@@ -1744,6 +1768,31 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountUpdateYourProfile => '编辑个人资料';
 
   @override
+  String get accountFriends => '好友';
+
+  @override
+  String get accountFriendsEmpty => '还没有好友';
+
+  @override
+  String accountFriendsOnlineCount(int count) {
+    return '$count 人在线';
+  }
+
+  @override
+  String get accountBlocked => '已拉黑';
+
+  @override
+  String get accountBlockedEmpty => '没有拉黑任何人';
+
+  @override
+  String accountBlockedCount(int count) {
+    return '$count 人';
+  }
+
+  @override
+  String get accountBlockedHint => '点开可解除拉黑';
+
+  @override
   String get profileEditTitle => '编辑资料';
 
   @override
@@ -1763,6 +1812,26 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get accountPublicEmailDesc => '关闭后其他人将看不到你的邮箱（默认公开）';
+
+  @override
+  String get accountReadStatusTitle => '展示已读状态';
+
+  @override
+  String get accountReadStatusDesc => '关闭后其他人将看不到你是否已读（默认展示）';
+
+  @override
+  String get accountOnlineStatusTitle => '展示在线状态';
+
+  @override
+  String get accountOnlineStatusDesc => '关闭后好友将看不到你是否在线（默认展示）';
+
+  @override
+  String get chatReadReceiptRead => '已读';
+
+  @override
+  String chatReadReceiptCount(int count) {
+    return '$count 人已读';
+  }
 
   @override
   String get profileEditBio => '个性签名';
@@ -2535,13 +2604,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get friendRequestEmpty => '暂无好友申请';
 
   @override
-  String get friendRequestBlocked => '对方已设置不接受好友申请';
+  String get friendRequestBlocked => '对方已把你拉黑，无法发送好友申请';
+
+  @override
+  String get friendRequestBlockedByMe => '你已拉黑对方，先解除拉黑再申请';
 
   @override
   String get friendBlock => '拉黑';
 
   @override
   String get friendUnblock => '解除拉黑';
+
+  @override
+  String get friendUnblockDone => '已解除拉黑';
 
   @override
   String get friendBlockConfirm => '拉黑后将解除好友关系，且对方无法再向你发送好友申请。确定拉黑？';
@@ -4073,9 +4148,35 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsWideThresholdDesc => '窗口宽度达到该值时切换为宽屏布局（仅自动模式生效）';
 
   @override
+  String get settingsSplitThresholdTitle => '分栏阈值';
+
+  @override
+  String get settingsSplitThresholdDesc => '窗口宽度达到该值时，列表与详情才并排显示（仅自动模式生效）';
+
+  @override
   String settingsWideThresholdValue(Object px) {
     return '$px px';
   }
+
+  @override
+  String get settingsSinglePageStyleTitle => '单页风格';
+
+  @override
+  String get settingsSinglePageStyleDesc => '论坛区不使用宽屏分栏，恢复整屏列表→详情的单页导航';
+
+  @override
+  String get settingsForumHideEmptyPaneTitle => '论坛展开栏为空时隐藏';
+
+  @override
+  String get settingsForumHideEmptyPaneDesc =>
+      '论坛列表和论坛详情独占整屏，仅在打开帖子时分屏，退出帖子即恢复';
+
+  @override
+  String get settingsCommandPaletteTitle => '命令面板';
+
+  @override
+  String get settingsCommandPaletteDesc =>
+      '桌面端用 Ctrl/Cmd+K 呼出命令面板（默认开启；关闭后无法呼出）';
 
   @override
   String get settingsWeakNetworkTitle => '弱网模式';
@@ -5187,4 +5288,25 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get errorCodeFeatureDisabledAnnouncement => '本服务器已关闭公告';
+
+  @override
+  String get listNoMore => '没有更多了';
+
+  @override
+  String get chatListEmpty => '还没有会话';
+
+  @override
+  String get contactListEmpty => '还没有联系人';
+
+  @override
+  String get forumMembersEmpty => '还没有成员';
+
+  @override
+  String get messageRetrySend => '发送失败，点击重发';
+
+  @override
+  String get commandPaletteHint => '搜索会话、页面和操作';
+
+  @override
+  String get commandPaletteEmpty => '没有匹配结果';
 }

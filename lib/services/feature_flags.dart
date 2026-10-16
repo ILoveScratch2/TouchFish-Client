@@ -32,9 +32,11 @@ class FeatureFlags extends ChangeNotifier {
   bool get groupChat => _flags.groupChat;
   bool get groupCreate => _flags.groupCreate;
   bool get friendRequest => _flags.friendRequest;
+  bool get readReceipt => _flags.readReceipt;
   bool get forum => _flags.forum;
   bool get sticker => _flags.sticker;
   bool get announcement => _flags.announcement;
+  bool get presence => _flags.presence;
 
   /// 从 SharedPreferences 读取上次缓存（首次进入 app 时调用一次）。
   Future<void> init() async {
@@ -75,9 +77,11 @@ class FeatureFlags extends ChangeNotifier {
       _flags.groupChat == other.groupChat &&
       _flags.groupCreate == other.groupCreate &&
       _flags.friendRequest == other.friendRequest &&
+      _flags.readReceipt == other.readReceipt &&
       _flags.forum == other.forum &&
       _flags.sticker == other.sticker &&
-      _flags.announcement == other.announcement;
+      _flags.announcement == other.announcement &&
+      _flags.presence == other.presence;
 
   /// 仅供测试：重置为默认并清除缓存状态。
   @visibleForTesting

@@ -11,6 +11,7 @@ import '../utils/talker.dart';
 import '../utils/wide_screen_helper.dart';
 import '../widgets/admin_ui.dart';
 import '../widgets/optimized_image.dart';
+import '../widgets/ui/loading_indicator.dart';
 
 class AccountManagementScreen extends StatefulWidget {
   const AccountManagementScreen({super.key});
@@ -901,7 +902,7 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
               icon: Icons.lock_outline_rounded,
             )
           : _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingIndicator()
           : _error != null
           ? AdminErrorState(
               message: l10n.adminAccountLoadFailed,

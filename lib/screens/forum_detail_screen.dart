@@ -17,13 +17,27 @@ import '../utils/talker.dart';
 import '../utils/wide_screen_helper.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/forum_attachments.dart';
+import '../widgets/ui/loading_indicator.dart';
 import '../routes/app_routes.dart';
 
 final _stickerTestPatternFd = RegExp(r':[A-Za-z0-9_]+\+[A-Za-z0-9_-]+:');
 
 class ForumDetailScreen extends StatefulWidget {
   final String forumId;
-  const ForumDetailScreen({super.key, required this.forumId});
+
+  final bool isAside;
+
+  /// 分栏时右栏正在看的那篇帖子 id（没打开帖子为 null）。
+  ///
+  /// 左栏常驻不重建（`context.go` 只是换路由）
+  final String? openPostId;
+
+  const ForumDetailScreen({
+    super.key,
+    required this.forumId,
+    this.isAside = false,
+    this.openPostId,
+  });
 
   @override
   State<ForumDetailScreen> createState() => _ForumDetailScreenState();
@@ -47,6 +61,38 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     _loadData();
+  }
+
+  /// 换论坛时 Flutter 会复用同一个 State（只换路径参数），按新 forumId
+  /// 重新加载；整屏 ↔ 分栏切换会重建 Scrollable，手工把帖子列表的位置接过去。
+  ///
+  /// 这里不能用 `PageStorageKey`：滚动视图里没有自己的 key 的 ExpansionTile
+  /// （论坛简介、置顶卡片）会和它落到同一个 PageStorage 槽位，把滚动偏移
+  /// 当成自己的展开状态读，直接抛 `double is not a subtype of bool?`。
+  @override
+  void didUpdateWidget(covariant ForumDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.forumId != widget.forumId) {
+      _loadData();
+      return;
+    }
+    // 分栏下帖子关闭：右栏是在论坛详情里点开的，浏览数 / 评论数已经变了，
+    // 而这条路径没有 push 的 await 可以挂钩，只能靠外壳传下来的 id 变化。
+    if (oldWidget.openPostId != null && widget.openPostId == null) {
+      _refresh();
+    }
+    if (oldWidget.isAside == widget.isAside) return;
+
+    // 此刻旧布局还挂着，控制器上只有一个位置，读得到当前偏移。
+    final offset = _scrollController.hasClients
+        ? _scrollController.offset
+        : null;
+    if (offset == null || offset <= 0) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final max = _scrollController.position.maxScrollExtent;
+      _scrollController.jumpTo(offset.clamp(0.0, max));
+    });
   }
 
   bool get _isNearBottom {
@@ -84,9 +130,14 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     super.dispose();
   }
 
-  Future<void> _loadData() async {
+  /// 拉取论坛帖子列表。
+  ///
+  /// [showLoading] 为假时保留当前内容做后台刷新：aside 是常驻左栏，把整块换成
+  /// loading 会把 CustomScrollView 卸载掉，帖子列表的滚动位置直接归零（"关闭
+  /// 帖子"正好走这条高频路径）。
+  Future<void> _loadData({bool showLoading = true}) async {
     setState(() {
-      _isLoading = true;
+      if (showLoading) _isLoading = true;
       _error = null;
     });
     try {
@@ -162,18 +213,20 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
   }
 
-  void _refresh() => _loadData();
+  /// 后台刷新：保留当前内容，不整块换成 loading（见 [_loadData]）。
+  void _refresh() => _loadData(showLoading: false);
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
 
+    if (widget.isAside) {
+      return Scaffold(body: _buildAsideLayout(context, l10n));
+    }
+
     if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(),
-        body: const Center(child: CircularProgressIndicator()),
-      );
+      return Scaffold(appBar: AppBar(), body: const LoadingIndicator());
     }
 
     if (_error != null || _forum == null) {
@@ -187,7 +240,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 _forum == null ? l10n.forumNotFound : l10n.forumPostLoadFailed,
               ),
               const SizedBox(height: 8),
-              TextButton(onPressed: _refresh, child: Text(l10n.retry)),
+              TextButton(onPressed: () => _loadData(), child: Text(l10n.retry)),
             ],
           ),
         ),
@@ -195,7 +248,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
     final forum = _forum!;
 
-    final isWide = WideScreenHelper.isWide(context);
+    // 宽版是「帖子列表 + 侧栏」双列，只有 expanded 档才放得下。
+    final isWide = WideScreenHelper.isExpanded(context);
 
     return Scaffold(
       body: Stack(
@@ -268,6 +322,94 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildAsideLayout(BuildContext context, AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final forum = _forum;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            BackButton(onPressed: () => context.go(AppRoutes.forum)),
+            if (forum != null) ...[
+              ProfilePictureWidget(
+                avatarUrl: forum.avatarUrl,
+                radius: 14,
+                fallbackIcon: Icons.forum,
+              ),
+              const SizedBox(width: 8),
+            ],
+            Expanded(
+              child: Text(
+                forum?.name ?? l10n.forumTitle,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (forum != null && (_identity?.role ?? 0) >= 50)
+              IconButton(
+                onPressed: () => _showMemberList(context),
+                icon: const Icon(Icons.people),
+              ),
+            if (AuthState.instance.isLoggedIn)
+              IconButton(
+                tooltip: l10n.forumComposePost,
+                onPressed: () => _openComposePost(context),
+                icon: const Icon(Icons.edit),
+              ),
+            if (forum != null)
+              _ForumActionMenu(
+                forum: forum,
+                identity: _identity,
+                isMember: _isMember,
+                onRefresh: _refresh,
+                onEditForum: () => _handleEditForum(context),
+                onPinPost: () => _handlePinPost(context),
+              ),
+          ],
+        ),
+        Expanded(child: _buildAsideBody(context, l10n)),
+      ],
+    );
+  }
+
+  Widget _buildAsideBody(BuildContext context, AppLocalizations l10n) {
+    final forum = _forum;
+    // 只有还没有数据才整块换
+    if (forum == null) {
+      if (_isLoading) return const Center(child: LoadingIndicator());
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _error != null ? l10n.forumPostLoadFailed : l10n.forumNotFound,
+            ),
+            const SizedBox(height: 8),
+            // 错误页重试仍走带loading的整块刷新
+            TextButton(onPressed: () => _loadData(), child: Text(l10n.retry)),
+          ],
+        ),
+      );
+    }
+    return CustomScrollView(
+      controller: _scrollController,
+      slivers: [
+        SliverToBoxAdapter(
+          child: _buildDescriptionCard(context, forum, l10n, expanded: false),
+        ),
+        if (!_isMember)
+          SliverToBoxAdapter(child: _buildJoinCard(context, l10n)),
+        if (_pinnedPosts.isNotEmpty)
+          SliverToBoxAdapter(child: _buildPinnedPostsCard(context, l10n)),
+        _buildPostListSliver(context, l10n),
       ],
     );
   }
@@ -364,7 +506,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Colors.black.withValues(alpha: 0.36), Colors.black.withValues(alpha: 0.7)],
+                        colors: [
+                          Colors.black.withValues(alpha: 0.36),
+                          Colors.black.withValues(alpha: 0.7),
+                        ],
                       ),
                     ),
                   ),
@@ -411,8 +556,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   Widget _buildDescriptionCard(
     BuildContext context,
     Forum forum,
-    AppLocalizations l10n,
-  ) {
+    AppLocalizations l10n, {
+    bool expanded = true,
+  }) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Theme(
@@ -425,7 +571,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             borderRadius: BorderRadius.all(Radius.circular(8)),
           ),
           title: Text(l10n.forumDescription),
-          initiallyExpanded: true,
+          initiallyExpanded: expanded,
           tilePadding: const EdgeInsets.only(left: 24, right: 20),
           expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -550,7 +696,14 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   }
 
   void _openPostDetail(BuildContext context, ForumPost post) async {
-    await context.push('/forum/${widget.forumId}/post/${post.id}');
+    final path = '/forum/${widget.forumId}/post/${post.id}';
+    // 分屏：帖子在右栏打开。这里必须 go（替换）而不是 push，
+    // 否则连点两个帖子会叠成两层，退出后回到上一个帖子而不是论坛详情。
+    if (WideScreenHelper.forumTwoPane(context)) {
+      context.go(path);
+      return;
+    }
+    await context.push(path);
     if (mounted) _refresh();
   }
 
@@ -841,9 +994,7 @@ class _ForumActionMenu extends StatelessWidget {
           TouchFishSnackbarService.instance.show(l10n.forumDeleteSuccess);
           onRefresh();
         } else {
-          TouchFishSnackbarService.instance.show(
-            l10n.forumDeleteFailed,
-          );
+          TouchFishSnackbarService.instance.show(l10n.forumDeleteFailed);
         }
       }
     });

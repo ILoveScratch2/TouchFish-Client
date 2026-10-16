@@ -5,6 +5,8 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../models/message_model.dart';
 import '../services/chat_data_service.dart';
+import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/refreshable.dart';
 
 class ChatSearchMessagesScreen extends StatefulWidget {
   final String roomId;
@@ -68,6 +70,14 @@ class _ChatSearchMessagesScreenState extends State<ChatSearchMessagesScreen> {
     });
   }
 
+  /// 重跑一次本地搜索（可带到新同步下来的消息）。
+  ///
+  /// 空关键词直接返回：`contains('')` 恒真，会把整段历史当成搜索结果灌进来。
+  Future<void> _refresh() async {
+    if (_searchController.text.trim().isEmpty) return;
+    await _executeSearch(_searchController.text);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -116,73 +126,56 @@ class _ChatSearchMessagesScreenState extends State<ChatSearchMessagesScreen> {
           // Search results
           Expanded(
             child: _searchController.text.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Symbols.search,
-                          size: 64,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          l10n.chatSearchMessagesHint,
-                          style: TextStyle(color: colorScheme.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
+                ? EmptyState(
+                    icon: Symbols.search,
+                    title: l10n.chatSearchMessagesHint,
                   )
                 : _searchResults.isEmpty && !_isSearching
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Symbols.search_off,
-                          size: 64,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          l10n.chatSearchMessagesNoResults,
-                          style: TextStyle(color: colorScheme.onSurfaceVariant),
-                        ),
-                      ],
+                // 空态也要能下拉重试（与其它列表屏一致）：最想刷新的时候
+                // 恰好什么都没有的时候。
+                ? PullToRefresh.content(
+                    onRefresh: _refresh,
+                    child: EmptyState(
+                      icon: Symbols.search_off,
+                      title: l10n.chatSearchMessagesNoResults,
                     ),
                   )
-                : ListView.builder(
-                    itemCount: _searchResults.length,
-                    itemBuilder: (context, index) {
-                      final message = _searchResults[index];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: colorScheme.primaryContainer,
-                          child: Icon(
-                            Icons.person,
-                            color: colorScheme.onPrimaryContainer,
+                : PullToRefresh.list(
+                    onRefresh: _refresh,
+                    child: ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: _searchResults.length,
+                      itemBuilder: (context, index) {
+                        final message = _searchResults[index];
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: colorScheme.primaryContainer,
+                            child: Icon(
+                              Icons.person,
+                              color: colorScheme.onPrimaryContainer,
+                            ),
                           ),
-                        ),
-                        title: Text(
-                          message.senderName ?? l10n.chatDetailOther,
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        subtitle: Text(
-                          message.text,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: Text(
-                          _formatTime(message.timestamp),
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: colorScheme.onSurfaceVariant),
-                        ),
-                        onTap: () {
-                          // 返回对话界面并跳转到该消息的位置
-                          Navigator.pop(context, message);
-                        },
-                      );
-                    },
+                          title: Text(
+                            message.senderName ?? l10n.chatDetailOther,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          subtitle: Text(
+                            message.text,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: Text(
+                            _formatTime(message.timestamp),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: colorScheme.onSurfaceVariant),
+                          ),
+                          onTap: () {
+                            // 返回对话界面并跳转到该消息的位置
+                            Navigator.pop(context, message);
+                          },
+                        );
+                      },
+                    ),
                   ),
           ),
         ],

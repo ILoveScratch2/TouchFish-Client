@@ -2080,6 +2080,30 @@ abstract class AppLocalizations {
   /// **'Select a chat to start talking'**
   String get chatSelectPlaceholder;
 
+  /// No description provided for @forumSelectPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a forum to view it'**
+  String get forumSelectPlaceholder;
+
+  /// No description provided for @forumSelectPostPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a post to read it'**
+  String get forumSelectPostPlaceholder;
+
+  /// No description provided for @forumPostFullScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'View full screen'**
+  String get forumPostFullScreen;
+
+  /// No description provided for @forumPostRestoreSplitView.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore split view'**
+  String get forumPostRestoreSplitView;
+
   /// No description provided for @settingsSystemNotificationsTitle.
   ///
   /// In en, this message translates to:
@@ -2758,6 +2782,18 @@ abstract class AppLocalizations {
   /// **'Allow sending friend requests and adding friends.'**
   String get adminFeatureFriendRequestDescription;
 
+  /// No description provided for @adminFeatureReadReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Read receipts'**
+  String get adminFeatureReadReceipt;
+
+  /// No description provided for @adminFeatureReadReceiptDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Send private-chat read receipts and let clients query read status.'**
+  String get adminFeatureReadReceiptDescription;
+
   /// No description provided for @adminFeatureForum.
   ///
   /// In en, this message translates to:
@@ -2793,6 +2829,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enable server announcements.'**
   String get adminFeatureAnnouncementDescription;
+
+  /// No description provided for @adminFeaturePresence.
+  ///
+  /// In en, this message translates to:
+  /// **'Online presence'**
+  String get adminFeaturePresence;
+
+  /// No description provided for @adminFeaturePresenceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Let friends see each other\'s online status and receive online / offline events.'**
+  String get adminFeaturePresenceDescription;
 
   /// No description provided for @adminServerFieldMaxStickerPacks.
   ///
@@ -3484,6 +3532,48 @@ abstract class AppLocalizations {
   /// **'Update Your Profile'**
   String get accountUpdateYourProfile;
 
+  /// No description provided for @accountFriends.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get accountFriends;
+
+  /// No description provided for @accountFriendsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No friends yet'**
+  String get accountFriendsEmpty;
+
+  /// No description provided for @accountFriendsOnlineCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} online'**
+  String accountFriendsOnlineCount(int count);
+
+  /// No description provided for @accountBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get accountBlocked;
+
+  /// No description provided for @accountBlockedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is blocked'**
+  String get accountBlockedEmpty;
+
+  /// No description provided for @accountBlockedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} blocked'**
+  String accountBlockedCount(int count);
+
+  /// No description provided for @accountBlockedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the list to unblock'**
+  String get accountBlockedHint;
+
   /// No description provided for @profileEditTitle.
   ///
   /// In en, this message translates to:
@@ -3525,6 +3615,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Others cannot see your email when disabled (public by default)'**
   String get accountPublicEmailDesc;
+
+  /// No description provided for @accountReadStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Read Status'**
+  String get accountReadStatusTitle;
+
+  /// No description provided for @accountReadStatusDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Others can see when you have read their messages (shown by default)'**
+  String get accountReadStatusDesc;
+
+  /// No description provided for @accountOnlineStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Online Status'**
+  String get accountOnlineStatusTitle;
+
+  /// No description provided for @accountOnlineStatusDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends can see when you are online (shown by default)'**
+  String get accountOnlineStatusDesc;
+
+  /// No description provided for @chatReadReceiptRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get chatReadReceiptRead;
+
+  /// No description provided for @chatReadReceiptCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} read'**
+  String chatReadReceiptCount(int count);
 
   /// No description provided for @profileEditBio.
   ///
@@ -4939,8 +5065,14 @@ abstract class AppLocalizations {
   /// No description provided for @friendRequestBlocked.
   ///
   /// In en, this message translates to:
-  /// **'This user is not accepting friend requests'**
+  /// **'This user has blocked you, so you cannot send a friend request'**
   String get friendRequestBlocked;
+
+  /// No description provided for @friendRequestBlockedByMe.
+  ///
+  /// In en, this message translates to:
+  /// **'You blocked this user — unblock first'**
+  String get friendRequestBlockedByMe;
 
   /// No description provided for @friendBlock.
   ///
@@ -4953,6 +5085,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unblock'**
   String get friendUnblock;
+
+  /// No description provided for @friendUnblockDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblocked'**
+  String get friendUnblockDone;
 
   /// No description provided for @friendBlockConfirm.
   ///
@@ -7834,11 +7972,59 @@ abstract class AppLocalizations {
   /// **'Switch to the wide layout when the window width reaches this value (only in Auto mode)'**
   String get settingsWideThresholdDesc;
 
+  /// No description provided for @settingsSplitThresholdTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Split View Threshold'**
+  String get settingsSplitThresholdTitle;
+
+  /// No description provided for @settingsSplitThresholdDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Place the list and the detail side by side only once the window is this wide (only in Auto mode)'**
+  String get settingsSplitThresholdDesc;
+
   /// No description provided for @settingsWideThresholdValue.
   ///
   /// In en, this message translates to:
   /// **'{px} px'**
   String settingsWideThresholdValue(Object px);
+
+  /// No description provided for @settingsSinglePageStyleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Single-page style'**
+  String get settingsSinglePageStyleTitle;
+
+  /// No description provided for @settingsSinglePageStyleDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not split the forum section: use the single-page list-to-detail navigation instead'**
+  String get settingsSinglePageStyleDesc;
+
+  /// No description provided for @settingsForumHideEmptyPaneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the forum pane when empty'**
+  String get settingsForumHideEmptyPaneTitle;
+
+  /// No description provided for @settingsForumHideEmptyPaneDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the forum list and the forum detail full-width; split only while a post is open, and restore when it closes'**
+  String get settingsForumHideEmptyPaneDesc;
+
+  /// No description provided for @settingsCommandPaletteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Command palette'**
+  String get settingsCommandPaletteTitle;
+
+  /// No description provided for @settingsCommandPaletteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the command palette with Ctrl/Cmd+K on desktop (on by default; nothing can summon it once off)'**
+  String get settingsCommandPaletteDesc;
 
   /// No description provided for @settingsWeakNetworkTitle.
   ///
@@ -9969,6 +10155,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Announcements are disabled on this server'**
   String get errorCodeFeatureDisabledAnnouncement;
+
+  /// Shown at the end of a paginated list when there are no more items
+  ///
+  /// In en, this message translates to:
+  /// **'No more'**
+  String get listNoMore;
+
+  /// No description provided for @chatListEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No chats yet'**
+  String get chatListEmpty;
+
+  /// No description provided for @contactListEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No contacts yet'**
+  String get contactListEmpty;
+
+  /// No description provided for @forumMembersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No members yet'**
+  String get forumMembersEmpty;
+
+  /// Tooltip on a failed message's status icon; tapping the icon resends it
+  ///
+  /// In en, this message translates to:
+  /// **'Send failed, tap to retry'**
+  String get messageRetrySend;
+
+  /// Placeholder of the command palette search field
+  ///
+  /// In en, this message translates to:
+  /// **'Search chats, pages and actions'**
+  String get commandPaletteHint;
+
+  /// No description provided for @commandPaletteEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching results'**
+  String get commandPaletteEmpty;
 }
 
 class _AppLocalizationsDelegate

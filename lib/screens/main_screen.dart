@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/app_localizations.dart';
@@ -10,7 +11,10 @@ import '../services/chat_data_service.dart';
 import '../services/forum_pending_service.dart';
 import '../services/feature_flags.dart';
 import '../services/notification_service.dart';
+import '../models/settings_service.dart';
 import '../utils/wide_screen_helper.dart';
+import '../widgets/app_alert_dialog.dart' show isDesktopWindowed;
+import '../widgets/command_palette.dart';
 
 class MainScreen extends StatefulWidget {
   final Widget child;
@@ -71,10 +75,13 @@ class _MainScreenState extends State<MainScreen> {
     return index >= 0 ? index : 0;
   }
 
-  bool _isInChatDetail(BuildContext context) {
-    final String location = GoRouterState.of(context).uri.toString();
-    return location.startsWith('/chat/') && location != '/chat';
-  }
+  /// 依据当前路由判断是否隐藏底部导航。
+  ///
+  /// 详情 / 全屏子页面（聊天详情、论坛详情 / 帖子 / 论坛搜索）不显示底部导航，
+  /// 与这些路由原先挂在顶层、不在本壳内时的行为一致；`/chat`、`/forum` 这些
+  /// Section 首页仍保留导航。判定规则见 [AppRoutes.isSubPageNavigation]。
+  bool _hidesBottomNav(BuildContext context) =>
+      AppRoutes.isSubPageNavigation(GoRouterState.of(context).uri.path);
 
   bool _matchesLocation(String location, String route) {
     if (route == AppRoutes.chat) {
@@ -136,153 +143,160 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([AuthState.instance, FeatureFlags.instance]),
-      builder: (context, _) {
-        final l10n = AppLocalizations.of(context)!;
-        final destinations = _buildDestinations(l10n);
-        final selectedIndex = _getCurrentIndex(context, destinations);
-        final appState = AppState.instance;
-        final backgroundImagePath = appState.backgroundImagePath;
-        final hasBackgroundImage =
-            backgroundImagePath != null && backgroundImagePath.isNotEmpty;
+    return _CommandPaletteScope(
+      child: AnimatedBuilder(
+        animation: Listenable.merge([
+          AuthState.instance,
+          FeatureFlags.instance,
+        ]),
+        builder: (context, _) {
+          final l10n = AppLocalizations.of(context)!;
+          final destinations = _buildDestinations(l10n);
+          final selectedIndex = _getCurrentIndex(context, destinations);
+          final appState = AppState.instance;
+          final backgroundImagePath = appState.backgroundImagePath;
+          final hasBackgroundImage =
+              backgroundImagePath != null && backgroundImagePath.isNotEmpty;
 
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = WideScreenHelper.isWideWithWidth(
-              constraints.maxWidth,
-            );
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = WideScreenHelper.isWideWithWidth(
+                constraints.maxWidth,
+              );
 
-            if (isWide) {
-              return SafeArea(
-                bottom: false,
-                child: Container(
-                  color: hasBackgroundImage
-                      ? Colors.transparent
-                      : Theme.of(context).colorScheme.surfaceContainer,
-                  child: Row(
-                    children: [
-                      Container(
-                        color: hasBackgroundImage
-                            ? Theme.of(context).colorScheme.surfaceContainer
-                                  .withValues(alpha: 0.7)
-                            : Colors.transparent,
-                        child: _buildNavRail(
-                          destinations,
-                          selectedIndex,
-                          context,
+              if (isWide) {
+                return SafeArea(
+                  bottom: false,
+                  child: Container(
+                    color: hasBackgroundImage
+                        ? Colors.transparent
+                        : Theme.of(context).colorScheme.surfaceContainer,
+                    child: Row(
+                      children: [
+                        Container(
+                          color: hasBackgroundImage
+                              ? Theme.of(context).colorScheme.surfaceContainer
+                                    .withValues(alpha: 0.7)
+                              : Colors.transparent,
+                          child: _buildNavRail(
+                            destinations,
+                            selectedIndex,
+                            context,
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            if (AuthState.instance.isBanned)
-                              MaterialBanner(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                backgroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.errorContainer,
-                                leading: Icon(
-                                  Icons.block,
-                                  color: Theme.of(
+                        Expanded(
+                          child: Column(
+                            children: [
+                              if (AuthState.instance.isBanned)
+                                MaterialBanner(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  backgroundColor: Theme.of(
                                     context,
-                                  ).colorScheme.onErrorContainer,
-                                ),
-                                content: Text(
-                                  l10n.chatSendFailedBanned,
-                                  style: TextStyle(
+                                  ).colorScheme.errorContainer,
+                                  leading: Icon(
+                                    Icons.block,
                                     color: Theme.of(
                                       context,
                                     ).colorScheme.onErrorContainer,
                                   ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        AuthState.instance.logout(),
-                                    child: Text(
-                                      l10n.accountLogout,
-                                      style: TextStyle(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onErrorContainer,
-                                      ),
+                                  content: Text(
+                                    l10n.chatSendFailedBanned,
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onErrorContainer,
                                     ),
                                   ),
-                                ],
-                              ),
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(16),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          AuthState.instance.logout(),
+                                      child: Text(
+                                        l10n.accountLogout,
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onErrorContainer,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                child: KeyedSubtree(
-                                  key: _childKey,
-                                  child: widget.child,
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(16),
+                                  ),
+                                  child: KeyedSubtree(
+                                    key: _childKey,
+                                    child: widget.child,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-            final showBottomNav = !_isInChatDetail(context);
-            final isBanned = AuthState.instance.isBanned;
-            return Scaffold(
-              body: Column(
-                children: [
-                  if (isBanned)
-                    MaterialBanner(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.errorContainer,
-                      leading: Icon(
-                        Icons.block,
-                        color: Theme.of(context).colorScheme.onErrorContainer,
-                      ),
-                      content: Text(
-                        l10n.chatSendFailedBanned,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onErrorContainer,
-                        ),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => AuthState.instance.logout(),
-                          child: Text(
-                            l10n.accountLogout,
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onErrorContainer,
-                            ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  Expanded(
-                    child: KeyedSubtree(key: _childKey, child: widget.child),
                   ),
-                ],
-              ),
-              bottomNavigationBar: showBottomNav
-                  ? _buildBottomNav(destinations, selectedIndex, context)
-                  : null,
-            );
-          },
-        );
-      },
+                );
+              }
+              final showBottomNav = !_hidesBottomNav(context);
+              final isBanned = AuthState.instance.isBanned;
+              return Scaffold(
+                body: Column(
+                  children: [
+                    if (isBanned)
+                      MaterialBanner(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.errorContainer,
+                        leading: Icon(
+                          Icons.block,
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                        content: Text(
+                          l10n.chatSendFailedBanned,
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onErrorContainer,
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => AuthState.instance.logout(),
+                            child: Text(
+                              l10n.accountLogout,
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onErrorContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    Expanded(
+                      child: KeyedSubtree(key: _childKey, child: widget.child),
+                    ),
+                  ],
+                ),
+                bottomNavigationBar: showBottomNav
+                    ? _buildBottomNav(destinations, selectedIndex, context)
+                    : null,
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -395,6 +409,35 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 桌面端全局命令面板快捷键（Ctrl/Cmd+K）；非桌面平台透传 [child]。
+class _CommandPaletteScope extends StatelessWidget {
+  final Widget child;
+
+  const _CommandPaletteScope({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isDesktopWindowed) return child;
+    // 订阅设置，让「命令面板」开关立刻生效（注册 / 注销快捷键），
+    // 不必等页面因别的理由重建。
+    return ListenableBuilder(
+      listenable: SettingsService.instance,
+      builder: (context, _) {
+        if (!commandPaletteEnabled) return child;
+        return CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.keyK, control: true): () =>
+                showCommandPalette(context),
+            const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () =>
+                showCommandPalette(context),
+          },
+          child: Focus(autofocus: true, child: child),
+        );
+      },
     );
   }
 }

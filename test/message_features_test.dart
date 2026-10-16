@@ -478,6 +478,66 @@ void main() {
     expect(find.text('response'), findsOneWidget);
   });
 
+  testWidgets('failed outgoing message exposes a tappable retry icon', (
+    tester,
+  ) async {
+    var retried = 0;
+    final message = ChatMessage(
+      id: 'c1',
+      clientMid: 'c1',
+      text: 'oops',
+      timestamp: DateTime(2026),
+      isMe: true,
+      status: MessageStatus.failed,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: MessageBubble(message: message, onRetry: () => retried++),
+        ),
+      ),
+    );
+
+    expect(find.byIcon(Icons.error_outline), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.error_outline));
+    await tester.pump();
+    expect(retried, 1);
+  });
+
+  testWidgets('sent outgoing message shows no retry icon', (tester) async {
+    final message = ChatMessage(
+      id: 'c2',
+      clientMid: 'c2',
+      text: 'done',
+      timestamp: DateTime(2026),
+      isMe: true,
+      status: MessageStatus.sent,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: MessageBubble(message: message, onRetry: () {})),
+      ),
+    );
+
+    expect(find.byIcon(Icons.error_outline), findsNothing);
+  });
+
   testWidgets('history quote without sender name is not marked unavailable', (
     tester,
   ) async {

@@ -7,6 +7,7 @@ import '../l10n/app_localizations.dart';
 import '../models/file_attachment.dart';
 import '../widgets/file_attachment_view.dart';
 import '../widgets/sheet_scaffold.dart';
+import '../widgets/ui/loading_indicator.dart';
 
 class AdminFileManagementScreen extends StatefulWidget {
   const AdminFileManagementScreen({super.key});
@@ -215,7 +216,7 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
   }
 
   Widget _buildBody(AppLocalizations l10n) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_isLoading) return const LoadingIndicator();
 
     return RefreshIndicator(
       onRefresh: _loadAllFiles,

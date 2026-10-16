@@ -357,6 +357,10 @@
 
 
   "chatSelectPlaceholder": "擇一對話以啟談",
+  "forumSelectPlaceholder": "擇一論壇以觀之",
+  "forumSelectPostPlaceholder": "擇一帖以閱之",
+  "forumPostFullScreen": "全屏覽之",
+  "forumPostRestoreSplitView": "復分欄",
 
   "settingsSystemNotificationsTitle": "系統通知",
   "settingsSystemNotificationsDesc": "藉作業系統通知以達消息之知",
@@ -492,12 +496,16 @@
   "adminFeatureGroupCreateDescription": "許用戶新立羣聊。",
   "adminFeatureFriendRequest": "好友之請",
   "adminFeatureFriendRequestDescription": "許發好友之請與加友。",
+  "adminFeatureReadReceipt": "已讀之報",
+  "adminFeatureReadReceiptDescription": "向私談之對方報已讀，且許客問已讀之狀。",
   "adminFeatureForum": "論壇",
   "adminFeatureForumDescription": "開論壇之能。",
   "adminFeatureSticker": "貼圖",
   "adminFeatureStickerDescription": "開貼圖包與貼圖擇器。",
   "adminFeatureAnnouncement": "告示",
   "adminFeatureAnnouncementDescription": "開伺服之告示。",
+  "adminFeaturePresence": "在線之狀",
+  "adminFeaturePresenceDescription": "許好友互見在線之狀，並受上下線之事。",
   "adminServerFieldMaxStickerPacks": "每用戶貼圖包之限",
   "adminServerFieldMaxStickersPerPack": "每貼圖包貼圖之限",
   "adminServerFieldMaxStickerSize": "貼圖至大之量（字節，-1 不限）",
@@ -656,6 +664,23 @@
   "accountSessionDevices": "設備管理",
   "accountLockNow": "即時鎖定",
   "accountUpdateYourProfile": "纂個人資料",
+  "accountFriends": "好友",
+  "accountFriendsEmpty": "尚無好友",
+  "accountFriendsOnlineCount": "{count} 人在線",
+  "@accountFriendsOnlineCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "accountBlocked": "已拉黑",
+  "accountBlockedEmpty": "未拉黑任何人",
+  "accountBlockedCount": "{count} 人",
+  "@accountBlockedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "accountBlockedHint": "開之可解拉黑",
 
   "profileEditTitle": "纂資料",
   "profileEditAvatar": "頭像",
@@ -664,6 +689,12 @@
   "profileEditEmail": "郵箱",
   "accountPublicEmailTitle": "公開郵箱",
   "accountPublicEmailDesc": "閉之則他人不見君之郵箱（預設公開）",
+  "accountReadStatusTitle": "顯示已讀狀態",
+  "accountReadStatusDesc": "閉之則他人不見君之已讀（預設顯示）",
+  "accountOnlineStatusTitle": "顯示在線狀態",
+  "accountOnlineStatusDesc": "閉之則友人不見君之在線（預設顯示）",
+  "chatReadReceiptRead": "已讀",
+  "chatReadReceiptCount": "{count} 人已讀",
   "profileEditBio": "個性簽名",
   "profileEditBioPlaceholder": "略介自己…",
   "profileEditIntroduction": "個人之介",
@@ -938,9 +969,11 @@
   "userProfileAddFriend": "結好友",
   "friendRequestsTitle": "好友申請",
   "friendRequestEmpty": "暫無好友申請",
-  "friendRequestBlocked": "對方已設不受好友申請",
+  "friendRequestBlocked": "彼已拉黑爾，不得申",
+  "friendRequestBlockedByMe": "爾已拉黑彼，宜先解之",
   "friendBlock": "拉黑",
   "friendUnblock": "解除拉黑",
+  "friendUnblockDone": "已解拉黑",
   "friendBlockConfirm": "拉黑後將解好友之誼，對方亦不得復申。確乎？",
   "userProfileUnknownEmail": "未知",
 
@@ -1635,7 +1668,15 @@
   "settingsLayoutModeForceNarrow": "強窄屏",
   "settingsWideThresholdTitle": "寬屏切換之限",
   "settingsWideThresholdDesc": "窗寬至此值則易寬屏佈局（惟自動模式生效）",
+  "settingsSplitThresholdTitle": "分欄之限",
+  "settingsSplitThresholdDesc": "窗寬至此值，列表與詳情方並列而陳（惟自動模式生效）",
   "settingsWideThresholdValue": "{px} px",
+  "settingsSinglePageStyleTitle": "單頁之風",
+  "settingsSinglePageStyleDesc": "論壇區不設寬屏分欄，復整屏列表以至詳情之單頁導覽",
+  "settingsForumHideEmptyPaneTitle": "論壇空欄則隱",
+  "settingsForumHideEmptyPaneDesc": "論壇列與論壇詳情獨占全屏，惟開帖時分欄，出帖即復",
+  "settingsCommandPaletteTitle": "命令之板",
+  "settingsCommandPaletteDesc": "桌面按 Ctrl/Cmd+K 以呼命令之板（預設開；閉之則不可呼）",
 
   "settingsWeakNetworkTitle": "弱網模式",
   "settingsWeakNetworkDesc": "網絡不穩定時使用定時同步",
@@ -2091,5 +2132,12 @@
   "errorCodeFeatureDisabledFriendRequest": "本伺服已閉好友之請",
   "errorCodeFeatureDisabledForum": "本伺服已閉論壇",
   "errorCodeFeatureDisabledSticker": "本伺服已閉貼圖",
-  "errorCodeFeatureDisabledAnnouncement": "本伺服已閉告示"
+  "errorCodeFeatureDisabledAnnouncement": "本伺服已閉告示",
+  "listNoMore": "無復更多",
+  "chatListEmpty": "尚無會話",
+  "contactListEmpty": "尚無聯絡",
+  "forumMembersEmpty": "尚無成員",
+  "messageRetrySend": "送信失敗，點擊重發",
+  "commandPaletteHint": "尋會話、頁面與操作",
+  "commandPaletteEmpty": "無相符之果"
 }

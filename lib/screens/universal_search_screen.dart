@@ -15,6 +15,9 @@ import '../services/feature_flags.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../widgets/optimized_image.dart';
+import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/load_more_footer.dart';
+import '../widgets/ui/refreshable.dart';
 
 /// 统一搜索页：用户 / 群组 / 本地消息三个 tab，共用一个关键词输入框。
 ///
@@ -173,6 +176,8 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
     }
   }
 
+  Future<void> _refresh() => _search(_controller.text);
+
   Future<void> _loadMoreGroups() async {
     if (_loadingMoreGroups || !_groupsHasMore) return;
     final uid = AuthState.instance.uid;
@@ -276,64 +281,84 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
   }
 
   Widget _buildUsersTab(AppLocalizations l10n, ColorScheme colorScheme) {
-    if (_users.isEmpty) return _emptyIfSettled(l10n, colorScheme);
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: _users.length,
-      separatorBuilder: (_, _) => const Divider(height: 1, indent: 76),
-      itemBuilder: (context, index) {
-        final user = _users[index];
-        return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          leading: CircleAvatar(
-            radius: 24,
-            backgroundColor: colorScheme.primaryContainer,
-            backgroundImage: _avatarProvider('user', user.uid),
-            onBackgroundImageError: (_, _) {},
-            child: _baseUrl == null
-                ? Icon(Icons.person, color: colorScheme.onPrimaryContainer)
-                : null,
-          ),
-          title: Text(
-            user.username,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          subtitle: user.sign.isEmpty
-              ? null
-              : Text(
-                  user.sign,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: colorScheme.onSurfaceVariant),
-                ),
-          onTap: () => context.push('/user/${user.uid}'),
-        );
-      },
+    if (_users.isEmpty) {
+      return PullToRefresh.content(
+        onRefresh: _refresh,
+        child: _emptyIfSettled(l10n),
+      );
+    }
+    return PullToRefresh.list(
+      onRefresh: _refresh,
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: _users.length,
+        separatorBuilder: (_, _) => const Divider(height: 1, indent: 76),
+        itemBuilder: (context, index) {
+          final user = _users[index];
+          return ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 6,
+            ),
+            leading: CircleAvatar(
+              radius: 24,
+              backgroundColor: colorScheme.primaryContainer,
+              backgroundImage: _avatarProvider('user', user.uid),
+              onBackgroundImageError: (_, _) {},
+              child: _baseUrl == null
+                  ? Icon(Icons.person, color: colorScheme.onPrimaryContainer)
+                  : null,
+            ),
+            title: Text(
+              user.username,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: user.sign.isEmpty
+                ? null
+                : Text(
+                    user.sign,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
+                  ),
+            onTap: () => context.push('/user/${user.uid}'),
+          );
+        },
+      ),
     );
   }
 
   Widget _buildGroupsTab(AppLocalizations l10n, ColorScheme colorScheme) {
-    if (_groups.isEmpty) return _emptyIfSettled(l10n, colorScheme);
-    return NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        if (notification.metrics.pixels >=
-            notification.metrics.maxScrollExtent - 200) {
-          unawaited(_loadMoreGroups());
-        }
-        return false;
-      },
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: _groups.length + (_groupsHasMore ? 1 : 0),
-        separatorBuilder: (_, _) => const Divider(height: 1, indent: 76),
-        itemBuilder: (context, index) {
-          if (index >= _groups.length) {
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator()),
-            );
+    if (_groups.isEmpty) {
+      return PullToRefresh.content(
+        onRefresh: _refresh,
+        child: _emptyIfSettled(l10n),
+      );
+    }
+    return PullToRefresh.list(
+      onRefresh: _refresh,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification.metrics.pixels >=
+              notification.metrics.maxScrollExtent - 200) {
+            unawaited(_loadMoreGroups());
           }
-          final group = _groups[index];
+          return false;
+        },
+        child: ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: _groups.length + (_groupsHasMore ? 1 : 0),
+          separatorBuilder: (_, _) => const Divider(height: 1, indent: 76),
+          itemBuilder: (context, index) {
+            if (index >= _groups.length) {
+              return LoadMoreFooter(
+                loading: _loadingMoreGroups,
+                hasMore: _groupsHasMore,
+              );
+            }
+            final group = _groups[index];
           return ListTile(
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
@@ -383,6 +408,7 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
             ),
           );
         },
+        ),
       ),
     );
   }
@@ -408,42 +434,54 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
   }
 
   Widget _buildLocalTab(AppLocalizations l10n, ColorScheme colorScheme) {
-    if (_local.isEmpty) return _emptyIfSettled(l10n, colorScheme);
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: _local.length,
-      separatorBuilder: (_, _) => const Divider(height: 1, indent: 76),
-      itemBuilder: (context, index) {
-        final result = _local[index];
-        final roomName = ChatDataService.instance.displayNameForRoom(
-          result.roomId,
-          result.roomId,
-        );
-        return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          leading: CircleAvatar(
-            radius: 24,
-            backgroundColor: colorScheme.primaryContainer,
-            child: Icon(Icons.chat, color: colorScheme.onPrimaryContainer),
-          ),
-          title: Text(
-            roomName,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          subtitle: Text(
-            result.message.text,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          onTap: () => context.push('/chat/${result.roomId}'),
-        );
-      },
+    if (_local.isEmpty) {
+      return PullToRefresh.content(
+        onRefresh: _refresh,
+        child: _emptyIfSettled(l10n),
+      );
+    }
+    return PullToRefresh.list(
+      onRefresh: _refresh,
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: _local.length,
+        separatorBuilder: (_, _) => const Divider(height: 1, indent: 76),
+        itemBuilder: (context, index) {
+          final result = _local[index];
+          final roomName = ChatDataService.instance.displayNameForRoom(
+            result.roomId,
+            result.roomId,
+          );
+          return ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 6,
+            ),
+            leading: CircleAvatar(
+              radius: 24,
+              backgroundColor: colorScheme.primaryContainer,
+              child: Icon(Icons.chat, color: colorScheme.onPrimaryContainer),
+            ),
+            title: Text(
+              roomName,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              result.message.text,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onTap: () => context.push('/chat/${result.roomId}'),
+          );
+        },
+      ),
     );
   }
 
-  Widget _emptyIfSettled(AppLocalizations l10n, ColorScheme colorScheme) {
+  Widget _emptyIfSettled(AppLocalizations l10n) {
+    final IconData icon;
     final String message;
-    IconData icon;
     if (_query.isEmpty) {
       message = l10n.searchStartHint;
       icon = Icons.search;
@@ -454,22 +492,6 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
       message = l10n.searchNoResults;
       icon = Icons.search_off;
     }
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 72, color: colorScheme.outlineVariant),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: colorScheme.onSurfaceVariant),
-            ),
-          ),
-        ],
-      ),
-    );
+    return EmptyState(icon: icon, title: message);
   }
 }

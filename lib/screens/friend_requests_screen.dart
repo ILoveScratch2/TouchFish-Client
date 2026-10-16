@@ -9,6 +9,9 @@ import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
+import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/loading_indicator.dart';
+import '../widgets/ui/refreshable.dart';
 
 /// 待处理好友申请列表（服务端 /friend/requests，含申请留言）。
 ///
@@ -104,37 +107,27 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingIndicator()
           : _requests.isEmpty
-          ? _buildEmpty(l10n)
-          : ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: _requests.length,
-              separatorBuilder: (_, _) => const Divider(height: 1),
-              itemBuilder: (context, index) =>
-                  _buildTile(l10n, _requests[index]),
+          ? PullToRefresh.content(onRefresh: _load, child: _buildEmpty(l10n))
+          : PullToRefresh.list(
+              onRefresh: _load,
+              child: ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: _requests.length,
+                separatorBuilder: (_, _) => const Divider(height: 1),
+                itemBuilder: (context, index) =>
+                    _buildTile(l10n, _requests[index]),
+              ),
             ),
     );
   }
 
   Widget _buildEmpty(AppLocalizations l10n) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.person_add_alt,
-            size: 64,
-            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.friendRequestEmpty,
-            style: TextStyle(color: colorScheme.onSurfaceVariant),
-          ),
-        ],
-      ),
+    return EmptyState(
+      icon: Icons.person_add_alt,
+      title: l10n.friendRequestEmpty,
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/browser_storage.dart';
+import '../widgets/ui/empty_state.dart';
 
 enum BrowserListMode { history, bookmarks }
 
@@ -236,21 +237,7 @@ class _BrowserListScreenState extends State<BrowserListScreen> {
     final text = _query.isNotEmpty
         ? l10n.browserNoSearchResults
         : (_isHistory ? l10n.browserHistoryEmpty : l10n.browserBookmarksEmpty);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 56, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(height: 12),
-          Text(
-            text,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
-        ],
-      ),
-    );
+    return EmptyState(icon: icon, title: text);
   }
 }
 

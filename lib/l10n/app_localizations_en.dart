@@ -1071,6 +1071,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatSelectPlaceholder => 'Select a chat to start talking';
 
   @override
+  String get forumSelectPlaceholder => 'Select a forum to view it';
+
+  @override
+  String get forumSelectPostPlaceholder => 'Select a post to read it';
+
+  @override
+  String get forumPostFullScreen => 'View full screen';
+
+  @override
+  String get forumPostRestoreSplitView => 'Restore split view';
+
+  @override
   String get settingsSystemNotificationsTitle => 'System Notifications';
 
   @override
@@ -1443,6 +1455,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Allow sending friend requests and adding friends.';
 
   @override
+  String get adminFeatureReadReceipt => 'Read receipts';
+
+  @override
+  String get adminFeatureReadReceiptDescription =>
+      'Send private-chat read receipts and let clients query read status.';
+
+  @override
   String get adminFeatureForum => 'Forum';
 
   @override
@@ -1461,6 +1480,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get adminFeatureAnnouncementDescription =>
       'Enable server announcements.';
+
+  @override
+  String get adminFeaturePresence => 'Online presence';
+
+  @override
+  String get adminFeaturePresenceDescription =>
+      'Let friends see each other\'s online status and receive online / offline events.';
 
   @override
   String get adminServerFieldMaxStickerPacks => 'Sticker packs per user';
@@ -1841,6 +1867,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountUpdateYourProfile => 'Update Your Profile';
 
   @override
+  String get accountFriends => 'Friends';
+
+  @override
+  String get accountFriendsEmpty => 'No friends yet';
+
+  @override
+  String accountFriendsOnlineCount(int count) {
+    return '$count online';
+  }
+
+  @override
+  String get accountBlocked => 'Blocked';
+
+  @override
+  String get accountBlockedEmpty => 'Nobody is blocked';
+
+  @override
+  String accountBlockedCount(int count) {
+    return '$count blocked';
+  }
+
+  @override
+  String get accountBlockedHint => 'Open the list to unblock';
+
+  @override
   String get profileEditTitle => 'Edit Profile';
 
   @override
@@ -1861,6 +1912,28 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get accountPublicEmailDesc =>
       'Others cannot see your email when disabled (public by default)';
+
+  @override
+  String get accountReadStatusTitle => 'Show Read Status';
+
+  @override
+  String get accountReadStatusDesc =>
+      'Others can see when you have read their messages (shown by default)';
+
+  @override
+  String get accountOnlineStatusTitle => 'Show Online Status';
+
+  @override
+  String get accountOnlineStatusDesc =>
+      'Friends can see when you are online (shown by default)';
+
+  @override
+  String get chatReadReceiptRead => 'Read';
+
+  @override
+  String chatReadReceiptCount(int count) {
+    return '$count read';
+  }
 
   @override
   String get profileEditBio => 'Bio';
@@ -2656,13 +2729,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get friendRequestBlocked =>
-      'This user is not accepting friend requests';
+      'This user has blocked you, so you cannot send a friend request';
+
+  @override
+  String get friendRequestBlockedByMe =>
+      'You blocked this user — unblock first';
 
   @override
   String get friendBlock => 'Block';
 
   @override
   String get friendUnblock => 'Unblock';
+
+  @override
+  String get friendUnblockDone => 'Unblocked';
 
   @override
   String get friendBlockConfirm =>
@@ -4254,9 +4334,38 @@ class AppLocalizationsEn extends AppLocalizations {
       'Switch to the wide layout when the window width reaches this value (only in Auto mode)';
 
   @override
+  String get settingsSplitThresholdTitle => 'Split View Threshold';
+
+  @override
+  String get settingsSplitThresholdDesc =>
+      'Place the list and the detail side by side only once the window is this wide (only in Auto mode)';
+
+  @override
   String settingsWideThresholdValue(Object px) {
     return '$px px';
   }
+
+  @override
+  String get settingsSinglePageStyleTitle => 'Single-page style';
+
+  @override
+  String get settingsSinglePageStyleDesc =>
+      'Do not split the forum section: use the single-page list-to-detail navigation instead';
+
+  @override
+  String get settingsForumHideEmptyPaneTitle =>
+      'Hide the forum pane when empty';
+
+  @override
+  String get settingsForumHideEmptyPaneDesc =>
+      'Keep the forum list and the forum detail full-width; split only while a post is open, and restore when it closes';
+
+  @override
+  String get settingsCommandPaletteTitle => 'Command palette';
+
+  @override
+  String get settingsCommandPaletteDesc =>
+      'Open the command palette with Ctrl/Cmd+K on desktop (on by default; nothing can summon it once off)';
 
   @override
   String get settingsWeakNetworkTitle => 'Weak network mode';
@@ -5436,4 +5545,25 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errorCodeFeatureDisabledAnnouncement =>
       'Announcements are disabled on this server';
+
+  @override
+  String get listNoMore => 'No more';
+
+  @override
+  String get chatListEmpty => 'No chats yet';
+
+  @override
+  String get contactListEmpty => 'No contacts yet';
+
+  @override
+  String get forumMembersEmpty => 'No members yet';
+
+  @override
+  String get messageRetrySend => 'Send failed, tap to retry';
+
+  @override
+  String get commandPaletteHint => 'Search chats, pages and actions';
+
+  @override
+  String get commandPaletteEmpty => 'No matching results';
 }

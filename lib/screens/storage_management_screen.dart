@@ -10,6 +10,7 @@ import '../models/file_attachment.dart';
 import '../widgets/file_attachment_view.dart';
 import '../widgets/file_thumbnail.dart';
 import '../widgets/sheet_scaffold.dart';
+import '../widgets/ui/loading_indicator.dart';
 
 class StorageManagementScreen extends StatefulWidget {
   const StorageManagementScreen({super.key});
@@ -311,7 +312,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
 
   Widget _buildBody(AppLocalizations l10n, ColorScheme colorScheme) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     if (_error != null) {

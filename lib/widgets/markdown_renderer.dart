@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'data_saving_image.dart';
+import 'media/image_lightbox.dart';
 import 'optimized_image.dart';
 import 'package:flutter_highlight/themes/a11y-dark.dart';
 import 'package:flutter_highlight/themes/a11y-light.dart';
@@ -8,7 +9,6 @@ import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:go_router/go_router.dart';
 import 'package:markdown/markdown.dart' as markdown;
 import 'package:markdown_widget/markdown_widget.dart';
-import 'package:photo_view/photo_view.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
@@ -190,7 +190,8 @@ class MarkdownRenderer extends HookWidget {
                   margin: const EdgeInsets.symmetric(vertical: 8),
                   padding: const EdgeInsets.all(16),
                   width: double.infinity,
-                  child: SelectionArea(  // 支持可以选中的 markdown 代码渲染
+                  child: SelectionArea(
+                    // 支持可以选中的 markdown 代码渲染
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Text.rich(
@@ -774,7 +775,10 @@ class _MarkdownRemoteImageState extends State<_MarkdownRemoteImage> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => _ImagePreviewScreen(uri: widget.uri),
+        builder: (context) => ImageLightbox(
+          imagePath: widget.uri.toString(),
+          heroTag: 'markdown-image-${widget.uri}',
+        ),
       ),
     );
   }
@@ -821,29 +825,6 @@ class _MarkdownRemoteImageState extends State<_MarkdownRemoteImage> {
           ),
         );
       },
-    );
-  }
-}
-
-class _ImagePreviewScreen extends StatelessWidget {
-  final Uri uri;
-
-  const _ImagePreviewScreen({required this.uri});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-      ),
-      body: PhotoView(
-        imageProvider: NetworkImage(uri.toString()),
-        minScale: PhotoViewComputedScale.contained,
-        maxScale: PhotoViewComputedScale.covered * 2,
-        backgroundDecoration: const BoxDecoration(color: Colors.black),
-      ),
     );
   }
 }

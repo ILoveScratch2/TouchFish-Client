@@ -11,6 +11,7 @@ import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../widgets/admin_ui.dart';
 import '../widgets/optimized_image.dart';
+import '../widgets/ui/loading_indicator.dart';
 
 class DefaultAssetsScreen extends StatefulWidget {
   const DefaultAssetsScreen({super.key});
@@ -327,7 +328,7 @@ class _DefaultAssetsScreenState extends State<DefaultAssetsScreen> {
     }
 
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     if (_serverInfo == null) {

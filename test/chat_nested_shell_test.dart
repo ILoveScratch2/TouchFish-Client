@@ -73,6 +73,13 @@ void main() {
     await tester.pump();
   }
 
+  Future<void> useMedium(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pump();
+  }
+
   testWidgets('wide: entering a chat room keeps the shell (list) mounted',
       (tester) async {
     await useWide(tester);
@@ -108,6 +115,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('index-chat'), findsOneWidget);
     expect(shellKey.currentState, same(shellBefore));
+  });
+
+  testWidgets('medium: shell stays single column', (tester) async {
+    // 800 宽是 medium：放得下导航栏 + 列表，但不再并排「列表 + 详情」。
+    await useMedium(tester);
+    final shellKey = GlobalKey<State<ChatShellScreen>>();
+    final router = buildRouter(shellKey);
+    await tester.pumpWidget(wrap(router));
+    await tester.pumpAndSettle();
+
+    expect(find.text('index-chat'), findsOneWidget);
+    expect(find.byType(ChatListScreen), findsNothing);
+
+    router.go('/chat/U1');
+    await tester.pumpAndSettle();
+    expect(find.text('detail-U1'), findsOneWidget);
+    expect(find.byType(ChatListScreen), findsNothing);
   });
 
   testWidgets('narrow: shell passes through to the inner page', (tester) async {
