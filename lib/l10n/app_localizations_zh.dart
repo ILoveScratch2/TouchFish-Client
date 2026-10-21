@@ -336,6 +336,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get retry => '重试';
 
   @override
+  String get videoPlaybackErrorTitle => '视频播放失败';
+
+  @override
+  String get videoPlaybackErrorDetails => '错误详情：';
+
+  @override
+  String get chatMeLabel => '我';
+
+  @override
+  String chatUserFallback(String uid) {
+    return '用户 $uid';
+  }
+
+  @override
   String get settingsTitle => '设置';
 
   @override

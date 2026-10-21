@@ -162,6 +162,7 @@ Future<void> main() async {
     final isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
     await AuthState.instance.init();
     final hasSavedSession = AuthState.instance.hasStoredCredentials;
+    final hasRememberedUid = AuthState.instance.rememberedUid != null;
 
     talker.info('TouchFish Client started!');
 
@@ -170,6 +171,7 @@ Future<void> main() async {
         child: TouchFishApp(
           isFirstLaunch: isFirstLaunch,
           hasSavedSession: hasSavedSession,
+          hasRememberedUid: hasRememberedUid,
           didResetLocalSettings: startupRecovery.didResetSharedPreferences,
         ),
       ),
@@ -370,12 +372,17 @@ class _OchCupertinoLocalizationsDelegate
 class TouchFishApp extends StatefulWidget {
   final bool isFirstLaunch;
   final bool hasSavedSession;
+
+  /// 本地还记着账号（`auth_uid`），但凭据可能暂时读不到。
+  /// 用于决定要不要尝试恢复、以及是否展示恢复失败对话框。
+  final bool hasRememberedUid;
   final bool didResetLocalSettings;
 
   const TouchFishApp({
     super.key,
     required this.isFirstLaunch,
     required this.hasSavedSession,
+    required this.hasRememberedUid,
     this.didResetLocalSettings = false,
   });
 
@@ -549,7 +556,7 @@ class _TouchFishAppState extends State<TouchFishApp>
   }
 
   Future<void> _startSavedSessionRestoreIfNeeded() async {
-    if (!widget.hasSavedSession || _didStartSavedSessionRestore) {
+    if (!widget.hasRememberedUid || _didStartSavedSessionRestore) {
       return;
     }
 
@@ -657,7 +664,7 @@ class _TouchFishAppState extends State<TouchFishApp>
 
   Widget _buildSavedSessionRestoreOverlay(BuildContext context, Widget child) {
     final status = AuthState.instance.savedSessionRestoreStatus;
-    if (!widget.hasSavedSession ||
+    if (!widget.hasRememberedUid ||
         (status != SavedSessionRestoreStatus.restoring &&
             status != SavedSessionRestoreStatus.failed)) {
       return child;

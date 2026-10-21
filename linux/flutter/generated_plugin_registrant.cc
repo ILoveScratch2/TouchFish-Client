@@ -9,6 +9,7 @@
 #include <disk_space_2/disk_space_2_plugin.h>
 #include <emoji_picker_flutter/emoji_picker_flutter_plugin.h>
 #include <file_selector_linux/file_selector_plugin.h>
+#include <flutter_secure_storage_linux/flutter_secure_storage_linux_plugin.h>
 #include <flutter_webrtc/flutter_web_r_t_c_plugin.h>
 #include <irondash_engine_context/irondash_engine_context_plugin.h>
 #include <media_kit_libs_linux/media_kit_libs_linux_plugin.h>
@@ -33,6 +34,9 @@ void fl_register_plugins(FlPluginRegistry* registry) {
   g_autoptr(FlPluginRegistrar) file_selector_linux_registrar =
       fl_plugin_registry_get_registrar_for_plugin(registry, "FileSelectorPlugin");
   file_selector_plugin_register_with_registrar(file_selector_linux_registrar);
+  g_autoptr(FlPluginRegistrar) flutter_secure_storage_linux_registrar =
+      fl_plugin_registry_get_registrar_for_plugin(registry, "FlutterSecureStorageLinuxPlugin");
+  flutter_secure_storage_linux_plugin_register_with_registrar(flutter_secure_storage_linux_registrar);
   g_autoptr(FlPluginRegistrar) flutter_webrtc_registrar =
       fl_plugin_registry_get_registrar_for_plugin(registry, "FlutterWebRTCPlugin");
   flutter_web_r_t_c_plugin_register_with_registrar(flutter_webrtc_registrar);

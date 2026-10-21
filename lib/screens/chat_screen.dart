@@ -281,8 +281,10 @@ class _ChatListScreenState extends State<ChatListScreen>
       initialIndex: _lastSelectedTab,
     );
     _tabController.addListener(() {
-      _lastSelectedTab = _tabController.index;
-      setState(() {});
+      // listener 在切换动画期间每帧都会触发：只在 index 真正变化时 setState
+      if (!mounted) return;
+      if (_tabController.index == _lastSelectedTab) return;
+      setState(() => _lastSelectedTab = _tabController.index);
     });
     _chatData.addListener(_onDataChanged);
     _notificationService.addListener(_onDataChanged);

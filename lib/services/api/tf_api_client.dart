@@ -893,10 +893,6 @@ class TfApiClient {
   static TfApiClient get instance => _instance ??= TfApiClient._();
   TfApiClient._();
 
-  /// The last structured API error, available to callers that currently use
-  /// nullable return values. It is cleared after a successful API response.
-  ApiError? lastApiError;
-
   http.Client _http = http.Client();
 
   /// 用于大文件上传/下载的 Dio 实例（支持 onSendProgress/onReceiveProgress）。
@@ -1399,15 +1395,11 @@ class TfApiClient {
     onStatus?.call(response.statusCode);
     final plain = _decryptSecretResponse(response.body, preparedRequest.aesKey);
     final responseData = _parseJsonMap(plain);
-    lastApiError = responseData != null && responseData['error'] != null
-        ? ApiError.fromResponse(responseData)
-        : null;
-    _captureAuthNote(plain);
+    _captureAuthNote(responseData);
     return plain;
   }
 
-  void _captureAuthNote(String plain) {
-    final data = _parseJsonMap(plain);
+  void _captureAuthNote(Map<String, dynamic>? data) {
     if (data == null) return;
     final note = data['note'];
     if (note is String && note.isNotEmpty) {
@@ -2113,11 +2105,15 @@ class TfApiClient {
         body,
         skipToken: true,
       );
-      if (_parseBool(result)) return RegisterResult.success;
-      // 验证码错误/过期：服务端返回 CAPTCHA_INVALID，客户端需刷新后重试
-      if (lastApiError?.code == 'CAPTCHA_INVALID') {
-        return RegisterResult.captchaInvalid;
+      // 直接解析本次响应：不能读共享的 lastApiError（并发请求会覆盖它）
+      final data = _parseJsonMap(result);
+      if (data != null && data['error'] != null) {
+        if (ApiError.fromResponse(data).code == 'CAPTCHA_INVALID') {
+          return RegisterResult.captchaInvalid;
+        }
+        return RegisterResult.failed;
       }
+      if (_parseBool(result)) return RegisterResult.success;
       return RegisterResult.failed;
     } catch (e) {
       talker.error('register failed', e);
@@ -2471,14 +2467,29 @@ class TfApiClient {
     }
   }
 
-  Future<List<ForumPost>> getPostList(int fid) async {
+  /// 拉取版块帖子。传 limit 时按 pid 游标分页（beforePid 为上一页最早一条）。
+  ///
+  /// 失败时抛异常，而不是返回一个空页：空的 `posts` + `hasMore:false` 和
+  /// 「这个版块真的没有更多帖子」无法区分，调用方会把网络失败当成翻到底了。
+  Future<({List<ForumPost> posts, bool hasMore, int? nextBeforePid, int? pinnedPid})>
+  getPostList(int fid, {int? beforePid, int? limit}) async {
     try {
       final baseUrl = await getBaseUrl();
-      final response = await _getRequest('$baseUrl/forum/get_post_list/$fid');
-      if (response.statusCode != 200) return [];
+      final uri = Uri.parse('$baseUrl/forum/get_post_list/$fid').replace(
+        queryParameters: {
+          if (beforePid != null) 'before_pid': '$beforePid',
+          if (limit != null) 'limit': '$limit',
+        },
+      );
+      final response = await _getRequest(uri.toString());
+      if (response.statusCode != 200) {
+        throw StateError(
+          'getPostList $fid: HTTP ${response.statusCode}',
+        );
+      }
       final data = jsonDecode(response.body);
       if (data is List) {
-        return data
+        final posts = data
             .map(
               (row) => row is Map
                   ? ForumPost.fromJson({
@@ -2491,12 +2502,18 @@ class TfApiClient {
                     ),
             )
             .toList();
+        return (
+          posts: posts,
+          hasMore: false,
+          nextBeforePid: null,
+          pinnedPid: null,
+        );
       }
       if (data is Map) {
-        final posts =
+        final rows =
             data['post_rows'] as List? ?? data['posts'] as List? ?? const [];
-        final pinnedPid = data['pinned_pid'];
-        return posts.map((row) {
+        final pinnedPid = (data['pinned_pid'] as num?)?.toInt();
+        final posts = rows.map((row) {
           final post = row is Map
               ? ForumPost.fromJson({
                   ...Map<String, dynamic>.from(row),
@@ -2508,11 +2525,17 @@ class TfApiClient {
           }
           return post;
         }).toList();
+        return (
+          posts: posts,
+          hasMore: data['has_more'] == true,
+          nextBeforePid: (data['next_before_pid'] as num?)?.toInt(),
+          pinnedPid: pinnedPid,
+        );
       }
-      return [];
+      throw StateError('getPostList $fid: unexpected response body');
     } catch (e) {
       talker.error('getPostList $fid failed', e);
-      return [];
+      rethrow;
     }
   }
 
@@ -3191,7 +3214,9 @@ class TfApiClient {
 
   // friend
 
-  Future<bool> addFriend(
+  /// 发送好友申请。返回 (是否成功, 服务端错误码)，
+  /// 错误码随本次请求返回，避免读共享的 lastApiError。
+  Future<({bool ok, String? errorCode})> addFriend(
     int uid,
     String password,
     int targetUid,
@@ -3203,7 +3228,11 @@ class TfApiClient {
       uid: uid,
       password: password,
     );
-    return _parseBool(result);
+    final data = _parseJsonMap(result);
+    final errorCode = data != null && data['error'] != null
+        ? ApiError.fromResponse(data).code
+        : null;
+    return (ok: _parseBool(result), errorCode: errorCode);
   }
 
   Future<bool> dealFriendShip(
@@ -3783,19 +3812,21 @@ class TfApiClient {
     }
   }
 
-  Future<List<TfChatListItem>> queryChatList(int uid, String password) async {
+  /// 拉取会话列表。失败（网络 / 解密 / 服务端错误）返回 null，
+  /// 调用方必须保留旧列表，不能把 null 当成“没有会话”。
+  Future<List<TfChatListItem>?> queryChatList(int uid, String password) async {
     final result = await secretPost(
       '/chat/list',
       {},
       uid: uid,
       password: password,
     );
-    if (result == null) return [];
+    if (result == null) return null;
     try {
       final decoded = jsonDecode(result);
       if (decoded is Map<String, dynamic> && decoded.containsKey('error')) {
         talker.warning('queryChatList server error: ${decoded['error']}');
-        return [];
+        return null;
       }
       final list = decoded as List<dynamic>;
       return list
@@ -3803,7 +3834,7 @@ class TfApiClient {
           .toList();
     } catch (e) {
       talker.error('queryChatList parse failed', e);
-      return [];
+      return null;
     }
   }
 
@@ -4591,8 +4622,8 @@ class TfApiClient {
         response.data!,
         preparedRequest.aesKey,
       );
-      _captureAuthNote(plain);
       final data = _parseJsonMap(plain);
+      _captureAuthNote(data);
       if (data == null) return null;
 
       final success = data['success'];

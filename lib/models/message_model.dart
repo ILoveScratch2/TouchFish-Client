@@ -402,6 +402,25 @@ class ChatMessage {
     return byTime != 0 ? byTime : dedupKey(a).compareTo(dedupKey(b));
   }
 
+  /// 按服务端 mid 去重，同 mid 只保留第一条
+  static List<ChatMessage> dedupeByMid(List<ChatMessage> messages) {
+    final seen = <int>{};
+    var hasDuplicate = false;
+    for (final message in messages) {
+      final mid = message.mid;
+      if (mid != null && !seen.add(mid)) {
+        hasDuplicate = true;
+        break;
+      }
+    }
+    if (!hasDuplicate) return messages;
+    final seenAgain = <int>{};
+    return [
+      for (final message in messages)
+        if (message.mid == null || seenAgain.add(message.mid!)) message,
+    ];
+  }
+
   /// 渲染相关内容是否一致（实例不同但 UI 无需重绘时 1
   static bool sameRenderedContent(ChatMessage a, ChatMessage b) {
     if (identical(a, b)) return true;

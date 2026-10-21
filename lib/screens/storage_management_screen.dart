@@ -1,8 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
+import '../services/file_service.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../l10n/app_localizations.dart';
@@ -116,16 +116,16 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     setState(() => _isUploading = true);
 
     try {
-      final fileBase64 = base64.encode(bytes);
-      final response = await TfApiClient.instance.uploadFile(
-        uid,
-        password,
-        file.name,
-        fileBase64,
+      // 超过阈值的文件内部会走分块上传，避免把整个文件塞进一个加密请求。
+      final hash = await FileService.instance.uploadBytes(
+        uid: uid,
+        password: password,
+        fileName: file.name,
+        bytes: bytes,
       );
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
-      if (response != null) {
+      if (hash != null) {
         TouchFishSnackbarService.instance.show(
           l10n.storageUploaded(file.name),
         );

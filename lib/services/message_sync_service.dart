@@ -97,6 +97,10 @@ class MessageSyncService extends ChangeNotifier {
   final Map<String, Set<int>> _inFlightMissing = {};
   final Map<String, Set<int>> _forgottenMissing = {};
   final Map<String, Timer> _retryTimers = {};
+  final Map<String, int> _retryAttempts = {};
+
+  static const int _maxRetryAttempts = 8;
+  static const Duration _maxRetryDelay = Duration(minutes: 5);
 
   // 同步进度状态（供 UI 展示顶部的加载提示）。
   // 同一房间的缺口同步与增量同步可能连续执行，用引用计数避免中间闪烁。
@@ -285,6 +289,7 @@ class MessageSyncService extends ChangeNotifier {
       timer.cancel();
     }
     _retryTimers.clear();
+    _retryAttempts.clear();
     _activeSyncs.clear();
     _syncedCount.clear();
     _batchRound.clear();
@@ -447,6 +452,13 @@ class MessageSyncService extends ChangeNotifier {
       }
     } finally {
       _syncingRooms.remove(roomId);
+      // 本轮把缺口队列清空 = 已经补齐，重置退避计数。
+      // 不能看「重试定时器是否还活着」：上一轮遗留的定时器会让计数永远不重置，
+      // 下一次真正失败时直接吃一个很大的退避。
+      final queued = _queuedMissing[roomId];
+      if (queued == null || queued.isEmpty) {
+        _retryAttempts.remove(roomId);
+      }
       // bulk action processing complete!
       // ——GitHub Notifications
       //
@@ -617,7 +629,24 @@ class MessageSyncService extends ChangeNotifier {
   void _scheduleRetry(String roomId) {
     final existing = _retryTimers[roomId];
     if (existing?.isActive == true) return;
-    _retryTimers[roomId] = Timer(_retryDelay, () {
+    final attempt = (_retryAttempts[roomId] ?? 0) + 1;
+    _retryAttempts[roomId] = attempt;
+    if (attempt > _maxRetryAttempts) {
+      // 服务端长时间不可用：别每 3 秒打一次加密请求，等下次重连/进会话再补
+      talker.warning(
+        'MessageSyncService: retry limit reached for $roomId, '
+        'will retry on next reconnect or room entry',
+      );
+      _retryAttempts.remove(roomId);
+      return;
+    }
+    final delayMs = _retryDelay.inMilliseconds * (1 << (attempt - 1));
+    var delay = Duration(milliseconds: delayMs);
+    // 测试会用超长 base 来禁用重试；只有 base 本身小于上限时才做封顶
+    if (_retryDelay < _maxRetryDelay && delay > _maxRetryDelay) {
+      delay = _maxRetryDelay;
+    }
+    _retryTimers[roomId] = Timer(delay, () {
       _retryTimers.remove(roomId);
       unawaited(_syncMissing(roomId));
     });
@@ -631,6 +660,9 @@ class MessageSyncService extends ChangeNotifier {
   @visibleForTesting
   Set<int> queuedMissingForTesting(String roomId) =>
       Set.unmodifiable(_queuedMissing[roomId] ?? const {});
+
+  @visibleForTesting
+  int retryAttemptsForTesting(String roomId) => _retryAttempts[roomId] ?? 0;
 
   @visibleForTesting
   Future<void> syncMissingForTesting(String roomId) => _syncMissing(roomId);

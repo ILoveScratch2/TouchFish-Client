@@ -40,17 +40,38 @@ class ChatWsService extends ChangeNotifier {
   static const Duration _baseReconnectDelay = Duration(milliseconds: 500);
   static const Duration _maxReconnectDelay = Duration(seconds: 30);
   static const Duration _rateLimitWindow = Duration(minutes: 1);
+  static const Duration _pingInterval = Duration(seconds: 50);
+  // 连续两个心跳周期都没有 PONG，就认为 TCP 已经半开（NAT 超时等）
+  static const Duration _pongTimeout = Duration(seconds: 110);
   int _reconnectCount = 0;
   DateTime? _reconnectWindowStart;
+  DateTime? _lastPongAt;
 
   final StreamController<ChatWsEvent> _eventController =
       StreamController<ChatWsEvent>.broadcast();
   Stream<ChatWsEvent> get eventStream => _eventController.stream;
 
   Completer<bool>? _authCompleter;
+  Future<bool>? _connectFuture;
 
   /// Connect to WebSocket, perform RSA+AES handshake, authenticate.
-  Future<bool> connect() async {
+  ///
+  /// 启动、进入会话、重连定时器三处都会调用它，并发建连会留下
+  /// 两条 channel / 两份 stream 订阅（旧订阅被覆盖但不会 cancel）。
+  Future<bool> connect() {
+    final pending = _connectFuture;
+    if (pending != null) return pending;
+    // 存进字段的就是返回给调用方的那个 future：清除时只清自己那一次，
+    // 也不会出现「上一次的旧结果被当成这一次的建连结果」。
+    late final Future<bool> future;
+    future = _connectInternal().whenComplete(() {
+      if (identical(_connectFuture, future)) _connectFuture = null;
+    });
+    _connectFuture = future;
+    return future;
+  }
+
+  Future<bool> _connectInternal() async {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     final jwtMode = AuthState.instance.isJwtMode;
@@ -191,6 +212,7 @@ class ChatWsService extends ChangeNotifier {
 
       _authenticatedUid = uid;
       _setState(ChatWsState.authenticated);
+      _lastPongAt = DateTime.now();
       _reconnectCount = 0;
       _reconnectWindowStart = null;
       _startPing();
@@ -270,6 +292,7 @@ class ChatWsService extends ChangeNotifier {
     }
 
     if (type == 'PONG') {
+      _lastPongAt = DateTime.now();
       return;
     }
 
@@ -369,12 +392,22 @@ class ChatWsService extends ChangeNotifier {
 
   void _startPing() {
     _pingTimer?.cancel();
-    _pingTimer = Timer.periodic(const Duration(seconds: 50), (_) {
-      if (_state == ChatWsState.authenticated && _channel != null) {
-        try {
-          _sendEncrypted(jsonEncode({'type': 'PING'}));
-        } catch (_) {}
+    _pingTimer = Timer.periodic(_pingInterval, (_) {
+      if (_state != ChatWsState.authenticated || _channel == null) return;
+      final lastPong = _lastPongAt;
+      if (lastPong != null &&
+          DateTime.now().difference(lastPong) > _pongTimeout) {
+        // 半开连接：sink.add 不会报错，但消息已经发不出去
+        talker.warning(
+          'ChatWsService: no PONG for ${_pongTimeout.inSeconds}s, reconnecting',
+        );
+        _teardownForReconnect();
+        _scheduleReconnect();
+        return;
       }
+      try {
+        _sendEncrypted(jsonEncode({'type': 'PING'}));
+      } catch (_) {}
     });
   }
 
@@ -385,6 +418,7 @@ class ChatWsService extends ChangeNotifier {
     _channel = null;
     _sessionAesKey = null;
     _authenticatedUid = null;
+    _lastPongAt = null;
     _pingTimer?.cancel();
     _setState(ChatWsState.disconnected);
   }
@@ -417,6 +451,8 @@ class ChatWsService extends ChangeNotifier {
 
   void _scheduleReconnect() {
     if (_intentionalClose) return;
+    // 同一时刻只保留一个重连定时器：connect() 失败与 _onDone 可能先后触发
+    if (_reconnectTimer?.isActive ?? false) return;
     _disconnectCleanup();
 
     final now = DateTime.now();

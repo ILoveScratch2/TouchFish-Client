@@ -1128,6 +1128,9 @@ class _BrowserScreenState extends State<BrowserScreen> {
 
   Widget _buildContent() {
     final s = _session;
+    if (s.isEmpty) {
+      return const SizedBox.shrink();
+    }
     final active = _activeTab;
     final showNewTab = active.url == 'about:blank' &&
         !active.loading &&
@@ -1144,9 +1147,12 @@ class _BrowserScreenState extends State<BrowserScreen> {
         if (_activeTab.loading)
           Align(
             alignment: Alignment.topCenter,
-            child: LinearProgressIndicator(
-              value: _activeTab.progress / 100,
-              minHeight: 2,
+            child: ValueListenableBuilder<double>(
+              valueListenable: _activeTab.progressNotifier,
+              builder: (context, value, _) => LinearProgressIndicator(
+                value: value,
+                minHeight: 2,
+              ),
             ),
           ),
         if (_activeTab.failed) _buildErrorOverlay(),
@@ -1390,6 +1396,13 @@ class _BrowserScreenState extends State<BrowserScreen> {
       },
       onState: (title, url, loading, progress, failed) {
         if (!mounted) return;
+        // 进度逐百分比变化：只更新 ValueNotifier，不重建整页
+        tab.progressNotifier.value = (progress / 100).clamp(0.0, 1.0);
+        tab.progress = progress;
+        final titleChanged = title != null && title != tab.title;
+        final urlChanged = url.isNotEmpty && url != tab.url;
+        final stateChanged = tab.loading != loading || tab.failed != failed;
+        if (!titleChanged && !urlChanged && !stateChanged) return;
         setState(() {
           if (title != null) tab.title = title;
           if (url.isNotEmpty && url != tab.url) {
@@ -1405,7 +1418,6 @@ class _BrowserScreenState extends State<BrowserScreen> {
             }
           }
           tab.loading = loading;
-          tab.progress = progress;
           tab.failed = failed;
           // 新导航开始即重置错误状态（对照 Telegram onPageStarted 重置）。
           if (loading) {

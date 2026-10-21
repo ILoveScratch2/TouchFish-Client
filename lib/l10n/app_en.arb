@@ -121,6 +121,15 @@
   "forumPostFailed": "Failed to publish post",
   "userProfileNotFound": "User not found",
   "retry": "Retry",
+  "videoPlaybackErrorTitle": "Video Playback Error",
+  "videoPlaybackErrorDetails": "Error Details:",
+  "chatMeLabel": "Me",
+  "chatUserFallback": "User {uid}",
+  "@chatUserFallback": {
+    "placeholders": {
+      "uid": {"type": "String"}
+    }
+  },
   
   "settingsTitle": "Settings",
   "settingsTooltip": "Settings",

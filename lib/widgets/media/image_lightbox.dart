@@ -213,9 +213,11 @@ class _ImageLightboxState extends State<ImageLightbox> {
 
   /// 同步可得的 ImageProvider；拿不到（纯 hash）返回 null，由 FutureBuilder 异步解析。
   ImageProvider? _resolveProviderSync(LightboxImageItem item) {
-    final bytes = item.bytes ?? (item.media.bytes != null
-        ? Uint8List.fromList(item.media.bytes!)
-        : null);
+    // 直接共享字节（只有非 Uint8List 时才复制）：PhotoView 每次构建都会调用这里
+    final raw = item.bytes ?? item.media.bytes;
+    final bytes = raw is Uint8List
+        ? raw
+        : (raw != null ? Uint8List.fromList(raw) : null);
     if (bytes != null && bytes.isNotEmpty) {
       return MemoryImage(bytes);
     }

@@ -124,20 +124,20 @@ class _ChatInputBarState extends State<ChatInputBar> {
   void _handleTypingChanged() {
     if (!AuthState.instance.isLoggedIn) return;
     final hasText = widget.controller.text.trim().isNotEmpty;
-    if (hasText && !_typingActive) {
-      ChatWsService.instance.sendTyping(widget.roomId, true);
-      _typingActive = true;
-    }
     _typingTimer?.cancel();
+    _typingTimer = null;
     if (!hasText) {
       _stopTyping();
       return;
     }
-    _typingTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (_typingActive) {
-        ChatWsService.instance.sendTyping(widget.roomId, true);
-      }
-    });
+    if (!_typingActive) {
+      ChatWsService.instance.sendTyping(widget.roomId, true);
+      _typingActive = true;
+    }
+    // 输入停顿 3 秒后自动停止：否则草稿留在输入框里，
+    // 对方会一直看到「正在输入」（服务端只按事件转发，不会过期）。
+    // 不不不3秒太短了还是6秒吧
+    _typingTimer = Timer(const Duration(seconds: 6), _stopTyping);
   }
 
   void _stopTyping() {
@@ -264,7 +264,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: colorScheme.shadow.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -509,7 +509,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
                               ? l10n.messageActionForward
                               : l10n.messageReplyingTo(
                                   message.isMe
-                                      ? 'Me'
+                                      ? l10n.chatMeLabel
                                       : message.senderName ??
                                             l10n.commonUnknown,
                                 ),

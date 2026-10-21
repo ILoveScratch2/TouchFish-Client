@@ -30,6 +30,9 @@ class NotificationService extends ChangeNotifier {
       StreamController<int>.broadcast();
   Timer? _pollTimer;
   StreamSubscription<ChatWsEvent>? _wsSubscription;
+  bool _listeningWsState = false;
+  bool _wsAuthenticated = false;
+  Duration _pollInterval = const Duration(seconds: 30);
   bool _isLoading = false;
   bool _isInitialLoad = true;
   bool _isFirstFetchForSession = true;
@@ -231,7 +234,9 @@ class NotificationService extends ChangeNotifier {
   }
 
   void startPolling({Duration interval = const Duration(seconds: 30)}) {
+    _pollInterval = interval;
     _pollTimer?.cancel();
+    _pollTimer = null;
     // 首次启动/登录时会在短时间内恢复历史通知（可能较多），
     // 抑制应用内横幅一段时间，只累计各栏目角标，避免集中轰炸。
     if (_isFirstFetchForSession || _isInitialLoad) {
@@ -240,8 +245,42 @@ class NotificationService extends ChangeNotifier {
       );
     }
     _wsSubscription ??= ChatWsService.instance.eventStream.listen(_onWsEvent);
+    if (!_listeningWsState) {
+      ChatWsService.instance.addListener(_onWsAuthStateChanged);
+      _wsAuthenticated = ChatWsService.instance.isAuthenticated;
+      _listeningWsState = true;
+    }
     fetchNotifications();
-    _pollTimer = Timer.periodic(interval, (_) => fetchNotifications());
+    _syncPollTimer();
+  }
+
+  /// WS 已认证时停止轮询：NOTIFICATION.NEW 已经实时推送，轮询纯属重复请求。
+  void _syncPollTimer() {
+    if (ChatWsService.instance.isAuthenticated) {
+      if (_pollTimer != null) {
+        talker.info('NotificationService: WS authenticated, polling paused');
+      }
+      _pollTimer?.cancel();
+      _pollTimer = null;
+      return;
+    }
+    _pollTimer ??= Timer.periodic(_pollInterval, (_) => fetchNotifications());
+  }
+
+  void _onWsAuthStateChanged() {
+    final wasPolling = _pollTimer != null;
+    final wasAuthenticated = _wsAuthenticated;
+    _wsAuthenticated = ChatWsService.instance.isAuthenticated;
+    _syncPollTimer();
+    if (!wasPolling && _pollTimer != null) {
+      talker.info('NotificationService: WS offline, polling resumed');
+    }
+    if (_wsAuthenticated && !wasAuthenticated) {
+      // 重连成功必须补拉一次：断线期间（以及服务端因发送队列满而丢弃 WS 帧时）
+      // 写入的通知没有任何重放机制，而轮询此刻是暂停的，不补拉就一直看不到。
+      talker.info('NotificationService: WS re-authenticated, catching up');
+      unawaited(fetchNotifications());
+    }
   }
 
   void stopPolling() {
@@ -249,6 +288,11 @@ class NotificationService extends ChangeNotifier {
     _pollTimer = null;
     _wsSubscription?.cancel();
     _wsSubscription = null;
+    if (_listeningWsState) {
+      ChatWsService.instance.removeListener(_onWsAuthStateChanged);
+      _listeningWsState = false;
+    }
+    _wsAuthenticated = false;
   }
 
   void _onWsEvent(ChatWsEvent event) {

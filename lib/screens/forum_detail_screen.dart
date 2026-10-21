@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
@@ -55,6 +57,11 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   final Map<String, UserProfile?> _profileCache = {};
   final ScrollController _scrollController = ScrollController();
   bool _showBackToBottom = false;
+  static const int _postPageSize = 30;
+  bool _hasMorePosts = false;
+  int? _nextBeforePid;
+  bool _isLoadingMore = false;
+  bool _loadMoreFailed = false;
 
   @override
   void initState() {
@@ -101,11 +108,59 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     return pos.pixels >= pos.maxScrollExtent - 100;
   }
 
+  String _errorText(AppLocalizations l10n) =>
+      _error != null ? l10n.forumPostLoadFailed : l10n.forumNotFound;
+
   void _onScroll() {
     if (!_scrollController.hasClients) return;
     final showBackToBottom = !_isNearBottom;
     if (_showBackToBottom != showBackToBottom && mounted) {
       setState(() => _showBackToBottom = showBackToBottom);
+    }
+    if (_isNearBottom && _hasMorePosts && !_isLoadingMore && !_loadMoreFailed) {
+      unawaited(_loadMorePosts());
+    }
+  }
+
+  Future<void> _loadMorePosts() async {
+    if (_isLoadingMore || !_hasMorePosts) return;
+    final fid = int.tryParse(widget.forumId);
+    if (fid == null) return;
+    final beforePid = _nextBeforePid;
+    if (beforePid == null) {
+      talker.warning(
+        'ForumDetailScreen: has_more without next_before_pid, stopping',
+      );
+      if (mounted) setState(() => _hasMorePosts = false);
+      return;
+    }
+    setState(() {
+      _isLoadingMore = true;
+      _loadMoreFailed = false;
+    });
+    try {
+      final page = await TfApiClient.instance.getPostList(
+        fid,
+        beforePid: beforePid,
+        limit: _postPageSize,
+      );
+      if (!mounted || widget.forumId != fid.toString()) return;
+      final known = _posts.map((post) => post.id).toSet();
+      setState(() {
+        _posts = [
+          ..._posts,
+          ...page.posts.where(
+            (post) => !post.isPinned && !known.contains(post.id),
+          ),
+        ]..sort(ForumPost.compareNewestFirst);
+        _hasMorePosts = page.hasMore;
+        _nextBeforePid = page.nextBeforePid;
+      });
+    } catch (e) {
+      talker.error('ForumDetailScreen: load more posts failed', e);
+      if (mounted) setState(() => _loadMoreFailed = true);
+    } finally {
+      if (mounted) setState(() => _isLoadingMore = false);
     }
   }
 
@@ -149,7 +204,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
       final results = await Future.wait([
         TfApiClient.instance.getForumList(),
-        TfApiClient.instance.getPostList(fid),
+        TfApiClient.instance.getPostList(fid, limit: _postPageSize),
         if (uid != null && password != null)
           TfApiClient.instance.getMyMemberships(uid, password),
         if (uid != null && password != null)
@@ -164,10 +219,30 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _forum = null;
       }
 
-      final allPosts = results[1] as List<ForumPost>;
+      final postPage =
+          results[1] as ({
+            List<ForumPost> posts,
+            bool hasMore,
+            int? nextBeforePid,
+            int? pinnedPid,
+          });
+      final allPosts = postPage.posts;
       _pinnedPosts = allPosts.where((p) => p.isPinned).toList();
       _posts = allPosts.where((p) => !p.isPinned).toList()
         ..sort(ForumPost.compareNewestFirst);
+      _hasMorePosts = postPage.hasMore;
+      _nextBeforePid = postPage.nextBeforePid;
+      _isLoadingMore = false;
+      _loadMoreFailed = false;
+      final pinnedPid = postPage.pinnedPid;
+      if (pinnedPid != null &&
+          !allPosts.any((p) => p.id == pinnedPid.toString())) {
+        // 置顶帖不在当前页：单独补一条，避免“置顶”在分页后消失
+        final pinned = await TfApiClient.instance.getPost(fid, pinnedPid);
+        if (pinned != null) {
+          _pinnedPosts = [pinned.copyWith(isPinned: true)];
+        }
+      }
       if (results.length > 2 && results[2] is List<Map<String, int>>) {
         final memberships = results[2] as List<Map<String, int>>;
         _isMember = memberships.any(
@@ -237,7 +312,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                _forum == null ? l10n.forumNotFound : l10n.forumPostLoadFailed,
+                _errorText(l10n),
               ),
               const SizedBox(height: 8),
               TextButton(onPressed: () => _loadData(), child: Text(l10n.retry)),
@@ -390,7 +465,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              _error != null ? l10n.forumPostLoadFailed : l10n.forumNotFound,
+              _errorText(l10n),
             ),
             const SizedBox(height: 8),
             // 错误页重试仍走带loading的整块刷新
@@ -668,8 +743,35 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       );
     }
 
+    final itemCount = _posts.length + (_hasMorePosts ? 1 : 0);
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
+        if (index >= _posts.length) {
+          // 分页加载指示（滚动到底时自动触发，见 _onScroll）。
+          // 失败时换成可点的重试：失败不会产生新的滚动事件，
+          // 只留一个转圈的话这页就永远卡在加载中了。
+          if (_loadMoreFailed) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: TextButton.icon(
+                  onPressed: _isLoadingMore ? null : _loadMorePosts,
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: Text(AppLocalizations.of(context)!.retry),
+                ),
+              ),
+            );
+          }
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: SizedBox.square(
+                dimension: 24,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+            ),
+          );
+        }
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: _PostCard(
@@ -678,7 +780,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             profileCache: _profileCache,
           ),
         );
-      }, childCount: _posts.length),
+      }, childCount: itemCount),
     );
   }
 
@@ -1042,9 +1144,24 @@ class _PostCard extends StatefulWidget {
 
 class _PostCardState extends State<_PostCard> {
   UserProfile? _author;
-  List<ForumComment>? _comments;
+  int _commentCount = 0;
+  String? _lastCommentUid;
+  String? _lastCommentContent;
   UserProfile? _featuredCommentAuthor;
   bool _loaded = false;
+
+  /// 同一作者的并发请求合并成一次（列表里同一人多帖、多卡片同时 init 时很常见）
+  static final Map<int, Future<UserProfile?>> _authorRequests = {};
+
+  static Future<UserProfile?> _fetchAuthor(int uid) {
+    final existing = _authorRequests[uid];
+    if (existing != null) return existing;
+    final future = TfApiClient.instance.getUserByUid(uid).whenComplete(() {
+      _authorRequests.remove(uid);
+    });
+    _authorRequests[uid] = future;
+    return future;
+  }
 
   ForumPost get post => widget.post;
 
@@ -1064,13 +1181,25 @@ class _PostCardState extends State<_PostCard> {
   }
 
   Future<void> _loadData() async {
+    try {
+      await _loadDataInner();
+    } catch (e) {
+      // 共享的作者请求 / 评论请求失败时不能把卡片永远停在骨架屏上
+      talker.error('ForumDetailScreen: post card load failed', e);
+      if (mounted) setState(() => _loaded = true);
+    }
+  }
+
+  Future<void> _loadDataInner() async {
     final fid = int.tryParse(post.forumId);
     final pid = int.tryParse(post.id);
     final authorUid = post.authorUid;
     final cache = widget.profileCache;
 
     UserProfile? author;
-    List<ForumComment>? comments;
+    var commentCount = post.commentCount;
+    var lastCommentUid = post.lastCommentUid;
+    var lastCommentContent = post.lastCommentContent;
     UserProfile? featuredAuthor;
 
     if (cache != null && cache.containsKey(authorUid)) {
@@ -1078,22 +1207,29 @@ class _PostCardState extends State<_PostCard> {
     } else {
       final uid = int.tryParse(authorUid);
       if (uid != null) {
-        author = await TfApiClient.instance.getUserByUid(uid);
+        author = await _fetchAuthor(uid);
         cache?[authorUid] = author;
       }
     }
-    if (fid != null && pid != null) {
-      comments = await TfApiClient.instance.getAllComments(fid, pid);
-      if (comments.isNotEmpty) {
-        final lastCommentUid = comments.last.authorUid;
-        if (cache != null && cache.containsKey(lastCommentUid)) {
-          featuredAuthor = cache[lastCommentUid];
-        } else {
-          final uid = int.tryParse(lastCommentUid);
-          if (uid != null) {
-            featuredAuthor = await TfApiClient.instance.getUserByUid(uid);
-            cache?[lastCommentUid] = featuredAuthor;
-          }
+    // 新服务端在列表里直接带评论摘要；没有摘要时才退回逐帖拉取（旧服务器）
+    if (lastCommentUid == null || lastCommentContent == null) {
+      if (fid != null && pid != null) {
+        final comments = await TfApiClient.instance.getAllComments(fid, pid);
+        commentCount = comments.length;
+        if (comments.isNotEmpty) {
+          lastCommentUid = comments.last.authorUid;
+          lastCommentContent = comments.last.content;
+        }
+      }
+    }
+    if (lastCommentUid != null) {
+      if (cache != null && cache.containsKey(lastCommentUid)) {
+        featuredAuthor = cache[lastCommentUid];
+      } else {
+        final uid = int.tryParse(lastCommentUid);
+        if (uid != null) {
+          featuredAuthor = await _fetchAuthor(uid);
+          cache?[lastCommentUid] = featuredAuthor;
         }
       }
     }
@@ -1101,7 +1237,9 @@ class _PostCardState extends State<_PostCard> {
     if (mounted) {
       setState(() {
         _author = author;
-        _comments = comments;
+        _commentCount = commentCount;
+        _lastCommentUid = lastCommentUid;
+        _lastCommentContent = lastCommentContent;
         _featuredCommentAuthor = featuredAuthor;
         _loaded = true;
       });
@@ -1115,11 +1253,10 @@ class _PostCardState extends State<_PostCard> {
       true,
     );
     final author = _author;
-    final comments = _comments;
-    final commentCount = comments?.length ?? 0;
-    final featuredComment = comments?.isNotEmpty == true
-        ? comments!.last
-        : null;
+    final commentCount = _commentCount;
+    final lastCommentContent = _lastCommentContent;
+    final hasCommentPreview =
+        lastCommentContent != null && lastCommentContent.isNotEmpty;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -1232,8 +1369,13 @@ class _PostCardState extends State<_PostCard> {
                     ),
                   ],
                 ),
-              if (featuredComment != null)
-                _buildCommentPreview(context, featuredComment, commentCount),
+              if (hasCommentPreview)
+                _buildCommentPreview(
+                  context,
+                  _lastCommentUid ?? '',
+                  lastCommentContent,
+                  commentCount,
+                ),
               if (post.attachments.isNotEmpty)
                 ForumAttachmentsRow(attachments: post.attachments),
             ],
@@ -1245,13 +1387,15 @@ class _PostCardState extends State<_PostCard> {
 
   Widget _buildCommentPreview(
     BuildContext context,
-    ForumComment comment,
+    String commentAuthorUid,
+    String commentContent,
     int commentCount,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
     final commentAuthor = _featuredCommentAuthor;
-    final displayName = commentAuthor?.username ?? 'UID:${comment.authorUid}';
+    final displayName =
+        commentAuthor?.username ?? 'UID:$commentAuthorUid';
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -1291,7 +1435,7 @@ class _PostCardState extends State<_PostCard> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    comment.content,
+                    commentContent,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(

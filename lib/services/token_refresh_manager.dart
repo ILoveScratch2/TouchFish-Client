@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import '../utils/talker.dart';
-import 'api/tf_api_client.dart';
 import 'auth_state.dart';
 
 /// Token 自动刷新
@@ -112,9 +111,11 @@ class TokenRefreshManager {
       }
 
       talker.info('TokenRefreshManager: refreshing token (attempt ${_consecutiveFailures + 1})');
-      final result = await TfApiClient.instance.refreshToken(refreshToken);
+      // 统一走 AuthState 的单飞刷新：refresh token 用一次即轮换，
+      // 这里不能再单独调 TfApiClient.refreshToken，否则会二次轮换必然失败。
+      final refreshed = await authState.refreshAccessToken();
 
-      if (result == null || result.token == null) {
+      if (!refreshed) {
         _consecutiveFailures++;
         talker.warning(
           'TokenRefreshManager: refresh failed (${_consecutiveFailures}/$_maxConsecutiveFailures)',
@@ -135,15 +136,12 @@ class TokenRefreshManager {
         return false;
       }
 
-      // 刷新成功：重置失败计数，更新 AuthState
+      // 刷新成功：重置失败计数。AuthState 已经写入新 token / refresh token。
       _consecutiveFailures = 0;
       talker.info('TokenRefreshManager: refresh succeeded, scheduling next refresh');
 
-      // 通知 AuthState 更新 token（避免直接修改私有字段）
-      await authState.relogin();
-
       // 调度下一次刷新
-      startAutoRefresh(result.expiresAt);
+      startAutoRefresh(authState.tokenExpiresAt);
 
       completer.complete(true);
       return true;

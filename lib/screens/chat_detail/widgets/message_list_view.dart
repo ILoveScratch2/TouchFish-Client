@@ -80,6 +80,9 @@ class MessageListView extends StatelessWidget {
   /// 本轮新增消息（见 [newlyAppendedMessageKeys]），这些气泡播一次入场动画。
   final Set<String> entranceKeys;
 
+  /// mid -> GlobalKey：让父级能用 currentContext 精确定位到某条消息。
+  final Map<int, GlobalKey> messageKeys;
+
   const MessageListView({
     super.key,
     required this.messages,
@@ -112,6 +115,7 @@ class MessageListView extends StatelessWidget {
     this.peerReadSeq,
     this.groupReadCounts = const {},
     this.entranceKeys = const {},
+    this.messageKeys = const {},
   });
 
   @override
@@ -252,7 +256,7 @@ class MessageListView extends StatelessWidget {
           child: bubble,
         );
 
-        return Dismissible(
+        final dismissible = Dismissible(
           key: ValueKey('$_swipeKeyPrefix$stableKey'),
           direction: message.isDeleted || isSelectionMode
               ? DismissDirection.none
@@ -278,6 +282,10 @@ class MessageListView extends StatelessWidget {
           ),
           child: selectionWrapped,
         );
+        final mid = message.mid;
+        final globalKey = mid == null ? null : messageKeys[mid];
+        if (globalKey == null) return dismissible;
+        return KeyedSubtree(key: globalKey, child: dismissible);
       },
     );
   }

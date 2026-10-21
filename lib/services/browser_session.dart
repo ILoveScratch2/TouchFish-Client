@@ -13,6 +13,10 @@ class BrowserTab {
   bool loading = false;
   bool failed = false;
 
+  /// 加载进度单独走 ValueNotifier：逐百分比 setState 会重建整个浏览器页
+  /// （包括所有标签页的 WebView）。
+  final ValueNotifier<double> progressNotifier = ValueNotifier<double>(0);
+
   /// 主 frame 加载失败时的错误描述
   String? errorDescription;
   InAppWebViewController? controller;
@@ -79,13 +83,16 @@ class BrowserSession {
   Future<void> closeTab(int index) async {
     if (index < 0 || index >= tabs.length) return;
     final tab = tabs.removeAt(index);
-    await InAppWebViewController.disposeKeepAlive(tab.keepAlive);
+    // 先修正 currentIndex，再 await：否则等待期间的重建可能把已移除的 tab
+    // 当成 active（甚至在 notifier dispose 之后继续使用）。
     if (tabs.isEmpty) {
       currentIndex = 0;
-      return;
+    } else {
+      if (currentIndex >= tabs.length) currentIndex = tabs.length - 1;
+      if (currentIndex > index) currentIndex--;
     }
-    if (currentIndex >= tabs.length) currentIndex = tabs.length - 1;
-    if (currentIndex > index) currentIndex--;
+    await InAppWebViewController.disposeKeepAlive(tab.keepAlive);
+    tab.progressNotifier.dispose();
   }
 
   /// 渲染进程崩溃后重建 WebView：释放旧 keepAlive 并换新实例，
@@ -99,16 +106,19 @@ class BrowserSession {
     tab.generation++;
     tab.loading = false;
     tab.progress = 0;
+    tab.progressNotifier.value = 0;
     tab.failed = false;
     tab.errorDescription = null;
     tab.themeColor = null;
   }
 
   Future<void> clearAll() async {
-    for (final tab in tabs) {
-      await InAppWebViewController.disposeKeepAlive(tab.keepAlive);
-    }
+    final closing = List<BrowserTab>.from(tabs);
     tabs.clear();
     currentIndex = 0;
+    for (final tab in closing) {
+      await InAppWebViewController.disposeKeepAlive(tab.keepAlive);
+      tab.progressNotifier.dispose();
+    }
   }
 }

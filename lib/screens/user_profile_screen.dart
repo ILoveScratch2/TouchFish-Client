@@ -144,17 +144,16 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
     setState(() => _isAddingFriend = true);
     try {
-      final ok = await TfApiClient.instance.addFriend(
+      final result = await TfApiClient.instance.addFriend(
         myUid,
         password,
         targetUid,
         message,
       );
       if (!mounted) return;
-      final blocked =
-          TfApiClient.instance.lastApiError?.code == 'FRIEND_BLOCKED';
+      final blocked = result.errorCode == 'FRIEND_BLOCKED';
       TouchFishSnackbarService.instance.show(
-        ok
+        result.ok
             ? l10n.userProfileFriendRequestSent(target.username)
             : blocked
             // 拉黑是双向共用一个关系行：是自己拉黑的话，得先解除拉黑。

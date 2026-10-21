@@ -256,20 +256,23 @@ const Set<MessageActionKind> _desktopMenuKinds = {
   MessageActionKind.viewOriginal,
 };
 
-double _hoverActionWidth(MessageActionKind kind) {
-  switch (kind) {
-    case MessageActionKind.reply:
-    case MessageActionKind.forward:
-      return 48;
-    case MessageActionKind.pin:
-    case MessageActionKind.essence:
-      return 32;
-    case MessageActionKind.recall:
-    case MessageActionKind.delete:
-      return 41;
-    default:
-      return 0;
+/// 桌面 hover 菜单的按钮尺寸与分隔线占位。
+///
+/// 菜单装在 `Positioned(width: menuWidth, height: 32)` 里，槽位必须和
+/// 渲染出来的宽度完全一致：槽位算窄了就是 "RenderFlex overflowed on the right"，
+/// 算宽了菜单会离气泡右边缘一截。两边共用这两个常量，不再各自维护一份数字。
+const double _hoverMenuButtonSize = 32;
+const double _hoverMenuSeparatorWidth = 9; // 1px 竖线 + 左右各 4px 外边距
+
+double _hoverMenuWidth(List<MessageAction> actions) {
+  var width = 0.0;
+  for (var i = 0; i < actions.length; i++) {
+    if (i > 0 && actions[i].kind != MessageActionKind.forward) {
+      width += _hoverMenuSeparatorWidth;
+    }
+    width += _hoverMenuButtonSize;
   }
+  return width;
 }
 
 class MessageBubble extends HookWidget {
@@ -495,9 +498,13 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
   Offset? _longPressOrigin;
   Timer? _longPressTimer;
 
-  // 媒体消息需要保留状态！！！！！！！！！！！！！！！！！！！！！
+  // 只有音视频需要保留状态（播放器/进度）；图片的字节仍在 message.media 里，
+  // 让 ListView 正常回收可以显著降低长会话的内存占用。
   @override
-  bool get wantKeepAlive => widget.message.media != null;
+  bool get wantKeepAlive {
+    final mime = widget.message.media?.mimeType ?? '';
+    return mime.startsWith('audio/') || mime.startsWith('video/');
+  }
 
   @override
   void dispose() {
@@ -529,10 +536,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     final overlayBox = overlay.context.findRenderObject() as RenderBox?;
     if (bubbleBox == null || overlayBox == null) return;
     final actions = _hoverActions(context);
-    final menuWidth = actions.fold<double>(
-      0,
-      (sum, action) => sum + _hoverActionWidth(action.kind),
-    );
+    final menuWidth = _hoverMenuWidth(actions);
     final bubbleTopLeft = bubbleBox.localToGlobal(
       Offset.zero,
       ancestor: overlayBox,
@@ -848,11 +852,14 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     final containerColor = widget.message.isMe
         ? colorScheme.primaryContainer.withValues(alpha: 0.5)
         : colorScheme.surfaceContainer;
+    final senderUid = widget.message.senderUid;
     final senderName = widget.message.senderName?.trim().isNotEmpty == true
         ? widget.message.senderName!
         : widget.message.isMe
-        ? AuthState.instance.currentUser?.username ?? 'Me'
-        : 'User ${widget.message.senderUid ?? ''}';
+        ? AuthState.instance.currentUser?.username ?? l10n.chatMeLabel
+        : senderUid == null
+        ? l10n.commonUnknown
+        : l10n.chatUserFallback('$senderUid');
     final senderAvatar =
         widget.message.senderAvatar ??
         (widget.message.isMe ? AuthState.instance.currentUser?.avatar : null);
@@ -1331,9 +1338,13 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
         child: GestureDetector(
           onTap: widget.onRetry,
           behavior: HitTestBehavior.opaque,
-          child: const Padding(
-            padding: EdgeInsets.all(3),
-            child: Icon(Icons.error_outline, size: 13, color: Colors.red),
+          child: Padding(
+            padding: const EdgeInsets.all(3),
+            child: Icon(
+              Icons.error_outline,
+              size: 13,
+              color: Theme.of(context).colorScheme.error,
+            ),
           ),
         ),
       );
@@ -1979,7 +1990,7 @@ class _MessageHoverActionMenu extends StatelessWidget {
       }
       children.add(
         SizedBox.square(
-          dimension: 32,
+          dimension: _hoverMenuButtonSize,
           child: IconButton(
             icon: Icon(action.icon, size: 16, color: action.color),
             onPressed: action.onInvoke,
@@ -1996,7 +2007,7 @@ class _MessageHoverActionMenu extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: colorScheme.shadow.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

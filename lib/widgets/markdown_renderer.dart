@@ -769,6 +769,24 @@ class _MarkdownRemoteImage extends StatefulWidget {
 
 class _MarkdownRemoteImageState extends State<_MarkdownRemoteImage> {
   bool _confirmed = false;
+  late Future<bool> _blockedFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _blockedFuture = DomainTrustService.instance.requiresImageBlock(widget.uri);
+  }
+
+  @override
+  void didUpdateWidget(covariant _MarkdownRemoteImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.uri != widget.uri) {
+      // 缓存 future：放在 build 里会在每次重建时重新发起信任查询，
+      // 并把已经加载好的图片打回 loading 占位。
+      _blockedFuture = DomainTrustService.instance.requiresImageBlock(widget.uri);
+      _confirmed = false;
+    }
+  }
 
   Future<void> _openPreview() async {
     if (!mounted) return;
@@ -786,7 +804,7 @@ class _MarkdownRemoteImageState extends State<_MarkdownRemoteImage> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(
-      future: DomainTrustService.instance.requiresImageBlock(widget.uri),
+      future: _blockedFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done ||
             snapshot.data == null) {

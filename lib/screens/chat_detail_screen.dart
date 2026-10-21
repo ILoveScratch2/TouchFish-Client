@@ -93,11 +93,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   Timer? _draftTimer;
   bool _suppressDraftSave = false;
   int _roomGeneration = 0;
-  List<ChatMessage> _lastBuiltMessages = const [];
   Set<String> _entranceKeys = const {};
   Timer? _entranceKeysTimer;
+  Timer? _groupMetaRefreshTimer;
   List<PinnedMessage> _pinnedMessages = [];
   final Map<int, ChatMessage?> _pinnedMessageContents = {};
+  List<ChatMessage>? _pinIndexSource;
+  Map<int, int> _pinMidIndex = const {};
   final GlobalKey _pinnedBarKey = GlobalKey();
   List<int> _essenceMids = [];
   bool _essenceEnabled = true;
@@ -291,9 +293,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     // 换房间后旧房间的回执节流状态不能让新房间的首次查询被跳过。
     _readReceiptThrottle.reset();
     _lastReportedReadMid = null;
-    _lastBuiltMessages = const [];
     _entranceKeysTimer?.cancel();
     _entranceKeys = const {};
+    _groupMetaRefreshTimer?.cancel();
+    _groupMetaRefreshTimer = null;
     _suppressDraftSave = true;
     _messageController.clear();
     _suppressDraftSave = false;
@@ -388,6 +391,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _weakNetworkTimer?.cancel();
     _typingCleanupTimer?.cancel();
     _entranceKeysTimer?.cancel();
+    _groupMetaRefreshTimer?.cancel();
     unawaited(_saveDraft());
     _messageController.dispose();
     _scrollListenerAttached?.removeListener(_onScroll);
@@ -800,15 +804,22 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final extentPerItem = position.maxScrollExtent / (total - 1);
     final viewportTop = position.pixels;
 
+    // 滚动回调每帧都会跑：缓存 mid -> index，避免每条置顶都全列表 indexWhere
+    if (!identical(_pinIndexSource, _messages)) {
+      _pinIndexSource = _messages;
+      _pinMidIndex = {
+        for (var i = 0; i < _messages.length; i++)
+          if (_messages[i].mid != null) _messages[i].mid!: i,
+      };
+    }
+
     int? aheadPage; // 前方 pin 中 msgIndex 最小的（最新）
     int aheadMsgIndex = total;
     int? behindPage; // 后方 pin 中 msgIndex 最大的（最旧）
     int behindMsgIndex = -1;
 
     for (int i = 0; i < _pinnedMessages.length; i++) {
-      final msgIndex = _messages.indexWhere(
-        (m) => m.mid == _pinnedMessages[i].messageId,
-      );
+      final msgIndex = _pinMidIndex[_pinnedMessages[i].messageId] ?? -1;
       if (msgIndex < 0) continue;
 
       final itemPosition = msgIndex * extentPerItem;
@@ -958,23 +969,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
   /// 尾部新追加的消息键（入场动画用）。
   ///
-  /// 键要留到新气泡真正构建出来为止——插入的新 item 比 provider 通知晚一帧，
-  /// 只在当帧有效的话动画会丢。过一阵没人认领就清掉，避免滚回视口时重播。
-  Set<String> _diffEntranceKeys(List<ChatMessage> messages) {
-    if (!identical(_lastBuiltMessages, messages)) {
-      final keys = newlyAppendedMessageKeys(_lastBuiltMessages, messages);
-      _lastBuiltMessages = messages;
-      if (keys.isNotEmpty) {
-        _entranceKeys = keys;
-        _entranceKeysTimer?.cancel();
-        _entranceKeysTimer = Timer(const Duration(milliseconds: 500), () {
-          if (!mounted || !_treeActive) return;
-          setState(() => _entranceKeys = const {});
-        });
-      }
-    }
-    return _entranceKeys;
-  }
+  /// 计算已移到 [_onProviderMessagesChanged]：build 里修改自身字段并创建 Timer
+  /// 违反“build 无副作用”，同一帧重复/被丢弃的构建会推进出不一致的状态。
 
   /// 消息列表 Provider 状态变化 原 _onChatDataChanged 里的消息列表逻辑迁移至此
   void _onProviderMessagesChanged(
@@ -982,6 +978,18 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     List<ChatMessage> next,
   ) {
     if (!mounted || !_treeActive) return;
+
+    // 入场动画的 key 在这里算（build 必须无副作用）：
+    // 插入的新 item 比 provider 通知晚一帧，key 要留到气泡真正构建出来。
+    final entranceKeys = newlyAppendedMessageKeys(prev ?? const [], next);
+    if (entranceKeys.isNotEmpty) {
+      _entranceKeys = entranceKeys;
+      _entranceKeysTimer?.cancel();
+      _entranceKeysTimer = Timer(const Duration(milliseconds: 500), () {
+        if (!mounted || !_treeActive) return;
+        setState(() => _entranceKeys = const {});
+      });
+    }
 
     if (_isJumpingToMessage) return;
 
@@ -996,13 +1004,26 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     if (countChanged || lastIdChanged) {
       _markVisibleMessagesRead(previousLastId: previousLastId);
     }
+    // 消息 key：供“跳到引用/跳到消息”的精确 ensureVisible 使用
+    for (final message in next) {
+      final mid = message.mid;
+      if (mid != null) _messageKeys.putIfAbsent(mid, GlobalKey.new);
+    }
     if (_currentRoom?.type == ChatType.group) {
+      _scheduleGroupMetaRefresh();
+    }
+  }
+
+  /// 群聊的置顶/精华/已读回执查询做 2s 防抖：
+  /// 旧实现挂在“消息列表任意变化”上，活跃群每来一条消息都会打三个接口。
+  void _scheduleGroupMetaRefresh() {
+    _groupMetaRefreshTimer?.cancel();
+    _groupMetaRefreshTimer = Timer(const Duration(seconds: 2), () {
+      if (!mounted || !_treeActive) return;
       unawaited(_fetchPinnedMessages());
       unawaited(_fetchEssenceMessages());
-      // 群聊没有实时回执推送：消息列表一变（自己发出 / 收到新消息）就补查一次，
-      // 否则「N 人已读」会停在打开会话时的那次结果。
       _refreshReadReceipt();
-    }
+    });
   }
 
   void _loadChatRoom() {
@@ -3046,13 +3067,16 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final gallery = ref.watch(imageGalleryProvider(_contactUid));
     ref.listen(roomMessagesProvider(_contactUid), _onProviderMessagesChanged);
 
-    // 父级先构建 → 这一帧里新建的气泡才能拿到入场动画标记
-    final entranceKeys = _diffEntranceKeys(messages);
+    // 入场动画标记由 ref.listen 回调维护，build 只读
+    final entranceKeys = _entranceKeys;
 
     // 对方上传中的占位消息，合成到消息列表末尾（视觉底部）。
-    final displayMessages = _uploadingStatuses.isEmpty
-        ? messages
-        : [...messages, ..._buildUploadPlaceholderMessages()];
+    // 再按 mid 去重：列表项会挂 GlobalKey，同 mid 重复会让两个 widget 撞同一把 key。
+    final displayMessages = ChatMessage.dedupeByMid(
+      _uploadingStatuses.isEmpty
+          ? messages
+          : [...messages, ..._buildUploadPlaceholderMessages()],
+    );
 
     if (_currentRoom == null) {
       return Scaffold(
@@ -3238,6 +3262,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                           builder: (context, _, _) => MessageListView(
                             messages: displayMessages,
                             entranceKeys: entranceKeys,
+                            messageKeys: _messageKeys,
                             scrollController: uiState.scrollController,
                             galleryItems: gallery.items,
                             imageIndexById: gallery.indexById,

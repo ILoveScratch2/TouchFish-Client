@@ -356,6 +356,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get retry => 'Retry';
 
   @override
+  String get videoPlaybackErrorTitle => 'Video Playback Error';
+
+  @override
+  String get videoPlaybackErrorDetails => 'Error Details:';
+
+  @override
+  String get chatMeLabel => 'Me';
+
+  @override
+  String chatUserFallback(String uid) {
+    return 'User $uid';
+  }
+
+  @override
   String get settingsTitle => 'Settings';
 
   @override

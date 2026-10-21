@@ -170,6 +170,11 @@ class ForumPost {
   final DateTime updatedAt;
   final List<FileAttachment> attachments;
 
+  final int commentCount;
+  final String? lastCommentUid;
+  final String? lastCommentContent;
+  final String? lastCommentTime;
+
   ForumPost({
     required this.id,
     required this.forumId,
@@ -180,6 +185,10 @@ class ForumPost {
     required this.createdAt,
     required this.updatedAt,
     this.attachments = const [],
+    this.commentCount = 0,
+    this.lastCommentUid,
+    this.lastCommentContent,
+    this.lastCommentTime,
   });
 
   static int compareNewestFirst(ForumPost left, ForumPost right) {
@@ -194,6 +203,10 @@ class ForumPost {
           )
         : DateTime.tryParse(createdRaw.toString()) ??
               DateTime.fromMillisecondsSinceEpoch(0);
+    final lastComment = json['last_comment'];
+    final lastCommentMap = lastComment is Map
+        ? Map<String, dynamic>.from(lastComment)
+        : const <String, dynamic>{};
     return ForumPost(
       id: (json['id'] ?? json['pid']).toString(),
       forumId: (json['forum_id'] ?? json['fid']).toString(),
@@ -211,6 +224,10 @@ class ForumPost {
           ? createdAt
           : DateTime.tryParse(json['updated_at'].toString()) ?? createdAt,
       attachments: _parseAttachments(json['attachments']),
+      commentCount: (json['comment_count'] as num?)?.toInt() ?? 0,
+      lastCommentUid: lastCommentMap['uid']?.toString(),
+      lastCommentContent: lastCommentMap['content']?.toString(),
+      lastCommentTime: lastCommentMap['time_stamp']?.toString(),
     );
   }
 
@@ -226,6 +243,7 @@ class ForumPost {
       createdAt: DateTime.fromMillisecondsSinceEpoch(ms),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(ms),
       attachments: row.length > 6 ? _parseAttachments(row[6]) : const [],
+      commentCount: 0,
     );
   }
 
@@ -249,6 +267,14 @@ class ForumPost {
             },
           )
           .toList(),
+      'comment_count': commentCount,
+      'last_comment': lastCommentContent == null
+          ? null
+          : {
+              'uid': lastCommentUid,
+              'content': lastCommentContent,
+              'time_stamp': lastCommentTime,
+            },
     };
   }
 
@@ -262,6 +288,7 @@ class ForumPost {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<FileAttachment>? attachments,
+    int? commentCount,
   }) {
     return ForumPost(
       id: id ?? this.id,
@@ -273,6 +300,10 @@ class ForumPost {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       attachments: attachments ?? this.attachments,
+      commentCount: commentCount ?? this.commentCount,
+      lastCommentUid: lastCommentUid,
+      lastCommentContent: lastCommentContent,
+      lastCommentTime: lastCommentTime,
     );
   }
 }

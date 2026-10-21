@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -69,6 +70,54 @@ class LocalMessageStore {
     db.execute('PRAGMA busy_timeout = 10000');
     db.execute('PRAGMA journal_mode = WAL');
     db.execute('PRAGMA synchronous = NORMAL');
+    // 带版本号的有序迁移：以后加列/改索引就在这里追加一步，
+    // 不用再猜“老用户的库里到底有没有这个表”。
+    var version = (db.select('PRAGMA user_version').first.values.first as int?) ?? 0;
+    final initialVersion = version;
+    if (version < 1) {
+      _createBaseSchema(db);
+      db.execute('PRAGMA user_version = 1');
+      version = 1;
+    }
+    if (version < 2) {
+      // 先把表/触发器建好（这样导入历史数据时写入也算数），回填放在导入之后
+      _createSearchSchema(db);
+    }
+    final uri = Uri.parse(server);
+    final legacyServer = '${uri.host}_${uri.port}';
+    await _importSharedDatabase(db, dir, server, legacyServer);
+    await _importLegacyFiles(db, server, legacyServer);
+    await _migrateSyncPoints(db);
+    if (version < 2) {
+      _backfillSearch(db);
+      db.execute('PRAGMA user_version = 2');
+      version = 2;
+    }
+    if (initialVersion == 2) {
+      // v2 的 unicode61 只做「前缀」匹配：中文里搜「鱼」找不到「摸鱼」，
+      // 与旧 LIKE / Web 端的子串语义不一致。v3 换成 trigram 并重建一次索引。
+      _rebuildSearchIndex(db);
+      version = 3;
+    } else if (version == 2) {
+      // 本次刚按当前（trigram）定义建好，不需要重建
+      version = 3;
+    }
+    if (initialVersion == 3) {
+      // v3 索引的正文取错了键（payload.content，实际落盘是 payload.text），
+      // 索引里全是空串；重建一次，升级前的历史消息才能重新搜到。
+      _rebuildSearchIndex(db);
+      version = 4;
+    } else if (version == 3) {
+      version = 4;
+    }
+    if (version != initialVersion) {
+      db.execute('PRAGMA user_version = $version');
+    }
+    _databases[_dbKey(server, uid)] = db;
+    return db;
+  }
+
+  void _createBaseSchema(Database db) {
     db.execute('''
       CREATE TABLE IF NOT EXISTS messages (
         server_key TEXT NOT NULL,
@@ -89,13 +138,110 @@ class LocalMessageStore {
         value TEXT NOT NULL
       )
     ''');
-    final uri = Uri.parse(server);
-    final legacyServer = '${uri.host}_${uri.port}';
-    await _importSharedDatabase(db, dir, server, legacyServer);
-    await _importLegacyFiles(db, server, legacyServer);
-    await _migrateSyncPoints(db);
-    _databases[_dbKey(server, uid)] = db;
-    return db;
+  }
+
+  /// trigram 索引比查询串更短时无法命中（见 [_ftsMinQueryLength]）。
+  static const int _ftsMinQueryLength = 3;
+
+  /// 本地消息的可搜索正文。
+  ///
+  /// 落盘的是 `ChatMessage.toJson()`，正文键是 `text`（camelCase）；
+  /// 更早的导出快照里还见过 `content`，这里都认，避免老数据整库搜不到。
+  /// 只取正文：直接扫整条 payload 会把 hash / 文件名 / 时间戳也当命中，
+  /// 于是 2 字关键词和 3 字关键词的结果集对不上。
+  @visibleForTesting
+  static const String searchableTextSql =
+      "COALESCE(json_extract(payload, '\$.text'), "
+      "json_extract(payload, '\$.content'), '')";
+
+  /// 子串兜底与 FTS 必须搜同一段文本（见 [searchableTextSql]）。
+  @visibleForTesting
+  static const String contentSubstringMatch =
+      'instr(lower($searchableTextSql), ?) > 0';
+
+  /// FTS5 全文索引：搜索不再对整条 payload 做 `LIKE '%q%'` 全表扫描。
+  ///
+  /// 用一张普通表 `message_search` 承载可搜索文本，FTS 通过 external content
+  /// 与触发器同步；这样更新/删除能精确按主键命中，不会在 FTS 里留重复行。
+  ///
+  /// tokenizer 必须是 trigram：unicode61 只按词/前缀匹配，中文里「摸鱼」会被
+  /// 当成一个 token，搜「鱼」直接搜不到——那是比全表扫描更糟的回归。
+  void _createSearchSchema(Database db) {
+    db.execute('''
+      CREATE TABLE IF NOT EXISTS message_search (
+        server_key TEXT NOT NULL,
+        uid INTEGER NOT NULL,
+        room_id TEXT NOT NULL,
+        message_key TEXT NOT NULL,
+        text TEXT NOT NULL,
+        PRIMARY KEY (server_key, uid, room_id, message_key)
+      )
+    ''');
+    try {
+      db.execute('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS message_search_fts USING fts5(
+          text,
+          content='message_search',
+          content_rowid='rowid',
+          tokenize='trigram'
+        )
+      ''');
+      db.execute('''
+        CREATE TRIGGER IF NOT EXISTS message_search_ai
+        AFTER INSERT ON message_search BEGIN
+          INSERT INTO message_search_fts(rowid, text) VALUES (new.rowid, new.text);
+        END
+      ''');
+      db.execute('''
+        CREATE TRIGGER IF NOT EXISTS message_search_ad
+        AFTER DELETE ON message_search BEGIN
+          INSERT INTO message_search_fts(message_search_fts, rowid, text)
+          VALUES ('delete', old.rowid, old.text);
+        END
+      ''');
+      db.execute('''
+        CREATE TRIGGER IF NOT EXISTS message_search_au
+        AFTER UPDATE ON message_search BEGIN
+          INSERT INTO message_search_fts(message_search_fts, rowid, text)
+          VALUES ('delete', old.rowid, old.text);
+          INSERT INTO message_search_fts(rowid, text) VALUES (new.rowid, new.text);
+        END
+      ''');
+    } catch (e) {
+      // 某些平台没有 FTS5：退回 LIKE 搜索，不影响启动
+      talker.warning('LocalMessageStore: FTS5 unavailable, falling back: $e');
+    }
+  }
+
+  /// 把旧版 unicode61 索引换成 trigram（v2 → v3）。只跑一次。
+  void _rebuildSearchIndex(Database db) {
+    try {
+      db.execute('DROP TRIGGER IF EXISTS message_search_ai');
+      db.execute('DROP TRIGGER IF EXISTS message_search_ad');
+      db.execute('DROP TRIGGER IF EXISTS message_search_au');
+      db.execute('DROP TABLE IF EXISTS message_search_fts');
+    } catch (e) {
+      talker.warning('LocalMessageStore: drop old search index failed: $e');
+    }
+    _createSearchSchema(db);
+    _backfillSearch(db);
+  }
+
+  void _backfillSearch(Database db) {
+    final exists = db.select(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='message_search_fts'",
+    );
+    if (exists.isEmpty) return;
+    try {
+      db.execute('''
+        INSERT OR REPLACE INTO message_search
+          (server_key, uid, room_id, message_key, text)
+        SELECT server_key, uid, room_id, message_key, $searchableTextSql
+        FROM messages
+      ''');
+    } catch (e) {
+      talker.warning('LocalMessageStore: search backfill failed: $e');
+    }
   }
 
   /// 迁移!
@@ -324,22 +470,40 @@ class LocalMessageStore {
     String room,
     ChatMessage message,
   ) {
+    final key = _key(message);
     db.execute(
       '''
       INSERT INTO messages(server_key, uid, room_id, message_key, timestamp, payload)
       VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(server_key, uid, room_id, message_key) DO UPDATE SET
         timestamp = excluded.timestamp, payload = excluded.payload
+      WHERE messages.timestamp IS NOT excluded.timestamp
+         OR messages.payload IS NOT excluded.payload
     ''',
       [
         server,
         uid,
         room,
-        _key(message),
+        key,
         message.timestamp.millisecondsSinceEpoch,
         jsonEncode(message.toJson()),
       ],
     );
+    // 全文索引文本（表在 v2 迁移时创建；触发器会同步到 FTS）
+    try {
+      db.execute(
+        '''
+        INSERT INTO message_search(server_key, uid, room_id, message_key, text)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(server_key, uid, room_id, message_key)
+        DO UPDATE SET text = excluded.text
+        WHERE message_search.text IS NOT excluded.text
+      ''',
+        [server, uid, room, key, message.text],
+      );
+    } catch (_) {
+      // 迁移尚未完成（v1 老库首次打开时的导入路径）：回填会补上
+    }
   }
 
   Future<List<ChatMessage>> loadMessages(
@@ -472,10 +636,14 @@ class LocalMessageStore {
     final server = scope.server;
     final uid = scope.uid;
     final db = await _db(server, uid);
+    final key = _key(message);
     db.execute(
       'DELETE FROM messages WHERE server_key = ? AND uid = ? AND room_id = ? AND message_key = ?',
-      [server, uid, roomId, _key(message)],
+      [server, uid, roomId, key],
     );
+    _deleteSearchRows(db,
+        'server_key = ? AND uid = ? AND room_id = ? AND message_key = ?',
+        [server, uid, roomId, key]);
   }
 
   Future<void> deleteRoom(String roomId) async {
@@ -487,6 +655,19 @@ class LocalMessageStore {
       'DELETE FROM messages WHERE server_key = ? AND uid = ? AND room_id = ?',
       [server, uid, roomId],
     );
+    _deleteSearchRows(
+      db,
+      'server_key = ? AND uid = ? AND room_id = ?',
+      [server, uid, roomId],
+    );
+  }
+
+  void _deleteSearchRows(Database db, String where, List<Object?> params) {
+    try {
+      db.execute('DELETE FROM message_search WHERE $where', params);
+    } catch (_) {
+      // 老库尚未完成 v2 迁移
+    }
   }
 
   Future<Map<String, ({int messages, int bytes})>> roomStats() async {
@@ -573,6 +754,19 @@ class LocalMessageStore {
           scope.server, scope.uid, roomId, messageKey,
           timestamp, jsonEncode(payload),
         ]);
+        try {
+          db.execute(
+            '''INSERT INTO message_search
+                 (server_key, uid, room_id, message_key, text)
+               VALUES (?, ?, ?, ?, ?)
+               ON CONFLICT(server_key, uid, room_id, message_key)
+               DO UPDATE SET text = excluded.text''',
+            [scope.server, scope.uid, roomId, messageKey,
+             payload['text']?.toString() ??
+                 payload['content']?.toString() ??
+                 ''],
+          );
+        } catch (_) {}
         count++;
       }
       db.execute('COMMIT');
@@ -590,6 +784,17 @@ class LocalMessageStore {
     return rows.isEmpty ? null : rows.first['file'] as String;
   }
 
+  /// 关闭所有已打开的连接（测试用：Windows 上文件句柄不释放就删不掉临时库）。
+  @visibleForTesting
+  void closeAllForTesting() {
+    for (final db in _databases.values) {
+      db.dispose();
+    }
+    _databases.clear();
+    _openingDatabases.clear();
+    _scope = null;
+  }
+
   Future<void> clearDatabase() async {
     final scope = _requireScope();
     final db = await _db(scope.server, scope.uid);
@@ -597,6 +802,11 @@ class LocalMessageStore {
       scope.server,
       scope.uid,
     ]);
+    _deleteSearchRows(
+      db,
+      'server_key = ? AND uid = ?',
+      [scope.server, scope.uid],
+    );
   }
 
   /// web 端 localStorage 配额是 hyw
@@ -635,13 +845,33 @@ class LocalMessageStore {
   }) async {
     final scope = _requireScope();
     final db = await _db(scope.server, scope.uid);
-    final needle = '%${query.trim().toLowerCase()}%';
-    final rows = db.select(
-      '''SELECT room_id, payload FROM messages
-         WHERE server_key = ? AND uid = ? AND lower(payload) LIKE ?
-         ORDER BY timestamp DESC LIMIT ?''',
-      [scope.server, scope.uid, needle, limit],
-    );
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return [];
+
+    // trigram 只索引 ≥3 字符的子串。更短的查询（中文里很常见，比如「鱼」）
+    // 必须走子串扫描，否则会静默搜不到东西。
+    ResultSet rows;
+    if (trimmed.runes.length >= _ftsMinQueryLength) {
+      try {
+        rows = db.select(
+          '''SELECT m.room_id, m.payload FROM message_search_fts f
+             JOIN message_search s ON s.rowid = f.rowid
+             JOIN messages m
+               ON m.server_key = s.server_key AND m.uid = s.uid
+              AND m.room_id = s.room_id AND m.message_key = s.message_key
+             WHERE message_search_fts MATCH ?
+               AND s.server_key = ? AND s.uid = ?
+             ORDER BY m.timestamp DESC LIMIT ?''',
+          [_ftsPhrase(trimmed), scope.server, scope.uid, limit],
+        );
+      } catch (e) {
+        // FTS5 不可用 / 索引还没建好：退回子串扫描（慢，但保证能搜到）
+        talker.warning('LocalMessageStore: FTS search failed, falling back: $e');
+        rows = _substringSearch(db, scope.server, scope.uid, trimmed, limit);
+      }
+    } else {
+      rows = _substringSearch(db, scope.server, scope.uid, trimmed, limit);
+    }
     final results = <LocalMessageSearchResult>[];
     for (final row in rows) {
       try {
@@ -656,4 +886,27 @@ class LocalMessageStore {
     }
     return results;
   }
+
+  /// 子串扫描兜底：用 instr 而不是 LIKE，查询里的 % / _ 不需要转义。
+  /// 只看 payload 里的正文（与 FTS、Web 端、聊天内搜索的子串语义一致）。
+  ResultSet _substringSearch(
+    Database db,
+    String server,
+    int uid,
+    String query,
+    int limit,
+  ) {
+    return db.select(
+      '''SELECT room_id, payload FROM messages
+         WHERE server_key = ? AND uid = ?
+           AND $contentSubstringMatch
+         ORDER BY timestamp DESC LIMIT ?''',
+      [server, uid, query.toLowerCase(), limit],
+    );
+  }
+
+  /// trigram FTS 的子串查询：整段加引号当 phrase，
+  /// 避免 -、*、OR 之类的字符被当成查询语法。
+  String _ftsPhrase(String query) =>
+      '"${query.replaceAll('"', '""')}"';
 }

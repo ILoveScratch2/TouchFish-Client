@@ -748,6 +748,30 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get retry;
 
+  /// No description provided for @videoPlaybackErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Video Playback Error'**
+  String get videoPlaybackErrorTitle;
+
+  /// No description provided for @videoPlaybackErrorDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Error Details:'**
+  String get videoPlaybackErrorDetails;
+
+  /// No description provided for @chatMeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Me'**
+  String get chatMeLabel;
+
+  /// No description provided for @chatUserFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'User {uid}'**
+  String chatUserFallback(String uid);
+
   /// No description provided for @settingsTitle.
   ///
   /// In en, this message translates to:

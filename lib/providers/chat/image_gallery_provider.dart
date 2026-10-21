@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../models/message_model.dart';
 import '../../widgets/media/image_lightbox.dart';
@@ -30,12 +31,15 @@ class ImageGallery extends _$ImageGallery {
       if (!_isImageMessage(message)) continue;
       final media = message.media!;
       final index = entries.length;
+      final raw = media.bytes;
       entries.add(LightboxImageItem(
         messageId: message.id,
         media: media,
-        bytes: media.bytes != null
-            ? Uint8List.fromList(media.bytes!)
-            : null,
+        // 直接共享 media.bytes（只有类型不是 Uint8List 时才复制）：
+        // 每来一条新消息都会重建画廊，逐张复制会放大成倍内存
+        bytes: raw is Uint8List
+            ? raw
+            : (raw != null ? Uint8List.fromList(raw) : null),
       ));
       indexById[message] = index;
     }

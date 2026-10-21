@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import '../services/clipboard_attachment_service.dart';
@@ -10,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/file_service.dart';
 import '../services/image_compression_service.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/account/profile_picture.dart';
@@ -564,14 +564,13 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
             .prepareForUpload(bytes: file.bytes, fileName: file.fileName);
         final uploadBytes = prepared?.bytes ?? file.bytes;
         final uploadName = prepared?.fileName ?? file.fileName;
-        final uploaded = await TfApiClient.instance.uploadFile(
-          uid,
-          password,
-          uploadName,
-          base64Encode(uploadBytes),
+        // 超过阈值的文件内部会走分块上传，避免把整个文件塞进一个加密请求。
+        final hash = await FileService.instance.uploadBytes(
+          uid: uid,
+          password: password,
+          fileName: uploadName,
+          bytes: uploadBytes,
         );
-        final hash =
-            (uploaded?['hash'] ?? uploaded?['file_hash'])?.toString();
         if (hash == null || hash.isEmpty || !mounted) continue;
         setState(() {
           _attachments.add(
@@ -628,13 +627,13 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
             .prepareForUpload(bytes: bytes, fileName: file.name);
         final uploadBytes = prepared?.bytes ?? bytes;
         final uploadName = prepared?.fileName ?? file.name;
-        final uploaded = await TfApiClient.instance.uploadFile(
-          uid,
-          password,
-          uploadName,
-          base64Encode(uploadBytes),
+        // 超过阈值的文件内部会走分块上传，避免把整个文件塞进一个加密请求。
+        final hash = await FileService.instance.uploadBytes(
+          uid: uid,
+          password: password,
+          fileName: uploadName,
+          bytes: uploadBytes,
         );
-        final hash = (uploaded?['hash'] ?? uploaded?['file_hash'])?.toString();
         if (hash == null || hash.isEmpty || !mounted) continue;
         setState(() {
           _attachments.add(

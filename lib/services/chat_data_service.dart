@@ -96,6 +96,9 @@ class ChatDataService extends ChangeNotifier {
   static const int _messagePageSize = 50;
   int? _roomPreferencesUid;
   String? _roomPreferencesScope;
+  String? _roomPreferencesEncoded;
+  // clientMid -> 房间：ACK 定位用，避免遍历所有房间
+  final Map<String, String> _pendingClientMidRooms = {};
   final Set<String> _fetchingGroups = {};
   final Set<String> _fetchingUsers = {}; // 正在加载的用户资料
 
@@ -203,6 +206,9 @@ class ChatDataService extends ChangeNotifier {
     while (_messageCache.length > limit && _cacheAccessOrder.isNotEmpty) {
       final oldest = _cacheAccessOrder.removeAt(0);
       _messageCache.remove(oldest);
+      // 该房间里的待确认消息已经不在缓存里，clientMid 索引也一起清掉，
+      // 否则 ACK 永远收不到的消息会让这张表一直涨。
+      _pendingClientMidRooms.removeWhere((_, roomId) => roomId == oldest);
       talker.info(
         'ChatDataService: evicted message cache for room $oldest (limit=$limit)',
       );
@@ -304,7 +310,9 @@ class ChatDataService extends ChangeNotifier {
     final generation = _generation;
     final rk = roomKey(roomId);
     var beforeMid = 0;
-    const maxPages = 20;
+    // 置顶/引用跳转的兜底补拉：3 页（150 条）足够覆盖绝大多数场景，
+    // 再多会串行阻塞十几秒、且每页都在 UI isolate 解密解析。
+    const maxPages = 3;
     for (var pageCount = 0; pageCount < maxPages; pageCount++) {
       if (_generation != generation || AuthState.instance.uid != uid) {
         return null;
@@ -535,6 +543,7 @@ class ChatDataService extends ChangeNotifier {
       _roomPreferences.clear();
       _roomPreferencesUid = null;
       _roomPreferencesScope = null;
+      _roomPreferencesEncoded = null;
       return;
     }
     final baseUrl = await TfApiClient.instance.getBaseUrl();
@@ -571,6 +580,7 @@ class ChatDataService extends ChangeNotifier {
       ..addAll(loaded);
     _roomPreferencesUid = uid;
     _roomPreferencesScope = scope;
+    _roomPreferencesEncoded = raw;
   }
 
   Future<void> _saveRoomPreferences() async {
@@ -579,8 +589,14 @@ class ChatDataService extends ChangeNotifier {
     final encoded = _roomPreferences.map(
       (key, value) => MapEntry(key, value.toJson()),
     );
+    final text = jsonEncode(encoded);
+    if (text == _roomPreferencesEncoded) {
+      // WS 每次重连都会走 loadContactsAndRooms；没有变化就不要重写磁盘
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('chat_room_prefs_$scope', jsonEncode(encoded));
+    await prefs.setString('chat_room_prefs_$scope', text);
+    _roomPreferencesEncoded = text;
   }
 
   Future<bool> updateRoomPreference(
@@ -810,6 +826,8 @@ class ChatDataService extends ChangeNotifier {
     _initializedUid = null;
     _roomPreferencesUid = null;
     _roomPreferencesScope = null;
+    _roomPreferencesEncoded = null;
+    _pendingClientMidRooms.clear();
     _messageCache.clear();
     _cacheAccessOrder.clear();
     _userCache.clear();
@@ -979,6 +997,14 @@ class ChatDataService extends ChangeNotifier {
           AuthState.instance.uid != uid) {
         return;
       }
+      if (chatItems == null) {
+        // 请求失败 ≠ 没有会话：保留现有列表与未读数，等下一次刷新
+        talker.warning(
+          'ChatDataService.loadContactsAndRooms: /chat/list failed, '
+          'keeping ${_rooms.length} cached rooms',
+        );
+        return;
+      }
       talker.info(
         'ChatDataService.loadContactsAndRooms: got ${chatItems.length} items from server',
       );
@@ -1088,7 +1114,13 @@ class ChatDataService extends ChangeNotifier {
     required MessageStatus status,
     String? error,
   }) {
-    for (final roomId in _messageCache.keys) {
+    // 刚发出的消息只可能在自己的房间：用 clientMid -> room 索引先定位，
+    // 避免每条 ACK 都遍历所有已缓存房间做 O(n) 查找。
+    final knownRoom = _pendingClientMidRooms[clientMid];
+    final roomIds = knownRoom != null && _messageCache.containsKey(knownRoom)
+        ? <String>[knownRoom]
+        : _messageCache.keys;
+    for (final roomId in roomIds) {
       final msgs = _messageCache[roomId]!;
       final idx = msgs.indexWhere((m) => m.clientMid == clientMid);
       if (idx != -1) {
@@ -1107,6 +1139,7 @@ class ChatDataService extends ChangeNotifier {
           updated.sort(_compareMessages);
         }
         _messageCache[roomId] = updated;
+        _pendingClientMidRooms.remove(clientMid);
         _indexMessages(roomId, [changed]);
         unawaited(_localStore.saveMessage(roomId, changed));
         if (idx == updated.length - 1 && serverMid != null) {
@@ -1125,6 +1158,8 @@ class ChatDataService extends ChangeNotifier {
         return;
       }
     }
+    // 索引失效（消息已被淘汰/来自本地库）：不要永久占着 map
+    _pendingClientMidRooms.remove(clientMid);
   }
 
   List<ChatMessage> _mergeMessages(
@@ -1145,8 +1180,13 @@ class ChatDataService extends ChangeNotifier {
       }
     }
     final seen = <String>{};
+    // 去重键优先 clientMid，所以同一条消息在「一侧有 clientMid、另一侧没有」时
+    // 会漏过去；再按 mid 兜一层，否则 UI 会拿到重复 mid（GlobalKey 会撞）。
+    final seenMids = <int>{};
     var result = <ChatMessage>[];
     for (final m in [...server, ...local]) {
+      final mid = m.mid;
+      if (mid != null && !seenMids.add(mid)) continue;
       final key = _messageDedupKey(m);
       if (!seen.add(key)) continue;
       final bytes = localBytes[key];
@@ -1853,6 +1893,10 @@ class ChatDataService extends ChangeNotifier {
   }
 
   void addSentMessage(String roomId, ChatMessage msg) {
+    final clientMid = msg.clientMid;
+    if (clientMid != null && clientMid.isNotEmpty) {
+      _pendingClientMidRooms[clientMid] = roomId;
+    }
     final cached = _messageCache[roomId] ?? [];
     if (!_containsMessage(cached, msg)) {
       cached.add(msg);

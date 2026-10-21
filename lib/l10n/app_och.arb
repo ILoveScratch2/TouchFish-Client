@@ -112,6 +112,15 @@
   "forumPostFailed": "發帖未成",
   "userProfileNotFound": "戶不存",
   "retry": "重試",
+  "videoPlaybackErrorTitle": "視訊播放未成",
+  "videoPlaybackErrorDetails": "誤詳：",
+  "chatMeLabel": "吾",
+  "chatUserFallback": "用戶 {uid}",
+  "@chatUserFallback": {
+    "placeholders": {
+      "uid": {"type": "String"}
+    }
+  },
 
   "settingsTitle": "設",
   "settingsTooltip": "設置",

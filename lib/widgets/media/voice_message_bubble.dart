@@ -47,10 +47,10 @@ class VoiceMessageBubble extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final player = useMemoized(() {
-      MediaKit.ensureInitialized();
-      return Player();
-    }, []);
+    // 懒加载：滚动到气泡时不创建播放器、不解析 URL；点击播放才初始化。
+    final player = useState<Player?>(null);
+    final opening = useState(false);
+    final subscriptions = useRef<List<StreamSubscription<dynamic>>>([]);
 
     final duration = useState(Duration(milliseconds: durationMs ?? 0));
     final position = useState(Duration.zero);
@@ -68,41 +68,61 @@ class VoiceMessageBubble extends HookWidget {
         ? 1.0
         : total.inMilliseconds.toDouble();
 
-    useEffect(() {
-      var disposed = false;
-      final subs = <StreamSubscription<dynamic>>[
-        player.stream.position.listen((value) {
+    // 页面销毁后仍在 await 的 open 不能再去碰 useState
+    final disposed = useRef(false);
+
+    Future<Player?> ensurePlayer() async {
+      final existing = player.value;
+      if (existing != null) return existing;
+      MediaKit.ensureInitialized();
+      final created = Player();
+      player.value = created;
+      final createdSubs = <StreamSubscription<dynamic>>[
+        created.stream.position.listen((value) {
           position.value = value;
           if (!isScrubbing.value) scrubPosition.value = value;
         }),
-        player.stream.duration.listen((value) {
+        created.stream.duration.listen((value) {
           if (value > Duration.zero) duration.value = value;
         }),
-        player.stream.playing.listen((value) => isPlaying.value = value),
+        created.stream.playing.listen((value) => isPlaying.value = value),
       ];
-
-      unawaited(() async {
-        try {
-          final canonical = await resolveCanonical(audioPath, fileHash);
-          final source = kIsWeb
-              ? canonical
-              : await MediaProxyService.instance.resolveUrl(canonical);
-          if (!disposed) {
-            await player.open(Media(source));
+      subscriptions.value.addAll(createdSubs);
+      opening.value = true;
+      try {
+        final canonical = await resolveCanonical(audioPath, fileHash);
+        final source = kIsWeb
+            ? canonical
+            : await MediaProxyService.instance.resolveUrl(canonical);
+        await created.open(Media(source));
+        return created;
+      } catch (e) {
+        talker.error('VoiceMessageBubble open failed', e);
+        if (!disposed.value) {
+          // 打开失败就丢掉这个播放器：否则下次点播放会拿到一个永远 play 不起来的实例
+          for (final sub in createdSubs) {
+            sub.cancel();
           }
-        } catch (e) {
-          talker.error('VoiceMessageBubble open failed', e);
+          subscriptions.value.removeWhere(createdSubs.contains);
+          if (identical(player.value, created)) player.value = null;
+          created.dispose();
         }
-      }());
+        return null;
+      } finally {
+        if (!disposed.value) opening.value = false;
+      }
+    }
 
+    useEffect(() {
       return () {
-        disposed = true;
-        for (final sub in subs) {
+        disposed.value = true;
+        for (final sub in subscriptions.value) {
           sub.cancel();
         }
-        player.dispose();
+        final active = player.value;
+        if (active != null) active.dispose();
       };
-    }, []);
+    }, const []);
 
     Future<void> generateWaveform() async {
       if (waveformSource.value == audioPath) return;
@@ -152,16 +172,21 @@ class VoiceMessageBubble extends HookWidget {
               isPlaying.value ? Symbols.pause_circle : Symbols.play_circle,
               size: 22,
             ),
-            onPressed: () async {
-              if (isPlaying.value) {
-                await player.pause();
-              } else {
-                final atEnd = totalMs > 0 &&
-                    position.value.inMilliseconds >= total.inMilliseconds - 250;
-                if (atEnd) await player.seek(Duration.zero);
-                await player.play();
-              }
-            },
+            onPressed: opening.value
+                ? null
+                : () async {
+                    final active = await ensurePlayer();
+                    if (active == null || disposed.value) return;
+                    if (isPlaying.value) {
+                      await active.pause();
+                    } else {
+                      final atEnd = totalMs > 0 &&
+                          position.value.inMilliseconds >=
+                              total.inMilliseconds - 250;
+                      if (atEnd) await active.seek(Duration.zero);
+                      await active.play();
+                    }
+                  },
           ),
           Expanded(
             child: Row(
@@ -182,7 +207,12 @@ class VoiceMessageBubble extends HookWidget {
                       );
                     },
                     onSeekEnd: () async {
-                      await player.seek(scrubPosition.value);
+                      final active = player.value;
+                      if (active == null) {
+                        isScrubbing.value = false;
+                        return;
+                      }
+                      await active.seek(scrubPosition.value);
                       isScrubbing.value = false;
                     },
                   ),

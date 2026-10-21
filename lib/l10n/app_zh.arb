@@ -112,6 +112,15 @@
   "forumPostFailed": "发布帖子失败",
   "userProfileNotFound": "用户不存在",
   "retry": "重试",
+  "videoPlaybackErrorTitle": "视频播放失败",
+  "videoPlaybackErrorDetails": "错误详情：",
+  "chatMeLabel": "我",
+  "chatUserFallback": "用户 {uid}",
+  "@chatUserFallback": {
+    "placeholders": {
+      "uid": {"type": "String"}
+    }
+  },
   
   "settingsTitle": "设置",
   "settingsTooltip": "设置",

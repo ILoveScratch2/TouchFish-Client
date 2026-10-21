@@ -671,6 +671,61 @@ void main() {
     await gesture.removePointer();
   });
 
+  testWidgets('hover menu fits its overlay slot with every hover action', (
+    tester,
+  ) async {
+    final message = ChatMessage(
+      id: 'hover-wide',
+      mid: 9,
+      text: 'pin and essence actions fit the hover menu',
+      timestamp: DateTime(2026),
+      isMe: false,
+      senderUid: 2,
+      senderName: 'Alice',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.only(top: 80),
+            child: MessageBubble(
+              message: message,
+              canPin: true,
+              essenceEnabled: true,
+              onReply: (_) {},
+              onForward: (_) {},
+              onDelete: (_) {},
+              onPinToggle: () {},
+              onEssenceToggle: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer(location: Offset.zero);
+    await gesture.moveTo(tester.getCenter(find.text(message.text)));
+    await tester.pump(const Duration(milliseconds: 130));
+
+    // 菜单装在 Positioned(width: menuWidth) 里：槽位算得比内容窄时
+    // RenderFlex 会以框架错误报「overflowed on the right」。
+    expect(tester.takeException(), isNull);
+    expect(
+      find.byKey(ValueKey('message-actions-${message.id}')),
+      findsOneWidget,
+    );
+
+    await gesture.removePointer();
+  });
+
   testWidgets('incoming avatar aligns with the top of a multiline message', (
     tester,
   ) async {

@@ -687,6 +687,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
             verifyEmail: verifyEmail,
             emailPassword: emailPassword,
           );
+          if (!mounted) return;
           if (!emailOk) {
             setState(() => _isSaving = false);
             TouchFishSnackbarService.instance.show(
@@ -700,6 +701,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
             password,
             changeTo: false,
           );
+          if (!mounted) return;
           if (!emailOk) {
             setState(() => _isSaving = false);
             TouchFishSnackbarService.instance.show(

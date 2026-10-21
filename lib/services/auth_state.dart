@@ -7,6 +7,7 @@ import '../utils/talker.dart';
 import 'api/tf_api_client.dart';
 import 'local_message_store.dart';
 import 'multi_instance_guard.dart';
+import 'secure_credentials.dart';
 import 'token_refresh_manager.dart';
 
 enum SavedSessionRestoreStatus { idle, restoring, succeeded, failed }
@@ -27,6 +28,7 @@ class AuthState extends ChangeNotifier {
   static const _kTokenExpiresAtKey = 'auth_token_expires_at';
   static const _kRefreshTokenKey = 'auth_refresh_token';
   static const _kRefreshExpiresAtKey = 'auth_refresh_expires_at';
+  static const _kPasswordKey = 'auth_password';
 
   UserProfile? _currentUser;
   int? _uid;
@@ -49,14 +51,22 @@ class AuthState extends ChangeNotifier {
   bool _sessionExpiredNotice = false;
   int _avatarVersion = 0;
   final _sessionNotifier = _AuthSessionNotifier();
+  Future<bool>? _refreshFuture;
 
   UserProfile? get currentUser => _currentUser;
   int? get uid => _uid;
+
+  /// 已保存会话的 uid（`init()` 就会填充）。
+  ///
+  /// 通知栏快捷回复这类后台 isolate 不会执行 `main()`，只调 `init()` 时
+  /// [uid] 仍是 null，必须用它兜底。
+  int? get rememberedUid => _rememberedUid;
 
   /// JWT 模式下若内存密码不可用（token 恢复会话），返回空串占位
   String? get password =>
       _password ?? (isJwtMode ? '' : null);
   String? get token => _token;
+  int? get tokenExpiresAt => _tokenExpiresAt;
   String? get refreshToken => _refreshToken;
   TfAuthMode get authMode => _authMode;
   bool get isJwtMode => _authMode == TfAuthMode.jwt && _token != null;
@@ -87,11 +97,14 @@ class AuthState extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _rememberedUid = prefs.getInt('auth_uid');
     _rememberedUsername = prefs.getString('auth_username');
-    _rememberedPassword = prefs.getString('auth_password');
-    _token = prefs.getString(_kTokenKey);
     _tokenExpiresAt = prefs.getInt(_kTokenExpiresAtKey);
-    _refreshToken = prefs.getString(_kRefreshTokenKey);
     _refreshExpiresAt = prefs.getInt(_kRefreshExpiresAtKey);
+    await _loadSecrets(prefs);
+    if (_rememberedUid != null && _token == null && _rememberedPassword == null) {
+      // 凭据只在安全存储里时，启动时一次探测失败（Keychain 未解锁、插件刚好
+      // 还没就绪）会让人被静默登出。这里强制重探一次并重读。
+      await _reloadSecretsFromSecure();
+    }
     _authMode = _token != null ? TfAuthMode.jwt : TfAuthMode.legacy;
     TfApiClient.instance.setAuthContext(
       token: _token,
@@ -103,11 +116,98 @@ class AuthState extends ChangeNotifier {
     _restoreFailureReason = RestoreFailureReason.none;
   }
 
+  /// 强制重探安全存储并重读凭据（启动时探测失败 / 用户点"重试"的唯一补救路径）。
+  Future<void> _reloadSecretsFromSecure() async {
+    try {
+      if (!await SecureCredentials.instance.probe(force: true)) return;
+      final prefs = await SharedPreferences.getInstance();
+      await _loadSecrets(prefs);
+      _authMode = _token != null ? TfAuthMode.jwt : TfAuthMode.legacy;
+      TfApiClient.instance.setAuthContext(
+        token: _token,
+        legacyMode: _authMode == TfAuthMode.legacy,
+      );
+    } catch (e) {
+      talker.warning('AuthState: reloading secure credentials failed: $e');
+    }
+  }
+
+  Future<void> _loadSecrets(SharedPreferences prefs) async {
+    final secure = SecureCredentials.instance;
+    const keys = [_kTokenKey, _kRefreshTokenKey, _kPasswordKey];
+    String? nonEmpty(String? value) =>
+        (value == null || value.isEmpty) ? null : value;
+
+    if (await secure.probe()) {
+      final stored = await secure.readAll(keys);
+      final plaintext = {
+        _kTokenKey: nonEmpty(prefs.getString(_kTokenKey)),
+        _kRefreshTokenKey: nonEmpty(prefs.getString(_kRefreshTokenKey)),
+        _kPasswordKey: nonEmpty(prefs.getString(_kPasswordKey)),
+      };
+      _token = plaintext[_kTokenKey] ?? nonEmpty(stored[_kTokenKey]);
+      _refreshToken =
+          plaintext[_kRefreshTokenKey] ?? nonEmpty(stored[_kRefreshTokenKey]);
+      _rememberedPassword =
+          plaintext[_kPasswordKey] ?? nonEmpty(stored[_kPasswordKey]);
+
+      for (final key in keys) {
+        final value = plaintext[key];
+        if (value == null) {
+          // 明文里没有值（或只有一个空的占位）：清理掉空副本即可
+          if (prefs.containsKey(key)) await prefs.remove(key);
+          continue;
+        }
+        if (stored[key] == value) {
+          // 安全存储里已经是同一个值：明文副本可以删
+          await prefs.remove(key);
+          continue;
+        }
+        final migrated = await secure.write(key, value);
+        if (migrated) {
+          await prefs.remove(key);
+        } else {
+          talker.warning(
+            'AuthState: failed to move $key into secure storage, '
+            'keeping the SharedPreferences copy for the next start',
+          );
+        }
+      }
+      return;
+    }
+    // 平台不支持安全存储：保持旧行为（token 在 prefs），并明确记录一次
+    _token = prefs.getString(_kTokenKey);
+    _refreshToken = prefs.getString(_kRefreshTokenKey);
+    _rememberedPassword = prefs.getString(_kPasswordKey);
+    if (_token != null || _rememberedPassword != null) {
+      talker.warning(
+        'AuthState: secure storage unavailable, credentials stay in '
+        'SharedPreferences on this platform',
+      );
+    }
+  }
+
   Future<bool> restoreSavedSession() async {
-    if (!hasStoredCredentials) return false;
+    if (_rememberedUid == null) return false;
 
     _savedSessionRestoreStatus = SavedSessionRestoreStatus.restoring;
     _notifySessionChanged();
+
+    if (!hasStoredCredentials) {
+      // 启动时安全存储探测失败过：这里（以及用户点「重试」时）强制重探一次。
+      await _reloadSecretsFromSecure();
+    }
+    if (!hasStoredCredentials) {
+      // 凭据确实读不出来：明确报「凭据不可用」并保留重试入口，
+      // 不能静默停在登录页（用户会以为账号被登出了）。
+      talker.warning(
+        'AuthState.restoreSavedSession: no readable credentials for uid=$_rememberedUid',
+      );
+      _restoreFailureReason = RestoreFailureReason.credentials;
+      _savedSessionRestoreStatus = SavedSessionRestoreStatus.failed;
+      _notifySessionChanged();
+      return false;
+    }
 
     final savedUid = _rememberedUid!;
     final legacyForced = SettingsService.instance.getValue<bool>(
@@ -136,34 +236,14 @@ class AuthState extends ChangeNotifier {
           return false;
         }
 
-        // access token 被拒绝时，尝试用 refresh token 轮换恢复
+        // access token 被拒绝时，尝试用 refresh token 轮换恢复。
+        // 走 refreshAccessToken 单飞：refresh token 用一次就轮换，
+        // 分散的刷新路径（这里 + TokenRefreshManager）必然有一方失败。
+        // 此时 _uid 还没赋值，所以显式把目标 uid 传进去。
         if (valid == false && _refreshToken != null && _refreshToken!.isNotEmpty) {
-          final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-          final refreshValid = _refreshExpiresAt == null ||
-              _refreshExpiresAt! > now;
-          if (refreshValid) {
-            final refreshed = await TfApiClient.instance.refreshToken(
-              _refreshToken!,
-            );
-            if (refreshed != null && refreshed.token != null) {
-              _token = refreshed.token;
-              _tokenExpiresAt = refreshed.expiresAt;
-              _refreshToken = refreshed.refreshToken ?? _refreshToken;
-              _refreshExpiresAt =
-                  refreshed.refreshExpiresAt ?? _refreshExpiresAt;
-              TfApiClient.instance.setAuthContext(
-                token: _token,
-                legacyMode: false,
-              );
-              final prefs = await SharedPreferences.getInstance();
-              await _persistCredentials(
-                prefs,
-                uid: savedUid,
-                username: _rememberedUsername ?? profile?.username ?? '',
-                password: null,
-              );
-              valid = true;
-            }
+          _rememberedUsername ??= profile?.username;
+          if (await refreshAccessToken(uid: savedUid)) {
+            valid = true;
           }
         }
 
@@ -424,44 +504,23 @@ class AuthState extends ChangeNotifier {
 
   Future<bool> _doRelogin() async {
     try {
-      TfLoginResult? result;
-
-      // 优先用 refresh token 轮换（无需密码）
-      if (_refreshToken != null && _refreshToken!.isNotEmpty) {
-        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-        final refreshValid = _refreshExpiresAt == null ||
-            _refreshExpiresAt! > now;
-        if (refreshValid) {
-          result = await TfApiClient.instance.refreshToken(_refreshToken!);
-        }
+      // 优先用 refresh token 轮换（无需密码）；单飞，避免与定时刷新重复轮换
+      if (await refreshAccessToken()) {
+        TokenRefreshManager.instance.startAutoRefresh(_tokenExpiresAt);
+        return true;
       }
 
       // 回退：用内存密码重新登录（仅当仍持有密码时）
-      if ((result == null || result.token == null) && _password != null) {
-        result = await TfApiClient.instance.login(
-          _uid!,
-          _password!,
-          legacyMode: false,
-        );
-      }
-
-      if (result == null || result.error != null || result.token == null) {
+      if (_password == null) return false;
+      final result = await TfApiClient.instance.login(
+        _uid!,
+        _password!,
+        legacyMode: false,
+      );
+      if (result.error != null || result.token == null) {
         return false;
       }
-      _token = result.token;
-      _tokenExpiresAt = result.expiresAt;
-      _refreshToken = result.refreshToken ?? _refreshToken;
-      _refreshExpiresAt = result.refreshExpiresAt ?? _refreshExpiresAt;
-      _authMode = TfAuthMode.jwt;
-      _degradedToLegacy = false;
-      TfApiClient.instance.setAuthContext(token: _token, legacyMode: false);
-      final prefs = await SharedPreferences.getInstance();
-      await _persistCredentials(
-        prefs,
-        uid: _uid!,
-        username: _rememberedUsername ?? _currentUser?.username ?? '',
-        password: null,
-      );
+      if (!await _applyTokenResult(result)) return false;
       // 重新启动 token 自动刷新
       TokenRefreshManager.instance.startAutoRefresh(_tokenExpiresAt);
       return true;
@@ -469,6 +528,68 @@ class AuthState extends ChangeNotifier {
       talker.error('AuthState.relogin failed', e);
       return false;
     }
+  }
+
+  /// 用当前 refresh token 换一次新 token
+  ///
+  /// 服务端的 refresh token 是「用一次就轮换」的 compare-and-swap：同一条 refresh
+  /// token 第二次使用必然失败。因此所有刷新路径都必须经过这里，不能各自调用
+  /// `TfApiClient.refreshToken`。
+  /// [uid] 只在 restoreSavedSession 里用：那时 _uid 还没有赋值。
+  Future<bool> refreshAccessToken({int? uid}) {
+    final targetUid = uid ?? _uid;
+    if (targetUid == null || _authMode != TfAuthMode.jwt) {
+      return Future.value(false);
+    }
+    final pending = _refreshFuture;
+    if (pending != null) return pending;
+    // 存进字段的必须就是返回给调用方的那个 future：否则「已完成但 whenComplete
+    // 还没跑」的窗口里，新调用会拿到上一次的旧结果而不真正刷新。
+    late final Future<bool> future;
+    future = _refreshAccessTokenOnce(targetUid).whenComplete(() {
+      if (identical(_refreshFuture, future)) _refreshFuture = null;
+    });
+    _refreshFuture = future;
+    return future;
+  }
+
+  Future<bool> _refreshAccessTokenOnce(int uid) async {
+    final refreshToken = _refreshToken;
+    if (refreshToken == null || refreshToken.isEmpty) return false;
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    if (_refreshExpiresAt != null && _refreshExpiresAt! <= now) return false;
+    try {
+      final result = await TfApiClient.instance.refreshToken(refreshToken);
+      if (result == null || result.error != null || result.token == null) {
+        return false;
+      }
+      return await _applyTokenResult(result, uid: uid);
+    } catch (e) {
+      talker.error('AuthState.refreshAccessToken failed', e);
+      return false;
+    }
+  }
+
+  /// 把一次成功的登录/刷新结果写回内存与本地存储。
+  Future<bool> _applyTokenResult(TfLoginResult result, {int? uid}) async {
+    final token = result.token;
+    final targetUid = uid ?? _uid;
+    if (token == null || targetUid == null) return false;
+    _token = token;
+    _tokenExpiresAt = result.expiresAt;
+    _refreshToken = result.refreshToken ?? _refreshToken;
+    _refreshExpiresAt = result.refreshExpiresAt ?? _refreshExpiresAt;
+    _authMode = TfAuthMode.jwt;
+    _degradedToLegacy = false;
+    TfApiClient.instance.setAuthContext(token: _token, legacyMode: false);
+    final prefs = await SharedPreferences.getInstance();
+    await _persistCredentials(
+      prefs,
+      uid: targetUid,
+      username: _rememberedUsername ?? _currentUser?.username ?? '',
+      password: null,
+    );
+    return true;
   }
 
   Future<void> logout() async {
@@ -541,6 +662,9 @@ class AuthState extends ChangeNotifier {
   }
 
   Future<void> _clearStorage(SharedPreferences prefs) async {
+    for (final key in const [_kTokenKey, _kRefreshTokenKey, _kPasswordKey]) {
+      await SecureCredentials.instance.delete(key);
+    }
     await prefs.remove('auth_uid');
     await prefs.remove('auth_username');
     await prefs.remove('auth_password');
@@ -580,35 +704,65 @@ class AuthState extends ChangeNotifier {
   }) async {
     await prefs.setInt('auth_uid', uid);
     await prefs.setString('auth_username', username);
+    final hasSecure = await SecureCredentials.instance.probe();
     if (_authMode == TfAuthMode.jwt && _token != null) {
-      await _persistString(prefs, _kTokenKey, _token!);
+      await _writeSecret(prefs, hasSecure, _kTokenKey, _token!);
       if (_tokenExpiresAt != null) {
         await prefs.setInt(_kTokenExpiresAtKey, _tokenExpiresAt!);
       } else {
         await prefs.remove(_kTokenExpiresAtKey);
       }
       if (_refreshToken != null && _refreshToken!.isNotEmpty) {
-        await _persistString(prefs, _kRefreshTokenKey, _refreshToken!);
+        await _writeSecret(prefs, hasSecure, _kRefreshTokenKey, _refreshToken!);
         if (_refreshExpiresAt != null) {
           await prefs.setInt(_kRefreshExpiresAtKey, _refreshExpiresAt!);
         } else {
           await prefs.remove(_kRefreshExpiresAtKey);
         }
       } else {
-        await prefs.remove(_kRefreshTokenKey);
+        await _deleteSecret(prefs, hasSecure, _kRefreshTokenKey);
         await prefs.remove(_kRefreshExpiresAtKey);
       }
-      await prefs.remove('auth_password');
+      await _deleteSecret(prefs, hasSecure, _kPasswordKey);
     } else {
       if (password != null) {
-        await _persistString(prefs, 'auth_password', password);
+        await _writeSecret(prefs, hasSecure, _kPasswordKey, password);
       } else {
-        await prefs.remove('auth_password');
+        await _deleteSecret(prefs, hasSecure, _kPasswordKey);
       }
-      await prefs.remove(_kTokenKey);
+      await _deleteSecret(prefs, hasSecure, _kTokenKey);
       await prefs.remove(_kTokenExpiresAtKey);
-      await prefs.remove(_kRefreshTokenKey);
+      await _deleteSecret(prefs, hasSecure, _kRefreshTokenKey);
       await prefs.remove(_kRefreshExpiresAtKey);
     }
+  }
+
+  /// 敏感字段：安全存储可用就写安全存储，并在 prefs 里删掉同名键。
+  Future<void> _writeSecret(
+    SharedPreferences prefs,
+    bool hasSecure,
+    String key,
+    String value,
+  ) async {
+    if (hasSecure && await SecureCredentials.instance.write(key, value)) {
+      await prefs.remove(key);
+      return;
+    }
+    // 回退到明文必须留下痕迹：probe 成功但写失败（Keychain 锁住、磁盘满）
+    // 时用户会以为凭据在加密存储里，实际在 SharedPreferences。
+    talker.warning(
+      'AuthState: $key stored in SharedPreferences ('
+      '${hasSecure ? 'secure storage write failed' : 'secure storage unavailable'})',
+    );
+    await _persistString(prefs, key, value);
+  }
+
+  Future<void> _deleteSecret(
+    SharedPreferences prefs,
+    bool hasSecure,
+    String key,
+  ) async {
+    if (hasSecure) await SecureCredentials.instance.delete(key);
+    await prefs.remove(key);
   }
 }

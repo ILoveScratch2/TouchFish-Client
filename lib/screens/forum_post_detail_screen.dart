@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -161,6 +162,8 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   }
 
   Future<void> _loadData() async {
+    // 可能在提交评论的 await 之后才被调用：页面已 pop 时不能再 setState
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final fid = int.tryParse(widget.forumId);
@@ -195,14 +198,27 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       final comments = await TfApiClient.instance.getAllComments(fid, pid);
       _commentDataList = comments.map((c) => _CommentData(c)).toList();
 
-      // Fetch comment authors in parallel
-      final authorFutures = _commentDataList.map((cd) async {
-        final uid = int.tryParse(cd.comment.authorUid);
-        if (uid != null) {
-          cd.author = await TfApiClient.instance.getUserByUid(uid);
+      // 终于修复了万能的评论超大量请求问题
+      final authorUids = <int>{
+        for (final cd in _commentDataList)
+          if (int.tryParse(cd.comment.authorUid) case final int uid) uid,
+      };
+      final authors = <int, UserProfile?>{};
+      final pending = Queue<int>.from(authorUids);
+      Future<void> worker() async {
+        while (pending.isNotEmpty) {
+          final uid = pending.removeFirst();
+          authors[uid] = await TfApiClient.instance.getUserByUid(uid);
         }
-      });
-      await Future.wait(authorFutures);
+      }
+
+      await Future.wait(
+        List.generate(authorUids.length < 4 ? authorUids.length : 4, (_) => worker()),
+      );
+      for (final cd in _commentDataList) {
+        final uid = int.tryParse(cd.comment.authorUid);
+        if (uid != null) cd.author = authors[uid];
+      }
 
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
@@ -740,6 +756,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
         );
       },
     );
+    if (!mounted) return;
     if (result == true) {
       _commentController.clear();
       await _loadData();

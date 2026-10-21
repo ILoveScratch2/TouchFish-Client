@@ -335,6 +335,20 @@ class AppLocalizationsOch extends AppLocalizations {
   String get retry => '重試';
 
   @override
+  String get videoPlaybackErrorTitle => '視訊播放未成';
+
+  @override
+  String get videoPlaybackErrorDetails => '誤詳：';
+
+  @override
+  String get chatMeLabel => '吾';
+
+  @override
+  String chatUserFallback(String uid) {
+    return '用戶 $uid';
+  }
+
+  @override
   String get settingsTitle => '設';
 
   @override
