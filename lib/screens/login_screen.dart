@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -6,9 +7,11 @@ import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/external_auth_service.dart';
 import '../services/rsa_key_trust_service.dart';
 import '../services/server_branding_service.dart';
 import '../services/snackbar_service.dart';
+import '../widgets/external_auth_sheet.dart';
 import '../widgets/rsa_key_prompts.dart';
 import '../widgets/server_selector.dart';
 import '../widgets/network_indicator.dart';
@@ -29,6 +32,8 @@ class _LoginScreenState extends State<LoginScreen> {
   List<ConnectivityResult> _connectionStatus = [ConnectivityResult.none];
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   RsaKeyCheckResult? _pendingFirstConnectResult;
+  /// null = 尚未确认；false 时隐藏注册入口
+  bool? _allowRegister;
 
   @override
   void initState() {
@@ -41,6 +46,30 @@ class _LoginScreenState extends State<LoginScreen> {
     _initConnectivity();
     _subscribeToConnectivityChanges();
     unawaited(ServerBrandingService.instance.refresh());
+    // 服务端下发 external_auth_url 时才会出现"外部平台登录"入口
+    unawaited(ExternalAuthService.instance.load());
+    // 服务器关闭注册时不应显示注册入口（旧版服务器没有该字段，按允许处理）
+    unawaited(
+      TfApiClient.instance.fetchServerInfo().then((config) {
+        if (!mounted || config == null) return;
+        setState(() => _allowRegister = config.allowRegister);
+      }).catchError((_) {}),
+    );
+  }
+
+  /// 切服务器后重新拉与新服务器相关的可见性数据。
+  ///
+  /// 不刷新的话，「注册」按钮与「外部平台登录」入口会停留在旧服务器的状态：
+  /// 从关闭注册的服务器切到开放注册的服务器，按钮仍然不出现。
+  void _onServerChanged() {
+    unawaited(_refreshServerDependent());
+  }
+
+  Future<void> _refreshServerDependent() async {
+    await ExternalAuthService.instance.load(force: true);
+    final config = await TfApiClient.instance.fetchServerInfo();
+    if (!mounted) return;
+    setState(() => _allowRegister = config?.allowRegister ?? _allowRegister);
   }
 
   Future<void> _initConnectivity() async {
@@ -125,6 +154,80 @@ class _LoginScreenState extends State<LoginScreen> {
       };
       TouchFishSnackbarService.instance.show(msg);
     }
+  }
+
+  /// 通过外部登录平台（TouchFish Auth）登录。
+  ///
+  /// 顺序：发现配置 → 校验 RSA 密钥（外部登录同样走信封）→ 打开授权页
+  /// → 校验 state → ticket 换 external_token → 交给 AuthState 收口。
+  Future<void> _loginWithExternalAuth() async {
+    final l10n = AppLocalizations.of(context)!;
+    final service = ExternalAuthService.instance;
+    final config = await service.load(force: true);
+    if (!mounted) return;
+    if (config == null || config.methods.isEmpty) {
+      TouchFishSnackbarService.instance.show(l10n.loginErrorNetwork);
+      return;
+    }
+
+    final keyOk = await _verifyRsaKeyBeforeLogin();
+    if (!mounted) return;
+    if (!keyOk) return;
+
+    final state = _randomStateToken();
+    final baseUrl = await TfApiClient.instance.getBaseUrl();
+    final uri = service.buildAuthorizeUri(state: state, target: baseUrl);
+    if (uri == null || !mounted) {
+      TouchFishSnackbarService.instance.show(l10n.loginErrorNetwork);
+      return;
+    }
+
+    final result = await ExternalAuthSheet.show(context, uri);
+    if (!mounted) return;
+    if (result == null) return; // 用户关闭了授权页
+
+    if (result.state == null || result.state != state) {
+      // 严格要求回传的 state 与本机生成的一致：允许 null 等于形同虚设，
+      // 页面（或被导航过去的任意页面）不回传就能绕过 CSRF 保护。
+      TouchFishSnackbarService.instance.show(l10n.loginErrorNetwork);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    final externalToken = await service.exchangeTicket(result.ticket);
+    if (!mounted) return;
+    if (externalToken == null) {
+      setState(() => _isLoading = false);
+      TouchFishSnackbarService.instance.show(l10n.loginErrorNetwork);
+      return;
+    }
+
+    final error = await AuthState.instance.loginWithExternalSession(externalToken);
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (error == null) {
+      final shouldContinue = await _maybePromptFirstConnect();
+      if (!mounted || !shouldContinue) return;
+      context.go(AppRoutes.main);
+      return;
+    }
+
+    final msg = switch (error) {
+      'externalNotLinked' => l10n.loginErrorInvalidCredentials,
+      'externalTokenInvalid' => l10n.loginErrorNetwork,
+      'userBanned' => l10n.loginErrorInvalidCredentials,
+      'sessionLimitReached' => l10n.loginErrorSessionLimit,
+      'duplicateLogin' => l10n.loginErrorDuplicateInstance,
+      _ => l10n.loginErrorNetwork,
+    };
+    TouchFishSnackbarService.instance.show(msg);
+  }
+
+  String _randomStateToken() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
   /// 登录前校验 RSA 密钥：
@@ -381,7 +484,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 24),
 
                       // Server selector
-                      const ServerSelector(),
+                      ServerSelector(onServerChanged: _onServerChanged),
                       const SizedBox(height: 24),
 
                       // Username field
@@ -447,18 +550,49 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Register button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: OutlinedButton(
-                          onPressed: _register,
-                          child: Text(
-                            AppLocalizations.of(context)!.loginRegister,
+                      // 外部登录平台（服务端下发 external_auth_url 时才出现）
+                      ListenableBuilder(
+                        listenable: ExternalAuthService.instance,
+                        builder: (context, _) {
+                          final service = ExternalAuthService.instance;
+                          if (!service.isAvailable) {
+                            return const SizedBox.shrink();
+                          }
+                          final methods = service.config!.alternativeMethods;
+                          final label = methods.isEmpty
+                              ? 'TouchFish Auth'
+                              : methods.first.displayName;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: OutlinedButton.icon(
+                                onPressed: _isLoading
+                                    ? null
+                                    : _loginWithExternalAuth,
+                                icon: const Icon(Icons.verified_user_outlined),
+                                label: Text(label),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      // Register button（服务器关闭注册时不显示）
+                      if (_allowRegister != false) ...[
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: OutlinedButton(
+                            onPressed: _register,
+                            child: Text(
+                              AppLocalizations.of(context)!.loginRegister,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
+                        const SizedBox(height: 4),
+                      ],
 
                       // Forgot password
                       TextButton(

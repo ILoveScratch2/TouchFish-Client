@@ -5323,4 +5323,43 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get commandPaletteEmpty => '没有匹配结果';
+
+  @override
+  String get adminServerFieldAllowRegister => '允许自助注册';
+
+  @override
+  String get adminServerFieldExternalAuthUrl => '外部登录平台地址';
+
+  @override
+  String get adminServerFieldPlatformAuthEnabled => '启用平台专用端点';
+
+  @override
+  String get adminServerFieldPlatformAuthIssuer => '平台 issuer';
+
+  @override
+  String get adminServerFieldPlatformAuthAllowIps => '平台调用白名单';
+
+  @override
+  String get adminServerFieldPlatformAuthSharedToken => '平台共享令牌';
+
+  @override
+  String get adminServerExternalAuthUrlDescription =>
+      '填写 TouchFish Auth 地址，如 https://auth.example.com；留空表示不启用外部登录';
+
+  @override
+  String get adminServerPlatformAuthDescription =>
+      '开启后 /auth/platform/* 只允许白名单地址调用；经反向代理时务必同时设置共享令牌';
+
+  @override
+  String get adminServerAllowRegisterDescription =>
+      '关闭后外部登录平台与客户端都无法注册新账号；已存在的账号不受影响';
+
+  @override
+  String get adminServerPlatformAuthTokenConfigured => '已配置，留空表示不修改';
+
+  @override
+  String get adminServerPlatformAuthTokenEmpty => '尚未配置';
+
+  @override
+  String get adminServerPlatformAuthTokenClear => '清除已配置的令牌';
 }

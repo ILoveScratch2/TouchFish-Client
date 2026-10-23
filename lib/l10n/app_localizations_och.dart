@@ -5316,4 +5316,42 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get commandPaletteEmpty => '無相符之果';
+
+  @override
+  String get adminServerFieldAllowRegister => '許自助註冊';
+
+  @override
+  String get adminServerFieldExternalAuthUrl => '外接登入平臺址';
+
+  @override
+  String get adminServerFieldPlatformAuthEnabled => '啟平臺專用端點';
+
+  @override
+  String get adminServerFieldPlatformAuthIssuer => '平臺簽發者';
+
+  @override
+  String get adminServerFieldPlatformAuthAllowIps => '平臺調用白名單';
+
+  @override
+  String get adminServerFieldPlatformAuthSharedToken => '平臺共享符';
+
+  @override
+  String get adminServerExternalAuthUrlDescription =>
+      '填 TouchFish Auth 之址，如 https://auth.example.com；空則不啟外接登入';
+
+  @override
+  String get adminServerPlatformAuthDescription =>
+      '既啟，/auth/platform/* 僅容白名單之址；經反向代理者務必並設共享符';
+
+  @override
+  String get adminServerAllowRegisterDescription => '既閉，外接平臺與客戶端皆不得註冊；已成之帳無損';
+
+  @override
+  String get adminServerPlatformAuthTokenConfigured => '已設，空則不改';
+
+  @override
+  String get adminServerPlatformAuthTokenEmpty => '尚未設';
+
+  @override
+  String get adminServerPlatformAuthTokenClear => '清除已設之符';
 }

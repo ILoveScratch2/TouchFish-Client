@@ -476,6 +476,122 @@ class AuthState extends ChangeNotifier {
     }
   }
 
+  /// 用外部登录平台（TouchFish Auth）的凭据换取本服务器会话。
+  ///
+  /// 与 [login] 走同一套收口逻辑（多开互斥 / 本地消息库分区 / token 自动刷新），
+  /// 否则会出现"已登录但 WS 与本地库未配置 scope"的半登录态。
+  ///
+  /// 返回 null 表示成功；否则返回错误标识，供调用方映射文案。
+  Future<String?> loginWithExternalSession(String externalToken) async {
+    // 回滚要覆盖整个函数（含 catch 里的异常），所以状态放在 try 之外。
+    final previousToken = _token;
+    final previousMode = _authMode;
+    final previousDegraded = _degradedToLegacy;
+    String? issuedToken;
+    var committed = false;
+
+    void rollback() {
+      if (committed) return;
+      TfApiClient.instance.setAuthContext(
+        token: previousToken,
+        legacyMode: previousMode == TfAuthMode.legacy,
+      );
+      // 同步切回内存登录态，否则「HTTP 层旧 token / 内存新 token」半登录残留。
+      _token = previousToken;
+      _authMode = previousMode;
+      _degradedToLegacy = previousDegraded;
+      if (issuedToken != null) {
+        unawaited(TfApiClient.instance.logoutCurrentToken(issuedToken));
+      }
+    }
+
+    try {
+      final result = await TfApiClient.instance.loginWithExternalToken(
+        externalToken,
+      );
+      if (result.error != null) {
+        return switch (result.error!) {
+          'externalNotLinked' => 'externalNotLinked',
+          'externalTokenInvalid' => 'externalTokenInvalid',
+          'userBanned' => 'userBanned',
+          'tokenLimitReached' => 'sessionLimitReached',
+          _ => 'networkError',
+        };
+      }
+      if (result.mode != TfAuthMode.jwt || result.token == null) {
+        return 'serverError';
+      }
+      issuedToken = result.token;
+
+      // 只把 token 交给 HTTP 层，供 getSelfProfile 使用；
+      // 认证状态本身等校验通过后再写，避免"半登录"残留。
+      TfApiClient.instance.setAuthContext(token: result.token, legacyMode: false);
+
+      final profile = await TfApiClient.instance.getSelfProfile();
+      if (profile == null) {
+        rollback();
+        return 'serverError';
+      }
+      final uid = int.tryParse(profile.uid);
+      if (uid == null) {
+        rollback();
+        return 'serverError';
+      }
+
+      final acquired = await MultiInstanceGuard.instance.acquire(
+        uid: uid,
+        username: profile.username,
+      );
+      if (!acquired) {
+        rollback();
+        return 'duplicateLogin';
+      }
+
+      // 校验全部通过，开始落状态。committed 暂不置 true——
+      // 落盘/通知等副作用若失败，catch 里的 rollback() 需要把内存与 HTTP 层
+      // 一并切回原状；只有所有副作用都完成后才标记不可回滚。
+      _token = result.token;
+      _tokenExpiresAt = result.expiresAt;
+      _refreshToken = result.refreshToken;
+      _refreshExpiresAt = result.refreshExpiresAt;
+      _authMode = TfAuthMode.jwt;
+      _degradedToLegacy = false;
+      TfApiClient.instance.setAuthContext(token: _token, legacyMode: false);
+
+      final baseUrl = await TfApiClient.instance.getBaseUrl();
+      LocalMessageStore.instance.configureScope(baseUrl, uid);
+      _uid = uid;
+      _currentUser = profile;
+      _rememberedUid = uid;
+      _rememberedUsername = profile.username;
+      // 外部登录不掌握服务器密码，静默重登只能依赖 refresh token。
+      _password = null;
+      _rememberedPassword = null;
+      _savedSessionRestoreStatus = SavedSessionRestoreStatus.idle;
+      _restoreFailureReason = RestoreFailureReason.none;
+
+      final prefs = await SharedPreferences.getInstance();
+      await _persistCredentials(
+        prefs,
+        uid: uid,
+        username: profile.username,
+        password: null,
+      );
+
+      TokenRefreshManager.instance.startAutoRefresh(_tokenExpiresAt);
+      _notifySessionChanged();
+      // 所有副作用完成，此后再失败也不回滚（会话在服务端已成立、UI 已通知）。
+      committed = true;
+      return null;
+    } catch (e) {
+      // 落盘/SharedPreferences 等失败时也要把 HTTP 层切回原状态，
+      // 否则后续请求会带着一个"没有对应会话"的 token。
+      rollback();
+      talker.error('AuthState.loginWithExternalSession failed', e);
+      return 'networkError';
+    }
+  }
+
   /// 静默重登（JWT 模式，运行时 token 失效时优先用 refresh token 换新 token，
   /// 无 refresh token 时才回退到内存密码重新登录）。
   /// 无法自愈时触发会话过期强制登出。

@@ -2193,5 +2193,17 @@
     "description": "Placeholder of the command palette search field"
   },
   "commandPaletteHint": "Search chats, pages and actions",
-  "commandPaletteEmpty": "No matching results"
+  "commandPaletteEmpty": "No matching results",
+  "adminServerFieldAllowRegister": "Allow self-service registration",
+  "adminServerFieldExternalAuthUrl": "External auth platform URL",
+  "adminServerFieldPlatformAuthEnabled": "Enable platform endpoints",
+  "adminServerFieldPlatformAuthIssuer": "Platform issuer",
+  "adminServerFieldPlatformAuthAllowIps": "Platform caller allowlist",
+  "adminServerFieldPlatformAuthSharedToken": "Platform shared token",
+  "adminServerExternalAuthUrlDescription": "TouchFish Auth base URL, e.g. https://auth.example.com. Leave empty to disable external login.",
+  "adminServerPlatformAuthDescription": "When enabled, /auth/platform/* only accepts allowlisted addresses. Always set the shared token behind a reverse proxy.",
+  "adminServerAllowRegisterDescription": "When disabled, neither the external platform nor clients can register new accounts. Existing accounts are unaffected.",
+  "adminServerPlatformAuthTokenConfigured": "Configured. Leave blank to keep it unchanged.",
+  "adminServerPlatformAuthTokenEmpty": "Not configured yet",
+  "adminServerPlatformAuthTokenClear": "Clear the configured token"
 }

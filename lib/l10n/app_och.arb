@@ -2148,5 +2148,17 @@
   "forumMembersEmpty": "尚無成員",
   "messageRetrySend": "送信失敗，點擊重發",
   "commandPaletteHint": "尋會話、頁面與操作",
-  "commandPaletteEmpty": "無相符之果"
+  "commandPaletteEmpty": "無相符之果",
+  "adminServerFieldAllowRegister": "許自助註冊",
+  "adminServerFieldExternalAuthUrl": "外接登入平臺址",
+  "adminServerFieldPlatformAuthEnabled": "啟平臺專用端點",
+  "adminServerFieldPlatformAuthIssuer": "平臺簽發者",
+  "adminServerFieldPlatformAuthAllowIps": "平臺調用白名單",
+  "adminServerFieldPlatformAuthSharedToken": "平臺共享符",
+  "adminServerExternalAuthUrlDescription": "填 TouchFish Auth 之址，如 https://auth.example.com；空則不啟外接登入",
+  "adminServerPlatformAuthDescription": "既啟，/auth/platform/* 僅容白名單之址；經反向代理者務必並設共享符",
+  "adminServerAllowRegisterDescription": "既閉，外接平臺與客戶端皆不得註冊；已成之帳無損",
+  "adminServerPlatformAuthTokenConfigured": "已設，空則不改",
+  "adminServerPlatformAuthTokenEmpty": "尚未設",
+  "adminServerPlatformAuthTokenClear": "清除已設之符"
 }

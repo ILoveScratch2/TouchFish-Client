@@ -45,6 +45,11 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   final _jwtExpiresSecondsController = TextEditingController();
   final _jwtRefreshExpiresSecondsController = TextEditingController();
   final _jwtMaxPerUserController = TextEditingController();
+  // 外部认证平台
+  final _externalAuthUrlController = TextEditingController();
+  final _platformAuthIssuerController = TextEditingController();
+  final _platformAuthAllowIpsController = TextEditingController();
+  final _platformAuthSharedTokenController = TextEditingController();
   final _captchaSiteKeyController = TextEditingController();
   final _captchaSecretController = TextEditingController();
   final _rateLimitsController = TextEditingController();
@@ -70,6 +75,13 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   bool _smtpUseSsl = true;
   bool _reverseProxyEnabled = false;
   bool _legacyAuthEnabled = true;
+  bool _allowRegister = true;
+  bool _platformAuthEnabled = false;
+  /// 共享令牌不回显：只标记"服务端是否已配置"，用于切换输入框的提示文案
+  bool _platformAuthTokenConfigured = false;
+  /// 显式清除已配置的令牌。空输入框默认表示"不修改"，清除必须勾选此处，
+  /// 免得管理员不小心清空输入框就把令牌删了。
+  bool _platformAuthTokenClear = false;
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -110,6 +122,12 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     'jwtExpiresSeconds': 'jwt_expires_seconds',
     'jwtRefreshExpiresSeconds': 'jwt_refresh_expires_seconds',
     'jwtMaxPerUser': 'jwt_max_per_user',
+    'allowRegister': 'allow_register',
+    'externalAuthUrl': 'external_auth_url',
+    'platformAuthEnabled': 'platform_auth_enabled',
+    'platformAuthIssuer': 'platform_auth_issuer',
+    'platformAuthAllowIps': 'platform_auth_allow_ips',
+    'platformAuthSharedToken': 'platform_auth_shared_token',
     'minGroupNameLength': 'min_group_name_length',
     'maxGroupNameLength': 'max_group_name_length',
     'minUsernameLength': 'min_username_length',
@@ -152,6 +170,10 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     _jwtExpiresSecondsController,
     _jwtRefreshExpiresSecondsController,
     _jwtMaxPerUserController,
+    _externalAuthUrlController,
+    _platformAuthIssuerController,
+    _platformAuthAllowIpsController,
+    _platformAuthSharedTokenController,
     _captchaSiteKeyController,
     _captchaSecretController,
     _rateLimitsController,
@@ -217,6 +239,10 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     _jwtExpiresSecondsController.dispose();
     _jwtRefreshExpiresSecondsController.dispose();
     _jwtMaxPerUserController.dispose();
+    _externalAuthUrlController.dispose();
+    _platformAuthIssuerController.dispose();
+    _platformAuthAllowIpsController.dispose();
+    _platformAuthSharedTokenController.dispose();
     _captchaSiteKeyController.dispose();
     _captchaSecretController.dispose();
     _rateLimitsController.dispose();
@@ -301,6 +327,14 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         (settings.jwtExpiresSeconds ?? 604800).toString();
     _jwtMaxPerUserController.text =
         (settings.jwtMaxPerUser ?? 5).toString();
+    _externalAuthUrlController.text = settings.externalAuthUrl ?? '';
+    _platformAuthIssuerController.text = settings.platformAuthIssuer;
+    _platformAuthAllowIpsController.text = settings.platformAuthAllowIps;
+    _platformAuthSharedTokenController.text = '';
+    _platformAuthTokenClear = false;
+    _allowRegister = settings.allowRegister;
+    _platformAuthEnabled = settings.platformAuthEnabled;
+    _platformAuthTokenConfigured = settings.platformAuthSharedTokenSet;
 
     _unlimitedOn.clear();
     for (final entry in _unlimitedControllers.entries) {
@@ -345,6 +379,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     'smtpUseSsl': _smtpUseSsl,
     'reverseProxyEnabled': _reverseProxyEnabled,
     'legacyAuthEnabled': _legacyAuthEnabled,
+    'allowRegister': _allowRegister,
+    'platformAuthEnabled': _platformAuthEnabled,
+    'platformAuthTokenClear': _platformAuthTokenClear,
   };
 
   bool _computeDirty() {
@@ -750,6 +787,18 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         fileDownloadMode: _fileDownloadMode,
         mediaFeatures: _mediaFeatures,
         features: _features,
+        // 共享令牌：勾选「清除」则发空串（服务端空串=清除）；
+        // 未勾选且输入框为空则省略该字段（=不修改），避免把已配置的令牌抹掉。
+        allowRegister: _allowRegister,
+        externalAuthUrl: _externalAuthUrlController.text.trim(),
+        platformAuthEnabled: _platformAuthEnabled,
+        platformAuthIssuer: _platformAuthIssuerController.text.trim(),
+        platformAuthAllowIps: _platformAuthAllowIpsController.text.trim(),
+        platformAuthSharedToken: _platformAuthTokenClear
+            ? ''
+            : (_platformAuthSharedTokenController.text.trim().isEmpty
+                ? null
+                : _platformAuthSharedTokenController.text.trim()),
       );
 
       if (!mounted) {
@@ -1468,6 +1517,105 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           controller: _jwtMaxPerUserController,
           labelText: l10n.adminServerFieldJwtMaxPerUser,
           icon: Icons.devices_outlined,
+        ),
+      ),
+      // ---- 外部认证平台 ----
+      _SettingField(
+        key: 'allowRegister',
+        section: _SettingsSection.auth,
+        label: (l10n) => l10n.adminServerFieldAllowRegister,
+        keywords: const ['register', 'signup', 'allow'],
+        build: (context, l10n) => _switchField(
+          value: _allowRegister,
+          title: l10n.adminServerFieldAllowRegister,
+          subtitle: l10n.adminServerAllowRegisterDescription,
+          onChanged: (value) {
+            setState(() => _allowRegister = value);
+            _handleFieldChanged();
+          },
+        ),
+      ),
+      _SettingField(
+        key: 'externalAuthUrl',
+        section: _SettingsSection.auth,
+        label: (l10n) => l10n.adminServerFieldExternalAuthUrl,
+        keywords: const ['external', 'auth', 'platform', 'url', 'oidc'],
+        build: (context, l10n) => _textField(
+          controller: _externalAuthUrlController,
+          labelText: l10n.adminServerFieldExternalAuthUrl,
+          helperText: l10n.adminServerExternalAuthUrlDescription,
+          icon: Icons.hub_outlined,
+        ),
+      ),
+      _SettingField(
+        key: 'platformAuthEnabled',
+        section: _SettingsSection.auth,
+        label: (l10n) => l10n.adminServerFieldPlatformAuthEnabled,
+        keywords: const ['platform', 'auth', 'endpoint', 'bind'],
+        build: (context, l10n) => _switchField(
+          value: _platformAuthEnabled,
+          title: l10n.adminServerFieldPlatformAuthEnabled,
+          subtitle: l10n.adminServerPlatformAuthDescription,
+          onChanged: (value) {
+            setState(() => _platformAuthEnabled = value);
+            _handleFieldChanged();
+          },
+        ),
+      ),
+      _SettingField(
+        key: 'platformAuthIssuer',
+        section: _SettingsSection.auth,
+        label: (l10n) => l10n.adminServerFieldPlatformAuthIssuer,
+        keywords: const ['platform', 'issuer', 'iss'],
+        build: (context, l10n) => _textField(
+          controller: _platformAuthIssuerController,
+          labelText: l10n.adminServerFieldPlatformAuthIssuer,
+          icon: Icons.badge_outlined,
+        ),
+      ),
+      _SettingField(
+        key: 'platformAuthAllowIps',
+        section: _SettingsSection.auth,
+        label: (l10n) => l10n.adminServerFieldPlatformAuthAllowIps,
+        keywords: const ['platform', 'ip', 'allowlist', 'cidr'],
+        build: (context, l10n) => _textField(
+          controller: _platformAuthAllowIpsController,
+          labelText: l10n.adminServerFieldPlatformAuthAllowIps,
+          helperText: l10n.adminServerPlatformAuthDescription,
+          icon: Icons.shield_outlined,
+        ),
+      ),
+      _SettingField(
+        key: 'platformAuthSharedToken',
+        section: _SettingsSection.auth,
+        label: (l10n) => l10n.adminServerFieldPlatformAuthSharedToken,
+        keywords: const ['platform', 'token', 'shared', 'secret'],
+        build: (context, l10n) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _textField(
+              controller: _platformAuthSharedTokenController,
+              labelText: l10n.adminServerFieldPlatformAuthSharedToken,
+              helperText: _platformAuthTokenConfigured
+                  ? l10n.adminServerPlatformAuthTokenConfigured
+                  : l10n.adminServerPlatformAuthTokenEmpty,
+              icon: Icons.key_outlined,
+              obscureText: true,
+            ),
+            if (_platformAuthTokenConfigured)
+              CheckboxListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                value: _platformAuthTokenClear,
+                title: Text(l10n.adminServerPlatformAuthTokenClear),
+                onChanged: (value) {
+                  setState(() => _platformAuthTokenClear = value ?? false);
+                  _handleFieldChanged();
+                },
+              ),
+          ],
         ),
       ),
       // 限流

@@ -474,6 +474,22 @@ class TfServerConfig {
   final int? jwtExpiresSeconds;
   final int? jwtRefreshExpiresSeconds;
   final int? jwtMaxPerUser;
+
+  /// 外部登录平台地址（TouchFish Auth）。空/未设置表示服务器未启用外部登录。
+  final String? externalAuthUrl;
+
+  /// 服务器是否允许自助注册。老服务器没有该字段时按 true 处理。
+  final bool allowRegister;
+
+  /// 服务器是否已启用外部认证平台专用端点。
+  final bool platformAuthEnabled;
+
+  /// 平台专用端点的 issuer / 白名单 / 共享令牌（后两者仅管理员可见）。
+  final String platformAuthIssuer;
+  final String platformAuthAllowIps;
+
+  /// 共享令牌**不回显**，只给出是否已配置；空字段提交表示"不修改"。
+  final bool platformAuthSharedTokenSet;
   final int? maxAvatarSize;
   final int? userStorageQuota;
   final int? maxUserStorageQuota;
@@ -523,6 +539,12 @@ class TfServerConfig {
     this.jwtExpiresSeconds,
     this.jwtRefreshExpiresSeconds,
     this.jwtMaxPerUser,
+    this.externalAuthUrl,
+    this.allowRegister = true,
+    this.platformAuthEnabled = false,
+    this.platformAuthIssuer = '',
+    this.platformAuthAllowIps = '',
+    this.platformAuthSharedTokenSet = false,
     this.maxAvatarSize,
     this.userStorageQuota,
     this.maxUserStorageQuota,
@@ -552,6 +574,27 @@ class TfServerConfig {
       return value;
     }
     return int.tryParse(value.toString());
+  }
+
+  static String? _parseNonEmptyString(dynamic value) {
+    if (value is! String) {
+      return null;
+    }
+    final text = value.trim();
+    return text.isEmpty ? null : text;
+  }
+
+  /// 宽松布尔解析：服务器可能给 true/"true"/1。
+  /// 直接 `as bool?` 遇到非 bool 会抛，导致整个 fetchServerInfo 返回 null。
+  static bool? _parseBoolish(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final text = value.trim().toLowerCase();
+      if (text == 'true' || text == '1' || text == 'yes') return true;
+      if (text == 'false' || text == '0' || text == 'no') return false;
+    }
+    return null;
   }
 
   factory TfServerConfig.fromJson(Map<String, dynamic> json) {
@@ -637,6 +680,13 @@ class TfServerConfig {
         json['jwt_refresh_expires_seconds'],
       ),
       jwtMaxPerUser: _parseOptionalIntValue(json['jwt_max_per_user']),
+      externalAuthUrl: _parseNonEmptyString(json['external_auth_url']),
+      allowRegister: _parseBoolish(json['allow_register']) ?? true,
+      platformAuthEnabled: _parseBoolish(json['platform_auth_enabled']) ?? false,
+      platformAuthIssuer: _parseNonEmptyString(json['platform_auth_issuer']) ?? '',
+      platformAuthAllowIps: _parseNonEmptyString(json['platform_auth_allow_ips']) ?? '',
+      platformAuthSharedTokenSet:
+          _parseBoolish(json['platform_auth_shared_token_set']) ?? false,
       maxAvatarSize: _parseOptionalIntValue(json['max_avatar_size']),
       userStorageQuota: _parseOptionalIntValue(json['user_storage_quota']),
       maxUserStorageQuota: _parseOptionalIntValue(json['max_user_storage_quota']),
@@ -1611,6 +1661,13 @@ class TfApiClient {
     String? fileDownloadMode,
     bool? mediaFeatures,
     TfFeatureFlags? features,
+    // ---- 外部认证平台 ----
+    bool? allowRegister,
+    String? externalAuthUrl,
+    bool? platformAuthEnabled,
+    String? platformAuthIssuer,
+    String? platformAuthAllowIps,
+    String? platformAuthSharedToken,
   }) async {
     final result = await secretPost(
       '/auth/server_settings/update',
@@ -1650,6 +1707,12 @@ class TfApiClient {
         'file_download_mode': ?fileDownloadMode,
         'media_features': ?mediaFeatures,
         'features': ?features?.toJson(),
+        'allow_register': ?allowRegister,
+        'external_auth_url': ?externalAuthUrl,
+        'platform_auth_enabled': ?platformAuthEnabled,
+        'platform_auth_issuer': ?platformAuthIssuer,
+        'platform_auth_allow_ips': ?platformAuthAllowIps,
+        'platform_auth_shared_token': ?platformAuthSharedToken,
       },
       uid: uid,
       password: password,
@@ -1876,6 +1939,63 @@ class TfApiClient {
       return TfLoginResult.error('authFailed');
     } catch (e) {
       talker.error('TfApiClient.login failed', e);
+      return TfLoginResult.error('networkError');
+    }
+  }
+
+  /// 用外部登录平台签发的一次性凭据换取本服务器的会话。
+  ///
+  /// [externalToken] 来自 TouchFish Auth 的 ticket 兑换结果；
+  /// 服务端会用 JWKS 验签并查 (iss, sub) 绑定，未绑定时返回 external_not_linked。
+  Future<TfLoginResult> loginWithExternalToken(String externalToken) async {
+    try {
+      final device = await DeviceIdentityService.instance.get();
+      final result = await _secretPostInternal(
+        '/auth/external/login',
+        {
+          'external_token': externalToken,
+          'device_id': device.deviceId,
+          'device_name': device.deviceName,
+          'platform': device.platform,
+        },
+        skipToken: true,
+      );
+      final data = _parseJsonMap(result);
+      if (data == null) {
+        return TfLoginResult.error('serverError');
+      }
+      final error = data['error'];
+      if (error != null) {
+        final code = switch (error) {
+          'external_not_linked' => 'externalNotLinked',
+          'external_token_invalid' => 'externalTokenInvalid',
+          'EXTERNAL_NOT_LINKED' => 'externalNotLinked',
+          'EXTERNAL_TOKEN_INVALID' => 'externalTokenInvalid',
+          'user_banned' => 'userBanned',
+          'RESOURCE_USER_BANNED' => 'userBanned',
+          _ => 'serverError',
+        };
+        return TfLoginResult.error(code);
+      }
+      final token = data['token'];
+      if (token is! String || token.isEmpty) {
+        return TfLoginResult.error('serverError');
+      }
+      final refreshToken = data['refresh_token'];
+      final refreshExpiresIn = (data['refresh_expires_in'] as num?)?.toInt();
+      final expiresAt = (data['expires_at'] as num?)?.toInt();
+      return TfLoginResult.jwt(
+        token: token,
+        expiresAt: expiresAt,
+        refreshToken: refreshToken is String && refreshToken.isNotEmpty
+            ? refreshToken
+            : null,
+        refreshExpiresAt: (expiresAt != null && refreshExpiresIn != null)
+            ? expiresAt + refreshExpiresIn
+            : null,
+      );
+    } catch (e) {
+      talker.error('TfApiClient.loginWithExternalToken failed', e);
       return TfLoginResult.error('networkError');
     }
   }

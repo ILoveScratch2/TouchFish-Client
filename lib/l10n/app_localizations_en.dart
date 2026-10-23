@@ -5580,4 +5580,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commandPaletteEmpty => 'No matching results';
+
+  @override
+  String get adminServerFieldAllowRegister => 'Allow self-service registration';
+
+  @override
+  String get adminServerFieldExternalAuthUrl => 'External auth platform URL';
+
+  @override
+  String get adminServerFieldPlatformAuthEnabled => 'Enable platform endpoints';
+
+  @override
+  String get adminServerFieldPlatformAuthIssuer => 'Platform issuer';
+
+  @override
+  String get adminServerFieldPlatformAuthAllowIps =>
+      'Platform caller allowlist';
+
+  @override
+  String get adminServerFieldPlatformAuthSharedToken => 'Platform shared token';
+
+  @override
+  String get adminServerExternalAuthUrlDescription =>
+      'TouchFish Auth base URL, e.g. https://auth.example.com. Leave empty to disable external login.';
+
+  @override
+  String get adminServerPlatformAuthDescription =>
+      'When enabled, /auth/platform/* only accepts allowlisted addresses. Always set the shared token behind a reverse proxy.';
+
+  @override
+  String get adminServerAllowRegisterDescription =>
+      'When disabled, neither the external platform nor clients can register new accounts. Existing accounts are unaffected.';
+
+  @override
+  String get adminServerPlatformAuthTokenConfigured =>
+      'Configured. Leave blank to keep it unchanged.';
+
+  @override
+  String get adminServerPlatformAuthTokenEmpty => 'Not configured yet';
+
+  @override
+  String get adminServerPlatformAuthTokenClear => 'Clear the configured token';
 }

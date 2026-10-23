@@ -2139,5 +2139,17 @@
   "forumMembersEmpty": "还没有成员",
   "messageRetrySend": "发送失败，点击重发",
   "commandPaletteHint": "搜索会话、页面和操作",
-  "commandPaletteEmpty": "没有匹配结果"
+  "commandPaletteEmpty": "没有匹配结果",
+  "adminServerFieldAllowRegister": "允许自助注册",
+  "adminServerFieldExternalAuthUrl": "外部登录平台地址",
+  "adminServerFieldPlatformAuthEnabled": "启用平台专用端点",
+  "adminServerFieldPlatformAuthIssuer": "平台 issuer",
+  "adminServerFieldPlatformAuthAllowIps": "平台调用白名单",
+  "adminServerFieldPlatformAuthSharedToken": "平台共享令牌",
+  "adminServerExternalAuthUrlDescription": "填写 TouchFish Auth 地址，如 https://auth.example.com；留空表示不启用外部登录",
+  "adminServerPlatformAuthDescription": "开启后 /auth/platform/* 只允许白名单地址调用；经反向代理时务必同时设置共享令牌",
+  "adminServerAllowRegisterDescription": "关闭后外部登录平台与客户端都无法注册新账号；已存在的账号不受影响",
+  "adminServerPlatformAuthTokenConfigured": "已配置，留空表示不修改",
+  "adminServerPlatformAuthTokenEmpty": "尚未配置",
+  "adminServerPlatformAuthTokenClear": "清除已配置的令牌"
 }

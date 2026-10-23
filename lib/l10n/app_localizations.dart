@@ -10221,6 +10221,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No matching results'**
   String get commandPaletteEmpty;
+
+  /// No description provided for @adminServerFieldAllowRegister.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow self-service registration'**
+  String get adminServerFieldAllowRegister;
+
+  /// No description provided for @adminServerFieldExternalAuthUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'External auth platform URL'**
+  String get adminServerFieldExternalAuthUrl;
+
+  /// No description provided for @adminServerFieldPlatformAuthEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable platform endpoints'**
+  String get adminServerFieldPlatformAuthEnabled;
+
+  /// No description provided for @adminServerFieldPlatformAuthIssuer.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform issuer'**
+  String get adminServerFieldPlatformAuthIssuer;
+
+  /// No description provided for @adminServerFieldPlatformAuthAllowIps.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform caller allowlist'**
+  String get adminServerFieldPlatformAuthAllowIps;
+
+  /// No description provided for @adminServerFieldPlatformAuthSharedToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform shared token'**
+  String get adminServerFieldPlatformAuthSharedToken;
+
+  /// No description provided for @adminServerExternalAuthUrlDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish Auth base URL, e.g. https://auth.example.com. Leave empty to disable external login.'**
+  String get adminServerExternalAuthUrlDescription;
+
+  /// No description provided for @adminServerPlatformAuthDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, /auth/platform/* only accepts allowlisted addresses. Always set the shared token behind a reverse proxy.'**
+  String get adminServerPlatformAuthDescription;
+
+  /// No description provided for @adminServerAllowRegisterDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When disabled, neither the external platform nor clients can register new accounts. Existing accounts are unaffected.'**
+  String get adminServerAllowRegisterDescription;
+
+  /// No description provided for @adminServerPlatformAuthTokenConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Configured. Leave blank to keep it unchanged.'**
+  String get adminServerPlatformAuthTokenConfigured;
+
+  /// No description provided for @adminServerPlatformAuthTokenEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Not configured yet'**
+  String get adminServerPlatformAuthTokenEmpty;
+
+  /// No description provided for @adminServerPlatformAuthTokenClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the configured token'**
+  String get adminServerPlatformAuthTokenClear;
 }
 
 class _AppLocalizationsDelegate
