@@ -6,6 +6,7 @@
   <a href="https://github.com/ILoveScratch2/TouchFish-Client/releases"><img src="https://img.shields.io/github/downloads/ILoveScratch2/TouchFish-Client/total?color=%239F7AEA&logo=github" alt="Downloads" /></a>
   <a href="https://github.com/2044-space-elevator/TouchFishServer"><img src="https://img.shields.io/badge/Server-TouchFish_V5-blue" alt="Server" /></a>
   <a href="https://touchfishclient.ilovescratch.us.ci/"><img src="https://img.shields.io/badge/Docs-Client-blue" alt="Client Docs" /></a>
+  <a href="https://deepwiki.com/ILoveScratch2/TouchFish-Client"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </div>
 
 <div align="center">
