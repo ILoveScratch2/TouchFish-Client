@@ -712,6 +712,7 @@ class _StickerPackEditorScreenState extends State<StickerPackEditorScreen> {
     final file = picked?.files.single;
     final bytes = file?.bytes;
     if (file == null || bytes == null) return;
+    if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
     final slug = TextEditingController(
       text: file.name

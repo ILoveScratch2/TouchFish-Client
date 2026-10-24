@@ -573,7 +573,7 @@ class _TouchFishAppState extends State<TouchFishApp>
     if (!canRestore) return;
 
     final restored = await AuthState.instance.restoreSavedSession();
-    if (!restored || !mounted) return;
+    if (!restored || !mounted || !navigatorContext.mounted) return;
 
     _maybePromptFirstConnectAfterRestore(navigatorContext);
   }
@@ -585,6 +585,7 @@ class _TouchFishAppState extends State<TouchFishApp>
       final result = await RsaKeyTrustService.instance.checkKey(livePem);
       result.log();
       if (result.kind == RsaKeyCheckKind.changed) {
+        if (!context.mounted) return false;
         final replaced = await promptRsaKeyChanged(
           context,
           newSha: result.liveFingerprint!,
