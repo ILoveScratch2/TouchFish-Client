@@ -2160,5 +2160,11 @@
   "adminServerAllowRegisterDescription": "既閉，外接平臺與客戶端皆不得註冊；已成之帳無損",
   "adminServerPlatformAuthTokenConfigured": "已設，空則不改",
   "adminServerPlatformAuthTokenEmpty": "尚未設",
-  "adminServerPlatformAuthTokenClear": "清除已設之符"
+  "adminServerPlatformAuthTokenClear": "清除已設之符",
+  "loginExternalAuth": "以 TouchFish Auth 登入",
+  "adminServerPlatformAuthIssuerDescription": "止校符中之簽發者，須與認證平臺之 AUTH_ISSUER 悉同",
+  "loginErrorExternalNotLinked": "帳未繫於 TouchFish 之帳，且服器未啟自建",
+  "loginErrorExternalTokenInvalid": "發之符見拒：請核伺服器是否信此認證平臺（jwt_external_issuers）",
+  "loginErrorTicketExchange": "以暫符易登入之符未成，請重試",
+  "loginOr": "或"
 }

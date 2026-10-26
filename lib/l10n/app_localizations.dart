@@ -10293,6 +10293,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear the configured token'**
   String get adminServerPlatformAuthTokenClear;
+
+  /// No description provided for @loginExternalAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with TouchFish Auth'**
+  String get loginExternalAuth;
+
+  /// No description provided for @adminServerPlatformAuthIssuerDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Only verifies the iss claim of platform tokens; must match the platform\'s AUTH_ISSUER exactly. The client login entry uses \"External auth platform URL\" above.'**
+  String get adminServerPlatformAuthIssuerDescription;
+
+  /// No description provided for @loginErrorExternalNotLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'This platform account is not linked to a TouchFish account, and auto-creation is disabled on the server.'**
+  String get loginErrorExternalNotLinked;
+
+  /// No description provided for @loginErrorExternalTokenInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The token issued by the auth platform was rejected: check that the server trusts that platform (jwt_external_issuers).'**
+  String get loginErrorExternalTokenInvalid;
+
+  /// No description provided for @loginErrorTicketExchange.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not exchange the ticket for a login token. Please retry.'**
+  String get loginErrorTicketExchange;
+
+  /// No description provided for @loginOr.
+  ///
+  /// In en, this message translates to:
+  /// **'or'**
+  String get loginOr;
 }
 
 class _AppLocalizationsDelegate

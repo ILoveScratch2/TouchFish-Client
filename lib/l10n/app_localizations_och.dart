@@ -5354,4 +5354,24 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get adminServerPlatformAuthTokenClear => '清除已設之符';
+
+  @override
+  String get loginExternalAuth => '以 TouchFish Auth 登入';
+
+  @override
+  String get adminServerPlatformAuthIssuerDescription =>
+      '止校符中之簽發者，須與認證平臺之 AUTH_ISSUER 悉同';
+
+  @override
+  String get loginErrorExternalNotLinked => '帳未繫於 TouchFish 之帳，且服器未啟自建';
+
+  @override
+  String get loginErrorExternalTokenInvalid =>
+      '發之符見拒：請核伺服器是否信此認證平臺（jwt_external_issuers）';
+
+  @override
+  String get loginErrorTicketExchange => '以暫符易登入之符未成，請重試';
+
+  @override
+  String get loginOr => '或';
 }

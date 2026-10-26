@@ -16,7 +16,14 @@ class ExternalAuthResult {
 /// 需要 Web 端闭环时应改走 `/authorize` 的 redirect_uri + 后端换票，
 /// 那是独立的一期工作，不在本次范围内。
 class ExternalAuthSheet {
-  static Future<ExternalAuthResult?> show(BuildContext context, Uri uri) async {
+  static Future<ExternalAuthResult?> show(
+    BuildContext context,
+    Uri uri, {
+    String title = 'TouchFish Auth',
+    List<String> allowedHosts = const [],
+  }) async {
+    // title / allowedHosts 只对 native 的 WebView 有意义：
+    // Web 端是整页跳转，无所谓白名单。
     final launched = await launchUrl(uri, webOnlyWindowName: '_blank');
     if (!context.mounted) return null;
     ScaffoldMessenger.of(context).showSnackBar(

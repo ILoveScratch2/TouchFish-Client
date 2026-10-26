@@ -9,6 +9,8 @@ class ExternalAuthMethod {
     required this.displayName,
     this.enabled = true,
     this.hint,
+    this.startUrl,
+    this.allowedHosts = const [],
   });
 
   final String id;
@@ -19,6 +21,12 @@ class ExternalAuthMethod {
   final bool enabled;
   final String? hint;
 
+  /// 仅 oauth2：发起授权的入口地址
+  final String? startUrl;
+
+  /// 仅 oauth2：走完授权需要停留的第三方域名
+  final List<String> allowedHosts;
+
   static ExternalAuthMethod? tryParse(Map<String, dynamic> json) {
     final id = json['id'];
     final kind = json['kind'];
@@ -26,12 +34,23 @@ class ExternalAuthMethod {
       return null;
     }
     final name = json['display_name'];
+    final hosts = json['allowed_hosts'];
     return ExternalAuthMethod(
       id: id,
       kind: kind,
       displayName: name is String && name.trim().isNotEmpty ? name.trim() : id,
       enabled: json['enabled'] as bool? ?? true,
       hint: json['hint'] is String ? json['hint'] as String : null,
+      startUrl: json['start_url'] is String && (json['start_url'] as String).isNotEmpty
+          ? json['start_url'] as String
+          : null,
+      allowedHosts: hosts is List
+          ? hosts
+              .whereType<String>()
+              .map((value) => value.trim().toLowerCase())
+              .where((value) => value.isNotEmpty)
+              .toList(growable: false)
+          : const [],
     );
   }
 }
@@ -76,8 +95,20 @@ class ExternalAuthConfig {
     );
   }
 
-  /// 除本平台账号密码以外可用的方式（用于登录页的"或"区）。
+  /// 除本平台账号密码以外可用的方式。
   List<ExternalAuthMethod> get alternativeMethods => methods
       .where((method) => method.kind != 'password')
       .toList(growable: false);
+
+  /// oauth2
+  List<ExternalAuthMethod> get oauthMethods => methods
+      .where((method) => method.kind == 'oauth2')
+      .toList(growable: false);
+
+  ExternalAuthMethod? methodById(String id) {
+    for (final method in methods) {
+      if (method.id == id) return method;
+    }
+    return null;
+  }
 }

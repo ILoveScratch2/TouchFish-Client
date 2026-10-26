@@ -1570,6 +1570,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         build: (context, l10n) => _textField(
           controller: _platformAuthIssuerController,
           labelText: l10n.adminServerFieldPlatformAuthIssuer,
+          helperText: l10n.adminServerPlatformAuthIssuerDescription,
           icon: Icons.badge_outlined,
         ),
       ),

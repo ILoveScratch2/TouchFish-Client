@@ -96,3 +96,8 @@ Any form of contribution is welcome! Whether it's reporting issues, requesting f
 TouchFish Client is licensed under the [GNU Affero General Public License v3.0](LICENSE).
 
 This strong copyleft license allows you to use, modify, and distribute the software under the same license, provided that the complete source code of the licensed work and modifications is made available. Copyright and license notices must be retained. Patent rights are granted as expressly stated by contributors. If you provide the modified version as a service over a network, you must also provide the complete source code of the modified version.
+
+
+**Note: The font files in `assets/font` are custom font resources used by the client. They are subject to their own licensing terms and are not covered by the client's AGPLv3 license.*
+
+**Note: The icon files in `assets/provider_icons` are used by the client for OAuth platform icons. They are subject to their own licensing terms and are not covered by the client's AGPLv3 license.*

@@ -15,6 +15,7 @@ import '../widgets/external_auth_sheet.dart';
 import '../widgets/rsa_key_prompts.dart';
 import '../widgets/server_selector.dart';
 import '../widgets/network_indicator.dart';
+import '../widgets/provider_mark.dart';
 import '../utils/talker.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -32,7 +33,6 @@ class _LoginScreenState extends State<LoginScreen> {
   List<ConnectivityResult> _connectionStatus = [ConnectivityResult.none];
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   RsaKeyCheckResult? _pendingFirstConnectResult;
-  /// null = 尚未确认；false 时隐藏注册入口
   bool? _allowRegister;
 
   @override
@@ -46,9 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _initConnectivity();
     _subscribeToConnectivityChanges();
     unawaited(ServerBrandingService.instance.refresh());
-    // 服务端下发 external_auth_url 时才会出现"外部平台登录"入口
     unawaited(ExternalAuthService.instance.load());
-    // 服务器关闭注册时不应显示注册入口（旧版服务器没有该字段，按允许处理）
     unawaited(
       TfApiClient.instance.fetchServerInfo().then((config) {
         if (!mounted || config == null) return;
@@ -57,10 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// 切服务器后重新拉与新服务器相关的可见性数据。
-  ///
-  /// 不刷新的话，「注册」按钮与「外部平台登录」入口会停留在旧服务器的状态：
-  /// 从关闭注册的服务器切到开放注册的服务器，按钮仍然不出现。
+  /// 切服务器后重拉与新服务器相关的可见性数据
   void _onServerChanged() {
     unawaited(_refreshServerDependent());
   }
@@ -157,10 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   /// 通过外部登录平台（TouchFish Auth）登录。
-  ///
-  /// 顺序：发现配置 → 校验 RSA 密钥（外部登录同样走信封）→ 打开授权页
-  /// → 校验 state → ticket 换 external_token → 交给 AuthState 收口。
-  Future<void> _loginWithExternalAuth() async {
+  Future<void> _loginWithExternalAuth({String? providerId}) async {
     final l10n = AppLocalizations.of(context)!;
     final service = ExternalAuthService.instance;
     final config = await service.load(force: true);
@@ -176,19 +168,34 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final state = _randomStateToken();
     final baseUrl = await TfApiClient.instance.getBaseUrl();
-    final uri = service.buildAuthorizeUri(state: state, target: baseUrl);
+    final uri = providerId == null
+        ? service.buildAuthorizeUri(state: state, target: baseUrl)
+        : service.buildProviderStartUri(
+            providerId: providerId,
+            state: state,
+            target: baseUrl,
+          );
     if (uri == null || !mounted) {
       TouchFishSnackbarService.instance.show(l10n.loginErrorNetwork);
       return;
     }
 
-    final result = await ExternalAuthSheet.show(context, uri);
+    final providerName = providerId == null
+        ? 'TouchFish Auth'
+        : config.methodById(providerId)?.displayName ?? providerId;
+    final result = await ExternalAuthSheet.show(
+      context,
+      uri,
+      title: providerName,
+      allowedHosts: providerId == null
+          ? const []
+          : service.allowedHostsFor(providerId),
+    );
     if (!mounted) return;
     if (result == null) return; // 用户关闭了授权页
 
     if (result.state == null || result.state != state) {
-      // 严格要求回传的 state 与本机生成的一致：允许 null 等于形同虚设，
-      // 页面（或被导航过去的任意页面）不回传就能绕过 CSRF 保护。
+      // 严格要求回传的 state 与本机生成的一致
       TouchFishSnackbarService.instance.show(l10n.loginErrorNetwork);
       return;
     }
@@ -198,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
     if (externalToken == null) {
       setState(() => _isLoading = false);
-      TouchFishSnackbarService.instance.show(l10n.loginErrorNetwork);
+      TouchFishSnackbarService.instance.show(l10n.loginErrorTicketExchange);
       return;
     }
 
@@ -214,8 +221,8 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     final msg = switch (error) {
-      'externalNotLinked' => l10n.loginErrorInvalidCredentials,
-      'externalTokenInvalid' => l10n.loginErrorNetwork,
+      'externalNotLinked' => l10n.loginErrorExternalNotLinked,
+      'externalTokenInvalid' => l10n.loginErrorExternalTokenInvalid,
       'userBanned' => l10n.loginErrorInvalidCredentials,
       'sessionLimitReached' => l10n.loginErrorSessionLimit,
       'duplicateLogin' => l10n.loginErrorDuplicateInstance,
@@ -224,16 +231,73 @@ class _LoginScreenState extends State<LoginScreen> {
     TouchFishSnackbarService.instance.show(msg);
   }
 
+  Widget _providerIconButton(
+    BuildContext context,
+    TfExternalAuthProvider provider,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: OutlinedButton(
+        onPressed: _isLoading
+            ? null
+            : () => _loginWithExternalAuth(providerId: provider.id),
+        style: OutlinedButton.styleFrom(
+          padding: EdgeInsets.zero,
+          minimumSize: const Size(44, 44),
+          // 默认 tap target 会把按钮撑到 48 高，与外面的 44 方块打架
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: const CircleBorder(),
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
+        child: ProviderMark(
+          providerId: provider.id,
+          size: 20,
+          color: scheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+
+  Widget _providerNameButton(
+    BuildContext context,
+    TfExternalAuthProvider provider,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 260),
+      child: SizedBox(
+        height: 44,
+        child: OutlinedButton(
+          onPressed: _isLoading
+              ? null
+              : () => _loginWithExternalAuth(providerId: provider.id),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            minimumSize: const Size(0, 44),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            shape: const StadiumBorder(),
+            side: BorderSide(color: scheme.outlineVariant),
+          ),
+          child: Text(
+            provider.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: scheme.onSurfaceVariant),
+          ),
+        ),
+      ),
+    );
+  }
+
   String _randomStateToken() {
     final random = Random.secure();
     final bytes = List<int>.generate(16, (_) => random.nextInt(256));
     return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
-  /// 登录前校验 RSA 密钥：
-  /// - 密钥变更：弹警告，替换后继续或断开；
-  /// - 首次连接：记录结果，登录成功后弹保存提示。
-  /// 返回 false 表示用户选择断开，中止登录。
+  /// 登录前校验 RSA 密钥
   Future<bool> _verifyRsaKeyBeforeLogin() async {
     try {
       final livePem = await TfApiClient.instance.fetchRsaPublicKeyPem();
@@ -252,7 +316,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// 初次连接成功后的保存提示；返回 false 表示用户选择断开服务器连接。
   Future<bool> _maybePromptFirstConnect() async {
     final result = _pendingFirstConnectResult;
     _pendingFirstConnectResult = null;
@@ -282,7 +345,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// 密钥变更警告；返回 true 表示已用新密钥替换并继续登录。
+  /// 密钥变更警告
   Future<bool> _promptKeyChanged(RsaKeyCheckResult result) async {
     final replaced = await promptRsaKeyChanged(
       context,
@@ -460,7 +523,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Logo + 服务器品牌标题（拉取完成后自动切换）
+                      // Logo + 服务器品牌标题
                       ListenableBuilder(
                         listenable: ServerBrandingService.instance,
                         builder: (context, _) {
@@ -550,30 +613,83 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // 外部登录平台（服务端下发 external_auth_url 时才出现）
+                      // 外部登录平台
                       ListenableBuilder(
                         listenable: ExternalAuthService.instance,
                         builder: (context, _) {
                           final service = ExternalAuthService.instance;
-                          if (!service.isAvailable) {
+                          if (!service.isAvailable && !service.isConfigured) {
                             return const SizedBox.shrink();
                           }
-                          final methods = service.config!.alternativeMethods;
-                          final label = methods.isEmpty
-                              ? 'TouchFish Auth'
-                              : methods.first.displayName;
+                          final providers = service.providers;
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12),
-                            child: SizedBox(
-                              width: double.infinity,
-                              height: 48,
-                              child: OutlinedButton.icon(
-                                onPressed: _isLoading
-                                    ? null
-                                    : _loginWithExternalAuth,
-                                icon: const Icon(Icons.verified_user_outlined),
-                                label: Text(label),
-                              ),
+                            child: Column(
+                              children: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 48,
+                                  child: OutlinedButton.icon(
+                                    onPressed: _isLoading
+                                        ? null
+                                        : () => _loginWithExternalAuth(),
+                                    icon: const Icon(
+                                      Icons.verified_user_outlined,
+                                    ),
+                                    label: Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.loginExternalAuth,
+                                    ),
+                                  ),
+                                ),
+                                if (providers.isNotEmpty) ...[
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    children: [
+                                      const Expanded(child: Divider()),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                        ),
+                                        child: Text(
+                                          AppLocalizations.of(context)!.loginOr,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                        ),
+                                      ),
+                                      const Expanded(child: Divider()),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Wrap(
+                                    spacing: 12,
+                                    runSpacing: 8,
+                                    alignment: WrapAlignment.center,
+                                    children: [
+                                      for (final provider in providers)
+                                        Tooltip(
+                                          message: provider.name,
+                                          child: hasProviderIcon(provider.id)
+                                              ? _providerIconButton(
+                                                  context,
+                                                  provider,
+                                                )
+                                              : _providerNameButton(
+                                                  context,
+                                                  provider,
+                                                ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ],
                             ),
                           );
                         },

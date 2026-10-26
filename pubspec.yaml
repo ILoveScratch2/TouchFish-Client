@@ -136,6 +136,7 @@ flutter:
     - assets/logo.png
     - assets/icon.ico
     - assets/font/HarmonyOS_Sans_SC.ttf
+    - assets/provider_icons/
     - assets/font/LICENSE.txt
     - LICENSE
   # An image asset can refer to one or more resolution-specific "variants", see

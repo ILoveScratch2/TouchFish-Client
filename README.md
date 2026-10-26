@@ -97,3 +97,7 @@ flutter run
 TouchFish Client 采用 [GNU Affero General Public License v3.0](LICENSE) 许可证。
 
 此最强 Copyleft 许可的权限以在同一许可下提供许可作品和修改的完整源代码为条件，其中包括使用许可作品的较大作品。版权和许可声明必须保留 贡献者明确授予专利权。当使用修改后的版本通过网络提供服务时，必须提供修改后版本的完整源代码。
+
+**注：`assets/font` 中的字体文件为客户端使用的自定义字体资源，根据这些字体本身的许可协议使用，不受客户端的 AGPLv3 许可证约束。*
+
+**注：`assets/provider_icons` 中的图标文件为客户端 OAuth 平台使用的图标资源，根据这些图标本身的协议使用，不受客户端的 AGPLv3 许可证约束。*

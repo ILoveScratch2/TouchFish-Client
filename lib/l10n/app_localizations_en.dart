@@ -5621,4 +5621,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminServerPlatformAuthTokenClear => 'Clear the configured token';
+
+  @override
+  String get loginExternalAuth => 'Sign in with TouchFish Auth';
+
+  @override
+  String get adminServerPlatformAuthIssuerDescription =>
+      'Only verifies the iss claim of platform tokens; must match the platform\'s AUTH_ISSUER exactly. The client login entry uses \"External auth platform URL\" above.';
+
+  @override
+  String get loginErrorExternalNotLinked =>
+      'This platform account is not linked to a TouchFish account, and auto-creation is disabled on the server.';
+
+  @override
+  String get loginErrorExternalTokenInvalid =>
+      'The token issued by the auth platform was rejected: check that the server trusts that platform (jwt_external_issuers).';
+
+  @override
+  String get loginErrorTicketExchange =>
+      'Could not exchange the ticket for a login token. Please retry.';
+
+  @override
+  String get loginOr => 'or';
 }

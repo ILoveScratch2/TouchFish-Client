@@ -6,14 +6,7 @@ import 'package:http/http.dart' as http;
 import '../models/external_auth_config.dart';
 import 'api/tf_api_client.dart';
 
-/// 外部登录平台的能力发现与票据兑换。
-///
-/// 流程：服务端 /info 下发 external_auth_url
-///   → GET {url}/.well-known/auth-config 拿登录方式
-///   → WebView 打开 authorization_endpoint
-///   → 页面通过 JS 桥回传一次性 ticket
-///   → POST {url}/api/auth/ticket 换 external_token
-///   → 交给 AuthState 调 /auth/external/login
+
 class ExternalAuthService extends ChangeNotifier {
   ExternalAuthService._();
 
@@ -21,17 +14,23 @@ class ExternalAuthService extends ChangeNotifier {
 
   ExternalAuthConfig? _config;
   String? _baseUrl;
+
+
+  String? _authUrl;
   Future<ExternalAuthConfig?>? _inflight;
+  List<TfExternalAuthProvider> _providers = const [];
 
   ExternalAuthConfig? get config => _config;
+  List<TfExternalAuthProvider> get providers => _providers;
+
   bool get isAvailable => _config != null && _config!.methods.isNotEmpty;
+  bool get isConfigured => _authUrl != null && _authUrl!.isNotEmpty;
+
+  String? get authUrl => _authUrl;
 
   static const _timeout = Duration(seconds: 10);
 
-  /// 读当前所选服务器的外部登录配置。未启用时返回 null。
-  ///
-  /// 并发调用共享同一个进行中的请求：首次加载时第二个调用者若走
-  /// "已在加载就返回当前配置"，拿到的会是 null，等于假失败。
+  /// 读当前所选服务器的外部登录配置
   Future<ExternalAuthConfig?> load({bool force = false}) async {
     final inflight = _inflight;
     if (inflight != null) return inflight;
@@ -46,13 +45,20 @@ class ExternalAuthService extends ChangeNotifier {
 
   Future<ExternalAuthConfig?> _load({required bool force}) async {
     final serverInfo = await TfApiClient.instance.fetchServerInfo();
-    final url = serverInfo?.externalAuthUrl;
+    if (serverInfo == null) {
+      notifyListeners();
+      return _config;
+    }
+    _providers = serverInfo.externalAuthProviders;
+    final url = serverInfo.externalAuthUrl;
     if (url == null || url.isEmpty) {
+      _authUrl = null;
       _config = null;
       _baseUrl = null;
       notifyListeners();
       return null;
     }
+    _authUrl = url;
     if (!force && _config != null && _baseUrl == url) {
       return _config;
     }
@@ -83,7 +89,6 @@ class ExternalAuthService extends ChangeNotifier {
     }
   }
 
-  /// 构造 hosted 授权页地址。state 由调用方生成并校验回传值。
   Uri? buildAuthorizeUri({
     required String state,
     String clientId = 'touchfish',
@@ -93,8 +98,6 @@ class ExternalAuthService extends ChangeNotifier {
     if (config == null) return null;
     final uri = Uri.tryParse(config.authorizationEndpoint);
     if (uri == null) return null;
-    // 合并而非覆盖：授权端点自身可能已带 query（版本号、租户等），
-    // 直接 replace 会把它清掉。
     return uri.replace(queryParameters: {
       ...uri.queryParameters,
       'client_id': clientId,
@@ -102,6 +105,43 @@ class ExternalAuthService extends ChangeNotifier {
       'response_mode': 'bridge',
       if (target != null && target.isNotEmpty) 'target': target,
     });
+  }
+
+  /// 构造第三方登录的入口地址
+  Uri? buildProviderStartUri({
+    required String providerId,
+    required String state,
+    String clientId = 'touchfish',
+    String? target,
+  }) {
+    final config = _config;
+    final base = _baseUrl;
+    if (config == null || base == null) return null;
+
+    final authorize = buildAuthorizeUri(
+      state: state,
+      clientId: clientId,
+      target: target,
+    );
+    if (authorize == null) return null;
+    final relative = authorize.hasQuery
+        ? '${authorize.path}?${authorize.query}'
+        : authorize.path;
+
+    final declared = config.methodById(providerId)?.startUrl;
+    final start = Uri.tryParse(
+      declared ?? '${base.replaceAll(RegExp(r"/+$"), "")}/api/auth/oauth/$providerId/start',
+    );
+    if (start == null) return null;
+    return start.replace(
+      queryParameters: {...start.queryParameters, 'redirect': relative},
+    );
+  }
+
+  /// provider 允许在 WebView 里停留的域名
+  List<String> allowedHostsFor(String providerId) {
+    final method = _config?.methodById(providerId);
+    return method?.allowedHosts ?? const [];
   }
 
   /// 一次性 ticket 换 external_token。
@@ -129,6 +169,8 @@ class ExternalAuthService extends ChangeNotifier {
   void clear() {
     _config = null;
     _baseUrl = null;
+    _authUrl = null;
+    _providers = const [];
     notifyListeners();
   }
 }

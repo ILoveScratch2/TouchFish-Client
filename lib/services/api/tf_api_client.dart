@@ -145,7 +145,6 @@ class TfChatListItem {
   }
 }
 
-/// 服务器功能开关（`/info` 下发的归一化结果）。缺省/类型不对时按开启处理。
 class TfFeatureFlags {
   final bool privateChat;
   final bool groupChat;
@@ -187,11 +186,7 @@ class TfFeatureFlags {
     );
   }
 
-  /// 只改指定字段，其余原样保留。
-  ///
-  /// 管理端保存时提交的是 [toJson] 的**完整快照**，所以任何一处手写的
-  /// 「拷一份再改一个字段」一旦漏掉某个开关，就会把它回落成构造默认值 true，
-  /// 把服务端已关掉的开关静默打开。新增开关必须同时接进这里。
+  /// 只改指定字段
   TfFeatureFlags copyWith({
     bool? privateChat,
     bool? groupChat,
@@ -214,7 +209,7 @@ class TfFeatureFlags {
     presence: presence ?? this.presence,
   );
 
-  /// 提交给 `/auth/server_settings/update` 的完整快照。
+  /// 提交给 `/auth/server_settings/update` 的完整快照
   Map<String, dynamic> toJson() => {
     'chat': {
       'private_chat': privateChat,
@@ -230,7 +225,6 @@ class TfFeatureFlags {
   };
 }
 
-/// 单条消息的已读回执查询结果（`/message/read_receipt`）。
 class TfReadReceipt {
   /// 对方（私聊）关闭了已读展示，回执不可见。
   final bool hidden;
@@ -241,7 +235,7 @@ class TfReadReceipt {
   /// 群聊：已读人数。
   final int readCount;
 
-  /// 私聊：对方当前已读水位序号。
+  /// 私聊：对方当前已读
   final int readerLastSeq;
 
   const TfReadReceipt({
@@ -259,20 +253,14 @@ class TfReadReceipt {
   );
 }
 
-/// 自己与某个用户的关系查询结果（`/friend/relationship`）。
-///
-/// 拉黑在服务端是双向共用一个关系行，申请失败只会回 `friend_blocked`，
-/// 所以资料页要靠 [blockedByMe] / [blockedByPeer] 分清是谁拉黑了谁。
+/// 自己与某个用户的关系查询
 class TfRelationship {
   /// `none` / `pending` / `friend` / `blocked`。
   final String relationship;
 
   final bool isFriend;
-
-  /// 自己拉黑了对方（资料页应显示「解除拉黑」）。
   final bool blockedByMe;
 
-  /// 对方拉黑了自己（自己无法解除，只能等对方）。
   final bool blockedByPeer;
 
   const TfRelationship({
@@ -293,16 +281,8 @@ class TfRelationship {
 }
 
 /// 判定 `/friend/blocked` 的响应。
-///
-/// 抽出成纯函数只为一件事：把「服务端不认识这个端点（404/405）」与「这次请求
-/// 失败了」分开。[TfApiClient.secretPost] 用同一个 null 表示两者，写错一处就会
-/// 让一次网络抖动被渲染成「没有拉黑任何人」。
-///
-/// 返回 null 表示**服务端不支持该端点**；请求失败 / 响应异常则抛异常。
 @visibleForTesting
 List<int>? decodeBlockedUsersResponse(int status, String? plain) {
-  // 旧服务器没有这个路由：Flask 直接回 404/405 的 HTML，连密文都不是，
-  // secretPost 因此也返回 null。
   if (status == 404 || status == 405) return null;
   if (plain == null) {
     throw StateError('getBlockedUsers: request failed (status=$status)');
@@ -324,7 +304,7 @@ List<int>? decodeBlockedUsersResponse(int status, String? plain) {
   ];
 }
 
-/// 服务器可配置项规格（`/auth/server_settings/query` 的 `settings_spec`）。
+/// 服务器可配置项规格
 class TfSettingSpec {
   final String key;
   final String type;
@@ -362,7 +342,7 @@ class TfSettingSpec {
   }
 }
 
-/// 群组预览成员（`/group/preview` 的 `members` 项）。
+/// 群组预览成员
 class TfGroupPreviewMember {
   final int uid;
   final String username;
@@ -386,7 +366,7 @@ class TfGroupPreviewMember {
   }
 }
 
-/// 群组预览（`/group/preview`）。非成员时 `enterHint` 为空。
+/// 群组预览（`/group/preview`）
 class TfGroupPreview {
   final int gid;
   final String groupname;
@@ -438,6 +418,32 @@ class TfGroupPreview {
   }
 }
 
+/// 服务器转发的第三方登录方式。
+class TfExternalAuthProvider {
+  const TfExternalAuthProvider({required this.id, required this.name});
+
+  final String id;
+  final String name;
+
+  static List<TfExternalAuthProvider> parseList(dynamic raw) {
+    if (raw is! List) return const [];
+    final result = <TfExternalAuthProvider>[];
+    for (final item in raw) {
+      if (item is! Map) continue;
+      final id = item['id'];
+      if (id is! String || id.isEmpty) continue;
+      final name = item['name'];
+      result.add(
+        TfExternalAuthProvider(
+          id: id,
+          name: name is String && name.trim().isNotEmpty ? name.trim() : id,
+        ),
+      );
+    }
+    return result;
+  }
+}
+
 class TfServerConfig {
   final bool captcha;
   final String captchaProvider;
@@ -483,6 +489,9 @@ class TfServerConfig {
 
   /// 服务器是否已启用外部认证平台专用端点。
   final bool platformAuthEnabled;
+
+  /// 认证平台支持的第三方登录方式（GitHub 等），由服务器代拉取后下发。
+  final List<TfExternalAuthProvider> externalAuthProviders;
 
   /// 平台专用端点的 issuer / 白名单 / 共享令牌（后两者仅管理员可见）。
   final String platformAuthIssuer;
@@ -542,6 +551,7 @@ class TfServerConfig {
     this.externalAuthUrl,
     this.allowRegister = true,
     this.platformAuthEnabled = false,
+    this.externalAuthProviders = const [],
     this.platformAuthIssuer = '',
     this.platformAuthAllowIps = '',
     this.platformAuthSharedTokenSet = false,
@@ -584,8 +594,7 @@ class TfServerConfig {
     return text.isEmpty ? null : text;
   }
 
-  /// 宽松布尔解析：服务器可能给 true/"true"/1。
-  /// 直接 `as bool?` 遇到非 bool 会抛，导致整个 fetchServerInfo 返回 null。
+  /// 宽松布尔解析
   static bool? _parseBoolish(dynamic value) {
     if (value is bool) return value;
     if (value is num) return value != 0;
@@ -683,6 +692,8 @@ class TfServerConfig {
       externalAuthUrl: _parseNonEmptyString(json['external_auth_url']),
       allowRegister: _parseBoolish(json['allow_register']) ?? true,
       platformAuthEnabled: _parseBoolish(json['platform_auth_enabled']) ?? false,
+      externalAuthProviders:
+          TfExternalAuthProvider.parseList(json['external_auth_providers']),
       platformAuthIssuer: _parseNonEmptyString(json['platform_auth_issuer']) ?? '',
       platformAuthAllowIps: _parseNonEmptyString(json['platform_auth_allow_ips']) ?? '',
       platformAuthSharedTokenSet:
@@ -715,12 +726,10 @@ class TfServerConfig {
     );
   }
 
-  /// 是否为第三方验证码（turnstile/hcaptcha/recaptcha），而非内置图片验证码。
   bool get isThirdPartyCaptcha =>
       captchaProvider != 'image' && captchaProvider.isNotEmpty;
 }
 
-/// 当前用户的一个活跃会话（设备）条目。
 class TfAuthTokenInfo {
   final String jti;
   final String sessionId;
@@ -776,7 +785,6 @@ class TfAuthTokenInfo {
   }
 }
 
-/// /auth/tokens/list 或 /auth/sessions/list 的解析结果。
 class TfTokenListResult {
   final List<TfAuthTokenInfo> tokens;
   final int maxPerUser;
@@ -801,7 +809,6 @@ class TfTokenListResult {
   }
 }
 
-/// 一个设备记录（/auth/devices/list）。
 class TfDeviceInfo {
   final String deviceId;
   final String deviceName;
@@ -817,7 +824,6 @@ class TfDeviceInfo {
     this.lastSeen = 0,
   });
 
-  /// 优先使用自定义标签，其次设备名称。
   String get displayName => label.isNotEmpty
       ? label
       : (deviceName.isNotEmpty ? deviceName : deviceId);
@@ -945,7 +951,7 @@ class TfApiClient {
 
   http.Client _http = http.Client();
 
-  /// 用于大文件上传/下载的 Dio 实例（支持 onSendProgress/onReceiveProgress）。
+  /// 用于大文件上传/下载
   Dio? _dio;
 
   Dio _dioClient() {
@@ -976,18 +982,15 @@ class TfApiClient {
   Future<bool> Function()? _tokenExpiredHandler;
   void Function(String note)? _authNoteHandler;
 
-  /// 由 AuthState 在登录/恢复/登出时同步当前认证上下文。
   void setAuthContext({String? token, required bool legacyMode}) {
     _authToken = token;
     _legacyAuthMode = legacyMode;
   }
 
-  /// 注册 token 失效回调（AuthState 内实现静默重登），返回 true 表示已重新登录。
   void setTokenExpiredHandler(Future<bool> Function()? handler) {
     _tokenExpiredHandler = handler;
   }
 
-  /// 注册服务器 deprecation note 回调（AuthState 内实现一次性提示）。
   void setAuthNoteHandler(void Function(String note)? handler) {
     _authNoteHandler = handler;
   }
@@ -1194,13 +1197,6 @@ class TfApiClient {
     return int.tryParse(raw) ?? AppConstants.defaultTcpPort;
   }
 
-  /// Resolve the host used for WebSocket connections.
-  ///
-  /// Mirrors [_resolveBaseUrlFor]: falls back to
-  /// [AppConstants.defaultServerAddress] when no server is selected or the
-  /// configured address is empty. This keeps WS host resolution consistent
-  /// with HTTP API host resolution (important on mobile where `127.0.0.1`
-  /// points to the device itself, not the development machine).
   Future<String> resolveServerHost() async {
     final serverInfo = await _loadSelectedServer();
     if (serverInfo != null && serverInfo.address.isNotEmpty) {
@@ -1233,7 +1229,7 @@ class TfApiClient {
   }
 
   Future<RSAPublicKey> _getRsaPublicKey(String baseUrl) async {
-    // 已保存/手动绑定的密钥优先，不再从服务器拉取。
+    // 已保存/手动绑定的密钥优先
     final savedPem = await RsaKeyTrustService.instance.savedKeyFor(
       RsaKeyTrustService.authorityOfBaseUrl(baseUrl),
     );
@@ -1255,8 +1251,6 @@ class TfApiClient {
     return pubKey;
   }
 
-  /// 拉取服务器实时 RSA 公钥 PEM（绕过缓存与已保存密钥短路）。
-  /// 服务器离线或请求失败时返回 null。
   Future<String?> fetchRsaPublicKeyPem() async {
     try {
       final baseUrl = await getBaseUrl();
@@ -1380,9 +1374,6 @@ class TfApiClient {
     Map<String, dynamic> body, {
     int? uid,
     String? password,
-    // 收到响应时回调 HTTP 状态码；传输层就失败时不会回调（调用方据此保持 0）。
-    // 有了它才能把「服务端不认识这个路由（404）」和「这次请求失败了」分开——
-    // 两者在下方的 catch 里都塌成 null。
     void Function(int statusCode)? onStatus,
   }) async {
     try {
@@ -1726,10 +1717,7 @@ class TfApiClient {
     return TfServerConfig.fromJson(data);
   }
 
-  /// 配置注册验证码供应商与密钥（仅 root）。
-  ///
-  /// [changeTo] 为验证码总开关；[provider] 为 `image` 或第三方
-  /// （`turnstile` / `hcaptcha` / `recaptcha`）。第三方需提供 site key 与
+  /// 配置注册验证码供应商与密钥（仅 root）
   /// secret，内置图片验证码则无需。
   Future<bool> changeCaptcha(
     int uid,
@@ -1754,9 +1742,6 @@ class TfApiClient {
   }
 
   /// 更新各端点的速率限制配置（仅 root）。
-  ///
-  /// [rateLimits] 形如 `{"default": {"requests": 60, "range": 60}}`；
-  /// 传 null 表示清空所有速率限制。
   Future<bool> changeRateLimits(
     int uid,
     String? password,
@@ -1877,8 +1862,6 @@ class TfApiClient {
   }
 
   /// 登录。默认优先 JWT（请求带 jwt:true）：
-  /// - 新服务器返回 {token, ...} → jwt 模式；
-  /// - 旧服务器返回 "…True/False" → legacy 模式（degraded=true，自动降级）；
   Future<TfLoginResult> login(
     int uid,
     String password, {
@@ -1944,9 +1927,6 @@ class TfApiClient {
   }
 
   /// 用外部登录平台签发的一次性凭据换取本服务器的会话。
-  ///
-  /// [externalToken] 来自 TouchFish Auth 的 ticket 兑换结果；
-  /// 服务端会用 JWKS 验签并查 (iss, sub) 绑定，未绑定时返回 external_not_linked。
   Future<TfLoginResult> loginWithExternalToken(String externalToken) async {
     try {
       final device = await DeviceIdentityService.instance.get();
@@ -1966,6 +1946,7 @@ class TfApiClient {
       }
       final error = data['error'];
       if (error != null) {
+        talker.error('external login rejected: $error');
         final code = switch (error) {
           'external_not_linked' => 'externalNotLinked',
           'external_token_invalid' => 'externalTokenInvalid',
@@ -2000,8 +1981,7 @@ class TfApiClient {
     }
   }
 
-  /// 用 refresh token 轮换会话，换取新的 access token + refresh token。
-  /// 返回 null 表示请求失败（网络/解析/被服务器拒绝）。
+  /// 用 refresh token 轮换会话
   Future<TfLoginResult?> refreshToken(String refreshToken) async {
     try {
       final result = await _secretPostInternal(
@@ -2035,8 +2015,7 @@ class TfApiClient {
     }
   }
 
-  /// 会话探活：校验已保存的 JWT 是否仍有效（需先 setAuthContext 注入 token
-  /// 返回 true=有效；false=服务器明确拒绝（过期/被吊销）；null=网络或解析失败
+  /// 会话探活
   Future<bool?> validateToken() async {
     try {
       final result = await _secretPostInternal('/auth/validate', const {});
@@ -2050,7 +2029,7 @@ class TfApiClient {
     }
   }
 
-  /// 列出活跃 token（设备）列表。返回 null 表示请求失败（如服务器不支持 JWT
+  /// 列出活跃 token（设备）
   Future<TfTokenListResult?> listAuthTokens({int? targetUid}) async {
     try {
       final result = await secretPost('/auth/tokens/list', {
@@ -2065,7 +2044,7 @@ class TfApiClient {
     }
   }
 
-  /// 移除指定 jti 的 token（踢出设备）。返回 null 表示请求失败
+  /// 移除指定 jti 的 token（踢出
   Future<bool?> revokeAuthToken(String jti, {int? targetUid}) async {
     try {
       final result = await secretPost('/auth/tokens/revoke', {
@@ -2082,7 +2061,7 @@ class TfApiClient {
     }
   }
 
-  /// 列出当前用户的活跃会话（session 粒度）。
+  /// 列出当前用户的活跃会话
   Future<TfTokenListResult?> listSessions({int? targetUid}) async {
     try {
       final result = await secretPost('/auth/sessions/list', {
@@ -2097,7 +2076,7 @@ class TfApiClient {
     }
   }
 
-  /// 按 session_id 吊销指定会话（踢出设备）。
+  /// 按 session_id 吊销指定会话
   Future<bool?> revokeSession(String sessionId, {int? targetUid}) async {
     try {
       final result = await secretPost('/auth/sessions/revoke', {
@@ -2114,7 +2093,7 @@ class TfApiClient {
     }
   }
 
-  /// 吊销除当前会话外的全部会话（普通用户），或目标用户全部会话（管理员）。
+  /// 吊销除当前会话外的全部会话（普通用户）或目标用户全部会话（管理员）。
   Future<bool?> revokeAllOtherSessions({int? targetUid}) async {
     try {
       final result = await secretPost('/auth/sessions/revoke_all', {
@@ -2130,7 +2109,7 @@ class TfApiClient {
     }
   }
 
-  /// 为指定会话的设备设置自定义标签（重命名设备）。
+  /// 为指定会话的设备设置自定义标签
   Future<bool?> renameSession(String sessionId, String label) async {
     try {
       final result = await secretPost('/auth/sessions/rename', {
@@ -2147,7 +2126,7 @@ class TfApiClient {
     }
   }
 
-  /// 列出用户的设备记录（设备粒度，/auth/devices/list）。
+  /// 列出用户的设备记录
   Future<TfDeviceListResult?> listDevices({int? targetUid}) async {
     try {
       final result = await secretPost('/auth/devices/list', {
@@ -2345,8 +2324,7 @@ class TfApiClient {
     return _parseBool(result);
   }
 
-  /// 按需查询某条消息的已读情况（私聊：对方是否已读；群聊：已读人数）。
-  /// 失败（如旧服务器无此端点或功能关闭）返回 null。
+  /// 按需查询某条消息的已读情况
   Future<TfReadReceipt?> queryReadReceipt(
     int uid,
     String password,
@@ -2370,8 +2348,8 @@ class TfApiClient {
     }
   }
 
-  /// 批量查询好友在线状态；uids 缺省表示全部好友。
-  /// 返回 {uid: "online"|"offline"}；失败（旧服务器无此端点或功能关闭）返回 null。
+  /// 批量查询好友在线状态
+  /// 返回 {uid: "online"|"offline"}
   Future<Map<int, String>?> queryFriendPresence(
     int uid,
     String? password, {
@@ -2403,8 +2381,7 @@ class TfApiClient {
     }
   }
 
-  /// 查询自己的完整资料（含被隐藏的邮箱与 public_email 开关）。
-  /// 失败（如旧服务器无此端点）返回 null，调用方回退 [getUserByUid]。
+  /// 查询自己的完整资料
   Future<UserProfile?> getSelfProfile({
     int avatarVersion = 0,
     int? uid,
@@ -2588,9 +2565,6 @@ class TfApiClient {
   }
 
   /// 拉取版块帖子。传 limit 时按 pid 游标分页（beforePid 为上一页最早一条）。
-  ///
-  /// 失败时抛异常，而不是返回一个空页：空的 `posts` + `hasMore:false` 和
-  /// 「这个版块真的没有更多帖子」无法区分，调用方会把网络失败当成翻到底了。
   Future<({List<ForumPost> posts, bool hasMore, int? nextBeforePid, int? pinnedPid})>
   getPostList(int fid, {int? beforePid, int? limit}) async {
     try {
@@ -3247,8 +3221,6 @@ class TfApiClient {
   }
 
   /// 增量同步某房间消息（含缺口补拉）。
-  ///
-  /// [lastSeq] 优先；迁移期可用 [lastMid]。返回 (messages, currentSeq, hasMore)。
   Future<MessageSyncResult> syncMessages(
     int uid,
     String password,
@@ -3266,8 +3238,7 @@ class TfApiClient {
         'room_id': roomId,
         'last_seq': lastSeq,
         'last_mid': ?lastMid,
-        // 声明事件轨道能力：sync 会返回事件行（撤回/置顶等变更），
-        // 未声明的旧客户端拿不到（被服务端过滤成永久空洞）。
+        // 声明事件轨道能力：sync 会返回事件行（撤回/置顶等变更）
         'capabilities': const ['event_stream_v1'],
         if (missingSequences.isNotEmpty) 'missing_sequences': missingSequences,
         if (missingSequenceRanges.isNotEmpty)
@@ -3294,9 +3265,6 @@ class TfApiClient {
       data = null;
     }
     if (data == null || data['success'] == false) {
-      // 服务端拒绝同步（尚未成为好友 / 不是群成员 / 参数不合法）时，老版本会回
-      // bool 接口的纯文本 "<时间戳>False"——那是「这个房间这次没同步到东西」，
-      // 不是解析崩溃，所以按信息级记录。
       talker.info('syncMessages: 未返回消息数据 ($roomId)');
       if (throwOnFailure) {
         throw StateError('Message sync rejected for $roomId');
@@ -3334,8 +3302,6 @@ class TfApiClient {
 
   // friend
 
-  /// 发送好友申请。返回 (是否成功, 服务端错误码)，
-  /// 错误码随本次请求返回，避免读共享的 lastApiError。
   Future<({bool ok, String? errorCode})> addFriend(
     int uid,
     String password,
@@ -3421,7 +3387,7 @@ class TfApiClient {
     return _parseBool(result);
   }
 
-  /// 查询自己与目标的关系（含拉黑方向）。失败（旧服务器无此端点）返回 null。
+  /// 查询自己与目标的关系（含拉黑方向）
   Future<TfRelationship?> queryRelationship(
     int uid,
     String? password,
@@ -3444,11 +3410,7 @@ class TfApiClient {
     }
   }
 
-  /// 列出自己拉黑的用户。
-  ///
-  /// 返回 null **只表示服务端不认识这个端点**（旧服务器）。请求失败会抛异常，
-  /// 调用方据此把「没有拉黑任何人」和「这次没拉到」分开显示——过去两者都返回
-  /// null，一次网络抖动就会被渲染成「Nobody is blocked」。
+  /// 列出自己拉黑的用户
   Future<List<int>?> getBlockedUsers(int uid, String? password) async {
     var status = 0;
     final result = await secretPost(
@@ -3554,9 +3516,6 @@ class TfApiClient {
   }
 
   /// 查看已撤回消息的原始记录（仅 root）。
-  ///
-  /// 成功返回消息 JSON（含 `content`、`content_type`、`send_time` 等）；
-  /// 无权限或消息未撤回返回 null。
   Future<Map<String, dynamic>?> getRecalledOriginal(
     int uid,
     String? password,
@@ -3583,9 +3542,7 @@ class TfApiClient {
     return '$baseUrl/file/get_thumbnail/${Uri.encodeComponent(hash)}';
   }
 
-  /// 从原图 URL 推导缩略图 URL（同一服务器的 /file/get_file/ 换成 /file/get_thumbnail/）。
-  ///
-  /// 非 file/get_file 的 URL（blob:、外链等）返回 null：拿原图当缩略图会导致重复下载。
+  /// 从原图 URL 推导缩略图 URL（同一服务器的 /file/get_file/ 换成 /file/get_thumbnail/）
   static String? thumbnailUrlFromFileUrl(String fileUrl) {
     if (fileUrl.contains('/file/get_file/')) {
       return fileUrl.replaceFirst('/file/get_file/', '/file/get_thumbnail/');
@@ -3932,8 +3889,7 @@ class TfApiClient {
     }
   }
 
-  /// 拉取会话列表。失败（网络 / 解密 / 服务端错误）返回 null，
-  /// 调用方必须保留旧列表，不能把 null 当成“没有会话”。
+  /// 拉取会话列表。失败（网络 / 解密 / 服务端错误）返回 null
   Future<List<TfChatListItem>?> queryChatList(int uid, String password) async {
     final result = await secretPost(
       '/chat/list',
@@ -4005,8 +3961,6 @@ class TfApiClient {
     if (result == null) return [];
     try {
       final decoded = jsonDecode(result);
-      // 服务端拒绝（非好友 / 不是群成员等）现在回 JSON 错误对象：这是正常拒绝，
-      // 不是解析失败，按 warning 记一笔即可。
       if (decoded is Map<String, dynamic> && decoded.containsKey('error')) {
         talker.warning(
           'queryMessageHistory server error: ${decoded['error']}',
@@ -4125,7 +4079,7 @@ class TfApiClient {
     return groups;
   }
 
-  /// 群组预览（secret）。任意登录用户可调用，用于加入前查看。
+  /// 群组预览（secret）
   Future<TfGroupPreview?> previewGroup(
     int uid,
     String password,
@@ -4142,7 +4096,7 @@ class TfApiClient {
     return TfGroupPreview.fromJson(data);
   }
 
-  /// 按用户名搜索用户（secret）。服务端不返回 email。
+  /// 按用户名搜索用户
   Future<List<UserSearchEntry>> searchUsers(
     int uid,
     String password,

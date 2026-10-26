@@ -5362,4 +5362,25 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get adminServerPlatformAuthTokenClear => '清除已配置的令牌';
+
+  @override
+  String get loginExternalAuth => '使用 TouchFish Auth 登录';
+
+  @override
+  String get adminServerPlatformAuthIssuerDescription =>
+      '只用于校验平台令牌里的 iss，须与认证平台的 AUTH_ISSUER 完全一致；客户端登录入口请填上面的「外部登录平台地址」';
+
+  @override
+  String get loginErrorExternalNotLinked =>
+      '该平台账号尚未绑定到 TouchFish 账号，且服务器未开启自动创建';
+
+  @override
+  String get loginErrorExternalTokenInvalid =>
+      '平台签发的登录凭证无效：请确认服务器已信任该认证平台（jwt_external_issuers）';
+
+  @override
+  String get loginErrorTicketExchange => '临时票据换取登录凭证失败，请重试';
+
+  @override
+  String get loginOr => '或';
 }

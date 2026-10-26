@@ -2205,5 +2205,11 @@
   "adminServerAllowRegisterDescription": "When disabled, neither the external platform nor clients can register new accounts. Existing accounts are unaffected.",
   "adminServerPlatformAuthTokenConfigured": "Configured. Leave blank to keep it unchanged.",
   "adminServerPlatformAuthTokenEmpty": "Not configured yet",
-  "adminServerPlatformAuthTokenClear": "Clear the configured token"
+  "adminServerPlatformAuthTokenClear": "Clear the configured token",
+  "loginExternalAuth": "Sign in with TouchFish Auth",
+  "adminServerPlatformAuthIssuerDescription": "Only verifies the iss claim of platform tokens; must match the platform's AUTH_ISSUER exactly. The client login entry uses \"External auth platform URL\" above.",
+  "loginErrorExternalNotLinked": "This platform account is not linked to a TouchFish account, and auto-creation is disabled on the server.",
+  "loginErrorExternalTokenInvalid": "The token issued by the auth platform was rejected: check that the server trusts that platform (jwt_external_issuers).",
+  "loginErrorTicketExchange": "Could not exchange the ticket for a login token. Please retry.",
+  "loginOr": "or"
 }
