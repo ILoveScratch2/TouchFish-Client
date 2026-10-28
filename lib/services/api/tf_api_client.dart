@@ -910,12 +910,14 @@ class UserManagePagination {
   });
 
   factory UserManagePagination.fromJson(Map<String, dynamic> json) {
+    int intOr(int fallback, String key) =>
+        (json[key] as num?)?.toInt() ?? fallback;
     return UserManagePagination(
-      page: (json['page'] as num).toInt(),
-      pageSize: (json['page_size'] as num).toInt(),
-      total: (json['total'] as num).toInt(),
-      totalPages: (json['total_pages'] as num).toInt(),
-      hasMore: json['has_more'] as bool,
+      page: intOr(0, 'page'),
+      pageSize: intOr(0, 'page_size'),
+      total: intOr(0, 'total'),
+      totalPages: intOr(0, 'total_pages'),
+      hasMore: json['has_more'] as bool? ?? false,
     );
   }
 }
@@ -4519,9 +4521,9 @@ class TfApiClient {
         );
       }).toList();
 
-      final pagination = UserManagePagination.fromJson(
-        data['pagination'] as Map<String, dynamic>,
-      );
+      final paginationRaw = data['pagination'];
+      if (paginationRaw is! Map<String, dynamic>) return null;
+      final pagination = UserManagePagination.fromJson(paginationRaw);
 
       return UserManageResult(users: users, pagination: pagination);
     } catch (e) {

@@ -1,6 +1,28 @@
 import '../utils/talker.dart';
 import 'file_attachment.dart';
 
+/// 容错解析时间
+DateTime parseForumTime(dynamic value) {
+  if (value == null) return DateTime.fromMillisecondsSinceEpoch(0);
+  if (value is DateTime) return value;
+  if (value is num) {
+    return DateTime.fromMillisecondsSinceEpoch(_toEpochMillis(value.toDouble()));
+  }
+  final text = value.toString().trim();
+  if (text.isEmpty) return DateTime.fromMillisecondsSinceEpoch(0);
+  final seconds = double.tryParse(text);
+  if (seconds != null) {
+    return DateTime.fromMillisecondsSinceEpoch(_toEpochMillis(seconds));
+  }
+  return DateTime.tryParse(text) ?? DateTime.fromMillisecondsSinceEpoch(0);
+}
+
+/// 统一换算成毫秒。
+int _toEpochMillis(double timestamp) {
+  if (timestamp.abs() > 1e11) return timestamp.toInt();
+  return (timestamp * 1000).toInt();
+}
+
 class Forum {
   final String id;
   final String name;
@@ -32,8 +54,8 @@ class Forum {
       isPublic: json['is_public'] as bool,
       isCommunity: json['is_community'] as bool,
       createdByUid: json['created_by_uid'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: parseForumTime(json['created_at']),
+      updatedAt: parseForumTime(json['updated_at']),
       avatarUrl: json['avatar_url'] as String?,
     );
   }
@@ -126,10 +148,10 @@ class ForumMember {
       accountUid: json['account_uid'] as String,
       role: json['role'] as int,
       joinedAt: json['joined_at'] != null
-          ? DateTime.parse(json['joined_at'] as String)
+          ? parseForumTime(json['joined_at'])
           : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: parseForumTime(json['created_at']),
+      updatedAt: parseForumTime(json['updated_at']),
     );
   }
 
@@ -340,8 +362,8 @@ class ForumComment {
       postId: json['post_id'] as String,
       authorUid: json['author_uid'] as String,
       content: json['content'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: parseForumTime(json['created_at']),
+      updatedAt: parseForumTime(json['updated_at']),
     );
   }
 
