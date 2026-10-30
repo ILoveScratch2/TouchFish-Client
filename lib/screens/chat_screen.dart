@@ -479,7 +479,10 @@ class _ChatListScreenState extends State<ChatListScreen>
                     children: [
                       PullToRefresh.list(
                         onRefresh: _refreshData,
-                        child: ChatListWidget(chatRooms: _chatRooms),
+                        child: ChatListWidget(
+                          chatRooms: _chatRooms,
+                          isLoading: _chatData.isLoading,
+                        ),
                       ),
                       PullToRefresh.list(
                         onRefresh: _refreshData,
@@ -715,7 +718,10 @@ class _ChatListScreenState extends State<ChatListScreen>
               children: [
                 PullToRefresh.list(
                   onRefresh: _refreshData,
-                  child: ChatListWidget(chatRooms: _chatRooms),
+                  child: ChatListWidget(
+                          chatRooms: _chatRooms,
+                          isLoading: _chatData.isLoading,
+                        ),
                 ),
                 PullToRefresh.list(
                   onRefresh: _refreshData,

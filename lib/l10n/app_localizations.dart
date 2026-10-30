@@ -7714,6 +7714,54 @@ abstract class AppLocalizations {
   /// **'OK'**
   String get commonOk;
 
+  /// No description provided for @draftsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts'**
+  String get draftsTitle;
+
+  /// No description provided for @inboxAllClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing needs your attention'**
+  String get inboxAllClear;
+
+  /// No description provided for @draftsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No drafts'**
+  String get draftsEmpty;
+
+  /// No description provided for @draftsEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts are saved locally while you edit a post'**
+  String get draftsEmptyHint;
+
+  /// No description provided for @draftsDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete draft'**
+  String get draftsDelete;
+
+  /// No description provided for @draftsDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This cannot be undone. Delete this draft?'**
+  String get draftsDeleteConfirm;
+
+  /// No description provided for @draftsUpdatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {time}'**
+  String draftsUpdatedAt(String time);
+
+  /// No description provided for @draftsAttachmentCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 attachment} other{{count} attachments}}'**
+  String draftsAttachmentCount(int count);
+
   /// No description provided for @commonFailedOperation.
   ///
   /// In en, this message translates to:

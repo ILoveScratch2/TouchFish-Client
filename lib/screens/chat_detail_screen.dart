@@ -2824,13 +2824,17 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final currentIndex = _pinCurrentPage.clamp(0, pins.length - 1);
     final currentPin = pins[currentIndex];
 
-    return Column(
-      key: _pinnedBarKey,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Material(
-          color: colorScheme.surfaceContainerHigh,
-          child: InkWell(
+    // 内缩浮卡
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+      child: Column(
+        key: _pinnedBarKey,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Card(
+            margin: EdgeInsets.zero,
+            color: colorScheme.surfaceContainerLow,
+            child: InkWell(
             onTap: () {
               ChatMessage? cachedMsg =
                   _pinnedMessageContents[currentPin.messageId];
@@ -2889,11 +2893,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
             ),
           ),
         ),
-        Divider(
-          height: 1,
-          thickness: 1 / MediaQuery.devicePixelRatioOf(context),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

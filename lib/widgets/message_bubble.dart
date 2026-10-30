@@ -18,6 +18,7 @@ import '../widgets/media/audio_player.dart';
 import '../widgets/media/voice_message_bubble.dart';
 import '../widgets/markdown_renderer.dart';
 import '../models/settings_service.dart';
+import '../utils/haptics.dart';
 import 'package:exif/exif.dart';
 import '../utils/talker.dart';
 import '../utils/clipboard_utils.dart';
@@ -640,6 +641,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
   }
 
   void _showActionSheet() {
+    Haptics.medium();
     final actions = buildMessageActions(
       context,
       message: widget.message,

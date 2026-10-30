@@ -12,6 +12,7 @@ import '../services/forum_pending_service.dart';
 import '../services/feature_flags.dart';
 import '../services/notification_service.dart';
 import '../models/settings_service.dart';
+import '../utils/haptics.dart';
 import '../utils/wide_screen_helper.dart';
 import '../widgets/app_alert_dialog.dart' show isDesktopWindowed;
 import '../widgets/command_palette.dart';
@@ -144,6 +145,7 @@ class _MainScreenState extends State<MainScreen> {
   ) {
     if (index < 0 || index >= destinations.length) return;
     final branchIndex = destinations[index].branchIndex;
+    Haptics.selection();
     final onBranchSelected = widget.onBranchSelected;
     if (onBranchSelected != null) {
       // 不销毁目标 tab，仅切换 IndexedStack 索引

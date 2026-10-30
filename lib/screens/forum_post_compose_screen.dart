@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mime/mime.dart';
 import '../l10n/app_localizations.dart';
+import 'draft_box_screen.dart';
 import '../models/user_profile.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
@@ -423,6 +424,11 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                         icon: const Icon(Icons.sticky_note_2_outlined, size: 20),
                         tooltip: l10n.stickerMarketTitle,
                       ),
+                      IconButton(
+                        onPressed: _openDraftBox,
+                        icon: const Icon(Icons.drafts_outlined, size: 20),
+                        tooltip: l10n.draftsTitle,
+                      ),
                     ],
                   ),
                 ),
@@ -438,6 +444,12 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
           ),
         ),
       ),
+    );
+  }
+
+  void _openDraftBox() {
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute<void>(builder: (_) => const DraftBoxScreen()),
     );
   }
 

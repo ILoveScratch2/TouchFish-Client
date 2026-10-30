@@ -28,8 +28,8 @@ abstract final class TFSpace {
   /// 区块之间的垂直间隔
   static const double section = xxl;
 
-  /// 卡片内边距
-  static const double card = lg;
+  /// 卡片内边距。与 [page] 同为 20
+  static const double card = xl;
 
   /// 控件最小可点击高度（Material 无障碍下限 48）
   static const double touchTarget = 48;
@@ -52,9 +52,9 @@ abstract final class TFRadius {
 
   /// 语义别名
   static const double chip = sm;
-  static const double control = xl;
-  static const double card = md;
-  static const double input = md;
+  static const double control = lg;
+  static const double card = lg;
+  static const double input = lg;
   static const double menu = lg;
   static const double dialog = xxl;
   static const double sheet = xxl;
@@ -96,7 +96,7 @@ abstract final class TFInsets {
   );
   static const EdgeInsets card = EdgeInsets.all(TFSpace.card);
   static const EdgeInsets control = EdgeInsets.symmetric(
-    horizontal: TFSpace.lg,
+    horizontal: TFSpace.xl,
     vertical: TFSpace.md,
   );
   static const EdgeInsets input = EdgeInsets.symmetric(

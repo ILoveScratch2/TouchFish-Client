@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
+import '../widgets/account/inbox_summary_card.dart';
 import '../models/user_profile.dart';
 import '../models/notification_model.dart';
 import '../widgets/account/account_name.dart';
@@ -149,6 +150,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 spacing: 4,
                 children: [
                   _buildProfileCard(context),
+                  const InboxSummaryCard(),
                   const AccountFriendsSection(),
                   _buildMenuItems(context),
                   const Divider(height: 1),

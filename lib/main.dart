@@ -986,26 +986,24 @@ class _TouchFishAppState extends State<TouchFishApp>
     final onTertiary = _onColorFor(tertiary);
     final onError = _onColorFor(error);
 
-    final surfaceContainerLowest = Color.lerp(
-      surface,
-      isDark ? Colors.black : Colors.white,
-      isDark ? 0.30 : 0.60,
-    )!;
-    final surfaceContainerLow = Color.lerp(
-      surface,
-      isDark ? Colors.black : Colors.white,
-      isDark ? 0.15 : 0.30,
-    )!;
-    final surfaceContainerHigh = Color.lerp(
+    // 表面层级必须和默认主题同向：亮色下容器逐级加深，暗色下逐级提亮。
+    // 卡片取 surfaceContainerLow（比页面深一点点），浮层取
+    // surfaceContainerLowest（比卡片浅），两者才都读得出来。
+    Color step(double t) => Color.lerp(
       surface,
       isDark ? Colors.white : Colors.black,
-      isDark ? 0.03 : 0.04,
+      t,
     )!;
-    final surfaceContainerHighest = Color.lerp(
+    Color backStep(double t) => Color.lerp(
       surface,
-      isDark ? Colors.white : Colors.black,
-      isDark ? 0.06 : 0.07,
+      isDark ? Colors.black : Colors.white,
+      t,
     )!;
+
+    final surfaceContainerLowest = backStep(isDark ? 0.20 : 0.55);
+    final surfaceContainerLow = step(0.028);
+    final surfaceContainerHigh = step(0.055);
+    final surfaceContainerHighest = step(0.085);
 
     return scheme.copyWith(
       primary: primary,

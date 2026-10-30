@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../models/file_attachment.dart';
 import '../theme/tokens.dart';
 import 'file_attachment_view.dart';
+import 'forum_media_carousel.dart';
 
 /// 帖子附件区
 class ForumAttachmentsRow extends StatefulWidget {
@@ -39,9 +40,12 @@ class _ForumAttachmentsRowState extends State<ForumAttachmentsRow> {
     final colorScheme = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
     final attachments = widget.attachments;
-    final visible = _expanded ? attachments : const <FileAttachment>[];
 
-    final imageCount = attachments.where((a) => a.isImage).length;
+    final imageAttachments =
+        attachments.where((a) => a.isImage).toList(growable: false);
+    final fileAttachments =
+        attachments.where((a) => !a.isImage).toList(growable: false);
+    final imageCount = imageAttachments.length;
     final videoCount = attachments.where((a) => a.isVideo).length;
     final otherCount = attachments.length - imageCount - videoCount;
 
@@ -83,15 +87,19 @@ class _ForumAttachmentsRowState extends State<ForumAttachmentsRow> {
           ),
           if (_expanded) ...[
             const SizedBox(height: TFSpace.sm),
-            ...visible.map(
+            // 图片走横向轮播（露一角提示可滑）
+            if (imageAttachments.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: TFSpace.sm),
+                child: ForumMediaCarousel(images: imageAttachments),
+              ),
+            ...fileAttachments.map(
               (attachment) => Padding(
                 padding: const EdgeInsets.only(bottom: TFSpace.sm),
-                child: attachment.isImage
-                    ? FileAttachmentView(attachment: attachment)
-                    : FileAttachmentView(
-                        attachment: attachment,
-                        compact: true,
-                      ),
+                child: FileAttachmentView(
+                  attachment: attachment,
+                  compact: true,
+                ),
               ),
             ),
           ],

@@ -4194,6 +4194,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonOk => 'OK';
 
   @override
+  String get draftsTitle => 'Drafts';
+
+  @override
+  String get inboxAllClear => 'Nothing needs your attention';
+
+  @override
+  String get draftsEmpty => 'No drafts';
+
+  @override
+  String get draftsEmptyHint =>
+      'Drafts are saved locally while you edit a post';
+
+  @override
+  String get draftsDelete => 'Delete draft';
+
+  @override
+  String get draftsDeleteConfirm => 'This cannot be undone. Delete this draft?';
+
+  @override
+  String draftsUpdatedAt(String time) {
+    return 'Updated $time';
+  }
+
+  @override
+  String draftsAttachmentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count attachments',
+      one: '1 attachment',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get commonFailedOperation => 'Operation failed, please retry';
 
   @override

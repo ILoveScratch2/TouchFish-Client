@@ -13,6 +13,7 @@ import '../theme/tokens.dart';
 import 'optimized_image.dart';
 import 'account/online_avatar_badge.dart';
 import 'ui/empty_state.dart';
+import 'ui/skeleton.dart';
 import 'ui/refreshable.dart';
 
 /// 测试或独立嵌入时可能没有祖先 ProviderScope（应用本体由 main.dart 提供），
@@ -29,22 +30,34 @@ Widget ensureProviderScope(BuildContext context, Widget child) {
 class ChatListWidget extends StatelessWidget {
   final List<ChatRoom> chatRooms;
 
-  const ChatListWidget({super.key, required this.chatRooms});
+  /// 展示骨架屏，
+  final bool isLoading;
+
+  const ChatListWidget({
+    super.key,
+    required this.chatRooms,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return ensureProviderScope(context, _ChatListContent(chatRooms: chatRooms));
+    return ensureProviderScope(
+      context,
+      _ChatListContent(chatRooms: chatRooms, isLoading: isLoading),
+    );
   }
 }
 
 class _ChatListContent extends ConsumerWidget {
   final List<ChatRoom> chatRooms;
+  final bool isLoading;
 
-  const _ChatListContent({required this.chatRooms});
+  const _ChatListContent({required this.chatRooms, this.isLoading = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (chatRooms.isEmpty) {
+      if (isLoading) return const ListSkeleton();
       return ScrollableFill(
         child: EmptyState(
           icon: Icons.chat_bubble_outline,

@@ -13,7 +13,8 @@ import '../widgets/layout/responsive_sidebar.dart';
 import '../services/draft_service.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/ui/empty_state.dart';
-import '../widgets/ui/loading_indicator.dart';
+import '../widgets/ui/error_state.dart';
+import '../widgets/ui/skeleton.dart';
 
 /// 论坛区
 /// 我是区！我是区！
@@ -375,18 +376,13 @@ class _ForumScreenState extends State<ForumScreen> {
 
   Widget _buildBody(AppLocalizations l10n) {
     if (_isLoading) {
-      return const LoadingIndicator();
+      return const ListSkeleton();
     }
     if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(l10n.forumLoadFailed),
-            const SizedBox(height: 8),
-            TextButton(onPressed: () => _loadForums(), child: Text(l10n.retry)),
-          ],
-        ),
+      return ErrorState(
+        title: l10n.forumLoadFailed,
+        onRetry: () => _loadForums(),
+        retryLabel: l10n.retry,
       );
     }
     return RefreshIndicator(

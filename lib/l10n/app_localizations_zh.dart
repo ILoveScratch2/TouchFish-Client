@@ -4017,6 +4017,34 @@ class AppLocalizationsZh extends AppLocalizations {
   String get commonOk => '确定';
 
   @override
+  String get draftsTitle => '草稿箱';
+
+  @override
+  String get inboxAllClear => '没有待处理的通知';
+
+  @override
+  String get draftsEmpty => '暂无草稿';
+
+  @override
+  String get draftsEmptyHint => '编辑帖子时会自动保存到本机';
+
+  @override
+  String get draftsDelete => '删除草稿';
+
+  @override
+  String get draftsDeleteConfirm => '删除后无法恢复，确定要删除这条草稿吗？';
+
+  @override
+  String draftsUpdatedAt(String time) {
+    return '更新于 $time';
+  }
+
+  @override
+  String draftsAttachmentCount(int count) {
+    return '$count 个附件';
+  }
+
+  @override
   String get commonFailedOperation => '操作失败，请重试';
 
   @override

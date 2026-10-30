@@ -17,10 +17,15 @@ abstract final class TFTheme {
   }) {
     final isDark = scheme.brightness == Brightness.dark;
 
-    // 卡片底色
+    // 表面层级
+    final cardBase = scheme.surfaceContainerLow;
     final cardColor = cardOpacity >= 1
-        ? scheme.surfaceContainer
-        : scheme.surfaceContainer.withValues(alpha: cardOpacity);
+        ? cardBase
+        : cardBase.withValues(alpha: cardOpacity);
+    // 浮层方向相反
+    final overlayColor = isDark
+        ? scheme.surfaceContainerHigh
+        : scheme.surfaceContainerLowest;
 
     var theme = ThemeData(
       colorScheme: scheme,
@@ -32,6 +37,9 @@ abstract final class TFTheme {
     // 注意：这里不覆写 textTheme / primaryTextTheme
     //
     // 否则会导致大量插值问题！！
+
+    // AppBar 标题从 M3 默认 22sp/w400 改成 16sp/w600，似乎实测比较统一
+    final titleSource = theme.textTheme.titleLarge;
 
     theme = theme.copyWith(
       // ----------  AppBar 的默认观感 ----------
@@ -46,6 +54,36 @@ abstract final class TFTheme {
         toolbarHeight: 56,
         iconTheme: IconThemeData(color: scheme.onSurface),
         actionsIconTheme: IconThemeData(color: scheme.onSurfaceVariant),
+        titleTextStyle: TextStyle(
+          inherit: false,
+          fontFamily: titleSource?.fontFamily,
+          fontFamilyFallback: titleSource?.fontFamilyFallback,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.15,
+          height: 1.3,
+          color: scheme.onSurface,
+        ),
+      ),
+
+      // ---------- 滚动条：桌面端细悬停加粗无轨 ----------
+      scrollbarTheme: ScrollbarThemeData(
+        thickness: WidgetStateProperty.resolveWith((states) {
+          final active =
+              states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.dragged);
+          return active ? 8 : 4;
+        }),
+        radius: const Radius.circular(TFRadius.pill),
+        crossAxisMargin: 2,
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          final active =
+              states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.dragged);
+          return scheme.onSurfaceVariant.withValues(alpha: active ? 0.55 : 0.32);
+        }),
+        trackColor: const WidgetStatePropertyAll(Colors.transparent),
+        trackVisibility: const WidgetStatePropertyAll(false),
       ),
 
       // ---------- 卡片 ----------
@@ -59,9 +97,9 @@ abstract final class TFTheme {
 
       // ----------  对话框 ----------
       dialogTheme: DialogThemeData(
-        backgroundColor: scheme.surfaceContainerHigh,
+        backgroundColor: overlayColor,
         surfaceTintColor: Colors.transparent,
-        elevation: 0,
+        elevation: 3,
         insetPadding: const EdgeInsets.symmetric(
           horizontal: 40,
           vertical: 24,
@@ -73,10 +111,10 @@ abstract final class TFTheme {
 
       // ----------  底部弹层 ----------
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: scheme.surfaceContainerLow,
+        backgroundColor: overlayColor,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        modalElevation: 0,
+        modalElevation: 3,
         modalBarrierColor: Colors.black.withValues(alpha: TFAlpha.scrim),
         // 拖拽指示条交给 SheetScaffold
         showDragHandle: false,
@@ -127,9 +165,9 @@ abstract final class TFTheme {
       ),
 
       popupMenuTheme: PopupMenuThemeData(
-        color: scheme.surfaceContainerHigh,
+        color: overlayColor,
         surfaceTintColor: Colors.transparent,
-        elevation: 0,
+        elevation: 3,
         shape: const RoundedRectangleBorder(borderRadius: TFRadius.menuRadius),
       ),
 

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import '../utils/message_search.dart';
+import '../widgets/ui/highlighted_text.dart';
 import '../l10n/app_localizations.dart';
 import '../models/message_model.dart';
 import '../services/chat_data_service.dart';
@@ -159,10 +161,12 @@ class _ChatSearchMessagesScreenState extends State<ChatSearchMessagesScreen> {
                             message.senderName ?? l10n.chatDetailOther,
                             style: const TextStyle(fontWeight: FontWeight.w500),
                           ),
-                          subtitle: Text(
-                            message.text,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                          subtitle: HighlightedText(
+                            buildSearchExcerpt(
+                              message.text,
+                              _searchController.text,
+                            ),
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
                           trailing: Text(
                             _formatTime(message.timestamp),

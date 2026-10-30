@@ -4014,6 +4014,34 @@ class AppLocalizationsOch extends AppLocalizations {
   String get commonOk => '確定';
 
   @override
+  String get draftsTitle => '草稿箱';
+
+  @override
+  String get inboxAllClear => '沒有待處理的通知';
+
+  @override
+  String get draftsEmpty => '暫無草稿';
+
+  @override
+  String get draftsEmptyHint => '編輯帖子時會自動存到本機';
+
+  @override
+  String get draftsDelete => '刪除草稿';
+
+  @override
+  String get draftsDeleteConfirm => '刪除後無法復原，確定要刪除這則草稿嗎？';
+
+  @override
+  String draftsUpdatedAt(String time) {
+    return '更新於 $time';
+  }
+
+  @override
+  String draftsAttachmentCount(int count) {
+    return '$count 個附件';
+  }
+
+  @override
   String get commonFailedOperation => '操作未成，請重試';
 
   @override

@@ -1,6 +1,8 @@
 import 'dart:io' show File, Platform;
 import 'dart:async';
 import 'package:flutter/material.dart';
+
+import '../utils/haptics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -183,6 +185,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
 
     if (shouldSend) {
       if (value.text.trim().isNotEmpty || widget.actionIsForward) {
+        Haptics.light();
         widget.onSend();
       }
       return KeyEventResult.handled;
@@ -376,6 +379,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
                     onPressed: () {
                       if (widget.controller.text.trim().isNotEmpty ||
                           widget.actionIsForward) {
+                        Haptics.light();
                         widget.onSend();
                       }
                     },
