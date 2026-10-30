@@ -3,6 +3,7 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import '../l10n/app_localizations.dart';
 import '../models/forum_model.dart';
 import '../models/user_profile.dart';
@@ -526,9 +527,12 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
             style: Theme.of(context).textTheme.bodyLarge,
           )
         else if (enableMarkdown)
-          MarkdownRenderer(data: post.content)
+          MarkdownRenderer(data: post.content, selectable: true)
         else
-          Text(post.content, style: Theme.of(context).textTheme.bodyLarge),
+          SelectableText(
+            post.content,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
         if (post.attachments.isNotEmpty)
           ForumAttachmentsRow(attachments: post.attachments),
         const SizedBox(height: 8),
@@ -550,13 +554,43 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     // 添加内容
     buffer.writeln(_post!.content);
 
-    // 添加来源标记
+    // 添加来源标记（原先硬编码中文，英文/繁中界面下会串语言）
     buffer.writeln();
     buffer.writeln('---');
-    buffer.writeln('来自 TouchFish 论坛');
+    buffer.writeln(AppLocalizations.of(context)!.forumPostCopySource);
 
     // 复制到剪贴板
     _copyText(buffer.toString());
+  }
+
+  /// 系统分享
+  Future<void> _sharePost() async {
+    final post = _post;
+    if (post == null) return;
+    final l10n = AppLocalizations.of(context)!;
+
+    final buffer = StringBuffer();
+    if (post.title.isNotEmpty) {
+      buffer.writeln(post.title);
+      buffer.writeln();
+    }
+    buffer.writeln(post.content);
+    buffer.writeln();
+    buffer.writeln('---');
+    buffer.writeln(l10n.forumPostCopySource);
+
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          text: buffer.toString(),
+          subject: post.title.isEmpty ? null : post.title,
+        ),
+      );
+    } catch (e) {
+      talker.error('share post failed', e);
+      if (!mounted) return;
+      TouchFishSnackbarService.instance.showError(l10n.forumPostShareFailed);
+    }
   }
 
   Future<void> _copyText(String text) async {
@@ -595,7 +629,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
           ),
           const SizedBox(width: 8),
           FilledButton.tonalIcon(
-            onPressed: () {},
+            onPressed: _sharePost,
             icon: const Icon(Icons.share_outlined, size: 18),
             label: Text(l10n.forumShare),
           ),
@@ -676,9 +710,9 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
                       style: Theme.of(context).textTheme.bodyMedium,
                     )
                   else if (enableMarkdown)
-                    MarkdownRenderer(data: comment.content)
+                    MarkdownRenderer(data: comment.content, selectable: true)
                   else
-                    Text(
+                    SelectableText(
                       comment.content,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),

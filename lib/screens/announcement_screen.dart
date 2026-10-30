@@ -443,7 +443,7 @@ class _AnnouncementCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            MarkdownRenderer(data: announcement.content),
+            MarkdownRenderer(data: announcement.content, selectable: true),
           ],
         ),
       ),

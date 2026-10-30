@@ -2071,6 +2071,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'No messages yet\nSend a message to start chatting';
 
   @override
+  String get chatMessagesLoadFailed => 'Failed to load messages';
+
+  @override
+  String get forumPostCopySource => 'From TouchFish Forum';
+
+  @override
+  String get forumPostShareFailed => 'Failed to share';
+
+  @override
   String get chatBackToBottom => 'Back to bottom';
 
   @override
@@ -4221,6 +4230,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsCategoryStorage => 'Storage';
+
+  @override
+  String get settingsLocalStorageTitle => 'Local storage';
 
   @override
   String get settingsNotifyWithHaptic => 'Haptic Feedback on Notification';

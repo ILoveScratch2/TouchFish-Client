@@ -1965,6 +1965,15 @@ class AppLocalizationsOch extends AppLocalizations {
   String get chatDetailNoMessages => '暫無消息\n發送一則以啟聊';
 
   @override
+  String get chatMessagesLoadFailed => '消息載入失敗';
+
+  @override
+  String get forumPostCopySource => '來自 TouchFish 論壇';
+
+  @override
+  String get forumPostShareFailed => '分享失敗';
+
+  @override
   String get chatBackToBottom => '返至底部';
 
   @override
@@ -4041,6 +4050,9 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get settingsCategoryStorage => '儲';
+
+  @override
+  String get settingsLocalStorageTitle => '本地儲存';
 
   @override
   String get settingsNotifyWithHaptic => '通知觸感反饋';

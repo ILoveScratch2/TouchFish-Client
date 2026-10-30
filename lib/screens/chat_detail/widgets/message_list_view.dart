@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../../../models/message_model.dart';
 import '../../../models/chat_model.dart';
@@ -6,7 +7,10 @@ import '../../../l10n/app_localizations.dart';
 import '../../../widgets/message_bubble.dart';
 import '../../../widgets/media/image_lightbox.dart';
 import '../../../widgets/ui/empty_state.dart';
+import '../../../widgets/ui/error_state.dart';
 import '../../../widgets/ui/refreshable.dart';
+import '../../../widgets/ui/skeleton.dart';
+import '../../../theme/tokens.dart';
 
 const String _swipeKeyPrefix = 'swipe-';
 
@@ -17,8 +21,7 @@ void _noopMessage(ChatMessage message) {}
 String chatMessageStableKey(ChatMessage message) =>
     message.clientMid ?? message.mid?.toString() ?? message.id;
 
-/// 尾部新追加消息的稳定键（用于入场动画）。
-/// 首屏/批量/翻页 都不算，只有已经在房间里时新到的消息才返回，比对用稳定键而不是对象实例
+/// 尾部新追加消息的稳定键
 Set<String> newlyAppendedMessageKeys(
   List<ChatMessage> previous,
   List<ChatMessage> next, {
@@ -26,7 +29,7 @@ Set<String> newlyAppendedMessageKeys(
 }) {
   final added = next.length - previous.length;
   if (added <= 0 || previous.isEmpty) return const {};
-  // 旧列表必须逐条仍在新列表的前缀里（翻页/同步是从头部合并，会对不上）
+  // 旧列表必须逐条仍在新列表的前缀里
   for (var i = 0; i < previous.length; i++) {
     if (identical(previous[i], next[i])) continue;
     if (chatMessageStableKey(previous[i]) != chatMessageStableKey(next[i])) {
@@ -65,6 +68,11 @@ class MessageListView extends StatelessWidget {
   final String noMessagesText;
   final ColorScheme colorScheme;
 
+  final bool isLoading;
+
+  /// 首屏加载失败文案
+  final String? errorText;
+
   final bool isSelectionMode;
   final Set<String> selectedMessageKeys;
   final ValueChanged<ChatMessage> onEnterSelectionMode;
@@ -73,7 +81,8 @@ class MessageListView extends StatelessWidget {
   /// 已读回执：全服开关是否开启。
   final bool readReceiptEnabled;
 
-  /// 私聊：对方已读水位序号；群聊：mid -> 已读人数。
+  /// 私聊：对方已读序号
+  /// 群聊：mid -> 已读人数。
   final int? peerReadSeq;
   final Map<int, int> groupReadCounts;
 
@@ -107,6 +116,8 @@ class MessageListView extends StatelessWidget {
     required this.canDeleteLocally,
     required this.noMessagesText,
     required this.colorScheme,
+    this.isLoading = false,
+    this.errorText,
     this.isSelectionMode = false,
     this.selectedMessageKeys = const {},
     this.onEnterSelectionMode = _noopMessage,
@@ -137,6 +148,18 @@ class MessageListView extends StatelessWidget {
     final essenceMidSet = essenceMids.toSet();
 
     if (messages.isEmpty) {
+      if (isLoading) {
+        return const MessageListSkeleton();
+      }
+      if (errorText != null) {
+        return PullToRefresh.content(
+          onRefresh: () async => onRefresh(),
+          child: ErrorState(
+            title: errorText!,
+            onRetry: onRefresh,
+          ),
+        );
+      }
       return PullToRefresh.content(
         onRefresh: () async => onRefresh(),
         child: EmptyState(
@@ -145,6 +168,14 @@ class MessageListView extends StatelessWidget {
         ),
       );
     }
+
+    // 移动端气泡自带滑动回复手势处理
+    // 其他平台才需要
+    final themePlatform = Theme.of(context).platform;
+    final bubbleHandlesSwipe =
+        !kIsWeb &&
+        (themePlatform == TargetPlatform.android ||
+            themePlatform == TargetPlatform.iOS);
 
     // 列表 reverse + 新消息插在 index 0，所有既有气泡的 index 都会平移，神秘 bug 调试半天
     Map<String, int>? indexByStableKey;
@@ -162,7 +193,7 @@ class MessageListView extends StatelessWidget {
       return messages.length - 1 - messageIndex;
     }
 
-    // 已读回执只显示一处（避免每条都刷屏）已被对方读到的、最新的那条
+    // 已读回执只显示一处
     var readMarkerIndex = -1;
     if (readReceiptEnabled) {
       for (var i = messages.length - 1; i >= 0; i--) {
@@ -195,7 +226,7 @@ class MessageListView extends StatelessWidget {
         // 不然会 sb reload
         final stableKey = chatMessageStableKey(message);
 
-        // 占位消息（对方上传中）不参与滑动回复等交互，但保留头像/名称展示。
+        // 占位消息（对方上传中）不参与滑动回复等交互，但保留头像/名称展示
         if (message.isPlaceholder) {
           return MessageBubble(
             key: ValueKey('bubble-$stableKey'),
@@ -272,7 +303,16 @@ class MessageListView extends StatelessWidget {
           child: bubbleBody,
         );
 
-        final dismissible = Dismissible(
+        // 外层键始终存在
+        // findChildIndexCallback 依赖 'swipe-' 前缀定位
+        final keyed = KeyedSubtree(
+          key: ValueKey('$_swipeKeyPrefix$stableKey'),
+          child: selectionWrapped,
+        );
+
+        if (bubbleHandlesSwipe) return keyed;
+
+        return Dismissible(
           key: ValueKey('$_swipeKeyPrefix$stableKey'),
           direction: message.isDeleted || isSelectionMode
               ? DismissDirection.none
@@ -287,13 +327,12 @@ class MessageListView extends StatelessWidget {
           background: Align(
             alignment: Alignment.centerRight,
             child: Padding(
-              padding: const EdgeInsets.only(right: 24),
+              padding: const EdgeInsets.only(right: TFSpace.xxl),
               child: Icon(Icons.reply, color: colorScheme.primary),
             ),
           ),
-          child: selectionWrapped,
+          child: keyed,
         );
-        return dismissible;
       },
     );
   }

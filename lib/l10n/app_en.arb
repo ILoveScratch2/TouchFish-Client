@@ -774,6 +774,9 @@
   "chatPlaceholderUploading": "Uploading {progress}%",
   "@chatPlaceholderUploading": {"placeholders": {"progress": {"type": "int"}}},
   "chatDetailNoMessages": "No messages yet\nSend a message to start chatting",
+  "chatMessagesLoadFailed": "Failed to load messages",
+  "forumPostCopySource": "From TouchFish Forum",
+  "forumPostShareFailed": "Failed to share",
   "chatBackToBottom": "Back to bottom",
   
   "chatInputCollapse": "Collapse",
@@ -1653,6 +1656,7 @@
 
   "settingsCategoryConnection": "Connection",
   "settingsCategoryStorage": "Storage",
+  "settingsLocalStorageTitle": "Local storage",
   "settingsNotifyWithHaptic": "Haptic Feedback on Notification",
   "settingsNotifyWithHapticDescription": "Trigger haptic feedback when a new in-app notification arrives",
   "settingsLockscreenReplyTitle": "Quick Reply on Lock Screen",

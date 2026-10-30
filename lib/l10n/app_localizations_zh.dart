@@ -1967,6 +1967,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatDetailNoMessages => '暂无消息\n发送一条消息开始聊天吧';
 
   @override
+  String get chatMessagesLoadFailed => '消息加载失败';
+
+  @override
+  String get forumPostCopySource => '来自 TouchFish 论坛';
+
+  @override
+  String get forumPostShareFailed => '分享失败';
+
+  @override
   String get chatBackToBottom => '回到底部';
 
   @override
@@ -4044,6 +4053,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsCategoryStorage => '存储';
+
+  @override
+  String get settingsLocalStorageTitle => '本地存储';
 
   @override
   String get settingsNotifyWithHaptic => '通知触感反馈';

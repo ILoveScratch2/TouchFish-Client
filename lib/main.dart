@@ -16,6 +16,7 @@ import 'l10n/app_localizations.dart';
 import 'models/app_state.dart';
 import 'models/settings_service.dart';
 import 'routes/app_routes.dart';
+import 'theme/app_theme.dart';
 import 'services/auth_state.dart';
 import 'services/api/tf_api_client.dart';
 import 'services/rsa_key_trust_service.dart';
@@ -890,53 +891,17 @@ class _TouchFishAppState extends State<TouchFishApp>
           ],
           supportedLocales: const [Locale('en'), Locale('zh'), Locale('och')],
           locale: _appState.locale,
-          theme: ThemeData(
-            colorScheme: lightColorScheme,
-            useMaterial3: true,
+          theme: TFTheme.build(
+            scheme: lightColorScheme,
             fontFamily: _appState.fontFamily,
-            scaffoldBackgroundColor: hasBackgroundImage
-                ? Colors.transparent
-                : null,
-            cardTheme: CardThemeData(
-              color: lightColorScheme.surfaceContainer.withValues(
-                alpha: cardOpacity,
-              ),
-              elevation: cardOpacity < 1 ? 0 : null,
-            ),
-            pageTransitionsTheme: PageTransitionsTheme(
-              builders: {
-                TargetPlatform.android: ZoomPageTransitionsBuilder(),
-                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-                TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
-                TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
-                TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
-                TargetPlatform.fuchsia: FadeForwardsPageTransitionsBuilder(),
-              },
-            ),
+            cardOpacity: cardOpacity,
+            transparentSurfaces: hasBackgroundImage,
           ),
-          darkTheme: ThemeData(
-            colorScheme: darkColorScheme,
-            useMaterial3: true,
+          darkTheme: TFTheme.build(
+            scheme: darkColorScheme,
             fontFamily: _appState.fontFamily,
-            scaffoldBackgroundColor: hasBackgroundImage
-                ? Colors.transparent
-                : null,
-            cardTheme: CardThemeData(
-              color: darkColorScheme.surfaceContainer.withValues(
-                alpha: cardOpacity,
-              ),
-              elevation: cardOpacity < 1 ? 0 : null,
-            ),
-            pageTransitionsTheme: PageTransitionsTheme(
-              builders: {
-                TargetPlatform.android: ZoomPageTransitionsBuilder(),
-                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-                TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
-                TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
-                TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
-                TargetPlatform.fuchsia: FadeForwardsPageTransitionsBuilder(),
-              },
-            ),
+            cardOpacity: cardOpacity,
+            transparentSurfaces: hasBackgroundImage,
           ),
           themeMode: _appState.themeMode,
           builder: (context, child) {
@@ -998,26 +963,77 @@ class _TouchFishAppState extends State<TouchFishApp>
     );
   }
 
+  /// 应用用户自定义配色
   ColorScheme _applyCustomColors(
     ColorScheme scheme,
     Map<String, int> customColors,
   ) {
-    final surfaceColor = customColors['surface'] ?? customColors['background'];
+    Color resolve(String key, Color fallback) {
+      final value = customColors[key];
+      return value == null ? fallback : Color(value);
+    }
+
+    final primary = resolve('primary', scheme.primary);
+    final secondary = resolve('secondary', scheme.secondary);
+    final tertiary = resolve('tertiary', scheme.tertiary);
+    final error = resolve('error', scheme.error);
+    final surface = resolve('surface', resolve('background', scheme.surface));
+    final isDark = scheme.brightness == Brightness.dark;
+
+    final onSurface = _onColorFor(surface);
+    final onPrimary = _onColorFor(primary);
+    final onSecondary = _onColorFor(secondary);
+    final onTertiary = _onColorFor(tertiary);
+    final onError = _onColorFor(error);
+
+    final surfaceContainerLowest = Color.lerp(
+      surface,
+      isDark ? Colors.black : Colors.white,
+      isDark ? 0.30 : 0.60,
+    )!;
+    final surfaceContainerLow = Color.lerp(
+      surface,
+      isDark ? Colors.black : Colors.white,
+      isDark ? 0.15 : 0.30,
+    )!;
+    final surfaceContainerHigh = Color.lerp(
+      surface,
+      isDark ? Colors.white : Colors.black,
+      isDark ? 0.03 : 0.04,
+    )!;
+    final surfaceContainerHighest = Color.lerp(
+      surface,
+      isDark ? Colors.white : Colors.black,
+      isDark ? 0.06 : 0.07,
+    )!;
 
     return scheme.copyWith(
-      primary: customColors['primary'] != null
-          ? Color(customColors['primary']!)
-          : null,
-      secondary: customColors['secondary'] != null
-          ? Color(customColors['secondary']!)
-          : null,
-      tertiary: customColors['tertiary'] != null
-          ? Color(customColors['tertiary']!)
-          : null,
-      surface: surfaceColor != null ? Color(surfaceColor) : null,
-      error: customColors['error'] != null
-          ? Color(customColors['error']!)
-          : null,
+      primary: primary,
+      onPrimary: onPrimary,
+      secondary: secondary,
+      onSecondary: onSecondary,
+      tertiary: tertiary,
+      onTertiary: onTertiary,
+      error: error,
+      onError: onError,
+      surface: surface,
+      onSurface: onSurface,
+      onSurfaceVariant: Color.lerp(onSurface, surface, 0.35),
+      surfaceContainerLowest: surfaceContainerLowest,
+      surfaceContainerLow: surfaceContainerLow,
+      surfaceContainer: surface,
+      surfaceContainerHigh: surfaceContainerHigh,
+      surfaceContainerHighest: surfaceContainerHighest,
+      outline: Color.lerp(surface, onSurface, 0.35),
+      outlineVariant: Color.lerp(surface, onSurface, 0.16),
     );
+  }
+
+  Color _onColorFor(Color background) {
+    final luminance = background.computeLuminance();
+    if (luminance > 0.5) {
+      return const Color(0xFF1A1A1A);
+    }
+    return Colors.white;
   }
 }

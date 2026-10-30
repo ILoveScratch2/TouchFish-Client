@@ -542,18 +542,26 @@ class AppRoutes {
                 );
               },
             ),
-            ShellRoute(
-              builder: (context, state, child) {
-                return MainScreen(child: child);
+            StatefulShellRoute.indexedStack(
+              builder: (context, state, navigationShell) {
+                return MainScreen(
+                  child: navigationShell,
+                  onBranchSelected: (branchIndex) {
+                    navigationShell.goBranch(
+                      branchIndex,
+                      initialLocation:
+                          branchIndex == navigationShell.currentIndex,
+                    );
+                  },
+                );
               },
-              routes: [
-                // 聊天区使用常驻 Shell：ChatShellScreen（左侧列表、拖动栏等
-                // 状态）跨 /chat、/chat/:roomId 切换保持不重建；详情页作为
-                // /chat 的嵌套子路由，在壳内子导航中 push 播放转场动画——
-                // 宽屏=右侧面板区域动画，窄屏=整屏 push 动画
-
-                // what the fuck
-                ShellRoute(
+              // 分支顺序固定 chat / announcement / forum / account / admin
+              branches: [
+                // 聊天常驻 ChatShellScreen（左侧列表、拖动栏等状态）
+                // 跨 /chat、/chat/:roomId 切换保持不重建
+                StatefulShellBranch(
+                  routes: [
+                    ShellRoute(
                   builder: (context, state, child) {
                     return ChatShellScreen(child: child);
                   },
@@ -662,34 +670,50 @@ class AppRoutes {
                     ),
                   ],
                 ),
-                // 公告区：整屏单页——列表即详情（卡片内联内容），不设常驻分栏。
-                GoRoute(
-                  path: announcement,
-                  pageBuilder: (context, state) => _mainSectionPage(
-                    context,
-                    state,
-                    const AnnouncementScreen(),
-                  ),
+                  ],
                 ),
-                // 论坛区使用常驻 Shell：ForumSectionShell（宽屏左栏常驻 +
-                // 右侧详情面板）。详情/发帖/搜索作为 /forum 的嵌套子路由，在
-                // 壳内子导航中切换——宽屏只换右侧面板，窄屏/单页风格整屏 push。
-                ...forumSectionRoutes(),
-                GoRoute(
-                  path: account,
-                  pageBuilder: (context, state) =>
-                      _mainSectionPage(context, state, const AccountScreen()),
+                // 公告区：整屏单页
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: announcement,
+                      pageBuilder: (context, state) => _mainSectionPage(
+                        context,
+                        state,
+                        const AnnouncementScreen(),
+                      ),
+                    ),
+                  ],
                 ),
-                GoRoute(
-                  path: stickerMarket,
-                  builder: (context, state) => const StickerMarketplaceScreen(),
+                // 论坛区使用常驻 Shell
+                StatefulShellBranch(routes: forumSectionRoutes()),
+                // 账户区（含从账户页进入的贴纸市场等页面）
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: account,
+                      pageBuilder: (context, state) => _mainSectionPage(
+                        context,
+                        state,
+                        const AccountScreen(),
+                      ),
+                    ),
+                    GoRoute(
+                      path: stickerMarket,
+                      builder: (context, state) =>
+                          const StickerMarketplaceScreen(),
+                    ),
+                    GoRoute(
+                      path: myStickers,
+                      builder: (context, state) => const MyStickerPacksScreen(),
+                    ),
+                  ],
                 ),
-                GoRoute(
-                  path: myStickers,
-                  builder: (context, state) => const MyStickerPacksScreen(),
-                ),
-                GoRoute(
-                  path: admin,
+                // 管理后台
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: admin,
                   redirect: (context, state) {
                     return AuthState.instance.currentUser?.hasAdminAccess ==
                             true
@@ -753,6 +777,8 @@ class AppRoutes {
                     state,
                     const AccountManagementScreen(),
                   ),
+                ),
+                  ],
                 ),
               ],
             ),

@@ -83,6 +83,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   bool _isLoadingOlder = false;
   bool _isLoadingMessages = false;
   bool _hasMoreMessages = true;
+
+  String? _messagesError;
   bool _realtimeListenersAttached = false;
   StreamSubscription? _ackErrorSub;
   String _groupEnterHint = '';
@@ -703,24 +705,51 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final roomId = _contactUid;
     final roomGeneration = _roomGeneration;
 
-    setState(() => _isLoadingMessages = true);
-
-    final page = await chatData.refreshMessagesForContact(roomId);
-    if (!mounted ||
-        roomGeneration != _roomGeneration ||
-        roomId != _contactUid) {
-      return;
-    }
-    _refreshRoom();
-
     setState(() {
-      _isLoadingMessages = false;
-      _hasMoreMessages = page.hasMore;
+      _isLoadingMessages = true;
+      _messagesError = null;
     });
-    _followBottom = true;
-    _markVisibleMessagesRead();
-    _refreshReadReceipt();
-    _refreshPresence();
+
+    try {
+      final page = await chatData.refreshMessagesForContact(roomId);
+      if (!mounted ||
+          roomGeneration != _roomGeneration ||
+          roomId != _contactUid) {
+        return;
+      }
+      _refreshRoom();
+
+      setState(() {
+        _isLoadingMessages = false;
+        _hasMoreMessages = page.hasMore;
+      });
+      _followBottom = true;
+      _markVisibleMessagesRead();
+      _refreshReadReceipt();
+      _refreshPresence();
+      _scheduleViewportFill();
+    } catch (e) {
+      if (!mounted ||
+          roomGeneration != _roomGeneration ||
+          roomId != _contactUid) {
+        return;
+      }
+      talker.error('load messages failed', e);
+      setState(() {
+        _isLoadingMessages = false;
+        _messagesError = AppLocalizations.of(context)?.chatMessagesLoadFailed;
+      });
+    }
+  }
+  void _scheduleViewportFill() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_isLoadingMessages || _isLoadingOlder || !_hasMoreMessages) return;
+      if (!_scrollController.hasClients) return;
+      if (_scrollController.position.maxScrollExtent <= 0) {
+        _loadOlder();
+      }
+    });
   }
 
   /// 打开私聊时批量拉取对方在线状态（群聊无单一 uid）。
@@ -782,7 +811,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       return;
     }
     final position = _scrollController.position;
-    if (position.maxScrollExtent > 0 &&
+    // maxScrollExtent == 0 说明历史还没铺满一屏，此时同样应该继续往前翻，
+    // 否则短会话永远卡在最初一页、看不到更早的记录。
+    if (position.maxScrollExtent <= 0 ||
         position.pixels > position.maxScrollExtent - 50) {
       _loadOlder();
     }
@@ -869,11 +900,21 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   Future<void> _loadOlder() async {
     if (_isLoadingMessages || _isLoadingOlder || !_hasMoreMessages) return;
 
+    final lengthBefore = _messages.length;
     setState(() => _isLoadingOlder = true);
     final roomId = _contactUid;
     final roomGeneration = _roomGeneration;
-    final hasMore =
-        await ref.read(roomMessagesProvider(roomId).notifier).loadOlder();
+
+    bool hasMore;
+    try {
+      hasMore = await ref
+          .read(roomMessagesProvider(roomId).notifier)
+          .loadOlder();
+    } catch (e) {
+      talker.error('load older messages failed', e);
+      if (mounted) setState(() => _isLoadingOlder = false);
+      return;
+    }
 
     if (!mounted ||
         roomGeneration != _roomGeneration ||
@@ -884,6 +925,12 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       _isLoadingOlder = false;
       _hasMoreMessages = hasMore;
     });
+
+    // 本轮确实翻到了新内容、且还有更早的，就继续检查视口是否仍未被填满。
+    // 用「条数是否增长」兜底，避免后端返回空页时无限递归。
+    if (_hasMoreMessages && _messages.length > lengthBefore) {
+      _scheduleViewportFill();
+    }
   }
 
   void _refreshRoom() {
@@ -3295,6 +3342,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                             canDeleteLocally: _canDeleteLocally,
                             noMessagesText: l10n.chatDetailNoMessages,
                             colorScheme: colorScheme,
+                            isLoading: _isLoadingMessages,
+                            errorText: _messagesError,
                             isSelectionMode: isSelectionMode,
                             selectedMessageKeys: selectedMessageIds,
                             onEnterSelectionMode: _enterSelection,

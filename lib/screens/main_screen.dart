@@ -18,7 +18,12 @@ import '../widgets/command_palette.dart';
 
 class MainScreen extends StatefulWidget {
   final Widget child;
-  const MainScreen({super.key, required this.child});
+
+  /// 由 `StatefulShellRoute` 注入
+  /// 点击导航项时切换到对应 branch
+  final ValueChanged<int>? onBranchSelected;
+
+  const MainScreen({super.key, required this.child, this.onBranchSelected});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -75,11 +80,7 @@ class _MainScreenState extends State<MainScreen> {
     return index >= 0 ? index : 0;
   }
 
-  /// 依据当前路由判断是否隐藏底部导航。
-  ///
-  /// 详情 / 全屏子页面（聊天详情、论坛详情 / 帖子 / 论坛搜索）不显示底部导航，
-  /// 与这些路由原先挂在顶层、不在本壳内时的行为一致；`/chat`、`/forum` 这些
-  /// Section 首页仍保留导航。判定规则见 [AppRoutes.isSubPageNavigation]。
+  /// 依据当前路由判断是否隐藏底部导航
   bool _hidesBottomNav(BuildContext context) =>
       AppRoutes.isSubPageNavigation(GoRouterState.of(context).uri.path);
 
@@ -97,6 +98,7 @@ class _MainScreenState extends State<MainScreen> {
     return [
       _NavDestinationConfig(
         route: AppRoutes.chat,
+        branchIndex: 0,
         label: l10n.navChat,
         icon: Icons.chat_bubble_outline,
         selectedIcon: Icons.chat_bubble,
@@ -104,6 +106,7 @@ class _MainScreenState extends State<MainScreen> {
       if (flags.announcement)
         _NavDestinationConfig(
           route: AppRoutes.announcement,
+          branchIndex: 1,
           label: l10n.navAnnouncement,
           icon: Icons.campaign_outlined,
           selectedIcon: Icons.campaign,
@@ -111,12 +114,14 @@ class _MainScreenState extends State<MainScreen> {
       if (flags.forum)
         _NavDestinationConfig(
           route: AppRoutes.forum,
+          branchIndex: 2,
           label: l10n.navForum,
           icon: Icons.forum_outlined,
           selectedIcon: Icons.forum,
         ),
       _NavDestinationConfig(
         route: AppRoutes.account,
+        branchIndex: 3,
         label: l10n.navAccount,
         icon: Icons.account_circle_outlined,
         selectedIcon: Icons.account_circle,
@@ -124,6 +129,7 @@ class _MainScreenState extends State<MainScreen> {
       if (AuthState.instance.currentUser?.hasAdminAccess == true)
         _NavDestinationConfig(
           route: AppRoutes.admin,
+          branchIndex: 4,
           label: l10n.navAdmin,
           icon: Icons.admin_panel_settings_outlined,
           selectedIcon: Icons.admin_panel_settings,
@@ -137,6 +143,13 @@ class _MainScreenState extends State<MainScreen> {
     int index,
   ) {
     if (index < 0 || index >= destinations.length) return;
+    final branchIndex = destinations[index].branchIndex;
+    final onBranchSelected = widget.onBranchSelected;
+    if (onBranchSelected != null) {
+      // 不销毁目标 tab，仅切换 IndexedStack 索引
+      onBranchSelected(branchIndex);
+      return;
+    }
     Navigator.of(context).popUntil((route) => route.isFirst);
     context.go(destinations[index].route);
   }
@@ -444,12 +457,16 @@ class _CommandPaletteScope extends StatelessWidget {
 
 class _NavDestinationConfig {
   final String route;
+
+  /// 对应的 StatefulShellRoute
+  final int branchIndex;
   final String label;
   final IconData icon;
   final IconData selectedIcon;
 
   const _NavDestinationConfig({
     required this.route,
+    required this.branchIndex,
     required this.label,
     required this.icon,
     required this.selectedIcon,

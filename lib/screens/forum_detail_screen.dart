@@ -1351,22 +1351,16 @@ class _PostCardState extends State<_PostCard> {
               const SizedBox(height: 8),
               if (_stickerTestPatternFd.hasMatch(post.content))
                 StickerTextRenderer(
-                  text: post.content.length > 200
-                      ? '${post.content.substring(0, 200)}...'
-                      : post.content,
+                  text: previewMarkdown(post.content),
                   style: Theme.of(context).textTheme.bodyMedium,
                 )
               else if (enableMarkdown)
                 MarkdownRenderer(
-                  data: post.content.length > 200
-                      ? '${post.content.substring(0, 200)}...'
-                      : post.content,
+                  data: previewMarkdown(post.content),
                 )
               else
                 Text(
-                  post.content.length > 200
-                      ? '${post.content.substring(0, 200)}...'
-                      : post.content,
+                  previewMarkdown(post.content),
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               const SizedBox(height: 8),

@@ -574,7 +574,7 @@ class SettingsData {
       items: [
         SettingItem(
           key: 'localStorage',
-          titleKey: 'settingsCategoryStorage',
+          titleKey: 'settingsLocalStorageTitle',
           type: SettingType.customWidget,
           defaultValue: null,
         ),

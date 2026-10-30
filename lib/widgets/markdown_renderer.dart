@@ -62,6 +62,14 @@ class MarkdownRenderer extends StatefulWidget {
   State<MarkdownRenderer> createState() => _MarkdownRendererState();
 }
 
+/// 生成 Markdown 摘要
+String previewMarkdown(String content, {int limit = 200}) {
+  if (content.length <= limit) return content;
+  final newlineCut = content.lastIndexOf('\n', limit);
+  final end = newlineCut > limit ~/ 2 ? newlineCut : limit;
+  return '${content.substring(0, end).trimRight()}…';
+}
+
 /// 解析产物的缓存键。
 class _RenderCacheKey {
   final String data;

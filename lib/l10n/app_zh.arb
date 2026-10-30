@@ -762,6 +762,9 @@
   "chatPlaceholderUploading": "正在上传 {progress}%",
   "@chatPlaceholderUploading": {"placeholders": {"progress": {"type": "int"}}},
   "chatDetailNoMessages": "暂无消息\n发送一条消息开始聊天吧",
+  "chatMessagesLoadFailed": "消息加载失败",
+  "forumPostCopySource": "来自 TouchFish 论坛",
+  "forumPostShareFailed": "分享失败",
   "chatBackToBottom": "回到底部",
   
   "chatInputCollapse": "收起",
@@ -1617,6 +1620,7 @@
 
   "settingsCategoryConnection": "连接",
   "settingsCategoryStorage": "存储",
+  "settingsLocalStorageTitle": "本地存储",
   "settingsNotifyWithHaptic": "通知触感反馈",
   "settingsNotifyWithHapticDescription": "收到应用内新通知时触发触感反馈",
   "settingsLockscreenReplyTitle": "锁屏快捷回复",

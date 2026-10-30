@@ -3898,6 +3898,24 @@ abstract class AppLocalizations {
   /// **'No messages yet\nSend a message to start chatting'**
   String get chatDetailNoMessages;
 
+  /// No description provided for @chatMessagesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load messages'**
+  String get chatMessagesLoadFailed;
+
+  /// No description provided for @forumPostCopySource.
+  ///
+  /// In en, this message translates to:
+  /// **'From TouchFish Forum'**
+  String get forumPostCopySource;
+
+  /// No description provided for @forumPostShareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to share'**
+  String get forumPostShareFailed;
+
   /// No description provided for @chatBackToBottom.
   ///
   /// In en, this message translates to:
@@ -7767,6 +7785,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Storage'**
   String get settingsCategoryStorage;
+
+  /// No description provided for @settingsLocalStorageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local storage'**
+  String get settingsLocalStorageTitle;
 
   /// No description provided for @settingsNotifyWithHaptic.
   ///
