@@ -57,16 +57,24 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
     }
   }
 
+  /// 分批拉取成员资料
+  static const int _profileBatchSize = 8;
+
   Future<void> _loadProfiles() async {
     final profiles = <String, UserProfile?>{};
-    final futures = _members.map((m) async {
-      final uid = int.tryParse(m.accountUid);
-      if (uid != null) {
-        profiles[m.accountUid] = await TfApiClient.instance.getUserByUid(uid);
-      }
-    });
-    await Future.wait(futures);
-    if (mounted) setState(() => _profiles = profiles);
+    for (var i = 0; i < _members.length; i += _profileBatchSize) {
+      final batch = _members.skip(i).take(_profileBatchSize);
+      await Future.wait(
+        batch.map((m) async {
+          final uid = int.tryParse(m.accountUid);
+          if (uid == null) return;
+          final profile = await TfApiClient.instance.getUserByUid(uid);
+          if (profile != null) profiles[m.accountUid] = profile;
+        }),
+      );
+      if (!mounted) return;
+      setState(() => _profiles = Map.of(profiles));
+    }
   }
 
   @override

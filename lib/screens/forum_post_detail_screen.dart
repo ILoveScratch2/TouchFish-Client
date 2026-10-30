@@ -61,6 +61,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   final List<MentionUser> _mentionUsers = [];
   Timer? _draftTimer;
   bool _showBackToBottom = false;
+  bool _enableMarkdown = true;
 
   String get _commentDraftId => '${widget.forumId}/${widget.postId}';
 
@@ -68,10 +69,25 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _enableMarkdown = SettingsService.instance.getValue<bool>(
+      'enableMarkdownRendering',
+      true,
+    );
+    SettingsService.instance.addListener(_onSettingsChanged);
     _loadData();
     _loadMentionUsers();
     _commentController.addListener(_scheduleCommentDraftSave);
     unawaited(_restoreCommentDraft());
+  }
+
+  void _onSettingsChanged() {
+    final next = SettingsService.instance.getValue<bool>(
+      'enableMarkdownRendering',
+      true,
+    );
+    if (next != _enableMarkdown && mounted) {
+      setState(() => _enableMarkdown = next);
+    }
   }
 
   /// 只换路径参数（换帖子 / 换论坛）时 Flutter 会复用同一个 State，
@@ -229,6 +245,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
 
   @override
   void dispose() {
+    SettingsService.instance.removeListener(_onSettingsChanged);
     _draftTimer?.cancel();
     unawaited(_saveCommentDraft());
     _commentController.dispose();
@@ -279,10 +296,8 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     }
     final post = _post!;
     final author = _postAuthor;
-    final enableMarkdown = SettingsService.instance.getValue<bool>(
-      'enableMarkdownRendering',
-      true,
-    );
+    // 值来自页面级缓存（见 _enableMarkdown / _onSettingsChanged）
+    final enableMarkdown = _enableMarkdown;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(

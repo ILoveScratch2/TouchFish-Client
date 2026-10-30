@@ -58,6 +58,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _showBackToBottom = false;
   static const int _postPageSize = 30;
+
+  /// 页面级读一次
+  bool _enableMarkdown = true;
   bool _hasMorePosts = false;
   int? _nextBeforePid;
   bool _isLoadingMore = false;
@@ -67,15 +70,27 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _enableMarkdown = SettingsService.instance.getValue<bool>(
+      'enableMarkdownRendering',
+      true,
+    );
+    SettingsService.instance.addListener(_onSettingsChanged);
     _loadData();
   }
 
-  /// 换论坛时 Flutter 会复用同一个 State（只换路径参数），按新 forumId
-  /// 重新加载；整屏 ↔ 分栏切换会重建 Scrollable，手工把帖子列表的位置接过去。
+  void _onSettingsChanged() {
+    final next = SettingsService.instance.getValue<bool>(
+      'enableMarkdownRendering',
+      true,
+    );
+    if (next != _enableMarkdown && mounted) {
+      setState(() => _enableMarkdown = next);
+    }
+  }
+
+  /// 换论坛时 Flutter 会复用同一个 State
   ///
-  /// 这里不能用 `PageStorageKey`：滚动视图里没有自己的 key 的 ExpansionTile
-  /// （论坛简介、置顶卡片）会和它落到同一个 PageStorage 槽位，把滚动偏移
-  /// 当成自己的展开状态读，直接抛 `double is not a subtype of bool?`。
+  /// 不能用 `PageStorageKey`：滚动视图里没有自己的 key 的 ExpansionTile（论坛简介、置顶卡片）会和它落到同一个 PageStorage
   @override
   void didUpdateWidget(covariant ForumDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -83,14 +98,13 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       _loadData();
       return;
     }
-    // 分栏下帖子关闭：右栏是在论坛详情里点开的，浏览数 / 评论数已经变了，
-    // 而这条路径没有 push 的 await 可以挂钩，只能靠外壳传下来的 id 变化。
+    // 分栏下帖子关闭
     if (oldWidget.openPostId != null && widget.openPostId == null) {
       _refresh();
     }
     if (oldWidget.isAside == widget.isAside) return;
 
-    // 此刻旧布局还挂着，控制器上只有一个位置，读得到当前偏移。
+    // 旧布局还挂着
     final offset = _scrollController.hasClients
         ? _scrollController.offset
         : null;
@@ -181,15 +195,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   @override
   void dispose() {
+    SettingsService.instance.removeListener(_onSettingsChanged);
     _scrollController.dispose();
     super.dispose();
   }
 
   /// 拉取论坛帖子列表。
-  ///
-  /// [showLoading] 为假时保留当前内容做后台刷新：aside 是常驻左栏，把整块换成
-  /// loading 会把 CustomScrollView 卸载掉，帖子列表的滚动位置直接归零（"关闭
-  /// 帖子"正好走这条高频路径）。
   Future<void> _loadData({bool showLoading = true}) async {
     setState(() {
       if (showLoading) _isLoading = true;
@@ -323,7 +334,6 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
     final forum = _forum!;
 
-    // 宽版是「帖子列表 + 侧栏」双列，只有 expanded 档才放得下。
     final isWide = WideScreenHelper.isExpanded(context);
 
     return Scaffold(
@@ -717,6 +727,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                     post: post,
                     onTap: () => _openPostDetail(context, post),
                     profileCache: _profileCache,
+                    enableMarkdown: _enableMarkdown,
                   ),
                 ),
               )
@@ -747,9 +758,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
         if (index >= _posts.length) {
-          // 分页加载指示（滚动到底时自动触发，见 _onScroll）。
-          // 失败时换成可点的重试：失败不会产生新的滚动事件，
-          // 只留一个转圈的话这页就永远卡在加载中了。
+          // 分页加载指示失败时换成可点的重试：失败不会产生新的滚动事件
           if (_loadMoreFailed) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -778,6 +787,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             post: _posts[index],
             onTap: () => _openPostDetail(context, _posts[index]),
             profileCache: _profileCache,
+            enableMarkdown: _enableMarkdown,
           ),
         );
       }, childCount: itemCount),
@@ -800,7 +810,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   void _openPostDetail(BuildContext context, ForumPost post) async {
     final path = '/forum/${widget.forumId}/post/${post.id}';
     // 分屏：帖子在右栏打开。这里必须 go（替换）而不是 push，
-    // 否则连点两个帖子会叠成两层，退出后回到上一个帖子而不是论坛详情。
+    // 否则连点两个帖子会叠成两层
     if (WideScreenHelper.forumTwoPane(context)) {
       context.go(path);
       return;
@@ -1135,8 +1145,14 @@ class _PostCard extends StatefulWidget {
   final ForumPost post;
   final VoidCallback? onTap;
   final Map<String, UserProfile?>? profileCache;
+  final bool enableMarkdown;
 
-  const _PostCard({required this.post, this.onTap, this.profileCache});
+  const _PostCard({
+    required this.post,
+    this.onTap,
+    this.profileCache,
+    this.enableMarkdown = true,
+  });
 
   @override
   State<_PostCard> createState() => _PostCardState();
@@ -1160,6 +1176,27 @@ class _PostCardState extends State<_PostCard> {
       _authorRequests.remove(uid);
     });
     _authorRequests[uid] = future;
+    return future;
+  }
+
+  /// 评论摘要请求的去重与缓存
+  static final Map<String, Future<List<ForumComment>>> _commentRequests = {};
+  static const int _commentCacheLimit = 200;
+
+  static Future<List<ForumComment>> _fetchComments(int fid, int pid) {
+    final key = '$fid/$pid';
+    final cached = _commentRequests[key];
+    if (cached != null) return cached;
+
+    if (_commentRequests.length >= _commentCacheLimit) {
+      _commentRequests.clear();
+    }
+    final future = TfApiClient.instance.getAllComments(fid, pid);
+    _commentRequests[key] = future;
+    future.catchError((Object _) {
+      _commentRequests.remove(key);
+      return const <ForumComment>[];
+    });
     return future;
   }
 
@@ -1214,7 +1251,7 @@ class _PostCardState extends State<_PostCard> {
     // 新服务端在列表里直接带评论摘要；没有摘要时才退回逐帖拉取（旧服务器）
     if (lastCommentUid == null || lastCommentContent == null) {
       if (fid != null && pid != null) {
-        final comments = await TfApiClient.instance.getAllComments(fid, pid);
+        final comments = await _fetchComments(fid, pid);
         commentCount = comments.length;
         if (comments.isNotEmpty) {
           lastCommentUid = comments.last.authorUid;
@@ -1248,10 +1285,8 @@ class _PostCardState extends State<_PostCard> {
 
   @override
   Widget build(BuildContext context) {
-    final enableMarkdown = SettingsService.instance.getValue<bool>(
-      'enableMarkdownRendering',
-      true,
-    );
+    // 由列表下发
+    final enableMarkdown = widget.enableMarkdown;
     final author = _author;
     final commentCount = _commentCount;
     final lastCommentContent = _lastCommentContent;

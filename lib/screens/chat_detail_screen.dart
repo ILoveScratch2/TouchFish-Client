@@ -3063,17 +3063,32 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     final messages = ref.watch(roomMessagesProvider(_contactUid));
-    final uiState = ref.watch(chatRoomStateProvider(_contactUid));
+    // 只 watch 真正影响本页
+    final chatRoomState = chatRoomStateProvider(_contactUid);
+    final scrollController = ref.watch(
+      chatRoomState.select((s) => s.scrollController),
+    );
+    final isSelectionMode = ref.watch(
+      chatRoomState.select((s) => s.isSelectionMode),
+    );
+    final selectedMessageIds = ref.watch(
+      chatRoomState.select((s) => s.selectedMessageIds),
+    );
+    final replyingTo = ref.watch(chatRoomState.select((s) => s.replyingTo));
+    final forwardingTo = ref.watch(chatRoomState.select((s) => s.forwardingTo));
     final gallery = ref.watch(imageGalleryProvider(_contactUid));
     ref.listen(roomMessagesProvider(_contactUid), _onProviderMessagesChanged);
 
     // 入场动画标记由 ref.listen 回调维护，build 只读
     final entranceKeys = _entranceKeys;
 
+    final typingStatuses = _typingStatuses;
+    final uploadingStatuses = _uploadingStatuses;
+
     // 对方上传中的占位消息，合成到消息列表末尾（视觉底部）。
     // 再按 mid 去重：列表项会挂 GlobalKey，同 mid 重复会让两个 widget 撞同一把 key。
     final displayMessages = ChatMessage.dedupeByMid(
-      _uploadingStatuses.isEmpty
+      uploadingStatuses.isEmpty
           ? messages
           : [...messages, ..._buildUploadPlaceholderMessages()],
     );
@@ -3085,9 +3100,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       );
     }
 
-    // 捕获成局部量：下面那个 ValueListenableBuilder 会**独立于本方法**重建
-    // （已读回执到达时），那时 _currentRoom 可能正被 _initRoom 置空，直接读
-    // 字段会撞空断言。父级一换房间就会重建并给出新闭包，所以捕获是安全的。
+    // 捕获成局部量，捕获是安全的。
     final room = _currentRoom!;
 
     final colorScheme = Theme.of(context).colorScheme;
@@ -3132,7 +3145,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        leading: uiState.isSelectionMode
+        leading: isSelectionMode
             ? IconButton(
                 icon: const Icon(Icons.close),
                 tooltip: l10n.selectionExit,
@@ -3157,11 +3170,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         automaticallyImplyLeading: false,
         backgroundColor: colorScheme.surfaceContainerHighest,
         surfaceTintColor: Colors.transparent,
-        title: uiState.isSelectionMode
+        title: isSelectionMode
             ? Text(
-                uiState.selectedMessageIds.isEmpty
+                selectedMessageIds.isEmpty
                     ? l10n.selectionSelectMessages
-                    : l10n.selectionCount(uiState.selectedMessageIds.length),
+                    : l10n.selectionCount(selectedMessageIds.length),
               )
             : Row(
                 children: [
@@ -3196,13 +3209,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   ),
                 ],
               ),
-        actions: uiState.isSelectionMode ? const [SizedBox.shrink()] : actiontmp,
+        actions: isSelectionMode ? const [SizedBox.shrink()] : actiontmp,
       ),
       body: SafeArea(
         child: Column(
           children: [
             ChatDetailBanners(
-              // 只重建指示器自身，不触发整页 setState（同步分页会多次通知进度）。
+              // 只重建指示器
               syncIndicator: ListenableBuilder(
                 listenable: MessageSyncService.instance,
                 builder: (context, _) =>
@@ -3253,9 +3266,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                       onNotification: _onScrollMetricsChanged,
                       child: NotificationListener<ScrollNotification>(
                         onNotification: _onUserScroll,
-                        // 已读回执不改变消息列表，roomMessagesProvider 判定
-                        // 「无变化」就不会发新 state，所以必须单独订阅已读缓存
-                        // 的修订号，否则「已读」根本不会随回执出现。
+                        // 已读回执不改变消息列表
                         child: ValueListenableBuilder<int>(
                           valueListenable:
                               ChatDataService.instance.readReceiptRevision,
@@ -3263,7 +3274,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                             messages: displayMessages,
                             entranceKeys: entranceKeys,
                             messageKeys: _messageKeys,
-                            scrollController: uiState.scrollController,
+                            scrollController: scrollController,
                             galleryItems: gallery.items,
                             imageIndexById: gallery.indexById,
                             essenceMids: _essenceMids,
@@ -3284,8 +3295,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                             canDeleteLocally: _canDeleteLocally,
                             noMessagesText: l10n.chatDetailNoMessages,
                             colorScheme: colorScheme,
-                            isSelectionMode: uiState.isSelectionMode,
-                            selectedMessageKeys: uiState.selectedMessageIds,
+                            isSelectionMode: isSelectionMode,
+                            selectedMessageKeys: selectedMessageIds,
                             onEnterSelectionMode: _enterSelection,
                             onToggleSelection: _toggleSelection,
                             readReceiptEnabled: FeatureFlags.instance.readReceipt,
@@ -3349,26 +3360,26 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   ),
                 );
               },
-              child: _typingStatuses.isNotEmpty
+              child: typingStatuses.isNotEmpty
                   ? TypingIndicator(
                       key: ValueKey(
-                        _typingStatuses.map((s) => s.compositeKey).toList(),
+                        typingStatuses.map((s) => s.compositeKey).toList(),
                       ),
-                      typingStatuses: _typingStatuses,
+                      typingStatuses: typingStatuses,
                     )
                   : const SizedBox.shrink(
                       key: ValueKey('typing-indicator-none'),
                     ),
             ),
             RoomSelectionMode(
-              visible: uiState.isSelectionMode,
-              selectedCount: uiState.selectedMessageIds.length,
+              visible: isSelectionMode,
+              selectedCount: selectedMessageIds.length,
               onClose: _exitSelection,
               onCopy: _copySelectedMessages,
               onRedirect: _mergeForwardSelected,
               onRedirectToCurrentChat: _redirectToCurrentChat,
             ),
-            if (!uiState.isSelectionMode)
+            if (!isSelectionMode)
               ChatInputBar(
                 roomId: _contactUid,
                 controller: _messageController,
@@ -3377,8 +3388,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                 onServerFilePicked: _sendServerFile,
                 onVoiceRecorded: _sendVoiceMessage,
                 mentionUsers: _mentionUsers,
-                actionMessage: uiState.replyingTo ?? uiState.forwardingTo,
-                actionIsForward: uiState.forwardingTo != null,
+                actionMessage: replyingTo ?? forwardingTo,
+                actionIsForward: forwardingTo != null,
                 onClearAction: _clearReplyAction,
               ),
           ],

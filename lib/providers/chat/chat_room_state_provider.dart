@@ -10,16 +10,13 @@ class ChatRoomState extends _$ChatRoomState {
   @override
   ChatRoomUiState build(String roomId) {
     final scrollController = ScrollController();
-    
+
     // 清理资源
     ref.onDispose(() {
       scrollController.dispose();
     });
-    
-    return ChatRoomUiState(
-      roomId: roomId,
-      scrollController: scrollController,
-    );
+
+    return ChatRoomUiState(roomId: roomId, scrollController: scrollController);
   }
 
   // 回复相关
@@ -41,10 +38,7 @@ class ChatRoomState extends _$ChatRoomState {
   }
 
   void exitSelectionMode() {
-    state = state.copyWith(
-      isSelectionMode: false,
-      selectedMessageIds: {},
-    );
+    state = state.copyWith(isSelectionMode: false, selectedMessageIds: {});
   }
 
   void toggleMessageSelection(String messageId) {
@@ -108,4 +102,30 @@ class ChatRoomUiState {
       isJumpingToMessage: isJumpingToMessage ?? this.isJumpingToMessage,
     );
   }
+
+  /// Riverpod 只在状态变时通知
+  @override
+  bool operator ==(Object other) =>
+      other is ChatRoomUiState &&
+      other.roomId == roomId &&
+      identical(other.scrollController, scrollController) &&
+      other.replyingTo == replyingTo &&
+      other.forwardingTo == forwardingTo &&
+      other.isSelectionMode == isSelectionMode &&
+      other.selectedMessageIds.length == selectedMessageIds.length &&
+      other.selectedMessageIds.containsAll(selectedMessageIds) &&
+      other.pinnedCurrentPage == pinnedCurrentPage &&
+      other.isJumpingToMessage == isJumpingToMessage;
+
+  @override
+  int get hashCode => Object.hash(
+    roomId,
+    identityHashCode(scrollController),
+    replyingTo,
+    forwardingTo,
+    isSelectionMode,
+    selectedMessageIds.length,
+    pinnedCurrentPage,
+    isJumpingToMessage,
+  );
 }

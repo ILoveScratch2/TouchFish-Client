@@ -4,7 +4,6 @@ import 'media/image_lightbox.dart';
 import 'optimized_image.dart';
 import 'package:flutter_highlight/themes/a11y-dark.dart';
 import 'package:flutter_highlight/themes/a11y-light.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:go_router/go_router.dart';
 import 'package:markdown/markdown.dart' as markdown;
@@ -44,7 +43,7 @@ TextStyle _codeTextStyle({double fontSize = 14, Color? color}) => TextStyle(
   color: color,
 );
 
-class MarkdownRenderer extends HookWidget {
+class MarkdownRenderer extends StatefulWidget {
   final String data;
   final bool selectable;
   final bool fitContent;
@@ -60,6 +59,44 @@ class MarkdownRenderer extends HookWidget {
   });
 
   @override
+  State<MarkdownRenderer> createState() => _MarkdownRendererState();
+}
+
+/// 解析产物的缓存键。
+class _RenderCacheKey {
+  final String data;
+  final bool selectable;
+  final bool spoilerRevealed;
+  final ThemeData theme;
+
+  const _RenderCacheKey({
+    required this.data,
+    required this.selectable,
+    required this.spoilerRevealed,
+    required this.theme,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      other is _RenderCacheKey &&
+      other.data == data &&
+      other.selectable == selectable &&
+      other.spoilerRevealed == spoilerRevealed &&
+      // identical 走快速路径
+      // 退到值比较是为了祖先每帧 new 一个等价 ThemeData的情形
+      (identical(other.theme, theme) || other.theme == theme);
+
+  @override
+  int get hashCode =>
+      Object.hash(data, selectable, spoilerRevealed, theme.hashCode);
+}
+
+class _MarkdownRendererState extends State<MarkdownRenderer> {
+  bool _spoilerRevealed = false;
+  _RenderCacheKey? _cacheKey;
+  List<Widget>? _cachedWidgets;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
@@ -67,7 +104,6 @@ class MarkdownRenderer extends HookWidget {
     final config = isDark
         ? MarkdownConfig.darkConfig
         : MarkdownConfig.defaultConfig;
-    final spoilerRevealed = useState(false);
     final codeBlockDecoration = BoxDecoration(
       color: isDark
           ? theme.colorScheme.surfaceBright
@@ -95,205 +131,234 @@ class MarkdownRenderer extends HookWidget {
       backgroundColor: theme.colorScheme.tertiary,
       foregroundColor: theme.colorScheme.onTertiary,
       outlineColor: theme.colorScheme.outline,
-      revealed: spoilerRevealed.value,
+      revealed: _spoilerRevealed,
       hiddenLabel: l10n.markdownSpoilerHidden,
-      onToggle: () => spoilerRevealed.value = !spoilerRevealed.value,
+      onToggle: () => setState(() => _spoilerRevealed = !_spoilerRevealed),
     );
 
     final useCustomSelectionMenu =
-        selectable && selectionContextMenuBuilder != null;
-    final markdown = MarkdownBlock(
-      data: data,
-      selectable: selectable && !useCustomSelectionMenu,
-      config: config.copy(
-        configs: [
-          CodeConfig(
-            style:
-                _codeTextStyle(
-                  fontSize: 13,
-                  color: isDark
-                      ? const Color(0xffe0e0e0)
-                      : const Color(0xff283237),
-                ).copyWith(
-                  backgroundColor: isDark
-                      ? const Color(0x33ffffff)
-                      : const Color(0x33eff1f3),
+        widget.selectable && widget.selectionContextMenuBuilder != null;
+    // 只有影响解析产物的输入变化时才重新解析
+    final cacheKey = _RenderCacheKey(
+      data: widget.data,
+      selectable: widget.selectable,
+      spoilerRevealed: _spoilerRevealed,
+      theme: theme,
+    );
+    if (_cachedWidgets == null || _cacheKey != cacheKey) {
+      _cacheKey = cacheKey;
+      _cachedWidgets =
+          buildGenerator(
+            isDark: isDark,
+            generators: [
+              mentionGenerator,
+              highlightGenerator,
+              spoilerGenerator,
+            ],
+          ).buildWidgets(
+            widget.data,
+            config: config.copy(
+              configs: [
+                CodeConfig(
+                  style:
+                      _codeTextStyle(
+                        fontSize: 13,
+                        color: isDark
+                            ? const Color(0xffe0e0e0)
+                            : const Color(0xff283237),
+                      ).copyWith(
+                        backgroundColor: isDark
+                            ? const Color(0x33ffffff)
+                            : const Color(0x33eff1f3),
+                      ),
                 ),
-          ),
-          isDark
-              ? PreConfig.darkConfig.copy(
+                isDark
+                    ? PreConfig.darkConfig.copy(
+                        textStyle: _codeTextStyle(),
+                        styleNotMatched: _codeTextStyle(),
+                        decoration: codeBlockDecoration,
+                      )
+                    : PreConfig(
+                        theme: a11yLightTheme,
+                        textStyle: _codeTextStyle(),
+                        styleNotMatched: _codeTextStyle(),
+                        decoration: codeBlockDecoration,
+                      ),
+                PConfig(
+                  textStyle:
+                      theme.textTheme.bodyMedium ??
+                      const TextStyle(fontSize: 14),
+                ),
+                CheckBoxConfig(
+                  builder: (checked) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Icon(
+                      checked ? Icons.check_box : Icons.check_box_outline_blank,
+                      size: 20,
+                    ),
+                  ),
+                ),
+                Heading1Config(
+                  style:
+                      theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ) ??
+                      const TextStyle(
+                        fontSize: 32,
+                        height: 40 / 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                Heading2Config(
+                  style:
+                      theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ) ??
+                      const TextStyle(
+                        fontSize: 24,
+                        height: 30 / 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                Heading3Config(
+                  style:
+                      theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ) ??
+                      const TextStyle(
+                        fontSize: 20,
+                        height: 25 / 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                PreConfig(
+                  theme: isDark ? a11yDarkTheme : a11yLightTheme,
                   textStyle: _codeTextStyle(),
                   styleNotMatched: _codeTextStyle(),
                   decoration: codeBlockDecoration,
-                )
-              : PreConfig(
-                  theme: a11yLightTheme,
-                  textStyle: _codeTextStyle(),
-                  styleNotMatched: _codeTextStyle(),
-                  decoration: codeBlockDecoration,
-                ),
-          PConfig(
-            textStyle:
-                theme.textTheme.bodyMedium ?? const TextStyle(fontSize: 14),
-          ),
-          CheckBoxConfig(
-            builder: (checked) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: Icon(
-                checked ? Icons.check_box : Icons.check_box_outline_blank,
-                size: 20,
-              ),
-            ),
-          ),
-          Heading1Config(
-            style:
-                theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ) ??
-                const TextStyle(
-                  fontSize: 32,
-                  height: 40 / 32,
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          Heading2Config(
-            style:
-                theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ) ??
-                const TextStyle(
-                  fontSize: 24,
-                  height: 30 / 24,
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          Heading3Config(
-            style:
-                theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ) ??
-                const TextStyle(
-                  fontSize: 20,
-                  height: 25 / 20,
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          PreConfig(
-            theme: isDark ? a11yDarkTheme : a11yLightTheme,
-            textStyle: _codeTextStyle(),
-            styleNotMatched: _codeTextStyle(),
-            decoration: codeBlockDecoration,
-            builder: (code, language) => Stack(
-              children: [
-                Container(
-                  decoration: codeBlockDecoration,
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  padding: const EdgeInsets.all(16),
-                  width: double.infinity,
-                  child: SelectionArea(
-                    // 支持可以选中的 markdown 代码渲染
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Text.rich(
-                        TextSpan(
-                          style: _codeTextStyle(
-                            color: isDark
-                                ? const Color(0xffd6d6d6)
-                                : const Color(0xff24292f),
-                          ),
-                          children: highLightSpans(
-                            code,
-                            // wyf 你为什么这么喜欢dart
-                            //
-                            //
-                            //
-                            // 与 markdown_widget 原行为一致：未指定语言时默认按 dart 高亮，
-                            // 传 null 会导致 highlight 完全不做语法着色。
-                            language: language.isEmpty ? 'dart' : language,
-                            theme: isDark ? a11yDarkTheme : a11yLightTheme,
-                            // 注意：textStyle / styleNotMatched 不能带 color。
-                            // highLightSpans 内部做 nodeStyle.merge(textStyle)，
-                            // textStyle 里的 color 会覆盖每个语法 token 的高亮颜色，
-                            // 导致所有代码变成单色、看起来没有语法高亮。
-                            textStyle: _codeTextStyle(),
-                            styleNotMatched: _codeTextStyle(),
+                  builder: (code, language) => Stack(
+                    children: [
+                      Container(
+                        decoration: codeBlockDecoration,
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.all(16),
+                        width: double.infinity,
+                        child: SelectionArea(
+                          // 支持可以选中的 markdown 代码渲染
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Text.rich(
+                              TextSpan(
+                                style: _codeTextStyle(
+                                  color: isDark
+                                      ? const Color(0xffd6d6d6)
+                                      : const Color(0xff24292f),
+                                ),
+                                children: highLightSpans(
+                                  code,
+                                  // wyf 你为什么这么喜欢dart
+                                  //
+                                  //
+                                  //
+                                  // 与 markdown_widget 原行为一致：未指定语言时默认按 dart 高亮，
+                                  // 传 null 会导致 highlight 完全不做语法着色。
+                                  language: language.isEmpty
+                                      ? 'dart'
+                                      : language,
+                                  theme: isDark
+                                      ? a11yDarkTheme
+                                      : a11yLightTheme,
+                                  // 注意：textStyle / styleNotMatched 不能带 color。
+                                  // highLightSpans 内部做 nodeStyle.merge(textStyle)，
+                                  // textStyle 里的 color 会覆盖每个语法 token 的高亮颜色，
+                                  // 导致所有代码变成单色、看起来没有语法高亮。
+                                  textStyle: _codeTextStyle(),
+                                  styleNotMatched: _codeTextStyle(),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                      Positioned(
+                        top: 12,
+                        right: 8,
+                        child: SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            icon: const Icon(Icons.copy, size: 14),
+                            tooltip: AppLocalizations.of(
+                              context,
+                            )!.markdownCopyCode,
+                            onPressed: () async {
+                              final l10n = AppLocalizations.of(context)!;
+                              final copied = await copyTextToClipboard(code);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      copied
+                                          ? l10n.markdownCodeCopied
+                                          : l10n.copyFailedText,
+                                    ),
+                                    duration: const Duration(milliseconds: 800),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Positioned(
-                  top: 12,
-                  right: 8,
-                  child: SizedBox(
-                    width: 28,
-                    height: 28,
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      icon: const Icon(Icons.copy, size: 14),
-                      tooltip: AppLocalizations.of(context)!.markdownCopyCode,
-                      onPressed: () async {
-                        final l10n = AppLocalizations.of(context)!;
-                        final copied = await copyTextToClipboard(code);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                copied
-                                    ? l10n.markdownCodeCopied
-                                    : l10n.copyFailedText,
-                              ),
-                              duration: const Duration(milliseconds: 800),
-                            ),
-                          );
-                        }
-                      },
-                    ),
+                TableConfig(
+                  wrapper: (child) => SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: child,
                   ),
+                ),
+                LinkConfig(
+                  style: TextStyle(
+                    color: theme.colorScheme.primary,
+                    decoration: TextDecoration.underline,
+                  ),
+                  onTap: (href) => _openLink(context, href),
+                ),
+                ImgConfig(
+                  builder: (url, attributes) {
+                    final uri = Uri.tryParse(url);
+                    if (uri == null) {
+                      return const SizedBox.shrink();
+                    }
+                    return _MarkdownRemoteImage(uri: uri);
+                  },
                 ),
               ],
             ),
-          ),
-          TableConfig(
-            wrapper: (child) => SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: child,
-            ),
-          ),
-          LinkConfig(
-            style: TextStyle(
-              color: theme.colorScheme.primary,
-              decoration: TextDecoration.underline,
-            ),
-            onTap: (href) => _openLink(context, href),
-          ),
-          ImgConfig(
-            builder: (url, attributes) {
-              final uri = Uri.tryParse(url);
-              if (uri == null) {
-                return const SizedBox.shrink();
-              }
-              return _MarkdownRemoteImage(uri: uri);
-            },
-          ),
-        ],
-      ),
-      generator: MarkdownRenderer.buildGenerator(
-        isDark: isDark,
-        generators: [mentionGenerator, highlightGenerator, spoilerGenerator],
-      ),
+          );
+    }
+
+    final markdownColumn = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: _cachedWidgets!,
     );
+    final Widget markdown = (widget.selectable && !useCustomSelectionMenu)
+        ? SelectionArea(child: markdownColumn)
+        : markdownColumn;
 
     Widget rendered = markdown;
     if (useCustomSelectionMenu) {
       rendered = SelectionArea(
-        contextMenuBuilder: selectionContextMenuBuilder,
+        contextMenuBuilder: widget.selectionContextMenuBuilder,
         child: markdown,
       );
     }
 
-    if (fitContent) {
+    if (widget.fitContent) {
       return rendered;
     }
 
@@ -445,8 +510,7 @@ class _MentionChipContent extends StatelessWidget {
     final chipColor = isCurrentUser
         ? Theme.of(context).colorScheme.tertiary
         : backgroundColor;
-
-    // Try to resolve an avatar from the local user cache (chat context).
+        
     final profile = ChatDataService.instance.getUserByUsername(username);
     final avatarUrl = profile?.avatar;
 
@@ -783,7 +847,9 @@ class _MarkdownRemoteImageState extends State<_MarkdownRemoteImage> {
     if (oldWidget.uri != widget.uri) {
       // 缓存 future：放在 build 里会在每次重建时重新发起信任查询，
       // 并把已经加载好的图片打回 loading 占位。
-      _blockedFuture = DomainTrustService.instance.requiresImageBlock(widget.uri);
+      _blockedFuture = DomainTrustService.instance.requiresImageBlock(
+        widget.uri,
+      );
       _confirmed = false;
     }
   }

@@ -307,6 +307,9 @@ class MessageBubble extends HookWidget {
   final bool isSelectionMode;
   final VoidCallback? onEnterSelectionMode;
 
+  /// 由列表统一下发的展示样式
+  final String? displayStyle;
+
   const MessageBubble({
     super.key,
     required this.message,
@@ -330,6 +333,7 @@ class MessageBubble extends HookWidget {
     this.animateEntrance = false,
     this.isSelectionMode = false,
     this.onEnterSelectionMode,
+    this.displayStyle,
   });
 
   @override
@@ -363,6 +367,7 @@ class MessageBubble extends HookWidget {
       galleryIndex: galleryIndex,
       isSelectionMode: isSelectionMode,
       onEnterSelectionMode: onEnterSelectionMode,
+      displayStyle: displayStyle,
     );
   }
 }
@@ -457,6 +462,9 @@ class _MessageBubbleContent extends StatefulWidget {
   final bool isSelectionMode;
   final VoidCallback? onEnterSelectionMode;
 
+  /// 消息展示样式（bubble / compact / column）
+  final String? displayStyle;
+
   const _MessageBubbleContent({
     required this.message,
     this.cachedBytes,
@@ -480,6 +488,7 @@ class _MessageBubbleContent extends StatefulWidget {
     this.galleryIndex = 0,
     this.isSelectionMode = false,
     this.onEnterSelectionMode,
+    this.displayStyle,
   });
 
   @override
@@ -711,10 +720,12 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
       return _buildPlaceholderBubble(context);
     }
 
-    final style = SettingsService.instance.getValue<String>(
-      'messageDisplayStyle',
-      'bubble',
-    );
+    final style =
+        widget.displayStyle ??
+        SettingsService.instance.getValue<String>(
+          'messageDisplayStyle',
+          'bubble',
+        );
     final content = style == 'compact' || style == 'column'
         ? _buildLinearLayout(context, isCompact: style == 'compact')
         : _buildBubbleLayout(context);

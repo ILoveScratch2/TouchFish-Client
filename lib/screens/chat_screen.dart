@@ -1,13 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../models/chat_model.dart';
-import '../providers/chat/message_provider.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/chat_data_service.dart';
 import '../services/chat_ws_service.dart';
@@ -28,7 +26,7 @@ import '../utils/wide_screen_helper.dart';
 import 'group_create_screen.dart';
 
 class ChatShellScreen extends StatefulWidget {
-  /// 聊天区内容（宽屏下为右侧嵌套导航区域，窄屏下整屏直通）。
+  /// 聊天区内容
   final Widget child;
 
   const ChatShellScreen({super.key, required this.child});
@@ -52,9 +50,7 @@ class _ChatShellScreenState extends State<ChatShellScreen>
   bool _isCollapsed = false;
   double _sidebarWidth = 320.0;
 
-  /// 整壳入场动画：仅当从其它主 Section 切进聊天区（壳重新挂载）时播放。
-  /// 聊天是导航栏最左的 tab，从任何其它 tab 回来都固定从左侧滑入；
-  /// 列表/详情在壳内部路由切换时壳保持常驻，不会重播。
+  /// 整壳入场动画
   late final AnimationController _enterController;
   late final Animation<double> _enterAnimation;
 
@@ -62,8 +58,7 @@ class _ChatShellScreenState extends State<ChatShellScreen>
   void initState() {
     super.initState();
     _loadDividerPosition();
-    // 断点在设置页可调（导航阈值 / 分栏阈值）：改了要立刻重排，
-    // 而不是等下一次数据变化才生效。
+    // 改了要立刻重排
     SettingsService.instance.addListener(_onSettingsChanged);
     _enterController = AnimationController(
       vsync: this,
@@ -73,7 +68,7 @@ class _ChatShellScreenState extends State<ChatShellScreen>
       parent: _enterController,
       curve: Curves.easeOutCubic,
     );
-    // 初始帧后再启动，避免冷启动首屏也被过渡一次
+    // 初始帧后再启动
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !MediaQuery.disableAnimationsOf(context)) {
         _enterController.forward();
@@ -155,13 +150,11 @@ class _ChatShellScreenState extends State<ChatShellScreen>
 
   @override
   Widget build(BuildContext context) {
-    // 「列表 + 详情」两栏：只有 expanded 档并排，medium 仍是单栏。
     final isWide = WideScreenHelper.isExpanded(context);
 
     if (isWide) {
       final currentWidth = _isCollapsed ? _collapsedWidth : _sidebarWidth;
 
-      // 宽屏：左侧聊天列表常驻，右侧为聊天区子路由（列表页/详情页带转场动画）
       return _enterWrapper(
         context,
         Scaffold(
@@ -231,9 +224,6 @@ class _ChatShellScreenState extends State<ChatShellScreen>
         vertical: true,
       );
     }
-    // 窄屏：整个聊天区（列表/详情）都由内嵌子路由承载，
-    // 保持 ChatShellScreen 常驻可以让切换房间不重建列表。
-    // 进入聊天区（壳重新挂载）时从左侧滑入：聊天是导航栏最左的 tab。
     return _enterWrapper(context, widget.child);
   }
 }
@@ -281,7 +271,7 @@ class _ChatListScreenState extends State<ChatListScreen>
       initialIndex: _lastSelectedTab,
     );
     _tabController.addListener(() {
-      // listener 在切换动画期间每帧都会触发：只在 index 真正变化时 setState
+      // 只在 index 真正变化时 setState
       if (!mounted) return;
       if (_tabController.index == _lastSelectedTab) return;
       setState(() => _lastSelectedTab = _tabController.index);
@@ -772,7 +762,6 @@ class _ChatListScreenState extends State<ChatListScreen>
     );
   }
 
-  /// 联系人页顶部的“好友申请”入口（服务端持久列表，不依赖通知）。
   Widget _buildFriendRequestsEntry(
     BuildContext context,
     AppLocalizations l10n,
@@ -872,15 +861,15 @@ class _ChatListScreenState extends State<ChatListScreen>
   }
 }
 
-class _CollapsedRoomButton extends ConsumerWidget {
+class _CollapsedRoomButton extends StatelessWidget {
   final ChatRoom room;
 
   const _CollapsedRoomButton({required this.room});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final unread = ref.watch(unreadCountProvider(room.id));
+    final unread = room.unreadCount;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),

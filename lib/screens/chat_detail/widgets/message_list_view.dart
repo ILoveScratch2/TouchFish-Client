@@ -127,6 +127,15 @@ class MessageListView extends StatelessWidget {
   }
 
   Widget _buildList(BuildContext context) {
+    // 外 ListenableBuilder 已在设置变化时重建本方法
+    final displayStyle = SettingsService.instance.getValue<String>(
+      'messageDisplayStyle',
+      'bubble',
+    );
+    // 置顶/精华判断提到这里做一次 Set，itemBuilder 内即为常数时间
+    final pinnedMidSet = <int>{for (final p in pinnedMessages) p.messageId};
+    final essenceMidSet = essenceMids.toSet();
+
     if (messages.isEmpty) {
       return PullToRefresh.content(
         onRefresh: () async => onRefresh(),
@@ -153,11 +162,7 @@ class MessageListView extends StatelessWidget {
       return messages.length - 1 - messageIndex;
     }
 
-    // 已读回执只显示一处（避免每条都刷屏），落点是**已被对方读到的、最新的那条
-    // 自己的消息**。
-    //
-    // 不能挂在「最后一条自己的消息」上：对方只读到一半时那里什么都没有，等于
-    // 部分已读完全不可见；而自己再发一条，标记还会整个消失（新消息尚未被读）。
+    // 已读回执只显示一处（避免每条都刷屏）已被对方读到的、最新的那条
     var readMarkerIndex = -1;
     if (readReceiptEnabled) {
       for (var i = messages.length - 1; i >= 0; i--) {
@@ -172,7 +177,7 @@ class MessageListView extends StatelessWidget {
     return ListView.builder(
       controller: scrollController,
       reverse: true,
-      cacheExtent: 1200,
+      cacheExtent: 400,
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: messages.length,
       findChildIndexCallback: findChildIndex,
@@ -180,11 +185,12 @@ class MessageListView extends StatelessWidget {
         final messageIndex = messages.length - 1 - index;
         final message = messages[messageIndex];
         final previous = messageIndex > 0 ? messages[messageIndex - 1] : null;
-        final showAvatar = previous == null ||
+        final showAvatar =
+            previous == null ||
             previous.senderUid != message.senderUid ||
             message.timestamp.difference(previous.timestamp).inMinutes >= 5;
         // 优先用 clientMid
-        // TCP.ACK WAITING TRANSMISSTION((())) 
+        // TCP.ACK WAITING TRANSMISSTION((()))
         // ack id from clientMid -> mid
         // 不然会 sb reload
         final stableKey = chatMessageStableKey(message);
@@ -203,6 +209,7 @@ class MessageListView extends StatelessWidget {
             canRecall: false,
             canPin: false,
             essenceEnabled: essenceEnabled,
+            displayStyle: displayStyle,
           );
         }
 
@@ -222,18 +229,18 @@ class MessageListView extends StatelessWidget {
           galleryItems: galleryItems.isEmpty ? null : galleryItems,
           galleryIndex: imageIndexById[message] ?? 0,
           canRecall: canRecall(message),
-          isEssence: message.mid != null &&
-              essenceMids.contains(message.mid) &&
-              essenceEnabled,
-          isPinned: message.mid != null &&
-              pinnedMessages.any((p) => p.messageId == message.mid),
-          canPin: currentRoom?.type == ChatType.group &&
+          isEssence:
+              message.mid != null &&
+              essenceEnabled &&
+              essenceMidSet.contains(message.mid),
+          isPinned: message.mid != null && pinnedMidSet.contains(message.mid),
+          canPin:
+              currentRoom?.type == ChatType.group &&
               canModerateGroup &&
               message.mid != null &&
               !message.isDeleted,
           essenceEnabled: essenceEnabled,
-          onPinToggle:
-              message.mid != null ? () => onPinToggle(message) : null,
+          onPinToggle: message.mid != null ? () => onPinToggle(message) : null,
           onEssenceToggle: message.mid != null && essenceEnabled
               ? () => onEssenceToggle(message)
               : null,
@@ -247,13 +254,22 @@ class MessageListView extends StatelessWidget {
             message,
             readMarkerIndex,
           ),
+          displayStyle: displayStyle,
         );
+
+        // 跳转定位用的 GlobalKey 只能挂在 Dismissible 之内
+        final mid = message.mid;
+        final globalKey = mid == null ? null : messageKeys[mid];
+        final bubbleBody = globalKey == null
+            ? bubble
+            : KeyedSubtree(key: globalKey, child: bubble);
 
         final selectionWrapped = _SelectionWrapper(
           isSelectionMode: isSelectionMode,
-          isSelected: isSelectionMode && selectedMessageKeys.contains(stableKey),
+          isSelected:
+              isSelectionMode && selectedMessageKeys.contains(stableKey),
           onTap: () => onToggleSelection(message),
-          child: bubble,
+          child: bubbleBody,
         );
 
         final dismissible = Dismissible(
@@ -261,9 +277,7 @@ class MessageListView extends StatelessWidget {
           direction: message.isDeleted || isSelectionMode
               ? DismissDirection.none
               : DismissDirection.endToStart,
-          dismissThresholds: const {
-            DismissDirection.endToStart: 0.22,
-          },
+          dismissThresholds: const {DismissDirection.endToStart: 0.22},
           resizeDuration: null,
           movementDuration: const Duration(milliseconds: 120),
           confirmDismiss: (_) async {
@@ -274,25 +288,17 @@ class MessageListView extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: Padding(
               padding: const EdgeInsets.only(right: 24),
-              child: Icon(
-                Icons.reply,
-                color: colorScheme.primary,
-              ),
+              child: Icon(Icons.reply, color: colorScheme.primary),
             ),
           ),
           child: selectionWrapped,
         );
-        final mid = message.mid;
-        final globalKey = mid == null ? null : messageKeys[mid];
-        if (globalKey == null) return dismissible;
-        return KeyedSubtree(key: globalKey, child: dismissible);
+        return dismissible;
       },
     );
   }
 
-  /// 对方是否已读到我这条消息。
-  ///
-  /// 私聊看对方的水位序号；群聊看「N 人已读」的计数（>=1 即算读到）。
+  /// 对方是否已读到我这条消息
   bool _isReadByPeer(ChatMessage message) {
     if (currentRoom?.type == ChatType.group) {
       return (groupReadCounts[message.mid!] ?? 0) > 0;
@@ -301,7 +307,7 @@ class MessageListView extends StatelessWidget {
     return seq != null && peerReadSeq != null && peerReadSeq! >= seq;
   }
 
-  /// 计算某条消息下的已读回执文案；只有 [readMarkerIndex] 那一条会返回非空。
+  /// 计算某条消息下的已读回执文案
   String? _readReceiptLabelFor(
     BuildContext context,
     int index,
@@ -383,10 +389,7 @@ class _SelectionWrapper extends StatelessWidget {
                     : const SizedBox(width: 0, height: 28),
               ),
               Expanded(
-                child: IgnorePointer(
-                  ignoring: isSelectionMode,
-                  child: child,
-                ),
+                child: IgnorePointer(ignoring: isSelectionMode, child: child),
               ),
             ],
           ),

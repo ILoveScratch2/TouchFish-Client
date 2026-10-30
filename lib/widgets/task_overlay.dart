@@ -92,6 +92,7 @@ class _TaskOverlayState extends ConsumerState<TaskOverlay> {
     super.initState();
     // 每 3 秒清理一次已完成/失败超过 8 秒的任务
     _pruneTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (ref.read(taskManagerProvider).isEmpty) return;
       ref.read(taskManagerProvider.notifier).pruneCompleted();
     });
   }
