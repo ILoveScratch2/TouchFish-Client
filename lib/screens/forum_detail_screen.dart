@@ -19,7 +19,10 @@ import '../utils/talker.dart';
 import '../utils/wide_screen_helper.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/forum_attachments.dart';
+import '../theme/tokens.dart';
+import '../widgets/ui/empty_state.dart';
 import '../widgets/ui/loading_indicator.dart';
+import '../widgets/ui/tri_state_filter_chip.dart';
 import '../routes/app_routes.dart';
 
 final _stickerTestPatternFd = RegExp(r':[A-Za-z0-9_]+\+[A-Za-z0-9_-]+:');
@@ -49,6 +52,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   Forum? _forum;
   ForumMember? _identity;
   List<ForumPost> _posts = [];
+
+  /// 帖子列表筛选：是否有附件 / 是否我发布。默认不限。
+  TriStateFilter _filterAttachment = TriStateFilter.any;
+  TriStateFilter _filterMine = TriStateFilter.any;
   List<ForumPost> _pinnedPosts = [];
   bool _isLoading = true;
   String? _error;
@@ -388,6 +395,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                         SliverToBoxAdapter(
                           child: _buildPinnedPostsCard(context, l10n),
                         ),
+                      SliverToBoxAdapter(
+                        child: _buildPostFilterBar(context, l10n),
+                      ),
                       _buildPostListSliver(context, l10n),
                     ],
                   ),
@@ -494,6 +504,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           SliverToBoxAdapter(child: _buildJoinCard(context, l10n)),
         if (_pinnedPosts.isNotEmpty)
           SliverToBoxAdapter(child: _buildPinnedPostsCard(context, l10n)),
+        SliverToBoxAdapter(child: _buildPostFilterBar(context, l10n)),
         _buildPostListSliver(context, l10n),
       ],
     );
@@ -737,7 +748,57 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     );
   }
 
+  /// 应用筛选后的帖
+  List<ForumPost> get _visiblePosts {
+    final myUid = AuthState.instance.uid?.toString();
+    return _posts.where((post) {
+      return passesTriState(
+            _filterAttachment,
+            post.attachments.isNotEmpty,
+          ) &&
+          passesTriState(_filterMine, myUid != null && post.authorUid == myUid);
+    }).toList(growable: false);
+  }
+
+  Widget _buildPostFilterBar(BuildContext context, AppLocalizations l10n) {
+    // 帖子太少时筛选没有意义
+    if (_posts.length < 5) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(TFSpace.lg, TFSpace.sm, TFSpace.lg, 0),
+      child: Wrap(
+        spacing: TFSpace.sm,
+        runSpacing: TFSpace.xs,
+        children: [
+          TriStateFilterChip(
+            label: l10n.forumFilterWithAttachment,
+            value: _filterAttachment,
+            onChanged: (value) => setState(() => _filterAttachment = value),
+          ),
+          TriStateFilterChip(
+            label: l10n.forumFilterMine,
+            value: _filterMine,
+            onChanged: (value) => setState(() => _filterMine = value),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPostListSliver(BuildContext context, AppLocalizations l10n) {
+    final filteredPosts = _visiblePosts;
+    if (_posts.isNotEmpty && filteredPosts.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: TFSpace.xxl),
+          child: EmptyState(
+            compact: true,
+            icon: Icons.filter_alt_off_outlined,
+            title: l10n.forumFilterNoMatch,
+          ),
+        ),
+      );
+    }
     if (_posts.isEmpty) {
       return SliverToBoxAdapter(
         child: Padding(
@@ -754,10 +815,11 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       );
     }
 
-    final itemCount = _posts.length + (_hasMorePosts ? 1 : 0);
+    final posts = _visiblePosts;
+    final itemCount = posts.length + (_hasMorePosts ? 1 : 0);
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
-        if (index >= _posts.length) {
+        if (index >= posts.length) {
           // 分页加载指示失败时换成可点的重试：失败不会产生新的滚动事件
           if (_loadMoreFailed) {
             return Padding(
@@ -784,8 +846,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: _PostCard(
-            post: _posts[index],
-            onTap: () => _openPostDetail(context, _posts[index]),
+            post: posts[index],
+            onTap: () => _openPostDetail(context, posts[index]),
             profileCache: _profileCache,
             enableMarkdown: _enableMarkdown,
           ),

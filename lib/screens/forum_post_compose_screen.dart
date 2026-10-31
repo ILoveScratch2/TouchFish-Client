@@ -30,6 +30,9 @@ class ForumPostComposeSheet extends StatefulWidget {
   final String? postId;
   final ValueChanged<String>? onContentChanged;
 
+  /// true 时以整页（自带 Scaffold），false 时按弹层
+  final bool asPage;
+
   const ForumPostComposeSheet({
     super.key,
     required this.forumId,
@@ -37,6 +40,7 @@ class ForumPostComposeSheet extends StatefulWidget {
     this.isReply = false,
     this.postId,
     this.onContentChanged,
+    this.asPage = false,
   });
   static Future<bool?> show(
     BuildContext context, {
@@ -46,17 +50,19 @@ class ForumPostComposeSheet extends StatefulWidget {
     String? postId,
     ValueChanged<String>? onContentChanged,
   }) {
-    return showDialog<bool>(
-      context: context,
-      useRootNavigator: false,
-      barrierDismissible: true,
-      barrierColor: Colors.black.withValues(alpha: 0.6),
-      builder: (context) => ForumPostComposeSheet(
-        forumId: forumId,
-        initialContent: initialContent,
-        isReply: isReply,
-        postId: postId,
-        onContentChanged: onContentChanged,
+    // 整页而不是弹层
+    // 编辑长文时弹层会被键盘压缩
+    return Navigator.of(context, rootNavigator: true).push<bool>(
+      MaterialPageRoute<bool>(
+        fullscreenDialog: true,
+        builder: (context) => ForumPostComposeSheet(
+          forumId: forumId,
+          initialContent: initialContent,
+          isReply: isReply,
+          postId: postId,
+          onContentChanged: onContentChanged,
+          asPage: true,
+        ),
       ),
     );
   }
@@ -189,7 +195,8 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final screenSize = MediaQuery.of(context).size;
-    final isWide = WideScreenHelper.isWide(context);
+    // 页模式下不再做"宽屏居中卡片"：整页布局自己撑满
+    final isWide = !widget.asPage && WideScreenHelper.isWide(context);
     final viewInsets = MediaQuery.of(context).viewInsets;
 
     Widget content = Material(
@@ -342,6 +349,12 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
       ),
     );
 
+    if (widget.asPage) {
+      return Scaffold(
+        backgroundColor: colorScheme.surface,
+        body: SafeArea(child: content),
+      );
+    }
     if (isWide) {
       return Center(child: content);
     }
@@ -690,57 +703,100 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    final pid = int.tryParse(widget.postId ?? '');
+    if (widget.isReply && pid == null) {
+      Navigator.pop(context, false);
+      return;
+    }
+
+    // 提交即离
+    final title = _titleController.text.trim();
+    final content = _contentController.text.trim();
+    final attachments = _attachments
+        .map(
+          (file) => {
+            'hash': file.hash,
+            'file_name': file.fileName,
+            if (file.fileSize != null) 'size': file.fileSize,
+            if (file.mimeType != null) 'mime_type': file.mimeType,
+          },
+        )
+        .toList();
+    final isReply = widget.isReply;
+
+    setState(() {
+      _isSubmitting = true;
+      _didSubmit = true;
+    });
+    Navigator.pop(context, true);
+    unawaited(
+      _submitInBackground(
+        l10n: l10n,
+        uid: uid,
+        password: password,
+        fid: fid,
+        pid: pid,
+        title: title,
+        content: content,
+        attachmentHashes: attachments.map((e) => e['hash'] as String).toList(),
+        isReply: isReply,
+        draftPayload: {
+          'title': title,
+          'content': content,
+          'attachments': attachments,
+        },
+      ),
+    );
+  }
+
+  Future<void> _submitInBackground({
+    required AppLocalizations l10n,
+    required int uid,
+    required String password,
+    required int fid,
+    required int? pid,
+    required String title,
+    required String content,
+    required List<String> attachmentHashes,
+    required bool isReply,
+    required Map<String, dynamic> draftPayload,
+  }) async {
+    // 注意：不能用 context
     try {
-      final bool success;
-      if (widget.isReply) {
-        final pid = int.tryParse(widget.postId ?? '');
-        if (pid == null) {
-          Navigator.pop(context, false);
-          return;
-        }
-        success = await TfApiClient.instance.addComment(
-          uid,
-          password,
-          fid,
-          pid,
-          _contentController.text.trim(),
-        );
-      } else {
-        success = await TfApiClient.instance.sendPost(
-          uid,
-          password,
-          fid,
-          _titleController.text.trim(),
-          _contentController.text.trim(),
-          attachmentHashes: _attachments.map((file) => file.hash).toList(),
-        );
-      }
-      if (!mounted) return;
-      setState(() => _isSubmitting = false);
+      final success = isReply
+          ? await TfApiClient.instance.addComment(
+              uid,
+              password,
+              fid,
+              pid!,
+              content,
+            )
+          : await TfApiClient.instance.sendPost(
+              uid,
+              password,
+              fid,
+              title,
+              content,
+              attachmentHashes: attachmentHashes,
+            );
+
       if (success) {
-        _didSubmit = true;
         await DraftService.instance.clearDraft(_draftType, _draftId);
-        if (!mounted) return;
         TouchFishSnackbarService.instance.show(
-          widget.isReply
-              ? l10n.forumCommentSuccess
-              : l10n.forumPostSuccess,
+          isReply ? l10n.forumCommentSuccess : l10n.forumPostSuccess,
         );
-        Navigator.pop(context, true);
       } else {
-        TouchFishSnackbarService.instance.show(
-          l10n.forumPostFailed,
+        await DraftService.instance.saveDraft(
+          _draftType,
+          _draftId,
+          draftPayload,
         );
+        TouchFishSnackbarService.instance.show(l10n.forumPostFailed);
       }
     } catch (e) {
       talker.error('_submit post failed', e);
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-        TouchFishSnackbarService.instance.show(
-          l10n.forumPostFailed,
-        );
-      }
+      await DraftService.instance.saveDraft(_draftType, _draftId, draftPayload);
+      TouchFishSnackbarService.instance.show(l10n.forumPostFailed);
     }
   }
 }

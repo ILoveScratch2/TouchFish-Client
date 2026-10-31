@@ -7726,6 +7726,24 @@ abstract class AppLocalizations {
   /// **'Nothing needs your attention'**
   String get inboxAllClear;
 
+  /// No description provided for @forumFilterWithAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'With attachments'**
+  String get forumFilterWithAttachment;
+
+  /// No description provided for @forumFilterMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Posted by me'**
+  String get forumFilterMine;
+
+  /// No description provided for @forumFilterNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No posts match these filters'**
+  String get forumFilterNoMatch;
+
   /// No description provided for @draftsEmpty.
   ///
   /// In en, this message translates to:

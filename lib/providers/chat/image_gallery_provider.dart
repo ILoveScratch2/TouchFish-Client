@@ -44,7 +44,8 @@ class ImageGallery extends _$ImageGallery {
     }
 
     final entries = <LightboxImageItem>[];
-    final indexById = <ChatMessage, int>{};
+    // 用稳定标识做键
+    final indexById = <String, int>{};
 
     for (final message in messages) {
       if (!_isImageMessage(message)) continue;
@@ -62,7 +63,7 @@ class ImageGallery extends _$ImageGallery {
               : (raw != null ? Uint8List.fromList(raw) : null),
         ),
       );
-      indexById[message] = index;
+      indexById[imageGalleryKey(message)] = index;
     }
 
     final next = ImageGalleryState(
@@ -100,10 +101,16 @@ class ImageGallery extends _$ImageGallery {
   }
 }
 
+/// 消息在画廊中的稳定键
+String imageGalleryKey(ChatMessage message) {
+  final mid = message.mid;
+  return mid != null ? 'm$mid' : 'id:${message.id}';
+}
+
 class ImageGalleryState {
   final String roomId;
   final List<LightboxImageItem> items;
-  final Map<ChatMessage, int> indexById;
+  final Map<String, int> indexById;
   final bool isOverLimit;
 
   ImageGalleryState({

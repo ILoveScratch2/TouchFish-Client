@@ -11,6 +11,8 @@ import '../../../widgets/ui/error_state.dart';
 import '../../../widgets/ui/refreshable.dart';
 import '../../../widgets/ui/skeleton.dart';
 import '../../../theme/tokens.dart';
+import '../../../providers/chat/image_gallery_provider.dart';
+import '../../../widgets/ui/flash_highlight.dart';
 
 const String _swipeKeyPrefix = 'swipe-';
 
@@ -48,7 +50,7 @@ class MessageListView extends StatelessWidget {
   final List<ChatMessage> messages;
   final ScrollController scrollController;
   final List<LightboxImageItem> galleryItems;
-  final Map<ChatMessage, int> imageIndexById;
+  final Map<String, int> imageIndexById;
   final List<int> essenceMids;
   final List<PinnedMessage> pinnedMessages;
   final bool essenceEnabled;
@@ -67,6 +69,9 @@ class MessageListView extends StatelessWidget {
   final bool Function(ChatMessage) canDeleteLocally;
   final String noMessagesText;
   final ColorScheme colorScheme;
+
+  /// 需要闪烁提示落点的消息
+  final int? highlightedMid;
 
   final bool isLoading;
 
@@ -127,6 +132,7 @@ class MessageListView extends StatelessWidget {
     this.groupReadCounts = const {},
     this.entranceKeys = const {},
     this.messageKeys = const {},
+    this.highlightedMid,
   });
 
   @override
@@ -258,7 +264,7 @@ class MessageListView extends StatelessWidget {
           onQuoteTap: onQuoteTap,
           showAvatar: showAvatar,
           galleryItems: galleryItems.isEmpty ? null : galleryItems,
-          galleryIndex: imageIndexById[message] ?? 0,
+          galleryIndex: imageIndexById[imageGalleryKey(message)] ?? 0,
           canRecall: canRecall(message),
           isEssence:
               message.mid != null &&
@@ -291,9 +297,13 @@ class MessageListView extends StatelessWidget {
         // 跳转定位用的 GlobalKey 只能挂在 Dismissible 之内
         final mid = message.mid;
         final globalKey = mid == null ? null : messageKeys[mid];
+        // 落点闪烁
+        final highlighted = message.mid != null && message.mid == highlightedMid
+            ? FlashHighlight(active: true, child: bubble)
+            : bubble;
         final bubbleBody = globalKey == null
-            ? bubble
-            : KeyedSubtree(key: globalKey, child: bubble);
+            ? highlighted
+            : KeyedSubtree(key: globalKey, child: highlighted);
 
         final selectionWrapped = _SelectionWrapper(
           isSelectionMode: isSelectionMode,

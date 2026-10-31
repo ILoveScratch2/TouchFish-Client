@@ -12,6 +12,7 @@ import '../widgets/forum_notification_sheet.dart';
 import '../widgets/layout/responsive_sidebar.dart';
 import '../services/draft_service.dart';
 import '../services/snackbar_service.dart';
+import '../widgets/forum_quick_strip.dart';
 import '../widgets/ui/empty_state.dart';
 import '../widgets/ui/error_state.dart';
 import '../widgets/ui/skeleton.dart';
@@ -368,11 +369,21 @@ class _ForumScreenState extends State<ForumScreen> {
               Tab(text: l10n.forumTabExplore),
             ],
           ),
+          // 版块横向速览
+          if (!_isLoading && _error == null && _quickStripForums.length >= 3)
+            ForumQuickStrip(
+              forums: _quickStripForums,
+              onOpen: _openForum,
+            ),
           Expanded(child: _buildBody(l10n)),
         ],
       ),
     );
   }
+
+  /// 速览条使用的版块
+  List<Forum> get _quickStripForums =>
+      _joinedForums.isNotEmpty ? _joinedForums : _exploreForums;
 
   Widget _buildBody(AppLocalizations l10n) {
     if (_isLoading) {

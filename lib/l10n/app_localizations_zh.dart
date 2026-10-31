@@ -4023,6 +4023,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get inboxAllClear => '没有待处理的通知';
 
   @override
+  String get forumFilterWithAttachment => '有附件';
+
+  @override
+  String get forumFilterMine => '我发布的';
+
+  @override
+  String get forumFilterNoMatch => '没有符合筛选条件的帖子';
+
+  @override
   String get draftsEmpty => '暂无草稿';
 
   @override

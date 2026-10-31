@@ -85,6 +85,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   bool _hasMoreMessages = true;
 
   String? _messagesError;
+
+  /// 需要闪烁提示落点的消息
+  int? _flashMid;
+  Timer? _flashTimer;
   bool _realtimeListenersAttached = false;
   StreamSubscription? _ackErrorSub;
   String _groupEnterHint = '';
@@ -378,6 +382,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
   @override
   void dispose() {
+    _flashTimer?.cancel();
     for (final timer in _pendingWsTimers.values) {
       timer.cancel();
     }
@@ -2519,8 +2524,19 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     });
   }
 
+  /// 跳转后给目标消息一个三下闪烁的落点提示。
+  void _flashMessage(int? mid) {
+    if (mid == null) return;
+    _flashTimer?.cancel();
+    setState(() => _flashMid = mid);
+    _flashTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted) setState(() => _flashMid = null);
+    });
+  }
+
   void _scrollToQuotedMessage(int mid) {
     _followBottom = false;
+    _flashMessage(mid);
     final index = _messages.indexWhere((message) => message.mid == mid);
     if (index < 0) return;
     final targetContext = _messageKeys[mid]?.currentContext;
@@ -2566,6 +2582,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _followBottom = false;
     final message = _messages[index];
     final mid = message.mid;
+    _flashMessage(mid);
 
     // 目标上下文已就绪：瞬时精确对齐（无动画）
     final targetContext = mid != null
@@ -3345,6 +3362,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                             colorScheme: colorScheme,
                             isLoading: _isLoadingMessages,
                             errorText: _messagesError,
+                            highlightedMid: _flashMid,
                             isSelectionMode: isSelectionMode,
                             selectedMessageKeys: selectedMessageIds,
                             onEnterSelectionMode: _enterSelection,

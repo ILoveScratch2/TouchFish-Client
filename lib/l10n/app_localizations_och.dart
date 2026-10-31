@@ -4020,6 +4020,15 @@ class AppLocalizationsOch extends AppLocalizations {
   String get inboxAllClear => '沒有待處理的通知';
 
   @override
+  String get forumFilterWithAttachment => '有附件';
+
+  @override
+  String get forumFilterMine => '我發佈的';
+
+  @override
+  String get forumFilterNoMatch => '沒有符合篩選條件的帖子';
+
+  @override
   String get draftsEmpty => '暫無草稿';
 
   @override

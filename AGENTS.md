@@ -59,6 +59,52 @@ TouchFish Server 的源码位于 [TouchFishServer](https://github.com/2044-space
 - 用户可能并行编辑同一批文件，如果你要在几次操作后改文件前，你需要先读最新内容，不要假设工作区只有自己的改动。
 - 代码里的玩笑注释不需要要清理或"规范化"，显然这是我故意的（毕竟这个世界已经太乏味了，连有彩蛋的软件都没几个了）
 
+
+### 主题与样式
+
+设计令牌在 `lib/theme/tokens.dart`（`TFSpace` / `TFRadius` / `TFSize` / `TFMotion` / `TFAlpha`），主题构造在 `lib/theme/app_theme.dart`。新增间距、圆角、时长优先查看已有令牌。
+
+**以下是约束，不是风格建议：**
+
+1. **不要覆写 `textTheme` / `primaryTextTheme`。** `ThemeData` 内部已经对文本主题 `apply()` 过，产物是 `inherit: true`，违反会导致 `AnimatedDefaultTextStyle` 在 `TextStyle.lerp` 时抛 `Failed to interpolate TextStyles with different inherit values`。这个断言在 debug 下不显示，但 UI 会出现大量异常文本样式和布局错乱。**切记：不要试图通过覆写文本主题来修复样式问题**
+2. **不要把 `theme.textTheme.*` 塞进子主题的 `textStyle` 字段**（appBar / dialog / snackBar / listTile / chip / popupMenu / tooltip）。同上一条
+3. 确实要标题样式时，必须 `inherit: false` 构造，并且**显式带上 `fontFamily`**。
+4. **不要覆写 `inputDecorationTheme` 的 border。**
+5. 下面这些默认值影响全站几何尺寸：`iconTheme`、`listTileTheme.contentPadding` / `minVerticalPadding`、`dividerTheme.space`、`dialogTheme.insetPadding`、`progressIndicatorTheme.linearMinHeight`、`chipTheme.padding`，**不要随意修改**。
+6. 表面层级方向必须一致卡片用 `surfaceContainerLow`（比页面略深），浮层用 `surfaceContainerLowest` + `elevation: 3`（比卡片浅）。用户自定义配色使用 `main.dart` 的 `_applyCustomColors`，不能让 `surfaceContainer` 正好等于页面色，否则会相当于隐形找不着。
+
+### Provider 与缓存
+
+- **带缓存的状态里，Map 的键一律用业务标识（`mid` / `id`），不要用对象身份。** 消息列表重建后拿到的是新实例，而 provider 复用旧 state，会炸！！！！！
+- 同样的，缓存的失效判据（签名）必须覆盖所有会影响结果的字段。
+
+### 页面销毁后不要再用 context
+
+请在 pop 之前把需要的东西捕获下来作为参数传进后台方法。
+
+可参考 `lib/screens/forum_post_compose_screen.dart` 的 `_submitInBackground`。
+
+### 本地测试
+
+- **绕开代理**，否则 `flutter_tester` 与测试宿主之间的 localhost WebSocket 升级请求会被 `HTTP_PROXY` 拦截 `WebSocketException: Invalid WebSocket upgrade request`。
+
+  ```bash
+  NO_PROXY="localhost,127.0.0.1,::1" no_proxy="localhost,127.0.0.1,::1" flutter test
+  ```
+
+  大小写都要设置。
+
+
+### 导航与外壳
+
+- 主壳是 `StatefulShellRoute.indexedStack`，分支顺序固定 `chat / announcement / forum / account / admin`（注意导航项会随特性开关增减，分支不动）
+- 切 tab 使用 `goBranch`，**不用 `popUntil + context.go()`**（那会销毁目标页的滚动位置、内层路由栈和 TabController）
+- 新增底部导航项时需在 `_buildDestinations` 里加入 `branchIndex`。
+
+### 新增文案
+
+改完 `lib/l10n/*.arb`（en / zh / och 三个都要）记得 `flutter gen-l10n`。不要手改 `app_localizations*.dart`。**上面说过了但还是要再说一遍。**
+
 ## 非代码注意
 
 除了项目本身的代码，AI 在编写代码时也需要遵守（本条目的为优化 AI 生成内容，非项目强制性规定，但如果你是 AI/LLM 需要遵守）

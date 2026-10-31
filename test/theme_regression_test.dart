@@ -57,7 +57,7 @@ Widget _probe() => Scaffold(
 
 void main() {
   for (final brightness in Brightness.values) {
-    testWidgets('主题构建不产生插值异常（$brightness）', (tester) async {
+    testWidgets('theme builds without text style lerp assertion ($brightness)', (tester) async {
       final scheme = ColorScheme.fromSeed(
         seedColor: Colors.blue,
         brightness: brightness,
@@ -71,7 +71,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('列表项/输入框几何与默认主题一致（$brightness）', (tester) async {
+    testWidgets('list tile geometry matches the default theme ($brightness)', (tester) async {
       final scheme = ColorScheme.fromSeed(
         seedColor: Colors.blue,
         brightness: brightness,
@@ -93,7 +93,7 @@ void main() {
     });
   }
 
-  testWidgets('对话框与弹层使用浮层色且带 elevation', (tester) async {
+  testWidgets('dialogs and sheets use the overlay surface with elevation', (tester) async {
     final scheme = ColorScheme.fromSeed(seedColor: Colors.blue);
     final theme = _themed(scheme);
 
@@ -103,7 +103,7 @@ void main() {
     expect(theme.popupMenuTheme.elevation, greaterThan(0));
   });
 
-  testWidgets('卡片底色比页面深，保证卡片可辨识', (tester) async {
+  testWidgets('card color differs from the page background', (tester) async {
     final scheme = ColorScheme.fromSeed(seedColor: Colors.blue);
     final theme = _themed(scheme);
 
@@ -115,7 +115,7 @@ void main() {
     );
   });
 
-  testWidgets('AppBar 标题收到 16sp/w600', (tester) async {
+  testWidgets('app bar title is 16sp semibold', (tester) async {
     final scheme = ColorScheme.fromSeed(seedColor: Colors.blue);
     final style = _themed(scheme).appBarTheme.titleTextStyle;
 
@@ -124,7 +124,7 @@ void main() {
     expect(style?.inherit, isFalse, reason: 'inherit 必须为 false，否则插值崩溃');
   });
 
-  test('圆角归成两个家族', () {
+  test('radius tokens form two interaction families', () {
     expect(TFRadius.card, 20);
     expect(TFRadius.input, 20);
     expect(TFRadius.control, 20);

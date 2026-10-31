@@ -4200,6 +4200,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inboxAllClear => 'Nothing needs your attention';
 
   @override
+  String get forumFilterWithAttachment => 'With attachments';
+
+  @override
+  String get forumFilterMine => 'Posted by me';
+
+  @override
+  String get forumFilterNoMatch => 'No posts match these filters';
+
+  @override
   String get draftsEmpty => 'No drafts';
 
   @override
