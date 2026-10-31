@@ -13,6 +13,7 @@ import '../models/chat_model.dart';
 import '../models/message_model.dart';
 import '../models/settings_service.dart';
 import '../models/user_profile.dart';
+import '../widgets/chat/ws_connection_strip.dart';
 import '../widgets/chat_input_bar.dart';
 import '../routes/app_routes.dart';
 import 'chat_detail/widgets/chat_detail_banners.dart';
@@ -3447,7 +3448,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               onRedirect: _mergeForwardSelected,
               onRedirectToCurrentChat: _redirectToCurrentChat,
             ),
-            if (!isSelectionMode)
+            if (!isSelectionMode) ...[
+              // WS 断开时给一行明确提示：全局横幅走 HTTP 探针，
+              // WS 断而 HTTP 通的情况下它不会出现。
+              const WsConnectionStrip(),
               ChatInputBar(
                 roomId: _contactUid,
                 controller: _messageController,
@@ -3460,6 +3464,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                 actionIsForward: forwardingTo != null,
                 onClearAction: _clearReplyAction,
               ),
+            ],
           ],
         ),
       ),

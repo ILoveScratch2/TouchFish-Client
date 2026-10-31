@@ -41,10 +41,33 @@ class VideoViewerState extends State<VideoViewer> {
 
   bool get isPlaying => _isPlaying;
 
+  /// 播放器是否已真正创建
+  bool _initializing = false;
+
   @override
   void initState() {
     super.initState();
-    _initPlayer();
+    MediaKit.ensureInitialized();
+    if (widget.autoplay) {
+      unawaited(_ensurePlayer(playAfterInit: true));
+    }
+  }
+
+  /// 创建播放
+  Future<void> _ensurePlayer({bool playAfterInit = false}) async {
+    if (_player != null || _initializing) {
+      if (playAfterInit && _player != null) await _player!.play();
+      return;
+    }
+    _initializing = true;
+    try {
+      await _initPlayer();
+    } finally {
+      _initializing = false;
+    }
+    if (!mounted || _player == null) return;
+    if (playAfterInit) await _player!.play();
+    setState(() {});
   }
 
   @override
@@ -61,7 +84,9 @@ class VideoViewerState extends State<VideoViewer> {
       _hasError = false;
       _errorMessage = null;
       _disposePlayer();
-      _initPlayer();
+      if (widget.autoplay) {
+        unawaited(_ensurePlayer(playAfterInit: true));
+      }
     }
   }
 
@@ -116,6 +141,11 @@ class VideoViewerState extends State<VideoViewer> {
   }
 
   void _handleRetry() {
+    if (_player == null) {
+      unawaited(_ensurePlayer(playAfterInit: true));
+      setState(() => _hasError = false);
+      return;
+    }
     setState(() {
       _hasError = false;
       _errorMessage = null;
@@ -152,9 +182,24 @@ class VideoViewerState extends State<VideoViewer> {
     }
 
     if (_videoController == null) {
-      return Container(
-        color: Colors.black,
-        child: const Center(child: CircularProgressIndicator()),
+      return AspectRatio(
+        aspectRatio: widget.aspectRatio,
+        child: Container(
+          color: Colors.black,
+          child: Center(
+            child: _initializing
+                ? const SizedBox.square(
+                    dimension: 28,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  )
+                : IconButton.filled(
+                    iconSize: 40,
+                    onPressed: () => _ensurePlayer(playAfterInit: true),
+                    icon: const Icon(Icons.play_arrow),
+                    tooltip: AppLocalizations.of(context)!.videoTapToPlay,
+                  ),
+          ),
+        ),
       );
     }
 

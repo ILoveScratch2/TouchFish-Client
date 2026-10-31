@@ -1643,6 +1643,8 @@
   "forumFilterWithAttachment": "With attachments",
   "forumFilterMine": "Posted by me",
   "forumFilterNoMatch": "No posts match these filters",
+  "chatConnectionReconnecting": "Connection lost, reconnecting…",
+  "videoTapToPlay": "Tap to play",
   "draftsEmpty": "No drafts",
   "draftsEmptyHint": "Drafts are saved locally while you edit a post",
   "draftsDelete": "Delete draft",

@@ -840,6 +840,12 @@ class _MarkdownRemoteImage extends StatefulWidget {
 }
 
 class _MarkdownRemoteImageState extends State<_MarkdownRemoteImage> {
+  /// 缩略图与查看器共用的 Hero tag
+  /// 同一篇文章里同一个 URL 可能重复出现
+  /// 只用 URI 会撞
+  late final String _heroTag =
+      'markdown-image-${widget.uri}_${identityHashCode(this)}';
+
   bool _confirmed = false;
   late Future<bool> _blockedFuture;
 
@@ -869,7 +875,7 @@ class _MarkdownRemoteImageState extends State<_MarkdownRemoteImage> {
       MaterialPageRoute(
         builder: (context) => ImageLightbox(
           imagePath: widget.uri.toString(),
-          heroTag: 'markdown-image-${widget.uri}',
+          heroTag: _heroTag,
         ),
       ),
     );
@@ -905,13 +911,16 @@ class _MarkdownRemoteImageState extends State<_MarkdownRemoteImage> {
         }
         return GestureDetector(
           onTap: _openPreview,
-          child: ClipRRect(
-            borderRadius: const BorderRadius.all(Radius.circular(8)),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 360),
-              child: DataSavingImage(
-                url: widget.uri.toString(),
-                fit: BoxFit.contain,
+          child: Hero(
+            tag: _heroTag,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 360),
+                child: DataSavingImage(
+                  url: widget.uri.toString(),
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),

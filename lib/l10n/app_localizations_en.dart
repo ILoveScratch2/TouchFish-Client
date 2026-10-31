@@ -4209,6 +4209,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forumFilterNoMatch => 'No posts match these filters';
 
   @override
+  String get chatConnectionReconnecting => 'Connection lost, reconnecting…';
+
+  @override
+  String get videoTapToPlay => 'Tap to play';
+
+  @override
   String get draftsEmpty => 'No drafts';
 
   @override

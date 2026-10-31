@@ -4032,6 +4032,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get forumFilterNoMatch => '没有符合筛选条件的帖子';
 
   @override
+  String get chatConnectionReconnecting => '连接已断开，正在重连…';
+
+  @override
+  String get videoTapToPlay => '点击播放';
+
+  @override
   String get draftsEmpty => '暂无草稿';
 
   @override

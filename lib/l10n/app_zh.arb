@@ -1607,6 +1607,8 @@
   "forumFilterWithAttachment": "有附件",
   "forumFilterMine": "我发布的",
   "forumFilterNoMatch": "没有符合筛选条件的帖子",
+  "chatConnectionReconnecting": "连接已断开，正在重连…",
+  "videoTapToPlay": "点击播放",
   "draftsEmpty": "暂无草稿",
   "draftsEmptyHint": "编辑帖子时会自动保存到本机",
   "draftsDelete": "删除草稿",

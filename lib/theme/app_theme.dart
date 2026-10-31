@@ -154,6 +154,23 @@ abstract final class TFTheme {
         thickness: TFSize.divider,
       ),
 
+      // 键盘焦点与悬停的可见反馈
+      focusColor: scheme.primary.withValues(alpha: 0.12),
+      iconButtonTheme: IconButtonThemeData(
+        style: ButtonStyle(
+          // 只加视觉反馈
+          overlayColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.focused)) {
+              return scheme.primary.withValues(alpha: 0.18);
+            }
+            if (states.contains(WidgetState.hovered)) {
+              return scheme.primary.withValues(alpha: 0.08);
+            }
+            return null;
+          }),
+        ),
+      ),
+
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: scheme.primary,
         linearTrackColor: scheme.surfaceContainerHighest,

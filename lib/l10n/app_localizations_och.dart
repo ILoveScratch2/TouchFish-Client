@@ -4029,6 +4029,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get forumFilterNoMatch => '沒有符合篩選條件的帖子';
 
   @override
+  String get chatConnectionReconnecting => '連線已中斷，正在重連…';
+
+  @override
+  String get videoTapToPlay => '點擊播放';
+
+  @override
   String get draftsEmpty => '暫無草稿';
 
   @override

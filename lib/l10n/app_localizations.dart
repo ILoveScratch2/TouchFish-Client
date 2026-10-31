@@ -7744,6 +7744,18 @@ abstract class AppLocalizations {
   /// **'No posts match these filters'**
   String get forumFilterNoMatch;
 
+  /// No description provided for @chatConnectionReconnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection lost, reconnecting…'**
+  String get chatConnectionReconnecting;
+
+  /// No description provided for @videoTapToPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to play'**
+  String get videoTapToPlay;
+
   /// No description provided for @draftsEmpty.
   ///
   /// In en, this message translates to:

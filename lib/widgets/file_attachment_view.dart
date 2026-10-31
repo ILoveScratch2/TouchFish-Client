@@ -559,6 +559,12 @@ class _AttachmentPreview extends StatefulWidget {
 }
 
 class _AttachmentPreviewState extends State<_AttachmentPreview> {
+  /// 缩略图与查看器共用的 Hero tag
+  ///
+  /// 不能只用文件 hash
+  late final String _heroTag =
+      'attachment_${widget.attachment.hash}_${identityHashCode(this)}';
+
   /// ParsedURL is loading
   String? _fileUrl;
   Future<File?>? _fileFuture;
@@ -662,15 +668,17 @@ class _AttachmentPreviewState extends State<_AttachmentPreview> {
             builder: (_) => ImageLightbox(
               imagePath: file?.path ?? url,
               imageBytes: file != null ? null : bytes,
-              heroTag: 'attachment_${attachment.hash}',
+              heroTag: _heroTag,
               items: widget.galleryItems,
               initialIndex: widget.galleryIndex,
             ),
           ),
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: OptimizedImage(
+        child: Hero(
+          tag: _heroTag,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: OptimizedImage(
             provider: provider,
             fit: BoxFit.contain,
             // 网络加载时：blurhash 占位 + 服务端缩略图渐进展示
@@ -686,6 +694,7 @@ class _AttachmentPreviewState extends State<_AttachmentPreview> {
                     );
                   }
                 : null,
+            ),
           ),
         ),
       );

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show FlutterView;
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -52,9 +52,45 @@ import 'widgets/task_overlay.dart';
 import 'utils/web_splash_stub.dart'
     if (dart.library.js) 'utils/web_splash_web.dart';
 
+/// 组件构建期抛异常时的 UI
+Widget _buildErrorWidget(FlutterErrorDetails details) {
+  return Directionality(
+    textDirection: TextDirection.ltr,
+    child: Container(
+      color: const Color(0xFF1B1B1F),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.error_outline, color: Color(0xFFB4B2A9), size: 32),
+          const SizedBox(height: 12),
+          const Text(
+            'TF Client Rendering failed.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Color(0xFFD3D1C7), fontSize: 13),
+          ),
+          if (kDebugMode) ...[
+            const SizedBox(height: 8),
+            Text(
+              details.exceptionAsString(),
+              textAlign: TextAlign.center,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Color(0xFF888780), fontSize: 11),
+            ),
+          ],
+        ],
+      ),
+    ),
+  );
+}
+
 Future<void> main() async {
   await runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    // 一张坏卡片不该把整页变成红屏
+    ErrorWidget.builder = _buildErrorWidget;
     registerTalkerErrorHandlers();
     MediaKit.ensureInitialized();
     initializeKeyboardLayouts();
@@ -921,9 +957,13 @@ class _TouchFishAppState extends State<TouchFishApp>
             );
             if (hasBackgroundImage && !kIsWeb) {
               return MediaQuery(
-                data: MediaQuery.of(
-                  context,
-                ).copyWith(disableAnimations: !_appState.animationsEnabled),
+                // copyWith 是覆盖不是合并：只写应用开关会把系统的
+                // "减弱动态效果" 冲掉。两者任一要求关闭都应关闭。
+                data: MediaQuery.of(context).copyWith(
+                  disableAnimations:
+                      MediaQuery.disableAnimationsOf(context) ||
+                      !_appState.animationsEnabled,
+                ),
                 child: TouchFishSnackbarOverlay(
                   child: _buildSavedSessionRestoreOverlay(
                     context,
@@ -950,9 +990,11 @@ class _TouchFishAppState extends State<TouchFishApp>
             }
             final animationsEnabled = _appState.animationsEnabled;
             return MediaQuery(
-              data: MediaQuery.of(
-                context,
-              ).copyWith(disableAnimations: !animationsEnabled),
+              data: MediaQuery.of(context).copyWith(
+                disableAnimations:
+                    MediaQuery.disableAnimationsOf(context) ||
+                    !animationsEnabled,
+              ),
               child: TouchFishSnackbarOverlay(
                 child: _buildSavedSessionRestoreOverlay(context, contentWithTasks),
               ),
