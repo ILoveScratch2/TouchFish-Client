@@ -37,6 +37,13 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
+class _SettingSearchHit {
+  final SettingCategoryData category;
+  final SettingItem item;
+
+  const _SettingSearchHit({required this.category, required this.item});
+}
+
 class _SettingsScreenState extends State<SettingsScreen>
     with TickerProviderStateMixin {
   static const String _customFontSentinel = '__custom__';
@@ -44,6 +51,10 @@ class _SettingsScreenState extends State<SettingsScreen>
   final _settingsService = SettingsService.instance;
   SettingCategory? _selectedCategory;
   late AnimationController _categoryAnimationController;
+
+  final TextEditingController _searchController = TextEditingController();
+  bool _searchActive = false;
+  String _searchQuery = '';
   final TextEditingController _customFontController = TextEditingController();
 
   @override
@@ -65,6 +76,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   void dispose() {
     _customFontController.dispose();
+    _searchController.dispose();
     _categoryAnimationController.dispose();
     super.dispose();
   }
@@ -82,9 +94,41 @@ class _SettingsScreenState extends State<SettingsScreen>
 
             return Scaffold(
               appBar: AppBar(
-                title: Text(AppLocalizations.of(context)!.settingsTitle),
+                title: _searchActive
+                    ? TextField(
+                        controller: _searchController,
+                        autofocus: true,
+                        textInputAction: TextInputAction.search,
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(context)!.settingsSearchHint,
+                          border: InputBorder.none,
+                          isDense: true,
+                        ),
+                        onChanged: (value) =>
+                            setState(() => _searchQuery = value),
+                      )
+                    : Text(AppLocalizations.of(context)!.settingsTitle),
+                actions: [
+                  IconButton(
+                    tooltip: _searchActive
+                        ? MaterialLocalizations.of(context).closeButtonTooltip
+                        : AppLocalizations.of(context)!.settingsSearchHint,
+                    icon: Icon(_searchActive ? Icons.close : Icons.search),
+                    onPressed: () {
+                      setState(() {
+                        _searchActive = !_searchActive;
+                        if (!_searchActive) {
+                          _searchController.clear();
+                          _searchQuery = '';
+                        }
+                      });
+                    },
+                  ),
+                ],
               ),
-              body: isWideScreen
+              body: (_searchActive && _searchQuery.trim().isNotEmpty)
+                  ? _buildSearchResults(context)
+                  : isWideScreen
                   ? _buildWideLayout(context)
                   : _buildNarrowLayout(context),
             );
@@ -2047,6 +2091,111 @@ class _SettingsScreenState extends State<SettingsScreen>
       default:
         return key;
     }
+  }
+
+  /// 常见说法
+  static const Map<String, List<String>> _searchAliases = {
+    '深色': ['theme'],
+    '暗色': ['theme'],
+    '夜间': ['theme'],
+    'dark': ['theme'],
+    '字体': ['font'],
+    'font': ['font'],
+    '语言': ['language'],
+    'language': ['language'],
+    '通知': ['notification'],
+    '隐私': ['privacy'],
+    '声音': ['voice', 'sound', 'audio'],
+    '语音': ['voice', 'audio'],
+  };
+
+  String _searchHaystack(
+    AppLocalizations l10n,
+    SettingCategoryData category,
+    SettingItem item,
+  ) {
+    final buffer = StringBuffer()
+      ..writeln(_getSettingTitle(l10n, item.titleKey))
+      ..writeln(item.key)
+      ..writeln(_getCategoryTitle(l10n, category.titleKey));
+    final descriptionKey = item.descriptionKey;
+    if (descriptionKey != null) {
+      buffer.writeln(_getSettingTitle(l10n, descriptionKey));
+    }
+    for (final option in item.options ?? const <SettingOption>[]) {
+      buffer.writeln(_getSettingTitle(l10n, option.labelKey));
+    }
+    return buffer.toString().toLowerCase();
+  }
+
+  List<_SettingSearchHit> _searchHits(AppLocalizations l10n) {
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return const [];
+
+    final aliases = _searchAliases[query] ?? const <String>[];
+    final hits = <_SettingSearchHit>[];
+    for (final category in SettingsData.categories) {
+      for (final item in category.items) {
+        final matchedByText = _searchHaystack(
+          l10n,
+          category,
+          item,
+        ).contains(query);
+        final matchedByAlias =
+            aliases.isNotEmpty && aliases.any(item.key.toLowerCase().contains);
+        if (matchedByText || matchedByAlias) {
+          hits.add(_SettingSearchHit(category: category, item: item));
+        }
+      }
+    }
+    return hits;
+  }
+
+  Widget _buildSearchResults(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final hits = _searchHits(l10n);
+
+    if (hits.isEmpty) {
+      return Center(
+        child: Text(
+          l10n.settingsSearchEmpty,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      itemCount: hits.length,
+      separatorBuilder: (_, _) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final hit = hits[index];
+        return ListTile(
+          leading: Icon(
+            hit.item.icon ?? hit.category.icon,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          title: Text(_getSettingTitle(l10n, hit.item.titleKey)),
+          subtitle: Text(_getCategoryTitle(l10n, hit.category.titleKey)),
+          trailing: Icon(
+            Icons.chevron_right,
+            size: 18,
+            color: colorScheme.outline,
+          ),
+          // 点结果直接跳到所属分类
+          onTap: () {
+            setState(() {
+              _selectedCategory = hit.category.category;
+              _searchActive = false;
+              _searchController.clear();
+              _searchQuery = '';
+            });
+          },
+        );
+      },
+    );
   }
 
   String _getSettingTitle(AppLocalizations l10n, String key) {

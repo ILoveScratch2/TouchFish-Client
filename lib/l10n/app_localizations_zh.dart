@@ -4038,6 +4038,38 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoTapToPlay => '点击播放';
 
   @override
+  String get messageSendTimeout => '发送超时，请检查网络后重试';
+
+  @override
+  String get messageSendNetworkFailed => '网络中断，这条没能发出去';
+
+  @override
+  String get messageSendRejected => '服务器未接受这条消息';
+
+  @override
+  String get messageSendUploadFailed => '附件上传失败';
+
+  @override
+  String failedMessagesCount(int count) {
+    return '$count 条未发出';
+  }
+
+  @override
+  String get failedMessagesRetryAll => '全部重发';
+
+  @override
+  String get imageCopyLink => '复制图片链接';
+
+  @override
+  String get imageLinkCopied => '链接已复制';
+
+  @override
+  String get settingsSearchHint => '搜索设置';
+
+  @override
+  String get settingsSearchEmpty => '没有匹配的设置项';
+
+  @override
   String get draftsEmpty => '暂无草稿';
 
   @override

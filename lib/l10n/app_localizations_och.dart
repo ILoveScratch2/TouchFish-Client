@@ -4035,6 +4035,38 @@ class AppLocalizationsOch extends AppLocalizations {
   String get videoTapToPlay => '點擊播放';
 
   @override
+  String get messageSendTimeout => '發送逾時，請檢查網路後重試';
+
+  @override
+  String get messageSendNetworkFailed => '網路中斷，此訊未送出';
+
+  @override
+  String get messageSendRejected => '伺服器未接受此訊';
+
+  @override
+  String get messageSendUploadFailed => '附件上傳未成';
+
+  @override
+  String failedMessagesCount(int count) {
+    return '$count 則未送出';
+  }
+
+  @override
+  String get failedMessagesRetryAll => '全部重送';
+
+  @override
+  String get imageCopyLink => '複製圖片連結';
+
+  @override
+  String get imageLinkCopied => '連結已複製';
+
+  @override
+  String get settingsSearchHint => '搜尋設定';
+
+  @override
+  String get settingsSearchEmpty => '無相符之設定';
+
+  @override
   String get draftsEmpty => '暫無草稿';
 
   @override

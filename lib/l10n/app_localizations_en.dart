@@ -4215,6 +4215,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoTapToPlay => 'Tap to play';
 
   @override
+  String get messageSendTimeout => 'Send timed out, check your network';
+
+  @override
+  String get messageSendNetworkFailed =>
+      'Connection lost, this message was not sent';
+
+  @override
+  String get messageSendRejected => 'The server did not accept this message';
+
+  @override
+  String get messageSendUploadFailed => 'Attachment upload failed';
+
+  @override
+  String failedMessagesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count messages not sent',
+      one: '1 message not sent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get failedMessagesRetryAll => 'Retry all';
+
+  @override
+  String get imageCopyLink => 'Copy image link';
+
+  @override
+  String get imageLinkCopied => 'Link copied';
+
+  @override
+  String get settingsSearchHint => 'Search settings';
+
+  @override
+  String get settingsSearchEmpty => 'No matching settings';
+
+  @override
   String get draftsEmpty => 'No drafts';
 
   @override

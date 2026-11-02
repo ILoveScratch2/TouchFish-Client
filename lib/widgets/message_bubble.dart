@@ -12,6 +12,7 @@ import '../models/message_model.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/failure_reason.dart';
 import '../widgets/media/image_lightbox.dart';
 import '../widgets/media/video_viewer.dart';
 import '../widgets/media/audio_player.dart';
@@ -1346,8 +1347,9 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
       );
     }
     if (widget.message.status == MessageStatus.failed) {
+      final l10n = AppLocalizations.of(context)!;
       return Tooltip(
-        message: AppLocalizations.of(context)!.messageRetrySend,
+        message: localizeFailureReason(l10n, widget.message.ackError),
         child: GestureDetector(
           onTap: widget.onRetry,
           behavior: HitTestBehavior.opaque,

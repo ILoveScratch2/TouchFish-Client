@@ -7756,6 +7756,66 @@ abstract class AppLocalizations {
   /// **'Tap to play'**
   String get videoTapToPlay;
 
+  /// No description provided for @messageSendTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Send timed out, check your network'**
+  String get messageSendTimeout;
+
+  /// No description provided for @messageSendNetworkFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection lost, this message was not sent'**
+  String get messageSendNetworkFailed;
+
+  /// No description provided for @messageSendRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'The server did not accept this message'**
+  String get messageSendRejected;
+
+  /// No description provided for @messageSendUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment upload failed'**
+  String get messageSendUploadFailed;
+
+  /// No description provided for @failedMessagesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 message not sent} other{{count} messages not sent}}'**
+  String failedMessagesCount(int count);
+
+  /// No description provided for @failedMessagesRetryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry all'**
+  String get failedMessagesRetryAll;
+
+  /// No description provided for @imageCopyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy image link'**
+  String get imageCopyLink;
+
+  /// No description provided for @imageLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied'**
+  String get imageLinkCopied;
+
+  /// No description provided for @settingsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search settings'**
+  String get settingsSearchHint;
+
+  /// No description provided for @settingsSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching settings'**
+  String get settingsSearchEmpty;
+
   /// No description provided for @draftsEmpty.
   ///
   /// In en, this message translates to:

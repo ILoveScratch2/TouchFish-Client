@@ -13,6 +13,7 @@ import '../models/chat_model.dart';
 import '../models/message_model.dart';
 import '../models/settings_service.dart';
 import '../models/user_profile.dart';
+import '../widgets/chat/failed_messages_bar.dart';
 import '../widgets/chat/ws_connection_strip.dart';
 import '../widgets/chat_input_bar.dart';
 import '../routes/app_routes.dart';
@@ -1778,7 +1779,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           final mid = (result['mid'] as num?)?.toInt();
           _updateMessageStatus(clientMid, mid: mid, status: MessageStatus.sent);
         } else {
-          _updateMessageStatus(clientMid, status: MessageStatus.failed);
+          _failMessage(clientMid, reason: 'send.rejected');
           _restoreFailedDraft(text);
           if (mounted) {
             final l10n = AppLocalizations.of(context)!;
@@ -1802,7 +1803,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       }
     } catch (e) {
       talker.error('ChatDetail text send failed', e);
-      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      _failMessage(clientMid, reason: 'send.network');
       _restoreFailedDraft(text);
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
@@ -1818,6 +1819,23 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   }
 
   /// 重发失败的消息：沿用原 clientMid，避免服务端产生重复。
+  /// 未发出的消息（按时间序）
+  List<ChatMessage> get _failedMessages => _messages
+      .where(
+        (m) => m.status == MessageStatus.failed && m.clientMid != null,
+      )
+      .toList(growable: false);
+
+  /// 逐条重发
+  Future<void> _retryAllFailed() async {
+    final pending = _failedMessages;
+    if (pending.isEmpty) return;
+    for (final message in pending) {
+      if (!mounted) return;
+      await _resendMessage(message);
+    }
+  }
+
   Future<void> _resendMessage(ChatMessage message) async {
     final clientMid = message.clientMid;
     if (clientMid == null || message.status != MessageStatus.failed) return;
@@ -1897,7 +1915,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           final mid = (result['mid'] as num?)?.toInt();
           _updateMessageStatus(clientMid, mid: mid, status: MessageStatus.sent);
         } else {
-          _updateMessageStatus(clientMid, status: MessageStatus.failed);
+          _failMessage(clientMid, reason: 'send.rejected');
           _showSendFailedSnackBar();
         }
       } else {
@@ -1915,7 +1933,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       }
     } catch (e) {
       talker.error('ChatDetail resend failed', e);
-      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      _failMessage(clientMid, reason: 'send.network');
       _showSendFailedSnackBar();
     }
   }
@@ -1939,7 +1957,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       if (await file.exists()) bytes = await file.readAsBytes();
     }
     if (bytes == null || bytes.isEmpty) {
-      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      _failMessage(clientMid, reason: 'send.upload');
       _showSendFailedSnackBar();
       return;
     }
@@ -1956,7 +1974,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       taskManager: taskManager,
     );
     if (hash == null) {
-      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      _failMessage(clientMid, reason: 'send.upload');
       _showSendFailedSnackBar();
       return;
     }
@@ -1987,15 +2005,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   }) async {
     _pendingWsTimers.remove(clientMid);
     if (!mounted) return;
-    // Only one REST attempt per client mid (guards the WS ack-fail retry
-    // racing with the 15s fallback timer).
     if (!_restFallbackAttempted.add(clientMid)) return;
 
     final msgs = ChatDataService.instance.getMessages(_contactUid);
     final idx = msgs.indexWhere((m) => m.clientMid == clientMid);
     if (idx == -1 || msgs[idx].status == MessageStatus.sent) return;
-    // Text messages rejected by the WS ack (banned / not_friends / ...) should
-    // not be re-sent automatically; only file/media messages get the REST retry.
     if (msgs[idx].status == MessageStatus.failed && msgs[idx].media == null) {
       return;
     }
@@ -2025,7 +2039,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         status: MessageStatus.sent,
       );
     } else {
-      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      _failMessage(clientMid, reason: 'send.rejected');
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
         TouchFishSnackbarService.instance.show(l10n.chatSendFailed);
@@ -2037,6 +2051,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     String clientMid, {
     int? mid,
     MessageStatus? status,
+    String? ackError,
+    bool clearAckError = false,
   }) {
     _pendingWsTimers.remove(clientMid)?.cancel();
     final msgs = ChatDataService.instance.getMessages(_contactUid);
@@ -2047,10 +2063,23 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         id: mid?.toString() ?? updated[cIdx].id,
         mid: mid ?? updated[cIdx].mid,
         status: status ?? updated[cIdx].status,
+        ackError: ackError,
+        clearAckError:
+            clearAckError ||
+            (status == MessageStatus.sent && ackError == null),
       );
       // setMessages 会通知房间监听器
       ChatDataService.instance.setMessages(_contactUid, updated);
     }
+  }
+
+  /// 把消息标记为发送失败
+  void _failMessage(String clientMid, {required String reason}) {
+    _updateMessageStatus(
+      clientMid,
+      status: MessageStatus.failed,
+      ackError: reason,
+    );
   }
 
   void _updateMessageMedia(String clientMid, MessageMedia media) {
@@ -2144,7 +2173,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         taskManager: taskManager,
       );
       if (hash == null) {
-        _updateMessageStatus(clientMid, status: MessageStatus.failed);
+        _failMessage(clientMid, reason: 'send.upload');
         return;
       }
       final baseUrl = await TfApiClient.instance.getBaseUrl();
@@ -2168,7 +2197,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       );
     } catch (e) {
       talker.error('ChatDetail voice send failed', e);
-      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      _failMessage(clientMid, reason: 'send.network');
       _showSendFailedSnackBar();
     }
   }
@@ -2306,7 +2335,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         taskManager: taskManager,
       );
       if (hash == null) {
-        _updateMessageStatus(clientMid, status: MessageStatus.failed);
+        _failMessage(clientMid, reason: 'send.upload');
         return;
       }
 
@@ -2332,7 +2361,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       );
     } catch (e) {
       talker.error('ChatDetail file send failed', e);
-      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      _failMessage(clientMid, reason: 'send.network');
       _showSendFailedSnackBar();
     }
   }
@@ -2398,7 +2427,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         final mid = (result['mid'] as num?)?.toInt();
         _updateMessageStatus(clientMid, mid: mid, status: MessageStatus.sent);
       } else {
-        _updateMessageStatus(clientMid, status: MessageStatus.failed);
+        _failMessage(clientMid, reason: 'send.rejected');
         _showSendFailedSnackBar();
       }
     } else {
@@ -2504,7 +2533,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       );
     } catch (e) {
       talker.error('ChatDetail server file send failed', e);
-      _updateMessageStatus(clientMid, status: MessageStatus.failed);
+      _failMessage(clientMid, reason: 'send.network');
       _showSendFailedSnackBar();
     }
   }
@@ -3452,6 +3481,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               // WS 断开时给一行明确提示：全局横幅走 HTTP 探针，
               // WS 断而 HTTP 通的情况下它不会出现。
               const WsConnectionStrip(),
+              // 有未发出的消息时给一条汇总 + 一键重发
+              FailedMessagesBar(
+                count: _failedMessages.length,
+                onRetryAll: _retryAllFailed,
+              ),
               ChatInputBar(
                 roomId: _contactUid,
                 controller: _messageController,
