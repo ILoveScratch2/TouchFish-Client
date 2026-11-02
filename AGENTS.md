@@ -93,6 +93,8 @@ TouchFish Server 的源码位于 [TouchFishServer](https://github.com/2044-space
   ```
 
   大小写都要设置。
+- 全量测试出现大量 `loading xxx_test.dart [E]`时，先单跑其中一个确认
+  直接重跑整轮，不要动代码
 
 
 ### 导航与外壳

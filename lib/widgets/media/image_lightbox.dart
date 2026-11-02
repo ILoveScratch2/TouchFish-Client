@@ -9,6 +9,7 @@ import 'package:flutter/services.dart'
     show Clipboard, ClipboardData, KeyDownEvent, LogicalKeyboardKey;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_blurhash/flutter_blurhash.dart';
+import 'package:dismissible_page/dismissible_page.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 
@@ -73,6 +74,21 @@ class _ImageLightboxState extends State<ImageLightbox> {
 
   late final List<LightboxImageItem> _items;
   late final List<PhotoViewController> _controllers;
+
+  /// 当前页的缩放状态
+  PhotoViewScaleState _scaleState = PhotoViewScaleState.initial;
+
+  void _onScaleStateChanged(PhotoViewScaleState state) {
+    if (!mounted || state == _scaleState) return;
+    setState(() => _scaleState = state);
+  }
+
+  /// 处于放大态时禁用下拉关闭
+  ///
+  bool get _isZoomedIn =>
+      _scaleState == PhotoViewScaleState.zoomedIn ||
+      _scaleState == PhotoViewScaleState.covering ||
+      _scaleState == PhotoViewScaleState.originalSize;
   late final PageController _pageController;
   late final Map<int, Future<String>> _urlFutures = {};
   final Map<String, Future<File?>> _fileCacheFutures = {};
@@ -283,6 +299,7 @@ class _ImageLightboxState extends State<ImageLightbox> {
                 minScale: PhotoViewComputedScale.contained * 0.9,
                 maxScale: PhotoViewComputedScale.covered * 3,
                 initialScale: PhotoViewComputedScale.contained,
+                scaleStateChangedCallback: _onScaleStateChanged,
                 onTapUp: (context, details, value) => _toggleControls(),
                 errorBuilder: _photoErrorBuilder(item),
               ),
@@ -301,6 +318,7 @@ class _ImageLightboxState extends State<ImageLightbox> {
           minScale: PhotoViewComputedScale.contained * 0.9,
           maxScale: PhotoViewComputedScale.covered * 3,
           initialScale: PhotoViewComputedScale.contained,
+          scaleStateChangedCallback: _onScaleStateChanged,
           onTapUp: (context, details, value) => _toggleControls(),
           errorBuilder: _photoErrorBuilder(item),
         ),
@@ -342,6 +360,7 @@ class _ImageLightboxState extends State<ImageLightbox> {
                   minScale: PhotoViewComputedScale.contained * 0.9,
                   maxScale: PhotoViewComputedScale.covered * 3,
                   initialScale: PhotoViewComputedScale.contained,
+                  scaleStateChangedCallback: _onScaleStateChanged,
                   onTapUp: (context, details, value) => _toggleControls(),
                   enableRotation: true,
                   errorBuilder: _photoErrorBuilder(item),
@@ -367,6 +386,7 @@ class _ImageLightboxState extends State<ImageLightbox> {
                 minScale: PhotoViewComputedScale.contained * 0.9,
                 maxScale: PhotoViewComputedScale.covered * 3,
                 initialScale: PhotoViewComputedScale.contained,
+                scaleStateChangedCallback: _onScaleStateChanged,
                 onTapUp: (context, details, value) => _toggleControls(),
                 enableRotation: true,
                 errorBuilder: _photoErrorBuilder(item),
@@ -565,7 +585,17 @@ class _ImageLightboxState extends State<ImageLightbox> {
                   );
                 }
               },
-              child: PhotoViewGallery.builder(
+              child: DismissiblePage(
+                onDismissed: () => Navigator.of(context).pop(),
+                // 放大态交给 PhotoView
+                disabled: _isZoomedIn,
+                direction: DismissiblePageDismissDirection.down,
+                backgroundColor: Colors.black,
+                dragSensitivity: 0.7,
+                dismissThresholds: const {
+                  DismissiblePageDismissDirection.down: 0.15,
+                },
+                child: PhotoViewGallery.builder(
                 key: ValueKey(_items.length),
                 pageController: _pageController,
                 itemCount: _items.length,
@@ -634,6 +664,7 @@ class _ImageLightboxState extends State<ImageLightbox> {
                 ),
                 gaplessPlayback: true,
                 enableRotation: true,
+              ),
               ),
             ),
 
