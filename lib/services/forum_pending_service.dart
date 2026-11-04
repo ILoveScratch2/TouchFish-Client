@@ -1,16 +1,25 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
+
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/notification_service.dart';
 import '../utils/talker.dart';
 
+/// 论坛待审数
 class ForumPendingService extends ChangeNotifier {
   static ForumPendingService? _instance;
   static ForumPendingService get instance =>
       _instance ??= ForumPendingService._();
   ForumPendingService._();
 
-  Timer? _pollTimer;
+  static const _refreshCoalesceWindow = Duration(seconds: 3);
+  static const _fallbackPollInterval = Duration(minutes: 5);
+
+  Timer? _fallbackTimer;
+  Timer? _coalesceTimer;
+  bool _listening = false;
   bool _isLoading = false;
   int _pendingCount = 0;
   String? _error;
@@ -49,14 +58,46 @@ class ForumPendingService extends ChangeNotifier {
     }
   }
 
-  void startPolling({Duration interval = const Duration(minutes: 10)}) {
-    _pollTimer?.cancel();
+  void startWatching() {
+    if (!_listening) {
+      NotificationService.instance.addListener(_onNotificationsChanged);
+      _listening = true;
+    }
+    _syncFallbackPolling();
     refresh();
-    _pollTimer = Timer.periodic(interval, (_) => refresh());
   }
 
-  void stopPolling() {
-    _pollTimer?.cancel();
-    _pollTimer = null;
+  void stopWatching() {
+    _coalesceTimer?.cancel();
+    _coalesceTimer = null;
+    _fallbackTimer?.cancel();
+    _fallbackTimer = null;
+    if (_listening) {
+      NotificationService.instance.removeListener(_onNotificationsChanged);
+      _listening = false;
+    }
+  }
+
+  void _syncFallbackPolling() {
+    final realtime = NotificationService.instance.isRealtime;
+    if (realtime) {
+      _fallbackTimer?.cancel();
+      _fallbackTimer = null;
+      return;
+    }
+    _fallbackTimer ??= Timer.periodic(
+      _fallbackPollInterval,
+      (_) => refresh(),
+    );
+  }
+
+  void _onNotificationsChanged() {
+    _syncFallbackPolling();
+    final latest = NotificationService.instance.forumNotifications;
+    if (latest.isEmpty) return;
+    if (!latest.any((n) => n.event == 'forum.review.pending')) return;
+
+    _coalesceTimer?.cancel();
+    _coalesceTimer = Timer(_refreshCoalesceWindow, refresh);
   }
 }

@@ -8,6 +8,7 @@ import '../services/forum_pending_service.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../widgets/admin_ui.dart';
+import '../widgets/review_reason_field.dart';
 import '../widgets/ui/loading_indicator.dart';
 
 enum _PendingForumAction { approve, reject }
@@ -122,6 +123,7 @@ class _PendingForumsScreenState extends State<PendingForumsScreen> {
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
 
+    final reasonController = TextEditingController();
     final confirmed = await showAdminConfirmDialog(
       context,
       title: l10n.adminRejectForumConfirmTitle,
@@ -129,7 +131,10 @@ class _PendingForumsScreenState extends State<PendingForumsScreen> {
       confirmLabel: l10n.adminRejectForumAction,
       icon: Icons.block_outlined,
       destructive: true,
+      content: ReviewReasonField(controller: reasonController),
     );
+    final reason = reasonController.text.trim();
+    reasonController.dispose();
 
     if (!confirmed || !mounted) return;
 
@@ -141,6 +146,7 @@ class _PendingForumsScreenState extends State<PendingForumsScreen> {
         uid,
         password,
         forum.queueId,
+        reason: reason.isEmpty ? null : reason,
       );
       if (!mounted) return;
 

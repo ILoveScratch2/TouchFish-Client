@@ -85,6 +85,7 @@ class NotificationService extends ChangeNotifier {
   Stream<int> get essenceChanges => _essenceChanges.stream;
 
   bool get isLoading => _isLoading;
+  bool get isRealtime => _wsAuthenticated && _wsSubscription != null;
   String? get error => _error;
 
   @visibleForTesting
@@ -403,6 +404,13 @@ class NotificationService extends ChangeNotifier {
     return updated;
   }
 
+  /// 标记单条通知已读。
+  ///
+  /// 通知中心里点开某一条就该消掉那一条的红点，而不是把整类全部清掉——
+  /// 后者会让用户丢掉"这一批里我还没看的是哪几条"的信息。
+  Future<bool> markReadFor(NotificationInfo notification) =>
+      _markCategoryRead([notification]);
+
   Future<bool> markAnnouncementRead() =>
       _markCategoryRead(announcementNotifications);
 
@@ -431,6 +439,36 @@ class NotificationService extends ChangeNotifier {
       _allNotifications.remove(notification);
       notifyListeners();
       if (approved) ChatDataService.instance.loadContactsAndRooms();
+    }
+    return success;
+  }
+
+  /// 删除单条通知。
+  ///
+  /// 先本地移除再发请求（乐观更新）：列表本来就在用户眼前，
+  /// 等一个来回再消掉卡片会让人以为没删成功而重复操作。
+  /// 请求失败时用 [fetchNotifications] 拉回真实状态，不做手工回滚——
+  /// 本地回滚要处理"期间又来了新通知"的插入位置，容易错。
+  Future<bool> deleteFor(NotificationInfo notification) async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return false;
+    if (notification.id <= 0) return false;
+
+    final index = _allNotifications.indexWhere((n) => n.id == notification.id);
+    if (index == -1) return false;
+    final removed = _allNotifications.removeAt(index);
+    if (removed.readAt == null && _unreadCount > 0) _unreadCount--;
+    notifyListeners();
+
+    final success = await TfApiClient.instance.deleteNotificationsByIds(
+      uid,
+      password,
+      [notification.id],
+    );
+    if (!success) {
+      await fetchNotifications();
+      notifyListeners();
     }
     return success;
   }

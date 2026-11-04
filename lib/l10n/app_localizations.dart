@@ -7816,6 +7816,120 @@ abstract class AppLocalizations {
   /// **'No matching settings'**
   String get settingsSearchEmpty;
 
+  /// No description provided for @reviewReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason (optional, sent to the author)'**
+  String get reviewReasonHint;
+
+  /// No description provided for @reviewReasonPresetIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Incomplete info'**
+  String get reviewReasonPresetIncomplete;
+
+  /// No description provided for @reviewReasonPresetOffTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Off topic'**
+  String get reviewReasonPresetOffTopic;
+
+  /// No description provided for @reviewReasonPresetDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get reviewReasonPresetDuplicate;
+
+  /// No description provided for @reviewReasonPresetInappropriate.
+  ///
+  /// In en, this message translates to:
+  /// **'Not suitable for public display'**
+  String get reviewReasonPresetInappropriate;
+
+  /// No description provided for @notificationMarkAllRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all read'**
+  String get notificationMarkAllRead;
+
+  /// No description provided for @notificationDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification deleted'**
+  String get notificationDeleted;
+
+  /// No description provided for @notificationDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete failed, please retry'**
+  String get notificationDeleteFailed;
+
+  /// No description provided for @notificationSwipeToDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get notificationSwipeToDelete;
+
+  /// No description provided for @notificationFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get notificationFilterAll;
+
+  /// No description provided for @notificationFilterSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get notificationFilterSystem;
+
+  /// No description provided for @notificationFilterForum.
+  ///
+  /// In en, this message translates to:
+  /// **'Forum'**
+  String get notificationFilterForum;
+
+  /// No description provided for @notificationFilterFriend.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get notificationFilterFriend;
+
+  /// No description provided for @notificationFilterGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups'**
+  String get notificationFilterGroup;
+
+  /// No description provided for @timeJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get timeJustNow;
+
+  /// No description provided for @timeMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 min ago} other{{count} min ago}}'**
+  String timeMinutesAgo(int count);
+
+  /// No description provided for @timeHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour ago} other{{count} hours ago}}'**
+  String timeHoursAgo(int count);
+
+  /// No description provided for @timeYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'yesterday'**
+  String get timeYesterday;
+
+  /// No description provided for @timeDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} days ago'**
+  String timeDaysAgo(int count);
+
   /// No description provided for @draftsEmpty.
   ///
   /// In en, this message translates to:

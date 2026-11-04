@@ -3120,6 +3120,22 @@ class TfApiClient {
     return _parseBool(result);
   }
 
+
+  Future<bool> deleteNotificationsByIds(
+    int uid,
+    String password,
+    List<int> ids,
+  ) async {
+    if (ids.isEmpty) return true;
+    final result = await secretPost(
+      '/notification/delete_ids',
+      {'ids': ids},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
   Future<bool> deleteAllNotifications(int uid, String password) async {
     final result = await secretPost(
       '/notification/delete_all',

@@ -4070,6 +4070,69 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSearchEmpty => '没有匹配的设置项';
 
   @override
+  String get reviewReasonHint => '驳回理由（选填，会通知提交者）';
+
+  @override
+  String get reviewReasonPresetIncomplete => '资料不完整';
+
+  @override
+  String get reviewReasonPresetOffTopic => '主题不符';
+
+  @override
+  String get reviewReasonPresetDuplicate => '重复提交';
+
+  @override
+  String get reviewReasonPresetInappropriate => '内容不适合公开展示';
+
+  @override
+  String get notificationMarkAllRead => '全部已读';
+
+  @override
+  String get notificationDeleted => '通知已删除';
+
+  @override
+  String get notificationDeleteFailed => '删除失败，请稍后重试';
+
+  @override
+  String get notificationSwipeToDelete => '删除';
+
+  @override
+  String get notificationFilterAll => '全部';
+
+  @override
+  String get notificationFilterSystem => '系统';
+
+  @override
+  String get notificationFilterForum => '论坛';
+
+  @override
+  String get notificationFilterFriend => '好友';
+
+  @override
+  String get notificationFilterGroup => '群组';
+
+  @override
+  String get timeJustNow => '刚刚';
+
+  @override
+  String timeMinutesAgo(int count) {
+    return '$count 分钟前';
+  }
+
+  @override
+  String timeHoursAgo(int count) {
+    return '$count 小时前';
+  }
+
+  @override
+  String get timeYesterday => '昨天';
+
+  @override
+  String timeDaysAgo(int count) {
+    return '$count 天前';
+  }
+
+  @override
   String get draftsEmpty => '暂无草稿';
 
   @override

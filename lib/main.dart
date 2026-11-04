@@ -506,7 +506,7 @@ class _TouchFishAppState extends State<TouchFishApp>
       PresenceService.instance.start();
       unawaited(ChatWsService.instance.connect());
       NotificationService.instance.startPolling();
-      ForumPendingService.instance.startPolling();
+      ForumPendingService.instance.startWatching();
       _startAndroidBackgroundServiceIfNeeded();
     }
   }
@@ -537,7 +537,7 @@ class _TouchFishAppState extends State<TouchFishApp>
     AuthState.instance.sessionListenable.removeListener(_onAuthStateChanged);
     AuthState.instance.removeListener(_onAuthNotice);
     NotificationService.instance.stopPolling();
-    ForumPendingService.instance.stopPolling();
+    ForumPendingService.instance.stopWatching();
     super.dispose();
   }
 
@@ -578,7 +578,7 @@ class _TouchFishAppState extends State<TouchFishApp>
       _startNotificationPollingIfLoggedIn();
     } else {
       NotificationService.instance.stopPolling();
-      ForumPendingService.instance.stopPolling();
+      ForumPendingService.instance.stopWatching();
       AppNotificationService.instance.clear();
       PresenceService.instance.clear();
       unawaited(ChatWsService.instance.disconnect());

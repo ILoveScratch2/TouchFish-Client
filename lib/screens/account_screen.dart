@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/account/inbox_summary_card.dart';
 import '../models/user_profile.dart';
+import '../models/app_notification.dart';
 import '../models/notification_model.dart';
 import '../widgets/account/account_name.dart';
 import '../widgets/account/account_friends_section.dart';
@@ -12,6 +14,7 @@ import '../widgets/account/signature_editor.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
+import '../theme/tokens.dart';
 import '../services/notification_service.dart';
 import '../services/snackbar_service.dart';
 import '../services/lock_service.dart';
@@ -571,75 +574,236 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 }
 
-class _AccountNotificationSheet extends StatelessWidget {
+enum _NotificationFilter { all, system, forum, friend, group }
+
+class _AccountNotificationSheet extends StatefulWidget {
   final AppLocalizations l10n;
 
   const _AccountNotificationSheet({required this.l10n});
 
   @override
-  Widget build(BuildContext context) {
-    final service = NotificationService.instance;
-    final notifs = service.nonMessageNotifications;
-    final isLoading = service.isLoading;
-    final colorScheme = Theme.of(context).colorScheme;
+  State<_AccountNotificationSheet> createState() =>
+      _AccountNotificationSheetState();
+}
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.8,
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(
-              top: 16,
-              left: 20,
-              right: 16,
-              bottom: 12,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.notificationTitle,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.5,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.close, color: colorScheme.onSurface),
-                  onPressed: () => Navigator.pop(context),
-                  style: IconButton.styleFrom(minimumSize: const Size(36, 36)),
-                ),
-              ],
-            ),
+class _AccountNotificationSheetState extends State<_AccountNotificationSheet> {
+  _NotificationFilter _filter = _NotificationFilter.all;
+
+  List<NotificationInfo> _source() {
+    final service = NotificationService.instance;
+    switch (_filter) {
+      case _NotificationFilter.all:
+        return service.nonMessageNotifications;
+      case _NotificationFilter.system:
+        return service.announcementNotifications;
+      case _NotificationFilter.forum:
+        return service.forumNotifications;
+      case _NotificationFilter.friend:
+        return service.friendNotifications;
+      case _NotificationFilter.group:
+        return service.inviteNotifications;
+    }
+  }
+
+  Future<void> _openNotification(NotificationInfo notification) async {
+    final service = NotificationService.instance;
+    if (notification.readAt == null) {
+      unawaited(service.markReadFor(notification));
+    }
+    final route = AppNotification.routeFor(notification);
+    if (!mounted) return;
+    // 先取 router 再关
+    final router = GoRouter.of(context);
+    Navigator.pop(context);
+    if (route.isNotEmpty && route != AppRoutes.account) {
+      router.push(route);
+    }
+  }
+
+  Future<void> _markAllRead() async {
+    final service = NotificationService.instance;
+    switch (_filter) {
+      case _NotificationFilter.all:
+        await service.markAnnouncementRead();
+        await service.markFriendRead();
+        await service.markInviteRead();
+        await service.markForumRead();
+      case _NotificationFilter.system:
+        await service.markAnnouncementRead();
+      case _NotificationFilter.forum:
+        await service.markForumRead();
+      case _NotificationFilter.friend:
+        await service.markFriendRead();
+      case _NotificationFilter.group:
+        await service.markInviteRead();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: NotificationService.instance,
+      builder: (context, _) {
+        final l10n = AppLocalizations.of(context)!;
+        final service = NotificationService.instance;
+        final colorScheme = Theme.of(context).colorScheme;
+        final notifs = _source();
+        final unread = notifs.where((n) => n.readAt == null).length;
+
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
           ),
-          const Divider(height: 1),
-          Expanded(
-            child: isLoading
-                ? const LoadingIndicator()
-                : notifs.isEmpty
-                ? EmptyState(
-                    icon: Icons.notifications_none,
-                    title: l10n.notificationEmpty,
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: 16,
+                  left: 20,
+                  right: 8,
+                  bottom: 8,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.l10n.notificationTitle,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.5,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    itemCount: notifs.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 6),
-                    itemBuilder: (context, index) {
-                      final notif = notifs[index];
-                      return _NotificationCard(notification: notif);
-                    },
-                  ),
+                    if (unread > 0)
+                      TextButton(
+                        onPressed: _markAllRead,
+                        child: Text(l10n.notificationMarkAllRead),
+                      ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: colorScheme.onSurface),
+                      onPressed: () => Navigator.pop(context),
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(40, 40),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // 分类筛选
+              SizedBox(
+                height: 40,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    _filterChip(_NotificationFilter.all, l10n.notificationFilterAll),
+                    _filterChip(
+                      _NotificationFilter.system,
+                      l10n.notificationFilterSystem,
+                    ),
+                    _filterChip(
+                      _NotificationFilter.forum,
+                      l10n.notificationFilterForum,
+                    ),
+                    _filterChip(
+                      _NotificationFilter.friend,
+                      l10n.notificationFilterFriend,
+                    ),
+                    _filterChip(
+                      _NotificationFilter.group,
+                      l10n.notificationFilterGroup,
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: service.isLoading && notifs.isEmpty
+                    ? const LoadingIndicator()
+                    : notifs.isEmpty
+                    ? EmptyState(
+                        icon: Icons.notifications_none,
+                        title: widget.l10n.notificationEmpty,
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        itemCount: notifs.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 6),
+                        itemBuilder: (context, index) {
+                          final notif = notifs[index];
+                          return Dismissible(
+                            key: ValueKey('notification-${notif.id}'),
+                            direction: DismissDirection.endToStart,
+                            background: _buildDeleteBackground(context),
+                            confirmDismiss: (_) => _deleteNotification(notif),
+                            child: _NotificationCard(
+                              notification: notif,
+                              onTap: () => _openNotification(notif),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<bool> _deleteNotification(NotificationInfo notification) async {
+    final l10n = AppLocalizations.of(context)!;
+    final success = await NotificationService.instance.deleteFor(notification);
+    TouchFishSnackbarService.instance.show(
+      success ? l10n.notificationDeleted : l10n.notificationDeleteFailed,
+    );
+    return success;
+  }
+
+  Widget _buildDeleteBackground(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      alignment: Alignment.centerRight,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer,
+        borderRadius: TFRadius.mdRadius,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.delete_outline,
+            size: 18,
+            color: colorScheme.onErrorContainer,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            l10n.notificationSwipeToDelete,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: colorScheme.onErrorContainer,
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _filterChip(_NotificationFilter value, String label) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: _filter == value,
+        onSelected: (_) => setState(() => _filter = value),
+        visualDensity: VisualDensity.compact,
       ),
     );
   }
@@ -647,74 +811,127 @@ class _AccountNotificationSheet extends StatelessWidget {
 
 class _NotificationCard extends StatelessWidget {
   final NotificationInfo notification;
+  final VoidCallback onTap;
 
-  const _NotificationCard({required this.notification});
+  const _NotificationCard({required this.notification, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final timeLabel = _formatTime(notification.dateTime);
+    final colorScheme = theme.colorScheme;
+    final unread = notification.readAt == null;
+    final timeLabel = _formatRelativeTime(
+      context,
+      notification.dateTime,
+    );
 
     IconData icon;
-    Color? iconColor;
+    Color iconColor;
     if (notification.isFriendEvent) {
       icon = Icons.person_add;
-      iconColor = theme.colorScheme.primary;
+      iconColor = colorScheme.primary;
     } else if (notification.isForumEvent) {
       icon = Icons.forum;
-      iconColor = theme.colorScheme.tertiary;
+      iconColor = colorScheme.tertiary;
     } else if (notification.isGroupEvent) {
       icon = Icons.group;
-      iconColor = theme.colorScheme.secondary;
+      iconColor = colorScheme.secondary;
     } else if (notification.isAnnouncementEvent) {
       icon = Icons.campaign;
-      iconColor = theme.colorScheme.primary;
+      iconColor = colorScheme.primary;
     } else if (notification.isAuthEvent) {
       icon = Icons.admin_panel_settings;
-      iconColor = theme.colorScheme.error;
+      iconColor = colorScheme.error;
     } else {
       icon = Icons.notifications;
-      iconColor = theme.colorScheme.primary;
+      iconColor = colorScheme.primary;
     }
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: iconColor, size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    notification.title,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: iconColor,
-                      fontWeight: FontWeight.w600,
+      margin: EdgeInsets.zero,
+      color: unread
+          ? colorScheme.primaryContainer.withValues(alpha: 0.28)
+          : null,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: TFRadius.mdRadius,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: iconColor, size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            notification.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: unread ? colorScheme.onSurface : iconColor,
+                              fontWeight: unread
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          timeLabel,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                    const SizedBox(height: 4),
+                    Text(
+                      notification.content,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  timeLabel,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+              ),
+              if (unread) ...[
+                const SizedBox(width: 8),
+                Container(
+                  width: 8,
+                  height: 8,
+                  margin: const EdgeInsets.only(top: 5),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    shape: BoxShape.circle,
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 8),
-            Text(notification.content, style: theme.textTheme.bodyMedium),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  String _formatTime(DateTime dt) {
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
-        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  static String _formatRelativeTime(BuildContext context, DateTime dt) {
+    final l10n = AppLocalizations.of(context)!;
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.isNegative || diff.inMinutes < 1) return l10n.timeJustNow;
+    if (diff.inMinutes < 60) return l10n.timeMinutesAgo(diff.inMinutes);
+    if (diff.inHours < 24) return l10n.timeHoursAgo(diff.inHours);
+    if (diff.inDays == 1) return l10n.timeYesterday;
+    if (diff.inDays < 7) return l10n.timeDaysAgo(diff.inDays);
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-'
+        '${dt.day.toString().padLeft(2, '0')}';
   }
 }

@@ -4254,6 +4254,82 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSearchEmpty => 'No matching settings';
 
   @override
+  String get reviewReasonHint => 'Reason (optional, sent to the author)';
+
+  @override
+  String get reviewReasonPresetIncomplete => 'Incomplete info';
+
+  @override
+  String get reviewReasonPresetOffTopic => 'Off topic';
+
+  @override
+  String get reviewReasonPresetDuplicate => 'Duplicate';
+
+  @override
+  String get reviewReasonPresetInappropriate =>
+      'Not suitable for public display';
+
+  @override
+  String get notificationMarkAllRead => 'Mark all read';
+
+  @override
+  String get notificationDeleted => 'Notification deleted';
+
+  @override
+  String get notificationDeleteFailed => 'Delete failed, please retry';
+
+  @override
+  String get notificationSwipeToDelete => 'Delete';
+
+  @override
+  String get notificationFilterAll => 'All';
+
+  @override
+  String get notificationFilterSystem => 'System';
+
+  @override
+  String get notificationFilterForum => 'Forum';
+
+  @override
+  String get notificationFilterFriend => 'Friends';
+
+  @override
+  String get notificationFilterGroup => 'Groups';
+
+  @override
+  String get timeJustNow => 'just now';
+
+  @override
+  String timeMinutesAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count min ago',
+      one: '1 min ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String timeHoursAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours ago',
+      one: '1 hour ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get timeYesterday => 'yesterday';
+
+  @override
+  String timeDaysAgo(int count) {
+    return '$count days ago';
+  }
+
+  @override
   String get draftsEmpty => 'No drafts';
 
   @override

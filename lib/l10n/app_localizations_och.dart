@@ -4067,6 +4067,69 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsSearchEmpty => '無相符之設定';
 
   @override
+  String get reviewReasonHint => '駁回之由（可不填，將告於呈者）';
+
+  @override
+  String get reviewReasonPresetIncomplete => '資料未備';
+
+  @override
+  String get reviewReasonPresetOffTopic => '題不相符';
+
+  @override
+  String get reviewReasonPresetDuplicate => '重複呈遞';
+
+  @override
+  String get reviewReasonPresetInappropriate => '不宜公示';
+
+  @override
+  String get notificationMarkAllRead => '悉已讀之';
+
+  @override
+  String get notificationDeleted => '通知已刪';
+
+  @override
+  String get notificationDeleteFailed => '刪除未成，請復試';
+
+  @override
+  String get notificationSwipeToDelete => '刪';
+
+  @override
+  String get notificationFilterAll => '悉';
+
+  @override
+  String get notificationFilterSystem => '系統';
+
+  @override
+  String get notificationFilterForum => '論壇';
+
+  @override
+  String get notificationFilterFriend => '友';
+
+  @override
+  String get notificationFilterGroup => '群';
+
+  @override
+  String get timeJustNow => '方今';
+
+  @override
+  String timeMinutesAgo(int count) {
+    return '$count 分前';
+  }
+
+  @override
+  String timeHoursAgo(int count) {
+    return '$count 時前';
+  }
+
+  @override
+  String get timeYesterday => '昨日';
+
+  @override
+  String timeDaysAgo(int count) {
+    return '$count 日前';
+  }
+
+  @override
   String get draftsEmpty => '暫無草稿';
 
   @override
