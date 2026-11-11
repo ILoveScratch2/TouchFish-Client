@@ -1,6 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 import '../models/settings_service.dart';
 import '../services/file_cache_service.dart';
@@ -12,6 +10,7 @@ class DataSavingImage extends StatefulWidget {
   final BoxFit fit;
   final double? width;
   final double? height;
+
   const DataSavingImage({
     super.key,
     required this.url,
@@ -25,49 +24,25 @@ class DataSavingImage extends StatefulWidget {
 }
 
 class _DataSavingImageState extends State<DataSavingImage> {
+  /// 用户是否已手动点按加载（本会话内，不随 widget 复用携带到新 URL）
   bool _requested = false;
+
+  /// 磁盘缓存命中与否；null = 尚未探测
   bool? _cached;
-  /// dspark
-  BaseCacheManager? _cacheManager;
-  bool _cacheManagerReady = false;
-  ({int? width, int? height})? _cachedDecodeSize;
-  ({double? width, double? height})? _lastSize;
-  double? _lastDpr;
 
   @override
   void initState() {
     super.initState();
-    _initCacheManager();
     _checkCache();
-  }
-
-  void _initCacheManager() {
-    final service = FileCacheService.instance;
-    if (service.isManagerReady) {
-      _cacheManager = service.cacheManager;
-      _cacheManagerReady = true;
-      return;
-    }
-    service.getCacheManager().then((manager) {
-      if (mounted) {
-        setState(() {
-          _cacheManager = manager;
-          _cacheManagerReady = true;
-        });
-      }
-    });
   }
 
   @override
   void didUpdateWidget(covariant DataSavingImage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.url != widget.url) {
-      // 旧 URL 的手动 load 意图不随 widget 复用带到新 URL
+      // 旧 URL 的手动加载意图不随 widget 复用带到新 URL
       _requested = false;
       _cached = null;
-      _cachedDecodeSize = null;
-      _lastSize = null;
-      _lastDpr = null;
       _checkCache();
     }
   }
@@ -103,59 +78,11 @@ class _DataSavingImageState extends State<DataSavingImage> {
         ),
       );
     }
-
-    if (widget.width != null || widget.height != null) {
-      // 明确尺寸：走磁盘缓存网络图，避免超大图全尺寸解码
-      final dpr = MediaQuery.of(context).devicePixelRatio;
-      
-      // 缓存解码尺寸
-      if (_lastDpr != dpr ||
-          _lastSize != (width: widget.width, height: widget.height)) {
-        _lastDpr = dpr;
-        _lastSize = (width: widget.width, height: widget.height);
-        _cachedDecodeSize = imageDecodeSize(
-          dpr,
-          width: widget.width,
-          height: widget.height,
-        );
-      }
-
-      // 缓存管理器，启动！
-      if (_cacheManagerReady) {
-        return CachedNetworkImage(
-          key: ValueKey(widget.url),
-          imageUrl: widget.url,
-          cacheManager: _cacheManager,
-          fit: widget.fit,
-          width: widget.width,
-          height: widget.height,
-          memCacheWidth: _cachedDecodeSize?.width,
-          memCacheHeight: _cachedDecodeSize?.height,
-          placeholder: (context, url) => SizedBox(
-            width: widget.width,
-            height: widget.height,
-            child: Center(
-              child: SizedBox.square(
-                dimension: 14,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          ),
-        );
-      }
-
-      // 缓存管理器加载中
-      return SizedBox(
-        width: widget.width,
-        height: widget.height,
-        child: Center(
-          child: SizedBox.square(
-            dimension: 14,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-      );
-    }
-    return OptimizedImage(provider: NetworkImage(widget.url), fit: widget.fit);
+    return OptimizedImage(
+      provider: NetworkImage(widget.url),
+      fit: widget.fit,
+      width: widget.width,
+      height: widget.height,
+    );
   }
 }

@@ -12,6 +12,7 @@ import 'debug/debug_options_screen.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../utils/clipboard_utils.dart';
+import '../widgets/ui/loading_indicator.dart';
 import '../widgets/app_alert_dialog.dart';
 
 class AboutScreen extends StatefulWidget {
@@ -768,7 +769,7 @@ class _AboutScreenState extends State<AboutScreen>
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingIndicator()
           : _errorMessage != null
           ? Center(child: Text(_errorMessage!))
           : Center(
@@ -1060,7 +1061,7 @@ class _AboutScreenState extends State<AboutScreen>
                 _copyToClipboard(value, l10n.aboutCopiedToClipboard);
               },
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
               tooltip: l10n.aboutCopyToClipboard,
             ),
         ],
@@ -1179,7 +1180,7 @@ class _AboutScreenState extends State<AboutScreen>
                 tooltip: l10n.aboutEasterEggReset,
                 iconSize: 18,
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 style: IconButton.styleFrom(
                   backgroundColor: theme.colorScheme.errorContainer,
                   foregroundColor: theme.colorScheme.onErrorContainer,

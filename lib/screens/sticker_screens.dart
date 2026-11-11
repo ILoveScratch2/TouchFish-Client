@@ -10,6 +10,7 @@ import '../models/sticker_model.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../widgets/stickers/sticker_image.dart';
+import '../widgets/ui/loading_indicator.dart';
 
 
 class StickerMarketplaceScreen extends StatefulWidget {
@@ -138,7 +139,7 @@ class _StickerMarketplaceScreenState extends State<StickerMarketplaceScreen>
           ),
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? const LoadingIndicator()
                 : TabBarView(
                     controller: _tabs,
                     children: [
@@ -580,7 +581,7 @@ class _MyStickerPacksScreenState extends State<MyStickerPacksScreen> {
         child: const Icon(Symbols.add),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingIndicator()
           : _packs.isEmpty
               ? Center(
                   child: Column(
@@ -711,6 +712,7 @@ class _StickerPackEditorScreenState extends State<StickerPackEditorScreen> {
     final file = picked?.files.single;
     final bytes = file?.bytes;
     if (file == null || bytes == null) return;
+    if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
     final slug = TextEditingController(
       text: file.name

@@ -8,6 +8,9 @@ import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/optimized_image.dart';
+import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/loading_indicator.dart';
+import '../widgets/ui/refreshable.dart';
 
 /// 群精华消息列表页。
 ///
@@ -149,7 +152,7 @@ class _GroupEssenceScreenState extends State<GroupEssenceScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(widget.groupName)),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingIndicator()
           : _loadFailed
               ? Center(
                   child: FilledButton.icon(
@@ -165,48 +168,38 @@ class _GroupEssenceScreenState extends State<GroupEssenceScreen> {
   }
 
   Widget _buildEmpty(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final l10n = AppLocalizations.of(context)!;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Symbols.auto_awesome,
-            size: 48,
-            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.essenceLabel(0),
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-          ),
-        ],
+    return PullToRefresh.content(
+      onRefresh: () => _load(showLoading: false),
+      child: EmptyState(
+        icon: Symbols.auto_awesome,
+        title: AppLocalizations.of(context)!.essenceLabel(0),
       ),
     );
   }
 
   Widget _buildList(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: _sortedMids.length,
-      separatorBuilder: (_, _) => Divider(
-        height: 1,
-        indent: 60,
-        color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+    return PullToRefresh.list(
+      onRefresh: () => _load(showLoading: false),
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: _sortedMids.length,
+        separatorBuilder: (_, _) => Divider(
+          height: 1,
+          indent: 60,
+          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+        ),
+        itemBuilder: (context, index) {
+          final mid = _sortedMids[index];
+          return _EssenceMessageTile(
+            mid: mid,
+            message: _messages[mid],
+            canRemove: _isAdmin,
+            onRemove: _isAdmin ? () => _removeEssence(mid) : null,
+          );
+        },
       ),
-      itemBuilder: (context, index) {
-        final mid = _sortedMids[index];
-        return _EssenceMessageTile(
-          mid: mid,
-          message: _messages[mid],
-          canRemove: _isAdmin,
-          onRemove: _isAdmin ? () => _removeEssence(mid) : null,
-        );
-      },
     );
   }
 }

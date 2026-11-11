@@ -209,10 +209,86 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sessionDevicesRemoveFailed => '移除失败，请重试';
 
   @override
+  String get sessionDevicesRename => '重命名';
+
+  @override
+  String get sessionDevicesRenameTitle => '重命名设备';
+
+  @override
+  String get sessionDevicesRenameLabel => '设备名称';
+
+  @override
+  String get sessionDevicesRenameHint => '例如：我的 iPhone';
+
+  @override
+  String get sessionDevicesRenameHelper => '留空则显示默认设备名称';
+
+  @override
+  String get sessionDevicesRenameSuccess => '重命名成功';
+
+  @override
+  String get sessionDevicesRenameFailed => '重命名失败，请重试';
+
+  @override
+  String get sessionDevicesLocation => '位置';
+
+  @override
+  String get sessionDevicesLastSeen => '最近活跃';
+
+  @override
+  String get sessionDevicesTabDevices => '设备';
+
+  @override
+  String get sessionDevicesTabSessions => '会话';
+
+  @override
+  String get sessionDevicesSessionCount => '会话数';
+
+  @override
+  String get sessionDevicesUnknownPlatform => '未知平台';
+
+  @override
+  String get sessionDevicesPlatformIos => 'iOS';
+
+  @override
+  String get sessionDevicesPlatformAndroid => 'Android';
+
+  @override
+  String get sessionDevicesPlatformWeb => '网页';
+
+  @override
+  String get sessionDevicesPlatformWindows => 'Windows';
+
+  @override
+  String get sessionDevicesPlatformMacos => 'macOS';
+
+  @override
+  String get sessionDevicesPlatformLinux => 'Linux';
+
+  @override
+  String get sessionDevicesRevokeAllOthers => '登出其他全部会话';
+
+  @override
+  String get sessionDevicesRevokeAllOthersConfirmTitle => '登出其他全部会话？';
+
+  @override
+  String get sessionDevicesRevokeAllOthersConfirmMessage =>
+      '其他所有设备将立即退出登录，当前设备保持登录状态。';
+
+  @override
+  String get sessionDevicesRevokeAllOthersSuccess => '已登出其他全部会话';
+
+  @override
+  String get sessionDevicesRevokeAllOthersFailed => '登出其他会话失败，请重试';
+
+  @override
   String get sessionRestoreNetworkError => '网络连接失败，请检查网络后重试';
 
   @override
   String get registerErrorCaptchaRequired => '请输入验证码';
+
+  @override
+  String get registerErrorCaptchaInvalid => '验证码错误，请重新输入';
 
   @override
   String get registerCaptchaLoad => '正在加载验证码...';
@@ -222,6 +298,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get registerCaptchaRefresh => '刷新';
+
+  @override
+  String get registerCaptchaVerify => '验证';
+
+  @override
+  String get registerCaptchaVerifyHint => '请完成人机验证以继续。';
+
+  @override
+  String get registerCaptchaVerified => '验证已通过';
 
   @override
   String get registerErrorFailed => '注册失败，请重试';
@@ -249,6 +334,20 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get retry => '重试';
+
+  @override
+  String get videoPlaybackErrorTitle => '视频播放失败';
+
+  @override
+  String get videoPlaybackErrorDetails => '错误详情：';
+
+  @override
+  String get chatMeLabel => '我';
+
+  @override
+  String chatUserFallback(String uid) {
+    return '用户 $uid';
+  }
 
   @override
   String get settingsTitle => '设置';
@@ -855,6 +954,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsEnableMarkdownDesc => '将可渲染的Markdown/LaTeX文本进行渲染';
 
   @override
+  String get settingsChatVoiceButtonTitle => '输入栏语音按钮';
+
+  @override
+  String get settingsChatVoiceButtonDesc => '在消息输入栏显示麦克风按钮（特殊功能页始终可进入语音模式）';
+
+  @override
   String get settingsMessageDisplayStyleTitle => '消息显示样式';
 
   @override
@@ -925,6 +1030,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get chatSelectPlaceholder => '选择一个聊天开始对话';
+
+  @override
+  String get forumSelectPlaceholder => '选择一个论坛查看';
+
+  @override
+  String get forumSelectPostPlaceholder => '选择一篇帖子查看';
+
+  @override
+  String get forumPostFullScreen => '整屏查看';
+
+  @override
+  String get forumPostRestoreSplitView => '恢复分栏';
 
   @override
   String get settingsSystemNotificationsTitle => '系统通知';
@@ -1247,6 +1364,63 @@ class AppLocalizationsZh extends AppLocalizations {
   String get adminServerSectionStickers => '贴图';
 
   @override
+  String get adminServerSectionFeatures => '功能开关';
+
+  @override
+  String get adminFeaturePrivateChat => '私聊';
+
+  @override
+  String get adminFeaturePrivateChatDescription => '允许用户发送一对一消息。';
+
+  @override
+  String get adminFeatureGroupChat => '群聊';
+
+  @override
+  String get adminFeatureGroupChatDescription => '允许在群聊中发消息、申请入群或邀请他人入群。';
+
+  @override
+  String get adminFeatureGroupCreate => '创建群聊';
+
+  @override
+  String get adminFeatureGroupCreateDescription => '允许用户创建新的群聊。';
+
+  @override
+  String get adminFeatureFriendRequest => '好友申请';
+
+  @override
+  String get adminFeatureFriendRequestDescription => '允许发送好友申请与添加好友。';
+
+  @override
+  String get adminFeatureReadReceipt => '已读回执';
+
+  @override
+  String get adminFeatureReadReceiptDescription => '向私聊对方推送已读回执，并允许客户端查询已读状态。';
+
+  @override
+  String get adminFeatureForum => '论坛';
+
+  @override
+  String get adminFeatureForumDescription => '启用论坛功能。';
+
+  @override
+  String get adminFeatureSticker => '贴图';
+
+  @override
+  String get adminFeatureStickerDescription => '启用贴图包与贴图选择器。';
+
+  @override
+  String get adminFeatureAnnouncement => '公告';
+
+  @override
+  String get adminFeatureAnnouncementDescription => '启用服务器公告。';
+
+  @override
+  String get adminFeaturePresence => '在线状态';
+
+  @override
+  String get adminFeaturePresenceDescription => '允许好友互相看到在线状态，并接收上下线事件。';
+
+  @override
   String get adminServerFieldMaxStickerPacks => '每用户贴图包上限';
 
   @override
@@ -1275,6 +1449,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get adminServerSectionAdvanced => '高级配置';
+
+  @override
+  String get adminServerSectionLimits => '限制与存储';
+
+  @override
+  String get adminServerLimitsDescription => '名称/用户名/密码长度、内容长度、存储配额与速率限制。';
 
   @override
   String get adminServerSectionEmailService => '邮箱验证服务';
@@ -1318,7 +1498,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get adminServerFieldProxyCount => '信任的代理层数';
 
   @override
-  String get adminServerSectionAuth => '认证';
+  String get adminServerSectionAuth => '认证与令牌';
 
   @override
   String get adminServerAuthDescription => '控制客户端登录认证方式。';
@@ -1345,6 +1525,125 @@ class AppLocalizationsZh extends AppLocalizations {
   String get adminServerEmailPasswordRequired => '启用邮箱验证需要填写验证邮箱和邮箱密码。';
 
   @override
+  String get adminServerFieldCaptchaProvider => '验证码供应商';
+
+  @override
+  String get adminServerCaptchaProviderDescription =>
+      'image 使用内置图片验证码；turnstile / hcaptcha / recaptcha 使用第三方服务。';
+
+  @override
+  String get adminServerFieldCaptchaSiteKey => '验证码 Site Key';
+
+  @override
+  String get adminServerFieldCaptchaSecret => '验证码 Secret';
+
+  @override
+  String get adminServerCaptchaSecretHint => '留空表示保持当前密钥不变。';
+
+  @override
+  String get adminServerCaptchaSaveSuccess => '验证码设置已更新';
+
+  @override
+  String get adminServerCaptchaSaveFailed => '验证码设置更新失败';
+
+  @override
+  String get adminServerFieldRateLimits => '速率限制（JSON）';
+
+  @override
+  String get adminServerRateLimitsDescription =>
+      '按端点的请求频率限制（JSON），将各端点映射到 requests 与 range。留空表示清空所有限制。';
+
+  @override
+  String get adminServerRateLimitsInvalid => '速率限制必须是合法 JSON';
+
+  @override
+  String get adminServerRateLimitsSaveSuccess => '速率限制已更新';
+
+  @override
+  String get adminServerRateLimitsSaveFailed => '速率限制更新失败';
+
+  @override
+  String get adminServerFieldMinGroupNameLength => '群名称最小长度';
+
+  @override
+  String get adminServerFieldMaxGroupNameLength => '群名称最大长度';
+
+  @override
+  String get adminServerFieldMinUsernameLength => '用户名最小长度';
+
+  @override
+  String get adminServerFieldMinPasswordLength => '密码最小长度';
+
+  @override
+  String get adminServerFieldMaxSignLength => '签名最大长度';
+
+  @override
+  String get adminServerFieldMaxIntroductionLength => '简介最大长度';
+
+  @override
+  String get adminServerFieldMaxPostContentLength => '帖子内容最大长度';
+
+  @override
+  String get adminServerFieldMaxAvatarSize => '头像最大大小';
+
+  @override
+  String get adminServerFieldUserStorageQuota => '用户存储配额';
+
+  @override
+  String get adminServerFieldMaxUserStorageQuota => '单用户单次上传上限';
+
+  @override
+  String get adminServerFieldMaxStickerStorageQuota => '表情存储配额';
+
+  @override
+  String get adminServerFieldJwtRefreshExpires => 'JWT 刷新有效期（秒）';
+
+  @override
+  String get adminServerFieldFileDownloadMode => '文件下载模式';
+
+  @override
+  String get adminServerFileDownloadModeDescription => 'redirect 或 proxy。';
+
+  @override
+  String get adminServerFieldMediaFeatures => '启用媒体功能';
+
+  @override
+  String get adminServerMediaFeaturesDescription => '允许缩略图等媒体处理。';
+
+  @override
+  String get adminServerSearchHint => '搜索设置项';
+
+  @override
+  String get adminServerSearchNoResults => '未找到匹配的设置项';
+
+  @override
+  String get adminServerUnlimited => '不限';
+
+  @override
+  String get adminServerUnsavedChanges => '有未保存的更改';
+
+  @override
+  String get adminServerUndoChanges => '撤销更改';
+
+  @override
+  String get adminServerDiscardChanges => '放弃更改';
+
+  @override
+  String get adminServerDiscardAndRefresh => '放弃并刷新';
+
+  @override
+  String get adminServerDiscardConfirmTitle => '放弃未保存的更改？';
+
+  @override
+  String get adminServerDiscardConfirmMessage => '当前编辑的内容将丢失。';
+
+  @override
+  String get adminServerSectionRateLimits => '限流';
+
+  @override
+  String get adminServerSectionServerInfo => '服务器信息';
+
+  @override
   String get adminPendingForums => '待审论坛';
 
   @override
@@ -1365,6 +1664,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String adminPendingForumCreator(String uid) {
     return '创建者 UID：$uid';
   }
+
+  @override
+  String get adminPendingForumEditBadge => '编辑';
 
   @override
   String get adminPendingForumNoIntroduction => '暂无论坛简介。';
@@ -1480,6 +1782,31 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountUpdateYourProfile => '编辑个人资料';
 
   @override
+  String get accountFriends => '好友';
+
+  @override
+  String get accountFriendsEmpty => '还没有好友';
+
+  @override
+  String accountFriendsOnlineCount(int count) {
+    return '$count 人在线';
+  }
+
+  @override
+  String get accountBlocked => '已拉黑';
+
+  @override
+  String get accountBlockedEmpty => '没有拉黑任何人';
+
+  @override
+  String accountBlockedCount(int count) {
+    return '$count 人';
+  }
+
+  @override
+  String get accountBlockedHint => '点开可解除拉黑';
+
+  @override
   String get profileEditTitle => '编辑资料';
 
   @override
@@ -1493,6 +1820,32 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get profileEditEmail => '邮箱';
+
+  @override
+  String get accountPublicEmailTitle => '公开邮箱';
+
+  @override
+  String get accountPublicEmailDesc => '关闭后其他人将看不到你的邮箱（默认公开）';
+
+  @override
+  String get accountReadStatusTitle => '展示已读状态';
+
+  @override
+  String get accountReadStatusDesc => '关闭后其他人将看不到你是否已读（默认展示）';
+
+  @override
+  String get accountOnlineStatusTitle => '展示在线状态';
+
+  @override
+  String get accountOnlineStatusDesc => '关闭后好友将看不到你是否在线（默认展示）';
+
+  @override
+  String get chatReadReceiptRead => '已读';
+
+  @override
+  String chatReadReceiptCount(int count) {
+    return '$count 人已读';
+  }
 
   @override
   String get profileEditBio => '个性签名';
@@ -1614,6 +1967,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatDetailNoMessages => '暂无消息\n发送一条消息开始聊天吧';
 
   @override
+  String get chatMessagesLoadFailed => '消息加载失败';
+
+  @override
+  String get forumPostCopySource => '来自 TouchFish 论坛';
+
+  @override
+  String get forumPostShareFailed => '分享失败';
+
+  @override
   String get chatBackToBottom => '回到底部';
 
   @override
@@ -1696,6 +2058,166 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get messageActionCopy => '复制';
+
+  @override
+  String get messageActionMergeForward => '合并转发';
+
+  @override
+  String get messageActionSelectMultiple => '多选';
+
+  @override
+  String get messageActionViewOriginal => '查看原文';
+
+  @override
+  String get messageRecalledOriginalTitle => '撤回消息原文';
+
+  @override
+  String get messageRecalledOriginalSender => '发送者';
+
+  @override
+  String get messageRecalledOriginalContent => '内容';
+
+  @override
+  String get messageRecalledOriginalFailed => '加载原文失败';
+
+  @override
+  String get messageRecalledOriginalNone => '没有可用的原文内容';
+
+  @override
+  String get selectionExit => '退出多选';
+
+  @override
+  String selectionCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 条已选',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get selectionSelectMessages => '选择消息';
+
+  @override
+  String get selectionRedirectToCurrentChat => '转发到当前会话';
+
+  @override
+  String get selectionCopy => '复制';
+
+  @override
+  String get selectionMergeForward => '合并转发';
+
+  @override
+  String get selectionCancel => '取消';
+
+  @override
+  String get copySelectedEmpty => '没有可复制的消息';
+
+  @override
+  String get voiceHoldToRecord => '按住录音';
+
+  @override
+  String get voiceHoldHint => '长按录音';
+
+  @override
+  String get voiceReleaseToCancel => '松开取消';
+
+  @override
+  String get voiceRecordingHint => '录音中 • 上滑取消';
+
+  @override
+  String get voiceUploading => '正在上传语音...';
+
+  @override
+  String get voiceSending => '正在发送音频...';
+
+  @override
+  String get voiceLeaveVoiceMode => '退出语音模式';
+
+  @override
+  String get voiceRecordVoice => '录制语音';
+
+  @override
+  String get voiceStop => '停止';
+
+  @override
+  String get voicePermissionDenied => '麦克风权限被拒绝';
+
+  @override
+  String get voiceRecordFailed => '录音失败';
+
+  @override
+  String mergedForwardTitle(String title) {
+    return '合并转发 · $title';
+  }
+
+  @override
+  String get mergedForwardGroup => '群聊';
+
+  @override
+  String get mergedForwardPrivate => '聊天';
+
+  @override
+  String mergedForwardMore(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '还有 $count 条消息',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String redirectCardLabel(String room) {
+    return '来自 $room 的转发记录';
+  }
+
+  @override
+  String redirectMessagesCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 条消息',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String redirectFromRoom(String room) {
+    return '来自 $room';
+  }
+
+  @override
+  String redirectHistoryTitle(String room) {
+    return '转发记录 · $room';
+  }
+
+  @override
+  String get redirectNoContent => '无内容';
+
+  @override
+  String get redirectUnknownSender => '未知';
+
+  @override
+  String get mergeForwardConfirmTitle => '合并转发？';
+
+  @override
+  String mergeForwardConfirmBody(int count, String target) {
+    return '转发 $count 条消息到 $target？';
+  }
+
+  @override
+  String get mergeForwardTextOnly => '仅文本消息可合并转发';
+
+  @override
+  String get mergeForwardTooMany => '一次最多转发 100 条消息';
+
+  @override
+  String get mergeForwardFailed => '合并转发失败';
+
+  @override
+  String get mergeForwardSuccess => '合并转发已发送';
 
   @override
   String get messageActionPin => '置顶';
@@ -2097,6 +2619,30 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get userProfileAddFriend => '添加好友';
+
+  @override
+  String get friendRequestsTitle => '好友申请';
+
+  @override
+  String get friendRequestEmpty => '暂无好友申请';
+
+  @override
+  String get friendRequestBlocked => '对方已把你拉黑，无法发送好友申请';
+
+  @override
+  String get friendRequestBlockedByMe => '你已拉黑对方，先解除拉黑再申请';
+
+  @override
+  String get friendBlock => '拉黑';
+
+  @override
+  String get friendUnblock => '解除拉黑';
+
+  @override
+  String get friendUnblockDone => '已解除拉黑';
+
+  @override
+  String get friendBlockConfirm => '拉黑后将解除好友关系，且对方无法再向你发送好友申请。确定拉黑？';
 
   @override
   String get userProfileUnknownEmail => '未知';
@@ -2897,6 +3443,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get announcementDeleteFailed => '删除公告失败';
 
   @override
+  String get announcementLoadFailed => '加载公告失败';
+
+  @override
+  String announcementSenderFallback(String uid) {
+    return '用户 $uid';
+  }
+
+  @override
   String get adminAnnouncements => '公告管理';
 
   @override
@@ -2957,6 +3511,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get adminAccountEmpty => '暂无用户';
 
   @override
+  String get adminAccountNoSearchResults => '没有匹配的用户';
+
+  @override
+  String adminAccountPageIndicator(int page, int totalPages, int total) {
+    return '第 $page / $totalPages 页（共 $total 位用户）';
+  }
+
+  @override
   String adminAccountCreated(String date) {
     return '创建时间：$date';
   }
@@ -2966,6 +3528,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get adminAccountViewDevices => '查看设备';
+
+  @override
+  String get adminAccountEdit => '编辑账号';
+
+  @override
+  String get adminAccountEditDescription => '留空的字段将保持不变。';
+
+  @override
+  String get adminAccountNewPassword => '新密码（可选）';
+
+  @override
+  String get adminAccountEditSuccess => '账号已更新';
+
+  @override
+  String get adminAccountEditFailed => '账号更新失败';
 
   @override
   String adminAccountChangeRoleTitle(String name) {
@@ -3087,6 +3664,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get storageDeleteFailed => '删除失败';
 
   @override
+  String get storageDereference => '释放引用';
+
+  @override
+  String storageDereferenceConfirm(String fileName) {
+    return '确定释放你对“$fileName”的引用吗？仅当没有任何引用后文件才会被删除。';
+  }
+
+  @override
+  String storageDereferenced(String fileName) {
+    return '已释放引用：$fileName';
+  }
+
+  @override
+  String get storageDereferenceFailed => '释放引用失败';
+
+  @override
   String storageUploaded(String fileName) {
     return '已上传：$fileName';
   }
@@ -3164,6 +3757,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get adminFileSummaryTotal => '总计';
+
+  @override
+  String get adminFileLoadFailed => '加载文件失败';
+
+  @override
+  String get adminFileUnknown => '未知';
+
+  @override
+  String adminFileTileMeta(
+    String owner,
+    String uid,
+    String size,
+    int refs,
+    int uploads,
+  ) {
+    return '所有者：$owner（UID：$uid）· $size · 引用 $refs · 上传者 $uploads';
+  }
+
+  @override
+  String adminFileSummaryStats(int files, int users, String total) {
+    return '文件：$files · 用户：$users · 总计：$total';
+  }
 
   @override
   String get chatFunctionTabFiles => '文件';
@@ -3304,6 +3919,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get groupEssenceFeatureDesc => '允许管理员标记精华消息';
 
   @override
+  String get groupPublicMessagesFeature => '公开消息预览';
+
+  @override
+  String get groupPublicMessagesFeatureDesc => '允许非群成员只读查看群消息';
+
+  @override
   String get groupTransferOwner => '转让群主';
 
   @override
@@ -3323,6 +3944,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get groupLeaveOwnerHint => '群主需要先转让群主后才能退出';
+
+  @override
+  String get groupDissolve => '解散群聊';
+
+  @override
+  String get groupDissolveConfirm => '这将永久解散群聊并移除所有成员，且无法撤销。';
+
+  @override
+  String get groupDissolveAction => '解散';
+
+  @override
+  String get groupDissolveSuccess => '群聊已解散';
+
+  @override
+  String get groupDissolveFailed => '解散群聊失败';
 
   @override
   String get groupInviteMember => '邀请成员';
@@ -3381,6 +4017,429 @@ class AppLocalizationsZh extends AppLocalizations {
   String get commonOk => '确定';
 
   @override
+  String get draftsTitle => '草稿箱';
+
+  @override
+  String get inboxAllClear => '没有待处理的通知';
+
+  @override
+  String get forumFilterWithAttachment => '有附件';
+
+  @override
+  String get forumFilterMine => '我发布的';
+
+  @override
+  String get forumFilterNoMatch => '没有符合筛选条件的帖子';
+
+  @override
+  String get chatConnectionReconnecting => '连接已断开，正在重连…';
+
+  @override
+  String get videoTapToPlay => '点击播放';
+
+  @override
+  String get messageSendTimeout => '发送超时，请检查网络后重试';
+
+  @override
+  String get messageSendNetworkFailed => '网络中断，这条没能发出去';
+
+  @override
+  String get messageSendRejected => '服务器未接受这条消息';
+
+  @override
+  String get messageSendUploadFailed => '附件上传失败';
+
+  @override
+  String failedMessagesCount(int count) {
+    return '$count 条未发出';
+  }
+
+  @override
+  String get failedMessagesRetryAll => '全部重发';
+
+  @override
+  String get imageCopyLink => '复制图片链接';
+
+  @override
+  String get imageLinkCopied => '链接已复制';
+
+  @override
+  String get settingsSearchHint => '搜索设置';
+
+  @override
+  String get settingsSearchEmpty => '没有匹配的设置项';
+
+  @override
+  String get reviewReasonHint => '驳回理由（选填，会通知提交者）';
+
+  @override
+  String get reviewReasonPresetIncomplete => '资料不完整';
+
+  @override
+  String get reviewReasonPresetOffTopic => '主题不符';
+
+  @override
+  String get reviewReasonPresetDuplicate => '重复提交';
+
+  @override
+  String get reviewReasonPresetInappropriate => '内容不适合公开展示';
+
+  @override
+  String get notificationMarkAllRead => '全部已读';
+
+  @override
+  String get notificationDeleted => '通知已删除';
+
+  @override
+  String get notificationDeleteFailed => '删除失败，请稍后重试';
+
+  @override
+  String get notificationSwipeToDelete => '删除';
+
+  @override
+  String get loginErrorPendingActivation => '账号尚未激活，请先完成邮箱验证';
+
+  @override
+  String get loginErrorBanned => '账号已被封禁，如有异议可在登录页查看帮助或联系管理员';
+
+  @override
+  String get ticketReport => '举报';
+
+  @override
+  String get ticketReportDesc => '举报违规内容或用户';
+
+  @override
+  String get ticketConsult => '意见建议';
+
+  @override
+  String get ticketAppeal => '处罚申诉';
+
+  @override
+  String get ticketMyTickets => '我的工单';
+
+  @override
+  String get ticketFeedback => '帮助与反馈';
+
+  @override
+  String get ticketComposeTitle => '标题';
+
+  @override
+  String get ticketComposeContent => '详细描述';
+
+  @override
+  String get ticketComposeSubmit => '提交';
+
+  @override
+  String get ticketSubmitted => '工单已提交';
+
+  @override
+  String get ticketSubmitFailed => '提交失败，请稍后重试';
+
+  @override
+  String get ticketTypeDisabled => '该类工单暂未开放';
+
+  @override
+  String get ticketEmpty => '暂无工单';
+
+  @override
+  String get ticketStatusOpen => '待处理';
+
+  @override
+  String get ticketStatusProcessing => '处理中';
+
+  @override
+  String get ticketStatusResolved => '已处理';
+
+  @override
+  String get ticketStatusRejected => '未通过';
+
+  @override
+  String get ticketReplyLabel => '处理说明';
+
+  @override
+  String get ticketQueue => '工单队列';
+
+  @override
+  String get ticketHandleProcessing => '开始处理';
+
+  @override
+  String get ticketHandleResolved => '标记已处理';
+
+  @override
+  String get ticketHandleRejected => '驳回';
+
+  @override
+  String get ticketHandled => '已更新';
+
+  @override
+  String get ticketTarget => '相关对象';
+
+  @override
+  String get ticketPriority => '优先级';
+
+  @override
+  String get ticketPriorityLow => '低';
+
+  @override
+  String get ticketPriorityNormal => '普通';
+
+  @override
+  String get ticketPriorityHigh => '高';
+
+  @override
+  String get ticketPriorityUrgent => '紧急';
+
+  @override
+  String get ticketAssignee => '负责人';
+
+  @override
+  String get ticketUnassigned => '未指派';
+
+  @override
+  String get ticketAssignToMe => '指派给我';
+
+  @override
+  String get ticketClearAssignee => '取消指派';
+
+  @override
+  String get ticketThreadTitle => '对话记录';
+
+  @override
+  String get ticketMessageHint => '补充说明…';
+
+  @override
+  String get ticketSend => '发送';
+
+  @override
+  String get ticketReopenHint => '已结单的工单，回复后会重新打开';
+
+  @override
+  String get ticketMuted => '你已被禁言，暂时无法发言';
+
+  @override
+  String get ticketBanned => '账号已被封禁，无法进行该操作';
+
+  @override
+  String get ticketPendingActivation => '账号尚未激活，请先完成邮箱验证';
+
+  @override
+  String ticketUnreadReplies(int count) {
+    return '$count 条未读回复';
+  }
+
+  @override
+  String get ticketAttachments => '附件';
+
+  @override
+  String get ticketAddAttachment => '添加图片';
+
+  @override
+  String get ticketUploadFailed => '附件上传失败';
+
+  @override
+  String get ticketChangeStatus => '更改状态';
+
+  @override
+  String get ticketThreadEmptyTitle => '还没有回复';
+
+  @override
+  String get ticketThreadEmptyDesc => '发送一条消息，开始对话';
+
+  @override
+  String get ticketTargetPost => '帖子';
+
+  @override
+  String get ticketTargetComment => '评论';
+
+  @override
+  String get ticketTargetUser => '用户';
+
+  @override
+  String get ticketTargetForum => '版块';
+
+  @override
+  String ticketReplies(int count) {
+    return '$count 条回复';
+  }
+
+  @override
+  String get ticketAddFile => '添加附件';
+
+  @override
+  String get ticketStaffReply => '客服';
+
+  @override
+  String get ticketContentRequired => '请填写描述或至少添加一个附件';
+
+  @override
+  String get ticketTypeName => '类型';
+
+  @override
+  String get ticketUnknownUser => '未知用户';
+
+  @override
+  String get refresh => '刷新';
+
+  @override
+  String get ticketSortByPriority => '紧急度';
+
+  @override
+  String get ticketSortByTime => '时间';
+
+  @override
+  String get ticketFilter => '筛选';
+
+  @override
+  String get ticketFilterReset => '重置';
+
+  @override
+  String get ticketFilterApply => '应用';
+
+  @override
+  String get ticketCreatorFilter => '创建者（用户名或 UID）';
+
+  @override
+  String get ticketCreatorNotFound => '找不到该用户';
+
+  @override
+  String get ticketAllTickets => '全部工单';
+
+  @override
+  String get ticketAttachmentLimit => '附件数量超出上限';
+
+  @override
+  String get punishmentTitle => '处罚记录';
+
+  @override
+  String get punishmentNoticeLocked => '处罚未到期，该通知暂不可删除';
+
+  @override
+  String get punishmentCreate => '添加处罚';
+
+  @override
+  String get punishmentKindLabel => '类型';
+
+  @override
+  String get punishmentKindWarn => '警告';
+
+  @override
+  String get punishmentKindMute => '禁言';
+
+  @override
+  String get punishmentKindBan => '封禁';
+
+  @override
+  String get punishmentReasonLabel => '理由（必填）';
+
+  @override
+  String get punishmentReasonRequired => '请填写处罚理由';
+
+  @override
+  String get punishmentDurationLabel => '时长';
+
+  @override
+  String get punishmentDurationPermanent => '永久';
+
+  @override
+  String get punishmentRevoke => '解除处罚';
+
+  @override
+  String get punishmentActive => '生效中';
+
+  @override
+  String get punishmentInactive => '已失效';
+
+  @override
+  String get punishmentEmpty => '暂无处罚记录';
+
+  @override
+  String get punishmentCreateSuccess => '处罚已生效';
+
+  @override
+  String get punishmentCreateFailed => '操作失败';
+
+  @override
+  String get notificationFilterAll => '所有';
+
+  @override
+  String notificationSummary(int total, int unread) {
+    return '共 $total 条 · 未读 $unread 条';
+  }
+
+  @override
+  String get notificationEmptyDescription => '公告、处罚、好友申请等系统通知都会出现在这里';
+
+  @override
+  String get notificationViewAll => '查看全部通知';
+
+  @override
+  String get notificationNoMore => '没有更多通知了';
+
+  @override
+  String get notificationCategoryOther => '其它';
+
+  @override
+  String get notificationLockedBadge => '未到期不可删';
+
+  @override
+  String get notificationUnreadBadge => '未读';
+
+  @override
+  String get notificationFilterSystem => '系统';
+
+  @override
+  String get notificationFilterForum => '论坛';
+
+  @override
+  String get notificationFilterFriend => '好友';
+
+  @override
+  String get notificationFilterGroup => '群组';
+
+  @override
+  String get timeJustNow => '刚刚';
+
+  @override
+  String timeMinutesAgo(int count) {
+    return '$count 分钟前';
+  }
+
+  @override
+  String timeHoursAgo(int count) {
+    return '$count 小时前';
+  }
+
+  @override
+  String get timeYesterday => '昨天';
+
+  @override
+  String timeDaysAgo(int count) {
+    return '$count 天前';
+  }
+
+  @override
+  String get draftsEmpty => '暂无草稿';
+
+  @override
+  String get draftsEmptyHint => '编辑帖子时会自动保存到本机';
+
+  @override
+  String get draftsDelete => '删除草稿';
+
+  @override
+  String get draftsDeleteConfirm => '删除后无法恢复，确定要删除这条草稿吗？';
+
+  @override
+  String draftsUpdatedAt(String time) {
+    return '更新于 $time';
+  }
+
+  @override
+  String draftsAttachmentCount(int count) {
+    return '$count 个附件';
+  }
+
+  @override
   String get commonFailedOperation => '操作失败，请重试';
 
   @override
@@ -3417,6 +4476,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsCategoryStorage => '存储';
+
+  @override
+  String get settingsLocalStorageTitle => '本地存储';
 
   @override
   String get settingsNotifyWithHaptic => '通知触感反馈';
@@ -3535,15 +4597,54 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsWideThresholdDesc => '窗口宽度达到该值时切换为宽屏布局（仅自动模式生效）';
 
   @override
+  String get settingsSplitThresholdTitle => '分栏阈值';
+
+  @override
+  String get settingsSplitThresholdDesc => '窗口宽度达到该值时，列表与详情才并排显示（仅自动模式生效）';
+
+  @override
   String settingsWideThresholdValue(Object px) {
     return '$px px';
   }
+
+  @override
+  String get settingsSinglePageStyleTitle => '单页风格';
+
+  @override
+  String get settingsSinglePageStyleDesc => '论坛区不使用宽屏分栏，恢复整屏列表→详情的单页导航';
+
+  @override
+  String get settingsForumHideEmptyPaneTitle => '论坛展开栏为空时隐藏';
+
+  @override
+  String get settingsForumHideEmptyPaneDesc =>
+      '论坛列表和论坛详情独占整屏，仅在打开帖子时分屏，退出帖子即恢复';
+
+  @override
+  String get settingsCommandPaletteTitle => '命令面板';
+
+  @override
+  String get settingsCommandPaletteDesc =>
+      '桌面端用 Ctrl/Cmd+K 呼出命令面板（默认开启；关闭后无法呼出）';
 
   @override
   String get settingsWeakNetworkTitle => '弱网模式';
 
   @override
   String get settingsWeakNetworkDesc => '网络不稳定时使用定时同步';
+
+  @override
+  String get settingsSyncModeTitle => '同步模式';
+
+  @override
+  String get settingsSyncModeDesc =>
+      '完整同步会离线保存全部聊天记录；仅浏览模式只同步你打开过的会话（不保证离线完整）。';
+
+  @override
+  String get settingsSyncModeFull => '完整同步';
+
+  @override
+  String get settingsSyncModeBrowsing => '仅浏览';
 
   @override
   String get settingsDataSavingTitle => '省流量模式';
@@ -3556,6 +4657,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsThumbnailPreviewDesc => '气泡中加载服务端缩略图，点开后加载原图（省流量）';
+
+  @override
+  String get settingsImageCompressionTitle => '发送前压缩图片';
+
+  @override
+  String get settingsImageCompressionDesc => '上传前在本地重新编码（最长边 1920、有损压缩），省流量与存储';
+
+  @override
+  String get settingsImageCompressionQualityTitle => '压缩质量';
+
+  @override
+  String get settingsImageCompressionQualityDesc => '数值越低文件越小，画质损失越明显';
 
   @override
   String get settingsIpOverrideTitle => 'IP 覆盖模式';
@@ -3844,6 +4957,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get groupProfileJoinPending => '已提交入群申请，等待管理员审核';
 
   @override
+  String get groupJoinMessageTitle => '入群申请留言';
+
+  @override
+  String get groupJoinMessageHint => '选填：向管理员说明你为什么想加入';
+
+  @override
+  String get groupInviteMessageTitle => '邀请留言';
+
+  @override
+  String get groupInviteMessageHint => '选填：给审核人的说明';
+
+  @override
   String get groupProfileJoinFailed => '加入群聊失败';
 
   @override
@@ -3854,6 +4979,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get groupProfileCreator => '群主';
+
+  @override
+  String get groupProfileInviteOnly => '仅限邀请';
+
+  @override
+  String get groupProfilePreviewSection => '消息预览';
+
+  @override
+  String get groupProfilePreviewHint => '仅展示公开消息，加入群聊后可参与聊天。';
+
+  @override
+  String get groupProfilePreviewEmpty => '暂无可预览的消息';
+
+  @override
+  String get groupProfilePreviewLoadOlder => '加载更早的消息';
 
   @override
   String get forwardSearchTitle => '转发';
@@ -4394,6 +5534,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get errorCodeValidationMessageTooLong => '消息过长';
 
   @override
+  String get errorCodeValidationRequestMessageTooLong => '申请留言过长';
+
+  @override
   String get errorCodeValidationMissingParameter => '缺少必要参数';
 
   @override
@@ -4476,4 +5619,203 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get errorCodeServerError => '服务器内部错误';
+
+  @override
+  String get timeAgoJustNow => '刚刚';
+
+  @override
+  String timeAgoMinutes(int minutes) {
+    return '$minutes分钟前';
+  }
+
+  @override
+  String timeAgoHours(int hours) {
+    return '$hours小时前';
+  }
+
+  @override
+  String timeAgoDays(int days) {
+    return '$days天前';
+  }
+
+  @override
+  String timeAgoWeeks(int weeks) {
+    return '$weeks周前';
+  }
+
+  @override
+  String timeAgoMonths(int months) {
+    return '$months个月前';
+  }
+
+  @override
+  String timeAgoYears(int years) {
+    return '$years年前';
+  }
+
+  @override
+  String get suspiciousLoginTitle => '检测到可疑登录';
+
+  @override
+  String get suspiciousLoginMessage => '您的账号出现了异常登录活动，如果不是您本人操作，请立即检查登录设备。';
+
+  @override
+  String get suspiciousLoginDevice => '设备';
+
+  @override
+  String get suspiciousLoginLocation => '位置';
+
+  @override
+  String get suspiciousLoginTime => '时间';
+
+  @override
+  String get suspiciousLoginDismiss => '知道了';
+
+  @override
+  String get suspiciousLoginReviewSessions => '查看登录设备';
+
+  @override
+  String get searchTitle => '搜索';
+
+  @override
+  String get searchTabUsers => '用户';
+
+  @override
+  String get searchTabGroups => '群组';
+
+  @override
+  String get searchTabMessages => '消息';
+
+  @override
+  String get searchHint => '搜索用户、群组或消息';
+
+  @override
+  String get searchStartHint => '输入关键词开始搜索';
+
+  @override
+  String get searchNoResults => '没有找到结果';
+
+  @override
+  String searchMinLengthHint(int count) {
+    return '至少输入 $count 个字符';
+  }
+
+  @override
+  String get searchGroupJoinDirect => '可直接加入';
+
+  @override
+  String get searchGroupNeedReview => '需审核';
+
+  @override
+  String get searchGroupInviteOnly => '仅邀请';
+
+  @override
+  String searchGroupMemberCount(int count) {
+    return '$count 位成员';
+  }
+
+  @override
+  String get errorCodeValidationSearchKeywordTooShort => '搜索关键词过短';
+
+  @override
+  String get errorCodeFeatureDisabledPrivateChat => '本服务器已关闭私聊';
+
+  @override
+  String get errorCodeFeatureDisabledGroupChat => '本服务器已关闭群聊';
+
+  @override
+  String get errorCodeFeatureDisabledGroupCreate => '本服务器已关闭创建群聊';
+
+  @override
+  String get errorCodeFeatureDisabledFriendRequest => '本服务器已关闭好友申请';
+
+  @override
+  String get errorCodeFeatureDisabledForum => '本服务器已关闭论坛';
+
+  @override
+  String get errorCodeFeatureDisabledSticker => '本服务器已关闭贴图';
+
+  @override
+  String get errorCodeFeatureDisabledAnnouncement => '本服务器已关闭公告';
+
+  @override
+  String get listNoMore => '没有更多了';
+
+  @override
+  String get chatListEmpty => '还没有会话';
+
+  @override
+  String get contactListEmpty => '还没有联系人';
+
+  @override
+  String get forumMembersEmpty => '还没有成员';
+
+  @override
+  String get messageRetrySend => '发送失败，点击重发';
+
+  @override
+  String get commandPaletteHint => '搜索会话、页面和操作';
+
+  @override
+  String get commandPaletteEmpty => '没有匹配结果';
+
+  @override
+  String get adminServerFieldAllowRegister => '允许自助注册';
+
+  @override
+  String get adminServerFieldExternalAuthUrl => '外部登录平台地址';
+
+  @override
+  String get adminServerFieldPlatformAuthEnabled => '启用平台专用端点';
+
+  @override
+  String get adminServerFieldPlatformAuthIssuer => '平台 issuer';
+
+  @override
+  String get adminServerFieldPlatformAuthAllowIps => '平台调用白名单';
+
+  @override
+  String get adminServerFieldPlatformAuthSharedToken => '平台共享令牌';
+
+  @override
+  String get adminServerExternalAuthUrlDescription =>
+      '填写 TouchFish Auth 地址，如 https://auth.example.com；留空表示不启用外部登录';
+
+  @override
+  String get adminServerPlatformAuthDescription =>
+      '开启后 /auth/platform/* 只允许白名单地址调用；经反向代理时务必同时设置共享令牌';
+
+  @override
+  String get adminServerAllowRegisterDescription =>
+      '关闭后外部登录平台与客户端都无法注册新账号；已存在的账号不受影响';
+
+  @override
+  String get adminServerPlatformAuthTokenConfigured => '已配置，留空表示不修改';
+
+  @override
+  String get adminServerPlatformAuthTokenEmpty => '尚未配置';
+
+  @override
+  String get adminServerPlatformAuthTokenClear => '清除已配置的令牌';
+
+  @override
+  String get loginExternalAuth => '使用 TouchFish Auth 登录';
+
+  @override
+  String get adminServerPlatformAuthIssuerDescription =>
+      '只用于校验平台令牌里的 iss，须与认证平台的 AUTH_ISSUER 完全一致；客户端登录入口请填上面的「外部登录平台地址」';
+
+  @override
+  String get loginErrorExternalNotLinked =>
+      '该平台账号尚未绑定到 TouchFish 账号，且服务器未开启自动创建';
+
+  @override
+  String get loginErrorExternalTokenInvalid =>
+      '平台签发的登录凭证无效：请确认服务器已信任该认证平台（jwt_external_issuers）';
+
+  @override
+  String get loginErrorTicketExchange => '临时票据换取登录凭证失败，请重试';
+
+  @override
+  String get loginOr => '或';
 }

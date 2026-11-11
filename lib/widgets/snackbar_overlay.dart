@@ -1,23 +1,9 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/snackbar_service.dart';
 
-class TouchFishSnackbarOverlay extends StatefulWidget {
+class TouchFishSnackbarOverlay extends StatelessWidget {
   final Widget child;
   const TouchFishSnackbarOverlay({super.key, required this.child});
-
-  @override
-  State<TouchFishSnackbarOverlay> createState() => _TouchFishSnackbarOverlayState();
-}
-
-class _TouchFishSnackbarOverlayState extends State<TouchFishSnackbarOverlay> {
-  Timer? _timer;
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
 
   ({Color background, Color foreground, IconData? icon}) _styleFor(
     SnackbarType type,
@@ -57,33 +43,35 @@ class _TouchFishSnackbarOverlayState extends State<TouchFishSnackbarOverlay> {
       listenable: TouchFishSnackbarService.instance,
       builder: (context, _) {
         final message = TouchFishSnackbarService.instance.message;
-        if (message != null) {
-          _timer?.cancel();
-          _timer = Timer(const Duration(seconds: 3), TouchFishSnackbarService.instance.clear);
-        }
         final style = _styleFor(
           TouchFishSnackbarService.instance.type,
           Theme.of(context).colorScheme,
         );
         return Stack(
           children: [
-            widget.child,
+            child,
             if (message != null)
               Positioned(
                 left: 16,
                 right: 16,
                 bottom: 24 + MediaQuery.paddingOf(context).bottom,
                 child: IgnorePointer(
-                  child: AnimatedOpacity(
-                    opacity: 1,
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: 1),
                     duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    builder: (context, opacity, child) =>
+                        Opacity(opacity: opacity, child: child),
                     child: Center(
                       child: Material(
                         elevation: 4,
                         borderRadius: BorderRadius.circular(8),
                         color: style.background,
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,

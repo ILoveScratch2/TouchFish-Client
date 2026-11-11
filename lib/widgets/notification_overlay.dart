@@ -103,10 +103,16 @@ class _AnimatedNotificationItemState extends State<_AnimatedNotificationItem>
     vsync: this,
     duration: widget.item.duration,
   );
+  late final CurvedAnimation _curved;
 
   @override
   void initState() {
     super.initState();
+    // 只创建一次：build 里 new CurvedAnimation 会不断给 controller 注册监听且永不释放
+    _curved = CurvedAnimation(
+      parent: _entryController,
+      curve: Curves.easeOutCubic,
+    );
     _entryController.forward();
     _progressController.forward();
   }
@@ -123,6 +129,7 @@ class _AnimatedNotificationItemState extends State<_AnimatedNotificationItem>
 
   @override
   void dispose() {
+    _curved.dispose();
     _entryController.dispose();
     _progressController.dispose();
     super.dispose();
@@ -130,10 +137,7 @@ class _AnimatedNotificationItemState extends State<_AnimatedNotificationItem>
 
   @override
   Widget build(BuildContext context) {
-    final curved = CurvedAnimation(
-      parent: _entryController,
-      curve: Curves.easeOutCubic,
-    );
+    final curved = _curved;
     return SlideTransition(
       position: Tween<Offset>(
         begin: widget.desktop ? const Offset(1, 0) : const Offset(0, -1),

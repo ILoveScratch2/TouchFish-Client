@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import '../services/clipboard_attachment_service.dart';
@@ -7,9 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mime/mime.dart';
 import '../l10n/app_localizations.dart';
+import 'draft_box_screen.dart';
 import '../models/user_profile.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/file_service.dart';
+import '../services/image_compression_service.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/mention_text_field.dart';
@@ -28,6 +30,9 @@ class ForumPostComposeSheet extends StatefulWidget {
   final String? postId;
   final ValueChanged<String>? onContentChanged;
 
+  /// true 时以整页（自带 Scaffold），false 时按弹层
+  final bool asPage;
+
   const ForumPostComposeSheet({
     super.key,
     required this.forumId,
@@ -35,6 +40,7 @@ class ForumPostComposeSheet extends StatefulWidget {
     this.isReply = false,
     this.postId,
     this.onContentChanged,
+    this.asPage = false,
   });
   static Future<bool?> show(
     BuildContext context, {
@@ -44,17 +50,19 @@ class ForumPostComposeSheet extends StatefulWidget {
     String? postId,
     ValueChanged<String>? onContentChanged,
   }) {
-    return showDialog<bool>(
-      context: context,
-      useRootNavigator: false,
-      barrierDismissible: true,
-      barrierColor: Colors.black.withValues(alpha: 0.6),
-      builder: (context) => ForumPostComposeSheet(
-        forumId: forumId,
-        initialContent: initialContent,
-        isReply: isReply,
-        postId: postId,
-        onContentChanged: onContentChanged,
+    // 整页而不是弹层
+    // 编辑长文时弹层会被键盘压缩
+    return Navigator.of(context, rootNavigator: true).push<bool>(
+      MaterialPageRoute<bool>(
+        fullscreenDialog: true,
+        builder: (context) => ForumPostComposeSheet(
+          forumId: forumId,
+          initialContent: initialContent,
+          isReply: isReply,
+          postId: postId,
+          onContentChanged: onContentChanged,
+          asPage: true,
+        ),
       ),
     );
   }
@@ -187,7 +195,8 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final screenSize = MediaQuery.of(context).size;
-    final isWide = WideScreenHelper.isWide(context);
+    // 页模式下不再做"宽屏居中卡片"：整页布局自己撑满
+    final isWide = !widget.asPage && WideScreenHelper.isWide(context);
     final viewInsets = MediaQuery.of(context).viewInsets;
 
     Widget content = Material(
@@ -340,6 +349,12 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
       ),
     );
 
+    if (widget.asPage) {
+      return Scaffold(
+        backgroundColor: colorScheme.surface,
+        body: SafeArea(child: content),
+      );
+    }
     if (isWide) {
       return Center(child: content);
     }
@@ -422,6 +437,11 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                         icon: const Icon(Icons.sticky_note_2_outlined, size: 20),
                         tooltip: l10n.stickerMarketTitle,
                       ),
+                      IconButton(
+                        onPressed: _openDraftBox,
+                        icon: const Icon(Icons.drafts_outlined, size: 20),
+                        tooltip: l10n.draftsTitle,
+                      ),
                     ],
                   ),
                 ),
@@ -437,6 +457,12 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
           ),
         ),
       ),
+    );
+  }
+
+  void _openDraftBox() {
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute<void>(builder: (_) => const DraftBoxScreen()),
     );
   }
 
@@ -558,22 +584,26 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
           }
           continue;
         }
-        final uploaded = await TfApiClient.instance.uploadFile(
-          uid,
-          password,
-          file.fileName,
-          base64Encode(file.bytes),
+        // 图片先本地压缩再上传（省流量与存储，原图不出本机）。
+        final prepared = await ImageCompressionService.instance
+            .prepareForUpload(bytes: file.bytes, fileName: file.fileName);
+        final uploadBytes = prepared?.bytes ?? file.bytes;
+        final uploadName = prepared?.fileName ?? file.fileName;
+        // 超过阈值的文件内部会走分块上传，避免把整个文件塞进一个加密请求。
+        final hash = await FileService.instance.uploadBytes(
+          uid: uid,
+          password: password,
+          fileName: uploadName,
+          bytes: uploadBytes,
         );
-        final hash =
-            (uploaded?['hash'] ?? uploaded?['file_hash'])?.toString();
         if (hash == null || hash.isEmpty || !mounted) continue;
         setState(() {
           _attachments.add(
             FileAttachment(
               hash: hash,
-              fileName: file.fileName,
-              fileSize: file.fileSize,
-              mimeType: lookupMimeType(file.fileName),
+              fileName: uploadName,
+              fileSize: uploadBytes.length,
+              mimeType: lookupMimeType(uploadName),
             ),
           );
         });
@@ -617,21 +647,26 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
           }
           continue;
         }
-        final uploaded = await TfApiClient.instance.uploadFile(
-          uid,
-          password,
-          file.name,
-          base64Encode(bytes),
+        // 图片先本地压缩再上传（省流量与存储，原图不出本机）。
+        final prepared = await ImageCompressionService.instance
+            .prepareForUpload(bytes: bytes, fileName: file.name);
+        final uploadBytes = prepared?.bytes ?? bytes;
+        final uploadName = prepared?.fileName ?? file.name;
+        // 超过阈值的文件内部会走分块上传，避免把整个文件塞进一个加密请求。
+        final hash = await FileService.instance.uploadBytes(
+          uid: uid,
+          password: password,
+          fileName: uploadName,
+          bytes: uploadBytes,
         );
-        final hash = (uploaded?['hash'] ?? uploaded?['file_hash'])?.toString();
         if (hash == null || hash.isEmpty || !mounted) continue;
         setState(() {
           _attachments.add(
             FileAttachment(
               hash: hash,
-              fileName: file.name,
-              fileSize: file.size,
-              mimeType: lookupMimeType(file.name),
+              fileName: uploadName,
+              fileSize: uploadBytes.length,
+              mimeType: lookupMimeType(uploadName),
             ),
           );
         });
@@ -668,57 +703,100 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    final pid = int.tryParse(widget.postId ?? '');
+    if (widget.isReply && pid == null) {
+      Navigator.pop(context, false);
+      return;
+    }
+
+    // 提交即离
+    final title = _titleController.text.trim();
+    final content = _contentController.text.trim();
+    final attachments = _attachments
+        .map(
+          (file) => {
+            'hash': file.hash,
+            'file_name': file.fileName,
+            if (file.fileSize != null) 'size': file.fileSize,
+            if (file.mimeType != null) 'mime_type': file.mimeType,
+          },
+        )
+        .toList();
+    final isReply = widget.isReply;
+
+    setState(() {
+      _isSubmitting = true;
+      _didSubmit = true;
+    });
+    Navigator.pop(context, true);
+    unawaited(
+      _submitInBackground(
+        l10n: l10n,
+        uid: uid,
+        password: password,
+        fid: fid,
+        pid: pid,
+        title: title,
+        content: content,
+        attachmentHashes: attachments.map((e) => e['hash'] as String).toList(),
+        isReply: isReply,
+        draftPayload: {
+          'title': title,
+          'content': content,
+          'attachments': attachments,
+        },
+      ),
+    );
+  }
+
+  Future<void> _submitInBackground({
+    required AppLocalizations l10n,
+    required int uid,
+    required String password,
+    required int fid,
+    required int? pid,
+    required String title,
+    required String content,
+    required List<String> attachmentHashes,
+    required bool isReply,
+    required Map<String, dynamic> draftPayload,
+  }) async {
+    // 注意：不能用 context
     try {
-      final bool success;
-      if (widget.isReply) {
-        final pid = int.tryParse(widget.postId ?? '');
-        if (pid == null) {
-          Navigator.pop(context, false);
-          return;
-        }
-        success = await TfApiClient.instance.addComment(
-          uid,
-          password,
-          fid,
-          pid,
-          _contentController.text.trim(),
-        );
-      } else {
-        success = await TfApiClient.instance.sendPost(
-          uid,
-          password,
-          fid,
-          _titleController.text.trim(),
-          _contentController.text.trim(),
-          attachmentHashes: _attachments.map((file) => file.hash).toList(),
-        );
-      }
-      if (!mounted) return;
-      setState(() => _isSubmitting = false);
+      final success = isReply
+          ? await TfApiClient.instance.addComment(
+              uid,
+              password,
+              fid,
+              pid!,
+              content,
+            )
+          : await TfApiClient.instance.sendPost(
+              uid,
+              password,
+              fid,
+              title,
+              content,
+              attachmentHashes: attachmentHashes,
+            );
+
       if (success) {
-        _didSubmit = true;
         await DraftService.instance.clearDraft(_draftType, _draftId);
-        if (!mounted) return;
         TouchFishSnackbarService.instance.show(
-          widget.isReply
-              ? l10n.forumCommentSuccess
-              : l10n.forumPostSuccess,
+          isReply ? l10n.forumCommentSuccess : l10n.forumPostSuccess,
         );
-        Navigator.pop(context, true);
       } else {
-        TouchFishSnackbarService.instance.show(
-          l10n.forumPostFailed,
+        await DraftService.instance.saveDraft(
+          _draftType,
+          _draftId,
+          draftPayload,
         );
+        TouchFishSnackbarService.instance.show(l10n.forumPostFailed);
       }
     } catch (e) {
       talker.error('_submit post failed', e);
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-        TouchFishSnackbarService.instance.show(
-          l10n.forumPostFailed,
-        );
-      }
+      await DraftService.instance.saveDraft(_draftType, _draftId, draftPayload);
+      TouchFishSnackbarService.instance.show(l10n.forumPostFailed);
     }
   }
 }

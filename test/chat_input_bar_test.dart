@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:touchfish_client/l10n/app_localizations.dart';
@@ -19,16 +20,18 @@ void main() {
     VoidCallback onSend,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: ChatInputBar(controller: controller, onSend: onSend),
+      ProviderScope(
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ChatInputBar(controller: controller, onSend: onSend),
+          ),
         ),
       ),
     );
@@ -111,19 +114,21 @@ void main() {
     var sends = 0;
 
     await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: ChatInputBar(
-            controller: controller,
-            onSend: () => sends++,
-            enableClipboardUpload: false,
+      ProviderScope(
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ChatInputBar(
+              controller: controller,
+              onSend: () => sends++,
+              enableClipboardUpload: false,
+            ),
           ),
         ),
       ),
@@ -154,6 +159,39 @@ void main() {
 
     expect(handled, false);
     expect(sends, 0);
+    controller.dispose();
+  });
+
+  testWidgets('attachment button opens a bottom sheet with the four options', (
+    tester,
+  ) async {
+    final controller = TextEditingController();
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ChatInputBar(controller: controller, onSend: () {}),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('Attachment'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pick Image'), findsOneWidget);
+    expect(find.text('Pick Video'), findsOneWidget);
+    expect(find.text('Pick Audio'), findsOneWidget);
+    expect(find.text('Upload File'), findsOneWidget);
     controller.dispose();
   });
 }

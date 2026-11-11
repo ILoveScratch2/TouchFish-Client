@@ -1,13 +1,19 @@
 import 'dart:io' show File, Platform;
 import 'dart:async';
 import 'package:flutter/material.dart';
+
+import '../utils/haptics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:file_picker/file_picker.dart';
+import '../models/file_task.dart';
+import '../providers/task/task_manager_provider.dart';
 import '../services/clipboard_attachment_service.dart';
 import '../services/auth_state.dart';
 import '../services/chat_ws_service.dart';
+import '../services/feature_flags.dart';
 import 'server_file_picker_sheet.dart';
 import 'stickers/sticker_autocomplete.dart';
 import 'stickers/sticker_picker_enhanced.dart';
@@ -17,6 +23,7 @@ import '../models/settings_service.dart';
 import '../utils/file_type_detector.dart';
 import '../utils/clipboard_utils.dart';
 import 'mention_text_field.dart';
+import 'voice_record_bar.dart';
 
 class ChatInputBar extends StatefulWidget {
   final String roomId;
@@ -30,6 +37,10 @@ class ChatInputBar extends StatefulWidget {
     MessageType type,
   )?
   onServerFilePicked;
+
+  /// 录音完成后回调（临时文件路径 + 时长毫秒）；为 null 时不显示麦克风按钮。
+  final Future<void> Function(String path, int durationMs)? onVoiceRecorded;
+
   final List<MentionUser> mentionUsers;
   final ChatMessage? actionMessage;
   final bool actionIsForward;
@@ -46,6 +57,7 @@ class ChatInputBar extends StatefulWidget {
     required this.onSend,
     this.onFilePicked,
     this.onServerFilePicked,
+    this.onVoiceRecorded,
     this.mentionUsers = const [],
     this.actionMessage,
     this.actionIsForward = false,
@@ -57,10 +69,9 @@ class ChatInputBar extends StatefulWidget {
   State<ChatInputBar> createState() => _ChatInputBarState();
 }
 
-class _ChatInputBarState extends State<ChatInputBar>
-    with SingleTickerProviderStateMixin {
+class _ChatInputBarState extends State<ChatInputBar> {
   bool _isExpanded = false;
-  late final TabController _tabController;
+  bool _isVoiceMode = false;
   late final FocusNode _inputFocusNode;
   /// @ 提及与贴纸自动补全共用的定位锚点：都锚定输入框左上角
   final LayerLink _inputLayerLink = LayerLink();
@@ -70,25 +81,30 @@ class _ChatInputBarState extends State<ChatInputBar>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _inputFocusNode = FocusNode(onKeyEvent: _handleInputKeyEvent);
     widget.controller.addListener(_handleTypingChanged);
     // 表情面板「最近使用」开关等设置变化时刷新
     SettingsService.instance.addListener(_onSettingsChanged);
+    // 贴纸功能开关变化时刷新「表情/贴纸」标签页
+    FeatureFlags.instance.addListener(_onFlagsChanged);
   }
 
   @override
   void dispose() {
     SettingsService.instance.removeListener(_onSettingsChanged);
+    FeatureFlags.instance.removeListener(_onFlagsChanged);
     widget.controller.removeListener(_handleTypingChanged);
     _typingTimer?.cancel();
     if (_typingActive) ChatWsService.instance.sendTyping(widget.roomId, false);
-    _tabController.dispose();
     _inputFocusNode.dispose();
     super.dispose();
   }
 
   void _onSettingsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _onFlagsChanged() {
     if (mounted) setState(() {});
   }
 
@@ -110,20 +126,20 @@ class _ChatInputBarState extends State<ChatInputBar>
   void _handleTypingChanged() {
     if (!AuthState.instance.isLoggedIn) return;
     final hasText = widget.controller.text.trim().isNotEmpty;
-    if (hasText && !_typingActive) {
-      ChatWsService.instance.sendTyping(widget.roomId, true);
-      _typingActive = true;
-    }
     _typingTimer?.cancel();
+    _typingTimer = null;
     if (!hasText) {
       _stopTyping();
       return;
     }
-    _typingTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (_typingActive) {
-        ChatWsService.instance.sendTyping(widget.roomId, true);
-      }
-    });
+    if (!_typingActive) {
+      ChatWsService.instance.sendTyping(widget.roomId, true);
+      _typingActive = true;
+    }
+    // 输入停顿 3 秒后自动停止：否则草稿留在输入框里，
+    // 对方会一直看到「正在输入」（服务端只按事件转发，不会过期）。
+    // 不不不3秒太短了还是6秒吧
+    _typingTimer = Timer(const Duration(seconds: 6), _stopTyping);
   }
 
   void _stopTyping() {
@@ -169,6 +185,7 @@ class _ChatInputBarState extends State<ChatInputBar>
 
     if (shouldSend) {
       if (value.text.trim().isNotEmpty || widget.actionIsForward) {
+        Haptics.light();
         widget.onSend();
       }
       return KeyEventResult.handled;
@@ -241,6 +258,7 @@ class _ChatInputBarState extends State<ChatInputBar>
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
+    final showSticker = FeatureFlags.instance.sticker;
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -249,7 +267,7 @@ class _ChatInputBarState extends State<ChatInputBar>
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: colorScheme.shadow.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -261,79 +279,53 @@ class _ChatInputBarState extends State<ChatInputBar>
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildMessageActionPreview(context),
+            _UploadProgressStrip(roomId: widget.roomId),
             // Main input row
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // Expand/Collapse button
+                // Expand/Collapse / leave voice mode button
                 IconButton(
                   icon: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
-                    child: Icon(
-                      _isExpanded ? Symbols.close : Symbols.add,
-                      key: ValueKey(_isExpanded),
-                    ),
+                    child: _isVoiceMode
+                        ? const Icon(
+                            Symbols.keyboard_return,
+                            key: ValueKey('voice-leave'),
+                          )
+                        : Icon(
+                            _isExpanded ? Symbols.close : Symbols.add,
+                            key: ValueKey(_isExpanded),
+                          ),
                   ),
-                  tooltip: _isExpanded
+                  tooltip: _isVoiceMode
+                      ? l10n.voiceLeaveVoiceMode
+                      : _isExpanded
                       ? l10n.chatInputCollapse
                       : l10n.chatInputExpand,
                   onPressed: () {
+                    if (_isVoiceMode) {
+                      setState(() => _isVoiceMode = false);
+                      return;
+                    }
                     setState(() {
                       _isExpanded = !_isExpanded;
                     });
                   },
                 ),
-                PopupMenuButton<String>(
-                  icon: const Icon(Symbols.attach_file),
-                  tooltip: l10n.chatInputAttachment,
-                  onSelected: (value) async {
-                    await _handleAttachment(value);
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'image',
-                      child: Row(
-                        children: [
-                          const Icon(Symbols.image),
-                          const SizedBox(width: 12),
-                          Text(l10n.mediaPickImage),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'video',
-                      child: Row(
-                        children: [
-                          const Icon(Symbols.videocam),
-                          const SizedBox(width: 12),
-                          Text(l10n.mediaPickVideo),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'audio',
-                      child: Row(
-                        children: [
-                          const Icon(Symbols.audiotrack),
-                          const SizedBox(width: 12),
-                          Text(l10n.mediaPickAudio),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'file',
-                      child: Row(
-                        children: [
-                          const Icon(Symbols.file_upload),
-                          const SizedBox(width: 12),
-                          Text(l10n.chatInputUploadFile),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                if (!_isVoiceMode)
+                  IconButton(
+                    icon: const Icon(Symbols.attach_file),
+                    tooltip: l10n.chatInputAttachment,
+                    onPressed: _showAttachmentSheet,
+                  ),
                 Expanded(
-                  child: Stack(
+                  child: _isVoiceMode
+                      ? VoiceRecordBar(
+                          onRecorded: widget.onVoiceRecorded!,
+                          enabled: !widget.actionIsForward,
+                        )
+                      : Stack(
                     children: [
                       MentionTextField(
                         controller: widget.controller,
@@ -369,76 +361,91 @@ class _ChatInputBarState extends State<ChatInputBar>
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  color: colorScheme.primary,
-                  onPressed: () {
-                    if (widget.controller.text.trim().isNotEmpty ||
-                        widget.actionIsForward) {
-                      widget.onSend();
-                    }
-                  },
-                ),
+                if (!_isVoiceMode &&
+                    widget.onVoiceRecorded != null &&
+                    SettingsService.instance.getValue<bool>(
+                      'chatVoiceButtonInInputBar',
+                      true,
+                    ))
+                  IconButton(
+                    icon: const Icon(Symbols.mic),
+                    tooltip: l10n.voiceHoldToRecord,
+                    onPressed: _enterVoiceMode,
+                  ),
+                if (!_isVoiceMode)
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    color: colorScheme.primary,
+                    onPressed: () {
+                      if (widget.controller.text.trim().isNotEmpty ||
+                          widget.actionIsForward) {
+                        Haptics.light();
+                        widget.onSend();
+                      }
+                    },
+                  ),
               ],
             ),
             AnimatedSize(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeInOut,
               child: _isExpanded
-                  ? Container(
-                      height: 300,
-                      margin: const EdgeInsets.only(top: 8, bottom: 3),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          width: 1,
-                          color: colorScheme.outline.withValues(alpha: 0.3),
-                        ),
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(24),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: TabBar(
-                              controller: _tabController,
-                              tabs: [
-                                Tab(text: l10n.chatFunctionTabFiles),
-                                Tab(text: l10n.chatFunctionTabEmoji),
-                                Tab(text: l10n.chatFunctionTabSpecial),
-                              ],
-                              labelStyle: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              unselectedLabelStyle: const TextStyle(
-                                fontSize: 13,
-                              ),
-                              indicatorSize: TabBarIndicatorSize.label,
-                              labelColor: colorScheme.primary,
-                              unselectedLabelColor:
-                                  colorScheme.onSurfaceVariant,
-                              indicatorPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              dividerColor: Colors.transparent,
-                              tabAlignment: TabAlignment.center,
-                              splashFactory: NoSplash.splashFactory,
-                            ),
+                  ? DefaultTabController(
+                      length: showSticker ? 3 : 2,
+                      child: Container(
+                        height: 300,
+                        margin: const EdgeInsets.only(top: 8, bottom: 3),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            width: 1,
+                            color: colorScheme.outline.withValues(alpha: 0.3),
                           ),
-                          const Divider(height: 1),
-                          Expanded(
-                            child: TabBarView(
-                              controller: _tabController,
-                              children: [
-                                _buildFilesTab(colorScheme, l10n),
-                                _buildEmojiTab(),
-                                _buildSpecialMessagesTab(colorScheme, l10n),
-                              ],
-                            ),
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(24),
                           ),
-                        ],
+                        ),
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: TabBar(
+                                tabs: [
+                                  Tab(text: l10n.chatFunctionTabFiles),
+                                  if (showSticker)
+                                    Tab(text: l10n.chatFunctionTabEmoji),
+                                  Tab(text: l10n.chatFunctionTabSpecial),
+                                ],
+                                labelStyle: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                unselectedLabelStyle: const TextStyle(
+                                  fontSize: 13,
+                                ),
+                                indicatorSize: TabBarIndicatorSize.label,
+                                labelColor: colorScheme.primary,
+                                unselectedLabelColor:
+                                    colorScheme.onSurfaceVariant,
+                                indicatorPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                dividerColor: Colors.transparent,
+                                tabAlignment: TabAlignment.center,
+                                splashFactory: NoSplash.splashFactory,
+                              ),
+                            ),
+                            const Divider(height: 1),
+                            Expanded(
+                              child: TabBarView(
+                                children: [
+                                  _buildFilesTab(colorScheme, l10n),
+                                  if (showSticker) _buildEmojiTab(),
+                                  _buildSpecialMessagesTab(colorScheme, l10n),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     )
                   : const SizedBox.shrink(),
@@ -506,7 +513,7 @@ class _ChatInputBarState extends State<ChatInputBar>
                               ? l10n.messageActionForward
                               : l10n.messageReplyingTo(
                                   message.isMe
-                                      ? 'Me'
+                                      ? l10n.chatMeLabel
                                       : message.senderName ??
                                             l10n.commonUnknown,
                                 ),
@@ -562,57 +569,10 @@ class _ChatInputBarState extends State<ChatInputBar>
             style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
           ),
           const SizedBox(height: 12),
-          PopupMenuButton<String>(
-            onSelected: (value) async {
-              await _handleAttachment(value);
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'image',
-                child: Row(
-                  children: [
-                    const Icon(Icons.image),
-                    const SizedBox(width: 12),
-                    Text(l10n.mediaPickImage),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'video',
-                child: Row(
-                  children: [
-                    const Icon(Icons.videocam),
-                    const SizedBox(width: 12),
-                    Text(l10n.mediaPickVideo),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'audio',
-                child: Row(
-                  children: [
-                    const Icon(Icons.audiotrack),
-                    const SizedBox(width: 12),
-                    Text(l10n.mediaPickAudio),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'file',
-                child: Row(
-                  children: [
-                    const Icon(Icons.file_upload),
-                    const SizedBox(width: 12),
-                    Text(l10n.chatInputUploadFile),
-                  ],
-                ),
-              ),
-            ],
-            child: ElevatedButton.icon(
-              onPressed: null,
-              icon: const Icon(Icons.add, size: 18),
-              label: Text(l10n.chatFunctionPickFile),
-            ),
+          ElevatedButton.icon(
+            onPressed: _showAttachmentSheet,
+            icon: const Icon(Icons.add, size: 18),
+            label: Text(l10n.chatFunctionPickFile),
           ),
           if (widget.onServerFilePicked != null) ...[
             const SizedBox(height: 12),
@@ -702,6 +662,13 @@ class _ChatInputBarState extends State<ChatInputBar>
     }
   }
 
+  void _enterVoiceMode() {
+    setState(() {
+      _isVoiceMode = true;
+      _isExpanded = false;
+    });
+  }
+
   Widget _buildSpecialMessagesTab(
     ColorScheme colorScheme,
     AppLocalizations l10n,
@@ -720,9 +687,53 @@ class _ChatInputBarState extends State<ChatInputBar>
             l10n.chatFunctionTabSpecialHint,
             style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
           ),
+          if (widget.onVoiceRecorded != null) ...[
+            const SizedBox(height: 16),
+            FilledButton.tonalIcon(
+              onPressed: _enterVoiceMode,
+              icon: const Icon(Symbols.mic, size: 18),
+              label: Text(l10n.voiceRecordVoice),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  Future<void> _showAttachmentSheet() async {
+    final l10n = AppLocalizations.of(context)!;
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Symbols.image),
+              title: Text(l10n.mediaPickImage),
+              onTap: () => Navigator.pop(sheetContext, 'image'),
+            ),
+            ListTile(
+              leading: const Icon(Symbols.videocam),
+              title: Text(l10n.mediaPickVideo),
+              onTap: () => Navigator.pop(sheetContext, 'video'),
+            ),
+            ListTile(
+              leading: const Icon(Symbols.audiotrack),
+              title: Text(l10n.mediaPickAudio),
+              onTap: () => Navigator.pop(sheetContext, 'audio'),
+            ),
+            ListTile(
+              leading: const Icon(Symbols.file_upload),
+              title: Text(l10n.chatInputUploadFile),
+              onTap: () => Navigator.pop(sheetContext, 'file'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (selected != null) await _handleAttachment(selected);
   }
 
   Future<void> _handleAttachment(String type) async {
@@ -823,5 +834,81 @@ class _ChatInputBarState extends State<ChatInputBar>
         }
         break;
     }
+  }
+}
+
+/// 输入框上方的附件上传进度条：复用 [taskManagerProvider]（消息气泡
+/// 内进度同源），仅展示当前房间进行中的上传任务。
+class _UploadProgressStrip extends ConsumerWidget {
+  final String roomId;
+
+  const _UploadProgressStrip({required this.roomId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final active = ref.watch(taskManagerProvider).where((task) {
+      return task.roomId == roomId &&
+          task.type == FileTaskType.upload &&
+          (task.status == FileTaskStatus.preparing ||
+              task.status == FileTaskStatus.transferring);
+    }).toList();
+    if (active.isEmpty) return const SizedBox.shrink();
+
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final task in active)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  Icon(
+                    Symbols.file_upload,
+                    size: 16,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          task.fileName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        const SizedBox(height: 2),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: task.progress,
+                            minHeight: 3,
+                            backgroundColor:
+                                colorScheme.surfaceContainerHighest,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    task.progressLabel,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

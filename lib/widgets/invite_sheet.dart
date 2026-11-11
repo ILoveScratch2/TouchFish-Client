@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/notification_model.dart';
+import '../routes/app_routes.dart';
 import '../services/notification_service.dart';
 import '../services/snackbar_service.dart';
 
@@ -128,6 +129,19 @@ class _InviteSheetState extends State<InviteSheet> {
                 ),
               ],
             ),
+          ),
+          const Divider(height: 1),
+          // 通知处理完即删；申请列表是持久视图，入口放这里方便回看留言
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.person_add_alt),
+            title: Text(l10n.friendRequestsTitle),
+            trailing: const Icon(Icons.chevron_right, size: 18),
+            onTap: () {
+              final router = GoRouter.of(context);
+              Navigator.pop(context);
+              router.push(AppRoutes.friendRequests);
+            },
           ),
           const Divider(height: 1),
           Expanded(

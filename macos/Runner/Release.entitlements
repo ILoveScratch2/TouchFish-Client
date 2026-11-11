@@ -17,5 +17,8 @@
 	<true/>
 	<key>com.apple.security.network.server</key>
 	<true/>
+	<!-- flutter_secure_storage（Keychain）：插件要求两个 entitlements 都加 -->
+	<key>keychain-access-groups</key>
+	<array/>
 </dict>
 </plist>

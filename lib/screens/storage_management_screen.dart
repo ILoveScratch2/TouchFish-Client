@@ -1,8 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
+import '../services/file_service.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../l10n/app_localizations.dart';
@@ -10,6 +10,7 @@ import '../models/file_attachment.dart';
 import '../widgets/file_attachment_view.dart';
 import '../widgets/file_thumbnail.dart';
 import '../widgets/sheet_scaffold.dart';
+import '../widgets/ui/loading_indicator.dart';
 
 class StorageManagementScreen extends StatefulWidget {
   const StorageManagementScreen({super.key});
@@ -115,16 +116,16 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     setState(() => _isUploading = true);
 
     try {
-      final fileBase64 = base64.encode(bytes);
-      final response = await TfApiClient.instance.uploadFile(
-        uid,
-        password,
-        file.name,
-        fileBase64,
+      // 超过阈值的文件内部会走分块上传，避免把整个文件塞进一个加密请求。
+      final hash = await FileService.instance.uploadBytes(
+        uid: uid,
+        password: password,
+        fileName: file.name,
+        bytes: bytes,
       );
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
-      if (response != null) {
+      if (hash != null) {
         TouchFishSnackbarService.instance.show(
           l10n.storageUploaded(file.name),
         );
@@ -179,6 +180,43 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     } else {
       TouchFishSnackbarService.instance.show(
         l10n.storageDeleteFailed,
+      );
+    }
+  }
+
+  Future<void> _dereferenceFile(String hash, String fileName) async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showTouchFishErrorDialog<bool>(
+      context,
+      title: l10n.storageDereference,
+      message: l10n.storageDereferenceConfirm(fileName),
+      icon: Icons.link_off,
+      selectableMessage: false,
+      actions: [
+        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
+        TouchFishDialogAction<bool>(
+          label: l10n.storageDereference,
+          result: true,
+          isPrimary: true,
+        ),
+      ],
+    );
+    if (confirmed != true || !mounted) return;
+
+    final ok = await TfApiClient.instance.dereferenceFile(uid, password, hash);
+    if (!mounted) return;
+    if (ok) {
+      TouchFishSnackbarService.instance.show(
+        l10n.storageDereferenced(fileName),
+      );
+      await _loadData();
+    } else {
+      TouchFishSnackbarService.instance.show(
+        l10n.storageDereferenceFailed,
       );
     }
   }
@@ -274,7 +312,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
 
   Widget _buildBody(AppLocalizations l10n, ColorScheme colorScheme) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     if (_error != null) {
@@ -465,11 +503,40 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
             onPressed: () => _showFileActions(file),
             tooltip: l10n.filePreview,
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, size: 20),
-            color: colorScheme.error,
-            onPressed: () => _deleteFile(hash, fileName),
-            tooltip: l10n.storageDeleteFile,
+          PopupMenuButton<String>(
+            tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
+            onSelected: (value) {
+              if (value == 'dereference') {
+                _dereferenceFile(hash, fileName);
+              } else if (value == 'delete') {
+                _deleteFile(hash, fileName);
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'dereference',
+                child: ListTile(
+                  leading: const Icon(Icons.link_off, size: 20),
+                  title: Text(l10n.storageDereference),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: ListTile(
+                  leading: Icon(
+                    Icons.delete_outline,
+                    size: 20,
+                    color: colorScheme.error,
+                  ),
+                  title: Text(
+                    l10n.storageDeleteFile,
+                    style: TextStyle(color: colorScheme.error),
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ],
       ),

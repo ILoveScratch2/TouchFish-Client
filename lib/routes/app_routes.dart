@@ -4,6 +4,7 @@ import '../screens/welcome_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/main_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/tickets_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/register_step2_screen.dart';
 import '../screens/register_step3_screen.dart';
@@ -14,13 +15,16 @@ import '../screens/chat_screen.dart';
 import '../screens/chat_detail_screen.dart';
 import '../screens/announcement_screen.dart';
 import '../screens/forum_screen.dart';
+import '../screens/forum_section_shell.dart';
 import '../screens/forum_detail_screen.dart';
 import '../screens/forum_post_detail_screen.dart';
 import '../screens/admin_screen.dart';
 import '../screens/account_screen.dart';
+import '../screens/notifications_screen.dart';
 import '../screens/pending_forums_screen.dart';
 import '../screens/default_assets_screen.dart';
 import '../screens/user_profile_screen.dart';
+import '../screens/friend_requests_screen.dart';
 import '../screens/about_screen.dart';
 import '../screens/licenses_screen.dart';
 import '../screens/profile_edit_screen.dart';
@@ -30,6 +34,7 @@ import '../screens/account_management_screen.dart';
 import '../screens/sticker_screens.dart';
 import '../screens/forum_search_screen.dart';
 import '../screens/group_search_screen.dart';
+import '../screens/universal_search_screen.dart';
 import '../screens/group_profile_screen.dart';
 import '../screens/browser_screen.dart';
 import '../screens/browser_history_screen.dart';
@@ -38,6 +43,7 @@ import '../l10n/app_localizations.dart';
 import '../screens/forward_screen.dart';
 import '../models/message_model.dart';
 import '../services/auth_state.dart';
+import '../services/feature_flags.dart';
 import '../widgets/window_frame.dart';
 import '../widgets/lock_gate.dart';
 import '../utils/talker.dart';
@@ -51,17 +57,18 @@ class AppRoutes {
   static const String chatDetail = '/chat/:roomId';
   static const String announcement = '/announcement';
   static const String forum = '/forum';
-  static const String forumDetail = '/forum/:forumId';
-  static const String forumPostDetail = '/forum/:forumId/post/:postId';
-  static const String forumSearch = '/forum/search';
   static const String groupSearch = '/group/search';
+  static const String universalSearch = '/search';
   static const String groupProfile = '/group/:gid';
   static const String forward = '/forward';
   static const String account = '/account';
+  static const String notifications = '/notifications';
   static const String admin = '/admin';
   static const String adminPendingForums = '/admin/pending-forums';
   static const String adminDefaultAssets = '/admin/default-assets';
   static const String adminServerSettings = '/admin/server-settings';
+  static const String adminTickets = '/admin/tickets';
+  static const String tickets = '/tickets';
   static const String adminAccountManagement = '/admin/account-management';
   static const String settings = '/settings';
   static const String register = '/register';
@@ -71,6 +78,7 @@ class AppRoutes {
   static const String forgotPassword = '/forgot-password';
   static const String changePassword = '/change-password';
   static const String userProfile = '/user/:userId';
+  static const String friendRequests = '/friends/requests';
   static const String about = '/about';
   static const String licenses = '/licenses';
   static const String profileEdit = '/profile/edit';
@@ -88,6 +96,7 @@ class AppRoutes {
     welcome,
     login,
     settings,
+    tickets,
     register,
     registerStep2,
     registerStep3,
@@ -124,7 +133,9 @@ class AppRoutes {
   ///
   /// 他妈的不要叠加主 Section 切换动画
   /// 神秘 dsv4f 给我 debug 半天，梁文锋你死定了过拟合这么严重的 fw ds
-  @visibleForTesting
+  ///
+  /// 同时也决定底部导航的显隐：子页面（聊天详情、论坛详情 / 帖子 / 搜索）
+  /// 是整屏页面，不显示底部导航。
   static bool isSubPageNavigation(String path) {
     // 聊天页面内的导航
     if (path.startsWith('/chat/') && path != '/chat') {
@@ -143,15 +154,12 @@ class AppRoutes {
     Widget child,
   ) {
     final path = state.uri.path;
-    
+
     // 如果是子页面导航，不使用动画
     if (isSubPageNavigation(path)) {
-      return NoTransitionPage<void>(
-        key: state.pageKey,
-        child: child,
-      );
+      return NoTransitionPage<void>(key: state.pageKey, child: child);
     }
-    
+
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final currentIndex = _sectionIndexOf(path);
     final lastIndex = _lastMainSectionIndex;
@@ -170,7 +178,8 @@ class AppRoutes {
       child: child,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         if (reduceMotion) return child;
-        final isWide = WideScreenHelper.isWide(context);
+        // 分栏时详情是右侧栏位的纵向淡入，单栏时才是整页横向推入。
+        final isWide = WideScreenHelper.isExpanded(context);
         final curved = CurvedAnimation(
           parent: animation,
           curve: Curves.easeOutCubic,
@@ -219,11 +228,9 @@ class AppRoutes {
   /// 索引页自身不做转场动画：进入聊天 Section 的整体过渡由 ChatShellScreen
   /// 整壳入场动画承担；从详情返回列表时索引页常驻栈底（或被静默补入），
   /// 不会重放"列表滑入"动画。
-  static Page<void> _chatIndexPage(
-    BuildContext context,
-    GoRouterState state,
-  ) {
-    final isWide = WideScreenHelper.isWide(context);
+  static Page<void> _chatIndexPage(BuildContext context, GoRouterState state) {
+    // 与 ChatShellScreen 的分栏判断一致。
+    final isWide = WideScreenHelper.isExpanded(context);
     final Widget page = isWide
         ? _chatPlaceholder(context)
         : const ChatListScreen(
@@ -231,6 +238,29 @@ class AppRoutes {
             isCollapsed: false,
             isHovering: false,
           );
+    return NoTransitionPage<void>(key: state.pageKey, child: page);
+  }
+
+  /// 论坛区占位页（宽屏右侧未选论坛时显示）
+  static Widget _forumPlaceholder(BuildContext context) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: Center(
+        child: Text(
+          AppLocalizations.of(context)!.forumSelectPlaceholder,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 论坛区索引页（URL 为 `/forum`）
+  static Page<void> _forumIndexPage(BuildContext context, GoRouterState state) {
+    final Widget page = WideScreenHelper.forumKeepsListPane(context)
+        ? _forumPlaceholder(context)
+        : const ForumScreen(isAside: false);
     return NoTransitionPage<void>(key: state.pageKey, child: page);
   }
 
@@ -253,7 +283,8 @@ class AppRoutes {
         extra['password'] is String &&
         (extra['requiresEmail'] == null || extra['requiresEmail'] is bool) &&
         (extra['captchaStamp'] == null || extra['captchaStamp'] is String) &&
-        (extra['captchaCode'] == null || extra['captchaCode'] is String);
+        (extra['captchaCode'] == null || extra['captchaCode'] is String) &&
+        (extra['captchaToken'] == null || extra['captchaToken'] is String);
   }
 
   @visibleForTesting
@@ -262,6 +293,51 @@ class AppRoutes {
         extra['username'] is String &&
         extra['uid'] is int;
   }
+
+  @visibleForTesting
+  static List<RouteBase> forumSectionRoutes() => [
+    ShellRoute(
+      builder: (context, state, child) {
+        return ForumSectionShell(location: state.uri.path, child: child);
+      },
+      routes: [
+        GoRoute(
+          path: forum,
+          pageBuilder: (context, state) => _forumIndexPage(context, state),
+          routes: [
+            GoRoute(
+              path: 'search',
+              builder: (context, state) => const ForumSearchScreen(),
+            ),
+            GoRoute(
+              path: ':forumId',
+              builder: (context, state) {
+                final forumId = state.pathParameters['forumId']!;
+                return ForumDetailScreen(
+                  key: ValueKey('forum-$forumId'),
+                  forumId: forumId,
+                );
+              },
+              routes: [
+                GoRoute(
+                  path: 'post/:postId',
+                  builder: (context, state) {
+                    final forumId = state.pathParameters['forumId']!;
+                    final postId = state.pathParameters['postId']!;
+                    return ForumPostDetailScreen(
+                      key: ValueKey('post-$forumId-$postId'),
+                      forumId: forumId,
+                      postId: postId,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    ),
+  ];
 
   static GoRouter createRouter({
     required bool isFirstLaunch,
@@ -273,6 +349,12 @@ class AppRoutes {
           : (hasSavedSession ? main : login),
       refreshListenable: AuthState.instance.sessionListenable,
       redirect: (context, state) {
+        final path = state.uri.path;
+        final flags = FeatureFlags.instance;
+        if (path.startsWith(forum) && !flags.forum) return main;
+        if (path.startsWith(announcement) && !flags.announcement) return main;
+        if (path.startsWith('$chat/U') && !flags.privateChat) return main;
+        if (path.startsWith('$chat/G') && !flags.groupChat) return main;
         final auth = AuthState.instance;
         final restoringSavedSession =
             auth.hasStoredCredentials && !auth.isLoggedIn;
@@ -301,6 +383,10 @@ class AppRoutes {
               builder: (context, state) => const SettingsScreen(),
             ),
             GoRoute(
+              path: tickets,
+              builder: (context, state) => const TicketsScreen(),
+            ),
+            GoRoute(
               path: register,
               builder: (context, state) {
                 final args = state.extra;
@@ -324,6 +410,7 @@ class AppRoutes {
                   requiresEmail: args['requiresEmail'] as bool? ?? false,
                   captchaStamp: args['captchaStamp'] as String?,
                   captchaCode: args['captchaCode'] as String?,
+                  captchaToken: args['captchaToken'] as String?,
                 );
               },
             ),
@@ -394,7 +481,9 @@ class AppRoutes {
                 if (peerUid == null) {
                   return Scaffold(
                     body: Center(
-                      child: Text(AppLocalizations.of(context)!.callInvalidRequest),
+                      child: Text(
+                        AppLocalizations.of(context)!.callInvalidRequest,
+                      ),
                     ),
                   );
                 }
@@ -404,6 +493,10 @@ class AppRoutes {
             GoRoute(
               path: profileEdit,
               builder: (context, state) => const ProfileEditScreen(),
+            ),
+            GoRoute(
+              path: friendRequests,
+              builder: (context, state) => const FriendRequestsScreen(),
             ),
             GoRoute(
               path: sessionDevices,
@@ -418,12 +511,12 @@ class AppRoutes {
               },
             ),
             GoRoute(
-              path: forumSearch,
-              builder: (context, state) => const ForumSearchScreen(),
-            ),
-            GoRoute(
               path: groupSearch,
               builder: (context, state) => const GroupSearchScreen(),
+            ),
+            GoRoute(
+              path: universalSearch,
+              builder: (context, state) => const UniversalSearchScreen(),
             ),
             GoRoute(
               path: forward,
@@ -449,8 +542,9 @@ class AppRoutes {
                 final Map<String, dynamic>? initialData = args is Map
                     ? args['initialData'] as Map<String, dynamic>?
                     : null;
-                final String? groupName =
-                    args is Map ? args['groupName'] as String? : null;
+                final String? groupName = args is Map
+                    ? args['groupName'] as String?
+                    : null;
                 return GroupProfileScreen(
                   gid: gid,
                   initialData: initialData,
@@ -458,42 +552,32 @@ class AppRoutes {
                 );
               },
             ),
-            GoRoute(
-              path: '/forum/:forumId',
-              builder: (context, state) {
-                final forumId = state.pathParameters['forumId']!;
-                return ForumDetailScreen(forumId: forumId);
+            StatefulShellRoute.indexedStack(
+              builder: (context, state, navigationShell) {
+                return MainScreen(
+                  child: navigationShell,
+                  onBranchSelected: (branchIndex) {
+                    navigationShell.goBranch(
+                      branchIndex,
+                      initialLocation:
+                          branchIndex == navigationShell.currentIndex,
+                    );
+                  },
+                );
               },
-            ),
-            GoRoute(
-              path: '/forum/:forumId/post/:postId',
-              builder: (context, state) {
-                final forumId = state.pathParameters['forumId']!;
-                final postId = state.pathParameters['postId']!;
-                return ForumPostDetailScreen(forumId: forumId, postId: postId);
-              },
-            ),
-            ShellRoute(
-              builder: (context, state, child) {
-                return MainScreen(child: child);
-              },
-              routes: [
-                // 聊天区使用常驻 Shell：ChatShellScreen（左侧列表、拖动栏等
-                // 状态）跨 /chat、/chat/:roomId 切换保持不重建；详情页作为
-                // /chat 的嵌套子路由，在壳内子导航中 push 播放转场动画——
-                // 宽屏=右侧面板区域动画，窄屏=整屏 push 动画
-
-                // what the fuck
-                ShellRoute(
+              // 分支顺序固定 chat / announcement / forum / account / admin
+              branches: [
+                // 聊天常驻 ChatShellScreen（左侧列表、拖动栏等状态）
+                // 跨 /chat、/chat/:roomId 切换保持不重建
+                StatefulShellBranch(
+                  routes: [
+                    ShellRoute(
                   builder: (context, state, child) {
                     return ChatShellScreen(child: child);
                   },
                   routes: [
                     // CHAT NB!
-                    GoRoute(
-                      path: main,
-                      redirect: (context, state) => chat,
-                    ),
+                    GoRoute(path: main, redirect: (context, state) => chat),
                     GoRoute(
                       path: chat,
                       pageBuilder: (context, state) =>
@@ -503,8 +587,9 @@ class AppRoutes {
                           path: ':roomId',
                           pageBuilder: (context, state) {
                             final roomId = state.pathParameters['roomId']!;
-                            final reduceMotion =
-                                MediaQuery.disableAnimationsOf(context);
+                            final reduceMotion = MediaQuery.disableAnimationsOf(
+                              context,
+                            );
                             final detail = ChatDetailScreen(
                               key: ValueKey(roomId),
                               roomId: roomId,
@@ -520,60 +605,74 @@ class AppRoutes {
                             // 不然他妈的 opaque 路由 pop 时恢复下层就会他妈的报错
 
                             // 气死我了，不要管文不文明了
-                            if (!WideScreenHelper.isWide(context)) {
-                              // 窄屏：整屏从右滑入
+                            if (!WideScreenHelper.isExpanded(context)) {
+                              // 单栏（窄屏或 medium）：整屏从右滑入
                               return CustomTransitionPage<void>(
                                 key: state.pageKey,
                                 opaque: false,
-                                transitionDuration:
-                                    const Duration(milliseconds: 300),
-                                reverseTransitionDuration:
-                                    const Duration(milliseconds: 260),
+                                transitionDuration: const Duration(
+                                  milliseconds: 300,
+                                ),
+                                reverseTransitionDuration: const Duration(
+                                  milliseconds: 260,
+                                ),
                                 child: detail,
-                                transitionsBuilder: (context, animation,
-                                        secondaryAnimation, child) {
-                                  final curved = CurvedAnimation(
-                                    parent: animation,
-                                    curve: Curves.easeOutCubic,
-                                    reverseCurve: Curves.easeInCubic,
-                                  );
-                                  return SlideTransition(
-                                    position: Tween<Offset>(
-                                      begin: const Offset(1, 0),
-                                      end: Offset.zero,
-                                    ).animate(curved),
-                                    child: child,
-                                  );
-                                },
+                                transitionsBuilder:
+                                    (
+                                      context,
+                                      animation,
+                                      secondaryAnimation,
+                                      child,
+                                    ) {
+                                      final curved = CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOutCubic,
+                                        reverseCurve: Curves.easeInCubic,
+                                      );
+                                      return SlideTransition(
+                                        position: Tween<Offset>(
+                                          begin: const Offset(1, 0),
+                                          end: Offset.zero,
+                                        ).animate(curved),
+                                        child: child,
+                                      );
+                                    },
                               );
                             }
                             // 宽屏：仅在右侧面板区域内轻量过渡
                             return CustomTransitionPage<void>(
                               key: state.pageKey,
                               opaque: false,
-                              transitionDuration:
-                                  const Duration(milliseconds: 260),
-                              reverseTransitionDuration:
-                                  const Duration(milliseconds: 240),
+                              transitionDuration: const Duration(
+                                milliseconds: 260,
+                              ),
+                              reverseTransitionDuration: const Duration(
+                                milliseconds: 240,
+                              ),
                               child: detail,
-                              transitionsBuilder: (context, animation,
-                                      secondaryAnimation, child) {
-                                final curved = CurvedAnimation(
-                                  parent: animation,
-                                  curve: Curves.easeOutCubic,
-                                  reverseCurve: Curves.easeInCubic,
-                                );
-                                return FadeTransition(
-                                  opacity: curved,
-                                  child: SlideTransition(
-                                    position: Tween<Offset>(
-                                      begin: const Offset(0.05, 0),
-                                      end: Offset.zero,
-                                    ).animate(curved),
-                                    child: child,
-                                  ),
-                                );
-                              },
+                              transitionsBuilder:
+                                  (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) {
+                                    final curved = CurvedAnimation(
+                                      parent: animation,
+                                      curve: Curves.easeOutCubic,
+                                      reverseCurve: Curves.easeInCubic,
+                                    );
+                                    return FadeTransition(
+                                      opacity: curved,
+                                      child: SlideTransition(
+                                        position: Tween<Offset>(
+                                          begin: const Offset(0.05, 0),
+                                          end: Offset.zero,
+                                        ).animate(curved),
+                                        child: child,
+                                      ),
+                                    );
+                                  },
                             );
                           },
                         ),
@@ -581,34 +680,54 @@ class AppRoutes {
                     ),
                   ],
                 ),
-                GoRoute(
-                  path: announcement,
-                  pageBuilder: (context, state) => _mainSectionPage(
-                    context,
-                    state,
-                    const AnnouncementScreen(),
-                  ),
+                  ],
                 ),
-                GoRoute(
-                  path: forum,
-                  pageBuilder: (context, state) =>
-                      _mainSectionPage(context, state, const ForumScreen()),
+                // 公告区：整屏单页
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: announcement,
+                      pageBuilder: (context, state) => _mainSectionPage(
+                        context,
+                        state,
+                        const AnnouncementScreen(),
+                      ),
+                    ),
+                  ],
                 ),
-                GoRoute(
-                  path: account,
-                  pageBuilder: (context, state) =>
-                      _mainSectionPage(context, state, const AccountScreen()),
+                // 论坛区使用常驻 Shell
+                StatefulShellBranch(routes: forumSectionRoutes()),
+                // 账户区（含从账户页进入的贴纸市场等页面）
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: account,
+                      pageBuilder: (context, state) => _mainSectionPage(
+                        context,
+                        state,
+                        const AccountScreen(),
+                      ),
+                    ),
+                    GoRoute(
+                      path: notifications,
+                      builder: (context, state) => const NotificationsScreen(),
+                    ),
+                    GoRoute(
+                      path: stickerMarket,
+                      builder: (context, state) =>
+                          const StickerMarketplaceScreen(),
+                    ),
+                    GoRoute(
+                      path: myStickers,
+                      builder: (context, state) => const MyStickerPacksScreen(),
+                    ),
+                  ],
                 ),
-                GoRoute(
-                  path: stickerMarket,
-                  builder: (context, state) => const StickerMarketplaceScreen(),
-                ),
-                GoRoute(
-                  path: myStickers,
-                  builder: (context, state) => const MyStickerPacksScreen(),
-                ),
-                GoRoute(
-                  path: admin,
+                // 管理后台
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: admin,
                   redirect: (context, state) {
                     return AuthState.instance.currentUser?.hasAdminAccess ==
                             true
@@ -617,6 +736,20 @@ class AppRoutes {
                   },
                   pageBuilder: (context, state) =>
                       _mainSectionPage(context, state, const AdminScreen()),
+                ),
+                GoRoute(
+                  path: adminTickets,
+                  redirect: (context, state) {
+                    return AuthState.instance.currentUser?.hasAdminAccess ==
+                            true
+                        ? null
+                        : AppRoutes.account;
+                  },
+                  pageBuilder: (context, state) => _mainSectionPage(
+                    context,
+                    state,
+                    const TicketsScreen(adminMode: true),
+                  ),
                 ),
                 GoRoute(
                   path: adminPendingForums,
@@ -672,6 +805,8 @@ class AppRoutes {
                     state,
                     const AccountManagementScreen(),
                   ),
+                ),
+                  ],
                 ),
               ],
             ),

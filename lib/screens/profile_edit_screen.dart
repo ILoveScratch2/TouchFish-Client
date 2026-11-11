@@ -12,6 +12,7 @@ import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/account/profile_picture.dart';
+import '../widgets/ui/loading_indicator.dart';
 import '../utils/talker.dart';
 
 class ProfileEditScreen extends StatefulWidget {
@@ -24,6 +25,9 @@ class ProfileEditScreen extends StatefulWidget {
 class _ProfileEditScreenState extends State<ProfileEditScreen> {
   UserProfile? _currentUser;
   bool _isSubmitting = false;
+  bool _publicEmail = true;
+  bool _showReadStatus = true;
+  bool _showOnlineStatus = true;
 
   // File picker
   PlatformFile? _selectedAvatar;
@@ -39,6 +43,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     _emailController = TextEditingController();
     _bioController = TextEditingController();
     _introductionController = TextEditingController();
+    // 同一账号的其它设备改了隐私开关时，服务端会推 PRIVACY.UPDATED，
+    // AuthState 随之刷新资料；这里跟着更新开关，免得显示陈旧值。
+    AuthState.instance.addListener(_onAuthChanged);
     _loadUser();
   }
 
@@ -50,11 +57,35 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       _emailController.text = user.email;
       _bioController.text = user.personalSign ?? '';
       _introductionController.text = user.introduction ?? '';
+      _publicEmail = user.publicEmail;
+      _showReadStatus = user.showReadStatus;
+      _showOnlineStatus = user.showOnlineStatus;
+    });
+  }
+
+  /// 远端资料刷新时同步隐私开关。
+  ///
+  /// 只同步用户没动过的开关（仍然等于进来时的快照）
+  void _onAuthChanged() {
+    final latest = AuthState.instance.currentUser;
+    final previous = _currentUser;
+    if (!mounted || latest == null || previous == null) return;
+    final readUntouched = _showReadStatus == previous.showReadStatus;
+    final onlineUntouched = _showOnlineStatus == previous.showOnlineStatus;
+    if (!readUntouched && !onlineUntouched) return;
+    if (_showReadStatus == latest.showReadStatus &&
+        _showOnlineStatus == latest.showOnlineStatus) {
+      return;
+    }
+    setState(() {
+      if (readUntouched) _showReadStatus = latest.showReadStatus;
+      if (onlineUntouched) _showOnlineStatus = latest.showOnlineStatus;
     });
   }
 
   @override
   void dispose() {
+    AuthState.instance.removeListener(_onAuthChanged);
     _emailController.dispose();
     _bioController.dispose();
     _introductionController.dispose();
@@ -172,6 +203,31 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         if (!ok) allOk = false;
       }
 
+      // 邮箱是否对外公开（默认公开）
+      if (_publicEmail != _currentUser!.publicEmail) {
+        final ok = await TfApiClient.instance.changePublicEmail(
+          uid,
+          password,
+          _publicEmail,
+        );
+        if (!ok) allOk = false;
+      }
+
+      // 隐私开关：已读状态 / 在线状态
+      final readStatusChanged =
+          _showReadStatus != _currentUser!.showReadStatus;
+      final onlineStatusChanged =
+          _showOnlineStatus != _currentUser!.showOnlineStatus;
+      if (readStatusChanged || onlineStatusChanged) {
+        final ok = await TfApiClient.instance.changePrivacy(
+          uid,
+          password,
+          showReadStatus: readStatusChanged ? _showReadStatus : null,
+          showOnlineStatus: onlineStatusChanged ? _showOnlineStatus : null,
+        );
+        if (!ok) allOk = false;
+      }
+
       // 上传头像
       if (_selectedAvatar != null) {
         final bytes =
@@ -219,7 +275,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     if (_currentUser == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: LoadingIndicator());
     }
 
     return Scaffold(
@@ -336,7 +392,39 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     keyboardType: TextInputType.emailAddress,
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
+
+                  // 邮箱是否公开
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.accountPublicEmailTitle),
+                    subtitle: Text(l10n.accountPublicEmailDesc),
+                    value: _publicEmail,
+                    onChanged: (value) =>
+                        setState(() => _publicEmail = value),
+                  ),
+
+                  // 是否展示已读状态
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.accountReadStatusTitle),
+                    subtitle: Text(l10n.accountReadStatusDesc),
+                    value: _showReadStatus,
+                    onChanged: (value) =>
+                        setState(() => _showReadStatus = value),
+                  ),
+
+                  // 是否展示在线状态
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.accountOnlineStatusTitle),
+                    subtitle: Text(l10n.accountOnlineStatusDesc),
+                    value: _showOnlineStatus,
+                    onChanged: (value) =>
+                        setState(() => _showOnlineStatus = value),
+                  ),
+
+                  const SizedBox(height: 8),
 
                   // Bio / Personal Sign
                   TextField(

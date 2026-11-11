@@ -187,6 +187,32 @@ void main() {
       expect(service.queuedMissingForTesting('U3'), isEmpty);
     });
 
+    test('backoff resets once the gap queue drains', () async {
+      var shouldFail = true;
+      final service = MessageSyncService.forTesting(
+        fetchMessages: (_) async {
+          if (shouldFail) throw StateError('network failed');
+          return (
+            messages: [_messageWithSeq(2)],
+            currentSeq: 2,
+            hasMore: false,
+          );
+        },
+        processMessages: (_, _) {},
+      );
+      addTearDown(service.clear);
+      service.queueMissingForTesting('R1', [2]);
+
+      await service.syncMissingForTesting('R1');
+      expect(service.retryAttemptsForTesting('R1'), 1);
+
+      shouldFail = false;
+      await service.syncMissingForTesting('R1');
+      expect(service.queuedMissingForTesting('R1'), isEmpty);
+      // 上一轮的重试定时器还挂着，但不能因此认为「本轮又排了重试」
+      expect(service.retryAttemptsForTesting('R1'), 0);
+    });
+
     test('large gaps are split into bounded requests', () async {
       final requestSizes = <int>[];
       final service = MessageSyncService.forTesting(
@@ -587,6 +613,55 @@ void main() {
         'deleted': 0,
       }, 1);
       expect(unknown.type, MessageType.file);
+    });
+  });
+
+  group('adoptServerBaseline', () {
+    test('uses the server seq without any network round trip', () async {
+      var fetchCalls = 0;
+      int? savedSeq;
+      final service = MessageSyncService.forTesting(
+        fetchMessages: (_) async {
+          fetchCalls++;
+          return (
+            messages: const <ChatMessage>[],
+            currentSeq: 0,
+            hasMore: false,
+          );
+        },
+        processMessages: (_, _) {},
+        saveSyncPoint: (_, seq) async => savedSeq = seq,
+      );
+      addTearDown(service.clear);
+
+      await service.adoptServerBaseline('U1', 42);
+
+      expect(service.lastSeqOf('U1'), 42);
+      expect(savedSeq, 42);
+      expect(fetchCalls, 0);
+    });
+
+    test('rejects invalid seq and never regresses an existing baseline',
+        () async {
+      final saved = <int>[];
+      final service = MessageSyncService.forTesting(
+        fetchMessages: (_) async => (
+          messages: const <ChatMessage>[],
+          currentSeq: 0,
+          hasMore: false,
+        ),
+        processMessages: (_, _) {},
+        saveSyncPoint: (_, seq) async => saved.add(seq),
+      );
+      addTearDown(service.clear);
+
+      await service.adoptServerBaseline('U1', 0);
+      expect(service.lastSeqOf('U1'), isNull);
+
+      service.registerRoomSeq('U1', 10);
+      await service.adoptServerBaseline('U1', 42);
+      expect(service.lastSeqOf('U1'), 10);
+      expect(saved, isEmpty);
     });
   });
 }

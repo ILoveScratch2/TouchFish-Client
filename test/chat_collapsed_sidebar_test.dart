@@ -33,8 +33,9 @@ void main() {
   testWidgets('collapsed shell preserves a 64 pixel content rail', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(800, 600));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
 
     await tester.pumpWidget(app(const ChatShellScreen(child: SizedBox())));
     await tester.pumpAndSettle();

@@ -9,9 +9,12 @@ import '../widgets/account/profile_picture.dart';
 import '../services/api/tf_api_client.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
+import '../services/feature_flags.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../utils/clipboard_utils.dart';
+import '../widgets/text_entry_dialog.dart';
+import '../widgets/ui/loading_indicator.dart';
 
 const double _kProfileMaxWidth = 680;
 
@@ -31,6 +34,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   bool _isAddingFriend = false;
   bool? _isFriend;
 
+  /// 自己拉黑了对方（服务端 `/friend/relationship` 的 `blocked_by_me`）。
+  bool? _isBlocked;
+
+  /// 对方拉黑了自己：只能等对方解除。
+  bool? _blockedByPeer;
+
   @override
   void initState() {
     super.initState();
@@ -47,22 +56,39 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       if (uid == null) throw Exception('Invalid userId');
       final profile = await TfApiClient.instance.getUserByUid(uid);
       bool? isFriend;
+      bool? isBlocked;
+      bool? blockedByPeer;
       final myUid = AuthState.instance.uid;
       final password = AuthState.instance.password;
       if (profile != null &&
           myUid != null &&
           password != null &&
           uid != myUid) {
-        final friendUids = await TfApiClient.instance.getFriendList(
+        // 关系一次性查全（含拉黑方向），这样菜单能直接显示「解除拉黑」。
+        final rel = await TfApiClient.instance.queryRelationship(
           myUid,
           password,
+          uid,
         );
-        if (friendUids != null) isFriend = friendUids.contains(uid);
+        if (rel != null) {
+          isFriend = rel.isFriend;
+          isBlocked = rel.blockedByMe;
+          blockedByPeer = rel.blockedByPeer;
+        } else {
+          // 旧服务器没有 /friend/relationship：退回好友列表判断
+          final friendUids = await TfApiClient.instance.getFriendList(
+            myUid,
+            password,
+          );
+          if (friendUids != null) isFriend = friendUids.contains(uid);
+        }
       }
       if (mounted) {
         setState(() {
           _profile = profile;
           _isFriend = isFriend;
+          _isBlocked = isBlocked;
+          _blockedByPeer = blockedByPeer;
           _isLoading = false;
         });
       }
@@ -101,22 +127,108 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final targetUid = int.tryParse(target.uid);
     if (targetUid == null) return;
 
+    // 可选申请留言（留空直接申请；重复申请会覆盖为最新留言）
+    final message = await showDialog<String>(
+      context: context,
+      builder: (ctx) => TextEntryDialog(
+        title: l10n.userProfileAddFriend,
+        hintText: l10n.userProfileFriendRequestHint,
+        cancelLabel: l10n.commonCancel,
+        confirmLabel: l10n.userProfileAddFriend,
+        icon: Icons.person_add_alt,
+        maxLines: 3,
+        allowEmpty: true,
+      ),
+    );
+    if (message == null || !mounted) return;
+
     setState(() => _isAddingFriend = true);
     try {
-      final ok = await TfApiClient.instance.addFriend(
+      final result = await TfApiClient.instance.addFriend(
         myUid,
         password,
         targetUid,
-        '',
+        message,
       );
       if (!mounted) return;
+      final blocked = result.errorCode == 'FRIEND_BLOCKED';
       TouchFishSnackbarService.instance.show(
-          ok
-              ? l10n.userProfileFriendRequestSent(target.username)
-              : l10n.userProfileFriendRequestFailed,
-        );
+        result.ok
+            ? l10n.userProfileFriendRequestSent(target.username)
+            : blocked
+            // 拉黑是双向共用一个关系行：是自己拉黑的话，得先解除拉黑。
+            ? (_isBlocked == true
+                  ? l10n.friendRequestBlockedByMe
+                  : l10n.friendRequestBlocked)
+            : l10n.userProfileFriendRequestFailed,
+      );
     } finally {
       if (mounted) setState(() => _isAddingFriend = false);
+    }
+  }
+
+  Future<void> _blockUser(UserProfile profile, AppLocalizations l10n) async {
+    final myUid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final targetUid = int.tryParse(profile.uid);
+    if (myUid == null || password == null || targetUid == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.friendBlock),
+        content: Text(l10n.friendBlockConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.friendBlock),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final ok = await TfApiClient.instance.blockUser(
+      myUid,
+      password,
+      targetUid,
+    );
+    if (!mounted) return;
+    TouchFishSnackbarService.instance.show(
+      ok ? l10n.friendBlock : l10n.commonFailedOperation,
+    );
+    if (ok) {
+      setState(() {
+        _isFriend = false;
+        _isBlocked = true;
+      });
+    }
+  }
+
+  Future<void> _unblockUser(UserProfile profile, AppLocalizations l10n) async {
+    final myUid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final targetUid = int.tryParse(profile.uid);
+    if (myUid == null || password == null || targetUid == null) return;
+
+    final ok = await TfApiClient.instance.unblockUser(
+      myUid,
+      password,
+      targetUid,
+    );
+    if (!mounted) return;
+    TouchFishSnackbarService.instance.show(
+      ok ? l10n.friendUnblockDone : l10n.commonFailedOperation,
+    );
+    if (ok) {
+      // 只清自己的拉黑标记：解除拉黑是单向的，对方那一侧仍然拉黑时
+      // 申请必然被拒，所以 _blockedByPeer 不能跟着一起清（否则按钮会
+      // 从「已被拉黑」变回可点，用户点一次吃一次 friend_blocked）。
+      setState(() => _isBlocked = false);
     }
   }
 
@@ -128,7 +240,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const LoadingIndicator(),
       );
     }
 
@@ -172,6 +284,28 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   TouchFishSnackbarService.instance.show('Share ${profile.username}');
                 },
               ),
+              if (AuthState.instance.uid?.toString() != profile.uid)
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'block') {
+                      _blockUser(profile, l10n);
+                    } else if (value == 'unblock') {
+                      _unblockUser(profile, l10n);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    if (_isBlocked == true)
+                      PopupMenuItem(
+                        value: 'unblock',
+                        child: Text(l10n.friendUnblock),
+                      )
+                    else
+                      PopupMenuItem(
+                        value: 'block',
+                        child: Text(l10n.friendBlock),
+                      ),
+                  ],
+                ),
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
@@ -322,24 +456,23 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 _copyText(context, profile.uid, l10n.userProfileUidCopied);
               },
             ),
-            const SizedBox(height: 12),
-            _buildDetailRow(
-              context,
-              Symbols.email,
-              l10n.userProfileEmail,
-              profile.email.isEmpty
-                  ? l10n.userProfileUnknownEmail
-                  : profile.email,
-              onTap: profile.email.isEmpty
-                  ? null
-                  : () {
-                      _copyText(
-                        context,
-                        profile.email,
-                        '${l10n.userProfileEmail} ${l10n.userProfileUidCopied}',
-                      );
-                    },
-            ),
+            // 邮箱未公开（服务端裁剪为空）或未设置时不占位展示
+            if (profile.email.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _buildDetailRow(
+                context,
+                Symbols.email,
+                l10n.userProfileEmail,
+                profile.email,
+                onTap: () {
+                  _copyText(
+                    context,
+                    profile.email,
+                    '${l10n.userProfileEmail} ${l10n.userProfileUidCopied}',
+                  );
+                },
+              ),
+            ],
             const SizedBox(height: 12),
             _buildDetailRow(
               context,
@@ -452,29 +585,46 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final isSelf = myUid != null && myUid.toString() == profile.uid;
     if (isSelf || _isFriend == null) return const SizedBox.shrink();
 
+    final flags = FeatureFlags.instance;
+    // 对方拉黑了我：申请必然被拒，直接把按钮置灰并写明原因。
+    final blockedByPeer = _blockedByPeer == true;
     return Row(
       children: [
-        if (!_isFriend!) ...[
+        if (!_isFriend! && flags.friendRequest) ...[
           Expanded(
-            child: OutlinedButton.icon(
-              onPressed: _isAddingFriend
-                  ? null
-                  : () => _addFriend(profile, l10n),
-              icon: _isAddingFriend
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Symbols.person_add),
-              label: Text(l10n.userProfileAddFriend),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-            ),
+            child: blockedByPeer
+                ? OutlinedButton.icon(
+                    onPressed: null,
+                    icon: const Icon(Symbols.block),
+                    label: Text(
+                      l10n.friendRequestBlocked,
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  )
+                : OutlinedButton.icon(
+                    onPressed: _isAddingFriend
+                        ? null
+                        : () => _addFriend(profile, l10n),
+                    icon: _isAddingFriend
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Symbols.person_add),
+                    label: Text(l10n.userProfileAddFriend),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
           ),
         ],
-        if (_isFriend!)
+        if (_isFriend! && flags.privateChat)
           Expanded(
             child: FilledButton.icon(
               onPressed: () => context.go('/chat/U${profile.uid}'),

@@ -222,11 +222,92 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to remove device, please try again';
 
   @override
+  String get sessionDevicesRename => 'Rename';
+
+  @override
+  String get sessionDevicesRenameTitle => 'Rename device';
+
+  @override
+  String get sessionDevicesRenameLabel => 'Device name';
+
+  @override
+  String get sessionDevicesRenameHint => 'e.g. My iPhone';
+
+  @override
+  String get sessionDevicesRenameHelper =>
+      'Leave empty to use the default device name';
+
+  @override
+  String get sessionDevicesRenameSuccess => 'Device renamed';
+
+  @override
+  String get sessionDevicesRenameFailed => 'Rename failed, please try again';
+
+  @override
+  String get sessionDevicesLocation => 'Location';
+
+  @override
+  String get sessionDevicesLastSeen => 'Last active';
+
+  @override
+  String get sessionDevicesTabDevices => 'Devices';
+
+  @override
+  String get sessionDevicesTabSessions => 'Sessions';
+
+  @override
+  String get sessionDevicesSessionCount => 'Sessions';
+
+  @override
+  String get sessionDevicesUnknownPlatform => 'Unknown platform';
+
+  @override
+  String get sessionDevicesPlatformIos => 'iOS';
+
+  @override
+  String get sessionDevicesPlatformAndroid => 'Android';
+
+  @override
+  String get sessionDevicesPlatformWeb => 'Web';
+
+  @override
+  String get sessionDevicesPlatformWindows => 'Windows';
+
+  @override
+  String get sessionDevicesPlatformMacos => 'macOS';
+
+  @override
+  String get sessionDevicesPlatformLinux => 'Linux';
+
+  @override
+  String get sessionDevicesRevokeAllOthers => 'Sign out all other sessions';
+
+  @override
+  String get sessionDevicesRevokeAllOthersConfirmTitle =>
+      'Sign out all other sessions?';
+
+  @override
+  String get sessionDevicesRevokeAllOthersConfirmMessage =>
+      'All other devices will be signed out immediately. You will stay signed in on this device.';
+
+  @override
+  String get sessionDevicesRevokeAllOthersSuccess =>
+      'All other sessions signed out';
+
+  @override
+  String get sessionDevicesRevokeAllOthersFailed =>
+      'Failed to sign out other sessions, please try again';
+
+  @override
   String get sessionRestoreNetworkError =>
       'Network connection failed. Please check your network and try again.';
 
   @override
   String get registerErrorCaptchaRequired => 'Please enter the captcha';
+
+  @override
+  String get registerErrorCaptchaInvalid =>
+      'Captcha is incorrect, please try again';
 
   @override
   String get registerCaptchaLoad => 'Loading captcha...';
@@ -236,6 +317,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get registerCaptchaRefresh => 'Refresh';
+
+  @override
+  String get registerCaptchaVerify => 'Verify';
+
+  @override
+  String get registerCaptchaVerifyHint => 'Complete the captcha to continue.';
+
+  @override
+  String get registerCaptchaVerified => 'Captcha verified';
 
   @override
   String get registerErrorFailed => 'Registration failed, please try again';
@@ -264,6 +354,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get retry => 'Retry';
+
+  @override
+  String get videoPlaybackErrorTitle => 'Video Playback Error';
+
+  @override
+  String get videoPlaybackErrorDetails => 'Error Details:';
+
+  @override
+  String get chatMeLabel => 'Me';
+
+  @override
+  String chatUserFallback(String uid) {
+    return 'User $uid';
+  }
 
   @override
   String get settingsTitle => 'Settings';
@@ -900,6 +1004,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Render Markdown and LaTeX formatted text';
 
   @override
+  String get settingsChatVoiceButtonTitle => 'Voice button in input bar';
+
+  @override
+  String get settingsChatVoiceButtonDesc =>
+      'Show the microphone button in the message input bar (voice mode is always available from the special tab)';
+
+  @override
   String get settingsMessageDisplayStyleTitle => 'Message Display Style';
 
   @override
@@ -972,6 +1083,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatSelectPlaceholder => 'Select a chat to start talking';
+
+  @override
+  String get forumSelectPlaceholder => 'Select a forum to view it';
+
+  @override
+  String get forumSelectPostPlaceholder => 'Select a post to read it';
+
+  @override
+  String get forumPostFullScreen => 'View full screen';
+
+  @override
+  String get forumPostRestoreSplitView => 'Restore split view';
 
   @override
   String get settingsSystemNotificationsTitle => 'System Notifications';
@@ -1315,6 +1438,71 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminServerSectionStickers => 'Stickers';
 
   @override
+  String get adminServerSectionFeatures => 'Feature Toggles';
+
+  @override
+  String get adminFeaturePrivateChat => 'Private chat';
+
+  @override
+  String get adminFeaturePrivateChatDescription =>
+      'Allow users to send one-to-one messages.';
+
+  @override
+  String get adminFeatureGroupChat => 'Group chat';
+
+  @override
+  String get adminFeatureGroupChatDescription =>
+      'Allow sending messages in groups, and joining or inviting to groups.';
+
+  @override
+  String get adminFeatureGroupCreate => 'Create groups';
+
+  @override
+  String get adminFeatureGroupCreateDescription =>
+      'Allow users to create new groups.';
+
+  @override
+  String get adminFeatureFriendRequest => 'Friend requests';
+
+  @override
+  String get adminFeatureFriendRequestDescription =>
+      'Allow sending friend requests and adding friends.';
+
+  @override
+  String get adminFeatureReadReceipt => 'Read receipts';
+
+  @override
+  String get adminFeatureReadReceiptDescription =>
+      'Send private-chat read receipts and let clients query read status.';
+
+  @override
+  String get adminFeatureForum => 'Forum';
+
+  @override
+  String get adminFeatureForumDescription => 'Enable the forum feature.';
+
+  @override
+  String get adminFeatureSticker => 'Stickers';
+
+  @override
+  String get adminFeatureStickerDescription =>
+      'Enable sticker packs and the sticker picker.';
+
+  @override
+  String get adminFeatureAnnouncement => 'Announcements';
+
+  @override
+  String get adminFeatureAnnouncementDescription =>
+      'Enable server announcements.';
+
+  @override
+  String get adminFeaturePresence => 'Online presence';
+
+  @override
+  String get adminFeaturePresenceDescription =>
+      'Let friends see each other\'s online status and receive online / offline events.';
+
+  @override
   String get adminServerFieldMaxStickerPacks => 'Sticker packs per user';
 
   @override
@@ -1345,6 +1533,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminServerSectionAdvanced => 'Advanced Configuration';
+
+  @override
+  String get adminServerSectionLimits => 'Limits & Storage';
+
+  @override
+  String get adminServerLimitsDescription =>
+      'Name/username/password length limits, content lengths, storage quotas, and rate limits.';
 
   @override
   String get adminServerSectionEmailService => 'Email Verification Service';
@@ -1391,7 +1586,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminServerFieldProxyCount => 'Trusted Proxy Count';
 
   @override
-  String get adminServerSectionAuth => 'Authentication';
+  String get adminServerSectionAuth => 'Authentication & Tokens';
 
   @override
   String get adminServerAuthDescription => 'Controls how clients authenticate.';
@@ -1421,6 +1616,132 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enabling email verification requires a verification email and an email password.';
 
   @override
+  String get adminServerFieldCaptchaProvider => 'Captcha Provider';
+
+  @override
+  String get adminServerCaptchaProviderDescription =>
+      'image uses the built-in image captcha; turnstile / hcaptcha / recaptcha use a third-party service.';
+
+  @override
+  String get adminServerFieldCaptchaSiteKey => 'Captcha Site Key';
+
+  @override
+  String get adminServerFieldCaptchaSecret => 'Captcha Secret';
+
+  @override
+  String get adminServerCaptchaSecretHint =>
+      'Leave empty to keep the current secret.';
+
+  @override
+  String get adminServerCaptchaSaveSuccess => 'Captcha settings updated';
+
+  @override
+  String get adminServerCaptchaSaveFailed =>
+      'Failed to update captcha settings';
+
+  @override
+  String get adminServerFieldRateLimits => 'Rate Limits (JSON)';
+
+  @override
+  String get adminServerRateLimitsDescription =>
+      'Per-endpoint request limits in JSON, mapping each endpoint to requests and range. Leave empty to clear all limits.';
+
+  @override
+  String get adminServerRateLimitsInvalid => 'Rate limits must be valid JSON';
+
+  @override
+  String get adminServerRateLimitsSaveSuccess => 'Rate limits updated';
+
+  @override
+  String get adminServerRateLimitsSaveFailed => 'Failed to update rate limits';
+
+  @override
+  String get adminServerFieldMinGroupNameLength => 'Min Group Name Length';
+
+  @override
+  String get adminServerFieldMaxGroupNameLength => 'Max Group Name Length';
+
+  @override
+  String get adminServerFieldMinUsernameLength => 'Min Username Length';
+
+  @override
+  String get adminServerFieldMinPasswordLength => 'Min Password Length';
+
+  @override
+  String get adminServerFieldMaxSignLength => 'Max Signature Length';
+
+  @override
+  String get adminServerFieldMaxIntroductionLength => 'Max Introduction Length';
+
+  @override
+  String get adminServerFieldMaxPostContentLength => 'Max Post Content Length';
+
+  @override
+  String get adminServerFieldMaxAvatarSize => 'Max Avatar Size';
+
+  @override
+  String get adminServerFieldUserStorageQuota => 'User Storage Quota';
+
+  @override
+  String get adminServerFieldMaxUserStorageQuota =>
+      'Max Single-User Upload Size';
+
+  @override
+  String get adminServerFieldMaxStickerStorageQuota =>
+      'Max Sticker Storage Quota';
+
+  @override
+  String get adminServerFieldJwtRefreshExpires =>
+      'JWT Refresh Expiry (seconds)';
+
+  @override
+  String get adminServerFieldFileDownloadMode => 'File Download Mode';
+
+  @override
+  String get adminServerFileDownloadModeDescription => 'redirect or proxy.';
+
+  @override
+  String get adminServerFieldMediaFeatures => 'Enable Media Features';
+
+  @override
+  String get adminServerMediaFeaturesDescription =>
+      'Allow media processing such as thumbnails.';
+
+  @override
+  String get adminServerSearchHint => 'Search settings';
+
+  @override
+  String get adminServerSearchNoResults => 'No matching settings found';
+
+  @override
+  String get adminServerUnlimited => 'Unlimited';
+
+  @override
+  String get adminServerUnsavedChanges => 'You have unsaved changes';
+
+  @override
+  String get adminServerUndoChanges => 'Undo changes';
+
+  @override
+  String get adminServerDiscardChanges => 'Discard changes';
+
+  @override
+  String get adminServerDiscardAndRefresh => 'Discard & refresh';
+
+  @override
+  String get adminServerDiscardConfirmTitle => 'Discard unsaved changes?';
+
+  @override
+  String get adminServerDiscardConfirmMessage =>
+      'Your current edits will be lost.';
+
+  @override
+  String get adminServerSectionRateLimits => 'Rate Limits';
+
+  @override
+  String get adminServerSectionServerInfo => 'Server Info';
+
+  @override
   String get adminPendingForums => 'Pending Forums';
 
   @override
@@ -1442,6 +1763,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String adminPendingForumCreator(String uid) {
     return 'Creator UID: $uid';
   }
+
+  @override
+  String get adminPendingForumEditBadge => 'Edit';
 
   @override
   String get adminPendingForumNoIntroduction => 'No introduction provided.';
@@ -1557,6 +1881,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountUpdateYourProfile => 'Update Your Profile';
 
   @override
+  String get accountFriends => 'Friends';
+
+  @override
+  String get accountFriendsEmpty => 'No friends yet';
+
+  @override
+  String accountFriendsOnlineCount(int count) {
+    return '$count online';
+  }
+
+  @override
+  String get accountBlocked => 'Blocked';
+
+  @override
+  String get accountBlockedEmpty => 'Nobody is blocked';
+
+  @override
+  String accountBlockedCount(int count) {
+    return '$count blocked';
+  }
+
+  @override
+  String get accountBlockedHint => 'Open the list to unblock';
+
+  @override
   String get profileEditTitle => 'Edit Profile';
 
   @override
@@ -1570,6 +1919,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileEditEmail => 'Email';
+
+  @override
+  String get accountPublicEmailTitle => 'Public Email';
+
+  @override
+  String get accountPublicEmailDesc =>
+      'Others cannot see your email when disabled (public by default)';
+
+  @override
+  String get accountReadStatusTitle => 'Show Read Status';
+
+  @override
+  String get accountReadStatusDesc =>
+      'Others can see when you have read their messages (shown by default)';
+
+  @override
+  String get accountOnlineStatusTitle => 'Show Online Status';
+
+  @override
+  String get accountOnlineStatusDesc =>
+      'Friends can see when you are online (shown by default)';
+
+  @override
+  String get chatReadReceiptRead => 'Read';
+
+  @override
+  String chatReadReceiptCount(int count) {
+    return '$count read';
+  }
 
   @override
   String get profileEditBio => 'Bio';
@@ -1693,6 +2071,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'No messages yet\nSend a message to start chatting';
 
   @override
+  String get chatMessagesLoadFailed => 'Failed to load messages';
+
+  @override
+  String get forumPostCopySource => 'From TouchFish Forum';
+
+  @override
+  String get forumPostShareFailed => 'Failed to share';
+
+  @override
   String get chatBackToBottom => 'Back to bottom';
 
   @override
@@ -1778,6 +2165,172 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get messageActionCopy => 'Copy';
+
+  @override
+  String get messageActionMergeForward => 'Merge forward';
+
+  @override
+  String get messageActionSelectMultiple => 'Select multiple';
+
+  @override
+  String get messageActionViewOriginal => 'View Original';
+
+  @override
+  String get messageRecalledOriginalTitle => 'Original Recalled Message';
+
+  @override
+  String get messageRecalledOriginalSender => 'Sender';
+
+  @override
+  String get messageRecalledOriginalContent => 'Content';
+
+  @override
+  String get messageRecalledOriginalFailed =>
+      'Failed to load the original message';
+
+  @override
+  String get messageRecalledOriginalNone => 'No original content available';
+
+  @override
+  String get selectionExit => 'Exit selection';
+
+  @override
+  String selectionCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count selected',
+      one: '1 selected',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get selectionSelectMessages => 'Select messages';
+
+  @override
+  String get selectionRedirectToCurrentChat => 'Forward to this chat';
+
+  @override
+  String get selectionCopy => 'Copy';
+
+  @override
+  String get selectionMergeForward => 'Merge forward';
+
+  @override
+  String get selectionCancel => 'Cancel';
+
+  @override
+  String get copySelectedEmpty => 'No messages to copy';
+
+  @override
+  String get voiceHoldToRecord => 'Hold to record voice';
+
+  @override
+  String get voiceHoldHint => 'Long press to record';
+
+  @override
+  String get voiceReleaseToCancel => 'Release to cancel';
+
+  @override
+  String get voiceRecordingHint => 'Recording • swipe up to cancel';
+
+  @override
+  String get voiceUploading => 'Uploading voice message...';
+
+  @override
+  String get voiceSending => 'Sending audio...';
+
+  @override
+  String get voiceLeaveVoiceMode => 'Leave voice mode';
+
+  @override
+  String get voiceRecordVoice => 'Record voice';
+
+  @override
+  String get voiceStop => 'Stop';
+
+  @override
+  String get voicePermissionDenied => 'Microphone permission denied';
+
+  @override
+  String get voiceRecordFailed => 'Failed to record voice message';
+
+  @override
+  String mergedForwardTitle(String title) {
+    return 'Merged forward · $title';
+  }
+
+  @override
+  String get mergedForwardGroup => 'Group chat';
+
+  @override
+  String get mergedForwardPrivate => 'Chat';
+
+  @override
+  String mergedForwardMore(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'and $count more messages',
+      one: 'and 1 more message',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String redirectCardLabel(String room) {
+    return 'Redirected history from $room';
+  }
+
+  @override
+  String redirectMessagesCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count messages',
+      one: '1 message',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String redirectFromRoom(String room) {
+    return 'From $room';
+  }
+
+  @override
+  String redirectHistoryTitle(String room) {
+    return 'Redirected history · $room';
+  }
+
+  @override
+  String get redirectNoContent => 'No content';
+
+  @override
+  String get redirectUnknownSender => 'Unknown';
+
+  @override
+  String get mergeForwardConfirmTitle => 'Merge forward?';
+
+  @override
+  String mergeForwardConfirmBody(int count, String target) {
+    return 'Forward $count messages to $target?';
+  }
+
+  @override
+  String get mergeForwardTextOnly =>
+      'Only text messages can be merged and forwarded';
+
+  @override
+  String get mergeForwardTooMany =>
+      'Up to 100 messages can be forwarded at once';
+
+  @override
+  String get mergeForwardFailed => 'Could not merge forward messages';
+
+  @override
+  String get mergeForwardSuccess => 'Merged forward sent';
 
   @override
   String get messageActionPin => 'Pin';
@@ -2190,6 +2743,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get userProfileAddFriend => 'Add Friend';
+
+  @override
+  String get friendRequestsTitle => 'Friend Requests';
+
+  @override
+  String get friendRequestEmpty => 'No pending friend requests';
+
+  @override
+  String get friendRequestBlocked =>
+      'This user has blocked you, so you cannot send a friend request';
+
+  @override
+  String get friendRequestBlockedByMe =>
+      'You blocked this user — unblock first';
+
+  @override
+  String get friendBlock => 'Block';
+
+  @override
+  String get friendUnblock => 'Unblock';
+
+  @override
+  String get friendUnblockDone => 'Unblocked';
+
+  @override
+  String get friendBlockConfirm =>
+      'Blocking removes the friendship and prevents this user from sending you friend requests. Block?';
 
   @override
   String get userProfileUnknownEmail => 'Unknown';
@@ -3024,6 +3604,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get announcementDeleteFailed => 'Failed to delete announcement';
 
   @override
+  String get announcementLoadFailed => 'Failed to load announcements';
+
+  @override
+  String announcementSenderFallback(String uid) {
+    return 'User $uid';
+  }
+
+  @override
   String get adminAnnouncements => 'Announcements';
 
   @override
@@ -3088,6 +3676,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminAccountEmpty => 'No users found';
 
   @override
+  String get adminAccountNoSearchResults => 'No users match your search';
+
+  @override
+  String adminAccountPageIndicator(int page, int totalPages, int total) {
+    return 'Page $page of $totalPages ($total users)';
+  }
+
+  @override
   String adminAccountCreated(String date) {
     return 'Created: $date';
   }
@@ -3097,6 +3693,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminAccountViewDevices => 'View Devices';
+
+  @override
+  String get adminAccountEdit => 'Edit Account';
+
+  @override
+  String get adminAccountEditDescription =>
+      'Leave a field empty to keep it unchanged.';
+
+  @override
+  String get adminAccountNewPassword => 'New Password (optional)';
+
+  @override
+  String get adminAccountEditSuccess => 'Account updated';
+
+  @override
+  String get adminAccountEditFailed => 'Failed to update account';
 
   @override
   String adminAccountChangeRoleTitle(String name) {
@@ -3218,6 +3830,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storageDeleteFailed => 'Delete failed';
 
   @override
+  String get storageDereference => 'Release Reference';
+
+  @override
+  String storageDereferenceConfirm(String fileName) {
+    return 'Release your reference to \"$fileName\"? The file is removed only after no references remain.';
+  }
+
+  @override
+  String storageDereferenced(String fileName) {
+    return 'Reference released: $fileName';
+  }
+
+  @override
+  String get storageDereferenceFailed => 'Failed to release reference';
+
+  @override
   String storageUploaded(String fileName) {
     return 'Uploaded: $fileName';
   }
@@ -3296,6 +3924,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminFileSummaryTotal => 'Total';
+
+  @override
+  String get adminFileLoadFailed => 'Failed to load files';
+
+  @override
+  String get adminFileUnknown => 'Unknown';
+
+  @override
+  String adminFileTileMeta(
+    String owner,
+    String uid,
+    String size,
+    int refs,
+    int uploads,
+  ) {
+    return 'Owner: $owner (UID: $uid) · $size · Refs: $refs · Uploads: $uploads';
+  }
+
+  @override
+  String adminFileSummaryStats(int files, int users, String total) {
+    return 'Files: $files · Users: $users · Total: $total';
+  }
 
   @override
   String get chatFunctionTabFiles => 'Files';
@@ -3440,6 +4090,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupEssenceFeatureDesc => 'Allow admins to mark essence messages';
 
   @override
+  String get groupPublicMessagesFeature => 'Public Message Preview';
+
+  @override
+  String get groupPublicMessagesFeatureDesc =>
+      'Allow non-members to read group messages';
+
+  @override
   String get groupTransferOwner => 'Transfer Ownership';
 
   @override
@@ -3461,6 +4118,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get groupLeaveOwnerHint =>
       'Transfer ownership before leaving the group';
+
+  @override
+  String get groupDissolve => 'Dissolve Group';
+
+  @override
+  String get groupDissolveConfirm =>
+      'This permanently dissolves the group and removes all members. This cannot be undone.';
+
+  @override
+  String get groupDissolveAction => 'Dissolve';
+
+  @override
+  String get groupDissolveSuccess => 'Group dissolved';
+
+  @override
+  String get groupDissolveFailed => 'Failed to dissolve group';
 
   @override
   String get groupInviteMember => 'Invite Member';
@@ -3521,6 +4194,462 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonOk => 'OK';
 
   @override
+  String get draftsTitle => 'Drafts';
+
+  @override
+  String get inboxAllClear => 'Nothing needs your attention';
+
+  @override
+  String get forumFilterWithAttachment => 'With attachments';
+
+  @override
+  String get forumFilterMine => 'Posted by me';
+
+  @override
+  String get forumFilterNoMatch => 'No posts match these filters';
+
+  @override
+  String get chatConnectionReconnecting => 'Connection lost, reconnecting…';
+
+  @override
+  String get videoTapToPlay => 'Tap to play';
+
+  @override
+  String get messageSendTimeout => 'Send timed out, check your network';
+
+  @override
+  String get messageSendNetworkFailed =>
+      'Connection lost, this message was not sent';
+
+  @override
+  String get messageSendRejected => 'The server did not accept this message';
+
+  @override
+  String get messageSendUploadFailed => 'Attachment upload failed';
+
+  @override
+  String failedMessagesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count messages not sent',
+      one: '1 message not sent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get failedMessagesRetryAll => 'Retry all';
+
+  @override
+  String get imageCopyLink => 'Copy image link';
+
+  @override
+  String get imageLinkCopied => 'Link copied';
+
+  @override
+  String get settingsSearchHint => 'Search settings';
+
+  @override
+  String get settingsSearchEmpty => 'No matching settings';
+
+  @override
+  String get reviewReasonHint => 'Reason (optional, sent to the author)';
+
+  @override
+  String get reviewReasonPresetIncomplete => 'Incomplete info';
+
+  @override
+  String get reviewReasonPresetOffTopic => 'Off topic';
+
+  @override
+  String get reviewReasonPresetDuplicate => 'Duplicate';
+
+  @override
+  String get reviewReasonPresetInappropriate =>
+      'Not suitable for public display';
+
+  @override
+  String get notificationMarkAllRead => 'Mark all read';
+
+  @override
+  String get notificationDeleted => 'Notification deleted';
+
+  @override
+  String get notificationDeleteFailed => 'Delete failed, please retry';
+
+  @override
+  String get notificationSwipeToDelete => 'Delete';
+
+  @override
+  String get loginErrorPendingActivation =>
+      'Account not activated yet, please verify your email';
+
+  @override
+  String get loginErrorBanned => 'This account has been banned';
+
+  @override
+  String get ticketReport => 'Report';
+
+  @override
+  String get ticketReportDesc => 'Report abusive content or users';
+
+  @override
+  String get ticketConsult => 'Feedback';
+
+  @override
+  String get ticketAppeal => 'Appeal';
+
+  @override
+  String get ticketMyTickets => 'My tickets';
+
+  @override
+  String get ticketFeedback => 'Help & feedback';
+
+  @override
+  String get ticketComposeTitle => 'Title';
+
+  @override
+  String get ticketComposeContent => 'Details';
+
+  @override
+  String get ticketComposeSubmit => 'Submit';
+
+  @override
+  String get ticketSubmitted => 'Ticket submitted';
+
+  @override
+  String get ticketSubmitFailed => 'Submit failed, please retry';
+
+  @override
+  String get ticketTypeDisabled => 'This ticket type is disabled';
+
+  @override
+  String get ticketEmpty => 'No tickets yet';
+
+  @override
+  String get ticketStatusOpen => 'Open';
+
+  @override
+  String get ticketStatusProcessing => 'Processing';
+
+  @override
+  String get ticketStatusResolved => 'Resolved';
+
+  @override
+  String get ticketStatusRejected => 'Rejected';
+
+  @override
+  String get ticketReplyLabel => 'Resolution note';
+
+  @override
+  String get ticketQueue => 'Ticket queue';
+
+  @override
+  String get ticketHandleProcessing => 'Start processing';
+
+  @override
+  String get ticketHandleResolved => 'Mark resolved';
+
+  @override
+  String get ticketHandleRejected => 'Reject';
+
+  @override
+  String get ticketHandled => 'Updated';
+
+  @override
+  String get ticketTarget => 'Target';
+
+  @override
+  String get ticketPriority => 'Priority';
+
+  @override
+  String get ticketPriorityLow => 'Low';
+
+  @override
+  String get ticketPriorityNormal => 'Normal';
+
+  @override
+  String get ticketPriorityHigh => 'High';
+
+  @override
+  String get ticketPriorityUrgent => 'Urgent';
+
+  @override
+  String get ticketAssignee => 'Assignee';
+
+  @override
+  String get ticketUnassigned => 'Unassigned';
+
+  @override
+  String get ticketAssignToMe => 'Assign to me';
+
+  @override
+  String get ticketClearAssignee => 'Clear assignee';
+
+  @override
+  String get ticketThreadTitle => 'Conversation';
+
+  @override
+  String get ticketMessageHint => 'Add a message…';
+
+  @override
+  String get ticketSend => 'Send';
+
+  @override
+  String get ticketReopenHint => 'Replying to a closed ticket will reopen it';
+
+  @override
+  String get ticketMuted => 'You are muted and cannot post right now';
+
+  @override
+  String get ticketBanned => 'This account is banned from this action';
+
+  @override
+  String get ticketPendingActivation =>
+      'Account not activated — verify your email first';
+
+  @override
+  String ticketUnreadReplies(int count) {
+    return '$count unread replies';
+  }
+
+  @override
+  String get ticketAttachments => 'Attachments';
+
+  @override
+  String get ticketAddAttachment => 'Add image';
+
+  @override
+  String get ticketUploadFailed => 'Attachment upload failed';
+
+  @override
+  String get ticketChangeStatus => 'Change status';
+
+  @override
+  String get ticketThreadEmptyTitle => 'No replies yet';
+
+  @override
+  String get ticketThreadEmptyDesc =>
+      'Send a message to start the conversation';
+
+  @override
+  String get ticketTargetPost => 'Post';
+
+  @override
+  String get ticketTargetComment => 'Comment';
+
+  @override
+  String get ticketTargetUser => 'User';
+
+  @override
+  String get ticketTargetForum => 'Forum';
+
+  @override
+  String ticketReplies(int count) {
+    return '$count replies';
+  }
+
+  @override
+  String get ticketAddFile => 'Add file';
+
+  @override
+  String get ticketStaffReply => 'Staff';
+
+  @override
+  String get ticketContentRequired =>
+      'Add a description or at least one attachment';
+
+  @override
+  String get ticketTypeName => 'Type';
+
+  @override
+  String get ticketUnknownUser => 'Unknown user';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get ticketSortByPriority => 'Priority';
+
+  @override
+  String get ticketSortByTime => 'Recent';
+
+  @override
+  String get ticketFilter => 'Filter';
+
+  @override
+  String get ticketFilterReset => 'Reset';
+
+  @override
+  String get ticketFilterApply => 'Apply';
+
+  @override
+  String get ticketCreatorFilter => 'Creator (username or UID)';
+
+  @override
+  String get ticketCreatorNotFound => 'No such user';
+
+  @override
+  String get ticketAllTickets => 'All tickets';
+
+  @override
+  String get ticketAttachmentLimit => 'Too many attachments';
+
+  @override
+  String get punishmentTitle => 'Punishments';
+
+  @override
+  String get punishmentNoticeLocked =>
+      'This notice stays until the punishment expires';
+
+  @override
+  String get punishmentCreate => 'Add punishment';
+
+  @override
+  String get punishmentKindLabel => 'Type';
+
+  @override
+  String get punishmentKindWarn => 'Warning';
+
+  @override
+  String get punishmentKindMute => 'Mute';
+
+  @override
+  String get punishmentKindBan => 'Ban';
+
+  @override
+  String get punishmentReasonLabel => 'Reason (required)';
+
+  @override
+  String get punishmentReasonRequired => 'A reason is required';
+
+  @override
+  String get punishmentDurationLabel => 'Duration';
+
+  @override
+  String get punishmentDurationPermanent => 'Permanent';
+
+  @override
+  String get punishmentRevoke => 'Revoke';
+
+  @override
+  String get punishmentActive => 'Active';
+
+  @override
+  String get punishmentInactive => 'Inactive';
+
+  @override
+  String get punishmentEmpty => 'No punishment records';
+
+  @override
+  String get punishmentCreateSuccess => 'Punishment applied';
+
+  @override
+  String get punishmentCreateFailed => 'Operation failed';
+
+  @override
+  String get notificationFilterAll => 'All';
+
+  @override
+  String notificationSummary(int total, int unread) {
+    return '$total notifications · $unread unread';
+  }
+
+  @override
+  String get notificationEmptyDescription =>
+      'Announcements, punishments, friend requests and other system notices appear here';
+
+  @override
+  String get notificationViewAll => 'View all notifications';
+
+  @override
+  String get notificationNoMore => 'No more notifications';
+
+  @override
+  String get notificationCategoryOther => 'Other';
+
+  @override
+  String get notificationLockedBadge => 'Locked';
+
+  @override
+  String get notificationUnreadBadge => 'Unread';
+
+  @override
+  String get notificationFilterSystem => 'System';
+
+  @override
+  String get notificationFilterForum => 'Forum';
+
+  @override
+  String get notificationFilterFriend => 'Friends';
+
+  @override
+  String get notificationFilterGroup => 'Groups';
+
+  @override
+  String get timeJustNow => 'just now';
+
+  @override
+  String timeMinutesAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count min ago',
+      one: '1 min ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String timeHoursAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours ago',
+      one: '1 hour ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get timeYesterday => 'yesterday';
+
+  @override
+  String timeDaysAgo(int count) {
+    return '$count days ago';
+  }
+
+  @override
+  String get draftsEmpty => 'No drafts';
+
+  @override
+  String get draftsEmptyHint =>
+      'Drafts are saved locally while you edit a post';
+
+  @override
+  String get draftsDelete => 'Delete draft';
+
+  @override
+  String get draftsDeleteConfirm => 'This cannot be undone. Delete this draft?';
+
+  @override
+  String draftsUpdatedAt(String time) {
+    return 'Updated $time';
+  }
+
+  @override
+  String draftsAttachmentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count attachments',
+      one: '1 attachment',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get commonFailedOperation => 'Operation failed, please retry';
 
   @override
@@ -3557,6 +4686,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsCategoryStorage => 'Storage';
+
+  @override
+  String get settingsLocalStorageTitle => 'Local storage';
 
   @override
   String get settingsNotifyWithHaptic => 'Haptic Feedback on Notification';
@@ -3684,9 +4816,38 @@ class AppLocalizationsEn extends AppLocalizations {
       'Switch to the wide layout when the window width reaches this value (only in Auto mode)';
 
   @override
+  String get settingsSplitThresholdTitle => 'Split View Threshold';
+
+  @override
+  String get settingsSplitThresholdDesc =>
+      'Place the list and the detail side by side only once the window is this wide (only in Auto mode)';
+
+  @override
   String settingsWideThresholdValue(Object px) {
     return '$px px';
   }
+
+  @override
+  String get settingsSinglePageStyleTitle => 'Single-page style';
+
+  @override
+  String get settingsSinglePageStyleDesc =>
+      'Do not split the forum section: use the single-page list-to-detail navigation instead';
+
+  @override
+  String get settingsForumHideEmptyPaneTitle =>
+      'Hide the forum pane when empty';
+
+  @override
+  String get settingsForumHideEmptyPaneDesc =>
+      'Keep the forum list and the forum detail full-width; split only while a post is open, and restore when it closes';
+
+  @override
+  String get settingsCommandPaletteTitle => 'Command palette';
+
+  @override
+  String get settingsCommandPaletteDesc =>
+      'Open the command palette with Ctrl/Cmd+K on desktop (on by default; nothing can summon it once off)';
 
   @override
   String get settingsWeakNetworkTitle => 'Weak network mode';
@@ -3694,6 +4855,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsWeakNetworkDesc =>
       'Use periodic synchronization when the connection is unstable';
+
+  @override
+  String get settingsSyncModeTitle => 'Sync mode';
+
+  @override
+  String get settingsSyncModeDesc =>
+      'Full sync keeps every chat complete offline. Browsing mode syncs only the chats you open (offline completeness not guaranteed).';
+
+  @override
+  String get settingsSyncModeFull => 'Full sync';
+
+  @override
+  String get settingsSyncModeBrowsing => 'Browsing only';
 
   @override
   String get settingsDataSavingTitle => 'Data saving mode';
@@ -3707,6 +4881,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsThumbnailPreviewDesc =>
       'Load server-generated thumbnails in chat bubbles; the original image loads only when opened (saves data)';
+
+  @override
+  String get settingsImageCompressionTitle => 'Compress images before sending';
+
+  @override
+  String get settingsImageCompressionDesc =>
+      'Re-encode images locally before upload (longest edge 1920, lossy) to save data and storage';
+
+  @override
+  String get settingsImageCompressionQualityTitle => 'Compression quality';
+
+  @override
+  String get settingsImageCompressionQualityDesc =>
+      'Lower values produce smaller files with more visible quality loss';
 
   @override
   String get settingsIpOverrideTitle => 'IP override mode';
@@ -4003,6 +5191,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Application submitted, pending admin approval';
 
   @override
+  String get groupJoinMessageTitle => 'Join Request Message';
+
+  @override
+  String get groupJoinMessageHint =>
+      'Optional: tell admins why you want to join';
+
+  @override
+  String get groupInviteMessageTitle => 'Invitation Message';
+
+  @override
+  String get groupInviteMessageHint => 'Optional: note for reviewers';
+
+  @override
   String get groupProfileJoinFailed => 'Failed to join the group';
 
   @override
@@ -4013,6 +5214,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupProfileCreator => 'Group Creator';
+
+  @override
+  String get groupProfileInviteOnly => 'Invite only';
+
+  @override
+  String get groupProfilePreviewSection => 'Message preview';
+
+  @override
+  String get groupProfilePreviewHint =>
+      'Only public messages are shown. Join the group to chat.';
+
+  @override
+  String get groupProfilePreviewEmpty => 'No messages to preview yet';
+
+  @override
+  String get groupProfilePreviewLoadOlder => 'Load earlier messages';
 
   @override
   String get forwardSearchTitle => 'Forward';
@@ -4585,6 +5802,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorCodeValidationMessageTooLong => 'Message is too long';
 
   @override
+  String get errorCodeValidationRequestMessageTooLong =>
+      'Request message is too long';
+
+  @override
   String get errorCodeValidationMissingParameter =>
       'A required parameter is missing';
 
@@ -4679,4 +5900,215 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorCodeServerError => 'Internal server error';
+
+  @override
+  String get timeAgoJustNow => 'Just now';
+
+  @override
+  String timeAgoMinutes(int minutes) {
+    return '${minutes}m ago';
+  }
+
+  @override
+  String timeAgoHours(int hours) {
+    return '${hours}h ago';
+  }
+
+  @override
+  String timeAgoDays(int days) {
+    return '${days}d ago';
+  }
+
+  @override
+  String timeAgoWeeks(int weeks) {
+    return '${weeks}w ago';
+  }
+
+  @override
+  String timeAgoMonths(int months) {
+    return '${months}mo ago';
+  }
+
+  @override
+  String timeAgoYears(int years) {
+    return '${years}y ago';
+  }
+
+  @override
+  String get suspiciousLoginTitle => 'Suspicious Login Detected';
+
+  @override
+  String get suspiciousLoginMessage =>
+      'Unusual login activity was detected on your account. If this wasn\'t you, please review your login devices immediately.';
+
+  @override
+  String get suspiciousLoginDevice => 'Device';
+
+  @override
+  String get suspiciousLoginLocation => 'Location';
+
+  @override
+  String get suspiciousLoginTime => 'Time';
+
+  @override
+  String get suspiciousLoginDismiss => 'Dismiss';
+
+  @override
+  String get suspiciousLoginReviewSessions => 'Review Login Devices';
+
+  @override
+  String get searchTitle => 'Search';
+
+  @override
+  String get searchTabUsers => 'Users';
+
+  @override
+  String get searchTabGroups => 'Groups';
+
+  @override
+  String get searchTabMessages => 'Messages';
+
+  @override
+  String get searchHint => 'Search users, groups or messages';
+
+  @override
+  String get searchStartHint => 'Enter keywords to start searching';
+
+  @override
+  String get searchNoResults => 'No results found';
+
+  @override
+  String searchMinLengthHint(int count) {
+    return 'Enter at least $count characters';
+  }
+
+  @override
+  String get searchGroupJoinDirect => 'Open to join';
+
+  @override
+  String get searchGroupNeedReview => 'Approval required';
+
+  @override
+  String get searchGroupInviteOnly => 'Invite only';
+
+  @override
+  String searchGroupMemberCount(int count) {
+    return '$count members';
+  }
+
+  @override
+  String get errorCodeValidationSearchKeywordTooShort =>
+      'Search keyword is too short';
+
+  @override
+  String get errorCodeFeatureDisabledPrivateChat =>
+      'Private chat is disabled on this server';
+
+  @override
+  String get errorCodeFeatureDisabledGroupChat =>
+      'Group chat is disabled on this server';
+
+  @override
+  String get errorCodeFeatureDisabledGroupCreate =>
+      'Creating groups is disabled on this server';
+
+  @override
+  String get errorCodeFeatureDisabledFriendRequest =>
+      'Friend requests are disabled on this server';
+
+  @override
+  String get errorCodeFeatureDisabledForum =>
+      'The forum is disabled on this server';
+
+  @override
+  String get errorCodeFeatureDisabledSticker =>
+      'Stickers are disabled on this server';
+
+  @override
+  String get errorCodeFeatureDisabledAnnouncement =>
+      'Announcements are disabled on this server';
+
+  @override
+  String get listNoMore => 'No more';
+
+  @override
+  String get chatListEmpty => 'No chats yet';
+
+  @override
+  String get contactListEmpty => 'No contacts yet';
+
+  @override
+  String get forumMembersEmpty => 'No members yet';
+
+  @override
+  String get messageRetrySend => 'Send failed, tap to retry';
+
+  @override
+  String get commandPaletteHint => 'Search chats, pages and actions';
+
+  @override
+  String get commandPaletteEmpty => 'No matching results';
+
+  @override
+  String get adminServerFieldAllowRegister => 'Allow self-service registration';
+
+  @override
+  String get adminServerFieldExternalAuthUrl => 'External auth platform URL';
+
+  @override
+  String get adminServerFieldPlatformAuthEnabled => 'Enable platform endpoints';
+
+  @override
+  String get adminServerFieldPlatformAuthIssuer => 'Platform issuer';
+
+  @override
+  String get adminServerFieldPlatformAuthAllowIps =>
+      'Platform caller allowlist';
+
+  @override
+  String get adminServerFieldPlatformAuthSharedToken => 'Platform shared token';
+
+  @override
+  String get adminServerExternalAuthUrlDescription =>
+      'TouchFish Auth base URL, e.g. https://auth.example.com. Leave empty to disable external login.';
+
+  @override
+  String get adminServerPlatformAuthDescription =>
+      'When enabled, /auth/platform/* only accepts allowlisted addresses. Always set the shared token behind a reverse proxy.';
+
+  @override
+  String get adminServerAllowRegisterDescription =>
+      'When disabled, neither the external platform nor clients can register new accounts. Existing accounts are unaffected.';
+
+  @override
+  String get adminServerPlatformAuthTokenConfigured =>
+      'Configured. Leave blank to keep it unchanged.';
+
+  @override
+  String get adminServerPlatformAuthTokenEmpty => 'Not configured yet';
+
+  @override
+  String get adminServerPlatformAuthTokenClear => 'Clear the configured token';
+
+  @override
+  String get loginExternalAuth => 'Sign in with TouchFish Auth';
+
+  @override
+  String get adminServerPlatformAuthIssuerDescription =>
+      'Only verifies the iss claim of platform tokens; must match the platform\'s AUTH_ISSUER exactly. The client login entry uses \"External auth platform URL\" above.';
+
+  @override
+  String get loginErrorExternalNotLinked =>
+      'This platform account is not linked to a TouchFish account, and auto-creation is disabled on the server.';
+
+  @override
+  String get loginErrorExternalTokenInvalid =>
+      'The token issued by the auth platform was rejected: check that the server trusts that platform (jwt_external_issuers).';
+
+  @override
+  String get loginErrorTicketExchange =>
+      'Could not exchange the ticket for a login token. Please retry.';
+
+  @override
+  String get loginOr => 'or';
 }

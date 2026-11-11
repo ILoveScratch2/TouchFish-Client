@@ -12,16 +12,20 @@ import '../models/message_model.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/failure_reason.dart';
 import '../widgets/media/image_lightbox.dart';
 import '../widgets/media/video_viewer.dart';
 import '../widgets/media/audio_player.dart';
+import '../widgets/media/voice_message_bubble.dart';
 import '../widgets/markdown_renderer.dart';
 import '../models/settings_service.dart';
+import '../utils/haptics.dart';
 import 'package:exif/exif.dart';
 import '../utils/talker.dart';
 import '../utils/clipboard_utils.dart';
 import '../models/file_attachment.dart';
 import 'file_attachment_view.dart';
+import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/snackbar_service.dart';
 import '../providers/task/task_manager_provider.dart';
@@ -29,8 +33,249 @@ import '../models/file_task.dart';
 import 'sheet_scaffold.dart';
 import 'sticker_text_renderer.dart';
 import 'message_swipeable_wrapper.dart';
+import 'redirect_message_view.dart';
 
 final _stickerTestPattern = RegExp(r':[A-Za-z0-9_]+\+[A-Za-z0-9_-]+:');
+
+/// 仅 root 可用：查看已撤回消息的服务端原始记录。
+Future<void> _showRecalledOriginalDialog(
+  BuildContext context,
+  ChatMessage message,
+) async {
+  final uid = AuthState.instance.uid;
+  final password = AuthState.instance.password;
+  final mid = message.mid;
+  final l10n = AppLocalizations.of(context)!;
+  if (uid == null || mid == null) return;
+
+  final original = await TfApiClient.instance.getRecalledOriginal(
+    uid,
+    password,
+    mid,
+  );
+  if (!context.mounted) return;
+  if (original == null) {
+    TouchFishSnackbarService.instance.show(l10n.messageRecalledOriginalFailed);
+    return;
+  }
+
+  final senderUid = original['sender_uid']?.toString() ?? '';
+  final contentType = original['content_type']?.toString() ?? 'plain';
+  final content = original['content']?.toString() ?? '';
+  final String body;
+  if (contentType == 'file') {
+    final name = original['file_name']?.toString() ?? content;
+    body = '$name\n$content';
+  } else if (content.isEmpty) {
+    body = l10n.messageRecalledOriginalNone;
+  } else {
+    body = content;
+  }
+
+  await showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(l10n.messageRecalledOriginalTitle),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${l10n.messageRecalledOriginalSender}: $senderUid'),
+            const SizedBox(height: 8),
+            Text('${l10n.messageRecalledOriginalContent}:'),
+            const SizedBox(height: 4),
+            SelectableText(body),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(MaterialLocalizations.of(context).closeButtonLabel),
+        ),
+      ],
+    ),
+  );
+}
+
+/// 消息动作类别。作为 [MessageAction] 与各呈现层筛选的规范标识。
+enum MessageActionKind {
+  copy,
+  reply,
+  forward,
+  selectMultiple,
+  pin,
+  essence,
+  recall,
+  delete,
+  viewOriginal,
+}
+
+/// 单条消息动作的规范定义：图标、文案、颜色与回调。
+///
+/// 桌面 hover 菜单、右键菜单、移动端长按 sheet 都由
+/// [buildMessageActions] 产出的同一份列表（按各自的 [MessageActionKind]
+/// 集合筛选后）渲染，避免三处动作表漂移。
+class MessageAction {
+  final MessageActionKind kind;
+  final IconData icon;
+  final String label;
+  final Color? color;
+  final VoidCallback onInvoke;
+
+  const MessageAction({
+    required this.kind,
+    required this.icon,
+    required this.label,
+    required this.onInvoke,
+    this.color,
+  });
+}
+
+Future<void> _copyMessage(BuildContext context, ChatMessage message) async {
+  final l10n = AppLocalizations.of(context)!;
+  final copied = await copyTextToClipboard(message.text);
+  TouchFishSnackbarService.instance.show(
+    copied ? l10n.aboutCopiedToClipboard : l10n.copyFailedText,
+    type: copied ? SnackbarType.info : SnackbarType.error,
+  );
+}
+
+/// 构建消息动作的单一事实源列表（规范顺序）。
+List<MessageAction> buildMessageActions(
+  BuildContext context, {
+  required ChatMessage message,
+  required bool canRecall,
+  required bool canPin,
+  required bool essenceEnabled,
+  required bool isPinned,
+  required bool isEssence,
+  ValueChanged<ChatMessage>? onReply,
+  ValueChanged<ChatMessage>? onForward,
+  ValueChanged<ChatMessage>? onRecall,
+  ValueChanged<ChatMessage>? onDelete,
+  VoidCallback? onPinToggle,
+  VoidCallback? onEssenceToggle,
+  VoidCallback? onEnterSelectionMode,
+}) {
+  final l10n = AppLocalizations.of(context)!;
+  final colorScheme = Theme.of(context).colorScheme;
+  final actionable = !message.isDeleted && message.mid != null;
+  final isRoot = AuthState.instance.currentUser?.isRoot == true;
+
+  return [
+    // 撤回/删除后 text 只剩占位文案，复制过去没有意义。
+    if (!message.isDeleted)
+      MessageAction(
+        kind: MessageActionKind.copy,
+        icon: Symbols.content_copy,
+        label: l10n.messageActionCopy,
+        onInvoke: () => _copyMessage(context, message),
+      ),
+    if (actionable && onReply != null)
+      MessageAction(
+        kind: MessageActionKind.reply,
+        icon: Symbols.reply,
+        label: l10n.messageActionReply,
+        onInvoke: () => onReply(message),
+      ),
+    if (actionable && onForward != null)
+      MessageAction(
+        kind: MessageActionKind.forward,
+        icon: Symbols.forward,
+        label: l10n.messageActionForward,
+        onInvoke: () => onForward(message),
+      ),
+    if (actionable && onEnterSelectionMode != null)
+      MessageAction(
+        kind: MessageActionKind.selectMultiple,
+        icon: Symbols.select_all,
+        label: l10n.messageActionSelectMultiple,
+        onInvoke: onEnterSelectionMode,
+      ),
+    if (canPin)
+      MessageAction(
+        kind: MessageActionKind.pin,
+        icon: Symbols.push_pin,
+        label: isPinned ? l10n.messageActionUnpin : l10n.messageActionPin,
+        color: isPinned ? colorScheme.error : null,
+        onInvoke: onPinToggle ?? () {},
+      ),
+    if (canPin && essenceEnabled)
+      MessageAction(
+        kind: MessageActionKind.essence,
+        icon: Symbols.auto_awesome,
+        label: isEssence ? l10n.essenceRemove : l10n.essenceAdd,
+        color: isEssence ? colorScheme.error : null,
+        onInvoke: onEssenceToggle ?? () {},
+      ),
+    if (canRecall)
+      MessageAction(
+        kind: MessageActionKind.recall,
+        icon: Symbols.delete,
+        label: l10n.messageActionRecall,
+        color: colorScheme.error,
+        onInvoke: () => onRecall?.call(message),
+      ),
+    if (onDelete != null && !message.isDeleted)
+      MessageAction(
+        kind: MessageActionKind.delete,
+        icon: Symbols.delete_forever,
+        label: l10n.messageActionDelete,
+        color: colorScheme.error,
+        onInvoke: () => onDelete(message),
+      ),
+    if (message.isDeleted && isRoot)
+      MessageAction(
+        kind: MessageActionKind.viewOriginal,
+        icon: Symbols.history,
+        label: l10n.messageActionViewOriginal,
+        onInvoke: () => _showRecalledOriginalDialog(context, message),
+      ),
+  ];
+}
+
+/// 命中桌面 hover 菜单可呈现的动作子集（紧凑横向图标）。
+const Set<MessageActionKind> _hoverActionKinds = {
+  MessageActionKind.reply,
+  MessageActionKind.forward,
+  MessageActionKind.pin,
+  MessageActionKind.essence,
+  MessageActionKind.recall,
+  MessageActionKind.delete,
+};
+
+/// 命中右键菜单可呈现的动作子集。
+const Set<MessageActionKind> _desktopMenuKinds = {
+  MessageActionKind.copy,
+  MessageActionKind.reply,
+  MessageActionKind.forward,
+  MessageActionKind.recall,
+  MessageActionKind.delete,
+  MessageActionKind.pin,
+  MessageActionKind.essence,
+  MessageActionKind.viewOriginal,
+};
+
+/// 桌面 hover 菜单的按钮尺寸与分隔线占位。
+///
+/// 菜单装在 `Positioned(width: menuWidth, height: 32)` 里，槽位必须和
+/// 渲染出来的宽度完全一致：槽位算窄了就是 "RenderFlex overflowed on the right"，
+/// 算宽了菜单会离气泡右边缘一截。两边共用这两个常量，不再各自维护一份数字。
+const double _hoverMenuButtonSize = 32;
+const double _hoverMenuSeparatorWidth = 9; // 1px 竖线 + 左右各 4px 外边距
+
+double _hoverMenuWidth(List<MessageAction> actions) {
+  var width = 0.0;
+  for (var i = 0; i < actions.length; i++) {
+    if (i > 0 && actions[i].kind != MessageActionKind.forward) {
+      width += _hoverMenuSeparatorWidth;
+    }
+    width += _hoverMenuButtonSize;
+  }
+  return width;
+}
 
 class MessageBubble extends HookWidget {
   final ChatMessage message;
@@ -48,12 +293,24 @@ class MessageBubble extends HookWidget {
   final VoidCallback? onPinToggle;
   final VoidCallback? onEssenceToggle;
 
+  /// 发送失败的消息，点击状态图标重发。
+  final VoidCallback? onRetry;
+
+  /// 已读回执文案（私聊「已读」/群聊「N 人已读」），仅自己的消息展示。
+  final String? readReceiptLabel;
+
   /// 当前聊天的图片画廊条目（按时间序）；为 null 时灯箱单图模式。
   final List<LightboxImageItem>? galleryItems;
 
   /// 本条消息在画廊中的下标。
   final int galleryIndex;
   final bool animateEntrance;
+
+  final bool isSelectionMode;
+  final VoidCallback? onEnterSelectionMode;
+
+  /// 由列表统一下发的展示样式
+  final String? displayStyle;
 
   const MessageBubble({
     super.key,
@@ -71,9 +328,14 @@ class MessageBubble extends HookWidget {
     this.essenceEnabled = true,
     this.onPinToggle,
     this.onEssenceToggle,
+    this.onRetry,
+    this.readReceiptLabel,
     this.galleryItems,
     this.galleryIndex = 0,
     this.animateEntrance = false,
+    this.isSelectionMode = false,
+    this.onEnterSelectionMode,
+    this.displayStyle,
   });
 
   @override
@@ -101,13 +363,18 @@ class MessageBubble extends HookWidget {
       essenceEnabled: essenceEnabled,
       onPinToggle: onPinToggle,
       onEssenceToggle: onEssenceToggle,
+      onRetry: onRetry,
+      readReceiptLabel: readReceiptLabel,
       galleryItems: galleryItems,
       galleryIndex: galleryIndex,
+      isSelectionMode: isSelectionMode,
+      onEnterSelectionMode: onEnterSelectionMode,
+      displayStyle: displayStyle,
     );
   }
 }
 
-/// 新消息入场：淡入 + 从下方滑入 + 撑开高度（参考 Solian 的发送动画）。
+/// 新消息入场：淡入 + 从下方滑入 + 撑开高度
 ///
 /// 只在 [animate] 首次为 true 时播放一次，元素复用/重建不会重播。
 class _MessageEntrance extends StatefulWidget {
@@ -189,9 +456,16 @@ class _MessageBubbleContent extends StatefulWidget {
   final bool essenceEnabled;
   final VoidCallback? onPinToggle;
   final VoidCallback? onEssenceToggle;
+  final VoidCallback? onRetry;
+  final String? readReceiptLabel;
   final List<LightboxImageItem>? galleryItems;
   final int galleryIndex;
   final bool animateEntrance;
+  final bool isSelectionMode;
+  final VoidCallback? onEnterSelectionMode;
+
+  /// 消息展示样式（bubble / compact / column）
+  final String? displayStyle;
 
   const _MessageBubbleContent({
     required this.message,
@@ -210,8 +484,13 @@ class _MessageBubbleContent extends StatefulWidget {
     this.essenceEnabled = true,
     this.onPinToggle,
     this.onEssenceToggle,
+    this.onRetry,
+    this.readReceiptLabel,
     this.galleryItems,
     this.galleryIndex = 0,
+    this.isSelectionMode = false,
+    this.onEnterSelectionMode,
+    this.displayStyle,
   });
 
   @override
@@ -230,9 +509,13 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
   Offset? _longPressOrigin;
   Timer? _longPressTimer;
 
-  // 媒体消息需要保留状态！！！！！！！！！！！！！！！！！！！！！
+  // 只有音视频需要保留状态（播放器/进度）；图片的字节仍在 message.media 里，
+  // 让 ListView 正常回收可以显著降低长会话的内存占用。
   @override
-  bool get wantKeepAlive => widget.message.media != null;
+  bool get wantKeepAlive {
+    final mime = widget.message.media?.mimeType ?? '';
+    return mime.startsWith('audio/') || mime.startsWith('video/');
+  }
 
   @override
   void dispose() {
@@ -244,6 +527,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
   }
 
   void _scheduleShowHoverActions() {
+    if (widget.isSelectionMode) return;
     _hoverHideTimer?.cancel();
     _hoverShowTimer?.cancel();
     if (_activeHoverOwner != null && _activeHoverOwner != this) {
@@ -262,11 +546,12 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     final overlay = Overlay.of(context);
     final overlayBox = overlay.context.findRenderObject() as RenderBox?;
     if (bubbleBox == null || overlayBox == null) return;
+    final actions = _hoverActions(context);
+    final menuWidth = _hoverMenuWidth(actions);
     final bubbleTopLeft = bubbleBox.localToGlobal(
       Offset.zero,
       ancestor: overlayBox,
     );
-    final menuWidth = _hoverMenuWidth;
     final left = (bubbleTopLeft.dx + bubbleBox.size.width - menuWidth - 4)
         .clamp(4.0, overlayBox.size.width - menuWidth - 4);
     final top = (bubbleTopLeft.dy - 32).clamp(4.0, overlayBox.size.height - 36);
@@ -284,7 +569,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
           onExit: (_) => _scheduleHideHoverActions(),
           child: KeyedSubtree(
             key: ValueKey('message-actions-${widget.message.id}'),
-            child: _buildHoverActionMenu(),
+            child: _MessageHoverActionMenu(actions: actions),
           ),
         ),
       ),
@@ -293,15 +578,23 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     Overlay.of(context).insert(_hoverOverlay!);
   }
 
-  double get _hoverMenuWidth {
-    var width = 0.0;
-    if (!widget.message.isDeleted && widget.message.mid != null) {
-      width += 96;
-    }
-    if (widget.canPin) width += 64;
-    if (widget.canRecall) width += 41;
-    if (widget.onDelete != null && !widget.message.isDeleted) width += 41;
-    return width;
+  /// 桌面 hover 菜单的动作子集（来自 [buildMessageActions] 单一事实源）。
+  List<MessageAction> _hoverActions(BuildContext context) {
+    return buildMessageActions(
+      context,
+      message: widget.message,
+      canRecall: widget.canRecall,
+      canPin: widget.canPin,
+      essenceEnabled: widget.essenceEnabled,
+      isPinned: widget.isPinned,
+      isEssence: widget.isEssence,
+      onReply: widget.onReply,
+      onForward: widget.onForward,
+      onRecall: widget.onRecall,
+      onDelete: widget.onDelete,
+      onPinToggle: widget.onPinToggle,
+      onEssenceToggle: widget.onEssenceToggle,
+    ).where((action) => _hoverActionKinds.contains(action.kind)).toList();
   }
 
   void _scheduleHideHoverActions() {
@@ -349,31 +642,53 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
   }
 
   void _showActionSheet() {
+    Haptics.medium();
+    final actions = buildMessageActions(
+      context,
+      message: widget.message,
+      canRecall: widget.canRecall,
+      canPin: widget.canPin,
+      essenceEnabled: widget.essenceEnabled,
+      isPinned: widget.isPinned,
+      isEssence: widget.isEssence,
+      onReply: widget.onReply,
+      onForward: widget.onForward,
+      onRecall: widget.onRecall,
+      onDelete: widget.onDelete,
+      onPinToggle: widget.onPinToggle,
+      onEssenceToggle: widget.onEssenceToggle,
+      onEnterSelectionMode: widget.onEnterSelectionMode,
+    );
+    // 已撤回且本人无权处理的旧消息可能一个动作都不剩，别弹出空 sheet。
+    if (actions.isEmpty) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => _MessageActionSheet(
-        message: widget.message,
-        onReply: widget.onReply,
-        onForward: widget.onForward,
-        onRecall: widget.onRecall,
-        onDelete: widget.onDelete,
-        canRecall: widget.canRecall,
-        isPinned: widget.isPinned,
-        isEssence: widget.isEssence,
-        canPin: widget.canPin,
-        onPinToggle: widget.onPinToggle,
-        onEssenceToggle: widget.onEssenceToggle,
-      ),
+      builder: (context) => _MessageActionSheet(actions: actions),
     );
   }
 
   Future<void> _showDesktopMenu() async {
     final position = _secondaryTapPosition;
     if (position == null) return;
-    final l10n = AppLocalizations.of(context)!;
     final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final selected = await showMenu<String>(
+    final actions = buildMessageActions(
+      context,
+      message: widget.message,
+      canRecall: widget.canRecall,
+      canPin: widget.canPin,
+      essenceEnabled: widget.essenceEnabled,
+      isPinned: widget.isPinned,
+      isEssence: widget.isEssence,
+      onReply: widget.onReply,
+      onForward: widget.onForward,
+      onRecall: widget.onRecall,
+      onDelete: widget.onDelete,
+      onPinToggle: widget.onPinToggle,
+      onEssenceToggle: widget.onEssenceToggle,
+    ).where((action) => _desktopMenuKinds.contains(action.kind)).toList();
+    if (actions.isEmpty) return;
+    final selected = await showMenu<MessageAction>(
       context: context,
       position: RelativeRect.fromLTRB(
         position.dx,
@@ -382,96 +697,23 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
         overlay.size.height - position.dy,
       ),
       items: [
-        PopupMenuItem(
-          value: 'copy',
-          child: ListTile(
-            dense: true,
-            leading: const Icon(Symbols.content_copy),
-            title: Text(l10n.messageActionCopy),
-          ),
-        ),
-        if (!widget.message.isDeleted && widget.message.mid != null)
-          PopupMenuItem(
-            value: 'reply',
+        for (final action in actions)
+          PopupMenuItem<MessageAction>(
+            value: action,
             child: ListTile(
               dense: true,
-              leading: const Icon(Symbols.reply),
-              title: Text(l10n.messageActionReply),
-            ),
-          ),
-        if (!widget.message.isDeleted && widget.message.mid != null)
-          PopupMenuItem(
-            value: 'forward',
-            child: ListTile(
-              dense: true,
-              leading: const Icon(Symbols.forward),
-              title: Text(l10n.messageActionForward),
-            ),
-          ),
-        if (widget.canRecall)
-          PopupMenuItem(
-            value: 'recall',
-            child: ListTile(
-              dense: true,
-              leading: Icon(
-                Symbols.delete,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              title: Text(l10n.messageActionRecall),
-            ),
-          ),
-        if (widget.onDelete != null && !widget.message.isDeleted)
-          PopupMenuItem(
-            value: 'delete',
-            child: ListTile(
-              dense: true,
-              leading: Icon(
-                Symbols.delete_forever,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              title: Text(l10n.messageActionDelete),
-            ),
-          ),
-        if (widget.canPin)
-          PopupMenuItem(
-            value: 'pin',
-            child: ListTile(
-              dense: true,
-              leading: Icon(
-                Symbols.push_pin,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              leading: Icon(action.icon, color: action.color),
               title: Text(
-                widget.isPinned
-                    ? l10n.messageActionUnpin
-                    : l10n.messageActionPin,
-              ),
-            ),
-          ),
-        // 这个是 xsfx 手写的注释（，显然一个消息能被置顶就可以被设为精华
-        if (widget.canPin && widget.essenceEnabled)
-          PopupMenuItem(
-            value: 'essence',
-            child: ListTile(
-              dense: true,
-              leading: Icon(
-                Symbols.auto_awesome,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              title: Text(
-                widget.isEssence ? l10n.essenceRemove : l10n.essenceAdd,
+                action.label,
+                style: action.color == null
+                    ? null
+                    : TextStyle(color: action.color),
               ),
             ),
           ),
       ],
     );
-    if (selected == 'copy') _copyMessageText(widget.message);
-    if (selected == 'reply') widget.onReply?.call(widget.message);
-    if (selected == 'forward') widget.onForward?.call(widget.message);
-    if (selected == 'recall') widget.onRecall?.call(widget.message);
-    if (selected == 'delete') widget.onDelete?.call(widget.message);
-    if (selected == 'pin') widget.onPinToggle?.call();
-    if (selected == 'essence') widget.onEssenceToggle?.call();
+    selected?.onInvoke();
   }
 
   @override
@@ -481,16 +723,19 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
       return _buildPlaceholderBubble(context);
     }
 
-    final style = SettingsService.instance.getValue<String>(
-      'messageDisplayStyle',
-      'bubble',
-    );
+    final style =
+        widget.displayStyle ??
+        SettingsService.instance.getValue<String>(
+          'messageDisplayStyle',
+          'bubble',
+        );
     final content = style == 'compact' || style == 'column'
         ? _buildLinearLayout(context, isCompact: style == 'compact')
         : _buildBubbleLayout(context);
     // 始终包一层（结构稳定，不会因为动画结束而重建子树的元素）
     return _MessageEntrance(animate: widget.animateEntrance, child: content);
   }
+
   Widget _buildPlaceholderBubble(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
@@ -621,11 +866,14 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     final containerColor = widget.message.isMe
         ? colorScheme.primaryContainer.withValues(alpha: 0.5)
         : colorScheme.surfaceContainer;
+    final senderUid = widget.message.senderUid;
     final senderName = widget.message.senderName?.trim().isNotEmpty == true
         ? widget.message.senderName!
         : widget.message.isMe
-        ? AuthState.instance.currentUser?.username ?? 'Me'
-        : 'User ${widget.message.senderUid ?? ''}';
+        ? AuthState.instance.currentUser?.username ?? l10n.chatMeLabel
+        : senderUid == null
+        ? l10n.commonUnknown
+        : l10n.chatUserFallback('$senderUid');
     final senderAvatar =
         widget.message.senderAvatar ??
         (widget.message.isMe ? AuthState.instance.currentUser?.avatar : null);
@@ -786,7 +1034,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
                                       ),
                                     ),
                                     const SizedBox(width: 4),
-                                    _buildStatusIndicator(textColor),
+                                    _buildStatusIndicator(context, textColor),
                                   ],
                                 ),
                               ),
@@ -799,12 +1047,30 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
                             alignment: Alignment.centerRight,
                             child: Padding(
                               padding: const EdgeInsets.only(top: 2, right: 4),
-                              child: Text(
-                                _formatTime(widget.message.timestamp, context),
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: textColor.withValues(alpha: 0.7),
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _formatTime(
+                                      widget.message.timestamp,
+                                      context,
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: textColor.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                  if (widget.readReceiptLabel != null) ...[
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      widget.readReceiptLabel!,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: textColor.withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
                           ),
@@ -1004,13 +1270,24 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
                                   child: content,
                                 ),
                               ),
+                              if (mine && widget.readReceiptLabel != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Text(
+                                    widget.readReceiptLabel!,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: timeColor.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
                         if (mine &&
                             widget.message.status != MessageStatus.sent) ...[
                           const SizedBox(width: 6),
-                          _buildStatusIndicator(timeColor),
+                          _buildStatusIndicator(context, timeColor),
                         ],
                       ],
                     ),
@@ -1039,30 +1316,6 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     );
   }
 
-  Widget _buildHoverActionMenu() {
-    return _MessageHoverActionMenu(
-      onReply: widget.message.isDeleted || widget.message.mid == null
-          ? null
-          : () => widget.onReply?.call(widget.message),
-      onForward: widget.message.isDeleted || widget.message.mid == null
-          ? null
-          : () => widget.onForward?.call(widget.message),
-      onRecall: widget.canRecall
-          ? () => widget.onRecall?.call(widget.message)
-          : null,
-      onDelete: widget.message.isDeleted
-          ? null
-          : widget.onDelete == null
-          ? null
-          : () => widget.onDelete?.call(widget.message),
-      isPinned: widget.isPinned,
-      isEssence: widget.isEssence,
-      canPin: widget.canPin,
-      onPinToggle: widget.onPinToggle,
-      onEssenceToggle: widget.onEssenceToggle,
-    );
-  }
-
   Widget _buildAvatar(ColorScheme colorScheme, String? senderAvatar) {
     return CircleAvatar(
       radius: 16,
@@ -1080,7 +1333,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     );
   }
 
-  Widget _buildStatusIndicator(Color textColor) {
+  Widget _buildStatusIndicator(BuildContext context, Color textColor) {
     if (!widget.message.isMe || widget.message.status == MessageStatus.sent) {
       return const SizedBox.shrink();
     }
@@ -1094,7 +1347,22 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
       );
     }
     if (widget.message.status == MessageStatus.failed) {
-      return const Icon(Icons.error_outline, size: 12, color: Colors.red);
+      final l10n = AppLocalizations.of(context)!;
+      return Tooltip(
+        message: localizeFailureReason(l10n, widget.message.ackError),
+        child: GestureDetector(
+          onTap: widget.onRetry,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.all(3),
+            child: Icon(
+              Icons.error_outline,
+              size: 13,
+              color: Theme.of(context).colorScheme.error,
+            ),
+          ),
+        ),
+      );
     }
     return const SizedBox.shrink();
   }
@@ -1142,9 +1410,16 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
       MessageType.video => _buildVideoMessage(context, colorScheme),
       MessageType.audio => _buildAudioMessage(context, colorScheme),
       MessageType.file => _buildFileMessage(context, colorScheme, textTheme),
+      MessageType.mergedForward =>
+        _buildMergedForwardMessage(context, colorScheme, textTheme),
       MessageType.text => _buildTextMessage(context, colorScheme, textTheme),
     };
     final contentWithProgress = _wrapWithUploadProgress(content);
+    // 合并转发消息自带来源卡片/内联内容，且 forwarded 仅作溯源用途，
+    // 不再渲染普通的"转发 / 原消息不可用"引用框。
+    if (widget.message.type == MessageType.mergedForward) {
+      return contentWithProgress;
+    }
     final quote = widget.message.quotePreview ?? widget.message.forwardPreview;
     if (quote == null) return contentWithProgress;
     final isForward = widget.message.forwardPreview != null;
@@ -1346,98 +1621,36 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     BuildContext context,
     SelectableRegionState state,
   ) {
-    final l10n = AppLocalizations.of(context)!;
     final message = widget.message;
-    final canAct = !message.isDeleted && message.mid != null;
-    final items = <ContextMenuButtonItem>[...state.contextMenuButtonItems];
-    if (canAct) {
-      items
-        ..add(
-          ContextMenuButtonItem(
-            label: l10n.messageActionCopy,
-            onPressed: () {
-              ContextMenuController.removeAny();
-              _copyMessageText(message);
-            },
-          ),
-        )
-        ..add(
-          ContextMenuButtonItem(
-            label: l10n.messageActionReply,
-            onPressed: () {
-              ContextMenuController.removeAny();
-              widget.onReply?.call(message);
-            },
-          ),
-        )
-        ..add(
-          ContextMenuButtonItem(
-            label: l10n.messageActionForward,
-            onPressed: () {
-              ContextMenuController.removeAny();
-              widget.onForward?.call(message);
-            },
-          ),
-        );
-    }
-    if (widget.canPin) {
-      items.add(
-        ContextMenuButtonItem(
-          label: widget.isPinned
-              ? l10n.messageActionUnpin
-              : l10n.messageActionPin,
-          onPressed: () {
-            ContextMenuController.removeAny();
-            widget.onPinToggle?.call();
-          },
-        ),
-      );
-    }
-    if (widget.canPin && widget.essenceEnabled) {
-      items.add(
-        ContextMenuButtonItem(
-          label: widget.isEssence ? l10n.essenceRemove : l10n.essenceAdd,
-          onPressed: () {
-            ContextMenuController.removeAny();
-            widget.onEssenceToggle?.call();
-          },
-        ),
-      );
-    }
-    if (widget.canRecall) {
-      items.add(
-        ContextMenuButtonItem(
-          label: l10n.messageActionRecall,
-          onPressed: () {
-            ContextMenuController.removeAny();
-            widget.onRecall?.call(message);
-          },
-        ),
-      );
-    }
-    if (widget.onDelete != null && !message.isDeleted) {
-      items.add(
-        ContextMenuButtonItem(
-          label: l10n.messageActionDelete,
-          onPressed: () {
-            ContextMenuController.removeAny();
-            widget.onDelete?.call(message);
-          },
-        ),
-      );
-    }
+    final actions = buildMessageActions(
+      context,
+      message: message,
+      canRecall: widget.canRecall,
+      canPin: widget.canPin,
+      essenceEnabled: widget.essenceEnabled,
+      isPinned: widget.isPinned,
+      isEssence: widget.isEssence,
+      onReply: widget.onReply,
+      onForward: widget.onForward,
+      onRecall: widget.onRecall,
+      onDelete: widget.onDelete,
+      onPinToggle: widget.onPinToggle,
+      onEssenceToggle: widget.onEssenceToggle,
+    ).where((action) => _desktopMenuKinds.contains(action.kind));
+
     return AdaptiveTextSelectionToolbar.buttonItems(
       anchors: state.contextMenuAnchors,
-      buttonItems: items,
-    );
-  }
-
-  Future<void> _copyMessageText(ChatMessage message) async {
-    final l10n = AppLocalizations.of(context)!;
-    final copied = await copyTextToClipboard(message.text);
-    TouchFishSnackbarService.instance.show(
-      copied ? l10n.aboutCopiedToClipboard : l10n.copyFailedText,
-      type: copied ? SnackbarType.info : SnackbarType.error,
+      buttonItems: [
+        ...state.contextMenuButtonItems,
+        for (final action in actions)
+          ContextMenuButtonItem(
+            label: action.label,
+            onPressed: () {
+              ContextMenuController.removeAny();
+              action.onInvoke();
+            },
+          ),
+      ],
     );
   }
 
@@ -1578,6 +1791,16 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
       );
     }
 
+    // 语音消息（带时长元数据）用波形气泡渲染。
+    if (media.durationMs != null) {
+      return VoiceMessageBubble(
+        audioPath: media.path,
+        audioBytes: widget.cachedBytes,
+        durationMs: media.durationMs,
+        fileHash: media.fileHash,
+      );
+    }
+
     if (media.fileHash != null && widget.cachedBytes == null) {
       return _buildRemoteAttachment(media);
     }
@@ -1588,6 +1811,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
         audioBytes: widget.cachedBytes,
         filename: media.fileName,
         autoplay: false,
+        durationMs: media.durationMs,
       ),
     );
   }
@@ -1603,6 +1827,29 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     }
 
     return _buildRemoteAttachment(media);
+  }
+
+  Widget _buildMergedForwardMessage(
+    BuildContext context,
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+  ) {
+    final preview = widget.message.mergedForward;
+    if (preview == null) {
+      return _buildTextMessage(context, colorScheme, textTheme);
+    }
+    final textColor = widget.message.isMe
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurface;
+
+    // 单条转发 → 内联展示；多条历史段 → 可展开卡片。
+    final isSingle = preview.version == 1 && preview.messages.length <= 1;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 320),
+      child: isSingle
+          ? RedirectInlineContent(redirect: preview, textColor: textColor)
+          : RedirectMessageCard(redirect: preview, textColor: textColor),
+    );
   }
 
   Widget _buildRemoteAttachment(MessageMedia media) {
@@ -1623,6 +1870,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
         ),
         sourceUrl: sourceUrl,
         bytes: widget.cachedBytes,
+        durationMs: media.durationMs,
         galleryItems: widget.galleryItems,
         galleryIndex: widget.galleryIndex,
       ),
@@ -1735,181 +1983,70 @@ class _UploadProgressOverlay extends ConsumerWidget {
 }
 
 class _MessageHoverActionMenu extends StatelessWidget {
-  final VoidCallback? onReply;
-  final VoidCallback? onForward;
-  final VoidCallback? onRecall;
-  final VoidCallback? onDelete;
-  final bool isPinned;
-  final bool isEssence;
-  final bool canPin;
-  final VoidCallback? onPinToggle;
-  final VoidCallback? onEssenceToggle;
+  final List<MessageAction> actions;
 
-  const _MessageHoverActionMenu({
-    required this.onReply,
-    required this.onForward,
-    this.onRecall,
-    this.onDelete,
-    this.isPinned = false,
-    this.isEssence = false,
-    this.canPin = false,
-    this.onPinToggle,
-    this.onEssenceToggle,
-  });
+  const _MessageHoverActionMenu({required this.actions});
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final children = <Widget>[];
+    for (var i = 0; i < actions.length; i++) {
+      final action = actions[i];
+      if (i > 0 && action.kind != MessageActionKind.forward) {
+        children.add(
+          Container(
+            width: 1,
+            height: 24,
+            color: colorScheme.outlineVariant,
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+          ),
+        );
+      }
+      children.add(
+        SizedBox.square(
+          dimension: _hoverMenuButtonSize,
+          child: IconButton(
+            icon: Icon(action.icon, size: 16, color: action.color),
+            onPressed: action.onInvoke,
+            tooltip: action.label,
+            padding: EdgeInsets.zero,
+          ),
+        ),
+      );
+    }
 
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: colorScheme.shadow.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (onReply != null)
-            SizedBox.square(
-              dimension: 32,
-              child: IconButton(
-                icon: const Icon(Symbols.reply, size: 16),
-                onPressed: onReply,
-                tooltip: l10n.messageActionReply,
-                padding: EdgeInsets.zero,
-              ),
-            ),
-          if (onForward != null)
-            SizedBox.square(
-              dimension: 32,
-              child: IconButton(
-                icon: const Icon(Symbols.forward, size: 16),
-                onPressed: onForward,
-                tooltip: l10n.messageActionForward,
-                padding: EdgeInsets.zero,
-              ),
-            ),
-          if (canPin) ...[
-            Container(
-              width: 1,
-              height: 24,
-              color: Theme.of(context).colorScheme.outlineVariant,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-            ),
-            SizedBox.square(
-              dimension: 32,
-              child: IconButton(
-                icon: Icon(
-                  Symbols.push_pin,
-                  size: 16,
-                  color: isPinned ? Theme.of(context).colorScheme.error : null,
-                ),
-                onPressed: onPinToggle,
-                tooltip: isPinned
-                    ? l10n.messageActionUnpin
-                    : l10n.messageActionPin,
-                padding: EdgeInsets.zero,
-              ),
-            ),
-          ],
-          if (canPin) ...[
-            Container(
-              width: 1,
-              height: 24,
-              color: Theme.of(context).colorScheme.outlineVariant,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-            ),
-            SizedBox.square(
-              dimension: 32,
-              child: IconButton(
-                icon: Icon(
-                  Symbols.auto_awesome,
-                  size: 16,
-                  color: isEssence ? Theme.of(context).colorScheme.error : null,
-                ),
-                onPressed: onEssenceToggle,
-                tooltip: isEssence ? l10n.essenceRemove : l10n.essenceAdd,
-                padding: EdgeInsets.zero,
-              ),
-            ),
-          ],
-          if (onRecall != null) ...[
-            Container(
-              width: 1,
-              height: 24,
-              color: Theme.of(context).colorScheme.outlineVariant,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-            ),
-            SizedBox.square(
-              dimension: 32,
-              child: IconButton(
-                icon: const Icon(Symbols.delete, size: 16, color: Colors.red),
-                onPressed: onRecall,
-                tooltip: l10n.messageActionRecall,
-                padding: EdgeInsets.zero,
-              ),
-            ),
-          ],
-          if (onDelete != null) ...[
-            Container(
-              width: 1,
-              height: 24,
-              color: Theme.of(context).colorScheme.outlineVariant,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-            ),
-            SizedBox.square(
-              dimension: 32,
-              child: IconButton(
-                icon: const Icon(
-                  Symbols.delete_forever,
-                  size: 16,
-                  color: Colors.red,
-                ),
-                onPressed: onDelete,
-                tooltip: l10n.messageActionDelete,
-                padding: EdgeInsets.zero,
-              ),
-            ),
-          ],
-        ],
-      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
 }
 
 class _MessageActionSheet extends StatelessWidget {
-  final ChatMessage message;
-  final ValueChanged<ChatMessage>? onReply;
-  final ValueChanged<ChatMessage>? onForward;
-  final ValueChanged<ChatMessage>? onRecall;
-  final ValueChanged<ChatMessage>? onDelete;
-  final bool canRecall;
-  final bool isPinned;
-  final bool isEssence;
-  final bool canPin;
-  final VoidCallback? onPinToggle;
-  final VoidCallback? onEssenceToggle;
+  final List<MessageAction> actions;
 
-  const _MessageActionSheet({
-    required this.message,
-    this.onReply,
-    this.onForward,
-    this.onRecall,
-    this.onDelete,
-    required this.canRecall,
-    this.isPinned = false,
-    this.isEssence = false,
-    this.canPin = false,
-    this.onPinToggle,
-    this.onEssenceToggle,
-  });
+  const _MessageActionSheet({required this.actions});
+
+  /// 这些动作在 sheet 中相邻成组，组内不插入分隔线。
+  static const Set<MessageActionKind> _composeGroup = {
+    MessageActionKind.reply,
+    MessageActionKind.forward,
+    MessageActionKind.selectMultiple,
+  };
+
+  static bool _sameGroup(MessageActionKind a, MessageActionKind b) =>
+      _composeGroup.contains(a) && _composeGroup.contains(b);
 
   @override
   Widget build(BuildContext context) {
@@ -1921,90 +2058,21 @@ class _MessageActionSheet extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
-          _ActionListTile(
-            icon: Symbols.content_copy,
-            label: l10n.messageActionCopy,
-            onTap: () {
-              Navigator.pop(context);
-              _copyMessage(context, message);
-            },
-          ),
-          if (!message.isDeleted && message.mid != null) ...[
-            const Divider(height: 17),
+          for (var i = 0; i < actions.length; i++) ...[
+            if (i > 0 && !_sameGroup(actions[i - 1].kind, actions[i].kind))
+              const Divider(height: 17),
             _ActionListTile(
-              icon: Symbols.reply,
-              label: l10n.messageActionReply,
+              icon: actions[i].icon,
+              label: actions[i].label,
+              color: actions[i].color,
               onTap: () {
                 Navigator.pop(context);
-                onReply?.call(message);
-              },
-            ),
-            _ActionListTile(
-              icon: Symbols.forward,
-              label: l10n.messageActionForward,
-              onTap: () {
-                Navigator.pop(context);
-                onForward?.call(message);
-              },
-            ),
-          ],
-          if (canPin) ...[
-            const Divider(height: 17),
-            _ActionListTile(
-              icon: Symbols.push_pin,
-              label: isPinned ? l10n.messageActionUnpin : l10n.messageActionPin,
-              onTap: () {
-                Navigator.pop(context);
-                onPinToggle?.call();
-              },
-            ),
-          ],
-          if (canPin) ...[
-            const Divider(height: 17),
-            _ActionListTile(
-              icon: Symbols.auto_awesome,
-              label: isEssence ? l10n.essenceRemove : l10n.essenceAdd,
-              onTap: () {
-                Navigator.pop(context);
-                onEssenceToggle?.call();
-              },
-            ),
-          ],
-          if (canRecall) ...[
-            const Divider(height: 17),
-            _ActionListTile(
-              icon: Symbols.delete,
-              label: l10n.messageActionRecall,
-              color: Theme.of(context).colorScheme.error,
-              onTap: () {
-                Navigator.pop(context);
-                onRecall?.call(message);
-              },
-            ),
-          ],
-          if (onDelete != null && !message.isDeleted) ...[
-            const Divider(height: 17),
-            _ActionListTile(
-              icon: Symbols.delete_forever,
-              label: l10n.messageActionDelete,
-              color: Theme.of(context).colorScheme.error,
-              onTap: () {
-                Navigator.pop(context);
-                onDelete?.call(message);
+                actions[i].onInvoke();
               },
             ),
           ],
         ],
       ),
-    );
-  }
-
-  Future<void> _copyMessage(BuildContext context, ChatMessage message) async {
-    final l10n = AppLocalizations.of(context)!;
-    final copied = await copyTextToClipboard(message.text);
-    TouchFishSnackbarService.instance.show(
-      copied ? l10n.aboutCopiedToClipboard : l10n.copyFailedText,
-      type: copied ? SnackbarType.info : SnackbarType.error,
     );
   }
 }

@@ -9,7 +9,12 @@ import '../l10n/app_localizations.dart';
 import '../providers/chat/message_provider.dart';
 import '../services/chat_data_service.dart';
 import '../services/snackbar_service.dart';
+import '../theme/tokens.dart';
 import 'optimized_image.dart';
+import 'account/online_avatar_badge.dart';
+import 'ui/empty_state.dart';
+import 'ui/skeleton.dart';
+import 'ui/refreshable.dart';
 
 /// 测试或独立嵌入时可能没有祖先 ProviderScope（应用本体由 main.dart 提供），
 /// 缺了就自动补一层，保证 Consumer 后代（未读角标等）可用。
@@ -25,35 +30,86 @@ Widget ensureProviderScope(BuildContext context, Widget child) {
 class ChatListWidget extends StatelessWidget {
   final List<ChatRoom> chatRooms;
 
-  const ChatListWidget({super.key, required this.chatRooms});
+  /// 展示骨架屏，
+  final bool isLoading;
+
+  const ChatListWidget({
+    super.key,
+    required this.chatRooms,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return ensureProviderScope(context, _ChatListContent(chatRooms: chatRooms));
+    return ensureProviderScope(
+      context,
+      _ChatListContent(chatRooms: chatRooms, isLoading: isLoading),
+    );
   }
 }
 
 class _ChatListContent extends ConsumerWidget {
   final List<ChatRoom> chatRooms;
+  final bool isLoading;
 
-  const _ChatListContent({required this.chatRooms});
+  const _ChatListContent({required this.chatRooms, this.isLoading = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (chatRooms.isEmpty) {
+      if (isLoading) return const ListSkeleton();
+      return ScrollableFill(
+        child: EmptyState(
+          icon: Icons.chat_bubble_outline,
+          title: AppLocalizations.of(context)!.chatListEmpty,
+        ),
+      );
+    }
     final pinnedRooms = chatRooms.where((room) => room.isPinned).toList();
     final unpinnedRooms = chatRooms.where((room) => !room.isPinned).toList();
+    final selectedRoomId = _selectedRoomIdFromRoute(context);
 
-    return ListView(
-      children: [
-        if (pinnedRooms.isNotEmpty) ...[
-          _buildPinnedSection(context, pinnedRooms),
-        ],
-        ...unpinnedRooms.map((room) => _ChatRoomTile(room: room)),
+    //  CustomScrollView + SliverList.builder 主列表按需构建
+    return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        if (pinnedRooms.isNotEmpty)
+          SliverToBoxAdapter(
+            child: _buildPinnedSection(
+              context,
+              pinnedRooms,
+              selectedRoomId,
+            ),
+          ),
+        SliverList.builder(
+          itemCount: unpinnedRooms.length,
+          itemBuilder: (context, index) => _ChatRoomTile(
+            room: unpinnedRooms[index],
+            isSelected: unpinnedRooms[index].id == selectedRoomId,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildPinnedSection(BuildContext context, List<ChatRoom> rooms) {
+  /// 从当前路由推断右栏正在打开的会话，左侧列表选中态高亮
+  String? _selectedRoomIdFromRoute(BuildContext context) {
+    try {
+      final segments = GoRouterState.of(context).uri.pathSegments;
+      if (segments.length >= 2 && segments.first == 'chat') {
+        return segments[1];
+      }
+    } catch (_) {
+      // no go router then byebye
+    }
+    return null;
+  }
+
+  Widget _buildPinnedSection(
+    BuildContext context,
+    List<ChatRoom> rooms,
+    String? selectedRoomId,
+  ) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -69,7 +125,20 @@ class _ChatListContent extends ConsumerWidget {
         title: Text(l10n.chatPinned),
         leading: const Icon(Icons.push_pin),
         initiallyExpanded: true,
-        children: rooms.map((room) => _ChatRoomTile(room: room)).toList(),
+        shape: const RoundedRectangleBorder(
+          borderRadius: TFRadius.mdRadius,
+        ),
+        collapsedShape: const RoundedRectangleBorder(
+          borderRadius: TFRadius.mdRadius,
+        ),
+        children: rooms
+            .map(
+              (room) => _ChatRoomTile(
+                room: room,
+                isSelected: room.id == selectedRoomId,
+              ),
+            )
+            .toList(),
       ),
     );
   }
@@ -78,7 +147,10 @@ class _ChatListContent extends ConsumerWidget {
 class _ChatRoomTile extends ConsumerStatefulWidget {
   final ChatRoom room;
 
-  const _ChatRoomTile({required this.room});
+  /// 双栏布局下该会话是否正在右栏打开
+  final bool isSelected;
+
+  const _ChatRoomTile({required this.room, this.isSelected = false});
 
   @override
   ConsumerState<_ChatRoomTile> createState() => _ChatRoomTileState();
@@ -97,8 +169,17 @@ class _ChatRoomTileState extends ConsumerState<_ChatRoomTile> {
 
     final listTile = ListTile(
       leading: _buildAvatar(context, room),
+      // 选中态
+      selected: widget.isSelected,
+      selectedTileColor: colorScheme.secondaryContainer.withValues(
+        alpha: 0.55,
+      ),
+      selectedColor: colorScheme.onSecondaryContainer,
+      shape: const RoundedRectangleBorder(borderRadius: TFRadius.smRadius),
       title: Text(
         room.name,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontWeight: unread > 0 ? FontWeight.bold : FontWeight.normal,
         ),
@@ -129,18 +210,22 @@ class _ChatRoomTileState extends ConsumerState<_ChatRoomTile> {
           if (unread > 0) ...[
             const SizedBox(height: 4),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(
+                horizontal: TFSpace.xs + 2,
+                vertical: TFSpace.xxs,
+              ),
               decoration: BoxDecoration(
                 color: colorScheme.primary,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: TFRadius.pillRadius,
               ),
-              constraints: const BoxConstraints(minWidth: 20),
+              constraints: const BoxConstraints(minWidth: TFSpace.xl),
               child: Text(
                 unread > 99 ? '99+' : unread.toString(),
                 style: TextStyle(
                   color: colorScheme.onPrimary,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
+                  height: 1.2,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -245,7 +330,7 @@ class _ChatRoomTileState extends ConsumerState<_ChatRoomTile> {
   Widget _buildAvatar(BuildContext context, ChatRoom room) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return CircleAvatar(
+    final avatar = CircleAvatar(
       backgroundColor: colorScheme.primaryContainer,
       backgroundImage: room.avatar != null
           ? resizedImageProvider(
@@ -262,6 +347,11 @@ class _ChatRoomTileState extends ConsumerState<_ChatRoomTile> {
             )
           : null,
     );
+
+    // 仅私聊展示对方在线点；群聊无单一 uid。
+    if (room.type != ChatType.direct) return avatar;
+    final peerUid = int.tryParse(room.id.replaceFirst('U', ''));
+    return OnlineAvatarBadge(uid: peerUid, radius: 20, child: avatar);
   }
 }
 

@@ -10,6 +10,7 @@ import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/optimized_image.dart';
+import '../widgets/ui/loading_indicator.dart';
 
 /// 转发选择屏幕。
 ///
@@ -281,7 +282,7 @@ class _ForwardScreenState extends State<ForwardScreen> {
           ),
           Expanded(
             child: _sending
-                ? const Center(child: CircularProgressIndicator())
+                ? const LoadingIndicator()
                 : targets.isEmpty
                 ? _buildEmptyState(context, l10n, colorScheme, hasSearched)
                 : ListView.separated(

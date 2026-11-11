@@ -2,9 +2,11 @@
 cmake_minimum_required(VERSION 3.14)
 project(touchfish_client LANGUAGES CXX)
 
-# 在中文/GBK 代码页(936)机器上,MSVC 默认按本地代码页读取源码,会把插件里无 BOM 的
-# UTF-8 文件误读并产生 C4819 警告,再被 APPLY_STANDARD_SETTINGS 的 /WX 升级为 C2220 错误。
-# 强制 MSVC 以 UTF-8 读取源码。该选项会传播给之后 add_subdirectory 的所有插件目标。
+# 在中文/GBK 代码页(936)机器上
+# MSVC 默认按本地代码页读取源码,会把插件里无 BOM 的
+# UTF-8 文件误读
+# 产生 C4819 警告  APPLY_STANDARD_SETTINGS /WX 升级为 C2220 错误
+# 强制 MSVC 以 UTF-8 读取源码
 if(MSVC)
   add_compile_options(/utf-8)
 endif()
@@ -70,12 +72,16 @@ include(flutter/generated_plugins.cmake)
 # Support files are copied into place next to the executable, so that it can
 # run in place. This is done instead of making a separate bundle (as on Linux)
 # so that building and running from within Visual Studio will work.
-set(BUILD_BUNDLE_DIR "$<TARGET_FILE_DIR:${BINARY_NAME}>")
+#
+#  Flutter 原模板这里写的是 "$<TARGET_FILE_DIR:${BINARY_NAME}>"。
+# 该生成器表达式在 install() 的 DESTINATION 中并不受支持
+
+# 改用 install() 明确支持的 $<CONFIG>, 路径在配置阶段即可确定, 且无条件覆盖
+# 缓存中的旧前缀。
+set(BUILD_BUNDLE_DIR "${CMAKE_BINARY_DIR}/runner/$<CONFIG>")
 # Make the "install" step default, as it's required to run.
 set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  set(CMAKE_INSTALL_PREFIX "${BUILD_BUNDLE_DIR}" CACHE PATH "..." FORCE)
-endif()
+set(CMAKE_INSTALL_PREFIX "${BUILD_BUNDLE_DIR}")
 
 set(INSTALL_BUNDLE_DATA_DIR "${CMAKE_INSTALL_PREFIX}/data")
 set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}")

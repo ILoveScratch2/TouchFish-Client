@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:ui' show FlutterView;
 import 'package:flutter/cupertino.dart'
     show CupertinoLocalizations, CupertinoPageTransitionsBuilder;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,6 +17,7 @@ import 'l10n/app_localizations.dart';
 import 'models/app_state.dart';
 import 'models/settings_service.dart';
 import 'routes/app_routes.dart';
+import 'theme/app_theme.dart';
 import 'services/auth_state.dart';
 import 'services/font_loader_service.dart';
 import 'services/api/tf_api_client.dart';
@@ -31,8 +32,11 @@ import 'services/app_update_flow.dart';
 import 'services/background_permission_service.dart';
 import 'services/desktop_app_lifecycle_service.dart';
 import 'services/forum_pending_service.dart';
+import 'services/ticket_inbox_service.dart';
 import 'services/single_instance_service.dart';
+import 'services/feature_flags.dart';
 import 'services/notification_service.dart';
+import 'services/presence_service.dart';
 import 'services/server_connection_status_service.dart';
 import 'services/ip_override_service.dart';
 import 'services/lock_service.dart';
@@ -51,9 +55,45 @@ import 'widgets/task_overlay.dart';
 import 'utils/web_splash_stub.dart'
     if (dart.library.js) 'utils/web_splash_web.dart';
 
+/// 组件构建期抛异常时的 UI
+Widget _buildErrorWidget(FlutterErrorDetails details) {
+  return Directionality(
+    textDirection: TextDirection.ltr,
+    child: Container(
+      color: const Color(0xFF1B1B1F),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.error_outline, color: Color(0xFFB4B2A9), size: 32),
+          const SizedBox(height: 12),
+          const Text(
+            'TF Client Rendering failed.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Color(0xFFD3D1C7), fontSize: 13),
+          ),
+          if (kDebugMode) ...[
+            const SizedBox(height: 8),
+            Text(
+              details.exceptionAsString(),
+              textAlign: TextAlign.center,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Color(0xFF888780), fontSize: 11),
+            ),
+          ],
+        ],
+      ),
+    ),
+  );
+}
+
 Future<void> main() async {
   await runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    // 一张坏卡片不该把整页 BOOM
+    ErrorWidget.builder = _buildErrorWidget;
     registerTalkerErrorHandlers();
     MediaKit.ensureInitialized();
     initializeKeyboardLayouts();
@@ -87,6 +127,7 @@ Future<void> main() async {
     if (configuredFont != null && configuredFont.isNotEmpty) {
       await FontLoaderService.instance.loadFont(configuredFont);
     }
+    await FeatureFlags.instance.init();
     await LockService.instance.init();
     await IpOverrideService.instance.ensureDefaultDomain();
     await IpOverrideService.instance.refreshGlobal();
@@ -103,7 +144,7 @@ Future<void> main() async {
       };
     }
 
-    // 窗口焦点/应用生命周期状态：聊天页靠它区分"失焦期间的未读"与"真的看到了"
+    // 窗口焦点/应用生命周期状态
     await AppForegroundService.instance.initialize();
 
     final prefs = await SharedPreferences.getInstance();
@@ -153,11 +194,10 @@ Future<void> main() async {
         await DesktopAppLifecycleService.instance.afterWindowReady();
         await DesktopAppLifecycleService.instance.restoreWindowState();
         // 上次退出时窗口隐藏在托盘里：本次启动直接驻留托盘，不显示窗口
-        // （可通过托盘菜单或再次启动唤出）。
         if (!DesktopAppLifecycleService.instance.wasHiddenInTray) {
           await windowManager.show();
           await windowManager.focus();
-          // initialize() 早于窗口显示，这里显式纠正前台状态
+          // initialize() 早于窗口显示
           AppForegroundService.instance.setWindowVisible(true);
         }
       });
@@ -166,6 +206,7 @@ Future<void> main() async {
     final isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
     await AuthState.instance.init();
     final hasSavedSession = AuthState.instance.hasStoredCredentials;
+    final hasRememberedUid = AuthState.instance.rememberedUid != null;
 
     talker.info('TouchFish Client started!');
 
@@ -174,6 +215,7 @@ Future<void> main() async {
         child: TouchFishApp(
           isFirstLaunch: isFirstLaunch,
           hasSavedSession: hasSavedSession,
+          hasRememberedUid: hasRememberedUid,
           didResetLocalSettings: startupRecovery.didResetSharedPreferences,
         ),
       ),
@@ -336,9 +378,6 @@ class _StartupRecoveryResult {
   });
 }
 
-/// Provides Material localizations for the [och] language code by proxying
-/// to Simplified Chinese, since [GlobalMaterialLocalizations] does not support
-/// ISO 639-3 codes like [och].
 class _OchMaterialLocalizationsDelegate
     extends LocalizationsDelegate<MaterialLocalizations> {
   const _OchMaterialLocalizationsDelegate();
@@ -354,8 +393,7 @@ class _OchMaterialLocalizationsDelegate
   bool shouldReload(_OchMaterialLocalizationsDelegate old) => false;
 }
 
-/// Provides Cupertino localizations for the [och] language code by proxying
-/// to Simplified Chinese, for the same reason as [_OchMaterialLocalizationsDelegate].
+// 超级 i18n 给清朝使用
 class _OchCupertinoLocalizationsDelegate
     extends LocalizationsDelegate<CupertinoLocalizations> {
   const _OchCupertinoLocalizationsDelegate();
@@ -374,12 +412,17 @@ class _OchCupertinoLocalizationsDelegate
 class TouchFishApp extends StatefulWidget {
   final bool isFirstLaunch;
   final bool hasSavedSession;
+
+  /// 本地账号（`auth_uid`），凭据可能暂时无法读取
+  /// 用于决定要不要尝试恢复、以及是否展示恢复失败对话框。
+  final bool hasRememberedUid;
   final bool didResetLocalSettings;
 
   const TouchFishApp({
     super.key,
     required this.isFirstLaunch,
     required this.hasSavedSession,
+    required this.hasRememberedUid,
     this.didResetLocalSettings = false,
   });
 
@@ -438,14 +481,14 @@ class _TouchFishAppState extends State<TouchFishApp>
   }
 
   Future<void> _runStartupChecks() async {
-    // Android: request background (battery-optimization) permission.
+    // Android 请求后台权限
     if (!kIsWeb && Platform.isAndroid) {
       unawaited(
         BackgroundPermissionService.instance.requestBackgroundPermissions(),
       );
     }
 
-    // Non-web: check for updates once per launch.
+    // Non-web 检查更新
     if (!kIsWeb) {
       final result = await AppUpdateService.instance.checkForUpdate();
       if (!mounted || !result.hasUpdate) return;
@@ -463,9 +506,11 @@ class _TouchFishAppState extends State<TouchFishApp>
   void _startNotificationPollingIfLoggedIn() {
     if (AuthState.instance.isLoggedIn) {
       unawaited(ChatDataService.instance.init());
+      PresenceService.instance.start();
       unawaited(ChatWsService.instance.connect());
       NotificationService.instance.startPolling();
-      ForumPendingService.instance.startPolling();
+      ForumPendingService.instance.startWatching();
+      TicketInboxService.instance.startWatching();
       _startAndroidBackgroundServiceIfNeeded();
     }
   }
@@ -496,7 +541,7 @@ class _TouchFishAppState extends State<TouchFishApp>
     AuthState.instance.sessionListenable.removeListener(_onAuthStateChanged);
     AuthState.instance.removeListener(_onAuthNotice);
     NotificationService.instance.stopPolling();
-    ForumPendingService.instance.stopPolling();
+    ForumPendingService.instance.stopWatching();
     super.dispose();
   }
 
@@ -537,8 +582,9 @@ class _TouchFishAppState extends State<TouchFishApp>
       _startNotificationPollingIfLoggedIn();
     } else {
       NotificationService.instance.stopPolling();
-      ForumPendingService.instance.stopPolling();
+      ForumPendingService.instance.stopWatching();
       AppNotificationService.instance.clear();
+      PresenceService.instance.clear();
       unawaited(ChatWsService.instance.disconnect());
       unawaited(ChatDataService.instance.reset());
       unawaited(_stopAndroidBackgroundService());
@@ -551,7 +597,7 @@ class _TouchFishAppState extends State<TouchFishApp>
   }
 
   Future<void> _startSavedSessionRestoreIfNeeded() async {
-    if (!widget.hasSavedSession || _didStartSavedSessionRestore) {
+    if (!widget.hasRememberedUid || _didStartSavedSessionRestore) {
       return;
     }
 
@@ -568,7 +614,7 @@ class _TouchFishAppState extends State<TouchFishApp>
     if (!canRestore) return;
 
     final restored = await AuthState.instance.restoreSavedSession();
-    if (!restored || !mounted) return;
+    if (!restored || !mounted || !navigatorContext.mounted) return;
 
     _maybePromptFirstConnectAfterRestore(navigatorContext);
   }
@@ -580,6 +626,7 @@ class _TouchFishAppState extends State<TouchFishApp>
       final result = await RsaKeyTrustService.instance.checkKey(livePem);
       result.log();
       if (result.kind == RsaKeyCheckKind.changed) {
+        if (!context.mounted) return false;
         final replaced = await promptRsaKeyChanged(
           context,
           newSha: result.liveFingerprint!,
@@ -659,7 +706,7 @@ class _TouchFishAppState extends State<TouchFishApp>
 
   Widget _buildSavedSessionRestoreOverlay(BuildContext context, Widget child) {
     final status = AuthState.instance.savedSessionRestoreStatus;
-    if (!widget.hasSavedSession ||
+    if (!widget.hasRememberedUid ||
         (status != SavedSessionRestoreStatus.restoring &&
             status != SavedSessionRestoreStatus.failed)) {
       return child;
@@ -884,53 +931,17 @@ class _TouchFishAppState extends State<TouchFishApp>
           ],
           supportedLocales: const [Locale('en'), Locale('zh'), Locale('och')],
           locale: _appState.locale,
-          theme: ThemeData(
-            colorScheme: lightColorScheme,
-            useMaterial3: true,
+          theme: TFTheme.build(
+            scheme: lightColorScheme,
             fontFamily: _appState.fontFamily,
-            scaffoldBackgroundColor: hasBackgroundImage
-                ? Colors.transparent
-                : null,
-            cardTheme: CardThemeData(
-              color: lightColorScheme.surfaceContainer.withValues(
-                alpha: cardOpacity,
-              ),
-              elevation: cardOpacity < 1 ? 0 : null,
-            ),
-            pageTransitionsTheme: PageTransitionsTheme(
-              builders: {
-                TargetPlatform.android: ZoomPageTransitionsBuilder(),
-                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-                TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
-                TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
-                TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
-                TargetPlatform.fuchsia: FadeForwardsPageTransitionsBuilder(),
-              },
-            ),
+            cardOpacity: cardOpacity,
+            transparentSurfaces: hasBackgroundImage,
           ),
-          darkTheme: ThemeData(
-            colorScheme: darkColorScheme,
-            useMaterial3: true,
+          darkTheme: TFTheme.build(
+            scheme: darkColorScheme,
             fontFamily: _appState.fontFamily,
-            scaffoldBackgroundColor: hasBackgroundImage
-                ? Colors.transparent
-                : null,
-            cardTheme: CardThemeData(
-              color: darkColorScheme.surfaceContainer.withValues(
-                alpha: cardOpacity,
-              ),
-              elevation: cardOpacity < 1 ? 0 : null,
-            ),
-            pageTransitionsTheme: PageTransitionsTheme(
-              builders: {
-                TargetPlatform.android: ZoomPageTransitionsBuilder(),
-                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-                TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
-                TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
-                TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
-                TargetPlatform.fuchsia: FadeForwardsPageTransitionsBuilder(),
-              },
-            ),
+            cardOpacity: cardOpacity,
+            transparentSurfaces: hasBackgroundImage,
           ),
           themeMode: _appState.themeMode,
           builder: (context, child) {
@@ -950,9 +961,13 @@ class _TouchFishAppState extends State<TouchFishApp>
             );
             if (hasBackgroundImage && !kIsWeb) {
               return MediaQuery(
-                data: MediaQuery.of(
-                  context,
-                ).copyWith(disableAnimations: !_appState.animationsEnabled),
+                // copyWith 是覆盖不是合并：只写应用开关会把系统的
+                // "减弱动态效果" 冲掉。两者任一要求关闭都应关闭。
+                data: MediaQuery.of(context).copyWith(
+                  disableAnimations:
+                      MediaQuery.disableAnimationsOf(context) ||
+                      !_appState.animationsEnabled,
+                ),
                 child: TouchFishSnackbarOverlay(
                   child: _buildSavedSessionRestoreOverlay(
                     context,
@@ -979,9 +994,11 @@ class _TouchFishAppState extends State<TouchFishApp>
             }
             final animationsEnabled = _appState.animationsEnabled;
             return MediaQuery(
-              data: MediaQuery.of(
-                context,
-              ).copyWith(disableAnimations: !animationsEnabled),
+              data: MediaQuery.of(context).copyWith(
+                disableAnimations:
+                    MediaQuery.disableAnimationsOf(context) ||
+                    !animationsEnabled,
+              ),
               child: TouchFishSnackbarOverlay(
                 child: _buildSavedSessionRestoreOverlay(context, contentWithTasks),
               ),
@@ -992,26 +1009,73 @@ class _TouchFishAppState extends State<TouchFishApp>
     );
   }
 
+  /// 应用用户自定义配色
   ColorScheme _applyCustomColors(
     ColorScheme scheme,
     Map<String, int> customColors,
   ) {
-    final surfaceColor = customColors['surface'] ?? customColors['background'];
+    Color resolve(String key, Color fallback) {
+      final value = customColors[key];
+      return value == null ? fallback : Color(value);
+    }
+
+    final primary = resolve('primary', scheme.primary);
+    final secondary = resolve('secondary', scheme.secondary);
+    final tertiary = resolve('tertiary', scheme.tertiary);
+    final error = resolve('error', scheme.error);
+    final surface = resolve('surface', resolve('background', scheme.surface));
+    final isDark = scheme.brightness == Brightness.dark;
+
+    final onSurface = _onColorFor(surface);
+    final onPrimary = _onColorFor(primary);
+    final onSecondary = _onColorFor(secondary);
+    final onTertiary = _onColorFor(tertiary);
+    final onError = _onColorFor(error);
+
+    // 表面层级必须和默认主题同向
+    Color step(double t) => Color.lerp(
+      surface,
+      isDark ? Colors.white : Colors.black,
+      t,
+    )!;
+    Color backStep(double t) => Color.lerp(
+      surface,
+      isDark ? Colors.black : Colors.white,
+      t,
+    )!;
+
+    final surfaceContainerLowest = backStep(isDark ? 0.20 : 0.55);
+    final surfaceContainerLow = step(0.028);
+    final surfaceContainerHigh = step(0.055);
+    final surfaceContainerHighest = step(0.085);
 
     return scheme.copyWith(
-      primary: customColors['primary'] != null
-          ? Color(customColors['primary']!)
-          : null,
-      secondary: customColors['secondary'] != null
-          ? Color(customColors['secondary']!)
-          : null,
-      tertiary: customColors['tertiary'] != null
-          ? Color(customColors['tertiary']!)
-          : null,
-      surface: surfaceColor != null ? Color(surfaceColor) : null,
-      error: customColors['error'] != null
-          ? Color(customColors['error']!)
-          : null,
+      primary: primary,
+      onPrimary: onPrimary,
+      secondary: secondary,
+      onSecondary: onSecondary,
+      tertiary: tertiary,
+      onTertiary: onTertiary,
+      error: error,
+      onError: onError,
+      surface: surface,
+      onSurface: onSurface,
+      onSurfaceVariant: Color.lerp(onSurface, surface, 0.35),
+      surfaceContainerLowest: surfaceContainerLowest,
+      surfaceContainerLow: surfaceContainerLow,
+      surfaceContainer: surface,
+      surfaceContainerHigh: surfaceContainerHigh,
+      surfaceContainerHighest: surfaceContainerHighest,
+      outline: Color.lerp(surface, onSurface, 0.35),
+      outlineVariant: Color.lerp(surface, onSurface, 0.16),
     );
+  }
+
+  Color _onColorFor(Color background) {
+    final luminance = background.computeLuminance();
+    if (luminance > 0.5) {
+      return const Color(0xFF1A1A1A);
+    }
+    return Colors.white;
   }
 }

@@ -7,6 +7,8 @@ import '../widgets/app_alert_dialog.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/snackbar_service.dart';
+import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/loading_indicator.dart';
 
 class ForumMemberListSheet extends StatefulWidget {
   final String forumId;
@@ -55,16 +57,24 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
     }
   }
 
+  /// 分批拉取成员资料
+  static const int _profileBatchSize = 8;
+
   Future<void> _loadProfiles() async {
     final profiles = <String, UserProfile?>{};
-    final futures = _members.map((m) async {
-      final uid = int.tryParse(m.accountUid);
-      if (uid != null) {
-        profiles[m.accountUid] = await TfApiClient.instance.getUserByUid(uid);
-      }
-    });
-    await Future.wait(futures);
-    if (mounted) setState(() => _profiles = profiles);
+    for (var i = 0; i < _members.length; i += _profileBatchSize) {
+      final batch = _members.skip(i).take(_profileBatchSize);
+      await Future.wait(
+        batch.map((m) async {
+          final uid = int.tryParse(m.accountUid);
+          if (uid == null) return;
+          final profile = await TfApiClient.instance.getUserByUid(uid);
+          if (profile != null) profiles[m.accountUid] = profile;
+        }),
+      );
+      if (!mounted) return;
+      setState(() => _profiles = Map.of(profiles));
+    }
   }
 
   @override
@@ -82,15 +92,11 @@ class _ForumMemberListSheetState extends State<ForumMemberListSheet> {
           const Divider(height: 1),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const LoadingIndicator()
                 : _members.isEmpty
-                ? Center(
-                    child: Text(
-                      l10n.adminPendingForumsEmpty,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+                ? EmptyState(
+                    icon: Icons.people_outline,
+                    title: l10n.forumMembersEmpty,
                   )
                 : ListView.builder(
                     itemCount: _members.length,

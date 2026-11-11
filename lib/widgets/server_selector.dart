@@ -74,7 +74,11 @@ class ServerInfo {
 }
 
 class ServerSelector extends StatefulWidget {
-  const ServerSelector({super.key});
+  const ServerSelector({super.key, this.onServerChanged});
+
+  /// 切换/新增服务器后回调。父页面据此重新拉 /info 与外部登录配置，
+  /// 否则「注册入口是否显示」「外部登录按钮是否出现」会停留在旧服务器的状态。
+  final VoidCallback? onServerChanged;
 
   @override
   State<ServerSelector> createState() => _ServerSelectorState();
@@ -196,6 +200,7 @@ class _ServerSelectorState extends State<ServerSelector> {
           DomainTrustService.instance.refreshServerHost();
           unawaited(ServerBrandingService.instance.refresh());
           _probeSelectedServer();
+          widget.onServerChanged?.call();
           if (context.mounted) Navigator.pop(context);
         },
         onAdd: (server) async {
@@ -212,6 +217,7 @@ class _ServerSelectorState extends State<ServerSelector> {
           DomainTrustService.instance.refreshServerHost();
           unawaited(ServerBrandingService.instance.refresh());
           _probeSelectedServer();
+          widget.onServerChanged?.call();
         },
         onEdit: (index, server) async {
           if (index == _selectedIndex && AuthState.instance.isLoggedIn) {
@@ -225,6 +231,7 @@ class _ServerSelectorState extends State<ServerSelector> {
             DomainTrustService.instance.refreshServerHost();
             unawaited(ServerBrandingService.instance.refresh());
             _probeSelectedServer();
+            widget.onServerChanged?.call();
           }
         },
         onDelete: (index) async {
@@ -240,6 +247,9 @@ class _ServerSelectorState extends State<ServerSelector> {
             DomainTrustService.instance.refreshServerHost();
             unawaited(ServerBrandingService.instance.refresh());
             _probeSelectedServer();
+            // 删除的恰好是当前服务器时，selectedIndex 已切到别的，
+            // 通知父页面重新拉 /info 与外部登录配置。
+            widget.onServerChanged?.call();
           }
         },
       ),

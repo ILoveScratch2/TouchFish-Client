@@ -4,7 +4,36 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api/tf_api_client.dart';
 import 'auth_state.dart';
+import '../models/file_attachment.dart';
 import '../models/settings_service.dart';
+
+/// 一条已保存的草稿
+class DraftRecord {
+  final String type;
+  final String id;
+  final Map<String, dynamic> data;
+  final DateTime? updatedAt;
+
+  const DraftRecord({
+    required this.type,
+    required this.id,
+    required this.data,
+    this.updatedAt,
+  });
+
+  String get title => (data['title'] as String?)?.trim() ?? '';
+
+  String get content => (data['content'] as String?)?.trim() ?? '';
+
+  List<FileAttachment> get attachments {
+    final raw = data['attachments'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((item) => FileAttachment.fromMap(Map<String, dynamic>.from(item)))
+        .toList(growable: false);
+  }
+}
 
 class DraftService {
   DraftService._();
@@ -56,15 +85,83 @@ class DraftService {
     });
     if (hasContent) {
       await prefs.setString(key, jsonEncode(value));
+      await prefs.setInt(
+        'touchfish_draftmeta_${key.substring('touchfish_draft_'.length)}',
+        DateTime.now().millisecondsSinceEpoch,
+      );
     } else {
       await prefs.remove(key);
+      await prefs.remove(
+        'touchfish_draftmeta_${key.substring('touchfish_draft_'.length)}',
+      );
     }
   }
 
   Future<void> clearDraft(String type, String id) async {
     final key = await _scopedKey('draft', type, id);
     if (key == null) return;
-    await (await SharedPreferences.getInstance()).remove(key);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(key);
+    await prefs.remove('touchfish_draftmeta_${key.substring('touchfish_draft_'.length)}');
+  }
+
+  /// 列出本地草稿
+  Future<List<DraftRecord>> listDrafts({String? type}) async {
+    final uid = AuthState.instance.uid;
+    if (uid == null) return const [];
+    final baseUrl = await TfApiClient.instance.getBaseUrl();
+    final scope = base64Url.encode(utf8.encode('$baseUrl:$uid'));
+    final prefix = 'touchfish_draft_${scope}_';
+    final prefs = await SharedPreferences.getInstance();
+
+    final records = <DraftRecord>[];
+    for (final key in prefs.getKeys().where((k) => k.startsWith(prefix))) {
+      final rest = key.substring(prefix.length);
+      final sep = rest.indexOf('_');
+      if (sep <= 0) continue;
+      final draftType = rest.substring(0, sep);
+      if (type != null && draftType != type) continue;
+      final raw = prefs.getString(key);
+      if (raw == null || raw.isEmpty) continue;
+
+      Map<String, dynamic> data;
+      try {
+        data = Map<String, dynamic>.from(jsonDecode(raw) as Map);
+      } catch (_) {
+        continue;
+      }
+
+      final encodedId = rest.substring(sep + 1);
+      final savedAt = prefs.getInt('touchfish_draftmeta_$rest');
+      records.add(
+        DraftRecord(
+          type: draftType,
+          id: _decodeId(encodedId),
+          data: data,
+          updatedAt: savedAt == null
+              ? null
+              : DateTime.fromMillisecondsSinceEpoch(savedAt),
+        ),
+      );
+    }
+
+    records.sort((a, b) {
+      final left = a.updatedAt;
+      final right = b.updatedAt;
+      if (left == null && right == null) return a.id.compareTo(b.id);
+      if (left == null) return 1;
+      if (right == null) return -1;
+      return right.compareTo(left);
+    });
+    return records;
+  }
+
+  String _decodeId(String encoded) {
+    try {
+      return utf8.decode(base64Url.decode(encoded));
+    } catch (_) {
+      return encoded;
+    }
   }
 
   Future<void> clearDraftGroup(String group) async {

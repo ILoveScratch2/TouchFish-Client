@@ -6,7 +6,7 @@ part of 'task_manager_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$taskManagerHash() => r'c558c3365840f759e81945d3f95a728090d9dfbc';
+String _$taskManagerHash() => r'ead7ef8d9cc09f869219fd5b8151c38a17e59621';
 
 /// 全局文件传输任务管理器。
 ///

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -35,13 +36,38 @@ class VideoViewerState extends State<VideoViewer> {
   String? _errorMessage;
   bool _hasError = false;
   bool _isPlaying = false;
+  StreamSubscription<bool>? _playingSubscription;
+  StreamSubscription<String>? _errorSubscription;
 
   bool get isPlaying => _isPlaying;
+
+  /// 播放器是否已真正创建
+  bool _initializing = false;
 
   @override
   void initState() {
     super.initState();
-    _initPlayer();
+    MediaKit.ensureInitialized();
+    if (widget.autoplay) {
+      unawaited(_ensurePlayer(playAfterInit: true));
+    }
+  }
+
+  /// 创建播放
+  Future<void> _ensurePlayer({bool playAfterInit = false}) async {
+    if (_player != null || _initializing) {
+      if (playAfterInit && _player != null) await _player!.play();
+      return;
+    }
+    _initializing = true;
+    try {
+      await _initPlayer();
+    } finally {
+      _initializing = false;
+    }
+    if (!mounted || _player == null) return;
+    if (playAfterInit) await _player!.play();
+    setState(() {});
   }
 
   @override
@@ -58,7 +84,9 @@ class VideoViewerState extends State<VideoViewer> {
       _hasError = false;
       _errorMessage = null;
       _disposePlayer();
-      _initPlayer();
+      if (widget.autoplay) {
+        unawaited(_ensurePlayer(playAfterInit: true));
+      }
     }
   }
 
@@ -68,7 +96,7 @@ class VideoViewerState extends State<VideoViewer> {
     _player = Player();
     _videoController = VideoController(_player!);
 
-    _player!.stream.playing.listen((playing) {
+    _playingSubscription = _player!.stream.playing.listen((playing) {
       if (mounted) {
         setState(() {
           _isPlaying = playing;
@@ -78,7 +106,7 @@ class VideoViewerState extends State<VideoViewer> {
       }
     });
 
-    _player!.stream.error.listen((error) {
+    _errorSubscription = _player!.stream.error.listen((error) {
       debugPrint('Video player error: $error');
       if (mounted) {
         setState(() {
@@ -103,12 +131,21 @@ class VideoViewerState extends State<VideoViewer> {
   }
 
   void _disposePlayer() {
+    _playingSubscription?.cancel();
+    _playingSubscription = null;
+    _errorSubscription?.cancel();
+    _errorSubscription = null;
     _player?.dispose();
     _player = null;
     _videoController = null;
   }
 
   void _handleRetry() {
+    if (_player == null) {
+      unawaited(_ensurePlayer(playAfterInit: true));
+      setState(() => _hasError = false);
+      return;
+    }
     setState(() {
       _hasError = false;
       _errorMessage = null;
@@ -137,16 +174,32 @@ class VideoViewerState extends State<VideoViewer> {
   Widget build(BuildContext context) {
     if (_hasError) {
       return _VideoErrorWidget(
-        errorMessage: _errorMessage ?? 'Unknown error',
+        errorMessage:
+            _errorMessage ?? AppLocalizations.of(context)!.commonUnknown,
         onRetry: _handleRetry,
         aspectRatio: widget.aspectRatio,
       );
     }
 
     if (_videoController == null) {
-      return Container(
-        color: Colors.black,
-        child: const Center(child: CircularProgressIndicator()),
+      return AspectRatio(
+        aspectRatio: widget.aspectRatio,
+        child: Container(
+          color: Colors.black,
+          child: Center(
+            child: _initializing
+                ? const SizedBox.square(
+                    dimension: 28,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  )
+                : IconButton.filled(
+                    iconSize: 40,
+                    onPressed: () => _ensurePlayer(playAfterInit: true),
+                    icon: const Icon(Icons.play_arrow),
+                    tooltip: AppLocalizations.of(context)!.videoTapToPlay,
+                  ),
+          ),
+        ),
       );
     }
 
@@ -246,6 +299,8 @@ class _VideoErrorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       color: Colors.black,
       child: Center(
@@ -257,18 +312,18 @@ class _VideoErrorWidget extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.grey[900],
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.red[700]!, width: 1),
+              border: Border.all(color: colorScheme.error, width: 1),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Symbols.error, size: 48, color: Colors.red[400]),
+                Icon(Symbols.error, size: 48, color: colorScheme.error),
                 const SizedBox(height: 16),
                 Text(
-                  'Video Playback Error',
+                  l10n.videoPlaybackErrorTitle,
                   style: TextStyle(
-                    color: Colors.red[400],
+                    color: colorScheme.error,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -284,9 +339,9 @@ class _VideoErrorWidget extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Error Details:',
-                        style: TextStyle(
+                      Text(
+                        l10n.videoPlaybackErrorDetails,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -313,16 +368,15 @@ class _VideoErrorWidget extends StatelessWidget {
                     ElevatedButton.icon(
                       onPressed: onRetry,
                       icon: const Icon(Symbols.refresh, size: 18),
-                      label: const Text('Retry'),
+                      label: Text(l10n.retry),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red[700],
-                        foregroundColor: Colors.white,
+                        backgroundColor: colorScheme.error,
+                        foregroundColor: colorScheme.onError,
                       ),
                     ),
                     const SizedBox(width: 12),
                     OutlinedButton.icon(
                       onPressed: () async {
-                        final l10n = AppLocalizations.of(context)!;
                         final copied = await copyTextToClipboard(errorMessage);
                         TouchFishSnackbarService.instance.show(
                           copied

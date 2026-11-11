@@ -1,6 +1,28 @@
 import '../utils/talker.dart';
 import 'file_attachment.dart';
 
+/// 容错解析时间
+DateTime parseForumTime(dynamic value) {
+  if (value == null) return DateTime.fromMillisecondsSinceEpoch(0);
+  if (value is DateTime) return value;
+  if (value is num) {
+    return DateTime.fromMillisecondsSinceEpoch(_toEpochMillis(value.toDouble()));
+  }
+  final text = value.toString().trim();
+  if (text.isEmpty) return DateTime.fromMillisecondsSinceEpoch(0);
+  final seconds = double.tryParse(text);
+  if (seconds != null) {
+    return DateTime.fromMillisecondsSinceEpoch(_toEpochMillis(seconds));
+  }
+  return DateTime.tryParse(text) ?? DateTime.fromMillisecondsSinceEpoch(0);
+}
+
+/// 统一换算成毫秒。
+int _toEpochMillis(double timestamp) {
+  if (timestamp.abs() > 1e11) return timestamp.toInt();
+  return (timestamp * 1000).toInt();
+}
+
 class Forum {
   final String id;
   final String name;
@@ -32,8 +54,8 @@ class Forum {
       isPublic: json['is_public'] as bool,
       isCommunity: json['is_community'] as bool,
       createdByUid: json['created_by_uid'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: parseForumTime(json['created_at']),
+      updatedAt: parseForumTime(json['updated_at']),
       avatarUrl: json['avatar_url'] as String?,
     );
   }
@@ -126,10 +148,10 @@ class ForumMember {
       accountUid: json['account_uid'] as String,
       role: json['role'] as int,
       joinedAt: json['joined_at'] != null
-          ? DateTime.parse(json['joined_at'] as String)
+          ? parseForumTime(json['joined_at'])
           : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: parseForumTime(json['created_at']),
+      updatedAt: parseForumTime(json['updated_at']),
     );
   }
 
@@ -170,6 +192,11 @@ class ForumPost {
   final DateTime updatedAt;
   final List<FileAttachment> attachments;
 
+  final int commentCount;
+  final String? lastCommentUid;
+  final String? lastCommentContent;
+  final String? lastCommentTime;
+
   ForumPost({
     required this.id,
     required this.forumId,
@@ -180,6 +207,10 @@ class ForumPost {
     required this.createdAt,
     required this.updatedAt,
     this.attachments = const [],
+    this.commentCount = 0,
+    this.lastCommentUid,
+    this.lastCommentContent,
+    this.lastCommentTime,
   });
 
   static int compareNewestFirst(ForumPost left, ForumPost right) {
@@ -194,6 +225,10 @@ class ForumPost {
           )
         : DateTime.tryParse(createdRaw.toString()) ??
               DateTime.fromMillisecondsSinceEpoch(0);
+    final lastComment = json['last_comment'];
+    final lastCommentMap = lastComment is Map
+        ? Map<String, dynamic>.from(lastComment)
+        : const <String, dynamic>{};
     return ForumPost(
       id: (json['id'] ?? json['pid']).toString(),
       forumId: (json['forum_id'] ?? json['fid']).toString(),
@@ -211,6 +246,10 @@ class ForumPost {
           ? createdAt
           : DateTime.tryParse(json['updated_at'].toString()) ?? createdAt,
       attachments: _parseAttachments(json['attachments']),
+      commentCount: (json['comment_count'] as num?)?.toInt() ?? 0,
+      lastCommentUid: lastCommentMap['uid']?.toString(),
+      lastCommentContent: lastCommentMap['content']?.toString(),
+      lastCommentTime: lastCommentMap['time_stamp']?.toString(),
     );
   }
 
@@ -226,6 +265,7 @@ class ForumPost {
       createdAt: DateTime.fromMillisecondsSinceEpoch(ms),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(ms),
       attachments: row.length > 6 ? _parseAttachments(row[6]) : const [],
+      commentCount: 0,
     );
   }
 
@@ -249,6 +289,14 @@ class ForumPost {
             },
           )
           .toList(),
+      'comment_count': commentCount,
+      'last_comment': lastCommentContent == null
+          ? null
+          : {
+              'uid': lastCommentUid,
+              'content': lastCommentContent,
+              'time_stamp': lastCommentTime,
+            },
     };
   }
 
@@ -262,6 +310,7 @@ class ForumPost {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<FileAttachment>? attachments,
+    int? commentCount,
   }) {
     return ForumPost(
       id: id ?? this.id,
@@ -273,6 +322,10 @@ class ForumPost {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       attachments: attachments ?? this.attachments,
+      commentCount: commentCount ?? this.commentCount,
+      lastCommentUid: lastCommentUid,
+      lastCommentContent: lastCommentContent,
+      lastCommentTime: lastCommentTime,
     );
   }
 }
@@ -309,8 +362,8 @@ class ForumComment {
       postId: json['post_id'] as String,
       authorUid: json['author_uid'] as String,
       content: json['content'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: parseForumTime(json['created_at']),
+      updatedAt: parseForumTime(json['updated_at']),
     );
   }
 

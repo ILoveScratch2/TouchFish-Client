@@ -12,8 +12,10 @@ import '../services/snackbar_service.dart';
 import '../routes/app_routes.dart';
 import '../utils/talker.dart';
 import '../widgets/account/profile_picture.dart';
+import '../widgets/app_alert_dialog.dart';
 import '../widgets/optimized_image.dart';
 import '../widgets/text_entry_dialog.dart';
+import '../widgets/ui/loading_indicator.dart';
 
 class GroupManagementScreen extends StatefulWidget {
   final int gid;
@@ -114,22 +116,19 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
   }
 
   Future<void> _transferOwner(AppLocalizations l10n, int newOwner) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.groupTransferOwner),
-        content: Text(l10n.groupTransferOwnerConfirm),
-        actions: [
-          TextButton(
-            onPressed: () => ctx.pop(false),
-            child: Text(l10n.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () => ctx.pop(true),
-            child: Text(l10n.groupTransferOwnerConfirmAction),
-          ),
-        ],
-      ),
+    final confirm = await showTouchFishInfoDialog<bool>(
+      context,
+      title: l10n.groupTransferOwner,
+      message: l10n.groupTransferOwnerConfirm,
+      icon: Icons.swap_horiz_rounded,
+      actions: [
+        TouchFishDialogAction<bool>(label: l10n.commonCancel, result: false),
+        TouchFishDialogAction<bool>(
+          label: l10n.groupTransferOwnerConfirmAction,
+          result: true,
+          isPrimary: true,
+        ),
+      ],
     );
     if (confirm == true) {
       final ok = await TfApiClient.instance.transferGroupOwner(
@@ -242,9 +241,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
       {'introduction': value},
     );
     if (!mounted) return;
-    _showSnack(
-      ok ? l10n.groupIntroductionUpdated : l10n.commonFailedOperation,
-    );
+    _showSnack(ok ? l10n.groupIntroductionUpdated : l10n.commonFailedOperation);
     if (ok) _load();
   }
 
@@ -279,22 +276,19 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
       _showSnack(l10n.groupLeaveOwnerHint);
       return;
     }
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.groupLeave),
-        content: Text(l10n.groupLeaveConfirm),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.groupLeave),
-          ),
-        ],
-      ),
+    final confirmed = await showTouchFishInfoDialog<bool>(
+      context,
+      title: l10n.groupLeave,
+      message: l10n.groupLeaveConfirm,
+      icon: Icons.logout_rounded,
+      actions: [
+        TouchFishDialogAction<bool>(label: l10n.commonCancel, result: false),
+        TouchFishDialogAction<bool>(
+          label: l10n.groupLeave,
+          result: true,
+          isPrimary: true,
+        ),
+      ],
     );
     if (confirmed != true) return;
     final ok = await TfApiClient.instance.leaveGroup(
@@ -308,6 +302,39 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
       return;
     }
     await ChatDataService.instance.removeRoom('G${widget.gid}');
+    if (mounted) context.go(AppRoutes.chat);
+  }
+
+  Future<void> _dissolveGroup(AppLocalizations l10n) async {
+    if (!_isOwner) return;
+    final confirmed = await showTouchFishErrorDialog<bool>(
+      context,
+      title: l10n.groupDissolve,
+      message: l10n.groupDissolveConfirm,
+      icon: Icons.delete_forever_outlined,
+      actions: [
+        TouchFishDialogAction<bool>(label: l10n.commonCancel, result: false),
+        TouchFishDialogAction<bool>(
+          label: l10n.groupDissolveAction,
+          result: true,
+          isPrimary: true,
+          isDestructive: true,
+        ),
+      ],
+    );
+    if (confirmed != true) return;
+    final ok = await TfApiClient.instance.deleteGroup(
+      _uid,
+      _password,
+      widget.gid,
+    );
+    if (!mounted) return;
+    if (!ok) {
+      _showSnack(l10n.groupDissolveFailed);
+      return;
+    }
+    await ChatDataService.instance.removeRoom('G${widget.gid}');
+    _showSnack(l10n.groupDissolveSuccess);
     if (mounted) context.go(AppRoutes.chat);
   }
 
@@ -331,12 +358,33 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
         invitedUid = int.tryParse(profile.uid);
       }
     }
+    if (!mounted) return;
     if (invitedUid != null) {
+      // 走审核流程的邀请：可选填写留言给审核人（管理员免审直入则跳过）
+      String? inviteMessage;
+      final needsReview = _settings?['require_review'] == true && !_isAdmin;
+      if (needsReview) {
+        final input = await showDialog<String>(
+          context: context,
+          builder: (ctx) => TextEntryDialog(
+            title: l10n.groupInviteMessageTitle,
+            hintText: l10n.groupInviteMessageHint,
+            cancelLabel: l10n.commonCancel,
+            confirmLabel: l10n.confirm,
+            icon: Icons.message_outlined,
+            maxLines: 3,
+            allowEmpty: true,
+          ),
+        );
+        if (input == null) return; // 用户取消
+        inviteMessage = input.isEmpty ? null : input;
+      }
       final ok = await TfApiClient.instance.inviteToGroup(
         _uid,
         _password,
         widget.gid,
         invitedUid,
+        message: inviteMessage,
       );
       if (ok != null) {
         _showSnack(
@@ -419,7 +467,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingIndicator()
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -503,6 +551,19 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _chooseNewOwner(l10n),
                   ),
+                if (_isOwner)
+                  ListTile(
+                    leading: Icon(
+                      Icons.delete_forever_outlined,
+                      color: cs.error,
+                    ),
+                    title: Text(
+                      l10n.groupDissolve,
+                      style: TextStyle(color: cs.error),
+                    ),
+                    subtitle: Text(l10n.groupDissolveConfirm),
+                    onTap: () => _dissolveGroup(l10n),
+                  ),
                 ListTile(
                   leading: Icon(Icons.logout, color: cs.error),
                   title: Text(
@@ -584,6 +645,14 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
             ? null
             : (v) => _toggleSetting('essence_enabled', v),
       ),
+      SwitchListTile.adaptive(
+        value: settings['public_messages'] == true,
+        title: Text(l10n.groupPublicMessagesFeature),
+        subtitle: Text(l10n.groupPublicMessagesFeatureDesc),
+        onChanged: _updatingSettings.contains('public_messages')
+            ? null
+            : (v) => _toggleSetting('public_messages', v),
+      ),
     ];
   }
 
@@ -658,6 +727,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
     final desc = inviter != null && inviter.isNotEmpty
         ? l10n.groupJoinInvitedBy(inviter)
         : l10n.groupJoinDirectRequest;
+    final message = (req['message'] as String? ?? '').trim();
 
     return ListTile(
       leading: CircleAvatar(
@@ -665,7 +735,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
         child: Icon(Icons.person_add, color: cs.onSecondaryContainer),
       ),
       title: Text(username),
-      subtitle: Text(desc),
+      subtitle: Text(message.isEmpty ? desc : '$desc\n$message'),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

@@ -37,6 +37,13 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
+class _SettingSearchHit {
+  final SettingCategoryData category;
+  final SettingItem item;
+
+  const _SettingSearchHit({required this.category, required this.item});
+}
+
 class _SettingsScreenState extends State<SettingsScreen>
     with TickerProviderStateMixin {
   static const String _customFontSentinel = '__custom__';
@@ -44,6 +51,10 @@ class _SettingsScreenState extends State<SettingsScreen>
   final _settingsService = SettingsService.instance;
   SettingCategory? _selectedCategory;
   late AnimationController _categoryAnimationController;
+
+  final TextEditingController _searchController = TextEditingController();
+  bool _searchActive = false;
+  String _searchQuery = '';
   final TextEditingController _customFontController = TextEditingController();
 
   @override
@@ -65,6 +76,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   void dispose() {
     _customFontController.dispose();
+    _searchController.dispose();
     _categoryAnimationController.dispose();
     super.dispose();
   }
@@ -74,17 +86,49 @@ class _SettingsScreenState extends State<SettingsScreen>
     return ListenableBuilder(
       listenable: _settingsService,
       builder: (context, _) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final isWideScreen = WideScreenHelper.isWideWithWidth(
-              constraints.maxWidth,
-            );
+        // 同 main_screen
+        //整页包在 LayoutBuilder 里会让重建落到布局阶段
+        return Builder(
+          builder: (context) {
+            final isWideScreen = WideScreenHelper.isWide(context);
 
             return Scaffold(
               appBar: AppBar(
-                title: Text(AppLocalizations.of(context)!.settingsTitle),
+                title: _searchActive
+                    ? TextField(
+                        controller: _searchController,
+                        autofocus: true,
+                        textInputAction: TextInputAction.search,
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(context)!.settingsSearchHint,
+                          border: InputBorder.none,
+                          isDense: true,
+                        ),
+                        onChanged: (value) =>
+                            setState(() => _searchQuery = value),
+                      )
+                    : Text(AppLocalizations.of(context)!.settingsTitle),
+                actions: [
+                  IconButton(
+                    tooltip: _searchActive
+                        ? MaterialLocalizations.of(context).closeButtonTooltip
+                        : AppLocalizations.of(context)!.settingsSearchHint,
+                    icon: Icon(_searchActive ? Icons.close : Icons.search),
+                    onPressed: () {
+                      setState(() {
+                        _searchActive = !_searchActive;
+                        if (!_searchActive) {
+                          _searchController.clear();
+                          _searchQuery = '';
+                        }
+                      });
+                    },
+                  ),
+                ],
               ),
-              body: isWideScreen
+              body: (_searchActive && _searchQuery.trim().isNotEmpty)
+                  ? _buildSearchResults(context)
+                  : isWideScreen
                   ? _buildWideLayout(context)
                   : _buildNarrowLayout(context),
             );
@@ -344,8 +388,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         if (item.key == 'maxCachedRooms') {
           return _buildMaxCachedRoomsSetting(context, l10n);
         }
-        if (item.key == 'wideScreenThreshold') {
-          return _buildWideScreenThresholdSetting(context, l10n);
+        if (item.key == 'wideScreenThreshold' ||
+            item.key == 'splitScreenThreshold') {
+          return _buildThresholdSetting(context, l10n, item);
         }
         if (item.key == 'automaticPreviewMaxMiB') {
           return _buildAutomaticPreviewSetting(context, l10n, item);
@@ -1592,9 +1637,15 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  Widget _buildWideScreenThresholdSetting(
+  /// 断点滑杆（窗口宽度，px）：导航形态一个、「列表 + 详情」分栏一个。
+  /// 两者都只在自动模式下可调——强制宽/窄屏时断点不参与判断。
+  static const double _thresholdMin = 400;
+  static const double _thresholdMax = 1200;
+
+  Widget _buildThresholdSetting(
     BuildContext context,
     AppLocalizations l10n,
+    SettingItem item,
   ) {
     return ListenableBuilder(
       listenable: _settingsService,
@@ -1602,9 +1653,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         final mode = _settingsService.getValue<String>('layoutMode', 'auto');
         final enabled = mode == 'auto';
         final currentVal = _settingsService
-            .getValue<int>('wideScreenThreshold', 600)
+            .getValue<int>(item.key, item.defaultValue as int)
             .toDouble()
-            .clamp(400.0, 1200.0);
+            .clamp(_thresholdMin, _thresholdMax);
         return Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
           child: Card(
@@ -1615,20 +1666,20 @@ class _SettingsScreenState extends State<SettingsScreen>
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.vertical_align_center),
+                      Icon(item.icon),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              l10n.settingsWideThresholdTitle,
+                              _getSettingTitle(l10n, item.titleKey),
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             Padding(
                               padding: const EdgeInsets.only(top: 4.0),
                               child: Text(
-                                l10n.settingsWideThresholdDesc,
+                                _getSettingTitle(l10n, item.descriptionKey!),
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ),
@@ -1644,16 +1695,13 @@ class _SettingsScreenState extends State<SettingsScreen>
                   const SizedBox(height: 8),
                   Slider(
                     value: currentVal,
-                    min: 400,
-                    max: 1200,
+                    min: _thresholdMin,
+                    max: _thresholdMax,
                     divisions: 16,
                     label: l10n.settingsWideThresholdValue(currentVal.round()),
                     onChanged: enabled
                         ? (v) async {
-                            await _settingsService.setValue(
-                              'wideScreenThreshold',
-                              v.round(),
-                            );
+                            await _settingsService.setValue(item.key, v.round());
                           }
                         : null,
                   ),
@@ -2044,6 +2092,111 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
   }
 
+  /// 常见说法
+  static const Map<String, List<String>> _searchAliases = {
+    '深色': ['theme'],
+    '暗色': ['theme'],
+    '夜间': ['theme'],
+    'dark': ['theme'],
+    '字体': ['font'],
+    'font': ['font'],
+    '语言': ['language'],
+    'language': ['language'],
+    '通知': ['notification'],
+    '隐私': ['privacy'],
+    '声音': ['voice', 'sound', 'audio'],
+    '语音': ['voice', 'audio'],
+  };
+
+  String _searchHaystack(
+    AppLocalizations l10n,
+    SettingCategoryData category,
+    SettingItem item,
+  ) {
+    final buffer = StringBuffer()
+      ..writeln(_getSettingTitle(l10n, item.titleKey))
+      ..writeln(item.key)
+      ..writeln(_getCategoryTitle(l10n, category.titleKey));
+    final descriptionKey = item.descriptionKey;
+    if (descriptionKey != null) {
+      buffer.writeln(_getSettingTitle(l10n, descriptionKey));
+    }
+    for (final option in item.options ?? const <SettingOption>[]) {
+      buffer.writeln(_getSettingTitle(l10n, option.labelKey));
+    }
+    return buffer.toString().toLowerCase();
+  }
+
+  List<_SettingSearchHit> _searchHits(AppLocalizations l10n) {
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return const [];
+
+    final aliases = _searchAliases[query] ?? const <String>[];
+    final hits = <_SettingSearchHit>[];
+    for (final category in SettingsData.categories) {
+      for (final item in category.items) {
+        final matchedByText = _searchHaystack(
+          l10n,
+          category,
+          item,
+        ).contains(query);
+        final matchedByAlias =
+            aliases.isNotEmpty && aliases.any(item.key.toLowerCase().contains);
+        if (matchedByText || matchedByAlias) {
+          hits.add(_SettingSearchHit(category: category, item: item));
+        }
+      }
+    }
+    return hits;
+  }
+
+  Widget _buildSearchResults(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final hits = _searchHits(l10n);
+
+    if (hits.isEmpty) {
+      return Center(
+        child: Text(
+          l10n.settingsSearchEmpty,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      itemCount: hits.length,
+      separatorBuilder: (_, _) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final hit = hits[index];
+        return ListTile(
+          leading: Icon(
+            hit.item.icon ?? hit.category.icon,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          title: Text(_getSettingTitle(l10n, hit.item.titleKey)),
+          subtitle: Text(_getCategoryTitle(l10n, hit.category.titleKey)),
+          trailing: Icon(
+            Icons.chevron_right,
+            size: 18,
+            color: colorScheme.outline,
+          ),
+          // 点结果直接跳到所属分类
+          onTap: () {
+            setState(() {
+              _selectedCategory = hit.category.category;
+              _searchActive = false;
+              _searchController.clear();
+              _searchQuery = '';
+            });
+          },
+        );
+      },
+    );
+  }
+
   String _getSettingTitle(AppLocalizations l10n, String key) {
     switch (key) {
       // Appearance
@@ -2107,6 +2260,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsEnableMarkdownTitle;
       case 'settingsEnableMarkdownDesc':
         return l10n.settingsEnableMarkdownDesc;
+      case 'settingsChatVoiceButtonTitle':
+        return l10n.settingsChatVoiceButtonTitle;
+      case 'settingsChatVoiceButtonDesc':
+        return l10n.settingsChatVoiceButtonDesc;
       case 'settingsMessageDisplayStyleTitle':
         return l10n.settingsMessageDisplayStyleTitle;
       case 'settingsMessageDisplayStyleDesc':
@@ -2155,10 +2312,34 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsWideThresholdTitle;
       case 'settingsWideThresholdDesc':
         return l10n.settingsWideThresholdDesc;
+      case 'settingsSplitThresholdTitle':
+        return l10n.settingsSplitThresholdTitle;
+      case 'settingsSplitThresholdDesc':
+        return l10n.settingsSplitThresholdDesc;
+      case 'settingsSinglePageStyleTitle':
+        return l10n.settingsSinglePageStyleTitle;
+      case 'settingsSinglePageStyleDesc':
+        return l10n.settingsSinglePageStyleDesc;
+      case 'settingsForumHideEmptyPaneTitle':
+        return l10n.settingsForumHideEmptyPaneTitle;
+      case 'settingsForumHideEmptyPaneDesc':
+        return l10n.settingsForumHideEmptyPaneDesc;
+      case 'settingsCommandPaletteTitle':
+        return l10n.settingsCommandPaletteTitle;
+      case 'settingsCommandPaletteDesc':
+        return l10n.settingsCommandPaletteDesc;
       case 'settingsWeakNetworkTitle':
         return l10n.settingsWeakNetworkTitle;
       case 'settingsWeakNetworkDesc':
         return l10n.settingsWeakNetworkDesc;
+      case 'settingsSyncModeTitle':
+        return l10n.settingsSyncModeTitle;
+      case 'settingsSyncModeDesc':
+        return l10n.settingsSyncModeDesc;
+      case 'settingsSyncModeFull':
+        return l10n.settingsSyncModeFull;
+      case 'settingsSyncModeBrowsing':
+        return l10n.settingsSyncModeBrowsing;
       case 'settingsDataSavingTitle':
         return l10n.settingsDataSavingTitle;
       case 'settingsDataSavingDesc':
@@ -2167,6 +2348,14 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsThumbnailPreviewTitle;
       case 'settingsThumbnailPreviewDesc':
         return l10n.settingsThumbnailPreviewDesc;
+      case 'settingsImageCompressionTitle':
+        return l10n.settingsImageCompressionTitle;
+      case 'settingsImageCompressionDesc':
+        return l10n.settingsImageCompressionDesc;
+      case 'settingsImageCompressionQualityTitle':
+        return l10n.settingsImageCompressionQualityTitle;
+      case 'settingsImageCompressionQualityDesc':
+        return l10n.settingsImageCompressionQualityDesc;
       case 'settingsIpOverrideTitle':
         return l10n.settingsIpOverrideTitle;
       case 'settingsIpOverrideDesc':
@@ -2426,10 +2615,19 @@ class _SettingsScreenState extends State<SettingsScreen>
     if (isDesktopOnly && !isDesktop) {
       return const SizedBox.shrink();
     }
+    // 质量滑杆用 10%~100% 的区间，0 没有意义。
+    final usesFractionRange =
+        item.key == 'windowOpacity' || item.key == 'imageCompressionQuality';
 
     return ListenableBuilder(
       listenable: _settingsService,
       builder: (context, _) {
+        // 压缩关掉时质量滑杆没有意义（外层 visibleItems 只在 setState 时重算，
+        // 所以隐藏判断必须放在这个 ListenableBuilder 里）。
+        if (item.key == 'imageCompressionQuality' &&
+            !_settingsService.getValue<bool>('imageCompressionEnabled', true)) {
+          return const SizedBox.shrink();
+        }
         final value = _settingsService.getValue<double>(
           item.key,
           item.defaultValue as double,
@@ -2477,9 +2675,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                   const SizedBox(height: 8),
                   Slider(
                     value: value,
-                    min: item.key == 'windowOpacity' ? 0.1 : 0.0,
+                    min: usesFractionRange ? 0.1 : 0.0,
                     max: 1.0,
-                    divisions: item.key == 'windowOpacity' ? 18 : 20,
+                    divisions: usesFractionRange ? 18 : 20,
                     label: '${(value * 100).round()}%',
                     onChanged: (newValue) async {
                       await _settingsService.setValue(item.key, newValue);

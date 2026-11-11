@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../services/api/tf_api_client.dart';
 import '../utils/talker.dart';
+import '../widgets/third_party_captcha_sheet.dart';
 
 class RegisterScreen extends StatefulWidget {
   final String? initialUsername;
@@ -26,8 +27,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoadingServerInfo = true;
   bool _requiresEmail = false;
   bool _requiresCaptcha = false;
+  TfServerConfig? _serverConfig;
   TfCaptchaInfo? _captchaInfo;
   bool _isLoadingCaptcha = false;
+  String? _captchaToken;
+
+  bool get _isThirdPartyCaptcha =>
+      _requiresCaptcha && (_serverConfig?.isThirdPartyCaptcha ?? false);
 
   @override
   void initState() {
@@ -46,11 +52,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final info = await TfApiClient.instance.fetchServerInfo();
       if (!mounted) return;
       setState(() {
+        _serverConfig = info;
         _requiresEmail = info?.emailActivate ?? false;
         _requiresCaptcha = info?.captcha ?? false;
         _isLoadingServerInfo = false;
       });
-      if (_requiresCaptcha) await _refreshCaptcha();
+      // 第三方验证码走 WebView，无需预取图片
+      if (_requiresCaptcha && !_isThirdPartyCaptcha) await _refreshCaptcha();
     } catch (e) {
       talker.error('RegisterScreen: fetchServerInfo failed', e);
       if (mounted) setState(() => _isLoadingServerInfo = false);
@@ -83,17 +91,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _nextStep() {
-    context.push(
+  Future<void> _openThirdPartyCaptcha() async {
+    final baseUrl = await TfApiClient.instance.getBaseUrl();
+    if (!mounted) return;
+    final token = await ThirdPartyCaptchaSheet.show(
+      context,
+      '$baseUrl/auth/captcha/page',
+    );
+    if (token == null || !mounted) return;
+    setState(() => _captchaToken = token);
+  }
+
+  Future<void> _nextStep() async {
+    // 第三方验证码
+    if (_isThirdPartyCaptcha && (_captchaToken == null || _captchaToken!.isEmpty)) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.registerErrorCaptchaRequired)),
+      );
+      return;
+    }
+
+    // 返回值为 true 表示验证码错误
+    final captchaInvalid = await context.push<bool>(
       AppRoutes.registerStep2,
       extra: {
         'username': _usernameController.text,
         'password': _passwordController.text,
         'requiresEmail': _requiresEmail,
-        'captchaStamp': _captchaInfo?.stamp,
-        'captchaCode': _requiresCaptcha ? _captchaController.text : null,
+        if (_isThirdPartyCaptcha)
+          'captchaToken': _captchaToken
+        else ...{
+          'captchaStamp': _captchaInfo?.stamp,
+          'captchaCode': _requiresCaptcha ? _captchaController.text : null,
+        },
       },
     );
+    if (captchaInvalid == true && mounted) {
+      if (_isThirdPartyCaptcha) {
+        setState(() => _captchaToken = null);
+      } else {
+        await _refreshCaptcha();
+      }
+    }
   }
 
   @override
@@ -116,7 +156,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: SmartForm(
-                onValid: _nextStep,
+                onValid: () => _nextStep(),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -229,6 +269,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildCaptchaSection(AppLocalizations l10n) {
+    if (_isThirdPartyCaptcha) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _captchaToken == null
+                    ? Text(
+                        l10n.registerCaptchaVerifyHint,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      )
+                    : Row(
+                        children: [
+                          const Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              l10n.registerCaptchaVerified,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: _openThirdPartyCaptcha,
+                icon: Icon(
+                  _captchaToken == null
+                      ? Icons.shield_outlined
+                      : Icons.refresh,
+                ),
+                label: Text(
+                  _captchaToken == null
+                      ? l10n.registerCaptchaVerify
+                      : l10n.registerCaptchaRefresh,
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

@@ -12,14 +12,19 @@ import 'tf_crypto.dart';
 import '../../models/message_model.dart';
 import '../../constants/app_constants.dart';
 import '../../models/user_profile.dart';
+import '../../models/friend_request.dart';
+import '../../models/search_result.dart';
 import '../../models/forum_model.dart';
 import '../../models/sticker_model.dart';
 import '../../models/announcement_model.dart';
 import '../../models/notification_model.dart';
+import '../../models/support_ticket.dart';
 import '../../models/api_error.dart';
 import '../../models/file_attachment.dart';
 import '../server_connection_status_service.dart';
+import '../feature_flags.dart';
 import '../rsa_key_trust_service.dart';
+import '../device_identity_service.dart';
 import '../../widgets/server_selector.dart';
 import '../../utils/talker.dart';
 
@@ -85,12 +90,14 @@ class TfChatListItem {
   final double? lastTime;
   final int? lastSenderUid;
   final int? lastMid;
+  final int? lastSeq;
   final bool lastDeleted;
   final bool isFriend;
   final bool? isPinned;
   final int? notifyLevel;
   final String? alias;
   final String? description;
+  final int unreadCount;
 
   const TfChatListItem({
     required this.roomId,
@@ -103,12 +110,14 @@ class TfChatListItem {
     this.lastTime,
     this.lastSenderUid,
     this.lastMid,
+    this.lastSeq,
     this.lastDeleted = false,
     required this.isFriend,
     this.isPinned,
     this.notifyLevel,
     this.alias,
     this.description,
+    this.unreadCount = 0,
   });
 
   String? get visibleLastContent => lastDeleted ? null : lastContent;
@@ -125,18 +134,321 @@ class TfChatListItem {
       lastTime: (json['last_time'] as num?)?.toDouble(),
       lastSenderUid: (json['last_sender_uid'] as num?)?.toInt(),
       lastMid: (json['last_mid'] as num?)?.toInt(),
+      lastSeq: (json['last_seq'] as num?)?.toInt(),
       lastDeleted: json['last_deleted'] as bool? ?? false,
       isFriend: json['is_friend'] as bool? ?? false,
       isPinned: json['is_pinned'] as bool?,
       notifyLevel: (json['notify_level'] as num?)?.toInt(),
       alias: json['alias'] as String?,
       description: json['description'] as String?,
+      unreadCount: (json['unread_count'] as num?)?.toInt() ?? 0,
     );
+  }
+}
+
+class TfFeatureFlags {
+  final bool privateChat;
+  final bool groupChat;
+  final bool groupCreate;
+  final bool friendRequest;
+  final bool readReceipt;
+  final bool forum;
+  final bool sticker;
+  final bool announcement;
+  final bool presence;
+
+  const TfFeatureFlags({
+    this.privateChat = true,
+    this.groupChat = true,
+    this.groupCreate = true,
+    this.friendRequest = true,
+    this.readReceipt = true,
+    this.forum = true,
+    this.sticker = true,
+    this.announcement = true,
+    this.presence = true,
+  });
+
+  static bool _read(dynamic value) => value is bool ? value : true;
+
+  factory TfFeatureFlags.fromJson(Map<String, dynamic>? json) {
+    final chatRaw = json?['chat'];
+    final chat = chatRaw is Map ? chatRaw : const {};
+    return TfFeatureFlags(
+      privateChat: _read(chat['private_chat']),
+      groupChat: _read(chat['group_chat']),
+      groupCreate: _read(chat['group_create']),
+      friendRequest: _read(chat['friend_request']),
+      readReceipt: _read(chat['read_receipt']),
+      forum: _read(json?['forum']),
+      sticker: _read(json?['sticker']),
+      announcement: _read(json?['announcement']),
+      presence: _read(json?['presence']),
+    );
+  }
+
+  /// 只改指定字段
+  TfFeatureFlags copyWith({
+    bool? privateChat,
+    bool? groupChat,
+    bool? groupCreate,
+    bool? friendRequest,
+    bool? readReceipt,
+    bool? forum,
+    bool? sticker,
+    bool? announcement,
+    bool? presence,
+  }) => TfFeatureFlags(
+    privateChat: privateChat ?? this.privateChat,
+    groupChat: groupChat ?? this.groupChat,
+    groupCreate: groupCreate ?? this.groupCreate,
+    friendRequest: friendRequest ?? this.friendRequest,
+    readReceipt: readReceipt ?? this.readReceipt,
+    forum: forum ?? this.forum,
+    sticker: sticker ?? this.sticker,
+    announcement: announcement ?? this.announcement,
+    presence: presence ?? this.presence,
+  );
+
+  /// 提交给 `/auth/server_settings/update` 的完整快照
+  Map<String, dynamic> toJson() => {
+    'chat': {
+      'private_chat': privateChat,
+      'group_chat': groupChat,
+      'group_create': groupCreate,
+      'friend_request': friendRequest,
+      'read_receipt': readReceipt,
+    },
+    'forum': forum,
+    'sticker': sticker,
+    'announcement': announcement,
+    'presence': presence,
+  };
+}
+
+class TfReadReceipt {
+  /// 对方（私聊）关闭了已读展示，回执不可见。
+  final bool hidden;
+
+  /// 私聊：对方是否已读到该消息。
+  final bool read;
+
+  /// 群聊：已读人数。
+  final int readCount;
+
+  /// 私聊：对方当前已读
+  final int readerLastSeq;
+
+  const TfReadReceipt({
+    this.hidden = false,
+    this.read = false,
+    this.readCount = 0,
+    this.readerLastSeq = 0,
+  });
+
+  factory TfReadReceipt.fromJson(Map<String, dynamic> json) => TfReadReceipt(
+    hidden: json['hidden'] == true,
+    read: json['read'] == true,
+    readCount: (json['read_count'] as num?)?.toInt() ?? 0,
+    readerLastSeq: (json['reader_last_seq'] as num?)?.toInt() ?? 0,
+  );
+}
+
+/// 自己与某个用户的关系查询
+class TfRelationship {
+  /// `none` / `pending` / `friend` / `blocked`。
+  final String relationship;
+
+  final bool isFriend;
+  final bool blockedByMe;
+
+  final bool blockedByPeer;
+
+  const TfRelationship({
+    this.relationship = 'none',
+    this.isFriend = false,
+    this.blockedByMe = false,
+    this.blockedByPeer = false,
+  });
+
+  bool get hasBlock => blockedByMe || blockedByPeer;
+
+  factory TfRelationship.fromJson(Map<String, dynamic> json) => TfRelationship(
+    relationship: json['relationship'] as String? ?? 'none',
+    isFriend: json['is_friend'] == true,
+    blockedByMe: json['blocked_by_me'] == true,
+    blockedByPeer: json['blocked_by_peer'] == true,
+  );
+}
+
+/// 判定 `/friend/blocked` 的响应。
+@visibleForTesting
+List<int>? decodeBlockedUsersResponse(int status, String? plain) {
+  if (status == 404 || status == 405) return null;
+  if (plain == null) {
+    throw StateError('getBlockedUsers: request failed (status=$status)');
+  }
+  dynamic decoded;
+  try {
+    decoded = jsonDecode(plain);
+  } catch (_) {
+    throw StateError('getBlockedUsers: undecodable response');
+  }
+  if (decoded is! Map<String, dynamic> || decoded['success'] != true) {
+    throw StateError('getBlockedUsers: rejected');
+  }
+  final raw = decoded['blocked'];
+  if (raw is! List) return const [];
+  return [
+    for (final entry in raw)
+      if (entry is num) entry.toInt(),
+  ];
+}
+
+/// 服务器可配置项规格
+class TfSettingSpec {
+  final String key;
+  final String type;
+  final int? min;
+  final int? max;
+  final bool allowUnlimited;
+  final dynamic defaultValue;
+  final String category;
+  final List<String> options;
+
+  const TfSettingSpec({
+    required this.key,
+    required this.type,
+    this.min,
+    this.max,
+    this.allowUnlimited = false,
+    this.defaultValue,
+    this.category = '',
+    this.options = const [],
+  });
+
+  factory TfSettingSpec.fromJson(Map<String, dynamic> json) {
+    return TfSettingSpec(
+      key: json['key'] as String? ?? '',
+      type: json['type'] as String? ?? 'str',
+      min: (json['min'] as num?)?.toInt(),
+      max: (json['max'] as num?)?.toInt(),
+      allowUnlimited: json['allow_unlimited'] == true,
+      defaultValue: json['default'],
+      category: json['category'] as String? ?? '',
+      options: (json['options'] as List<dynamic>? ?? const [])
+          .map((value) => value.toString())
+          .toList(),
+    );
+  }
+}
+
+/// 群组预览成员
+class TfGroupPreviewMember {
+  final int uid;
+  final String username;
+  final String role;
+
+  const TfGroupPreviewMember({
+    required this.uid,
+    required this.username,
+    required this.role,
+  });
+
+  static TfGroupPreviewMember? fromJson(dynamic json) {
+    if (json is! Map) return null;
+    final uid = (json['uid'] as num?)?.toInt();
+    if (uid == null) return null;
+    return TfGroupPreviewMember(
+      uid: uid,
+      username: (json['username'] as String?) ?? 'User $uid',
+      role: (json['role'] as String?) ?? 'member',
+    );
+  }
+}
+
+/// 群组预览（`/group/preview`）
+class TfGroupPreview {
+  final int gid;
+  final String groupname;
+  final String introduction;
+  final String enterHint;
+  final int memberCount;
+  final bool isMember;
+  final bool allowDirectJoin;
+  final bool requireReview;
+  final bool publicMessages;
+  final bool essenceEnabled;
+  final List<TfGroupPreviewMember> members;
+
+  const TfGroupPreview({
+    required this.gid,
+    required this.groupname,
+    required this.introduction,
+    required this.enterHint,
+    required this.memberCount,
+    required this.isMember,
+    required this.allowDirectJoin,
+    required this.requireReview,
+    required this.publicMessages,
+    required this.essenceEnabled,
+    required this.members,
+  });
+
+  factory TfGroupPreview.fromJson(Map<String, dynamic> json) {
+    final rawMembers = json['members'];
+    final members = rawMembers is List
+        ? rawMembers
+              .map(TfGroupPreviewMember.fromJson)
+              .whereType<TfGroupPreviewMember>()
+              .toList()
+        : const <TfGroupPreviewMember>[];
+    return TfGroupPreview(
+      gid: (json['gid'] as num?)?.toInt() ?? 0,
+      groupname: (json['groupname'] as String?) ?? '',
+      introduction: (json['introduction'] as String?) ?? '',
+      enterHint: (json['enter_hint'] as String?) ?? '',
+      memberCount: (json['member_count'] as num?)?.toInt() ?? 0,
+      isMember: json['is_member'] == true,
+      allowDirectJoin: json['allow_direct_join'] == true,
+      requireReview: json['require_review'] == true,
+      publicMessages: json['public_messages'] == true,
+      essenceEnabled: json['essence_enabled'] != false,
+      members: members,
+    );
+  }
+}
+
+/// 服务器转发的第三方登录方式。
+class TfExternalAuthProvider {
+  const TfExternalAuthProvider({required this.id, required this.name});
+
+  final String id;
+  final String name;
+
+  static List<TfExternalAuthProvider> parseList(dynamic raw) {
+    if (raw is! List) return const [];
+    final result = <TfExternalAuthProvider>[];
+    for (final item in raw) {
+      if (item is! Map) continue;
+      final id = item['id'];
+      if (id is! String || id.isEmpty) continue;
+      final name = item['name'];
+      result.add(
+        TfExternalAuthProvider(
+          id: id,
+          name: name is String && name.trim().isNotEmpty ? name.trim() : id,
+        ),
+      );
+    }
+    return result;
   }
 }
 
 class TfServerConfig {
   final bool captcha;
+  final String captchaProvider;
+  final String captchaSiteKey;
   final bool emailActivate;
   final int portApi;
   final int portTcp;
@@ -146,6 +458,8 @@ class TfServerConfig {
   final int? singleGroupMaxPeople;
   final int? maxFileSize;
   final int? maxMessageLength;
+  final int maxRequestMessageLength;
+  final int minSearchLength;
   final int minGroupNameLength;
   final int maxGroupNameLength;
   final String? verifyEmail;
@@ -165,11 +479,44 @@ class TfServerConfig {
   final List<String> defaultJoinTargets;
   final bool? legacyAuthEnabled;
   final int? jwtExpiresSeconds;
+  final int? jwtRefreshExpiresSeconds;
   final int? jwtMaxPerUser;
+
+  /// 外部登录平台地址（TouchFish Auth）。空/未设置表示服务器未启用外部登录。
+  final String? externalAuthUrl;
+
+  /// 服务器是否允许自助注册。老服务器没有该字段时按 true 处理。
+  final bool allowRegister;
+
+  /// 服务器是否已启用外部认证平台专用端点。
+  final bool platformAuthEnabled;
+
+  /// 认证平台支持的第三方登录方式（GitHub 等），由服务器代拉取后下发。
+  final List<TfExternalAuthProvider> externalAuthProviders;
+
+  /// 平台专用端点的 issuer / 白名单 / 共享令牌（后两者仅管理员可见）。
+  final String platformAuthIssuer;
+  final String platformAuthAllowIps;
+
+  /// 共享令牌**不回显**，只给出是否已配置；空字段提交表示"不修改"。
+  final bool platformAuthSharedTokenSet;
+  final int? maxAvatarSize;
+  final int? userStorageQuota;
+  final int? maxUserStorageQuota;
+  final int? maxStickerStorageQuota;
+  final int? maxSignLength;
+  final int? maxIntroductionLength;
+  final int? maxPostContentLength;
+  final String? fileDownloadMode;
+  final bool mediaFeatures;
   final List<Map<String, dynamic>> iceServers;
+  final TfFeatureFlags features;
+  final List<TfSettingSpec> settingsSpec;
 
   const TfServerConfig({
     required this.captcha,
+    required this.captchaProvider,
+    required this.captchaSiteKey,
     required this.emailActivate,
     required this.portApi,
     required this.portTcp,
@@ -179,6 +526,8 @@ class TfServerConfig {
     this.singleGroupMaxPeople,
     this.maxFileSize,
     this.maxMessageLength,
+    this.maxRequestMessageLength = 200,
+    this.minSearchLength = 2,
     this.minGroupNameLength = 1,
     this.maxGroupNameLength = 50,
     this.verifyEmail,
@@ -198,8 +547,27 @@ class TfServerConfig {
     this.defaultJoinTargets = const [],
     this.legacyAuthEnabled,
     this.jwtExpiresSeconds,
+    this.jwtRefreshExpiresSeconds,
     this.jwtMaxPerUser,
+    this.externalAuthUrl,
+    this.allowRegister = true,
+    this.platformAuthEnabled = false,
+    this.externalAuthProviders = const [],
+    this.platformAuthIssuer = '',
+    this.platformAuthAllowIps = '',
+    this.platformAuthSharedTokenSet = false,
+    this.maxAvatarSize,
+    this.userStorageQuota,
+    this.maxUserStorageQuota,
+    this.maxStickerStorageQuota,
+    this.maxSignLength,
+    this.maxIntroductionLength,
+    this.maxPostContentLength,
+    this.fileDownloadMode,
+    this.mediaFeatures = true,
     this.iceServers = const [],
+    this.features = const TfFeatureFlags(),
+    this.settingsSpec = const [],
   });
 
   static int _parseIntValue(dynamic value, int fallback) {
@@ -217,6 +585,26 @@ class TfServerConfig {
       return value;
     }
     return int.tryParse(value.toString());
+  }
+
+  static String? _parseNonEmptyString(dynamic value) {
+    if (value is! String) {
+      return null;
+    }
+    final text = value.trim();
+    return text.isEmpty ? null : text;
+  }
+
+  /// 宽松布尔解析
+  static bool? _parseBoolish(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final text = value.trim().toLowerCase();
+      if (text == 'true' || text == '1' || text == 'yes') return true;
+      if (text == 'false' || text == '0' || text == 'no') return false;
+    }
+    return null;
   }
 
   factory TfServerConfig.fromJson(Map<String, dynamic> json) {
@@ -250,6 +638,8 @@ class TfServerConfig {
 
     return TfServerConfig(
       captcha: json['captcha'] as bool? ?? false,
+      captchaProvider: json['captcha_provider'] as String? ?? 'image',
+      captchaSiteKey: json['captcha_site_key'] as String? ?? '',
       emailActivate: json['email_activate'] as bool? ?? false,
       portApi: _parseIntValue(json['port_api'], 7001),
       portTcp: _parseIntValue(json['port_tcp'], AppConstants.defaultTcpPort),
@@ -261,6 +651,11 @@ class TfServerConfig {
       ),
       maxFileSize: _parseOptionalIntValue(json['max_file_size']),
       maxMessageLength: _parseOptionalIntValue(json['max_message_length']),
+      maxRequestMessageLength: _parseIntValue(
+        json['max_request_message_length'],
+        200,
+      ),
+      minSearchLength: _parseIntValue(json['min_search_length'], 2),
       minGroupNameLength: _parseIntValue(json['min_group_name_length'], 1),
       maxGroupNameLength: _parseIntValue(json['max_group_name_length'], 50),
       verifyEmail: json['verify_email'] as String?,
@@ -291,30 +686,80 @@ class TfServerConfig {
               .toList(),
       legacyAuthEnabled: json['legacy_auth_enabled'] as bool?,
       jwtExpiresSeconds: _parseOptionalIntValue(json['jwt_expires_seconds']),
+      jwtRefreshExpiresSeconds: _parseOptionalIntValue(
+        json['jwt_refresh_expires_seconds'],
+      ),
       jwtMaxPerUser: _parseOptionalIntValue(json['jwt_max_per_user']),
+      externalAuthUrl: _parseNonEmptyString(json['external_auth_url']),
+      allowRegister: _parseBoolish(json['allow_register']) ?? true,
+      platformAuthEnabled: _parseBoolish(json['platform_auth_enabled']) ?? false,
+      externalAuthProviders:
+          TfExternalAuthProvider.parseList(json['external_auth_providers']),
+      platformAuthIssuer: _parseNonEmptyString(json['platform_auth_issuer']) ?? '',
+      platformAuthAllowIps: _parseNonEmptyString(json['platform_auth_allow_ips']) ?? '',
+      platformAuthSharedTokenSet:
+          _parseBoolish(json['platform_auth_shared_token_set']) ?? false,
+      maxAvatarSize: _parseOptionalIntValue(json['max_avatar_size']),
+      userStorageQuota: _parseOptionalIntValue(json['user_storage_quota']),
+      maxUserStorageQuota: _parseOptionalIntValue(json['max_user_storage_quota']),
+      maxStickerStorageQuota: _parseOptionalIntValue(
+        json['max_sticker_storage_quota'],
+      ),
+      maxSignLength: _parseOptionalIntValue(json['max_sign_length']),
+      maxIntroductionLength: _parseOptionalIntValue(
+        json['max_introduction_length'],
+      ),
+      maxPostContentLength: _parseOptionalIntValue(
+        json['max_post_content_length'],
+      ),
+      fileDownloadMode: json['file_download_mode'] as String?,
+      mediaFeatures: json['media_features'] as bool? ?? true,
       iceServers: iceServers,
+      features: TfFeatureFlags.fromJson(
+        json['features'] is Map
+            ? Map<String, dynamic>.from(json['features'] as Map)
+            : null,
+      ),
+      settingsSpec: (json['settings_spec'] as List<dynamic>? ?? const [])
+          .whereType<Map>()
+          .map((raw) => TfSettingSpec.fromJson(Map<String, dynamic>.from(raw)))
+          .toList(),
     );
   }
+
+  bool get isThirdPartyCaptcha =>
+      captchaProvider != 'image' && captchaProvider.isNotEmpty;
 }
 
-/// 当前用户的一个活跃会话（设备）条目。
 class TfAuthTokenInfo {
   final String jti;
   final String sessionId;
   final int issuedAt;
   final int expiresAt;
+  final int lastSeen;
   final String ip;
   final String ua;
   final bool isCurrent;
+  final String deviceId;
+  final String deviceName;
+  final String label;
+  final int platform;
+  final String location;
 
   const TfAuthTokenInfo({
     required this.jti,
     required this.sessionId,
     required this.issuedAt,
     required this.expiresAt,
+    this.lastSeen = 0,
     this.ip = '',
     this.ua = '',
     this.isCurrent = false,
+    this.deviceId = '',
+    this.deviceName = '',
+    this.label = '',
+    this.platform = 0,
+    this.location = '',
   });
 
   factory TfAuthTokenInfo.fromJson(Map<String, dynamic> json) {
@@ -326,14 +771,21 @@ class TfAuthTokenInfo {
           (json['created_at'] as num?)?.toInt() ??
           0,
       expiresAt: (json['expires_at'] as num?)?.toInt() ?? 0,
+      lastSeen: (json['last_seen_at'] as num?)?.toInt() ??
+          (json['last_seen'] as num?)?.toInt() ??
+          0,
       ip: json['ip'] as String? ?? '',
       ua: json['ua'] as String? ?? '',
       isCurrent: json['is_current'] == true,
+      deviceId: json['device_id'] as String? ?? '',
+      deviceName: json['device_name'] as String? ?? '',
+      label: json['label'] as String? ?? '',
+      platform: (json['platform'] as num?)?.toInt() ?? 0,
+      location: json['location'] as String? ?? '',
     );
   }
 }
 
-/// /auth/tokens/list 的解析结果。
 class TfTokenListResult {
   final List<TfAuthTokenInfo> tokens;
   final int maxPerUser;
@@ -358,12 +810,66 @@ class TfTokenListResult {
   }
 }
 
+class TfDeviceInfo {
+  final String deviceId;
+  final String deviceName;
+  final String label;
+  final int platform;
+  final int lastSeen;
+
+  const TfDeviceInfo({
+    required this.deviceId,
+    required this.deviceName,
+    this.label = '',
+    this.platform = 0,
+    this.lastSeen = 0,
+  });
+
+  String get displayName => label.isNotEmpty
+      ? label
+      : (deviceName.isNotEmpty ? deviceName : deviceId);
+
+  factory TfDeviceInfo.fromJson(Map<String, dynamic> json) {
+    return TfDeviceInfo(
+      deviceId: json['device_id'] as String? ?? '',
+      deviceName: json['device_name'] as String? ?? '',
+      label: json['label'] as String? ?? '',
+      platform: (json['platform'] as num?)?.toInt() ?? 0,
+      lastSeen: (json['last_seen'] as num?)?.toInt() ??
+          (json['last_seen_at'] as num?)?.toInt() ??
+          0,
+    );
+  }
+}
+
+/// /auth/devices/list 的解析结果。
+class TfDeviceListResult {
+  final List<TfDeviceInfo> devices;
+
+  const TfDeviceListResult({required this.devices});
+
+  factory TfDeviceListResult.fromJson(Map<String, dynamic> json) {
+    final raw = json['devices'];
+    final devices = raw is List
+        ? raw
+              .whereType<Map>()
+              .map(
+                (item) => TfDeviceInfo.fromJson(Map<String, dynamic>.from(item)),
+              )
+              .toList()
+        : const <TfDeviceInfo>[];
+    return TfDeviceListResult(devices: devices);
+  }
+}
+
 class TfCaptchaInfo {
   final String pic; // base64 png
   final String stamp; // captcha token
 
   const TfCaptchaInfo({required this.pic, required this.stamp});
 }
+
+enum RegisterResult { success, captchaInvalid, failed }
 
 enum TfDebugRequestMethod { get, post }
 
@@ -405,12 +911,14 @@ class UserManagePagination {
   });
 
   factory UserManagePagination.fromJson(Map<String, dynamic> json) {
+    int intOr(int fallback, String key) =>
+        (json[key] as num?)?.toInt() ?? fallback;
     return UserManagePagination(
-      page: (json['page'] as num).toInt(),
-      pageSize: (json['page_size'] as num).toInt(),
-      total: (json['total'] as num).toInt(),
-      totalPages: (json['total_pages'] as num).toInt(),
-      hasMore: json['has_more'] as bool,
+      page: intOr(0, 'page'),
+      pageSize: intOr(0, 'page_size'),
+      total: intOr(0, 'total'),
+      totalPages: intOr(0, 'total_pages'),
+      hasMore: json['has_more'] as bool? ?? false,
     );
   }
 }
@@ -444,13 +952,9 @@ class TfApiClient {
   static TfApiClient get instance => _instance ??= TfApiClient._();
   TfApiClient._();
 
-  /// The last structured API error, available to callers that currently use
-  /// nullable return values. It is cleared after a successful API response.
-  ApiError? lastApiError;
-
   http.Client _http = http.Client();
 
-  /// 用于大文件上传/下载的 Dio 实例（支持 onSendProgress/onReceiveProgress）。
+  /// 用于大文件上传/下载
   Dio? _dio;
 
   Dio _dioClient() {
@@ -481,18 +985,15 @@ class TfApiClient {
   Future<bool> Function()? _tokenExpiredHandler;
   void Function(String note)? _authNoteHandler;
 
-  /// 由 AuthState 在登录/恢复/登出时同步当前认证上下文。
   void setAuthContext({String? token, required bool legacyMode}) {
     _authToken = token;
     _legacyAuthMode = legacyMode;
   }
 
-  /// 注册 token 失效回调（AuthState 内实现静默重登），返回 true 表示已重新登录。
   void setTokenExpiredHandler(Future<bool> Function()? handler) {
     _tokenExpiredHandler = handler;
   }
 
-  /// 注册服务器 deprecation note 回调（AuthState 内实现一次性提示）。
   void setAuthNoteHandler(void Function(String note)? handler) {
     _authNoteHandler = handler;
   }
@@ -699,13 +1200,6 @@ class TfApiClient {
     return int.tryParse(raw) ?? AppConstants.defaultTcpPort;
   }
 
-  /// Resolve the host used for WebSocket connections.
-  ///
-  /// Mirrors [_resolveBaseUrlFor]: falls back to
-  /// [AppConstants.defaultServerAddress] when no server is selected or the
-  /// configured address is empty. This keeps WS host resolution consistent
-  /// with HTTP API host resolution (important on mobile where `127.0.0.1`
-  /// points to the device itself, not the development machine).
   Future<String> resolveServerHost() async {
     final serverInfo = await _loadSelectedServer();
     if (serverInfo != null && serverInfo.address.isNotEmpty) {
@@ -738,7 +1232,7 @@ class TfApiClient {
   }
 
   Future<RSAPublicKey> _getRsaPublicKey(String baseUrl) async {
-    // 已保存/手动绑定的密钥优先，不再从服务器拉取。
+    // 已保存/手动绑定的密钥优先
     final savedPem = await RsaKeyTrustService.instance.savedKeyFor(
       RsaKeyTrustService.authorityOfBaseUrl(baseUrl),
     );
@@ -760,8 +1254,6 @@ class TfApiClient {
     return pubKey;
   }
 
-  /// 拉取服务器实时 RSA 公钥 PEM（绕过缓存与已保存密钥短路）。
-  /// 服务器离线或请求失败时返回 null。
   Future<String?> fetchRsaPublicKeyPem() async {
     try {
       final baseUrl = await getBaseUrl();
@@ -885,6 +1377,7 @@ class TfApiClient {
     Map<String, dynamic> body, {
     int? uid,
     String? password,
+    void Function(int statusCode)? onStatus,
   }) async {
     try {
       var result = await _secretPostInternal(
@@ -892,6 +1385,7 @@ class TfApiClient {
         body,
         uid: uid,
         password: password,
+        onStatus: onStatus,
       );
       final data = _parseJsonMap(result);
       if (data != null && ApiError.fromResponse(data).isTokenExpired) {
@@ -904,6 +1398,7 @@ class TfApiClient {
               body,
               uid: uid,
               password: password,
+              onStatus: onStatus,
             );
           }
         }
@@ -923,6 +1418,7 @@ class TfApiClient {
     String? password,
     bool skipToken = false,
     String? tokenOverride,
+    void Function(int statusCode)? onStatus,
   }) async {
     final preparedRequest = await _prepareSecretPostRequest(
       path,
@@ -940,17 +1436,14 @@ class TfApiClient {
       timeout: _secretPostTimeout,
     );
 
+    onStatus?.call(response.statusCode);
     final plain = _decryptSecretResponse(response.body, preparedRequest.aesKey);
     final responseData = _parseJsonMap(plain);
-    lastApiError = responseData != null && responseData['error'] != null
-        ? ApiError.fromResponse(responseData)
-        : null;
-    _captureAuthNote(plain);
+    _captureAuthNote(responseData);
     return plain;
   }
 
-  void _captureAuthNote(String plain) {
-    final data = _parseJsonMap(plain);
+  void _captureAuthNote(Map<String, dynamic>? data) {
     if (data == null) return;
     final note = data['note'];
     if (note is String && note.isNotEmpty) {
@@ -1100,6 +1593,7 @@ class TfApiClient {
         jsonDecode(response.body) as Map<String, dynamic>,
       );
       _cachedServerConfig = config;
+      unawaited(FeatureFlags.instance.apply(config.features));
       return config;
     } catch (e) {
       talker.error('fetchServerInfo failed', e);
@@ -1145,7 +1639,29 @@ class TfApiClient {
     List<String>? defaultJoinTargets,
     bool? legacyAuthEnabled,
     int? jwtExpiresSeconds,
+    int? jwtRefreshExpiresSeconds,
     int? jwtMaxPerUser,
+    int? minGroupNameLength,
+    int? maxGroupNameLength,
+    int? minUsernameLength,
+    int? minPasswordLength,
+    int? maxSignLength,
+    int? maxIntroductionLength,
+    int? maxPostContentLength,
+    int? maxAvatarSize,
+    int? userStorageQuota,
+    int? maxUserStorageQuota,
+    int? maxStickerStorageQuota,
+    String? fileDownloadMode,
+    bool? mediaFeatures,
+    TfFeatureFlags? features,
+    // ---- 外部认证平台 ----
+    bool? allowRegister,
+    String? externalAuthUrl,
+    bool? platformAuthEnabled,
+    String? platformAuthIssuer,
+    String? platformAuthAllowIps,
+    String? platformAuthSharedToken,
   }) async {
     final result = await secretPost(
       '/auth/server_settings/update',
@@ -1169,7 +1685,28 @@ class TfApiClient {
         'default_join_targets': ?defaultJoinTargets,
         'legacy_auth_enabled': ?legacyAuthEnabled,
         'jwt_expires_seconds': ?jwtExpiresSeconds,
+        'jwt_refresh_expires_seconds': ?jwtRefreshExpiresSeconds,
         'jwt_max_per_user': ?jwtMaxPerUser,
+        'min_group_name_length': ?minGroupNameLength,
+        'max_group_name_length': ?maxGroupNameLength,
+        'min_username_length': ?minUsernameLength,
+        'min_password_length': ?minPasswordLength,
+        'max_sign_length': ?maxSignLength,
+        'max_introduction_length': ?maxIntroductionLength,
+        'max_post_content_length': ?maxPostContentLength,
+        'max_avatar_size': ?maxAvatarSize,
+        'user_storage_quota': ?userStorageQuota,
+        'max_user_storage_quota': ?maxUserStorageQuota,
+        'max_sticker_storage_quota': ?maxStickerStorageQuota,
+        'file_download_mode': ?fileDownloadMode,
+        'media_features': ?mediaFeatures,
+        'features': ?features?.toJson(),
+        'allow_register': ?allowRegister,
+        'external_auth_url': ?externalAuthUrl,
+        'platform_auth_enabled': ?platformAuthEnabled,
+        'platform_auth_issuer': ?platformAuthIssuer,
+        'platform_auth_allow_ips': ?platformAuthAllowIps,
+        'platform_auth_shared_token': ?platformAuthSharedToken,
       },
       uid: uid,
       password: password,
@@ -1181,6 +1718,45 @@ class TfApiClient {
     }
 
     return TfServerConfig.fromJson(data);
+  }
+
+  /// 配置注册验证码供应商与密钥（仅 root）
+  /// secret，内置图片验证码则无需。
+  Future<bool> changeCaptcha(
+    int uid,
+    String? password, {
+    required bool changeTo,
+    String? provider,
+    String? siteKey,
+    String? secret,
+  }) async {
+    final result = await secretPost(
+      '/auth/change_captcha',
+      {
+        'change_to': changeTo,
+        'captcha_provider': ?provider,
+        'captcha_site_key': ?siteKey,
+        'captcha_secret': ?secret,
+      },
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  /// 更新各端点的速率限制配置（仅 root）。
+  Future<bool> changeRateLimits(
+    int uid,
+    String? password,
+    Map<String, dynamic>? rateLimits,
+  ) async {
+    final result = await secretPost(
+      '/auth/change_rate_limits',
+      {'rate_limits': rateLimits},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
   }
 
   Future<bool> changeEmailVerify(
@@ -1289,8 +1865,6 @@ class TfApiClient {
   }
 
   /// 登录。默认优先 JWT（请求带 jwt:true）：
-  /// - 新服务器返回 {token, ...} → jwt 模式；
-  /// - 旧服务器返回 "…True/False" → legacy 模式（degraded=true，自动降级）；
   Future<TfLoginResult> login(
     int uid,
     String password, {
@@ -1298,7 +1872,14 @@ class TfApiClient {
   }) async {
     try {
       final body = <String, dynamic>{};
-      if (!legacyMode) body['jwt'] = true;
+      if (!legacyMode) {
+        body['jwt'] = true;
+        // 仅供新服务器识别设备，旧服务器会忽略多余字段。
+        final device = await DeviceIdentityService.instance.get();
+        body['device_id'] = device.deviceId;
+        body['device_name'] = device.deviceName;
+        body['platform'] = device.platform;
+      }
       final result = await _secretPostInternal(
         '/auth/login',
         body,
@@ -1316,6 +1897,9 @@ class TfApiClient {
             'AUTH_FAILED' => 'authFailed',
             'AUTH_TOKEN_LIMIT_REACHED' => 'tokenLimitReached',
             'AUTH_INVALID_PASSWORD' => 'authFailed',
+            'pending_activation' => 'pendingActivation',
+            // 封禁以前掉进 serverError，用户看到的是"网络错误"
+            'account_banned' => 'accountBanned',
             _ => 'serverError',
           };
           return TfLoginResult.error(code);
@@ -1348,8 +1932,62 @@ class TfApiClient {
     }
   }
 
-  /// 用 refresh token 轮换会话，换取新的 access token + refresh token。
-  /// 返回 null 表示请求失败（网络/解析/被服务器拒绝）。
+  /// 用外部登录平台签发的一次性凭据换取本服务器的会话。
+  Future<TfLoginResult> loginWithExternalToken(String externalToken) async {
+    try {
+      final device = await DeviceIdentityService.instance.get();
+      final result = await _secretPostInternal(
+        '/auth/external/login',
+        {
+          'external_token': externalToken,
+          'device_id': device.deviceId,
+          'device_name': device.deviceName,
+          'platform': device.platform,
+        },
+        skipToken: true,
+      );
+      final data = _parseJsonMap(result);
+      if (data == null) {
+        return TfLoginResult.error('serverError');
+      }
+      final error = data['error'];
+      if (error != null) {
+        talker.error('external login rejected: $error');
+        final code = switch (error) {
+          'external_not_linked' => 'externalNotLinked',
+          'external_token_invalid' => 'externalTokenInvalid',
+          'EXTERNAL_NOT_LINKED' => 'externalNotLinked',
+          'EXTERNAL_TOKEN_INVALID' => 'externalTokenInvalid',
+          'user_banned' => 'userBanned',
+          'RESOURCE_USER_BANNED' => 'userBanned',
+          _ => 'serverError',
+        };
+        return TfLoginResult.error(code);
+      }
+      final token = data['token'];
+      if (token is! String || token.isEmpty) {
+        return TfLoginResult.error('serverError');
+      }
+      final refreshToken = data['refresh_token'];
+      final refreshExpiresIn = (data['refresh_expires_in'] as num?)?.toInt();
+      final expiresAt = (data['expires_at'] as num?)?.toInt();
+      return TfLoginResult.jwt(
+        token: token,
+        expiresAt: expiresAt,
+        refreshToken: refreshToken is String && refreshToken.isNotEmpty
+            ? refreshToken
+            : null,
+        refreshExpiresAt: (expiresAt != null && refreshExpiresIn != null)
+            ? expiresAt + refreshExpiresIn
+            : null,
+      );
+    } catch (e) {
+      talker.error('TfApiClient.loginWithExternalToken failed', e);
+      return TfLoginResult.error('networkError');
+    }
+  }
+
+  /// 用 refresh token 轮换会话
   Future<TfLoginResult?> refreshToken(String refreshToken) async {
     try {
       final result = await _secretPostInternal(
@@ -1383,8 +2021,7 @@ class TfApiClient {
     }
   }
 
-  /// 会话探活：校验已保存的 JWT 是否仍有效（需先 setAuthContext 注入 token
-  /// 返回 true=有效；false=服务器明确拒绝（过期/被吊销）；null=网络或解析失败
+  /// 会话探活
   Future<bool?> validateToken() async {
     try {
       final result = await _secretPostInternal('/auth/validate', const {});
@@ -1398,7 +2035,7 @@ class TfApiClient {
     }
   }
 
-  /// 列出活跃 token（设备）列表。返回 null 表示请求失败（如服务器不支持 JWT
+  /// 列出活跃 token（设备）
   Future<TfTokenListResult?> listAuthTokens({int? targetUid}) async {
     try {
       final result = await secretPost('/auth/tokens/list', {
@@ -1413,7 +2050,7 @@ class TfApiClient {
     }
   }
 
-  /// 移除指定 jti 的 token（踢出设备）。返回 null 表示请求失败
+  /// 移除指定 jti 的 token（踢出
   Future<bool?> revokeAuthToken(String jti, {int? targetUid}) async {
     try {
       final result = await secretPost('/auth/tokens/revoke', {
@@ -1430,7 +2067,7 @@ class TfApiClient {
     }
   }
 
-  /// 列出当前用户的活跃会话（session 粒度）。
+  /// 列出当前用户的活跃会话
   Future<TfTokenListResult?> listSessions({int? targetUid}) async {
     try {
       final result = await secretPost('/auth/sessions/list', {
@@ -1445,7 +2082,7 @@ class TfApiClient {
     }
   }
 
-  /// 按 session_id 吊销指定会话（踢出设备）。
+  /// 按 session_id 吊销指定会话
   Future<bool?> revokeSession(String sessionId, {int? targetUid}) async {
     try {
       final result = await secretPost('/auth/sessions/revoke', {
@@ -1462,7 +2099,7 @@ class TfApiClient {
     }
   }
 
-  /// 吊销除当前会话外的全部会话（普通用户），或目标用户全部会话（管理员）。
+  /// 吊销除当前会话外的全部会话（普通用户）或目标用户全部会话（管理员）。
   Future<bool?> revokeAllOtherSessions({int? targetUid}) async {
     try {
       final result = await secretPost('/auth/sessions/revoke_all', {
@@ -1478,6 +2115,72 @@ class TfApiClient {
     }
   }
 
+  /// 为指定会话的设备设置自定义标签
+  Future<bool?> renameSession(String sessionId, String label) async {
+    try {
+      final result = await secretPost('/auth/sessions/rename', {
+        'session_id': sessionId,
+        'label': label,
+      });
+      final data = _parseJsonMap(result);
+      if (data == null) return null;
+      if (data['success'] == true) return true;
+      return false;
+    } catch (e) {
+      talker.error('renameSession failed', e);
+      return null;
+    }
+  }
+
+  /// 列出用户的设备记录
+  Future<TfDeviceListResult?> listDevices({int? targetUid}) async {
+    try {
+      final result = await secretPost('/auth/devices/list', {
+        'target_uid': ?targetUid,
+      });
+      final data = _parseJsonMap(result);
+      if (data == null) return null;
+      return TfDeviceListResult.fromJson(data);
+    } catch (e) {
+      talker.error('listDevices failed', e);
+      return null;
+    }
+  }
+
+  /// 更新设备的自定义标签（设备粒度，/auth/devices/update_label）。
+  Future<bool?> updateDeviceLabel(String deviceId, String label) async {
+    try {
+      final result = await secretPost('/auth/devices/update_label', {
+        'device_id': deviceId,
+        'label': label,
+      });
+      final data = _parseJsonMap(result);
+      if (data == null) return null;
+      if (data['success'] == true) return true;
+      return false;
+    } catch (e) {
+      talker.error('updateDeviceLabel failed', e);
+      return null;
+    }
+  }
+
+  /// 吊销指定设备的所有会话（设备粒度，/auth/devices/revoke）。
+  Future<bool?> revokeDevice(String deviceId, {int? targetUid}) async {
+    try {
+      final result = await secretPost('/auth/devices/revoke', {
+        'device_id': deviceId,
+        'target_uid': ?targetUid,
+      });
+      final data = _parseJsonMap(result);
+      if (data == null) return null;
+      if (data['success'] == true) return true;
+      return false;
+    } catch (e) {
+      talker.error('revokeDevice failed', e);
+      return null;
+    }
+  }
+
   /// 登出时吊销指定 token
   Future<void> logoutCurrentToken(String token) async {
     try {
@@ -1487,17 +2190,19 @@ class TfApiClient {
     }
   }
 
-  Future<bool> register(
+  Future<RegisterResult> register(
     String username,
     String password, {
     String? email,
     String? captchaStamp,
     String? captchaCode,
+    String? captchaToken,
   }) async {
     final body = <String, dynamic>{'username': username, 'password': password};
     if (email != null && email.isNotEmpty) body['email'] = email;
     if (captchaStamp != null) body['captcha_stamp'] = captchaStamp;
     if (captchaCode != null) body['captcha_code'] = captchaCode;
+    if (captchaToken != null) body['captcha_token'] = captchaToken;
     // 注册为免认证端点，不携带当前 token
     try {
       final result = await _secretPostInternal(
@@ -1505,10 +2210,19 @@ class TfApiClient {
         body,
         skipToken: true,
       );
-      return _parseBool(result);
+      // 直接解析本次响应：不能读共享的 lastApiError（并发请求会覆盖它）
+      final data = _parseJsonMap(result);
+      if (data != null && data['error'] != null) {
+        if (ApiError.fromResponse(data).code == 'CAPTCHA_INVALID') {
+          return RegisterResult.captchaInvalid;
+        }
+        return RegisterResult.failed;
+      }
+      if (_parseBool(result)) return RegisterResult.success;
+      return RegisterResult.failed;
     } catch (e) {
       talker.error('register failed', e);
-      return false;
+      return RegisterResult.failed;
     }
   }
 
@@ -1579,6 +2293,127 @@ class TfApiClient {
       password: password,
     );
     return _parseBool(result);
+  }
+
+  /// 设置邮箱是否对外公开（默认公开）。公开查询接口会按此裁剪 email。
+  Future<bool> changePublicEmail(
+    int uid,
+    String password,
+    bool publicEmail,
+  ) async {
+    final result = await secretPost(
+      '/auth/change_public_email',
+      {'public_email': publicEmail},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  /// 修改隐私开关（已读状态、在线状态等）。缺省字段表示不改动。旧服务器无此端点返回 false。
+  Future<bool> changePrivacy(
+    int uid,
+    String password, {
+    bool? showReadStatus,
+    bool? showOnlineStatus,
+  }) async {
+    final body = <String, dynamic>{};
+    if (showReadStatus != null) body['show_read_status'] = showReadStatus;
+    if (showOnlineStatus != null) body['show_online_status'] = showOnlineStatus;
+    if (body.isEmpty) return false;
+    final result = await secretPost(
+      '/auth/change_privacy',
+      body,
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  /// 按需查询某条消息的已读情况
+  Future<TfReadReceipt?> queryReadReceipt(
+    int uid,
+    String password,
+    String roomId,
+    int mid,
+  ) async {
+    final result = await secretPost(
+      '/message/read_receipt',
+      {'room_id': roomId, 'mid': mid},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return null;
+    try {
+      final data = jsonDecode(result) as Map<String, dynamic>;
+      if (data['success'] != true) return null;
+      return TfReadReceipt.fromJson(data);
+    } catch (e) {
+      talker.error('queryReadReceipt parse failed', e);
+      return null;
+    }
+  }
+
+  /// 批量查询好友在线状态
+  /// 返回 {uid: "online"|"offline"}
+  Future<Map<int, String>?> queryFriendPresence(
+    int uid,
+    String? password, {
+    List<int>? uids,
+  }) async {
+    final body = <String, dynamic>{};
+    if (uids != null) body['uids'] = uids;
+    final result = await secretPost(
+      '/friend/presence',
+      body,
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return null;
+    try {
+      final data = jsonDecode(result) as Map<String, dynamic>;
+      if (data['success'] != true) return null;
+      final raw = data['presence'];
+      if (raw is! Map) return const {};
+      final out = <int, String>{};
+      raw.forEach((key, value) {
+        final id = int.tryParse(key.toString());
+        if (id != null && value is String) out[id] = value;
+      });
+      return out;
+    } catch (e) {
+      talker.error('queryFriendPresence parse failed', e);
+      return null;
+    }
+  }
+
+  /// 查询自己的完整资料
+  Future<UserProfile?> getSelfProfile({
+    int avatarVersion = 0,
+    int? uid,
+    String? password,
+  }) async {
+    final result = await secretPost(
+      '/auth/query_self',
+      {},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return null;
+    try {
+      final data = jsonDecode(result) as Map<String, dynamic>;
+      if (data.isEmpty || data['uid'] == null) return null;
+      final baseUrl = await getBaseUrl();
+      final selfUid = (data['uid'] as num).toInt();
+      return UserProfile.fromServerJson(
+        data,
+        '$baseUrl/avatar/get_avatar/user/$selfUid',
+        avatarVersion: avatarVersion,
+      );
+    } catch (e) {
+      talker.error('getSelfProfile parse failed', e);
+      return null;
+    }
   }
 
   Future<bool> changePassword(
@@ -1735,14 +2570,26 @@ class TfApiClient {
     }
   }
 
-  Future<List<ForumPost>> getPostList(int fid) async {
+  /// 拉取版块帖子。传 limit 时按 pid 游标分页（beforePid 为上一页最早一条）。
+  Future<({List<ForumPost> posts, bool hasMore, int? nextBeforePid, int? pinnedPid})>
+  getPostList(int fid, {int? beforePid, int? limit}) async {
     try {
       final baseUrl = await getBaseUrl();
-      final response = await _getRequest('$baseUrl/forum/get_post_list/$fid');
-      if (response.statusCode != 200) return [];
+      final uri = Uri.parse('$baseUrl/forum/get_post_list/$fid').replace(
+        queryParameters: {
+          if (beforePid != null) 'before_pid': '$beforePid',
+          if (limit != null) 'limit': '$limit',
+        },
+      );
+      final response = await _getRequest(uri.toString());
+      if (response.statusCode != 200) {
+        throw StateError(
+          'getPostList $fid: HTTP ${response.statusCode}',
+        );
+      }
       final data = jsonDecode(response.body);
       if (data is List) {
-        return data
+        final posts = data
             .map(
               (row) => row is Map
                   ? ForumPost.fromJson({
@@ -1755,12 +2602,18 @@ class TfApiClient {
                     ),
             )
             .toList();
+        return (
+          posts: posts,
+          hasMore: false,
+          nextBeforePid: null,
+          pinnedPid: null,
+        );
       }
       if (data is Map) {
-        final posts =
+        final rows =
             data['post_rows'] as List? ?? data['posts'] as List? ?? const [];
-        final pinnedPid = data['pinned_pid'];
-        return posts.map((row) {
+        final pinnedPid = (data['pinned_pid'] as num?)?.toInt();
+        final posts = rows.map((row) {
           final post = row is Map
               ? ForumPost.fromJson({
                   ...Map<String, dynamic>.from(row),
@@ -1772,11 +2625,17 @@ class TfApiClient {
           }
           return post;
         }).toList();
+        return (
+          posts: posts,
+          hasMore: data['has_more'] == true,
+          nextBeforePid: (data['next_before_pid'] as num?)?.toInt(),
+          pinnedPid: pinnedPid,
+        );
       }
-      return [];
+      throw StateError('getPostList $fid: unexpected response body');
     } catch (e) {
       talker.error('getPostList $fid failed', e);
-      return [];
+      rethrow;
     }
   }
 
@@ -1835,6 +2694,7 @@ class TfApiClient {
       uid: uid,
       password: password,
     );
+    _lastContentError = _readRestrictionError(result);
     return _parseBool(result);
   }
 
@@ -1890,6 +2750,31 @@ class TfApiClient {
     }
   }
 
+  /// 最近一次内容写入错误码
+  String? _lastContentError;
+  String? get lastContentError => _lastContentError;
+
+  /// 只识别账号限制相关的错误
+  String? _readRestrictionError(String? result) {
+    if (result == null) return null;
+    final trimmed = result.trim();
+    if (!trimmed.startsWith('{')) return null;
+    try {
+      final data = jsonDecode(trimmed);
+      if (data is! Map) return null;
+      final error = data['error'] as String?;
+      if (error == null) return null;
+      const restricted = {
+        'account_muted',
+        'account_banned',
+        'pending_activation',
+      };
+      return restricted.contains(error) ? error : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<bool> addComment(
     int uid,
     String password,
@@ -1903,6 +2788,7 @@ class TfApiClient {
       uid: uid,
       password: password,
     );
+    _lastContentError = _readRestrictionError(result);
     return _parseBool(result);
   }
 
@@ -2105,6 +2991,335 @@ class TfApiClient {
     return _parseBool(result);
   }
 
+  Future<int?> createTicket(
+    int uid,
+    String password, {
+    required TicketType type,
+    required String title,
+    required String content,
+    String? targetType,
+    String? targetId,
+    TicketPriority priority = TicketPriority.normal,
+    List<String> attachments = const [],
+  }) async {
+    final result = await secretPost(
+      '/ticket/create',
+      {
+        'type': type.wire,
+        'title': title,
+        'content': content,
+        'priority': priority.wire,
+        if (targetType != null) 'target_type': targetType,
+        if (targetId != null) 'target_id': targetId,
+        if (attachments.isNotEmpty) 'attachments': attachments,
+      },
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return null;
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return null;
+      if (data['success'] != true) {
+        // 服务端用 error 区分类型被关闭和参数不对
+        _lastTicketError = data['error'] as String?;
+        return null;
+      }
+      _lastTicketError = null;
+      return (data['ticket_id'] as num?)?.toInt();
+    } catch (e) {
+      talker.error('createTicket parse failed', e);
+      return null;
+    }
+  }
+
+  /// 最近一次工单接口返回的错误
+  String? _lastTicketError;
+  String? get lastTicketError => _lastTicketError;
+
+  Future<List<SupportTicket>> listMyTickets(
+    int uid,
+    String password, {
+    int offset = 0,
+    int take = 30,
+  }) async {
+    final result = await secretPost(
+      '/ticket/list',
+      {'offset': offset, 'take': take},
+      uid: uid,
+      password: password,
+    );
+    return _parseTicketList(result, 'listMyTickets');
+  }
+
+  Future<List<SupportTicket>> listTicketQueue(
+    int uid,
+    String password, {
+    String? status,
+    bool includeClosed = false,
+    String sort = 'priority',
+    String? type,
+    String? priority,
+    int? creatorUid,
+    int offset = 0,
+    int take = 30,
+  }) async {
+    final result = await secretPost(
+      '/ticket/queue',
+      {
+        if (status != null) 'status': status,
+        if (includeClosed) 'scope': 'all',
+        'sort': sort,
+        if (type != null) 'type': type,
+        if (priority != null) 'priority': priority,
+        if (creatorUid != null) 'creator_uid': creatorUid,
+        'offset': offset,
+        'take': take,
+      },
+      uid: uid,
+      password: password,
+    );
+    return _parseTicketList(result, 'listTicketQueue');
+  }
+
+  List<SupportTicket> _parseTicketList(String? result, String caller) {
+    if (result == null) return const [];
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return const [];
+      final raw = data['tickets'];
+      if (raw is! List) return const [];
+      return raw
+          .whereType<Map>()
+          .map((item) => SupportTicket.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+    } catch (e) {
+      talker.error('$caller parse failed', e);
+      return const [];
+    }
+  }
+
+  Future<SupportTicket?> getTicketDetail(
+    int uid,
+    String password,
+    int ticketId,
+  ) async {
+    final result = await secretPost(
+      '/ticket/detail',
+      {'ticket_id': ticketId},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return null;
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return null;
+      return SupportTicket.fromJson(Map<String, dynamic>.from(data));
+    } catch (e) {
+      talker.error('getTicketDetail parse failed', e);
+      return null;
+    }
+  }
+
+  Future<int> getTicketPendingCount(int uid, String password) async {
+    final result = await secretPost(
+      '/ticket/pending_count',
+      const {},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return 0;
+    try {
+      final data = jsonDecode(result);
+      if (data is Map) return (data['count'] as num?)?.toInt() ?? 0;
+    } catch (e) {
+      talker.error('getTicketPendingCount parse failed', e);
+    }
+    return 0;
+  }
+
+  Future<int> getTicketUnreadCount(int uid, String password) async {
+    final result = await secretPost(
+      '/ticket/my_count',
+      const {},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return 0;
+    try {
+      final data = jsonDecode(result);
+      if (data is Map) return (data['unread'] as num?)?.toInt() ?? 0;
+    } catch (e) {
+      talker.error('getTicketUnreadCount parse failed', e);
+    }
+    return 0;
+  }
+
+  /// 在工单里发一条消息
+  Future<String?> sendTicketMessage(
+    int uid,
+    String password,
+    int ticketId,
+    String content, {
+    List<String> attachments = const [],
+  }) async {
+    final result = await secretPost(
+      '/ticket/message/send',
+      {
+        'ticket_id': ticketId,
+        'content': content,
+        if (attachments.isNotEmpty) 'attachments': attachments,
+      },
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return 'network';
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return 'invalid_response';
+      if (data['success'] == true) return null;
+      return data['error'] as String? ?? 'unknown';
+    } catch (e) {
+      talker.error('sendTicketMessage parse failed', e);
+      return 'invalid_response';
+    }
+  }
+
+  /// 改优先级或指派
+  Future<String?> updateTicketMeta(
+    int uid,
+    String password,
+    int ticketId, {
+    TicketPriority? priority,
+    int? assigneeUid,
+    bool clearAssignee = false,
+  }) async {
+    final result = await secretPost(
+      '/ticket/handle',
+      {
+        'ticket_id': ticketId,
+        if (priority != null) 'priority': priority.wire,
+        if (assigneeUid != null) 'assignee_uid': assigneeUid,
+        if (clearAssignee) 'clear_assignee': true,
+      },
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return 'network';
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return 'invalid_response';
+      if (data['success'] == true) return null;
+      return data['error'] as String? ?? 'unknown';
+    } catch (e) {
+      talker.error('updateTicketMeta parse failed', e);
+      return 'invalid_response';
+    }
+  }
+
+  /// 推进工单状态。返回服务端的错误码，`null` 表示成功。
+  Future<String?> handleTicket(
+    int uid,
+    String password,
+    int ticketId, {
+    required String status,
+    String? reply,
+  }) async {
+    final result = await secretPost(
+      '/ticket/handle',
+      {
+        'ticket_id': ticketId,
+        'status': status,
+        if (reply != null && reply.isNotEmpty) 'reply': reply,
+      },
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return 'network';
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return 'invalid_response';
+      if (data['success'] == true) return null;
+      return data['error'] as String? ?? 'unknown';
+    } catch (e) {
+      talker.error('handleTicket parse failed', e);
+      return 'invalid_response';
+    }
+  }
+
+
+  Future<String?> createPunishment(
+    int uid,
+    String password, {
+    required int targetUid,
+    required PunishmentKind kind,
+    required String reason,
+    int? durationSeconds,
+  }) async {
+    final result = await secretPost(
+      '/punishment/create',
+      {
+        'target_uid': targetUid,
+        'kind': kind.wire,
+        'reason': reason,
+        if (durationSeconds != null) 'duration_seconds': durationSeconds,
+      },
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return 'network';
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return 'invalid_response';
+      if (data['success'] == true) return null;
+      return data['error'] as String? ?? 'unknown';
+    } catch (e) {
+      talker.error('createPunishment parse failed', e);
+      return 'invalid_response';
+    }
+  }
+
+  Future<List<Punishment>> listPunishments(
+    int uid,
+    String password, {
+    int? targetUid,
+  }) async {
+    final result = await secretPost(
+      '/punishment/list',
+      {if (targetUid != null) 'target_uid': targetUid},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return const [];
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return const [];
+      final raw = data['punishments'];
+      if (raw is! List) return const [];
+      return raw
+          .whereType<Map>()
+          .map((item) => Punishment.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+    } catch (e) {
+      talker.error('listPunishments parse failed', e);
+      return const [];
+    }
+  }
+
+  Future<bool> revokePunishment(
+    int uid,
+    String password,
+    int punishmentId,
+  ) async {
+    final result = await secretPost(
+      '/punishment/revoke',
+      {'punishment_id': punishmentId},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
   Future<bool> approveForum(int uid, String password, int queueId) async {
     final result = await secretPost(
       '/forum/approve_forum',
@@ -2202,7 +3417,8 @@ class TfApiClient {
 
   // notification
 
-  Future<List<NotificationInfo>> queryAllNotifications(
+  /// 返回 null 表示请求或解析失败
+  Future<List<NotificationInfo>?> queryAllNotifications(
     int uid,
     String password,
   ) async {
@@ -2212,7 +3428,7 @@ class TfApiClient {
       uid: uid,
       password: password,
     );
-    if (result == null) return [];
+    if (result == null) return null;
     try {
       final list = jsonDecode(result) as List<dynamic>;
       return list
@@ -2222,11 +3438,11 @@ class TfApiClient {
           .toList();
     } catch (e) {
       talker.error('queryAllNotifications parse failed', e);
-      return [];
+      return null;
     }
   }
 
-  Future<List<NotificationInfo>> queryNotificationsAfter(
+  Future<List<NotificationInfo>?> queryNotificationsAfter(
     int uid,
     String password,
     double timeStamp,
@@ -2237,7 +3453,7 @@ class TfApiClient {
       uid: uid,
       password: password,
     );
-    if (result == null) return [];
+    if (result == null) return null;
     try {
       final list = jsonDecode(result) as List<dynamic>;
       return list
@@ -2247,7 +3463,34 @@ class TfApiClient {
           .toList();
     } catch (e) {
       talker.error('queryNotificationsAfter parse failed', e);
-      return [];
+      return null;
+    }
+  }
+
+  /// 取比 [timeStamp] 更早的
+  Future<List<NotificationInfo>?> queryNotificationsBefore(
+    int uid,
+    String password,
+    double timeStamp, {
+    int limit = 50,
+  }) async {
+    final result = await secretPost(
+      '/notification/query_before',
+      {'time_stamp': timeStamp, 'limit': limit},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return null;
+    try {
+      final list = jsonDecode(result) as List<dynamic>;
+      return list
+          .map(
+            (e) => NotificationInfo.fromServerJson(e as Map<String, dynamic>),
+          )
+          .toList();
+    } catch (e) {
+      talker.error('queryNotificationsBefore parse failed', e);
+      return null;
     }
   }
 
@@ -2259,6 +3502,22 @@ class TfApiClient {
     final result = await secretPost(
       '/notification/delete_before',
       {'time_stamp': timeStamp},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+
+  Future<bool> deleteNotificationsByIds(
+    int uid,
+    String password,
+    List<int> ids,
+  ) async {
+    if (ids.isEmpty) return true;
+    final result = await secretPost(
+      '/notification/delete_ids',
+      {'ids': ids},
       uid: uid,
       password: password,
     );
@@ -2368,8 +3627,6 @@ class TfApiClient {
   }
 
   /// 增量同步某房间消息（含缺口补拉）。
-  ///
-  /// [lastSeq] 优先；迁移期可用 [lastMid]。返回 (messages, currentSeq, hasMore)。
   Future<MessageSyncResult> syncMessages(
     int uid,
     String password,
@@ -2387,6 +3644,8 @@ class TfApiClient {
         'room_id': roomId,
         'last_seq': lastSeq,
         'last_mid': ?lastMid,
+        // 声明事件轨道能力：sync 会返回事件行（撤回/置顶等变更）
+        'capabilities': const ['event_stream_v1'],
         if (missingSequences.isNotEmpty) 'missing_sequences': missingSequences,
         if (missingSequenceRanges.isNotEmpty)
           'missing_sequence_ranges': missingSequenceRanges,
@@ -2405,8 +3664,24 @@ class TfApiClient {
         hasMore: false,
       );
     }
+    Map<String, dynamic>? data;
     try {
-      final data = jsonDecode(result) as Map<String, dynamic>;
+      data = jsonDecode(result) as Map<String, dynamic>;
+    } catch (_) {
+      data = null;
+    }
+    if (data == null || data['success'] == false) {
+      talker.info('syncMessages: 未返回消息数据 ($roomId)');
+      if (throwOnFailure) {
+        throw StateError('Message sync rejected for $roomId');
+      }
+      return (
+        messages: const <ChatMessage>[],
+        currentSeq: lastSeq,
+        hasMore: false,
+      );
+    }
+    try {
       final list = (data['messages'] as List<dynamic>? ?? const [])
           .map(
             (e) => ChatMessage.fromMessageRecord(
@@ -2433,7 +3708,7 @@ class TfApiClient {
 
   // friend
 
-  Future<bool> addFriend(
+  Future<({bool ok, String? errorCode})> addFriend(
     int uid,
     String password,
     int targetUid,
@@ -2445,7 +3720,11 @@ class TfApiClient {
       uid: uid,
       password: password,
     );
-    return _parseBool(result);
+    final data = _parseJsonMap(result);
+    final errorCode = data != null && data['error'] != null
+        ? ApiError.fromResponse(data).code
+        : null;
+    return (ok: _parseBool(result), errorCode: errorCode);
   }
 
   Future<bool> dealFriendShip(
@@ -2464,6 +3743,91 @@ class TfApiClient {
       'dealFriendShip: uid=$uid dealt=$dealtUid stat=$stat rawResult=$result parsed=${_parseBool(result)}',
     );
     return _parseBool(result);
+  }
+
+  /// 待处理的好友申请列表（含申请留言）。
+  Future<List<FriendRequestEntry>> queryFriendRequests(
+    int uid,
+    String password,
+  ) async {
+    final result = await secretPost(
+      '/friend/requests',
+      {},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return [];
+    try {
+      return (jsonDecode(result) as List<dynamic>)
+          .map(
+            (e) => FriendRequestEntry.fromJson(
+              Map<String, dynamic>.from(e as Map),
+            ),
+          )
+          .toList();
+    } catch (e) {
+      talker.error('queryFriendRequests parse failed', e);
+      return [];
+    }
+  }
+
+  /// 拉黑用户（会覆盖现有好友关系，破坏性）。
+  Future<bool> blockUser(int uid, String password, int target) async {
+    final result = await secretPost(
+      '/friend/block',
+      {'target': target},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  /// 解除拉黑（幂等）。
+  Future<bool> unblockUser(int uid, String password, int target) async {
+    final result = await secretPost(
+      '/friend/unblock',
+      {'target': target},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  /// 查询自己与目标的关系（含拉黑方向）
+  Future<TfRelationship?> queryRelationship(
+    int uid,
+    String? password,
+    int target,
+  ) async {
+    final result = await secretPost(
+      '/friend/relationship',
+      {'target': target},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return null;
+    try {
+      final data = jsonDecode(result) as Map<String, dynamic>;
+      if (data['success'] != true) return null;
+      return TfRelationship.fromJson(data);
+    } catch (e) {
+      talker.error('queryRelationship parse failed', e);
+      return null;
+    }
+  }
+
+  /// 列出自己拉黑的用户
+  Future<List<int>?> getBlockedUsers(int uid, String? password) async {
+    var status = 0;
+    final result = await secretPost(
+      '/friend/blocked',
+      {},
+      uid: uid,
+      password: password,
+      // 传输层就失败时不会回调，status 保持 0。
+      onStatus: (code) => status = code,
+    );
+    return decodeBlockedUsersResponse(status, result);
   }
 
   Future<List<int>?> getFriendList(int uid, String password) async {
@@ -2493,6 +3857,7 @@ class TfApiClient {
     String? fileHash,
     int quote = -1,
     int forwarded = -1,
+    int? durationMs,
   }) async {
     final result = await secretPost(
       '/message/send',
@@ -2504,6 +3869,32 @@ class TfApiClient {
         'file_hash': fileHash,
         'quote': quote,
         'forwarded': forwarded,
+        'duration_ms': ?durationMs,
+      },
+      uid: uid,
+      password: password,
+    );
+    _lastContentError = _readRestrictionError(result);
+    try {
+      final data = jsonDecode(result ?? '');
+      if (data is Map<String, dynamic>) return data;
+    } catch (_) {}
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> redirectMessages(
+    int uid,
+    String password, {
+    required String recipient,
+    required List<int> mids,
+    String? clientMid,
+  }) async {
+    final result = await secretPost(
+      '/message/redirect',
+      {
+        'recipient': recipient,
+        'mids': mids,
+        'client_mid': clientMid,
       },
       uid: uid,
       password: password,
@@ -2531,6 +3922,23 @@ class TfApiClient {
     return Map<String, dynamic>.from(data!['message'] as Map);
   }
 
+  /// 查看已撤回消息的原始记录（仅 root）。
+  Future<Map<String, dynamic>?> getRecalledOriginal(
+    int uid,
+    String? password,
+    int mid,
+  ) async {
+    final result = await secretPost(
+      '/message/recalled_original',
+      {'mid': mid},
+      uid: uid,
+      password: password,
+    );
+    final data = _parseJsonMap(result);
+    if (data?['success'] != true || data?['message'] is! Map) return null;
+    return Map<String, dynamic>.from(data!['message'] as Map);
+  }
+
   Future<String> getFileUrl(String hash) async {
     final baseUrl = await getBaseUrl();
     return '$baseUrl/file/get_file/${Uri.encodeComponent(hash)}';
@@ -2541,9 +3949,7 @@ class TfApiClient {
     return '$baseUrl/file/get_thumbnail/${Uri.encodeComponent(hash)}';
   }
 
-  /// 从原图 URL 推导缩略图 URL（同一服务器的 /file/get_file/ 换成 /file/get_thumbnail/）。
-  ///
-  /// 非 file/get_file 的 URL（blob:、外链等）返回 null：拿原图当缩略图会导致重复下载。
+  /// 从原图 URL 推导缩略图 URL（同一服务器的 /file/get_file/ 换成 /file/get_thumbnail/）
   static String? thumbnailUrlFromFileUrl(String fileUrl) {
     if (fileUrl.contains('/file/get_file/')) {
       return fileUrl.replaceFirst('/file/get_file/', '/file/get_thumbnail/');
@@ -2890,19 +4296,20 @@ class TfApiClient {
     }
   }
 
-  Future<List<TfChatListItem>> queryChatList(int uid, String password) async {
+  /// 拉取会话列表。失败（网络 / 解密 / 服务端错误）返回 null
+  Future<List<TfChatListItem>?> queryChatList(int uid, String password) async {
     final result = await secretPost(
       '/chat/list',
       {},
       uid: uid,
       password: password,
     );
-    if (result == null) return [];
+    if (result == null) return null;
     try {
       final decoded = jsonDecode(result);
       if (decoded is Map<String, dynamic> && decoded.containsKey('error')) {
         talker.warning('queryChatList server error: ${decoded['error']}');
-        return [];
+        return null;
       }
       final list = decoded as List<dynamic>;
       return list
@@ -2910,7 +4317,7 @@ class TfApiClient {
           .toList();
     } catch (e) {
       talker.error('queryChatList parse failed', e);
-      return [];
+      return null;
     }
   }
 
@@ -2960,7 +4367,14 @@ class TfApiClient {
     );
     if (result == null) return [];
     try {
-      final list = jsonDecode(result) as List<dynamic>;
+      final decoded = jsonDecode(result);
+      if (decoded is Map<String, dynamic> && decoded.containsKey('error')) {
+        talker.warning(
+          'queryMessageHistory server error: ${decoded['error']}',
+        );
+        return [];
+      }
+      final list = decoded as List<dynamic>;
       return list
           .map(
             (e) =>
@@ -3070,6 +4484,82 @@ class TfApiClient {
       });
     }
     return groups;
+  }
+
+  /// 群组预览（secret）
+  Future<TfGroupPreview?> previewGroup(
+    int uid,
+    String password,
+    int gid,
+  ) async {
+    final result = await secretPost(
+      '/group/preview',
+      {'gid': gid},
+      uid: uid,
+      password: password,
+    );
+    final data = _parseJsonMap(result);
+    if (data == null) return null;
+    return TfGroupPreview.fromJson(data);
+  }
+
+  /// 按用户名搜索用户
+  Future<List<UserSearchEntry>> searchUsers(
+    int uid,
+    String password,
+    String keyword, {
+    int limit = 20,
+  }) async {
+    final result = await secretPost(
+      '/user/search',
+      {'keyword': keyword, 'limit': limit},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) {
+      throw StateError('searchUsers request failed');
+    }
+    final decoded = jsonDecode(result);
+    if (decoded is List) {
+      return decoded
+          .whereType<Map>()
+          .map((e) => UserSearchEntry.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+    if (decoded is Map) {
+      throw ApiErrorException(
+        ApiError.fromResponse(Map<String, dynamic>.from(decoded)),
+      );
+    }
+    return [];
+  }
+
+  /// 按群名搜索群组（secret，分页）。仅返回公开字段。
+  Future<GroupSearchPage> searchGroups(
+    int uid,
+    String password,
+    String keyword, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final result = await secretPost(
+      '/group/search',
+      {'keyword': keyword, 'limit': limit, 'offset': offset},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) {
+      throw StateError('searchGroups request failed');
+    }
+    final decoded = jsonDecode(result);
+    if (decoded is Map) {
+      final map = Map<String, dynamic>.from(decoded);
+      if (map['success'] == false || map['error'] != null) {
+        throw ApiErrorException(ApiError.fromResponse(map));
+      }
+      return GroupSearchPage.fromJson(map);
+    }
+    return const GroupSearchPage(groups: [], hasMore: false);
   }
 
   Future<int?> createGroup(
@@ -3200,6 +4690,17 @@ class TfApiClient {
     return _parseBool(result);
   }
 
+  /// 解散群聊（仅群主）。服务端会清理群头像并通知全体成员。
+  Future<bool> deleteGroup(int uid, String password, int gid) async {
+    final result = await secretPost(
+      '/group/delete_group',
+      {'gid': gid},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
   Future<bool> pinMessage(int uid, String password, int gid, int mid) async {
     final result = await secretPost(
       '/group/pin_message',
@@ -3291,11 +4792,16 @@ class TfApiClient {
   Future<Map<String, dynamic>?> joinGroup(
     int uid,
     String password,
-    int gid,
-  ) async {
+    int gid, {
+    String? message,
+  }) async {
     final result = await secretPost(
       '/group/join',
-      {'gid': gid},
+      {
+        'gid': gid,
+        if (message != null && message.trim().isNotEmpty)
+          'message': message.trim(),
+      },
       uid: uid,
       password: password,
     );
@@ -3306,11 +4812,17 @@ class TfApiClient {
     int uid,
     String password,
     int gid,
-    int invitedUid,
-  ) async {
+    int invitedUid, {
+    String? message,
+  }) async {
     final result = await secretPost(
       '/group/invite',
-      {'gid': gid, 'invited_uid': invitedUid},
+      {
+        'gid': gid,
+        'invited_uid': invitedUid,
+        if (message != null && message.trim().isNotEmpty)
+          'message': message.trim(),
+      },
       uid: uid,
       password: password,
     );
@@ -3414,9 +4926,9 @@ class TfApiClient {
         );
       }).toList();
 
-      final pagination = UserManagePagination.fromJson(
-        data['pagination'] as Map<String, dynamic>,
-      );
+      final paginationRaw = data['pagination'];
+      if (paginationRaw is! Map<String, dynamic>) return null;
+      final pagination = UserManagePagination.fromJson(paginationRaw);
 
       return UserManageResult(users: users, pagination: pagination);
     } catch (e) {
@@ -3454,6 +4966,37 @@ class TfApiClient {
     final result = await secretPost(
       '/auth/manage/delete',
       {'change_uid': targetUid},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  /// 修改目标用户资料（仅管理员）。
+  ///
+  /// 只提交非 null 的字段；`newAuth` 为 null 时不改变权限状态。
+  Future<bool> manageUpdateUser(
+    int uid,
+    String password,
+    int targetUid, {
+    String? newAuth,
+    String? username,
+    String? targetPassword,
+    String? email,
+    String? sign,
+    String? introduction,
+  }) async {
+    final result = await secretPost(
+      '/auth/manage/update',
+      {
+        'change_uid': targetUid,
+        'new_auth': ?newAuth,
+        'username': ?username,
+        'target_password': ?targetPassword,
+        'email': ?email,
+        'sign': ?sign,
+        'introduction': ?introduction,
+      },
       uid: uid,
       password: password,
     );
@@ -3560,8 +5103,8 @@ class TfApiClient {
         response.data!,
         preparedRequest.aesKey,
       );
-      _captureAuthNote(plain);
       final data = _parseJsonMap(plain);
+      _captureAuthNote(data);
       if (data == null) return null;
 
       final success = data['success'];
@@ -3642,6 +5185,17 @@ class TfApiClient {
   Future<bool> deleteFile(int uid, String password, String hash) async {
     final result = await secretPost(
       '/file/delete_file',
+      {'hash': hash},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  /// 释放当前用户对文件的引用（不会立即删除 blob，仅递减引用计数）。
+  Future<bool> dereferenceFile(int uid, String password, String hash) async {
+    final result = await secretPost(
+      '/file/dereference_file',
       {'hash': hash},
       uid: uid,
       password: password,

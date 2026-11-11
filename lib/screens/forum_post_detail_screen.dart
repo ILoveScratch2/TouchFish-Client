@@ -1,13 +1,18 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import '../l10n/app_localizations.dart';
+import '../models/support_ticket.dart';
+import '../widgets/support/ticket_compose_sheet.dart';
 import '../models/forum_model.dart';
 import '../models/user_profile.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/markdown_renderer.dart';
 import '../widgets/sticker_text_renderer.dart';
+import '../widgets/ui/loading_indicator.dart';
 import '../models/settings_service.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
@@ -17,6 +22,7 @@ import '../utils/talker.dart';
 import '../utils/clipboard_utils.dart';
 import '../widgets/mention_text_field.dart';
 import '../widgets/forum_attachments.dart';
+import '../widgets/layout/forum_post_pane_scope.dart';
 import '../services/draft_service.dart';
 import '../widgets/app_alert_dialog.dart';
 
@@ -58,6 +64,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   final List<MentionUser> _mentionUsers = [];
   Timer? _draftTimer;
   bool _showBackToBottom = false;
+  bool _enableMarkdown = true;
 
   String get _commentDraftId => '${widget.forumId}/${widget.postId}';
 
@@ -65,9 +72,38 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _enableMarkdown = SettingsService.instance.getValue<bool>(
+      'enableMarkdownRendering',
+      true,
+    );
+    SettingsService.instance.addListener(_onSettingsChanged);
     _loadData();
     _loadMentionUsers();
     _commentController.addListener(_scheduleCommentDraftSave);
+    unawaited(_restoreCommentDraft());
+  }
+
+  void _onSettingsChanged() {
+    final next = SettingsService.instance.getValue<bool>(
+      'enableMarkdownRendering',
+      true,
+    );
+    if (next != _enableMarkdown && mounted) {
+      setState(() => _enableMarkdown = next);
+    }
+  }
+
+  /// 只换路径参数（换帖子 / 换论坛）时 Flutter 会复用同一个 State，
+  /// 那样页面会停在上一个帖子的数据上，这里按新参数重新加载。
+  @override
+  void didUpdateWidget(covariant ForumPostDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.postId == widget.postId &&
+        oldWidget.forumId == widget.forumId) {
+      return;
+    }
+    _loadData();
+    _loadMentionUsers();
     unawaited(_restoreCommentDraft());
   }
 
@@ -145,6 +181,8 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   }
 
   Future<void> _loadData() async {
+    // 可能在提交评论的 await 之后才被调用：页面已 pop 时不能再 setState
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final fid = int.tryParse(widget.forumId);
@@ -179,14 +217,27 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       final comments = await TfApiClient.instance.getAllComments(fid, pid);
       _commentDataList = comments.map((c) => _CommentData(c)).toList();
 
-      // Fetch comment authors in parallel
-      final authorFutures = _commentDataList.map((cd) async {
-        final uid = int.tryParse(cd.comment.authorUid);
-        if (uid != null) {
-          cd.author = await TfApiClient.instance.getUserByUid(uid);
+      // 终于修复了万能的评论超大量请求问题
+      final authorUids = <int>{
+        for (final cd in _commentDataList)
+          if (int.tryParse(cd.comment.authorUid) case final int uid) uid,
+      };
+      final authors = <int, UserProfile?>{};
+      final pending = Queue<int>.from(authorUids);
+      Future<void> worker() async {
+        while (pending.isNotEmpty) {
+          final uid = pending.removeFirst();
+          authors[uid] = await TfApiClient.instance.getUserByUid(uid);
         }
-      });
-      await Future.wait(authorFutures);
+      }
+
+      await Future.wait(
+        List.generate(authorUids.length < 4 ? authorUids.length : 4, (_) => worker()),
+      );
+      for (final cd in _commentDataList) {
+        final uid = int.tryParse(cd.comment.authorUid);
+        if (uid != null) cd.author = authors[uid];
+      }
 
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
@@ -197,11 +248,30 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
 
   @override
   void dispose() {
+    SettingsService.instance.removeListener(_onSettingsChanged);
     _draftTimer?.cancel();
     unawaited(_saveCommentDraft());
     _commentController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// 分屏里的整屏查看 / 恢复分栏按钮
+  List<Widget> _buildFullScreenActions(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    final scope = ForumPostPaneScope.maybeOf(context);
+    if (scope == null) return const [];
+    return [
+      IconButton(
+        tooltip: scope.fullScreen
+            ? l10n.forumPostRestoreSplitView
+            : l10n.forumPostFullScreen,
+        onPressed: scope.toggleFullScreen,
+        icon: Icon(scope.fullScreen ? Icons.fullscreen_exit : Icons.fullscreen),
+      ),
+    ];
   }
 
   @override
@@ -210,23 +280,27 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
 
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(leading: BackButton(onPressed: _leavePost)),
-        body: const Center(child: CircularProgressIndicator()),
+        appBar: AppBar(
+          leading: BackButton(onPressed: _leavePost),
+          actions: _buildFullScreenActions(context, l10n),
+        ),
+        body: const LoadingIndicator(),
       );
     }
 
     if (_post == null) {
       return Scaffold(
-        appBar: AppBar(leading: BackButton(onPressed: _leavePost)),
+        appBar: AppBar(
+          leading: BackButton(onPressed: _leavePost),
+          actions: _buildFullScreenActions(context, l10n),
+        ),
         body: Center(child: Text(l10n.forumPostNotFound)),
       );
     }
     final post = _post!;
     final author = _postAuthor;
-    final enableMarkdown = SettingsService.instance.getValue<bool>(
-      'enableMarkdownRendering',
-      true,
-    );
+    // 值来自页面级缓存（见 _enableMarkdown / _onSettingsChanged）
+    final enableMarkdown = _enableMarkdown;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
@@ -234,6 +308,20 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
         leading: BackButton(onPressed: _leavePost),
         title: Text(post.title.isNotEmpty ? post.title : l10n.forumPostDetail),
         actions: [
+          ..._buildFullScreenActions(context, l10n),
+          // 举报入口
+          // 帖子详情
+          IconButton(
+            tooltip: l10n.ticketReport,
+            icon: const Icon(Icons.flag_outlined),
+            onPressed: () => showTicketComposeSheet(
+              context,
+              type: TicketType.report,
+              targetType: 'post',
+              targetId: '${widget.forumId}:${widget.postId}',
+              initialTitle: l10n.ticketReport,
+            ),
+          ),
           if (_canDeletePost(post))
             IconButton(
               tooltip: l10n.forumPostDelete,
@@ -249,107 +337,109 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       ),
       body: Stack(
         children: [
-          CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              SliverToBoxAdapter(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: _kPostDetailMaxWidth,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: _buildPostBody(
-                        context,
-                        post,
-                        author,
-                        enableMarkdown,
-                        l10n,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: _kPostDetailMaxWidth,
-                    ),
-                    child: _buildActionButtons(context, l10n),
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: _kPostDetailMaxWidth,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                      child: Row(
-                        children: [
-                          Text(
-                            l10n.forumComments(_commentDataList.length),
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(width: 8),
-                          const Expanded(child: Divider()),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              if (_commentDataList.isEmpty)
+          _PaneEnterAnimation(
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.chat_bubble_outline,
-                            size: 40,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant
-                                .withValues(alpha: 0.4),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            l10n.forumNoComments,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
-                        ],
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: _kPostDetailMaxWidth,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        child: _buildPostBody(
+                          context,
+                          post,
+                          author,
+                          enableMarkdown,
+                          l10n,
+                        ),
                       ),
                     ),
                   ),
-                )
-              else
-                SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final cd = _commentDataList[index];
-                    return Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxWidth: _kPostDetailMaxWidth,
-                        ),
-                        child: _buildCommentCard(context, cd, enableMarkdown),
-                      ),
-                    );
-                  }, childCount: _commentDataList.length),
                 ),
-              SliverToBoxAdapter(child: SizedBox(height: bottomPadding + 80)),
-            ],
+                SliverToBoxAdapter(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: _kPostDetailMaxWidth,
+                      ),
+                      child: _buildActionButtons(context, l10n),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: _kPostDetailMaxWidth,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                        child: Row(
+                          children: [
+                            Text(
+                              l10n.forumComments(_commentDataList.length),
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(width: 8),
+                            const Expanded(child: Divider()),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                if (_commentDataList.isEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_outline,
+                              size: 40,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant
+                                  .withValues(alpha: 0.4),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              l10n.forumNoComments,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final cd = _commentDataList[index];
+                      return Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxWidth: _kPostDetailMaxWidth,
+                          ),
+                          child: _buildCommentCard(context, cd, enableMarkdown),
+                        ),
+                      );
+                    }, childCount: _commentDataList.length),
+                  ),
+                SliverToBoxAdapter(child: SizedBox(height: bottomPadding + 80)),
+              ],
+            ),
           ),
           Positioned(
             bottom: bottomPadding + 16,
@@ -447,11 +537,17 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
         ],
         const SizedBox(height: 12),
         if (_stickerTestPattern.hasMatch(post.content))
-          StickerTextRenderer(text: post.content, style: Theme.of(context).textTheme.bodyLarge)
+          StickerTextRenderer(
+            text: post.content,
+            style: Theme.of(context).textTheme.bodyLarge,
+          )
         else if (enableMarkdown)
-          MarkdownRenderer(data: post.content)
+          MarkdownRenderer(data: post.content, selectable: true)
         else
-          Text(post.content, style: Theme.of(context).textTheme.bodyLarge),
+          SelectableText(
+            post.content,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
         if (post.attachments.isNotEmpty)
           ForumAttachmentsRow(attachments: post.attachments),
         const SizedBox(height: 8),
@@ -473,13 +569,43 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     // 添加内容
     buffer.writeln(_post!.content);
 
-    // 添加来源标记
+    // 添加来源标记（原先硬编码中文，英文/繁中界面下会串语言）
     buffer.writeln();
     buffer.writeln('---');
-    buffer.writeln('来自 TouchFish 论坛');
+    buffer.writeln(AppLocalizations.of(context)!.forumPostCopySource);
 
     // 复制到剪贴板
     _copyText(buffer.toString());
+  }
+
+  /// 系统分享
+  Future<void> _sharePost() async {
+    final post = _post;
+    if (post == null) return;
+    final l10n = AppLocalizations.of(context)!;
+
+    final buffer = StringBuffer();
+    if (post.title.isNotEmpty) {
+      buffer.writeln(post.title);
+      buffer.writeln();
+    }
+    buffer.writeln(post.content);
+    buffer.writeln();
+    buffer.writeln('---');
+    buffer.writeln(l10n.forumPostCopySource);
+
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          text: buffer.toString(),
+          subject: post.title.isEmpty ? null : post.title,
+        ),
+      );
+    } catch (e) {
+      talker.error('share post failed', e);
+      if (!mounted) return;
+      TouchFishSnackbarService.instance.showError(l10n.forumPostShareFailed);
+    }
   }
 
   Future<void> _copyText(String text) async {
@@ -518,7 +644,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
           ),
           const SizedBox(width: 8),
           FilledButton.tonalIcon(
-            onPressed: () {},
+            onPressed: _sharePost,
             icon: const Icon(Icons.share_outlined, size: 18),
             label: Text(l10n.forumShare),
           ),
@@ -594,11 +720,14 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
                   ),
                   const SizedBox(height: 4),
                   if (_stickerTestPattern.hasMatch(comment.content))
-                    StickerTextRenderer(text: comment.content, style: Theme.of(context).textTheme.bodyMedium)
+                    StickerTextRenderer(
+                      text: comment.content,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    )
                   else if (enableMarkdown)
-                    MarkdownRenderer(data: comment.content)
+                    MarkdownRenderer(data: comment.content, selectable: true)
                   else
-                    Text(
+                    SelectableText(
                       comment.content,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
@@ -691,6 +820,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
         );
       },
     );
+    if (!mounted) return;
     if (result == true) {
       _commentController.clear();
       await _loadData();
@@ -730,17 +860,13 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
         TouchFishSnackbarService.instance.show(l10n.forumCommentSuccess);
         await _loadData();
       } else {
-        TouchFishSnackbarService.instance.show(
-          l10n.forumCommentFailed,
-        );
+        TouchFishSnackbarService.instance.show(l10n.forumCommentFailed);
       }
     } catch (e) {
       talker.error('_submitComment failed', e);
       if (mounted) {
         setState(() => _isSendingComment = false);
-        TouchFishSnackbarService.instance.show(
-          l10n.forumCommentFailed,
-        );
+        TouchFishSnackbarService.instance.show(l10n.forumCommentFailed);
       }
     }
   }
@@ -840,9 +966,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       }
     });
     TouchFishSnackbarService.instance.show(
-      success
-          ? l10n.forumCommentDeleteSuccess
-          : l10n.forumCommentDeleteFailed,
+      success ? l10n.forumCommentDeleteSuccess : l10n.forumCommentDeleteFailed,
     );
   }
 
@@ -859,5 +983,59 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     if (diff.inHours > 0) return '${diff.inHours}h';
     if (diff.inMinutes > 0) return '${diff.inMinutes}m';
     return 'now';
+  }
+}
+
+class _PaneEnterAnimation extends StatefulWidget {
+  final Widget child;
+
+  const _PaneEnterAnimation({required this.child});
+
+  @override
+  State<_PaneEnterAnimation> createState() => _PaneEnterAnimationState();
+}
+
+class _PaneEnterAnimationState extends State<_PaneEnterAnimation>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 260),
+  );
+  late final Animation<double> _animation = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOutCubic,
+  );
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.value = 1;
+    } else {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _animation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.035, 0),
+          end: Offset.zero,
+        ).animate(_animation),
+        child: widget.child,
+      ),
+    );
   }
 }

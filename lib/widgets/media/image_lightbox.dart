@@ -5,9 +5,11 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/services.dart' show KeyDownEvent, LogicalKeyboardKey;
+import 'package:flutter/services.dart'
+    show Clipboard, ClipboardData, KeyDownEvent, LogicalKeyboardKey;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_blurhash/flutter_blurhash.dart';
+import 'package:dismissible_page/dismissible_page.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 
@@ -34,25 +36,18 @@ class LightboxImageItem {
   });
 }
 
-/// 图片灯箱：单图体验优化 + 多图画廊。
+/// 图片灯箱
 ///
-/// 设计参照 Solian 的 cloud_file_lightbox.dart：
-/// - 双击缩放（photo_view 内置）、点击切换控制栏、3s 自动隐藏
-/// - 加载进度（spinner 或百分比）
-/// - 上下渐变 scrim、键盘方向键/Esc
-/// - 不用下滑关闭（与 PhotoView 垂直平移冲突），关闭走按钮/Esc
-///
-/// 旧构造（imagePath/imageBytes/heroTag）保留，内部包装为单条目画廊。
 class ImageLightbox extends StatefulWidget {
   final String imagePath;
   final Uint8List? imageBytes;
   final String heroTag;
   final Map<String, dynamic>? exifData;
 
-  /// 多图模式：按时间序的图片列表；为 null 时用单图构造。
+  /// 多图模式：按时间序的图片列表；为 null 时用单图
   final List<LightboxImageItem>? items;
 
-  /// 初始显示第几张（多图模式）。
+  /// 初始显示第几张（多图模式）
   final int initialIndex;
 
   /// 把文件 hash 解析为可访问 URL；默认走 [TfApiClient.getFileUrl]。
@@ -79,6 +74,21 @@ class _ImageLightboxState extends State<ImageLightbox> {
 
   late final List<LightboxImageItem> _items;
   late final List<PhotoViewController> _controllers;
+
+  /// 当前页的缩放状态
+  PhotoViewScaleState _scaleState = PhotoViewScaleState.initial;
+
+  void _onScaleStateChanged(PhotoViewScaleState state) {
+    if (!mounted || state == _scaleState) return;
+    setState(() => _scaleState = state);
+  }
+
+  /// 处于放大态时禁用下拉关闭
+  ///
+  bool get _isZoomedIn =>
+      _scaleState == PhotoViewScaleState.zoomedIn ||
+      _scaleState == PhotoViewScaleState.covering ||
+      _scaleState == PhotoViewScaleState.originalSize;
   late final PageController _pageController;
   late final Map<int, Future<String>> _urlFutures = {};
   final Map<String, Future<File?>> _fileCacheFutures = {};
@@ -177,7 +187,7 @@ class _ImageLightboxState extends State<ImageLightbox> {
   bool get _thumbnailModeEnabled =>
       SettingsService.instance.getValue<bool>('thumbnailPreview', true);
 
-  /// 该条目最终展示是否来自网络原图（本地字节/已有本地文件不需要缩略图替代）。
+  /// 该条目最终展示是否来自网络原图
   bool _isRemoteOriginal(LightboxImageItem item) {
     if (item.bytes?.isNotEmpty == true) return false;
     if (item.media.bytes?.isNotEmpty == true) return false;
@@ -213,9 +223,11 @@ class _ImageLightboxState extends State<ImageLightbox> {
 
   /// 同步可得的 ImageProvider；拿不到（纯 hash）返回 null，由 FutureBuilder 异步解析。
   ImageProvider? _resolveProviderSync(LightboxImageItem item) {
-    final bytes = item.bytes ?? (item.media.bytes != null
-        ? Uint8List.fromList(item.media.bytes!)
-        : null);
+    // 直接共享字节（只有非 Uint8List 时才复制）：PhotoView 每次构建都会调用这里
+    final raw = item.bytes ?? item.media.bytes;
+    final bytes = raw is Uint8List
+        ? raw
+        : (raw != null ? Uint8List.fromList(raw) : null);
     if (bytes != null && bytes.isNotEmpty) {
       return MemoryImage(bytes);
     }
@@ -230,6 +242,25 @@ class _ImageLightboxState extends State<ImageLightbox> {
       if (file.existsSync()) return FileImage(file);
     }
     return null;
+  }
+
+  /// 复制当前图片的链接
+  Future<void> _copyCurrentLink(BuildContext context) async {
+    if (_items.isEmpty) return;
+    final path = _items[_currentIndex].media.path;
+    final isRemote = path.startsWith('http://') || path.startsWith('https://');
+    if (!isRemote) return;
+
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    await Clipboard.setData(ClipboardData(text: path));
+    if (!mounted || l10n == null) return;
+    messenger?.showSnackBar(
+      SnackBar(
+        content: Text(l10n.imageLinkCopied),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   PhotoViewGalleryPageOptions _pageOptions(int index) {
@@ -268,6 +299,7 @@ class _ImageLightboxState extends State<ImageLightbox> {
                 minScale: PhotoViewComputedScale.contained * 0.9,
                 maxScale: PhotoViewComputedScale.covered * 3,
                 initialScale: PhotoViewComputedScale.contained,
+                scaleStateChangedCallback: _onScaleStateChanged,
                 onTapUp: (context, details, value) => _toggleControls(),
                 errorBuilder: _photoErrorBuilder(item),
               ),
@@ -286,6 +318,7 @@ class _ImageLightboxState extends State<ImageLightbox> {
           minScale: PhotoViewComputedScale.contained * 0.9,
           maxScale: PhotoViewComputedScale.covered * 3,
           initialScale: PhotoViewComputedScale.contained,
+          scaleStateChangedCallback: _onScaleStateChanged,
           onTapUp: (context, details, value) => _toggleControls(),
           errorBuilder: _photoErrorBuilder(item),
         ),
@@ -327,6 +360,7 @@ class _ImageLightboxState extends State<ImageLightbox> {
                   minScale: PhotoViewComputedScale.contained * 0.9,
                   maxScale: PhotoViewComputedScale.covered * 3,
                   initialScale: PhotoViewComputedScale.contained,
+                  scaleStateChangedCallback: _onScaleStateChanged,
                   onTapUp: (context, details, value) => _toggleControls(),
                   enableRotation: true,
                   errorBuilder: _photoErrorBuilder(item),
@@ -352,6 +386,7 @@ class _ImageLightboxState extends State<ImageLightbox> {
                 minScale: PhotoViewComputedScale.contained * 0.9,
                 maxScale: PhotoViewComputedScale.covered * 3,
                 initialScale: PhotoViewComputedScale.contained,
+                scaleStateChangedCallback: _onScaleStateChanged,
                 onTapUp: (context, details, value) => _toggleControls(),
                 enableRotation: true,
                 errorBuilder: _photoErrorBuilder(item),
@@ -550,7 +585,17 @@ class _ImageLightboxState extends State<ImageLightbox> {
                   );
                 }
               },
-              child: PhotoViewGallery.builder(
+              child: DismissiblePage(
+                onDismissed: () => Navigator.of(context).pop(),
+                // 放大态交给 PhotoView
+                disabled: _isZoomedIn,
+                direction: DismissiblePageDismissDirection.down,
+                backgroundColor: Colors.black,
+                dragSensitivity: 0.7,
+                dismissThresholds: const {
+                  DismissiblePageDismissDirection.down: 0.15,
+                },
+                child: PhotoViewGallery.builder(
                 key: ValueKey(_items.length),
                 pageController: _pageController,
                 itemCount: _items.length,
@@ -619,6 +664,7 @@ class _ImageLightboxState extends State<ImageLightbox> {
                 ),
                 gaplessPlayback: true,
                 enableRotation: true,
+              ),
               ),
             ),
 
@@ -726,7 +772,31 @@ class _ImageLightboxState extends State<ImageLightbox> {
                                 ),
                               ),
                             ),
-                          const SizedBox(width: 48),
+                          PopupMenuButton<String>(
+                            tooltip: MaterialLocalizations.of(
+                              context,
+                            ).moreButtonTooltip,
+                            icon: const Icon(Icons.more_horiz, color: Colors.white),
+                            onSelected: (value) {
+                              if (value == 'copy') _copyCurrentLink(context);
+                            },
+                            itemBuilder: (context) => [
+                              PopupMenuItem(
+                                value: 'copy',
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.link, size: 18),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.imageCopyLink,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),

@@ -31,7 +31,7 @@ void main() {
       supportedLocales: AppLocalizations.supportedLocales,
       home: MediaQuery(
         data: MediaQueryData(
-          size: const Size(800, 600),
+          size: const Size(1200, 800),
           padding: EdgeInsets.only(top: statusBar),
         ),
         child: home,
@@ -42,7 +42,8 @@ void main() {
   testWidgets('wide chat shell insets content below the status bar', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(800, 600));
+    // 「宽」聊天外壳（左列表 + 右详情）需要 expanded 档。
+    await tester.binding.setSurfaceSize(const Size(1200, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
@@ -55,7 +56,8 @@ void main() {
     expect(cardTop, greaterThanOrEqualTo(24));
 
     // 顶部的搜索按钮（右侧工具栏）同样不被状态栏遮挡。
-    final searchButton = find.byTooltip('搜索群聊');
+    // 按钮用的是 l10n.searchTitle（zh = '搜索'），不是 groupSearchTooltip。
+    final searchButton = find.byTooltip('搜索');
     expect(searchButton, findsOneWidget);
     final buttonTop = tester.getTopLeft(searchButton).dy;
     expect(buttonTop, greaterThanOrEqualTo(24));

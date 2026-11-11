@@ -108,6 +108,36 @@ class FileService {
     }
   }
 
+  /// 上传字节并返回服务端文件哈希（失败返回 null）。
+  ///
+  /// ≤ [kStandardUploadThreshold] 走单请求，更大的自动分块；供不方便接入
+  /// [TaskManager] 的页面使用（论坛附件、存储管理）。聊天消息仍走
+  /// [uploadFile] 以便在传输面板里展示进度。不传 [filePath] 就不做断点续传
+  /// 会话持久化（避免不同文件复用同一个会话键）。
+  Future<String?> uploadBytes({
+    required int uid,
+    required String password,
+    required String fileName,
+    required List<int> bytes,
+    String? filePath,
+    void Function(int transferred)? onProgress,
+  }) async {
+    final data = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+    try {
+      return await _uploadInternal(
+        uid: uid,
+        password: password,
+        fileName: fileName,
+        bytes: data,
+        filePath: filePath,
+        onProgress: onProgress ?? (_) {},
+      );
+    } catch (e) {
+      talker.error('FileService.uploadBytes failed', e);
+      return null;
+    }
+  }
+
   Future<String?> _uploadInternal({
     required int uid,
     required String password,

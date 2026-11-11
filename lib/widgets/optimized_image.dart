@@ -15,14 +15,14 @@ import 'media/image_error_view.dart';
 }) {
   if (kIsWeb) return (width: null, height: null);
   return (
-    width:
-        width != null && width > 0 ? (width * devicePixelRatio).round() : null,
+    width: width != null && width > 0
+        ? (width * devicePixelRatio).round()
+        : null,
     height: height != null && height > 0
         ? (height * devicePixelRatio).round()
         : null,
   );
 }
-
 
 ImageProvider resizedImageProvider(
   ImageProvider provider,
@@ -55,6 +55,11 @@ class OptimizedImage extends StatefulWidget {
 
   final String? blurhash;
 
+  /// 显式尺寸：给定后按此尺寸约束布局，并按该尺寸下采样解码
+  /// （用于头像/缩略图等已知尺寸场景）。为空时按父级约束自适应。
+  final double? width;
+  final double? height;
+
   const OptimizedImage({
     super.key,
     required this.provider,
@@ -64,6 +69,8 @@ class OptimizedImage extends StatefulWidget {
     this.frameBuilder,
     this.thumbnailUrl,
     this.blurhash,
+    this.width,
+    this.height,
   });
 
   @override
@@ -73,6 +80,7 @@ class OptimizedImage extends StatefulWidget {
 class _OptimizedImageState extends State<OptimizedImage> {
   /// 磁盘缓存管理器
   BaseCacheManager? _cacheManager;
+
   /// loading loading loading
   bool _cacheManagerReady = false;
   ({int? width, int? height})? _cachedDecodeSize;
@@ -163,12 +171,19 @@ class _OptimizedImageState extends State<OptimizedImage> {
     );
   }
 
-  Widget _error(BuildContext context, Object error) => widget.errorBuilder != null
+  Widget _error(BuildContext context, Object error) =>
+      widget.errorBuilder != null
       ? widget.errorBuilder!(context, error, StackTrace.current)
       : ImageErrorView(blurhash: widget.blurhash, error: error);
 
   @override
   Widget build(BuildContext context) {
+    final content = _buildContent(context);
+    if (widget.width == null && widget.height == null) return content;
+    return SizedBox(width: widget.width, height: widget.height, child: content);
+  }
+
+  Widget _buildContent(BuildContext context) {
     // 网络图片走磁盘缓存
     if (widget.provider is NetworkImage) {
       final networkImage = widget.provider as NetworkImage;
@@ -181,7 +196,9 @@ class _OptimizedImageState extends State<OptimizedImage> {
             _cachedDecodeSize = imageDecodeSize(
               MediaQuery.of(context).devicePixelRatio,
               width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
-              height: constraints.hasBoundedHeight ? constraints.maxHeight : null,
+              height: constraints.hasBoundedHeight
+                  ? constraints.maxHeight
+                  : null,
             );
           }
 
@@ -194,8 +211,8 @@ class _OptimizedImageState extends State<OptimizedImage> {
               fit: widget.fit,
               memCacheWidth: _cachedDecodeSize?.width,
               memCacheHeight: _cachedDecodeSize?.height,
-              placeholder: (context, url) => (widget.thumbnailUrl != null ||
-                      widget.blurhash != null)
+              placeholder: (context, url) =>
+                  (widget.thumbnailUrl != null || widget.blurhash != null)
                   ? _progressivePlaceholder(context)
                   : _placeholder(context),
               errorWidget: (context, url, error) => _error(context, error),
@@ -215,13 +232,15 @@ class _OptimizedImageState extends State<OptimizedImage> {
         final currentSize = Size(constraints.maxWidth, constraints.maxHeight);
         if (_lastConstraints != currentSize) {
           _lastConstraints = currentSize;
-          
+
           var imageProvider = widget.provider;
           if (!kIsWeb) {
             final size = imageDecodeSize(
               MediaQuery.of(context).devicePixelRatio,
               width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
-              height: constraints.hasBoundedHeight ? constraints.maxHeight : null,
+              height: constraints.hasBoundedHeight
+                  ? constraints.maxHeight
+                  : null,
             );
             if (size.width != null || size.height != null) {
               imageProvider = ResizeImage(
@@ -234,7 +253,7 @@ class _OptimizedImageState extends State<OptimizedImage> {
           }
           _cachedImageProvider = imageProvider;
         }
-        
+
         return Image(
           image: _cachedImageProvider ?? widget.provider,
           fit: widget.fit,

@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 import '../models/message_model.dart';
+import '../models/settings_service.dart';
 import '../utils/talker.dart';
 import 'api/tf_api_client.dart';
 import 'auth_state.dart';
@@ -96,6 +97,10 @@ class MessageSyncService extends ChangeNotifier {
   final Map<String, Set<int>> _inFlightMissing = {};
   final Map<String, Set<int>> _forgottenMissing = {};
   final Map<String, Timer> _retryTimers = {};
+  final Map<String, int> _retryAttempts = {};
+
+  static const int _maxRetryAttempts = 8;
+  static const Duration _maxRetryDelay = Duration(minutes: 5);
 
   // 同步进度状态（供 UI 展示顶部的加载提示）。
   // 同一房间的缺口同步与增量同步可能连续执行，用引用计数避免中间闪烁。
@@ -120,6 +125,44 @@ class MessageSyncService extends ChangeNotifier {
   static const int _maxSilentFailures = 3;
 
   String? activeRoomId;
+
+  // 仅浏览模式下：哪些房间被显式升级为"完整同步"（持久化在 LocalMessageStore）。
+  final Set<String> _fullSyncRooms = {};
+  bool _fullSyncRoomsLoaded = false;
+
+  /// 全局同步模式：full（默认，完整补拉）/ browsing（仅浏览，不补拉历史）。
+  bool get _browsingSyncMode =>
+      SettingsService.instance.getValue<String>('syncMode', 'full') == 'browsing';
+
+  /// 该房间当前是否走完整同步：非浏览模式恒为 true；浏览模式下仅已升级的房间
+  /// 或正在查看的会话为 true。
+  bool isFullSyncRoom(String roomId) {
+    if (!_browsingSyncMode) return true;
+    return _fullSyncRooms.contains(roomId) || roomId == activeRoomId;
+  }
+
+  /// 加载持久化的"完整同步房间"集合（浏览模式启动/恢复基线时调用一次）。
+  Future<void> loadFullSyncRooms() async {
+    if (_fullSyncRoomsLoaded) return;
+    try {
+      final rooms = await LocalMessageStore.instance.loadSyncEnabledRooms();
+      _fullSyncRooms.addAll(rooms);
+      _fullSyncRoomsLoaded = true;
+    } catch (e) {
+      talker.warning('MessageSyncService: load sync-enabled rooms failed $e');
+    }
+  }
+
+  /// 把房间升级为完整同步（进入聊天时调用）并持久化。
+  Future<void> markRoomFullySynced(String roomId) async {
+    if (_fullSyncRooms.contains(roomId)) return;
+    _fullSyncRooms.add(roomId);
+    try {
+      await LocalMessageStore.instance.setRoomSyncEnabled(roomId, true);
+    } catch (e) {
+      talker.warning('MessageSyncService: persist sync-enabled room failed $e');
+    }
+  }
 
   /// 仅可见同步（显示指示器）计为 syncing；静默补拉不打扰 UI。
   bool isSyncingFor(String roomId) => _visibleSyncs.containsKey(roomId);
@@ -153,6 +196,7 @@ class MessageSyncService extends ChangeNotifier {
   /// 冷却期内的后台静默增量补拉：不显示指示器、失败静默，
   /// 连续失败 [_maxSilentFailures] 次后暂时放弃，直到有缺口或距上次成功拉取超时。
   Future<void> silentSyncRoom(String roomId) async {
+    if (!isFullSyncRoom(roomId)) return;
     if (_syncingRooms.contains(roomId) || _latestSeq[roomId] == null) return;
     if ((_silentFailures[roomId] ?? 0) >= _maxSilentFailures) return;
     final ok = await _syncRoomIncremental(roomId, silent: true);
@@ -245,6 +289,7 @@ class MessageSyncService extends ChangeNotifier {
       timer.cancel();
     }
     _retryTimers.clear();
+    _retryAttempts.clear();
     _activeSyncs.clear();
     _syncedCount.clear();
     _batchRound.clear();
@@ -257,6 +302,8 @@ class MessageSyncService extends ChangeNotifier {
     _visibleSyncs.clear();
     _lastSyncAt.clear();
     _silentFailures.clear();
+    _fullSyncRooms.clear();
+    _fullSyncRoomsLoaded = false;
     notifyListeners();
   }
 
@@ -270,6 +317,13 @@ class MessageSyncService extends ChangeNotifier {
       return;
     }
     if (seq <= latest) return;
+
+    // 仅浏览模式且未升级的房间：只推进游标，不排队补拉缺口
+    // （不保证离线完整同步；进入房间会升级为完整同步）。
+    if (!isFullSyncRoom(roomId)) {
+      _latestSeq[roomId] = seq;
+      return;
+    }
 
     if (seq > latest + 1) {
       final missing = _queuedMissing.putIfAbsent(roomId, () => {});
@@ -294,6 +348,7 @@ class MessageSyncService extends ChangeNotifier {
       ..._queuedMissing.keys,
     };
     for (final roomId in roomIds) {
+      if (!isFullSyncRoom(roomId)) continue;
       await _syncMissing(roomId);
       if (_queuedMissing[roomId]?.isNotEmpty == true) continue;
       await _syncRoomIncremental(roomId);
@@ -397,6 +452,13 @@ class MessageSyncService extends ChangeNotifier {
       }
     } finally {
       _syncingRooms.remove(roomId);
+      // 本轮把缺口队列清空 = 已经补齐，重置退避计数。
+      // 不能看「重试定时器是否还活着」：上一轮遗留的定时器会让计数永远不重置，
+      // 下一次真正失败时直接吃一个很大的退避。
+      final queued = _queuedMissing[roomId];
+      if (queued == null || queued.isEmpty) {
+        _retryAttempts.remove(roomId);
+      }
       // bulk action processing complete!
       // ——GitHub Notifications
       //
@@ -491,6 +553,14 @@ class MessageSyncService extends ChangeNotifier {
     return ok;
   }
 
+  /// 用 /chat/list 携带的房间当前序号直接建立基线（免一次网络往返）。
+  /// 语义与 [establishBaseline] 相同：跳过历史，只接后续增量。
+  Future<void> adoptServerBaseline(String roomId, int seq) async {
+    if (seq <= 0 || _latestSeq.containsKey(roomId)) return;
+    registerRoomSeq(roomId, seq);
+    await _saveSyncPoint(roomId, seq);
+  }
+
   /// 没有任何本地同步点的新房间，以服务端当前序号建立空基线。
   Future<void> establishBaseline(String roomId) async {
     if (_latestSeq.containsKey(roomId)) return;
@@ -559,7 +629,24 @@ class MessageSyncService extends ChangeNotifier {
   void _scheduleRetry(String roomId) {
     final existing = _retryTimers[roomId];
     if (existing?.isActive == true) return;
-    _retryTimers[roomId] = Timer(_retryDelay, () {
+    final attempt = (_retryAttempts[roomId] ?? 0) + 1;
+    _retryAttempts[roomId] = attempt;
+    if (attempt > _maxRetryAttempts) {
+      // 服务端长时间不可用：别每 3 秒打一次加密请求，等下次重连/进会话再补
+      talker.warning(
+        'MessageSyncService: retry limit reached for $roomId, '
+        'will retry on next reconnect or room entry',
+      );
+      _retryAttempts.remove(roomId);
+      return;
+    }
+    final delayMs = _retryDelay.inMilliseconds * (1 << (attempt - 1));
+    var delay = Duration(milliseconds: delayMs);
+    // 测试会用超长 base 来禁用重试；只有 base 本身小于上限时才做封顶
+    if (_retryDelay < _maxRetryDelay && delay > _maxRetryDelay) {
+      delay = _maxRetryDelay;
+    }
+    _retryTimers[roomId] = Timer(delay, () {
       _retryTimers.remove(roomId);
       unawaited(_syncMissing(roomId));
     });
@@ -573,6 +660,9 @@ class MessageSyncService extends ChangeNotifier {
   @visibleForTesting
   Set<int> queuedMissingForTesting(String roomId) =>
       Set.unmodifiable(_queuedMissing[roomId] ?? const {});
+
+  @visibleForTesting
+  int retryAttemptsForTesting(String roomId) => _retryAttempts[roomId] ?? 0;
 
   @visibleForTesting
   Future<void> syncMissingForTesting(String roomId) => _syncMissing(roomId);

@@ -258,6 +258,22 @@ class AppNotificationService extends ChangeNotifier
     }
   }
 
+  /// 强提醒
+  /// 绕过登录时的横幅抑制
+  Future<void> presentUrgent(AppNotification notification) async {
+    if (!canShowInApp(notification)) return;
+    if (!await _shouldShowInApp()) {
+      if (kIsWeb) return;
+      if (!SettingsService.instance.getValue<bool>('systemNotifications', true)) {
+        return;
+      }
+      await _showSystemNotification(notification);
+      return;
+    }
+    _playNotificationFeedback();
+    add(notification);
+  }
+
   Future<void> _presentOne(AppNotification notification) async {
     final settings = SettingsService.instance;
     if (await _shouldShowInApp()) {

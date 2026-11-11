@@ -11,9 +11,13 @@ class NotificationInfo {
   final String? clientMid; // client message
   final String? roomId; // explicit room id
   final String? fileHash; // file hash
+  final int? durationMs; // audio/voice ms
   final int? groupId; // group ID
   final List<int> mentionedUids;
   final bool mentionsMe;
+
+  /// 服务端删除锁
+  final bool locked;
   final bool? shouldAlert;
   final int? quoteMid;
   final Map<String, dynamic>? quotePreview;
@@ -37,6 +41,7 @@ class NotificationInfo {
     this.clientMid,
     this.roomId,
     this.fileHash,
+    this.durationMs,
     this.groupId,
     this.mentionedUids = const [],
     this.mentionsMe = false,
@@ -49,6 +54,7 @@ class NotificationInfo {
     this.recalledMid,
     this.deletedBy,
     this.deletedAt,
+    this.locked = false,
   });
 
   NotificationInfo withReadAt(double value) => NotificationInfo(
@@ -64,6 +70,7 @@ class NotificationInfo {
     clientMid: clientMid,
     roomId: roomId,
     fileHash: fileHash,
+    durationMs: durationMs,
     groupId: groupId,
     mentionedUids: mentionedUids,
     mentionsMe: mentionsMe,
@@ -76,10 +83,86 @@ class NotificationInfo {
     recalledMid: recalledMid,
     deletedBy: deletedBy,
     deletedAt: deletedAt,
+    locked: locked,
   );
 
-  /// Parsed sender UID from the raw sender string.
-  /// "U123" -> 123, "G456U123" -> 123
+  /// 本地缓存用的序列化（与服务端格式无关
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'time_stamp': timeStamp,
+        'read_at': readAt,
+        'event': event,
+        'title': title,
+        'content': content,
+        'sender': senderRaw,
+        'meta': meta,
+        'mid': mid,
+        'client_mid': clientMid,
+        'room_id': roomId,
+        'file_hash': fileHash,
+        'duration': durationMs,
+        'group_id': groupId,
+        'mentioned_uids': mentionedUids,
+        'mentions_me': mentionsMe,
+        'should_alert': shouldAlert,
+        'quote_mid': quoteMid,
+        'quote_preview': quotePreview,
+        'forwarded_mid': forwardedMid,
+        'forward_preview': forwardPreview,
+        'file_metadata': fileMetadata,
+        'recalled_mid': recalledMid,
+        'deleted_by': deletedBy,
+        'deleted_at': deletedAt?.toIso8601String(),
+        'locked': locked,
+      };
+
+  /// 从本地缓存还原
+  factory NotificationInfo.fromLocalJson(Map<String, dynamic> json) {
+    final rawMeta = json['meta'];
+    final rawMentioned = json['mentioned_uids'];
+    return NotificationInfo(
+      id: _notificationInt(json['id']) ?? -1,
+      timeStamp: (json['time_stamp'] as num?)?.toDouble() ?? 0,
+      readAt: _notificationDouble(json['read_at']),
+      event: json['event'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      content: json['content'] as String? ?? '',
+      senderRaw: json['sender']?.toString(),
+      meta: rawMeta is Map
+          ? Map<String, dynamic>.from(rawMeta)
+          : const <String, dynamic>{},
+      mid: _notificationInt(json['mid']),
+      clientMid: json['client_mid'] as String?,
+      roomId: json['room_id'] as String?,
+      fileHash: json['file_hash'] as String?,
+      durationMs: _notificationInt(json['duration']),
+      groupId: _notificationInt(json['group_id']),
+      mentionedUids: rawMentioned is List
+          ? rawMentioned
+              .map((e) => (e as num).toInt())
+              .toList(growable: false)
+          : const [],
+      mentionsMe: json['mentions_me'] as bool? ?? false,
+      shouldAlert: json['should_alert'] as bool?,
+      quoteMid: _notificationInt(json['quote_mid']),
+      quotePreview: json['quote_preview'] is Map
+          ? Map<String, dynamic>.from(json['quote_preview'] as Map)
+          : null,
+      forwardedMid: _notificationInt(json['forwarded_mid']),
+      forwardPreview: json['forward_preview'] is Map
+          ? Map<String, dynamic>.from(json['forward_preview'] as Map)
+          : null,
+      fileMetadata: json['file_metadata'] is Map
+          ? Map<String, dynamic>.from(json['file_metadata'] as Map)
+          : null,
+      recalledMid: _notificationInt(json['recalled_mid']),
+      deletedBy: _notificationInt(json['deleted_by']),
+      deletedAt: DateTime.tryParse(json['deleted_at'] as String? ?? ''),
+      locked: json['locked'] as bool? ?? false,
+    );
+  }
+
+
   int? get senderUid {
     if (senderRaw == null) return null;
     final s = senderRaw!;
@@ -92,13 +175,10 @@ class NotificationInfo {
   factory NotificationInfo.fromServerJson(Map<String, dynamic> json) {
     final outerInfo = json['info'] as Map<String, dynamic>? ?? {};
 
-    // server message.plain handler nests an extra info level:
-    // {info: {time_stamp: ..., info: {event: "message.plain", ...}}}
-    // while message.file uses: {info: {time_stamp: ..., event: "message.file", ...}}
+    // 服务端消息可能在 info 层嵌套额外的 info
     final innerInfo = outerInfo['info'];
     final info = (innerInfo is Map<String, dynamic>) ? innerInfo : outerInfo;
-
-    // Fallback: old channel.py messages put sender at outerInfo level
+    // 神秘 fallback
     final rawSender = info['sender'] ?? outerInfo['sender'];
     final rawMeta = info['meta'];
     final rawQuote = info['quote'] ?? (rawMeta is num ? rawMeta : null);
@@ -126,11 +206,13 @@ class NotificationInfo {
       clientMid: info['client_mid'] as String?,
       roomId: info['room_id'] as String?,
       fileHash: info['file_hash'] as String?,
+      durationMs: _notificationInt(info['duration']),
       groupId: (info['group_id'] as num?)?.toInt(),
       mentionedUids: (info['mentioned_uids'] as List<dynamic>? ?? const [])
           .map((uid) => (uid as num).toInt())
           .toList(),
       mentionsMe: info['mentions_me'] as bool? ?? false,
+      locked: json['locked'] as bool? ?? false,
       shouldAlert: info['should_alert'] as bool?,
       quoteMid: rawQuote is num
           ? rawQuote.toInt()
@@ -155,7 +237,7 @@ class NotificationInfo {
     );
   }
 
-  /// 解析服务端 MESSAGE.NEW / MESSAGE.RECALLED 的 message（旧 info）。
+  /// 解析服务端 MESSAGE.NEW / MESSAGE.RECALLED 的 message（旧 info）
   factory NotificationInfo.fromServerMessageInfo(Map<String, dynamic> json) {
     final rawQuote = json['quote'];
     final preview =
@@ -175,6 +257,7 @@ class NotificationInfo {
       clientMid: json['client_mid'] as String?,
       roomId: json['room_id'] as String?,
       fileHash: json['file_hash'] as String?,
+      durationMs: _notificationInt(json['duration']),
       groupId: _notificationInt(json['group_id']),
       mentionedUids: (json['mentioned_uids'] as List<dynamic>? ?? const [])
           .map((uid) => (uid as num).toInt())
@@ -209,6 +292,7 @@ class NotificationInfo {
   bool get isAnnouncementEvent => event.startsWith('announcement.');
   bool get isMessageEvent => event.startsWith('message.');
   bool get isForumEvent => event.startsWith('forum.');
+  bool get isPunishmentEvent => event.startsWith('punishment.');
   bool get isGroupEvent => event.startsWith('group.');
   bool get isAuthEvent => event.startsWith('auth.');
   bool get isInviteEvent =>

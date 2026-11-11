@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:touchfish_client/l10n/app_localizations.dart';
 import 'package:touchfish_client/models/chat_model.dart';
 import 'package:touchfish_client/widgets/chat_list_widget.dart';
+import 'package:touchfish_client/widgets/ui/refreshable.dart';
 
 class _OchMaterialLocalizationsDelegate
     extends LocalizationsDelegate<MaterialLocalizations> {
@@ -85,5 +86,33 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text(DateFormat.E('zh').format(messageTime)), findsOneWidget);
+  });
+
+  testWidgets('an empty chat list is still pullable to refresh', (tester) async {
+    var refreshed = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: PullToRefresh.list(
+            onRefresh: () async => refreshed = true,
+            child: const ChatListWidget(chatRooms: []),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, 400));
+    await tester.pumpAndSettle();
+
+    expect(refreshed, isTrue);
   });
 }

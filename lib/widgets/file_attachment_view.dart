@@ -32,6 +32,9 @@ class FileAttachmentView extends ConsumerStatefulWidget {
   final bool allowAutomaticPreview;
   final bool compact;
 
+  /// 音频时长（毫秒），仅音频附件用于展示。
+  final int? durationMs;
+
   /// 多图灯箱画廊条目（由聊天详情页收集）；为 null 时单图模式。
   final List<LightboxImageItem>? galleryItems;
   final int galleryIndex;
@@ -43,6 +46,7 @@ class FileAttachmentView extends ConsumerStatefulWidget {
     this.bytes,
     this.allowAutomaticPreview = true,
     this.compact = false,
+    this.durationMs,
     this.galleryItems,
     this.galleryIndex = 0,
   });
@@ -307,6 +311,7 @@ class _FileAttachmentViewState extends ConsumerState<FileAttachmentView> {
             attachment: _attachment,
             urlFuture: _urlFuture,
             bytes: widget.bytes,
+            durationMs: widget.durationMs,
             galleryItems: widget.galleryItems,
             galleryIndex: widget.galleryIndex,
           ),
@@ -323,6 +328,7 @@ class _FileAttachmentViewState extends ConsumerState<FileAttachmentView> {
         urlFuture: _urlFuture,
         bytes: widget.bytes,
         onDownload: _download,
+        durationMs: widget.durationMs,
         galleryItems: widget.galleryItems,
         galleryIndex: widget.galleryIndex,
       );
@@ -534,6 +540,7 @@ class _AttachmentPreview extends StatefulWidget {
   final Future<String> urlFuture;
   final Uint8List? bytes;
   final VoidCallback? onDownload;
+  final int? durationMs;
   final List<LightboxImageItem>? galleryItems;
   final int galleryIndex;
 
@@ -542,6 +549,7 @@ class _AttachmentPreview extends StatefulWidget {
     required this.urlFuture,
     this.bytes,
     this.onDownload,
+    this.durationMs,
     this.galleryItems,
     this.galleryIndex = 0,
   });
@@ -551,6 +559,12 @@ class _AttachmentPreview extends StatefulWidget {
 }
 
 class _AttachmentPreviewState extends State<_AttachmentPreview> {
+  /// 缩略图与查看器共用的 Hero tag
+  ///
+  /// 不能只用文件 hash
+  late final String _heroTag =
+      'attachment_${widget.attachment.hash}_${identityHashCode(this)}';
+
   /// ParsedURL is loading
   String? _fileUrl;
   Future<File?>? _fileFuture;
@@ -654,15 +668,17 @@ class _AttachmentPreviewState extends State<_AttachmentPreview> {
             builder: (_) => ImageLightbox(
               imagePath: file?.path ?? url,
               imageBytes: file != null ? null : bytes,
-              heroTag: 'attachment_${attachment.hash}',
+              heroTag: _heroTag,
               items: widget.galleryItems,
               initialIndex: widget.galleryIndex,
             ),
           ),
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: OptimizedImage(
+        child: Hero(
+          tag: _heroTag,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: OptimizedImage(
             provider: provider,
             fit: BoxFit.contain,
             // 网络加载时：blurhash 占位 + 服务端缩略图渐进展示
@@ -678,6 +694,7 @@ class _AttachmentPreviewState extends State<_AttachmentPreview> {
                     );
                   }
                 : null,
+            ),
           ),
         ),
       );
@@ -700,6 +717,7 @@ class _AttachmentPreviewState extends State<_AttachmentPreview> {
         audioPath: file?.path ?? url,
         audioBytes: file != null ? null : bytes,
         filename: attachment.fileName,
+        durationMs: widget.durationMs,
       );
     } else if (attachment.isText) {
       return Center(

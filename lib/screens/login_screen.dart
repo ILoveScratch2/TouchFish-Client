@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -6,12 +7,15 @@ import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/external_auth_service.dart';
 import '../services/rsa_key_trust_service.dart';
 import '../services/server_branding_service.dart';
 import '../services/snackbar_service.dart';
+import '../widgets/external_auth_sheet.dart';
 import '../widgets/rsa_key_prompts.dart';
 import '../widgets/server_selector.dart';
 import '../widgets/network_indicator.dart';
+import '../widgets/provider_mark.dart';
 import '../utils/talker.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -29,6 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
   List<ConnectivityResult> _connectionStatus = [ConnectivityResult.none];
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   RsaKeyCheckResult? _pendingFirstConnectResult;
+  bool? _allowRegister;
 
   @override
   void initState() {
@@ -41,6 +46,25 @@ class _LoginScreenState extends State<LoginScreen> {
     _initConnectivity();
     _subscribeToConnectivityChanges();
     unawaited(ServerBrandingService.instance.refresh());
+    unawaited(ExternalAuthService.instance.load());
+    unawaited(
+      TfApiClient.instance.fetchServerInfo().then((config) {
+        if (!mounted || config == null) return;
+        setState(() => _allowRegister = config.allowRegister);
+      }).catchError((_) {}),
+    );
+  }
+
+  /// 切服务器后重拉与新服务器相关的可见性数据
+  void _onServerChanged() {
+    unawaited(_refreshServerDependent());
+  }
+
+  Future<void> _refreshServerDependent() async {
+    await ExternalAuthService.instance.load(force: true);
+    final config = await TfApiClient.instance.fetchServerInfo();
+    if (!mounted) return;
+    setState(() => _allowRegister = config?.allowRegister ?? _allowRegister);
   }
 
   Future<void> _initConnectivity() async {
@@ -127,10 +151,155 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// 登录前校验 RSA 密钥：
-  /// - 密钥变更：弹警告，替换后继续或断开；
-  /// - 首次连接：记录结果，登录成功后弹保存提示。
-  /// 返回 false 表示用户选择断开，中止登录。
+  /// 通过外部登录平台（TouchFish Auth）登录。
+  Future<void> _loginWithExternalAuth({String? providerId}) async {
+    final l10n = AppLocalizations.of(context)!;
+    final service = ExternalAuthService.instance;
+    final config = await service.load(force: true);
+    if (!mounted) return;
+    if (config == null || config.methods.isEmpty) {
+      TouchFishSnackbarService.instance.show(l10n.loginErrorNetwork);
+      return;
+    }
+
+    final keyOk = await _verifyRsaKeyBeforeLogin();
+    if (!mounted) return;
+    if (!keyOk) return;
+
+    final state = _randomStateToken();
+    final baseUrl = await TfApiClient.instance.getBaseUrl();
+    final uri = providerId == null
+        ? service.buildAuthorizeUri(state: state, target: baseUrl)
+        : service.buildProviderStartUri(
+            providerId: providerId,
+            state: state,
+            target: baseUrl,
+          );
+    if (uri == null || !mounted) {
+      TouchFishSnackbarService.instance.show(l10n.loginErrorNetwork);
+      return;
+    }
+
+    final providerName = providerId == null
+        ? 'TouchFish Auth'
+        : config.methodById(providerId)?.displayName ?? providerId;
+    final result = await ExternalAuthSheet.show(
+      context,
+      uri,
+      title: providerName,
+      allowedHosts: providerId == null
+          ? const []
+          : service.allowedHostsFor(providerId),
+    );
+    if (!mounted) return;
+    if (result == null) return; // 用户关闭了授权页
+
+    if (result.state == null || result.state != state) {
+      // 严格要求回传的 state 与本机生成的一致
+      TouchFishSnackbarService.instance.show(l10n.loginErrorNetwork);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    final externalToken = await service.exchangeTicket(result.ticket);
+    if (!mounted) return;
+    if (externalToken == null) {
+      setState(() => _isLoading = false);
+      TouchFishSnackbarService.instance.show(l10n.loginErrorTicketExchange);
+      return;
+    }
+
+    final error = await AuthState.instance.loginWithExternalSession(externalToken);
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (error == null) {
+      final shouldContinue = await _maybePromptFirstConnect();
+      if (!mounted || !shouldContinue) return;
+      context.go(AppRoutes.main);
+      return;
+    }
+
+    final msg = switch (error) {
+      'externalNotLinked' => l10n.loginErrorExternalNotLinked,
+      'externalTokenInvalid' => l10n.loginErrorExternalTokenInvalid,
+      'userBanned' => l10n.loginErrorInvalidCredentials,
+      'pendingActivation' => l10n.loginErrorPendingActivation,
+      'accountBanned' => l10n.loginErrorBanned,
+      'sessionLimitReached' => l10n.loginErrorSessionLimit,
+      'duplicateLogin' => l10n.loginErrorDuplicateInstance,
+      _ => l10n.loginErrorNetwork,
+    };
+    TouchFishSnackbarService.instance.show(msg);
+  }
+
+  Widget _providerIconButton(
+    BuildContext context,
+    TfExternalAuthProvider provider,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: OutlinedButton(
+        onPressed: _isLoading
+            ? null
+            : () => _loginWithExternalAuth(providerId: provider.id),
+        style: OutlinedButton.styleFrom(
+          padding: EdgeInsets.zero,
+          minimumSize: const Size(44, 44),
+          // 默认 tap target 会把按钮撑到 48 高，与外面的 44 方块打架
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: const CircleBorder(),
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
+        child: ProviderMark(
+          providerId: provider.id,
+          size: 20,
+          color: scheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+
+  Widget _providerNameButton(
+    BuildContext context,
+    TfExternalAuthProvider provider,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 260),
+      child: SizedBox(
+        height: 44,
+        child: OutlinedButton(
+          onPressed: _isLoading
+              ? null
+              : () => _loginWithExternalAuth(providerId: provider.id),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            minimumSize: const Size(0, 44),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            shape: const StadiumBorder(),
+            side: BorderSide(color: scheme.outlineVariant),
+          ),
+          child: Text(
+            provider.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: scheme.onSurfaceVariant),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _randomStateToken() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  }
+
+  /// 登录前校验 RSA 密钥
   Future<bool> _verifyRsaKeyBeforeLogin() async {
     try {
       final livePem = await TfApiClient.instance.fetchRsaPublicKeyPem();
@@ -149,7 +318,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// 初次连接成功后的保存提示；返回 false 表示用户选择断开服务器连接。
   Future<bool> _maybePromptFirstConnect() async {
     final result = _pendingFirstConnectResult;
     _pendingFirstConnectResult = null;
@@ -179,7 +347,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// 密钥变更警告；返回 true 表示已用新密钥替换并继续登录。
+  /// 密钥变更警告
   Future<bool> _promptKeyChanged(RsaKeyCheckResult result) async {
     final replaced = await promptRsaKeyChanged(
       context,
@@ -357,7 +525,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Logo + 服务器品牌标题（拉取完成后自动切换）
+                      // Logo + 服务器品牌标题
                       ListenableBuilder(
                         listenable: ServerBrandingService.instance,
                         builder: (context, _) {
@@ -381,7 +549,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 24),
 
                       // Server selector
-                      const ServerSelector(),
+                      ServerSelector(onServerChanged: _onServerChanged),
                       const SizedBox(height: 24),
 
                       // Username field
@@ -447,18 +615,102 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Register button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: OutlinedButton(
-                          onPressed: _register,
-                          child: Text(
-                            AppLocalizations.of(context)!.loginRegister,
+                      // 外部登录平台
+                      ListenableBuilder(
+                        listenable: ExternalAuthService.instance,
+                        builder: (context, _) {
+                          final service = ExternalAuthService.instance;
+                          if (!service.isAvailable && !service.isConfigured) {
+                            return const SizedBox.shrink();
+                          }
+                          final providers = service.providers;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Column(
+                              children: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 48,
+                                  child: OutlinedButton.icon(
+                                    onPressed: _isLoading
+                                        ? null
+                                        : () => _loginWithExternalAuth(),
+                                    icon: const Icon(
+                                      Icons.verified_user_outlined,
+                                    ),
+                                    label: Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.loginExternalAuth,
+                                    ),
+                                  ),
+                                ),
+                                if (providers.isNotEmpty) ...[
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    children: [
+                                      const Expanded(child: Divider()),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                        ),
+                                        child: Text(
+                                          AppLocalizations.of(context)!.loginOr,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                        ),
+                                      ),
+                                      const Expanded(child: Divider()),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Wrap(
+                                    spacing: 12,
+                                    runSpacing: 8,
+                                    alignment: WrapAlignment.center,
+                                    children: [
+                                      for (final provider in providers)
+                                        Tooltip(
+                                          message: provider.name,
+                                          child: hasProviderIcon(provider.id)
+                                              ? _providerIconButton(
+                                                  context,
+                                                  provider,
+                                                )
+                                              : _providerNameButton(
+                                                  context,
+                                                  provider,
+                                                ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+
+                      // Register button（服务器关闭注册时不显示）
+                      if (_allowRegister != false) ...[
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: OutlinedButton(
+                            onPressed: _register,
+                            child: Text(
+                              AppLocalizations.of(context)!.loginRegister,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
+                        const SizedBox(height: 4),
+                      ],
 
                       // Forgot password
                       TextButton(

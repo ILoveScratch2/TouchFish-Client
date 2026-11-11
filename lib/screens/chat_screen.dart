@@ -1,28 +1,32 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../models/chat_model.dart';
-import '../providers/chat/message_provider.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/chat_data_service.dart';
 import '../services/chat_ws_service.dart';
+import '../services/feature_flags.dart';
 import '../services/auth_state.dart';
 import '../widgets/chat_list_widget.dart';
 import '../widgets/contact_list_widget.dart';
 import '../widgets/invite_sheet.dart';
 import '../widgets/text_entry_dialog.dart';
 import '../widgets/optimized_image.dart';
+import '../widgets/ui/refreshable.dart';
 import '../services/notification_service.dart';
+import '../services/presence_service.dart';
 import '../services/snackbar_service.dart';
+import '../models/settings_service.dart';
 import '../routes/app_routes.dart';
 import '../utils/wide_screen_helper.dart';
 import 'group_create_screen.dart';
 
 class ChatShellScreen extends StatefulWidget {
-  /// 聊天区内容（宽屏下为右侧嵌套导航区域，窄屏下整屏直通）。
+  /// 聊天区内容
   final Widget child;
 
   const ChatShellScreen({super.key, required this.child});
@@ -46,9 +50,7 @@ class _ChatShellScreenState extends State<ChatShellScreen>
   bool _isCollapsed = false;
   double _sidebarWidth = 320.0;
 
-  /// 整壳入场动画：仅当从其它主 Section 切进聊天区（壳重新挂载）时播放。
-  /// 聊天是导航栏最左的 tab，从任何其它 tab 回来都固定从左侧滑入；
-  /// 列表/详情在壳内部路由切换时壳保持常驻，不会重播。
+  /// 整壳入场动画
   late final AnimationController _enterController;
   late final Animation<double> _enterAnimation;
 
@@ -56,6 +58,8 @@ class _ChatShellScreenState extends State<ChatShellScreen>
   void initState() {
     super.initState();
     _loadDividerPosition();
+    // 改了要立刻重排
+    SettingsService.instance.addListener(_onSettingsChanged);
     _enterController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 320),
@@ -64,7 +68,7 @@ class _ChatShellScreenState extends State<ChatShellScreen>
       parent: _enterController,
       curve: Curves.easeOutCubic,
     );
-    // 初始帧后再启动，避免冷启动首屏也被过渡一次
+    // 初始帧后再启动
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !MediaQuery.disableAnimationsOf(context)) {
         _enterController.forward();
@@ -72,8 +76,13 @@ class _ChatShellScreenState extends State<ChatShellScreen>
     });
   }
 
+  void _onSettingsChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    SettingsService.instance.removeListener(_onSettingsChanged);
     _enterController.dispose();
     super.dispose();
   }
@@ -141,12 +150,11 @@ class _ChatShellScreenState extends State<ChatShellScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isWide = WideScreenHelper.isWide(context);
+    final isWide = WideScreenHelper.isExpanded(context);
 
     if (isWide) {
       final currentWidth = _isCollapsed ? _collapsedWidth : _sidebarWidth;
 
-      // 宽屏：左侧聊天列表常驻，右侧为聊天区子路由（列表页/详情页带转场动画）
       return _enterWrapper(
         context,
         Scaffold(
@@ -216,9 +224,6 @@ class _ChatShellScreenState extends State<ChatShellScreen>
         vertical: true,
       );
     }
-    // 窄屏：整个聊天区（列表/详情）都由内嵌子路由承载，
-    // 保持 ChatShellScreen 常驻可以让切换房间不重建列表。
-    // 进入聊天区（壳重新挂载）时从左侧滑入：聊天是导航栏最左的 tab。
     return _enterWrapper(context, widget.child);
   }
 }
@@ -266,8 +271,10 @@ class _ChatListScreenState extends State<ChatListScreen>
       initialIndex: _lastSelectedTab,
     );
     _tabController.addListener(() {
-      _lastSelectedTab = _tabController.index;
-      setState(() {});
+      // 只在 index 真正变化时 setState
+      if (!mounted) return;
+      if (_tabController.index == _lastSelectedTab) return;
+      setState(() => _lastSelectedTab = _tabController.index);
     });
     _chatData.addListener(_onDataChanged);
     _notificationService.addListener(_onDataChanged);
@@ -315,8 +322,17 @@ class _ChatListScreenState extends State<ChatListScreen>
       }
       if (!AuthState.instance.isLoggedIn) return;
       _chatData.init();
+      PresenceService.instance.start();
       ChatWsService.instance.connect();
+      unawaited(PresenceService.instance.refreshFriends());
     }
+  }
+
+  Future<void> _refreshData() async {
+    await Future.wait([
+      _chatData.loadContactsAndRooms(),
+      PresenceService.instance.refreshFriends(),
+    ]);
   }
 
   @override
@@ -444,9 +460,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                         children: [
                           IconButton(
                             icon: const Icon(Icons.search),
-                            tooltip: l10n.groupSearchTooltip,
+                            tooltip: l10n.searchTitle,
                             onPressed: () =>
-                                context.push(AppRoutes.groupSearch),
+                                context.push(AppRoutes.universalSearch),
                           ),
                           _buildInviteButton(context, l10n),
                         ],
@@ -461,8 +477,25 @@ class _ChatListScreenState extends State<ChatListScreen>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      ChatListWidget(chatRooms: _chatRooms),
-                      ContactListWidget(contacts: _contacts),
+                      PullToRefresh.list(
+                        onRefresh: _refreshData,
+                        child: ChatListWidget(
+                          chatRooms: _chatRooms,
+                          isLoading: _chatData.isLoading,
+                        ),
+                      ),
+                      PullToRefresh.list(
+                        onRefresh: _refreshData,
+                        child: Column(
+                          children: [
+                            _buildFriendRequestsEntry(context, l10n),
+                            const Divider(height: 1),
+                            Expanded(
+                              child: ContactListWidget(contacts: _contacts),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -654,8 +687,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                     children: [
                       IconButton(
                         icon: const Icon(Icons.search),
-                        tooltip: l10n.groupSearchTooltip,
-                        onPressed: () => context.push(AppRoutes.groupSearch),
+                        tooltip: l10n.searchTitle,
+                        onPressed: () =>
+                            context.push(AppRoutes.universalSearch),
                       ),
                       _buildInviteButton(context, l10n),
                     ],
@@ -666,11 +700,15 @@ class _ChatListScreenState extends State<ChatListScreen>
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'chat-fab',
-        onPressed: () => _showAddMenu(context),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton:
+          (FeatureFlags.instance.friendRequest ||
+              FeatureFlags.instance.groupCreate)
+          ? FloatingActionButton(
+              heroTag: 'chat-fab',
+              onPressed: () => _showAddMenu(context),
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: Column(
         children: [
           if (_chatData.isLoading) const LinearProgressIndicator(minHeight: 2),
@@ -678,8 +716,25 @@ class _ChatListScreenState extends State<ChatListScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                ChatListWidget(chatRooms: _chatRooms),
-                ContactListWidget(contacts: _contacts),
+                PullToRefresh.list(
+                  onRefresh: _refreshData,
+                  child: ChatListWidget(
+                          chatRooms: _chatRooms,
+                          isLoading: _chatData.isLoading,
+                        ),
+                ),
+                PullToRefresh.list(
+                  onRefresh: _refreshData,
+                  child: Column(
+                    children: [
+                      _buildFriendRequestsEntry(context, l10n),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: ContactListWidget(contacts: _contacts),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -713,6 +768,26 @@ class _ChatListScreenState extends State<ChatListScreen>
     );
   }
 
+  Widget _buildFriendRequestsEntry(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    final unread = _notificationService.friendUnreadCount;
+    return ListTile(
+      leading: const Icon(Icons.person_add_alt),
+      title: Text(l10n.friendRequestsTitle),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (unread > 0) Badge(label: Text(unread > 99 ? '99+' : '$unread')),
+          const SizedBox(width: 8),
+          const Icon(Icons.chevron_right),
+        ],
+      ),
+      onTap: () => context.push(AppRoutes.friendRequests),
+    );
+  }
+
   Future<void> _createGroup() async {
     final result = await Navigator.push<bool>(
       context,
@@ -725,6 +800,10 @@ class _ChatListScreenState extends State<ChatListScreen>
 
   void _showAddMenu(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final flags = FeatureFlags.instance;
+    final showAddFriend = flags.friendRequest;
+    final showCreateGroup = flags.groupCreate;
+    if (!showAddFriend && !showCreateGroup) return;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -735,22 +814,24 @@ class _ChatListScreenState extends State<ChatListScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 8),
-            ListTile(
-              leading: const Icon(Icons.person_add),
-              title: Text(l10n.chatAddFriend),
-              onTap: () {
-                Navigator.pop(ctx);
-                _showAddFriendDialog();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.group_add),
-              title: Text(l10n.chatCreateGroup),
-              onTap: () {
-                Navigator.pop(ctx);
-                _createGroup();
-              },
-            ),
+            if (showAddFriend)
+              ListTile(
+                leading: const Icon(Icons.person_add),
+                title: Text(l10n.chatAddFriend),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showAddFriendDialog();
+                },
+              ),
+            if (showCreateGroup)
+              ListTile(
+                leading: const Icon(Icons.group_add),
+                title: Text(l10n.chatCreateGroup),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _createGroup();
+                },
+              ),
             const SizedBox(height: 8),
           ],
         ),
@@ -786,15 +867,15 @@ class _ChatListScreenState extends State<ChatListScreen>
   }
 }
 
-class _CollapsedRoomButton extends ConsumerWidget {
+class _CollapsedRoomButton extends StatelessWidget {
   final ChatRoom room;
 
   const _CollapsedRoomButton({required this.room});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final unread = ref.watch(unreadCountProvider(room.id));
+    final unread = room.unreadCount;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),

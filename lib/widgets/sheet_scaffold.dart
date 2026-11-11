@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../theme/tokens.dart';
+
+/// 底部弹层的统一外壳
 class SheetScaffold extends StatelessWidget {
   final Widget? title;
   final String? titleText;
@@ -10,26 +13,32 @@ class SheetScaffold extends StatelessWidget {
   final double? height;
   final VoidCallback? onClose;
 
+  /// 是否在顶部画拖拽指示条
+  /// 弹层本身有 header 时默认不画
+  final bool showHandle;
+
   const SheetScaffold({
     super.key,
     this.title,
     this.titleText,
     required this.child,
     this.actions = const [],
-    this.heightFactor = 0.8,
+    this.heightFactor = TFSize.sheetHeightFactor,
     this.height,
     this.onClose,
+    this.showHandle = false,
   });
 
   @override
   Widget build(BuildContext context) {
     assert(title != null || titleText != null);
 
-    var titleWidget =
+    final theme = Theme.of(context);
+    final titleWidget =
         title ??
         Text(
           titleText!,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+          style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w600,
             letterSpacing: -0.5,
           ),
@@ -37,42 +46,87 @@ class SheetScaffold extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         );
 
-    return Container(
-      padding: MediaQuery.of(context).viewInsets,
-      constraints: BoxConstraints(
-        maxHeight: height ?? MediaQuery.of(context).size.height * heightFactor,
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(
-              top: 16,
-              left: 20,
-              right: 16,
-              bottom: 12,
-            ),
-            child: Row(
-              children: [
-                Expanded(child: titleWidget),
-                const Spacer(),
-                ...actions,
-                IconButton(
-                  icon: Icon(
-                    Symbols.close,
-                    color: Theme.of(context).colorScheme.onSurface,
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+
+    return Padding(
+      // 只让键盘挤占底部，左右不再被 viewInsets 影响
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: height ?? MediaQuery.sizeOf(context).height * heightFactor,
+        ),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerLow,
+          borderRadius: TFRadius.sheetRadius,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showHandle)
+              Padding(
+                padding: const EdgeInsets.only(top: TFSpace.sm),
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurfaceVariant.withValues(
+                      alpha: TFAlpha.disabled,
+                    ),
+                    borderRadius: TFRadius.pillRadius,
                   ),
-                  onPressed: () => onClose != null
-                      ? onClose?.call()
-                      : Navigator.pop(context),
-                  style: IconButton.styleFrom(minimumSize: const Size(36, 36)),
                 ),
-              ],
+              ),
+            Padding(
+              padding: TFInsets.sheetHeader,
+              child: Row(
+                children: [
+                  // 只在标题行内伸缩；动作区按内容宽度排布
+                  Expanded(child: titleWidget),
+                  ...actions,
+                  IconButton(
+                    icon: Icon(
+                      Symbols.close,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    onPressed: () => onClose != null
+                        ? onClose?.call()
+                        : Navigator.pop(context),
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(
+                        TFSize.controlSm,
+                        TFSize.controlSm,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const Divider(height: 1),
-          Expanded(child: child),
-        ],
+            const Divider(height: 1),
+            Flexible(child: child),
+            SizedBox(height: safeBottom > 0 ? TFSpace.sm : 0),
+          ],
+        ),
       ),
     );
   }
+}
+
+/// 统一弹层入口
+Future<T?> showAppSheet<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool isScrollControlled = true,
+  bool useRootNavigator = false,
+  bool dismissible = true,
+}) {
+  return showModalBottomSheet<T>(
+    context: context,
+    isScrollControlled: isScrollControlled,
+    useRootNavigator: useRootNavigator,
+    isDismissible: dismissible,
+    enableDrag: dismissible,
+    builder: builder,
+  );
 }

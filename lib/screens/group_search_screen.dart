@@ -7,6 +7,9 @@ import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
 import '../utils/talker.dart';
 import '../widgets/optimized_image.dart';
+import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/loading_indicator.dart';
+import '../widgets/ui/refreshable.dart';
 
 /// 群聊搜索界面。
 ///
@@ -46,14 +49,6 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
     super.dispose();
   }
 
-  static bool _allowsDirectJoin(dynamic value) {
-    if (value == null) return false;
-    if (value is bool) return value;
-    if (value is num) return value != 0;
-    if (value is String) return value == '1' || value.toLowerCase() == 'true';
-    return false;
-  }
-
   Future<void> _search() async {
     final keyword = _controller.text.trim();
     if (keyword.isEmpty) {
@@ -77,9 +72,7 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
       }
       if (!mounted) return;
       setState(() {
-        _results = results
-            .where((g) => _allowsDirectJoin(g['allow_direct_join']))
-            .toList();
+        _results = results;
         _loading = false;
       });
     } catch (e) {
@@ -134,9 +127,9 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
           if (_loading) const LinearProgressIndicator(),
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? const LoadingIndicator()
                 : _results.isEmpty
-                    ? _buildEmptyState(context, l10n, colorScheme)
+                    ? _buildEmptyState(context, l10n)
                     : _buildResultList(context, l10n, colorScheme),
           ),
         ],
@@ -144,37 +137,52 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
     );
   }
 
-  Widget _buildEmptyState(
-    BuildContext context,
-    AppLocalizations l10n,
-    ColorScheme colorScheme,
-  ) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.search, size: 96, color: colorScheme.outlineVariant),
-          const SizedBox(height: 16),
-          Text(
-            _hasSearched ? l10n.groupSearchNotFound : l10n.groupSearchStartHint,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
+  Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
+    return EmptyState(
+      icon: Icons.search,
+      title: _hasSearched ? l10n.groupSearchNotFound : l10n.groupSearchStartHint,
     );
   }
 
+
+  static bool _truthy(dynamic value) {
+    if (value == null) return false;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) return value == '1' || value.toLowerCase() == 'true';
+    return false;
+  }
+
+  String _joinLabel(AppLocalizations l10n, Map<String, dynamic> group) {
+    if (_truthy(group['allow_direct_join'])) return l10n.searchGroupJoinDirect;
+    if (_truthy(group['require_review'])) return l10n.searchGroupNeedReview;
+    return l10n.searchGroupInviteOnly;
+  }
+
+  Widget _joinBadge(ColorScheme colorScheme, String text) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 12, color: colorScheme.onSecondaryContainer),
+      ),
+    );
+  }
 
   Widget _buildResultList(
     BuildContext context,
     AppLocalizations l10n,
     ColorScheme colorScheme,
   ) {
-    return ListView.separated(
+    return PullToRefresh.list(
+      onRefresh: _search,
+      child: ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: _results.length,
       separatorBuilder: (_, _) => const Divider(height: 1, indent: 76),
@@ -211,6 +219,7 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _joinBadge(colorScheme, _joinLabel(l10n, group)),
               if (enterHint.isNotEmpty)
                 Text(
                   enterHint,
@@ -237,6 +246,7 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
           },
         );
       },
+      ),
     );
   }
 }

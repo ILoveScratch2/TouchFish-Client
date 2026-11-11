@@ -73,9 +73,14 @@ class _InlineSticker extends StatefulWidget {
 }
 
 class _InlineStickerState extends State<_InlineSticker> {
-  static final Map<String, StickerItem?> _lookupCache = {};
+  // 有上限的缓存：聊天记录里出现过的贴纸标识符不设上限会一直涨；
+  // 查询失败不缓存（下次进入视口可以重试）。
+  static final Map<String, StickerItem> _lookupCache = {};
+  static const int _lookupCacheLimit = 200;
+
   StickerItem? _item;
   bool _loading = true;
+  OverlayEntry? _overlayEntry;
 
   @override
   void initState() {
@@ -83,25 +88,54 @@ class _InlineStickerState extends State<_InlineSticker> {
     _lookup();
   }
 
+  @override
+  void dispose() {
+    _dismissOverlay();
+    super.dispose();
+  }
+
+  static void _remember(String identifier, StickerItem item) {
+    _lookupCache.remove(identifier);
+    if (_lookupCache.length >= _lookupCacheLimit) {
+      _lookupCache.remove(_lookupCache.keys.first);
+    }
+    _lookupCache[identifier] = item;
+  }
+
   Future<void> _lookup() async {
     // 做干净的奥赛
     if (_lookupCache.containsKey(widget.identifier)) {
-      _item = _lookupCache[widget.identifier];
+      final cached = _lookupCache[widget.identifier]!;
+      // 命中后移到队尾，近似 LRU
+      _remember(widget.identifier, cached);
+      _item = cached;
       _loading = false;
       return;
     }
     try {
       final item = await TfApiClient.instance.lookupSticker(widget.identifier);
-      _lookupCache[widget.identifier] = item;
+      if (item != null) _remember(widget.identifier, item);
       if (mounted) setState(() { _item = item; _loading = false; });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
   }
 
+  void _dismissOverlay() {
+    final entry = _overlayEntry;
+    _overlayEntry = null;
+    if (entry == null) return;
+    try {
+      entry.remove();
+    } catch (_) {
+      // Overlay 已经随页面销毁：忽略
+    }
+  }
+
   void _showEnlarged(BuildContext context) {
     final item = _item;
     if (item == null) return;
+    if (_overlayEntry != null) return;
     final overlay = Overlay.of(context);
     late OverlayEntry entry;
     final shadow = [
@@ -116,7 +150,7 @@ class _InlineStickerState extends State<_InlineSticker> {
         children: [
           Positioned.fill(
             child: GestureDetector(
-              onTap: () => entry.remove(),
+              onTap: _dismissOverlay,
               behavior: HitTestBehavior.opaque,
               child: Container(color: Colors.black.withValues(alpha: 0.85)),
             ),
@@ -154,13 +188,14 @@ class _InlineStickerState extends State<_InlineSticker> {
             top: 16,
             right: 12,
             child: IconButton(
-              onPressed: () => entry.remove(),
+              onPressed: _dismissOverlay,
               icon: Icon(Icons.close, color: Colors.white70, shadows: shadow),
             ),
           ),
         ],
       ),
     );
+    _overlayEntry = entry;
     overlay.insert(entry);
   }
 

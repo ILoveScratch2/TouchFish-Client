@@ -209,10 +209,85 @@ class AppLocalizationsOch extends AppLocalizations {
   String get sessionDevicesRemoveFailed => '移除敗矣，請復試之';
 
   @override
+  String get sessionDevicesRename => '易名';
+
+  @override
+  String get sessionDevicesRenameTitle => '易設備之名';
+
+  @override
+  String get sessionDevicesRenameLabel => '設備之名';
+
+  @override
+  String get sessionDevicesRenameHint => '如：吾之 iPhone';
+
+  @override
+  String get sessionDevicesRenameHelper => '空之則用默認之名';
+
+  @override
+  String get sessionDevicesRenameSuccess => '易名已成';
+
+  @override
+  String get sessionDevicesRenameFailed => '易名敗矣，請復試之';
+
+  @override
+  String get sessionDevicesLocation => '所在';
+
+  @override
+  String get sessionDevicesLastSeen => '近動';
+
+  @override
+  String get sessionDevicesTabDevices => '設備';
+
+  @override
+  String get sessionDevicesTabSessions => '會話';
+
+  @override
+  String get sessionDevicesSessionCount => '會話之數';
+
+  @override
+  String get sessionDevicesUnknownPlatform => '未知之台';
+
+  @override
+  String get sessionDevicesPlatformIos => 'iOS';
+
+  @override
+  String get sessionDevicesPlatformAndroid => 'Android';
+
+  @override
+  String get sessionDevicesPlatformWeb => '網頁';
+
+  @override
+  String get sessionDevicesPlatformWindows => 'Windows';
+
+  @override
+  String get sessionDevicesPlatformMacos => 'macOS';
+
+  @override
+  String get sessionDevicesPlatformLinux => 'Linux';
+
+  @override
+  String get sessionDevicesRevokeAllOthers => '登出餘會話';
+
+  @override
+  String get sessionDevicesRevokeAllOthersConfirmTitle => '登出餘會話乎？';
+
+  @override
+  String get sessionDevicesRevokeAllOthersConfirmMessage => '餘設備皆即出，惟此設備留登。';
+
+  @override
+  String get sessionDevicesRevokeAllOthersSuccess => '餘會話已出';
+
+  @override
+  String get sessionDevicesRevokeAllOthersFailed => '出餘會話敗矣，請復試之';
+
+  @override
   String get sessionRestoreNetworkError => '網絡連接失敗，請檢查網絡後重試';
 
   @override
   String get registerErrorCaptchaRequired => '請輸入驗證碼';
+
+  @override
+  String get registerErrorCaptchaInvalid => '驗證碼誤，請復輸之';
 
   @override
   String get registerCaptchaLoad => '方載驗證碼…';
@@ -222,6 +297,15 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get registerCaptchaRefresh => '更之';
+
+  @override
+  String get registerCaptchaVerify => '驗證';
+
+  @override
+  String get registerCaptchaVerifyHint => '請完人機之驗以繼行。';
+
+  @override
+  String get registerCaptchaVerified => '驗證已過';
 
   @override
   String get registerErrorFailed => '註冊未成，請重試';
@@ -249,6 +333,20 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get retry => '重試';
+
+  @override
+  String get videoPlaybackErrorTitle => '視訊播放未成';
+
+  @override
+  String get videoPlaybackErrorDetails => '誤詳：';
+
+  @override
+  String get chatMeLabel => '吾';
+
+  @override
+  String chatUserFallback(String uid) {
+    return '用戶 $uid';
+  }
 
   @override
   String get settingsTitle => '設';
@@ -854,6 +952,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsEnableMarkdownDesc => '將可染之 Markdown/LaTeX 文予以渲染';
 
   @override
+  String get settingsChatVoiceButtonTitle => '輸入欄語音按鈕';
+
+  @override
+  String get settingsChatVoiceButtonDesc => '於輸入欄顯示麥克風按鈕（特殊功能頁恆可入語音模式）';
+
+  @override
   String get settingsMessageDisplayStyleTitle => '消息顯示樣式';
 
   @override
@@ -924,6 +1028,18 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get chatSelectPlaceholder => '擇一對話以啟談';
+
+  @override
+  String get forumSelectPlaceholder => '擇一論壇以觀之';
+
+  @override
+  String get forumSelectPostPlaceholder => '擇一帖以閱之';
+
+  @override
+  String get forumPostFullScreen => '全屏覽之';
+
+  @override
+  String get forumPostRestoreSplitView => '復分欄';
 
   @override
   String get settingsSystemNotificationsTitle => '系統通知';
@@ -1246,6 +1362,63 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminServerSectionStickers => '貼圖';
 
   @override
+  String get adminServerSectionFeatures => '功能開關';
+
+  @override
+  String get adminFeaturePrivateChat => '私聊';
+
+  @override
+  String get adminFeaturePrivateChatDescription => '許用戶傳一對一之信。';
+
+  @override
+  String get adminFeatureGroupChat => '羣聊';
+
+  @override
+  String get adminFeatureGroupChatDescription => '許於羣中傳信、乞入羣或邀人入羣。';
+
+  @override
+  String get adminFeatureGroupCreate => '立羣';
+
+  @override
+  String get adminFeatureGroupCreateDescription => '許用戶新立羣聊。';
+
+  @override
+  String get adminFeatureFriendRequest => '好友之請';
+
+  @override
+  String get adminFeatureFriendRequestDescription => '許發好友之請與加友。';
+
+  @override
+  String get adminFeatureReadReceipt => '已讀之報';
+
+  @override
+  String get adminFeatureReadReceiptDescription => '向私談之對方報已讀，且許客問已讀之狀。';
+
+  @override
+  String get adminFeatureForum => '論壇';
+
+  @override
+  String get adminFeatureForumDescription => '開論壇之能。';
+
+  @override
+  String get adminFeatureSticker => '貼圖';
+
+  @override
+  String get adminFeatureStickerDescription => '開貼圖包與貼圖擇器。';
+
+  @override
+  String get adminFeatureAnnouncement => '告示';
+
+  @override
+  String get adminFeatureAnnouncementDescription => '開伺服之告示。';
+
+  @override
+  String get adminFeaturePresence => '在線之狀';
+
+  @override
+  String get adminFeaturePresenceDescription => '許好友互見在線之狀，並受上下線之事。';
+
+  @override
   String get adminServerFieldMaxStickerPacks => '每用戶貼圖包之限';
 
   @override
@@ -1274,6 +1447,12 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get adminServerSectionAdvanced => '高級配置';
+
+  @override
+  String get adminServerSectionLimits => '限與存儲';
+
+  @override
+  String get adminServerLimitsDescription => '名/用戶名/密碼之長、內容之長、存儲之額與限速。';
 
   @override
   String get adminServerSectionEmailService => '郵箱驗證服務';
@@ -1317,7 +1496,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminServerFieldProxyCount => '信代理之層數';
 
   @override
-  String get adminServerSectionAuth => '認證';
+  String get adminServerSectionAuth => '認證與憑符';
 
   @override
   String get adminServerAuthDescription => '定客戶端登入認證之方式。';
@@ -1344,6 +1523,125 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminServerEmailPasswordRequired => '啟郵箱驗證須填驗證郵箱與郵箱密碼。';
 
   @override
+  String get adminServerFieldCaptchaProvider => '驗證碼之供';
+
+  @override
+  String get adminServerCaptchaProviderDescription =>
+      'image 為內建圖形驗證碼；turnstile / hcaptcha / recaptcha 乃第三方之服務。';
+
+  @override
+  String get adminServerFieldCaptchaSiteKey => '驗證碼 Site Key';
+
+  @override
+  String get adminServerFieldCaptchaSecret => '驗證碼 Secret';
+
+  @override
+  String get adminServerCaptchaSecretHint => '留空則存舊鑰。';
+
+  @override
+  String get adminServerCaptchaSaveSuccess => '驗證碼之設已更';
+
+  @override
+  String get adminServerCaptchaSaveFailed => '驗證碼之設更而未成';
+
+  @override
+  String get adminServerFieldRateLimits => '限速（JSON）';
+
+  @override
+  String get adminServerRateLimitsDescription =>
+      '按端點之請求頻率（JSON），各端點對應 requests 與 range。留空則盡除諸限。';
+
+  @override
+  String get adminServerRateLimitsInvalid => '限速須為合法之 JSON';
+
+  @override
+  String get adminServerRateLimitsSaveSuccess => '限速已更';
+
+  @override
+  String get adminServerRateLimitsSaveFailed => '限速更而未成';
+
+  @override
+  String get adminServerFieldMinGroupNameLength => '群名最短';
+
+  @override
+  String get adminServerFieldMaxGroupNameLength => '群名最長';
+
+  @override
+  String get adminServerFieldMinUsernameLength => '用戶名最短';
+
+  @override
+  String get adminServerFieldMinPasswordLength => '密碼最短';
+
+  @override
+  String get adminServerFieldMaxSignLength => '簽名最長';
+
+  @override
+  String get adminServerFieldMaxIntroductionLength => '簡介最長';
+
+  @override
+  String get adminServerFieldMaxPostContentLength => '帖文最長';
+
+  @override
+  String get adminServerFieldMaxAvatarSize => '頭像最大';
+
+  @override
+  String get adminServerFieldUserStorageQuota => '用戶存儲之額';
+
+  @override
+  String get adminServerFieldMaxUserStorageQuota => '單用戶單傳之上限';
+
+  @override
+  String get adminServerFieldMaxStickerStorageQuota => '表情存儲之額';
+
+  @override
+  String get adminServerFieldJwtRefreshExpires => 'JWT 刷新之期（秒）';
+
+  @override
+  String get adminServerFieldFileDownloadMode => '檔案下載之法';
+
+  @override
+  String get adminServerFileDownloadModeDescription => 'redirect 或 proxy。';
+
+  @override
+  String get adminServerFieldMediaFeatures => '啟媒體之能';
+
+  @override
+  String get adminServerMediaFeaturesDescription => '許縮略圖等媒體之處理。';
+
+  @override
+  String get adminServerSearchHint => '檢索設置';
+
+  @override
+  String get adminServerSearchNoResults => '未得相應之設置';
+
+  @override
+  String get adminServerUnlimited => '無限';
+
+  @override
+  String get adminServerUnsavedChanges => '有未存之更改';
+
+  @override
+  String get adminServerUndoChanges => '復其改易';
+
+  @override
+  String get adminServerDiscardChanges => '棄改';
+
+  @override
+  String get adminServerDiscardAndRefresh => '棄改而重載';
+
+  @override
+  String get adminServerDiscardConfirmTitle => '欲棄未存之改乎？';
+
+  @override
+  String get adminServerDiscardConfirmMessage => '今所改易將盡失。';
+
+  @override
+  String get adminServerSectionRateLimits => '限流之則';
+
+  @override
+  String get adminServerSectionServerInfo => '伺服之訊';
+
+  @override
   String get adminPendingForums => '待審論壇';
 
   @override
@@ -1364,6 +1662,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String adminPendingForumCreator(String uid) {
     return '創者 UID：$uid';
   }
+
+  @override
+  String get adminPendingForumEditBadge => '修訂';
 
   @override
   String get adminPendingForumNoIntroduction => '暫無論壇之介。';
@@ -1479,6 +1780,31 @@ class AppLocalizationsOch extends AppLocalizations {
   String get accountUpdateYourProfile => '纂個人資料';
 
   @override
+  String get accountFriends => '好友';
+
+  @override
+  String get accountFriendsEmpty => '尚無好友';
+
+  @override
+  String accountFriendsOnlineCount(int count) {
+    return '$count 人在線';
+  }
+
+  @override
+  String get accountBlocked => '已拉黑';
+
+  @override
+  String get accountBlockedEmpty => '未拉黑任何人';
+
+  @override
+  String accountBlockedCount(int count) {
+    return '$count 人';
+  }
+
+  @override
+  String get accountBlockedHint => '開之可解拉黑';
+
+  @override
   String get profileEditTitle => '纂資料';
 
   @override
@@ -1492,6 +1818,32 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get profileEditEmail => '郵箱';
+
+  @override
+  String get accountPublicEmailTitle => '公開郵箱';
+
+  @override
+  String get accountPublicEmailDesc => '閉之則他人不見君之郵箱（預設公開）';
+
+  @override
+  String get accountReadStatusTitle => '顯示已讀狀態';
+
+  @override
+  String get accountReadStatusDesc => '閉之則他人不見君之已讀（預設顯示）';
+
+  @override
+  String get accountOnlineStatusTitle => '顯示在線狀態';
+
+  @override
+  String get accountOnlineStatusDesc => '閉之則友人不見君之在線（預設顯示）';
+
+  @override
+  String get chatReadReceiptRead => '已讀';
+
+  @override
+  String chatReadReceiptCount(int count) {
+    return '$count 人已讀';
+  }
 
   @override
   String get profileEditBio => '個性簽名';
@@ -1613,6 +1965,15 @@ class AppLocalizationsOch extends AppLocalizations {
   String get chatDetailNoMessages => '暫無消息\n發送一則以啟聊';
 
   @override
+  String get chatMessagesLoadFailed => '消息載入失敗';
+
+  @override
+  String get forumPostCopySource => '來自 TouchFish 論壇';
+
+  @override
+  String get forumPostShareFailed => '分享失敗';
+
+  @override
   String get chatBackToBottom => '返至底部';
 
   @override
@@ -1695,6 +2056,166 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get messageActionCopy => '複製';
+
+  @override
+  String get messageActionMergeForward => '合併轉發';
+
+  @override
+  String get messageActionSelectMultiple => '多選';
+
+  @override
+  String get messageActionViewOriginal => '視原文';
+
+  @override
+  String get messageRecalledOriginalTitle => '已撤回消息之原文';
+
+  @override
+  String get messageRecalledOriginalSender => '發者';
+
+  @override
+  String get messageRecalledOriginalContent => '內容';
+
+  @override
+  String get messageRecalledOriginalFailed => '載原文未成';
+
+  @override
+  String get messageRecalledOriginalNone => '無可用之原文';
+
+  @override
+  String get selectionExit => '退出多選';
+
+  @override
+  String selectionCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 條已選',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get selectionSelectMessages => '擇訊息';
+
+  @override
+  String get selectionRedirectToCurrentChat => '轉發至此會話';
+
+  @override
+  String get selectionCopy => '複製';
+
+  @override
+  String get selectionMergeForward => '合併轉發';
+
+  @override
+  String get selectionCancel => '取消';
+
+  @override
+  String get copySelectedEmpty => '無可複製之訊息';
+
+  @override
+  String get voiceHoldToRecord => '長按以錄語音';
+
+  @override
+  String get voiceHoldHint => '長按錄音';
+
+  @override
+  String get voiceReleaseToCancel => '鬆手即止';
+
+  @override
+  String get voiceRecordingHint => '錄音中 • 上滑即止';
+
+  @override
+  String get voiceUploading => '語音上傳中⋯';
+
+  @override
+  String get voiceSending => '音訊傳送中⋯';
+
+  @override
+  String get voiceLeaveVoiceMode => '退出語音模式';
+
+  @override
+  String get voiceRecordVoice => '錄語音';
+
+  @override
+  String get voiceStop => '止';
+
+  @override
+  String get voicePermissionDenied => '麥克風權限不許';
+
+  @override
+  String get voiceRecordFailed => '錄音未成';
+
+  @override
+  String mergedForwardTitle(String title) {
+    return '合併轉發 · $title';
+  }
+
+  @override
+  String get mergedForwardGroup => '群聊';
+
+  @override
+  String get mergedForwardPrivate => '聊天';
+
+  @override
+  String mergedForwardMore(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '尚有 $count 條訊息',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String redirectCardLabel(String room) {
+    return '自 $room 之轉發記';
+  }
+
+  @override
+  String redirectMessagesCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 條訊息',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String redirectFromRoom(String room) {
+    return '自 $room';
+  }
+
+  @override
+  String redirectHistoryTitle(String room) {
+    return '轉發記 · $room';
+  }
+
+  @override
+  String get redirectNoContent => '無內容';
+
+  @override
+  String get redirectUnknownSender => '未知';
+
+  @override
+  String get mergeForwardConfirmTitle => '合併轉發？';
+
+  @override
+  String mergeForwardConfirmBody(int count, String target) {
+    return '轉發 $count 條訊息至 $target？';
+  }
+
+  @override
+  String get mergeForwardTextOnly => '僅文本訊息可合併轉發';
+
+  @override
+  String get mergeForwardTooMany => '一次至多轉發一百條訊息';
+
+  @override
+  String get mergeForwardFailed => '合併轉發失敗';
+
+  @override
+  String get mergeForwardSuccess => '合併轉發已發送';
 
   @override
   String get messageActionPin => '置頂';
@@ -2096,6 +2617,30 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get userProfileAddFriend => '結好友';
+
+  @override
+  String get friendRequestsTitle => '好友申請';
+
+  @override
+  String get friendRequestEmpty => '暫無好友申請';
+
+  @override
+  String get friendRequestBlocked => '彼已拉黑爾，不得申';
+
+  @override
+  String get friendRequestBlockedByMe => '爾已拉黑彼，宜先解之';
+
+  @override
+  String get friendBlock => '拉黑';
+
+  @override
+  String get friendUnblock => '解除拉黑';
+
+  @override
+  String get friendUnblockDone => '已解拉黑';
+
+  @override
+  String get friendBlockConfirm => '拉黑後將解好友之誼，對方亦不得復申。確乎？';
 
   @override
   String get userProfileUnknownEmail => '未知';
@@ -2895,6 +3440,14 @@ class AppLocalizationsOch extends AppLocalizations {
   String get announcementDeleteFailed => '刪告示未成';
 
   @override
+  String get announcementLoadFailed => '載告示未成';
+
+  @override
+  String announcementSenderFallback(String uid) {
+    return '用戶 $uid';
+  }
+
+  @override
   String get adminAnnouncements => '司告示府';
 
   @override
@@ -2955,6 +3508,14 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminAccountEmpty => '暫無用戶';
 
   @override
+  String get adminAccountNoSearchResults => '無相符之用戶';
+
+  @override
+  String adminAccountPageIndicator(int page, int totalPages, int total) {
+    return '第 $page / $totalPages 頁（共 $total 用戶）';
+  }
+
+  @override
   String adminAccountCreated(String date) {
     return '創建時間：$date';
   }
@@ -2964,6 +3525,21 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get adminAccountViewDevices => '視設備';
+
+  @override
+  String get adminAccountEdit => '編輯帳號';
+
+  @override
+  String get adminAccountEditDescription => '留空之欄則存舊不改。';
+
+  @override
+  String get adminAccountNewPassword => '新密碼（可空）';
+
+  @override
+  String get adminAccountEditSuccess => '帳號已更';
+
+  @override
+  String get adminAccountEditFailed => '帳號更而未成';
 
   @override
   String adminAccountChangeRoleTitle(String name) {
@@ -3085,6 +3661,22 @@ class AppLocalizationsOch extends AppLocalizations {
   String get storageDeleteFailed => '刪除未成';
 
   @override
+  String get storageDereference => '釋引用';
+
+  @override
+  String storageDereferenceConfirm(String fileName) {
+    return '確釋汝對「$fileName」之引用乎？必待無引用後乃除其檔。';
+  }
+
+  @override
+  String storageDereferenced(String fileName) {
+    return '已釋引用：$fileName';
+  }
+
+  @override
+  String get storageDereferenceFailed => '釋引用未成';
+
+  @override
   String storageUploaded(String fileName) {
     return '已上傳：$fileName';
   }
@@ -3162,6 +3754,28 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get adminFileSummaryTotal => '總計';
+
+  @override
+  String get adminFileLoadFailed => '載文件未成';
+
+  @override
+  String get adminFileUnknown => '未知';
+
+  @override
+  String adminFileTileMeta(
+    String owner,
+    String uid,
+    String size,
+    int refs,
+    int uploads,
+  ) {
+    return '所有者：$owner（編號 $uid）· $size · 引 $refs · 傳 $uploads';
+  }
+
+  @override
+  String adminFileSummaryStats(int files, int users, String total) {
+    return '文件：$files · 用戶：$users · 總計：$total';
+  }
 
   @override
   String get chatFunctionTabFiles => '文件';
@@ -3302,6 +3916,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get groupEssenceFeatureDesc => '允許管理員標記精華訊息';
 
   @override
+  String get groupPublicMessagesFeature => '公開訊息預覽';
+
+  @override
+  String get groupPublicMessagesFeatureDesc => '允許非羣員唯讀覽羣訊息';
+
+  @override
   String get groupTransferOwner => '轉讓羣主';
 
   @override
@@ -3321,6 +3941,21 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get groupLeaveOwnerHint => '羣主需先轉讓羣主後方可退出';
+
+  @override
+  String get groupDissolve => '解散羣聊';
+
+  @override
+  String get groupDissolveConfirm => '此將永解羣聊並逐諸成員，不可復也。';
+
+  @override
+  String get groupDissolveAction => '解散';
+
+  @override
+  String get groupDissolveSuccess => '羣聊已解';
+
+  @override
+  String get groupDissolveFailed => '解散羣聊未成';
 
   @override
   String get groupInviteMember => '邀請成員';
@@ -3379,6 +4014,429 @@ class AppLocalizationsOch extends AppLocalizations {
   String get commonOk => '確定';
 
   @override
+  String get draftsTitle => '草稿箱';
+
+  @override
+  String get inboxAllClear => '沒有待處理的通知';
+
+  @override
+  String get forumFilterWithAttachment => '有附件';
+
+  @override
+  String get forumFilterMine => '我發佈的';
+
+  @override
+  String get forumFilterNoMatch => '沒有符合篩選條件的帖子';
+
+  @override
+  String get chatConnectionReconnecting => '連線已中斷，正在重連…';
+
+  @override
+  String get videoTapToPlay => '點擊播放';
+
+  @override
+  String get messageSendTimeout => '發送逾時，請檢查網路後重試';
+
+  @override
+  String get messageSendNetworkFailed => '網路中斷，此訊未送出';
+
+  @override
+  String get messageSendRejected => '伺服器未接受此訊';
+
+  @override
+  String get messageSendUploadFailed => '附件上傳未成';
+
+  @override
+  String failedMessagesCount(int count) {
+    return '$count 則未送出';
+  }
+
+  @override
+  String get failedMessagesRetryAll => '全部重送';
+
+  @override
+  String get imageCopyLink => '複製圖片連結';
+
+  @override
+  String get imageLinkCopied => '連結已複製';
+
+  @override
+  String get settingsSearchHint => '搜尋設定';
+
+  @override
+  String get settingsSearchEmpty => '無相符之設定';
+
+  @override
+  String get reviewReasonHint => '駁回之由（可不填，將告於呈者）';
+
+  @override
+  String get reviewReasonPresetIncomplete => '資料未備';
+
+  @override
+  String get reviewReasonPresetOffTopic => '題不相符';
+
+  @override
+  String get reviewReasonPresetDuplicate => '重複呈遞';
+
+  @override
+  String get reviewReasonPresetInappropriate => '不宜公示';
+
+  @override
+  String get notificationMarkAllRead => '悉已讀之';
+
+  @override
+  String get notificationDeleted => '通知已刪';
+
+  @override
+  String get notificationDeleteFailed => '刪除未成，請復試';
+
+  @override
+  String get notificationSwipeToDelete => '刪';
+
+  @override
+  String get loginErrorPendingActivation => '帳未啟，請先驗其郵';
+
+  @override
+  String get loginErrorBanned => '帳號已被封禁';
+
+  @override
+  String get ticketReport => '糾舉';
+
+  @override
+  String get ticketReportDesc => '糾舉違規之內容或人';
+
+  @override
+  String get ticketConsult => '建言';
+
+  @override
+  String get ticketAppeal => '申辯';
+
+  @override
+  String get ticketMyTickets => '吾之工單';
+
+  @override
+  String get ticketFeedback => '求助與建言';
+
+  @override
+  String get ticketComposeTitle => '題';
+
+  @override
+  String get ticketComposeContent => '詳述';
+
+  @override
+  String get ticketComposeSubmit => '呈';
+
+  @override
+  String get ticketSubmitted => '工單已呈';
+
+  @override
+  String get ticketSubmitFailed => '呈遞未成，請復試';
+
+  @override
+  String get ticketTypeDisabled => '此類工單未開';
+
+  @override
+  String get ticketEmpty => '尚無工單';
+
+  @override
+  String get ticketStatusOpen => '待理';
+
+  @override
+  String get ticketStatusProcessing => '理中';
+
+  @override
+  String get ticketStatusResolved => '已理';
+
+  @override
+  String get ticketStatusRejected => '未准';
+
+  @override
+  String get ticketReplyLabel => '批註';
+
+  @override
+  String get ticketQueue => '工單之列';
+
+  @override
+  String get ticketHandleProcessing => '始理之';
+
+  @override
+  String get ticketHandleResolved => '標為已理';
+
+  @override
+  String get ticketHandleRejected => '駁回';
+
+  @override
+  String get ticketHandled => '已更';
+
+  @override
+  String get ticketTarget => '所涉';
+
+  @override
+  String get ticketPriority => '緩急';
+
+  @override
+  String get ticketPriorityLow => '緩';
+
+  @override
+  String get ticketPriorityNormal => '平常';
+
+  @override
+  String get ticketPriorityHigh => '急';
+
+  @override
+  String get ticketPriorityUrgent => '火急';
+
+  @override
+  String get ticketAssignee => '主事';
+
+  @override
+  String get ticketUnassigned => '未派';
+
+  @override
+  String get ticketAssignToMe => '交予我';
+
+  @override
+  String get ticketClearAssignee => '撤派';
+
+  @override
+  String get ticketThreadTitle => '往來';
+
+  @override
+  String get ticketMessageHint => '再述…';
+
+  @override
+  String get ticketSend => '發';
+
+  @override
+  String get ticketReopenHint => '已結之單，一迴即重開';
+
+  @override
+  String get ticketMuted => '已禁言，暫不得言';
+
+  @override
+  String get ticketBanned => '此號已封，不得為之';
+
+  @override
+  String get ticketPendingActivation => '此號未啟，請先驗郵';
+
+  @override
+  String ticketUnreadReplies(int count) {
+    return '$count 封未讀';
+  }
+
+  @override
+  String get ticketAttachments => '附件';
+
+  @override
+  String get ticketAddAttachment => '添圖';
+
+  @override
+  String get ticketUploadFailed => '附件上傳未成';
+
+  @override
+  String get ticketChangeStatus => '改其狀';
+
+  @override
+  String get ticketThreadEmptyTitle => '尚無回覆';
+
+  @override
+  String get ticketThreadEmptyDesc => '發一言以啟對話';
+
+  @override
+  String get ticketTargetPost => '帖';
+
+  @override
+  String get ticketTargetComment => '評';
+
+  @override
+  String get ticketTargetUser => '人';
+
+  @override
+  String get ticketTargetForum => '版';
+
+  @override
+  String ticketReplies(int count) {
+    return '$count 迴';
+  }
+
+  @override
+  String get ticketAddFile => '添附';
+
+  @override
+  String get ticketStaffReply => '吏';
+
+  @override
+  String get ticketContentRequired => '請述其事，或附一物';
+
+  @override
+  String get ticketTypeName => '類';
+
+  @override
+  String get ticketUnknownUser => '不知誰';
+
+  @override
+  String get refresh => '翻新';
+
+  @override
+  String get ticketSortByPriority => '緩急';
+
+  @override
+  String get ticketSortByTime => '時';
+
+  @override
+  String get ticketFilter => '篩';
+
+  @override
+  String get ticketFilterReset => '復原';
+
+  @override
+  String get ticketFilterApply => '行';
+
+  @override
+  String get ticketCreatorFilter => '啟者（名或編號）';
+
+  @override
+  String get ticketCreatorNotFound => '無此人';
+
+  @override
+  String get ticketAllTickets => '諸單';
+
+  @override
+  String get ticketAttachmentLimit => '附件過多';
+
+  @override
+  String get punishmentTitle => '刑罰之錄';
+
+  @override
+  String get punishmentNoticeLocked => '處分未到期，此訊暫不可刪';
+
+  @override
+  String get punishmentCreate => '加罰';
+
+  @override
+  String get punishmentKindLabel => '類';
+
+  @override
+  String get punishmentKindWarn => '警';
+
+  @override
+  String get punishmentKindMute => '禁言';
+
+  @override
+  String get punishmentKindBan => '封禁';
+
+  @override
+  String get punishmentReasonLabel => '其由（必填）';
+
+  @override
+  String get punishmentReasonRequired => '請書其由';
+
+  @override
+  String get punishmentDurationLabel => '期';
+
+  @override
+  String get punishmentDurationPermanent => '永';
+
+  @override
+  String get punishmentRevoke => '解罰';
+
+  @override
+  String get punishmentActive => '方行';
+
+  @override
+  String get punishmentInactive => '已廢';
+
+  @override
+  String get punishmentEmpty => '尚無刑錄';
+
+  @override
+  String get punishmentCreateSuccess => '罰已行';
+
+  @override
+  String get punishmentCreateFailed => '事未成';
+
+  @override
+  String get notificationFilterAll => '悉';
+
+  @override
+  String notificationSummary(int total, int unread) {
+    return '共 $total 條 · 未讀 $unread 條';
+  }
+
+  @override
+  String get notificationEmptyDescription => '公告、處分、好友申請等系統通知都會出現喺呢度';
+
+  @override
+  String get notificationViewAll => '查看全部通知';
+
+  @override
+  String get notificationNoMore => '冇更多通知喇';
+
+  @override
+  String get notificationCategoryOther => '其它';
+
+  @override
+  String get notificationLockedBadge => '未到期唔可刪';
+
+  @override
+  String get notificationUnreadBadge => '未讀';
+
+  @override
+  String get notificationFilterSystem => '系統';
+
+  @override
+  String get notificationFilterForum => '論壇';
+
+  @override
+  String get notificationFilterFriend => '友';
+
+  @override
+  String get notificationFilterGroup => '群';
+
+  @override
+  String get timeJustNow => '方今';
+
+  @override
+  String timeMinutesAgo(int count) {
+    return '$count 分前';
+  }
+
+  @override
+  String timeHoursAgo(int count) {
+    return '$count 時前';
+  }
+
+  @override
+  String get timeYesterday => '昨日';
+
+  @override
+  String timeDaysAgo(int count) {
+    return '$count 日前';
+  }
+
+  @override
+  String get draftsEmpty => '暫無草稿';
+
+  @override
+  String get draftsEmptyHint => '編輯帖子時會自動存到本機';
+
+  @override
+  String get draftsDelete => '刪除草稿';
+
+  @override
+  String get draftsDeleteConfirm => '刪除後無法復原，確定要刪除這則草稿嗎？';
+
+  @override
+  String draftsUpdatedAt(String time) {
+    return '更新於 $time';
+  }
+
+  @override
+  String draftsAttachmentCount(int count) {
+    return '$count 個附件';
+  }
+
+  @override
   String get commonFailedOperation => '操作未成，請重試';
 
   @override
@@ -3415,6 +4473,9 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get settingsCategoryStorage => '儲';
+
+  @override
+  String get settingsLocalStorageTitle => '本地儲存';
 
   @override
   String get settingsNotifyWithHaptic => '通知觸感反饋';
@@ -3533,15 +4594,51 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsWideThresholdDesc => '窗寬至此值則易寬屏佈局（惟自動模式生效）';
 
   @override
+  String get settingsSplitThresholdTitle => '分欄之限';
+
+  @override
+  String get settingsSplitThresholdDesc => '窗寬至此值，列表與詳情方並列而陳（惟自動模式生效）';
+
+  @override
   String settingsWideThresholdValue(Object px) {
     return '$px px';
   }
+
+  @override
+  String get settingsSinglePageStyleTitle => '單頁之風';
+
+  @override
+  String get settingsSinglePageStyleDesc => '論壇區不設寬屏分欄，復整屏列表以至詳情之單頁導覽';
+
+  @override
+  String get settingsForumHideEmptyPaneTitle => '論壇空欄則隱';
+
+  @override
+  String get settingsForumHideEmptyPaneDesc => '論壇列與論壇詳情獨占全屏，惟開帖時分欄，出帖即復';
+
+  @override
+  String get settingsCommandPaletteTitle => '命令之板';
+
+  @override
+  String get settingsCommandPaletteDesc => '桌面按 Ctrl/Cmd+K 以呼命令之板（預設開；閉之則不可呼）';
 
   @override
   String get settingsWeakNetworkTitle => '弱網模式';
 
   @override
   String get settingsWeakNetworkDesc => '網絡不穩定時使用定時同步';
+
+  @override
+  String get settingsSyncModeTitle => '同步之式';
+
+  @override
+  String get settingsSyncModeDesc => '全量同步者，離線存諸會話之記錄；僅閱之式惟同步所啟之會話（不保證離線皆全）。';
+
+  @override
+  String get settingsSyncModeFull => '全量同步';
+
+  @override
+  String get settingsSyncModeBrowsing => '僅閱';
 
   @override
   String get settingsDataSavingTitle => '省流量模式';
@@ -3554,6 +4651,18 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get settingsThumbnailPreviewDesc => '氣泡中加載服務端縮略圖，點開後加載原圖（省流量）';
+
+  @override
+  String get settingsImageCompressionTitle => '送圖前壓縮';
+
+  @override
+  String get settingsImageCompressionDesc => '上傳前於本機重編碼（長邊 1920，有損），以省流量與儲存';
+
+  @override
+  String get settingsImageCompressionQualityTitle => '壓縮品質';
+
+  @override
+  String get settingsImageCompressionQualityDesc => '數值愈低，檔案愈小，畫質之損愈顯';
 
   @override
   String get settingsIpOverrideTitle => 'IP 覆蓋模式';
@@ -3841,6 +4950,18 @@ class AppLocalizationsOch extends AppLocalizations {
   String get groupProfileJoinPending => '申請已投，候群管審核';
 
   @override
+  String get groupJoinMessageTitle => '入群申請留言';
+
+  @override
+  String get groupJoinMessageHint => '選填：向群管說明欲入之由';
+
+  @override
+  String get groupInviteMessageTitle => '邀請留言';
+
+  @override
+  String get groupInviteMessageHint => '選填：致審核者之說明';
+
+  @override
   String get groupProfileJoinFailed => '入群未成';
 
   @override
@@ -3851,6 +4972,21 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get groupProfileCreator => '群主';
+
+  @override
+  String get groupProfileInviteOnly => '僅限邀';
+
+  @override
+  String get groupProfilePreviewSection => '訊息預覽';
+
+  @override
+  String get groupProfilePreviewHint => '僅示公開訊息，入群乃可與談。';
+
+  @override
+  String get groupProfilePreviewEmpty => '暫無可覽之訊息';
+
+  @override
+  String get groupProfilePreviewLoadOlder => '載更早之訊息';
 
   @override
   String get forwardSearchTitle => '轉發';
@@ -4391,6 +5527,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get errorCodeValidationMessageTooLong => '消息過長';
 
   @override
+  String get errorCodeValidationRequestMessageTooLong => '申請留言過長';
+
+  @override
   String get errorCodeValidationMissingParameter => '缺必要參數';
 
   @override
@@ -4473,4 +5612,201 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get errorCodeServerError => '伺服器內部有誤';
+
+  @override
+  String get timeAgoJustNow => '方纔';
+
+  @override
+  String timeAgoMinutes(int minutes) {
+    return '$minutes 分前';
+  }
+
+  @override
+  String timeAgoHours(int hours) {
+    return '$hours 小時前';
+  }
+
+  @override
+  String timeAgoDays(int days) {
+    return '$days 日前';
+  }
+
+  @override
+  String timeAgoWeeks(int weeks) {
+    return '$weeks 週前';
+  }
+
+  @override
+  String timeAgoMonths(int months) {
+    return '$months 月前';
+  }
+
+  @override
+  String timeAgoYears(int years) {
+    return '$years 年前';
+  }
+
+  @override
+  String get suspiciousLoginTitle => '察有可疑之登入';
+
+  @override
+  String get suspiciousLoginMessage => '察覺君之賬戶有異常之登入。若非君所為，請即察君之登入設備。';
+
+  @override
+  String get suspiciousLoginDevice => '設備';
+
+  @override
+  String get suspiciousLoginLocation => '位置';
+
+  @override
+  String get suspiciousLoginTime => '時間';
+
+  @override
+  String get suspiciousLoginDismiss => '略之';
+
+  @override
+  String get suspiciousLoginReviewSessions => '審視登入設備';
+
+  @override
+  String get searchTitle => '尋';
+
+  @override
+  String get searchTabUsers => '用戶';
+
+  @override
+  String get searchTabGroups => '群聊';
+
+  @override
+  String get searchTabMessages => '消息';
+
+  @override
+  String get searchHint => '尋用戶、群聊或消息';
+
+  @override
+  String get searchStartHint => '輸入關鍵詞始尋';
+
+  @override
+  String get searchNoResults => '未尋得';
+
+  @override
+  String searchMinLengthHint(int count) {
+    return '至少輸入 $count 字';
+  }
+
+  @override
+  String get searchGroupJoinDirect => '可直接入';
+
+  @override
+  String get searchGroupNeedReview => '須審';
+
+  @override
+  String get searchGroupInviteOnly => '僅邀';
+
+  @override
+  String searchGroupMemberCount(int count) {
+    return '$count 人';
+  }
+
+  @override
+  String get errorCodeValidationSearchKeywordTooShort => '尋的關鍵詞過短';
+
+  @override
+  String get errorCodeFeatureDisabledPrivateChat => '本伺服已閉私聊';
+
+  @override
+  String get errorCodeFeatureDisabledGroupChat => '本伺服已閉羣聊';
+
+  @override
+  String get errorCodeFeatureDisabledGroupCreate => '本伺服已閉立羣';
+
+  @override
+  String get errorCodeFeatureDisabledFriendRequest => '本伺服已閉好友之請';
+
+  @override
+  String get errorCodeFeatureDisabledForum => '本伺服已閉論壇';
+
+  @override
+  String get errorCodeFeatureDisabledSticker => '本伺服已閉貼圖';
+
+  @override
+  String get errorCodeFeatureDisabledAnnouncement => '本伺服已閉告示';
+
+  @override
+  String get listNoMore => '無復更多';
+
+  @override
+  String get chatListEmpty => '尚無會話';
+
+  @override
+  String get contactListEmpty => '尚無聯絡';
+
+  @override
+  String get forumMembersEmpty => '尚無成員';
+
+  @override
+  String get messageRetrySend => '送信失敗，點擊重發';
+
+  @override
+  String get commandPaletteHint => '尋會話、頁面與操作';
+
+  @override
+  String get commandPaletteEmpty => '無相符之果';
+
+  @override
+  String get adminServerFieldAllowRegister => '許自助註冊';
+
+  @override
+  String get adminServerFieldExternalAuthUrl => '外接登入平臺址';
+
+  @override
+  String get adminServerFieldPlatformAuthEnabled => '啟平臺專用端點';
+
+  @override
+  String get adminServerFieldPlatformAuthIssuer => '平臺簽發者';
+
+  @override
+  String get adminServerFieldPlatformAuthAllowIps => '平臺調用白名單';
+
+  @override
+  String get adminServerFieldPlatformAuthSharedToken => '平臺共享符';
+
+  @override
+  String get adminServerExternalAuthUrlDescription =>
+      '填 TouchFish Auth 之址，如 https://auth.example.com；空則不啟外接登入';
+
+  @override
+  String get adminServerPlatformAuthDescription =>
+      '既啟，/auth/platform/* 僅容白名單之址；經反向代理者務必並設共享符';
+
+  @override
+  String get adminServerAllowRegisterDescription => '既閉，外接平臺與客戶端皆不得註冊；已成之帳無損';
+
+  @override
+  String get adminServerPlatformAuthTokenConfigured => '已設，空則不改';
+
+  @override
+  String get adminServerPlatformAuthTokenEmpty => '尚未設';
+
+  @override
+  String get adminServerPlatformAuthTokenClear => '清除已設之符';
+
+  @override
+  String get loginExternalAuth => '以 TouchFish Auth 登入';
+
+  @override
+  String get adminServerPlatformAuthIssuerDescription =>
+      '止校符中之簽發者，須與認證平臺之 AUTH_ISSUER 悉同';
+
+  @override
+  String get loginErrorExternalNotLinked => '帳未繫於 TouchFish 之帳，且服器未啟自建';
+
+  @override
+  String get loginErrorExternalTokenInvalid =>
+      '發之符見拒：請核伺服器是否信此認證平臺（jwt_external_issuers）';
+
+  @override
+  String get loginErrorTicketExchange => '以暫符易登入之符未成，請重試';
+
+  @override
+  String get loginOr => '或';
 }

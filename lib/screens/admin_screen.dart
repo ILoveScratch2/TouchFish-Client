@@ -3,9 +3,13 @@ import 'package:go_router/go_router.dart';
 
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
+import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/forum_pending_service.dart';
+import '../services/ticket_inbox_service.dart';
 import '../services/snackbar_service.dart';
+import '../utils/wide_screen_helper.dart';
+import '../widgets/admin_ui.dart';
 import 'admin_file_management_screen.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -18,19 +22,36 @@ class AdminScreen extends StatefulWidget {
 class _AdminScreenState extends State<AdminScreen> {
   final _forumPendingService = ForumPendingService.instance;
 
+  int _pendingTicketCount = 0;
+
   @override
   void initState() {
     super.initState();
     _forumPendingService.addListener(_onPendingChanged);
+    TicketInboxService.instance.addListener(_onTicketInboxChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _forumPendingService.refresh();
+      if (mounted) {
+        _forumPendingService.refresh();
+        _refreshPendingTicketCount();
+      }
     });
   }
 
   @override
   void dispose() {
     _forumPendingService.removeListener(_onPendingChanged);
+    TicketInboxService.instance.removeListener(_onTicketInboxChanged);
     super.dispose();
+  }
+
+  void _onTicketInboxChanged() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final count = TicketInboxService.instance.pendingCount;
+      if (count != _pendingTicketCount) {
+        setState(() => _pendingTicketCount = count);
+      }
+    });
   }
 
   void _onPendingChanged() {
@@ -39,12 +60,30 @@ class _AdminScreenState extends State<AdminScreen> {
 
   int get _pendingForumCount => _forumPendingService.pendingCount;
 
+  Future<void> _refreshPendingTicketCount() async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+    final count = await TfApiClient.instance.getTicketPendingCount(
+      uid,
+      password,
+    );
+    if (!mounted) return;
+    setState(() => _pendingTicketCount = count);
+  }
+
   Future<void> _refreshPendingForumCount({bool showError = false}) async {
     await _forumPendingService.refresh();
     if (showError && mounted && _forumPendingService.error != null) {
       final l10n = AppLocalizations.of(context)!;
       TouchFishSnackbarService.instance.show(l10n.adminPendingForumsLoadFailed);
     }
+  }
+
+  Future<void> _openTicketQueue() async {
+    await context.push(AppRoutes.adminTickets);
+    if (!mounted) return;
+    await _refreshPendingTicketCount();
   }
 
   Future<void> _openPendingForums() async {
@@ -156,98 +195,135 @@ class _AdminScreenState extends State<AdminScreen> {
     final currentUser = AuthState.instance.currentUser;
 
     if (currentUser?.hasAdminAccess != true) {
-      return Scaffold(
-        appBar: AppBar(title: Text(l10n.navAdmin)),
-        body: Center(child: Text(l10n.adminAccessDenied)),
+      return AdminPageScaffold(
+        title: l10n.navAdmin,
+        body: AdminEmptyState(
+          message: l10n.adminAccessDenied,
+          icon: Icons.lock_outline_rounded,
+        ),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.navAdmin),
-        actions: [
-          IconButton(
-            onPressed: _forumPendingService.isLoading
-                ? null
-                : () => _refreshPendingForumCount(showError: true),
-            tooltip: l10n.retry,
-            icon: _forumPendingService.isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.refresh_rounded),
-          ),
-        ],
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: SingleChildScrollView(
+    return AdminPageScaffold(
+      title: l10n.navAdmin,
+      maxWidth: 960,
+      actions: [
+        IconButton(
+          onPressed: _forumPendingService.isLoading
+              ? null
+              : () => _refreshPendingForumCount(showError: true),
+          tooltip: l10n.retry,
+          icon: _forumPendingService.isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.refresh_rounded),
+        ),
+      ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWideScreen = WideScreenHelper.isWideWithWidth(
+            constraints.maxWidth,
+          );
+          final cardWidth = isWideScreen
+              ? (constraints.maxWidth - 32 - 16) / 2
+              : constraints.maxWidth - 32;
+          Widget card(Widget child) =>
+              SizedBox(width: cardWidth, child: child);
+
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               spacing: 16,
               children: [
-                Text(
-                  l10n.adminTitle,
-                  style: Theme.of(context).textTheme.headlineSmall,
+                AdminSectionHeader(
+                  icon: Icons.admin_panel_settings_outlined,
+                  title: l10n.adminTitle,
+                  description: l10n.adminDescription,
                 ),
-                Text(
-                  l10n.adminDescription,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    card(
+                      _buildAdminActionCard(
+                        context,
+                        icon: Icons.pending_actions_outlined,
+                        title: l10n.adminPendingForums,
+                        description: l10n.adminPendingForumsDescription,
+                        onTap: _openPendingForums,
+                        trailing: _PendingForumCountBadge(
+                          count: _pendingForumCount,
+                        ),
+                      ),
+                    ),
+                    card(
+                      _buildAdminActionCard(
+                        context,
+                        icon: Icons.support_agent_outlined,
+                        title: l10n.ticketQueue,
+                        description: l10n.ticketFeedback,
+                        onTap: _openTicketQueue,
+                        trailing: _PendingForumCountBadge(
+                          count: _pendingTicketCount,
+                        ),
+                      ),
+                    ),
+                    card(
+                      _buildAdminActionCard(
+                        context,
+                        icon: Icons.image_outlined,
+                        title: l10n.adminDefaultAssets,
+                        description: l10n.adminDefaultAssetsDescription,
+                        onTap: _openDefaultAssets,
+                      ),
+                    ),
+                    card(
+                      _buildAdminActionCard(
+                        context,
+                        icon: Icons.campaign_outlined,
+                        title: l10n.adminAnnouncements,
+                        description: l10n.adminAnnouncementsDescription,
+                        onTap: () => context.go(AppRoutes.announcement),
+                      ),
+                    ),
+                    card(
+                      _buildAdminActionCard(
+                        context,
+                        icon: Icons.people_outline,
+                        title: l10n.adminAccountManagement,
+                        description: l10n.adminAccountManagementDescription,
+                        onTap: _openAccountManagement,
+                      ),
+                    ),
+                    card(
+                      _buildAdminActionCard(
+                        context,
+                        icon: Icons.folder_outlined,
+                        title: l10n.adminFileManagement,
+                        description: l10n.adminFileManagementDescription,
+                        onTap: _openFileManagement,
+                      ),
+                    ),
+                    if (currentUser?.isRoot == true)
+                      card(
+                        _buildAdminActionCard(
+                          context,
+                          icon: Icons.tune_rounded,
+                          title: l10n.adminServerSettings,
+                          description: l10n.adminServerSettingsDescription,
+                          onTap: _openServerSettings,
+                        ),
+                      ),
+                  ],
                 ),
-                _buildAdminActionCard(
-                  context,
-                  icon: Icons.pending_actions_outlined,
-                  title: l10n.adminPendingForums,
-                  description: l10n.adminPendingForumsDescription,
-                  onTap: _openPendingForums,
-                  trailing: _PendingForumCountBadge(count: _pendingForumCount),
-                ),
-                _buildAdminActionCard(
-                  context,
-                  icon: Icons.image_outlined,
-                  title: l10n.adminDefaultAssets,
-                  description: l10n.adminDefaultAssetsDescription,
-                  onTap: _openDefaultAssets,
-                ),
-                _buildAdminActionCard(
-                  context,
-                  icon: Icons.campaign_outlined,
-                  title: l10n.adminAnnouncements,
-                  description: l10n.adminAnnouncementsDescription,
-                  onTap: () => context.go(AppRoutes.announcement),
-                ),
-                _buildAdminActionCard(
-                  context,
-                  icon: Icons.people_outline,
-                  title: l10n.adminAccountManagement,
-                  description: l10n.adminAccountManagementDescription,
-                  onTap: _openAccountManagement,
-                ),
-                _buildAdminActionCard(
-                  context,
-                  icon: Icons.folder_outlined,
-                  title: l10n.adminFileManagement,
-                  description: l10n.adminFileManagementDescription,
-                  onTap: _openFileManagement,
-                ),
-                if (currentUser?.isRoot == true)
-                  _buildAdminActionCard(
-                    context,
-                    icon: Icons.tune_rounded,
-                    title: l10n.adminServerSettings,
-                    description: l10n.adminServerSettingsDescription,
-                    onTap: _openServerSettings,
-                  ),
               ],
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

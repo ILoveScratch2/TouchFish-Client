@@ -13,12 +13,24 @@ String localizeApiError(BuildContext context, ApiError error) {
     'AUTH_NOT_AUTHENTICATED' => l10n.errorCodeAuthNotAuthenticated,
     'PERMISSION_DENIED' => l10n.errorCodePermissionDenied,
     'VALIDATION_INVALID_REQUEST' => l10n.errorCodeValidationInvalidRequest,
+    'VALIDATION_SEARCH_KEYWORD_TOO_SHORT' =>
+      l10n.errorCodeValidationSearchKeywordTooShort,
     'RESOURCE_NOT_FOUND' => l10n.errorCodeResourceNotFound,
     'RESOURCE_USER_NOT_FOUND' => l10n.errorCodeResourceUserNotFound,
     'RESOURCE_UNAVAILABLE' => l10n.errorCodeResourceUnavailable,
     'AUTH_CANNOT_REVOKE_CURRENT' => l10n.errorCodeAuthCannotRevokeCurrent,
     'PERMISSION_NOT_FRIENDS' => l10n.errorCodePermissionNotFriends,
+    'FRIEND_BLOCKED' => l10n.friendRequestBlocked,
     'PERMISSION_NOT_GROUP_MEMBER' => l10n.errorCodePermissionNotGroupMember,
+    'FEATURE_DISABLED_PRIVATE_CHAT' => l10n.errorCodeFeatureDisabledPrivateChat,
+    'FEATURE_DISABLED_GROUP_CHAT' => l10n.errorCodeFeatureDisabledGroupChat,
+    'FEATURE_DISABLED_GROUP_CREATE' => l10n.errorCodeFeatureDisabledGroupCreate,
+    'FEATURE_DISABLED_FRIEND_REQUEST' =>
+      l10n.errorCodeFeatureDisabledFriendRequest,
+    'FEATURE_DISABLED_FORUM' => l10n.errorCodeFeatureDisabledForum,
+    'FEATURE_DISABLED_STICKER' => l10n.errorCodeFeatureDisabledSticker,
+    'FEATURE_DISABLED_ANNOUNCEMENT' =>
+      l10n.errorCodeFeatureDisabledAnnouncement,
     'RESOURCE_GROUP_NOT_FOUND' => l10n.errorCodeResourceGroupNotFound,
     'RESOURCE_USER_BANNED' => l10n.errorCodeResourceUserBanned,
     'VALIDATION_INVALID_UID' => l10n.errorCodeValidationInvalidUid,
@@ -33,6 +45,8 @@ String localizeApiError(BuildContext context, ApiError error) {
     'VALIDATION_INVALID_QUOTE' => l10n.errorCodeValidationInvalidQuote,
     'VALIDATION_INVALID_CALL_ID' => l10n.errorCodeValidationInvalidCallId,
     'VALIDATION_MESSAGE_TOO_LONG' => l10n.errorCodeValidationMessageTooLong,
+    'VALIDATION_REQUEST_MESSAGE_TOO_LONG' =>
+      l10n.errorCodeValidationRequestMessageTooLong,
     'VALIDATION_MISSING_PARAMETER' => l10n.errorCodeValidationMissingParameter,
     'FILE_NOT_OWNED' => l10n.errorCodeFileNotOwned,
     'FILE_UNAVAILABLE' => l10n.errorCodeFileUnavailable,
@@ -62,6 +76,10 @@ String localizeApiError(BuildContext context, ApiError error) {
     'RATE_LIMITED' => l10n.errorCodeRateLimited,
     'CONFLICT' => l10n.errorCodeConflict,
     'SERVER_ERROR' => l10n.errorCodeServerError,
+    // 搜索接口直接返回小写错误码（未走统一错误信封）
+    'rate_limited' => l10n.errorCodeRateLimited,
+    'search_keyword_too_short' =>
+      l10n.errorCodeValidationSearchKeywordTooShort,
     _ => null,
   };
   return localized ?? error.message;

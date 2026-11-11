@@ -496,6 +496,150 @@ abstract class AppLocalizations {
   /// **'Failed to remove device, please try again'**
   String get sessionDevicesRemoveFailed;
 
+  /// No description provided for @sessionDevicesRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get sessionDevicesRename;
+
+  /// No description provided for @sessionDevicesRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename device'**
+  String get sessionDevicesRenameTitle;
+
+  /// No description provided for @sessionDevicesRenameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Device name'**
+  String get sessionDevicesRenameLabel;
+
+  /// No description provided for @sessionDevicesRenameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. My iPhone'**
+  String get sessionDevicesRenameHint;
+
+  /// No description provided for @sessionDevicesRenameHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to use the default device name'**
+  String get sessionDevicesRenameHelper;
+
+  /// No description provided for @sessionDevicesRenameSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Device renamed'**
+  String get sessionDevicesRenameSuccess;
+
+  /// No description provided for @sessionDevicesRenameFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename failed, please try again'**
+  String get sessionDevicesRenameFailed;
+
+  /// No description provided for @sessionDevicesLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get sessionDevicesLocation;
+
+  /// No description provided for @sessionDevicesLastSeen.
+  ///
+  /// In en, this message translates to:
+  /// **'Last active'**
+  String get sessionDevicesLastSeen;
+
+  /// No description provided for @sessionDevicesTabDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get sessionDevicesTabDevices;
+
+  /// No description provided for @sessionDevicesTabSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get sessionDevicesTabSessions;
+
+  /// No description provided for @sessionDevicesSessionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get sessionDevicesSessionCount;
+
+  /// No description provided for @sessionDevicesUnknownPlatform.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown platform'**
+  String get sessionDevicesUnknownPlatform;
+
+  /// No description provided for @sessionDevicesPlatformIos.
+  ///
+  /// In en, this message translates to:
+  /// **'iOS'**
+  String get sessionDevicesPlatformIos;
+
+  /// No description provided for @sessionDevicesPlatformAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Android'**
+  String get sessionDevicesPlatformAndroid;
+
+  /// No description provided for @sessionDevicesPlatformWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Web'**
+  String get sessionDevicesPlatformWeb;
+
+  /// No description provided for @sessionDevicesPlatformWindows.
+  ///
+  /// In en, this message translates to:
+  /// **'Windows'**
+  String get sessionDevicesPlatformWindows;
+
+  /// No description provided for @sessionDevicesPlatformMacos.
+  ///
+  /// In en, this message translates to:
+  /// **'macOS'**
+  String get sessionDevicesPlatformMacos;
+
+  /// No description provided for @sessionDevicesPlatformLinux.
+  ///
+  /// In en, this message translates to:
+  /// **'Linux'**
+  String get sessionDevicesPlatformLinux;
+
+  /// No description provided for @sessionDevicesRevokeAllOthers.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out all other sessions'**
+  String get sessionDevicesRevokeAllOthers;
+
+  /// No description provided for @sessionDevicesRevokeAllOthersConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out all other sessions?'**
+  String get sessionDevicesRevokeAllOthersConfirmTitle;
+
+  /// No description provided for @sessionDevicesRevokeAllOthersConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'All other devices will be signed out immediately. You will stay signed in on this device.'**
+  String get sessionDevicesRevokeAllOthersConfirmMessage;
+
+  /// No description provided for @sessionDevicesRevokeAllOthersSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'All other sessions signed out'**
+  String get sessionDevicesRevokeAllOthersSuccess;
+
+  /// No description provided for @sessionDevicesRevokeAllOthersFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to sign out other sessions, please try again'**
+  String get sessionDevicesRevokeAllOthersFailed;
+
   /// No description provided for @sessionRestoreNetworkError.
   ///
   /// In en, this message translates to:
@@ -507,6 +651,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please enter the captcha'**
   String get registerErrorCaptchaRequired;
+
+  /// No description provided for @registerErrorCaptchaInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Captcha is incorrect, please try again'**
+  String get registerErrorCaptchaInvalid;
 
   /// No description provided for @registerCaptchaLoad.
   ///
@@ -525,6 +675,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh'**
   String get registerCaptchaRefresh;
+
+  /// No description provided for @registerCaptchaVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get registerCaptchaVerify;
+
+  /// No description provided for @registerCaptchaVerifyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the captcha to continue.'**
+  String get registerCaptchaVerifyHint;
+
+  /// No description provided for @registerCaptchaVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Captcha verified'**
+  String get registerCaptchaVerified;
 
   /// No description provided for @registerErrorFailed.
   ///
@@ -579,6 +747,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get retry;
+
+  /// No description provided for @videoPlaybackErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Video Playback Error'**
+  String get videoPlaybackErrorTitle;
+
+  /// No description provided for @videoPlaybackErrorDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Error Details:'**
+  String get videoPlaybackErrorDetails;
+
+  /// No description provided for @chatMeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Me'**
+  String get chatMeLabel;
+
+  /// No description provided for @chatUserFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'User {uid}'**
+  String chatUserFallback(String uid);
 
   /// No description provided for @settingsTitle.
   ///
@@ -1756,6 +1948,18 @@ abstract class AppLocalizations {
   /// **'Render Markdown and LaTeX formatted text'**
   String get settingsEnableMarkdownDesc;
 
+  /// No description provided for @settingsChatVoiceButtonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice button in input bar'**
+  String get settingsChatVoiceButtonTitle;
+
+  /// No description provided for @settingsChatVoiceButtonDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the microphone button in the message input bar (voice mode is always available from the special tab)'**
+  String get settingsChatVoiceButtonDesc;
+
   /// No description provided for @settingsMessageDisplayStyleTitle.
   ///
   /// In en, this message translates to:
@@ -1899,6 +2103,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select a chat to start talking'**
   String get chatSelectPlaceholder;
+
+  /// No description provided for @forumSelectPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a forum to view it'**
+  String get forumSelectPlaceholder;
+
+  /// No description provided for @forumSelectPostPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a post to read it'**
+  String get forumSelectPostPlaceholder;
+
+  /// No description provided for @forumPostFullScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'View full screen'**
+  String get forumPostFullScreen;
+
+  /// No description provided for @forumPostRestoreSplitView.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore split view'**
+  String get forumPostRestoreSplitView;
 
   /// No description provided for @settingsSystemNotificationsTitle.
   ///
@@ -2524,6 +2752,120 @@ abstract class AppLocalizations {
   /// **'Stickers'**
   String get adminServerSectionStickers;
 
+  /// No description provided for @adminServerSectionFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'Feature Toggles'**
+  String get adminServerSectionFeatures;
+
+  /// No description provided for @adminFeaturePrivateChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Private chat'**
+  String get adminFeaturePrivateChat;
+
+  /// No description provided for @adminFeaturePrivateChatDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow users to send one-to-one messages.'**
+  String get adminFeaturePrivateChatDescription;
+
+  /// No description provided for @adminFeatureGroupChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Group chat'**
+  String get adminFeatureGroupChat;
+
+  /// No description provided for @adminFeatureGroupChatDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow sending messages in groups, and joining or inviting to groups.'**
+  String get adminFeatureGroupChatDescription;
+
+  /// No description provided for @adminFeatureGroupCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create groups'**
+  String get adminFeatureGroupCreate;
+
+  /// No description provided for @adminFeatureGroupCreateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow users to create new groups.'**
+  String get adminFeatureGroupCreateDescription;
+
+  /// No description provided for @adminFeatureFriendRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend requests'**
+  String get adminFeatureFriendRequest;
+
+  /// No description provided for @adminFeatureFriendRequestDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow sending friend requests and adding friends.'**
+  String get adminFeatureFriendRequestDescription;
+
+  /// No description provided for @adminFeatureReadReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Read receipts'**
+  String get adminFeatureReadReceipt;
+
+  /// No description provided for @adminFeatureReadReceiptDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Send private-chat read receipts and let clients query read status.'**
+  String get adminFeatureReadReceiptDescription;
+
+  /// No description provided for @adminFeatureForum.
+  ///
+  /// In en, this message translates to:
+  /// **'Forum'**
+  String get adminFeatureForum;
+
+  /// No description provided for @adminFeatureForumDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable the forum feature.'**
+  String get adminFeatureForumDescription;
+
+  /// No description provided for @adminFeatureSticker.
+  ///
+  /// In en, this message translates to:
+  /// **'Stickers'**
+  String get adminFeatureSticker;
+
+  /// No description provided for @adminFeatureStickerDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable sticker packs and the sticker picker.'**
+  String get adminFeatureStickerDescription;
+
+  /// No description provided for @adminFeatureAnnouncement.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements'**
+  String get adminFeatureAnnouncement;
+
+  /// No description provided for @adminFeatureAnnouncementDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable server announcements.'**
+  String get adminFeatureAnnouncementDescription;
+
+  /// No description provided for @adminFeaturePresence.
+  ///
+  /// In en, this message translates to:
+  /// **'Online presence'**
+  String get adminFeaturePresence;
+
+  /// No description provided for @adminFeaturePresenceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Let friends see each other\'s online status and receive online / offline events.'**
+  String get adminFeaturePresenceDescription;
+
   /// No description provided for @adminServerFieldMaxStickerPacks.
   ///
   /// In en, this message translates to:
@@ -2583,6 +2925,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Advanced Configuration'**
   String get adminServerSectionAdvanced;
+
+  /// No description provided for @adminServerSectionLimits.
+  ///
+  /// In en, this message translates to:
+  /// **'Limits & Storage'**
+  String get adminServerSectionLimits;
+
+  /// No description provided for @adminServerLimitsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Name/username/password length limits, content lengths, storage quotas, and rate limits.'**
+  String get adminServerLimitsDescription;
 
   /// No description provided for @adminServerSectionEmailService.
   ///
@@ -2665,7 +3019,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminServerSectionAuth.
   ///
   /// In en, this message translates to:
-  /// **'Authentication'**
+  /// **'Authentication & Tokens'**
   String get adminServerSectionAuth;
 
   /// No description provided for @adminServerAuthDescription.
@@ -2716,6 +3070,240 @@ abstract class AppLocalizations {
   /// **'Enabling email verification requires a verification email and an email password.'**
   String get adminServerEmailPasswordRequired;
 
+  /// No description provided for @adminServerFieldCaptchaProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'Captcha Provider'**
+  String get adminServerFieldCaptchaProvider;
+
+  /// No description provided for @adminServerCaptchaProviderDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'image uses the built-in image captcha; turnstile / hcaptcha / recaptcha use a third-party service.'**
+  String get adminServerCaptchaProviderDescription;
+
+  /// No description provided for @adminServerFieldCaptchaSiteKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Captcha Site Key'**
+  String get adminServerFieldCaptchaSiteKey;
+
+  /// No description provided for @adminServerFieldCaptchaSecret.
+  ///
+  /// In en, this message translates to:
+  /// **'Captcha Secret'**
+  String get adminServerFieldCaptchaSecret;
+
+  /// No description provided for @adminServerCaptchaSecretHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to keep the current secret.'**
+  String get adminServerCaptchaSecretHint;
+
+  /// No description provided for @adminServerCaptchaSaveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Captcha settings updated'**
+  String get adminServerCaptchaSaveSuccess;
+
+  /// No description provided for @adminServerCaptchaSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update captcha settings'**
+  String get adminServerCaptchaSaveFailed;
+
+  /// No description provided for @adminServerFieldRateLimits.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Limits (JSON)'**
+  String get adminServerFieldRateLimits;
+
+  /// No description provided for @adminServerRateLimitsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Per-endpoint request limits in JSON, mapping each endpoint to requests and range. Leave empty to clear all limits.'**
+  String get adminServerRateLimitsDescription;
+
+  /// No description provided for @adminServerRateLimitsInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate limits must be valid JSON'**
+  String get adminServerRateLimitsInvalid;
+
+  /// No description provided for @adminServerRateLimitsSaveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate limits updated'**
+  String get adminServerRateLimitsSaveSuccess;
+
+  /// No description provided for @adminServerRateLimitsSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update rate limits'**
+  String get adminServerRateLimitsSaveFailed;
+
+  /// No description provided for @adminServerFieldMinGroupNameLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Min Group Name Length'**
+  String get adminServerFieldMinGroupNameLength;
+
+  /// No description provided for @adminServerFieldMaxGroupNameLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Group Name Length'**
+  String get adminServerFieldMaxGroupNameLength;
+
+  /// No description provided for @adminServerFieldMinUsernameLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Min Username Length'**
+  String get adminServerFieldMinUsernameLength;
+
+  /// No description provided for @adminServerFieldMinPasswordLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Min Password Length'**
+  String get adminServerFieldMinPasswordLength;
+
+  /// No description provided for @adminServerFieldMaxSignLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Signature Length'**
+  String get adminServerFieldMaxSignLength;
+
+  /// No description provided for @adminServerFieldMaxIntroductionLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Introduction Length'**
+  String get adminServerFieldMaxIntroductionLength;
+
+  /// No description provided for @adminServerFieldMaxPostContentLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Post Content Length'**
+  String get adminServerFieldMaxPostContentLength;
+
+  /// No description provided for @adminServerFieldMaxAvatarSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Avatar Size'**
+  String get adminServerFieldMaxAvatarSize;
+
+  /// No description provided for @adminServerFieldUserStorageQuota.
+  ///
+  /// In en, this message translates to:
+  /// **'User Storage Quota'**
+  String get adminServerFieldUserStorageQuota;
+
+  /// No description provided for @adminServerFieldMaxUserStorageQuota.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Single-User Upload Size'**
+  String get adminServerFieldMaxUserStorageQuota;
+
+  /// No description provided for @adminServerFieldMaxStickerStorageQuota.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Sticker Storage Quota'**
+  String get adminServerFieldMaxStickerStorageQuota;
+
+  /// No description provided for @adminServerFieldJwtRefreshExpires.
+  ///
+  /// In en, this message translates to:
+  /// **'JWT Refresh Expiry (seconds)'**
+  String get adminServerFieldJwtRefreshExpires;
+
+  /// No description provided for @adminServerFieldFileDownloadMode.
+  ///
+  /// In en, this message translates to:
+  /// **'File Download Mode'**
+  String get adminServerFieldFileDownloadMode;
+
+  /// No description provided for @adminServerFileDownloadModeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'redirect or proxy.'**
+  String get adminServerFileDownloadModeDescription;
+
+  /// No description provided for @adminServerFieldMediaFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Media Features'**
+  String get adminServerFieldMediaFeatures;
+
+  /// No description provided for @adminServerMediaFeaturesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow media processing such as thumbnails.'**
+  String get adminServerMediaFeaturesDescription;
+
+  /// No description provided for @adminServerSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search settings'**
+  String get adminServerSearchHint;
+
+  /// No description provided for @adminServerSearchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching settings found'**
+  String get adminServerSearchNoResults;
+
+  /// No description provided for @adminServerUnlimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited'**
+  String get adminServerUnlimited;
+
+  /// No description provided for @adminServerUnsavedChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'You have unsaved changes'**
+  String get adminServerUnsavedChanges;
+
+  /// No description provided for @adminServerUndoChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo changes'**
+  String get adminServerUndoChanges;
+
+  /// No description provided for @adminServerDiscardChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes'**
+  String get adminServerDiscardChanges;
+
+  /// No description provided for @adminServerDiscardAndRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard & refresh'**
+  String get adminServerDiscardAndRefresh;
+
+  /// No description provided for @adminServerDiscardConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard unsaved changes?'**
+  String get adminServerDiscardConfirmTitle;
+
+  /// No description provided for @adminServerDiscardConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your current edits will be lost.'**
+  String get adminServerDiscardConfirmMessage;
+
+  /// No description provided for @adminServerSectionRateLimits.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Limits'**
+  String get adminServerSectionRateLimits;
+
+  /// No description provided for @adminServerSectionServerInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Info'**
+  String get adminServerSectionServerInfo;
+
   /// No description provided for @adminPendingForums.
   ///
   /// In en, this message translates to:
@@ -2751,6 +3339,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Creator UID: {uid}'**
   String adminPendingForumCreator(String uid);
+
+  /// No description provided for @adminPendingForumEditBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get adminPendingForumEditBadge;
 
   /// No description provided for @adminPendingForumNoIntroduction.
   ///
@@ -2962,6 +3556,48 @@ abstract class AppLocalizations {
   /// **'Update Your Profile'**
   String get accountUpdateYourProfile;
 
+  /// No description provided for @accountFriends.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get accountFriends;
+
+  /// No description provided for @accountFriendsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No friends yet'**
+  String get accountFriendsEmpty;
+
+  /// No description provided for @accountFriendsOnlineCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} online'**
+  String accountFriendsOnlineCount(int count);
+
+  /// No description provided for @accountBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get accountBlocked;
+
+  /// No description provided for @accountBlockedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is blocked'**
+  String get accountBlockedEmpty;
+
+  /// No description provided for @accountBlockedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} blocked'**
+  String accountBlockedCount(int count);
+
+  /// No description provided for @accountBlockedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the list to unblock'**
+  String get accountBlockedHint;
+
   /// No description provided for @profileEditTitle.
   ///
   /// In en, this message translates to:
@@ -2991,6 +3627,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Email'**
   String get profileEditEmail;
+
+  /// No description provided for @accountPublicEmailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Public Email'**
+  String get accountPublicEmailTitle;
+
+  /// No description provided for @accountPublicEmailDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Others cannot see your email when disabled (public by default)'**
+  String get accountPublicEmailDesc;
+
+  /// No description provided for @accountReadStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Read Status'**
+  String get accountReadStatusTitle;
+
+  /// No description provided for @accountReadStatusDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Others can see when you have read their messages (shown by default)'**
+  String get accountReadStatusDesc;
+
+  /// No description provided for @accountOnlineStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Online Status'**
+  String get accountOnlineStatusTitle;
+
+  /// No description provided for @accountOnlineStatusDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends can see when you are online (shown by default)'**
+  String get accountOnlineStatusDesc;
+
+  /// No description provided for @chatReadReceiptRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get chatReadReceiptRead;
+
+  /// No description provided for @chatReadReceiptCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} read'**
+  String chatReadReceiptCount(int count);
 
   /// No description provided for @profileEditBio.
   ///
@@ -3214,6 +3898,24 @@ abstract class AppLocalizations {
   /// **'No messages yet\nSend a message to start chatting'**
   String get chatDetailNoMessages;
 
+  /// No description provided for @chatMessagesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load messages'**
+  String get chatMessagesLoadFailed;
+
+  /// No description provided for @forumPostCopySource.
+  ///
+  /// In en, this message translates to:
+  /// **'From TouchFish Forum'**
+  String get forumPostCopySource;
+
+  /// No description provided for @forumPostShareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to share'**
+  String get forumPostShareFailed;
+
   /// No description provided for @chatBackToBottom.
   ///
   /// In en, this message translates to:
@@ -3381,6 +4083,264 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copy'**
   String get messageActionCopy;
+
+  /// No description provided for @messageActionMergeForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge forward'**
+  String get messageActionMergeForward;
+
+  /// No description provided for @messageActionSelectMultiple.
+  ///
+  /// In en, this message translates to:
+  /// **'Select multiple'**
+  String get messageActionSelectMultiple;
+
+  /// No description provided for @messageActionViewOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'View Original'**
+  String get messageActionViewOriginal;
+
+  /// No description provided for @messageRecalledOriginalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Original Recalled Message'**
+  String get messageRecalledOriginalTitle;
+
+  /// No description provided for @messageRecalledOriginalSender.
+  ///
+  /// In en, this message translates to:
+  /// **'Sender'**
+  String get messageRecalledOriginalSender;
+
+  /// No description provided for @messageRecalledOriginalContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Content'**
+  String get messageRecalledOriginalContent;
+
+  /// No description provided for @messageRecalledOriginalFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load the original message'**
+  String get messageRecalledOriginalFailed;
+
+  /// No description provided for @messageRecalledOriginalNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No original content available'**
+  String get messageRecalledOriginalNone;
+
+  /// No description provided for @selectionExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit selection'**
+  String get selectionExit;
+
+  /// No description provided for @selectionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 selected} other{{count} selected}}'**
+  String selectionCount(num count);
+
+  /// No description provided for @selectionSelectMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Select messages'**
+  String get selectionSelectMessages;
+
+  /// No description provided for @selectionRedirectToCurrentChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward to this chat'**
+  String get selectionRedirectToCurrentChat;
+
+  /// No description provided for @selectionCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get selectionCopy;
+
+  /// No description provided for @selectionMergeForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge forward'**
+  String get selectionMergeForward;
+
+  /// No description provided for @selectionCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get selectionCancel;
+
+  /// No description provided for @copySelectedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages to copy'**
+  String get copySelectedEmpty;
+
+  /// No description provided for @voiceHoldToRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold to record voice'**
+  String get voiceHoldToRecord;
+
+  /// No description provided for @voiceHoldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Long press to record'**
+  String get voiceHoldHint;
+
+  /// No description provided for @voiceReleaseToCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Release to cancel'**
+  String get voiceReleaseToCancel;
+
+  /// No description provided for @voiceRecordingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording • swipe up to cancel'**
+  String get voiceRecordingHint;
+
+  /// No description provided for @voiceUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading voice message...'**
+  String get voiceUploading;
+
+  /// No description provided for @voiceSending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending audio...'**
+  String get voiceSending;
+
+  /// No description provided for @voiceLeaveVoiceMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave voice mode'**
+  String get voiceLeaveVoiceMode;
+
+  /// No description provided for @voiceRecordVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Record voice'**
+  String get voiceRecordVoice;
+
+  /// No description provided for @voiceStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get voiceStop;
+
+  /// No description provided for @voicePermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission denied'**
+  String get voicePermissionDenied;
+
+  /// No description provided for @voiceRecordFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to record voice message'**
+  String get voiceRecordFailed;
+
+  /// No description provided for @mergedForwardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Merged forward · {title}'**
+  String mergedForwardTitle(String title);
+
+  /// No description provided for @mergedForwardGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Group chat'**
+  String get mergedForwardGroup;
+
+  /// No description provided for @mergedForwardPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get mergedForwardPrivate;
+
+  /// No description provided for @mergedForwardMore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{and 1 more message} other{and {count} more messages}}'**
+  String mergedForwardMore(num count);
+
+  /// No description provided for @redirectCardLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Redirected history from {room}'**
+  String redirectCardLabel(String room);
+
+  /// No description provided for @redirectMessagesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 message} other{{count} messages}}'**
+  String redirectMessagesCount(num count);
+
+  /// No description provided for @redirectFromRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'From {room}'**
+  String redirectFromRoom(String room);
+
+  /// No description provided for @redirectHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Redirected history · {room}'**
+  String redirectHistoryTitle(String room);
+
+  /// No description provided for @redirectNoContent.
+  ///
+  /// In en, this message translates to:
+  /// **'No content'**
+  String get redirectNoContent;
+
+  /// No description provided for @redirectUnknownSender.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get redirectUnknownSender;
+
+  /// No description provided for @mergeForwardConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge forward?'**
+  String get mergeForwardConfirmTitle;
+
+  /// No description provided for @mergeForwardConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward {count} messages to {target}?'**
+  String mergeForwardConfirmBody(int count, String target);
+
+  /// No description provided for @mergeForwardTextOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only text messages can be merged and forwarded'**
+  String get mergeForwardTextOnly;
+
+  /// No description provided for @mergeForwardTooMany.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to 100 messages can be forwarded at once'**
+  String get mergeForwardTooMany;
+
+  /// No description provided for @mergeForwardFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not merge forward messages'**
+  String get mergeForwardFailed;
+
+  /// No description provided for @mergeForwardSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Merged forward sent'**
+  String get mergeForwardSuccess;
 
   /// No description provided for @messageActionPin.
   ///
@@ -4131,6 +5091,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add Friend'**
   String get userProfileAddFriend;
+
+  /// No description provided for @friendRequestsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend Requests'**
+  String get friendRequestsTitle;
+
+  /// No description provided for @friendRequestEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending friend requests'**
+  String get friendRequestEmpty;
+
+  /// No description provided for @friendRequestBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'This user has blocked you, so you cannot send a friend request'**
+  String get friendRequestBlocked;
+
+  /// No description provided for @friendRequestBlockedByMe.
+  ///
+  /// In en, this message translates to:
+  /// **'You blocked this user — unblock first'**
+  String get friendRequestBlockedByMe;
+
+  /// No description provided for @friendBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get friendBlock;
+
+  /// No description provided for @friendUnblock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock'**
+  String get friendUnblock;
+
+  /// No description provided for @friendUnblockDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblocked'**
+  String get friendUnblockDone;
+
+  /// No description provided for @friendBlockConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocking removes the friendship and prevents this user from sending you friend requests. Block?'**
+  String get friendBlockConfirm;
 
   /// No description provided for @userProfileUnknownEmail.
   ///
@@ -5668,6 +6676,18 @@ abstract class AppLocalizations {
   /// **'Failed to delete announcement'**
   String get announcementDeleteFailed;
 
+  /// No description provided for @announcementLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load announcements'**
+  String get announcementLoadFailed;
+
+  /// No description provided for @announcementSenderFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'User {uid}'**
+  String announcementSenderFallback(String uid);
+
   /// No description provided for @adminAnnouncements.
   ///
   /// In en, this message translates to:
@@ -5788,6 +6808,18 @@ abstract class AppLocalizations {
   /// **'No users found'**
   String get adminAccountEmpty;
 
+  /// No description provided for @adminAccountNoSearchResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No users match your search'**
+  String get adminAccountNoSearchResults;
+
+  /// No description provided for @adminAccountPageIndicator.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page} of {totalPages} ({total} users)'**
+  String adminAccountPageIndicator(int page, int totalPages, int total);
+
   /// No description provided for @adminAccountCreated.
   ///
   /// In en, this message translates to:
@@ -5805,6 +6837,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View Devices'**
   String get adminAccountViewDevices;
+
+  /// No description provided for @adminAccountEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Account'**
+  String get adminAccountEdit;
+
+  /// No description provided for @adminAccountEditDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave a field empty to keep it unchanged.'**
+  String get adminAccountEditDescription;
+
+  /// No description provided for @adminAccountNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New Password (optional)'**
+  String get adminAccountNewPassword;
+
+  /// No description provided for @adminAccountEditSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Account updated'**
+  String get adminAccountEditSuccess;
+
+  /// No description provided for @adminAccountEditFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update account'**
+  String get adminAccountEditFailed;
 
   /// No description provided for @adminAccountChangeRoleTitle.
   ///
@@ -6004,6 +7066,30 @@ abstract class AppLocalizations {
   /// **'Delete failed'**
   String get storageDeleteFailed;
 
+  /// No description provided for @storageDereference.
+  ///
+  /// In en, this message translates to:
+  /// **'Release Reference'**
+  String get storageDereference;
+
+  /// No description provided for @storageDereferenceConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Release your reference to \"{fileName}\"? The file is removed only after no references remain.'**
+  String storageDereferenceConfirm(String fileName);
+
+  /// No description provided for @storageDereferenced.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference released: {fileName}'**
+  String storageDereferenced(String fileName);
+
+  /// No description provided for @storageDereferenceFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to release reference'**
+  String get storageDereferenceFailed;
+
   /// No description provided for @storageUploaded.
   ///
   /// In en, this message translates to:
@@ -6141,6 +7227,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total'**
   String get adminFileSummaryTotal;
+
+  /// No description provided for @adminFileLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load files'**
+  String get adminFileLoadFailed;
+
+  /// No description provided for @adminFileUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get adminFileUnknown;
+
+  /// No description provided for @adminFileTileMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner: {owner} (UID: {uid}) · {size} · Refs: {refs} · Uploads: {uploads}'**
+  String adminFileTileMeta(
+    String owner,
+    String uid,
+    String size,
+    int refs,
+    int uploads,
+  );
+
+  /// No description provided for @adminFileSummaryStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Files: {files} · Users: {users} · Total: {total}'**
+  String adminFileSummaryStats(int files, int users, String total);
 
   /// No description provided for @chatFunctionTabFiles.
   ///
@@ -6406,6 +7522,18 @@ abstract class AppLocalizations {
   /// **'Allow admins to mark essence messages'**
   String get groupEssenceFeatureDesc;
 
+  /// No description provided for @groupPublicMessagesFeature.
+  ///
+  /// In en, this message translates to:
+  /// **'Public Message Preview'**
+  String get groupPublicMessagesFeature;
+
+  /// No description provided for @groupPublicMessagesFeatureDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow non-members to read group messages'**
+  String get groupPublicMessagesFeatureDesc;
+
   /// No description provided for @groupTransferOwner.
   ///
   /// In en, this message translates to:
@@ -6447,6 +7575,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transfer ownership before leaving the group'**
   String get groupLeaveOwnerHint;
+
+  /// No description provided for @groupDissolve.
+  ///
+  /// In en, this message translates to:
+  /// **'Dissolve Group'**
+  String get groupDissolve;
+
+  /// No description provided for @groupDissolveConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently dissolves the group and removes all members. This cannot be undone.'**
+  String get groupDissolveConfirm;
+
+  /// No description provided for @groupDissolveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Dissolve'**
+  String get groupDissolveAction;
+
+  /// No description provided for @groupDissolveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Group dissolved'**
+  String get groupDissolveSuccess;
+
+  /// No description provided for @groupDissolveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to dissolve group'**
+  String get groupDissolveFailed;
 
   /// No description provided for @groupInviteMember.
   ///
@@ -6556,6 +7714,816 @@ abstract class AppLocalizations {
   /// **'OK'**
   String get commonOk;
 
+  /// No description provided for @draftsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts'**
+  String get draftsTitle;
+
+  /// No description provided for @inboxAllClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing needs your attention'**
+  String get inboxAllClear;
+
+  /// No description provided for @forumFilterWithAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'With attachments'**
+  String get forumFilterWithAttachment;
+
+  /// No description provided for @forumFilterMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Posted by me'**
+  String get forumFilterMine;
+
+  /// No description provided for @forumFilterNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No posts match these filters'**
+  String get forumFilterNoMatch;
+
+  /// No description provided for @chatConnectionReconnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection lost, reconnecting…'**
+  String get chatConnectionReconnecting;
+
+  /// No description provided for @videoTapToPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to play'**
+  String get videoTapToPlay;
+
+  /// No description provided for @messageSendTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Send timed out, check your network'**
+  String get messageSendTimeout;
+
+  /// No description provided for @messageSendNetworkFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection lost, this message was not sent'**
+  String get messageSendNetworkFailed;
+
+  /// No description provided for @messageSendRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'The server did not accept this message'**
+  String get messageSendRejected;
+
+  /// No description provided for @messageSendUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment upload failed'**
+  String get messageSendUploadFailed;
+
+  /// No description provided for @failedMessagesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 message not sent} other{{count} messages not sent}}'**
+  String failedMessagesCount(int count);
+
+  /// No description provided for @failedMessagesRetryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry all'**
+  String get failedMessagesRetryAll;
+
+  /// No description provided for @imageCopyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy image link'**
+  String get imageCopyLink;
+
+  /// No description provided for @imageLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied'**
+  String get imageLinkCopied;
+
+  /// No description provided for @settingsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search settings'**
+  String get settingsSearchHint;
+
+  /// No description provided for @settingsSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching settings'**
+  String get settingsSearchEmpty;
+
+  /// No description provided for @reviewReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason (optional, sent to the author)'**
+  String get reviewReasonHint;
+
+  /// No description provided for @reviewReasonPresetIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Incomplete info'**
+  String get reviewReasonPresetIncomplete;
+
+  /// No description provided for @reviewReasonPresetOffTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Off topic'**
+  String get reviewReasonPresetOffTopic;
+
+  /// No description provided for @reviewReasonPresetDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get reviewReasonPresetDuplicate;
+
+  /// No description provided for @reviewReasonPresetInappropriate.
+  ///
+  /// In en, this message translates to:
+  /// **'Not suitable for public display'**
+  String get reviewReasonPresetInappropriate;
+
+  /// No description provided for @notificationMarkAllRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all read'**
+  String get notificationMarkAllRead;
+
+  /// No description provided for @notificationDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification deleted'**
+  String get notificationDeleted;
+
+  /// No description provided for @notificationDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete failed, please retry'**
+  String get notificationDeleteFailed;
+
+  /// No description provided for @notificationSwipeToDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get notificationSwipeToDelete;
+
+  /// No description provided for @loginErrorPendingActivation.
+  ///
+  /// In en, this message translates to:
+  /// **'Account not activated yet, please verify your email'**
+  String get loginErrorPendingActivation;
+
+  /// No description provided for @loginErrorBanned.
+  ///
+  /// In en, this message translates to:
+  /// **'This account has been banned'**
+  String get loginErrorBanned;
+
+  /// No description provided for @ticketReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get ticketReport;
+
+  /// No description provided for @ticketReportDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Report abusive content or users'**
+  String get ticketReportDesc;
+
+  /// No description provided for @ticketConsult.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback'**
+  String get ticketConsult;
+
+  /// No description provided for @ticketAppeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal'**
+  String get ticketAppeal;
+
+  /// No description provided for @ticketMyTickets.
+  ///
+  /// In en, this message translates to:
+  /// **'My tickets'**
+  String get ticketMyTickets;
+
+  /// No description provided for @ticketFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Help & feedback'**
+  String get ticketFeedback;
+
+  /// No description provided for @ticketComposeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get ticketComposeTitle;
+
+  /// No description provided for @ticketComposeContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get ticketComposeContent;
+
+  /// No description provided for @ticketComposeSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get ticketComposeSubmit;
+
+  /// No description provided for @ticketSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket submitted'**
+  String get ticketSubmitted;
+
+  /// No description provided for @ticketSubmitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit failed, please retry'**
+  String get ticketSubmitFailed;
+
+  /// No description provided for @ticketTypeDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'This ticket type is disabled'**
+  String get ticketTypeDisabled;
+
+  /// No description provided for @ticketEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No tickets yet'**
+  String get ticketEmpty;
+
+  /// No description provided for @ticketStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get ticketStatusOpen;
+
+  /// No description provided for @ticketStatusProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing'**
+  String get ticketStatusProcessing;
+
+  /// No description provided for @ticketStatusResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get ticketStatusResolved;
+
+  /// No description provided for @ticketStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get ticketStatusRejected;
+
+  /// No description provided for @ticketReplyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolution note'**
+  String get ticketReplyLabel;
+
+  /// No description provided for @ticketQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket queue'**
+  String get ticketQueue;
+
+  /// No description provided for @ticketHandleProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Start processing'**
+  String get ticketHandleProcessing;
+
+  /// No description provided for @ticketHandleResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark resolved'**
+  String get ticketHandleResolved;
+
+  /// No description provided for @ticketHandleRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get ticketHandleRejected;
+
+  /// No description provided for @ticketHandled.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get ticketHandled;
+
+  /// No description provided for @ticketTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Target'**
+  String get ticketTarget;
+
+  /// No description provided for @ticketPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get ticketPriority;
+
+  /// No description provided for @ticketPriorityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get ticketPriorityLow;
+
+  /// No description provided for @ticketPriorityNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get ticketPriorityNormal;
+
+  /// No description provided for @ticketPriorityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get ticketPriorityHigh;
+
+  /// No description provided for @ticketPriorityUrgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get ticketPriorityUrgent;
+
+  /// No description provided for @ticketAssignee.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignee'**
+  String get ticketAssignee;
+
+  /// No description provided for @ticketUnassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned'**
+  String get ticketUnassigned;
+
+  /// No description provided for @ticketAssignToMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign to me'**
+  String get ticketAssignToMe;
+
+  /// No description provided for @ticketClearAssignee.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear assignee'**
+  String get ticketClearAssignee;
+
+  /// No description provided for @ticketThreadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation'**
+  String get ticketThreadTitle;
+
+  /// No description provided for @ticketMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a message…'**
+  String get ticketMessageHint;
+
+  /// No description provided for @ticketSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get ticketSend;
+
+  /// No description provided for @ticketReopenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Replying to a closed ticket will reopen it'**
+  String get ticketReopenHint;
+
+  /// No description provided for @ticketMuted.
+  ///
+  /// In en, this message translates to:
+  /// **'You are muted and cannot post right now'**
+  String get ticketMuted;
+
+  /// No description provided for @ticketBanned.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is banned from this action'**
+  String get ticketBanned;
+
+  /// No description provided for @ticketPendingActivation.
+  ///
+  /// In en, this message translates to:
+  /// **'Account not activated — verify your email first'**
+  String get ticketPendingActivation;
+
+  /// No description provided for @ticketUnreadReplies.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} unread replies'**
+  String ticketUnreadReplies(int count);
+
+  /// No description provided for @ticketAttachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get ticketAttachments;
+
+  /// No description provided for @ticketAddAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Add image'**
+  String get ticketAddAttachment;
+
+  /// No description provided for @ticketUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment upload failed'**
+  String get ticketUploadFailed;
+
+  /// No description provided for @ticketChangeStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Change status'**
+  String get ticketChangeStatus;
+
+  /// No description provided for @ticketThreadEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No replies yet'**
+  String get ticketThreadEmptyTitle;
+
+  /// No description provided for @ticketThreadEmptyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a message to start the conversation'**
+  String get ticketThreadEmptyDesc;
+
+  /// No description provided for @ticketTargetPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Post'**
+  String get ticketTargetPost;
+
+  /// No description provided for @ticketTargetComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment'**
+  String get ticketTargetComment;
+
+  /// No description provided for @ticketTargetUser.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get ticketTargetUser;
+
+  /// No description provided for @ticketTargetForum.
+  ///
+  /// In en, this message translates to:
+  /// **'Forum'**
+  String get ticketTargetForum;
+
+  /// No description provided for @ticketReplies.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} replies'**
+  String ticketReplies(int count);
+
+  /// No description provided for @ticketAddFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Add file'**
+  String get ticketAddFile;
+
+  /// No description provided for @ticketStaffReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff'**
+  String get ticketStaffReply;
+
+  /// No description provided for @ticketContentRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a description or at least one attachment'**
+  String get ticketContentRequired;
+
+  /// No description provided for @ticketTypeName.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get ticketTypeName;
+
+  /// No description provided for @ticketUnknownUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown user'**
+  String get ticketUnknownUser;
+
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// No description provided for @ticketSortByPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get ticketSortByPriority;
+
+  /// No description provided for @ticketSortByTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get ticketSortByTime;
+
+  /// No description provided for @ticketFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get ticketFilter;
+
+  /// No description provided for @ticketFilterReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get ticketFilterReset;
+
+  /// No description provided for @ticketFilterApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get ticketFilterApply;
+
+  /// No description provided for @ticketCreatorFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Creator (username or UID)'**
+  String get ticketCreatorFilter;
+
+  /// No description provided for @ticketCreatorNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No such user'**
+  String get ticketCreatorNotFound;
+
+  /// No description provided for @ticketAllTickets.
+  ///
+  /// In en, this message translates to:
+  /// **'All tickets'**
+  String get ticketAllTickets;
+
+  /// No description provided for @ticketAttachmentLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attachments'**
+  String get ticketAttachmentLimit;
+
+  /// No description provided for @punishmentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Punishments'**
+  String get punishmentTitle;
+
+  /// No description provided for @punishmentNoticeLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'This notice stays until the punishment expires'**
+  String get punishmentNoticeLocked;
+
+  /// No description provided for @punishmentCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Add punishment'**
+  String get punishmentCreate;
+
+  /// No description provided for @punishmentKindLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get punishmentKindLabel;
+
+  /// No description provided for @punishmentKindWarn.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning'**
+  String get punishmentKindWarn;
+
+  /// No description provided for @punishmentKindMute.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute'**
+  String get punishmentKindMute;
+
+  /// No description provided for @punishmentKindBan.
+  ///
+  /// In en, this message translates to:
+  /// **'Ban'**
+  String get punishmentKindBan;
+
+  /// No description provided for @punishmentReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason (required)'**
+  String get punishmentReasonLabel;
+
+  /// No description provided for @punishmentReasonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A reason is required'**
+  String get punishmentReasonRequired;
+
+  /// No description provided for @punishmentDurationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get punishmentDurationLabel;
+
+  /// No description provided for @punishmentDurationPermanent.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanent'**
+  String get punishmentDurationPermanent;
+
+  /// No description provided for @punishmentRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke'**
+  String get punishmentRevoke;
+
+  /// No description provided for @punishmentActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get punishmentActive;
+
+  /// No description provided for @punishmentInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get punishmentInactive;
+
+  /// No description provided for @punishmentEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No punishment records'**
+  String get punishmentEmpty;
+
+  /// No description provided for @punishmentCreateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Punishment applied'**
+  String get punishmentCreateSuccess;
+
+  /// No description provided for @punishmentCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation failed'**
+  String get punishmentCreateFailed;
+
+  /// No description provided for @notificationFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get notificationFilterAll;
+
+  /// No description provided for @notificationSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{total} notifications · {unread} unread'**
+  String notificationSummary(int total, int unread);
+
+  /// No description provided for @notificationEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements, punishments, friend requests and other system notices appear here'**
+  String get notificationEmptyDescription;
+
+  /// No description provided for @notificationViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all notifications'**
+  String get notificationViewAll;
+
+  /// No description provided for @notificationNoMore.
+  ///
+  /// In en, this message translates to:
+  /// **'No more notifications'**
+  String get notificationNoMore;
+
+  /// No description provided for @notificationCategoryOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get notificationCategoryOther;
+
+  /// No description provided for @notificationLockedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get notificationLockedBadge;
+
+  /// No description provided for @notificationUnreadBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get notificationUnreadBadge;
+
+  /// No description provided for @notificationFilterSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get notificationFilterSystem;
+
+  /// No description provided for @notificationFilterForum.
+  ///
+  /// In en, this message translates to:
+  /// **'Forum'**
+  String get notificationFilterForum;
+
+  /// No description provided for @notificationFilterFriend.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get notificationFilterFriend;
+
+  /// No description provided for @notificationFilterGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups'**
+  String get notificationFilterGroup;
+
+  /// No description provided for @timeJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get timeJustNow;
+
+  /// No description provided for @timeMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 min ago} other{{count} min ago}}'**
+  String timeMinutesAgo(int count);
+
+  /// No description provided for @timeHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour ago} other{{count} hours ago}}'**
+  String timeHoursAgo(int count);
+
+  /// No description provided for @timeYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'yesterday'**
+  String get timeYesterday;
+
+  /// No description provided for @timeDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} days ago'**
+  String timeDaysAgo(int count);
+
+  /// No description provided for @draftsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No drafts'**
+  String get draftsEmpty;
+
+  /// No description provided for @draftsEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts are saved locally while you edit a post'**
+  String get draftsEmptyHint;
+
+  /// No description provided for @draftsDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete draft'**
+  String get draftsDelete;
+
+  /// No description provided for @draftsDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This cannot be undone. Delete this draft?'**
+  String get draftsDeleteConfirm;
+
+  /// No description provided for @draftsUpdatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {time}'**
+  String draftsUpdatedAt(String time);
+
+  /// No description provided for @draftsAttachmentCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 attachment} other{{count} attachments}}'**
+  String draftsAttachmentCount(int count);
+
   /// No description provided for @commonFailedOperation.
   ///
   /// In en, this message translates to:
@@ -6627,6 +8595,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Storage'**
   String get settingsCategoryStorage;
+
+  /// No description provided for @settingsLocalStorageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local storage'**
+  String get settingsLocalStorageTitle;
 
   /// No description provided for @settingsNotifyWithHaptic.
   ///
@@ -6856,11 +8830,59 @@ abstract class AppLocalizations {
   /// **'Switch to the wide layout when the window width reaches this value (only in Auto mode)'**
   String get settingsWideThresholdDesc;
 
+  /// No description provided for @settingsSplitThresholdTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Split View Threshold'**
+  String get settingsSplitThresholdTitle;
+
+  /// No description provided for @settingsSplitThresholdDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Place the list and the detail side by side only once the window is this wide (only in Auto mode)'**
+  String get settingsSplitThresholdDesc;
+
   /// No description provided for @settingsWideThresholdValue.
   ///
   /// In en, this message translates to:
   /// **'{px} px'**
   String settingsWideThresholdValue(Object px);
+
+  /// No description provided for @settingsSinglePageStyleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Single-page style'**
+  String get settingsSinglePageStyleTitle;
+
+  /// No description provided for @settingsSinglePageStyleDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not split the forum section: use the single-page list-to-detail navigation instead'**
+  String get settingsSinglePageStyleDesc;
+
+  /// No description provided for @settingsForumHideEmptyPaneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the forum pane when empty'**
+  String get settingsForumHideEmptyPaneTitle;
+
+  /// No description provided for @settingsForumHideEmptyPaneDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the forum list and the forum detail full-width; split only while a post is open, and restore when it closes'**
+  String get settingsForumHideEmptyPaneDesc;
+
+  /// No description provided for @settingsCommandPaletteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Command palette'**
+  String get settingsCommandPaletteTitle;
+
+  /// No description provided for @settingsCommandPaletteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the command palette with Ctrl/Cmd+K on desktop (on by default; nothing can summon it once off)'**
+  String get settingsCommandPaletteDesc;
 
   /// No description provided for @settingsWeakNetworkTitle.
   ///
@@ -6873,6 +8895,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use periodic synchronization when the connection is unstable'**
   String get settingsWeakNetworkDesc;
+
+  /// No description provided for @settingsSyncModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync mode'**
+  String get settingsSyncModeTitle;
+
+  /// No description provided for @settingsSyncModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Full sync keeps every chat complete offline. Browsing mode syncs only the chats you open (offline completeness not guaranteed).'**
+  String get settingsSyncModeDesc;
+
+  /// No description provided for @settingsSyncModeFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Full sync'**
+  String get settingsSyncModeFull;
+
+  /// No description provided for @settingsSyncModeBrowsing.
+  ///
+  /// In en, this message translates to:
+  /// **'Browsing only'**
+  String get settingsSyncModeBrowsing;
 
   /// No description provided for @settingsDataSavingTitle.
   ///
@@ -6897,6 +8943,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Load server-generated thumbnails in chat bubbles; the original image loads only when opened (saves data)'**
   String get settingsThumbnailPreviewDesc;
+
+  /// No description provided for @settingsImageCompressionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compress images before sending'**
+  String get settingsImageCompressionTitle;
+
+  /// No description provided for @settingsImageCompressionDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-encode images locally before upload (longest edge 1920, lossy) to save data and storage'**
+  String get settingsImageCompressionDesc;
+
+  /// No description provided for @settingsImageCompressionQualityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compression quality'**
+  String get settingsImageCompressionQualityTitle;
+
+  /// No description provided for @settingsImageCompressionQualityDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Lower values produce smaller files with more visible quality loss'**
+  String get settingsImageCompressionQualityDesc;
 
   /// No description provided for @settingsIpOverrideTitle.
   ///
@@ -7450,6 +9520,30 @@ abstract class AppLocalizations {
   /// **'Application submitted, pending admin approval'**
   String get groupProfileJoinPending;
 
+  /// No description provided for @groupJoinMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Request Message'**
+  String get groupJoinMessageTitle;
+
+  /// No description provided for @groupJoinMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional: tell admins why you want to join'**
+  String get groupJoinMessageHint;
+
+  /// No description provided for @groupInviteMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation Message'**
+  String get groupInviteMessageTitle;
+
+  /// No description provided for @groupInviteMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional: note for reviewers'**
+  String get groupInviteMessageHint;
+
   /// No description provided for @groupProfileJoinFailed.
   ///
   /// In en, this message translates to:
@@ -7473,6 +9567,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Group Creator'**
   String get groupProfileCreator;
+
+  /// No description provided for @groupProfileInviteOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite only'**
+  String get groupProfileInviteOnly;
+
+  /// No description provided for @groupProfilePreviewSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Message preview'**
+  String get groupProfilePreviewSection;
+
+  /// No description provided for @groupProfilePreviewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only public messages are shown. Join the group to chat.'**
+  String get groupProfilePreviewHint;
+
+  /// No description provided for @groupProfilePreviewEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages to preview yet'**
+  String get groupProfilePreviewEmpty;
+
+  /// No description provided for @groupProfilePreviewLoadOlder.
+  ///
+  /// In en, this message translates to:
+  /// **'Load earlier messages'**
+  String get groupProfilePreviewLoadOlder;
 
   /// No description provided for @forwardSearchTitle.
   ///
@@ -8512,6 +10636,12 @@ abstract class AppLocalizations {
   /// **'Message is too long'**
   String get errorCodeValidationMessageTooLong;
 
+  /// No description provided for @errorCodeValidationRequestMessageTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Request message is too long'**
+  String get errorCodeValidationRequestMessageTooLong;
+
   /// No description provided for @errorCodeValidationMissingParameter.
   ///
   /// In en, this message translates to:
@@ -8679,6 +10809,360 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Internal server error'**
   String get errorCodeServerError;
+
+  /// No description provided for @timeAgoJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get timeAgoJustNow;
+
+  /// No description provided for @timeAgoMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}m ago'**
+  String timeAgoMinutes(int minutes);
+
+  /// No description provided for @timeAgoHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h ago'**
+  String timeAgoHours(int hours);
+
+  /// No description provided for @timeAgoDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days}d ago'**
+  String timeAgoDays(int days);
+
+  /// No description provided for @timeAgoWeeks.
+  ///
+  /// In en, this message translates to:
+  /// **'{weeks}w ago'**
+  String timeAgoWeeks(int weeks);
+
+  /// No description provided for @timeAgoMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'{months}mo ago'**
+  String timeAgoMonths(int months);
+
+  /// No description provided for @timeAgoYears.
+  ///
+  /// In en, this message translates to:
+  /// **'{years}y ago'**
+  String timeAgoYears(int years);
+
+  /// No description provided for @suspiciousLoginTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspicious Login Detected'**
+  String get suspiciousLoginTitle;
+
+  /// No description provided for @suspiciousLoginMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Unusual login activity was detected on your account. If this wasn\'t you, please review your login devices immediately.'**
+  String get suspiciousLoginMessage;
+
+  /// No description provided for @suspiciousLoginDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Device'**
+  String get suspiciousLoginDevice;
+
+  /// No description provided for @suspiciousLoginLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get suspiciousLoginLocation;
+
+  /// No description provided for @suspiciousLoginTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get suspiciousLoginTime;
+
+  /// No description provided for @suspiciousLoginDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get suspiciousLoginDismiss;
+
+  /// No description provided for @suspiciousLoginReviewSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Login Devices'**
+  String get suspiciousLoginReviewSessions;
+
+  /// No description provided for @searchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get searchTitle;
+
+  /// No description provided for @searchTabUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Users'**
+  String get searchTabUsers;
+
+  /// No description provided for @searchTabGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups'**
+  String get searchTabGroups;
+
+  /// No description provided for @searchTabMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get searchTabMessages;
+
+  /// No description provided for @searchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search users, groups or messages'**
+  String get searchHint;
+
+  /// No description provided for @searchStartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter keywords to start searching'**
+  String get searchStartHint;
+
+  /// No description provided for @searchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No results found'**
+  String get searchNoResults;
+
+  /// No description provided for @searchMinLengthHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at least {count} characters'**
+  String searchMinLengthHint(int count);
+
+  /// No description provided for @searchGroupJoinDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Open to join'**
+  String get searchGroupJoinDirect;
+
+  /// No description provided for @searchGroupNeedReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval required'**
+  String get searchGroupNeedReview;
+
+  /// No description provided for @searchGroupInviteOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite only'**
+  String get searchGroupInviteOnly;
+
+  /// No description provided for @searchGroupMemberCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} members'**
+  String searchGroupMemberCount(int count);
+
+  /// No description provided for @errorCodeValidationSearchKeywordTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Search keyword is too short'**
+  String get errorCodeValidationSearchKeywordTooShort;
+
+  /// No description provided for @errorCodeFeatureDisabledPrivateChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Private chat is disabled on this server'**
+  String get errorCodeFeatureDisabledPrivateChat;
+
+  /// No description provided for @errorCodeFeatureDisabledGroupChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Group chat is disabled on this server'**
+  String get errorCodeFeatureDisabledGroupChat;
+
+  /// No description provided for @errorCodeFeatureDisabledGroupCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating groups is disabled on this server'**
+  String get errorCodeFeatureDisabledGroupCreate;
+
+  /// No description provided for @errorCodeFeatureDisabledFriendRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend requests are disabled on this server'**
+  String get errorCodeFeatureDisabledFriendRequest;
+
+  /// No description provided for @errorCodeFeatureDisabledForum.
+  ///
+  /// In en, this message translates to:
+  /// **'The forum is disabled on this server'**
+  String get errorCodeFeatureDisabledForum;
+
+  /// No description provided for @errorCodeFeatureDisabledSticker.
+  ///
+  /// In en, this message translates to:
+  /// **'Stickers are disabled on this server'**
+  String get errorCodeFeatureDisabledSticker;
+
+  /// No description provided for @errorCodeFeatureDisabledAnnouncement.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements are disabled on this server'**
+  String get errorCodeFeatureDisabledAnnouncement;
+
+  /// Shown at the end of a paginated list when there are no more items
+  ///
+  /// In en, this message translates to:
+  /// **'No more'**
+  String get listNoMore;
+
+  /// No description provided for @chatListEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No chats yet'**
+  String get chatListEmpty;
+
+  /// No description provided for @contactListEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No contacts yet'**
+  String get contactListEmpty;
+
+  /// No description provided for @forumMembersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No members yet'**
+  String get forumMembersEmpty;
+
+  /// Tooltip on a failed message's status icon; tapping the icon resends it
+  ///
+  /// In en, this message translates to:
+  /// **'Send failed, tap to retry'**
+  String get messageRetrySend;
+
+  /// Placeholder of the command palette search field
+  ///
+  /// In en, this message translates to:
+  /// **'Search chats, pages and actions'**
+  String get commandPaletteHint;
+
+  /// No description provided for @commandPaletteEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching results'**
+  String get commandPaletteEmpty;
+
+  /// No description provided for @adminServerFieldAllowRegister.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow self-service registration'**
+  String get adminServerFieldAllowRegister;
+
+  /// No description provided for @adminServerFieldExternalAuthUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'External auth platform URL'**
+  String get adminServerFieldExternalAuthUrl;
+
+  /// No description provided for @adminServerFieldPlatformAuthEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable platform endpoints'**
+  String get adminServerFieldPlatformAuthEnabled;
+
+  /// No description provided for @adminServerFieldPlatformAuthIssuer.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform issuer'**
+  String get adminServerFieldPlatformAuthIssuer;
+
+  /// No description provided for @adminServerFieldPlatformAuthAllowIps.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform caller allowlist'**
+  String get adminServerFieldPlatformAuthAllowIps;
+
+  /// No description provided for @adminServerFieldPlatformAuthSharedToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform shared token'**
+  String get adminServerFieldPlatformAuthSharedToken;
+
+  /// No description provided for @adminServerExternalAuthUrlDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish Auth base URL, e.g. https://auth.example.com. Leave empty to disable external login.'**
+  String get adminServerExternalAuthUrlDescription;
+
+  /// No description provided for @adminServerPlatformAuthDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, /auth/platform/* only accepts allowlisted addresses. Always set the shared token behind a reverse proxy.'**
+  String get adminServerPlatformAuthDescription;
+
+  /// No description provided for @adminServerAllowRegisterDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When disabled, neither the external platform nor clients can register new accounts. Existing accounts are unaffected.'**
+  String get adminServerAllowRegisterDescription;
+
+  /// No description provided for @adminServerPlatformAuthTokenConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Configured. Leave blank to keep it unchanged.'**
+  String get adminServerPlatformAuthTokenConfigured;
+
+  /// No description provided for @adminServerPlatformAuthTokenEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Not configured yet'**
+  String get adminServerPlatformAuthTokenEmpty;
+
+  /// No description provided for @adminServerPlatformAuthTokenClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the configured token'**
+  String get adminServerPlatformAuthTokenClear;
+
+  /// No description provided for @loginExternalAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with TouchFish Auth'**
+  String get loginExternalAuth;
+
+  /// No description provided for @adminServerPlatformAuthIssuerDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Only verifies the iss claim of platform tokens; must match the platform\'s AUTH_ISSUER exactly. The client login entry uses \"External auth platform URL\" above.'**
+  String get adminServerPlatformAuthIssuerDescription;
+
+  /// No description provided for @loginErrorExternalNotLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'This platform account is not linked to a TouchFish account, and auto-creation is disabled on the server.'**
+  String get loginErrorExternalNotLinked;
+
+  /// No description provided for @loginErrorExternalTokenInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The token issued by the auth platform was rejected: check that the server trusts that platform (jwt_external_issuers).'**
+  String get loginErrorExternalTokenInvalid;
+
+  /// No description provided for @loginErrorTicketExchange.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not exchange the ticket for a login token. Please retry.'**
+  String get loginErrorTicketExchange;
+
+  /// No description provided for @loginOr.
+  ///
+  /// In en, this message translates to:
+  /// **'or'**
+  String get loginOr;
 }
 
 class _AppLocalizationsDelegate
