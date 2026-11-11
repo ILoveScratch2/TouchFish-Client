@@ -4094,7 +4094,292 @@ class AppLocalizationsOch extends AppLocalizations {
   String get notificationSwipeToDelete => '刪';
 
   @override
+  String get loginErrorPendingActivation => '帳未啟，請先驗其郵';
+
+  @override
+  String get loginErrorBanned => '帳號已被封禁';
+
+  @override
+  String get ticketReport => '糾舉';
+
+  @override
+  String get ticketReportDesc => '糾舉違規之內容或人';
+
+  @override
+  String get ticketConsult => '建言';
+
+  @override
+  String get ticketAppeal => '申辯';
+
+  @override
+  String get ticketMyTickets => '吾之工單';
+
+  @override
+  String get ticketFeedback => '求助與建言';
+
+  @override
+  String get ticketComposeTitle => '題';
+
+  @override
+  String get ticketComposeContent => '詳述';
+
+  @override
+  String get ticketComposeSubmit => '呈';
+
+  @override
+  String get ticketSubmitted => '工單已呈';
+
+  @override
+  String get ticketSubmitFailed => '呈遞未成，請復試';
+
+  @override
+  String get ticketTypeDisabled => '此類工單未開';
+
+  @override
+  String get ticketEmpty => '尚無工單';
+
+  @override
+  String get ticketStatusOpen => '待理';
+
+  @override
+  String get ticketStatusProcessing => '理中';
+
+  @override
+  String get ticketStatusResolved => '已理';
+
+  @override
+  String get ticketStatusRejected => '未准';
+
+  @override
+  String get ticketReplyLabel => '批註';
+
+  @override
+  String get ticketQueue => '工單之列';
+
+  @override
+  String get ticketHandleProcessing => '始理之';
+
+  @override
+  String get ticketHandleResolved => '標為已理';
+
+  @override
+  String get ticketHandleRejected => '駁回';
+
+  @override
+  String get ticketHandled => '已更';
+
+  @override
+  String get ticketTarget => '所涉';
+
+  @override
+  String get ticketPriority => '緩急';
+
+  @override
+  String get ticketPriorityLow => '緩';
+
+  @override
+  String get ticketPriorityNormal => '平常';
+
+  @override
+  String get ticketPriorityHigh => '急';
+
+  @override
+  String get ticketPriorityUrgent => '火急';
+
+  @override
+  String get ticketAssignee => '主事';
+
+  @override
+  String get ticketUnassigned => '未派';
+
+  @override
+  String get ticketAssignToMe => '交予我';
+
+  @override
+  String get ticketClearAssignee => '撤派';
+
+  @override
+  String get ticketThreadTitle => '往來';
+
+  @override
+  String get ticketMessageHint => '再述…';
+
+  @override
+  String get ticketSend => '發';
+
+  @override
+  String get ticketReopenHint => '已結之單，一迴即重開';
+
+  @override
+  String get ticketMuted => '已禁言，暫不得言';
+
+  @override
+  String get ticketBanned => '此號已封，不得為之';
+
+  @override
+  String get ticketPendingActivation => '此號未啟，請先驗郵';
+
+  @override
+  String ticketUnreadReplies(int count) {
+    return '$count 封未讀';
+  }
+
+  @override
+  String get ticketAttachments => '附件';
+
+  @override
+  String get ticketAddAttachment => '添圖';
+
+  @override
+  String get ticketUploadFailed => '附件上傳未成';
+
+  @override
+  String get ticketChangeStatus => '改其狀';
+
+  @override
+  String get ticketThreadEmptyTitle => '尚無回覆';
+
+  @override
+  String get ticketThreadEmptyDesc => '發一言以啟對話';
+
+  @override
+  String get ticketTargetPost => '帖';
+
+  @override
+  String get ticketTargetComment => '評';
+
+  @override
+  String get ticketTargetUser => '人';
+
+  @override
+  String get ticketTargetForum => '版';
+
+  @override
+  String ticketReplies(int count) {
+    return '$count 迴';
+  }
+
+  @override
+  String get ticketAddFile => '添附';
+
+  @override
+  String get ticketStaffReply => '吏';
+
+  @override
+  String get ticketContentRequired => '請述其事，或附一物';
+
+  @override
+  String get ticketTypeName => '類';
+
+  @override
+  String get ticketUnknownUser => '不知誰';
+
+  @override
+  String get refresh => '翻新';
+
+  @override
+  String get ticketSortByPriority => '緩急';
+
+  @override
+  String get ticketSortByTime => '時';
+
+  @override
+  String get ticketFilter => '篩';
+
+  @override
+  String get ticketFilterReset => '復原';
+
+  @override
+  String get ticketFilterApply => '行';
+
+  @override
+  String get ticketCreatorFilter => '啟者（名或編號）';
+
+  @override
+  String get ticketCreatorNotFound => '無此人';
+
+  @override
+  String get ticketAllTickets => '諸單';
+
+  @override
+  String get ticketAttachmentLimit => '附件過多';
+
+  @override
+  String get punishmentTitle => '刑罰之錄';
+
+  @override
+  String get punishmentNoticeLocked => '處分未到期，此訊暫不可刪';
+
+  @override
+  String get punishmentCreate => '加罰';
+
+  @override
+  String get punishmentKindLabel => '類';
+
+  @override
+  String get punishmentKindWarn => '警';
+
+  @override
+  String get punishmentKindMute => '禁言';
+
+  @override
+  String get punishmentKindBan => '封禁';
+
+  @override
+  String get punishmentReasonLabel => '其由（必填）';
+
+  @override
+  String get punishmentReasonRequired => '請書其由';
+
+  @override
+  String get punishmentDurationLabel => '期';
+
+  @override
+  String get punishmentDurationPermanent => '永';
+
+  @override
+  String get punishmentRevoke => '解罰';
+
+  @override
+  String get punishmentActive => '方行';
+
+  @override
+  String get punishmentInactive => '已廢';
+
+  @override
+  String get punishmentEmpty => '尚無刑錄';
+
+  @override
+  String get punishmentCreateSuccess => '罰已行';
+
+  @override
+  String get punishmentCreateFailed => '事未成';
+
+  @override
   String get notificationFilterAll => '悉';
+
+  @override
+  String notificationSummary(int total, int unread) {
+    return '共 $total 條 · 未讀 $unread 條';
+  }
+
+  @override
+  String get notificationEmptyDescription => '公告、處分、好友申請等系統通知都會出現喺呢度';
+
+  @override
+  String get notificationViewAll => '查看全部通知';
+
+  @override
+  String get notificationNoMore => '冇更多通知喇';
+
+  @override
+  String get notificationCategoryOther => '其它';
+
+  @override
+  String get notificationLockedBadge => '未到期唔可刪';
+
+  @override
+  String get notificationUnreadBadge => '未讀';
 
   @override
   String get notificationFilterSystem => '系統';

@@ -72,6 +72,13 @@ class _InboxSummaryCardState extends State<InboxSummaryCard> {
           count: _notifications.announcementUnreadCount,
           route: AppRoutes.announcement,
         ),
+      if (_notifications.unreadCount > 0)
+        _InboxItem(
+          icon: Icons.notifications_outlined,
+          label: l10n.notificationTitle,
+          count: _notifications.unreadCount,
+          route: AppRoutes.notifications,
+        ),
       if (_notifications.forumUnreadCount > 0)
         _InboxItem(
           icon: Icons.forum_outlined,
@@ -92,12 +99,41 @@ class _InboxSummaryCardState extends State<InboxSummaryCard> {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: TFSpace.md),
         child: Card(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: TFSpace.sm),
-            child: EmptyState(
-              compact: true,
-              icon: Symbols.inbox,
-              title: l10n.inboxAllClear,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => GoRouter.of(context).push(AppRoutes.notifications),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: TFSpace.sm),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: 88,
+                    child: EmptyState(
+                      compact: true,
+                      icon: Symbols.inbox,
+                      title: l10n.inboxAllClear,
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        l10n.notificationViewAll,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right,
+                        size: TFSize.iconSm,
+                        color: colorScheme.outline,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: TFSpace.xs),
+                ],
+              ),
             ),
           ),
         ),

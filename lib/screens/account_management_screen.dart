@@ -10,6 +10,7 @@ import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../utils/wide_screen_helper.dart';
 import '../widgets/admin_ui.dart';
+import '../widgets/support/punishment_sheet.dart';
 import '../widgets/optimized_image.dart';
 import '../widgets/ui/loading_indicator.dart';
 
@@ -821,6 +822,15 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
                     _showRoleChangeDialog(user);
                   case 'ban':
                     _banUser(user);
+                  case 'punish':
+                    final targetUid = int.tryParse(user.uid);
+                    if (targetUid != null) {
+                      showPunishmentSheet(
+                        context,
+                        targetUid: targetUid,
+                        targetName: user.username,
+                      );
+                    }
                   case 'delete':
                     _deleteUser(user);
                   case 'devices':
@@ -848,6 +858,11 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
                   stat == 'banned'
                       ? l10n.adminAccountUnbanAction
                       : l10n.adminAccountBanAction,
+                ),
+                _menuItem(
+                  'punish',
+                  Icons.gavel_outlined,
+                  l10n.punishmentTitle,
                 ),
                 _menuItem(
                   'devices',

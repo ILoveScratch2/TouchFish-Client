@@ -14,6 +14,30 @@ import 'auth_state.dart';
 
 enum ChatWsState { disconnected, connecting, connected, authenticated }
 
+enum ChatWsPingAction {
+  /// 连接仍活跃/尚未判超时
+  /// 照常发 PING。
+  send,
+
+  /// 判定为半开连接
+  reconnect,
+
+  /// 服务器从不回应 PING
+  /// 停止主动心跳
+  passive,
+}
+
+/// 根据"距上次收到任何入站帧多久决定
+ChatWsPingAction decideChatWsPingAction({
+  required Duration idleFor,
+  required int pongReplies,
+  required Duration timeout,
+}) {
+  if (idleFor <= timeout) return ChatWsPingAction.send;
+  if (pongReplies == 0) return ChatWsPingAction.passive;
+  return ChatWsPingAction.reconnect;
+}
+
 class ChatWsService extends ChangeNotifier {
   static ChatWsService? _instance;
   static ChatWsService get instance => _instance ??= ChatWsService._();
@@ -41,11 +65,13 @@ class ChatWsService extends ChangeNotifier {
   static const Duration _maxReconnectDelay = Duration(seconds: 30);
   static const Duration _rateLimitWindow = Duration(minutes: 1);
   static const Duration _pingInterval = Duration(seconds: 50);
-  // 连续两个心跳周期都没有 PONG，就认为 TCP 已经半开（NAT 超时等）
+  // 连续两个心跳周期都没有 PONG
   static const Duration _pongTimeout = Duration(seconds: 110);
   int _reconnectCount = 0;
   DateTime? _reconnectWindowStart;
   DateTime? _lastPongAt;
+  int _pongReplies = 0;
+  bool _pingUnsupported = false;
 
   final StreamController<ChatWsEvent> _eventController =
       StreamController<ChatWsEvent>.broadcast();
@@ -129,6 +155,9 @@ class ChatWsService extends ChangeNotifier {
       _tryingConnectionCandidates = false;
     }
 
+    if (_state != ChatWsState.authenticated) {
+      _disconnectCleanup();
+    }
     _scheduleReconnect();
     return false;
   }
@@ -213,6 +242,8 @@ class ChatWsService extends ChangeNotifier {
       _authenticatedUid = uid;
       _setState(ChatWsState.authenticated);
       _lastPongAt = DateTime.now();
+      _pongReplies = 0;
+      _pingUnsupported = false;
       _reconnectCount = 0;
       _reconnectWindowStart = null;
       _startPing();
@@ -246,6 +277,8 @@ class ChatWsService extends ChangeNotifier {
       return;
     }
 
+    _touchLiveness();
+
     // Try to decrypt as {"iv": "...", "content": "..."} JSON
     if (_sessionAesKey != null) {
       final decrypted = _tryDecrypt(text);
@@ -262,11 +295,20 @@ class ChatWsService extends ChangeNotifier {
     try {
       final parsed = jsonDecode(text);
       if (parsed is Map<String, dynamic>) {
-        if (parsed['type'] == 'AUTH.LOGIN_SUCCEEDED') {
+        final type = parsed['type'];
+        if (type == 'AUTH.LOGIN_SUCCEEDED') {
           _completeAuthentication(true);
+          _touchLiveness();
+        } else if (type == 'PONG') {
+          _pongReplies++;
+          _touchLiveness();
         }
       }
     } catch (_) {}
+  }
+
+  void _touchLiveness() {
+    _lastPongAt = DateTime.now();
   }
 
   void _onError(Object error) {
@@ -292,7 +334,8 @@ class ChatWsService extends ChangeNotifier {
     }
 
     if (type == 'PONG') {
-      _lastPongAt = DateTime.now();
+      _pongReplies++;
+      _touchLiveness();
       return;
     }
 
@@ -394,20 +437,36 @@ class ChatWsService extends ChangeNotifier {
     _pingTimer?.cancel();
     _pingTimer = Timer.periodic(_pingInterval, (_) {
       if (_state != ChatWsState.authenticated || _channel == null) return;
-      final lastPong = _lastPongAt;
-      if (lastPong != null &&
-          DateTime.now().difference(lastPong) > _pongTimeout) {
-        // 半开连接：sink.add 不会报错，但消息已经发不出去
-        talker.warning(
-          'ChatWsService: no PONG for ${_pongTimeout.inSeconds}s, reconnecting',
-        );
-        _teardownForReconnect();
-        _scheduleReconnect();
-        return;
+      final lastActivity = _lastPongAt ?? DateTime.now();
+      final action = decideChatWsPingAction(
+        idleFor: DateTime.now().difference(lastActivity),
+        pongReplies: _pongReplies,
+        timeout: _pongTimeout,
+      );
+      switch (action) {
+        case ChatWsPingAction.passive:
+          if (!_pingUnsupported) {
+            _pingUnsupported = true;
+            talker.info(
+              'ChatWsService: server never answered PING, switching to passive '
+              'liveness detection',
+            );
+          }
+          return;
+        case ChatWsPingAction.reconnect:
+          // 半开连接
+          talker.warning(
+            'ChatWsService: no inbound frame for '
+            '${_pongTimeout.inSeconds}s, reconnecting',
+          );
+          _teardownForReconnect();
+          _scheduleReconnect();
+          return;
+        case ChatWsPingAction.send:
+          try {
+            _sendEncrypted(jsonEncode({'type': 'PING'}));
+          } catch (_) {}
       }
-      try {
-        _sendEncrypted(jsonEncode({'type': 'PING'}));
-      } catch (_) {}
     });
   }
 
@@ -419,6 +478,8 @@ class ChatWsService extends ChangeNotifier {
     _sessionAesKey = null;
     _authenticatedUid = null;
     _lastPongAt = null;
+    _pongReplies = 0;
+    _pingUnsupported = false;
     _pingTimer?.cancel();
     _setState(ChatWsState.disconnected);
   }

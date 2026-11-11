@@ -4282,7 +4282,298 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationSwipeToDelete => 'Delete';
 
   @override
+  String get loginErrorPendingActivation =>
+      'Account not activated yet, please verify your email';
+
+  @override
+  String get loginErrorBanned => 'This account has been banned';
+
+  @override
+  String get ticketReport => 'Report';
+
+  @override
+  String get ticketReportDesc => 'Report abusive content or users';
+
+  @override
+  String get ticketConsult => 'Feedback';
+
+  @override
+  String get ticketAppeal => 'Appeal';
+
+  @override
+  String get ticketMyTickets => 'My tickets';
+
+  @override
+  String get ticketFeedback => 'Help & feedback';
+
+  @override
+  String get ticketComposeTitle => 'Title';
+
+  @override
+  String get ticketComposeContent => 'Details';
+
+  @override
+  String get ticketComposeSubmit => 'Submit';
+
+  @override
+  String get ticketSubmitted => 'Ticket submitted';
+
+  @override
+  String get ticketSubmitFailed => 'Submit failed, please retry';
+
+  @override
+  String get ticketTypeDisabled => 'This ticket type is disabled';
+
+  @override
+  String get ticketEmpty => 'No tickets yet';
+
+  @override
+  String get ticketStatusOpen => 'Open';
+
+  @override
+  String get ticketStatusProcessing => 'Processing';
+
+  @override
+  String get ticketStatusResolved => 'Resolved';
+
+  @override
+  String get ticketStatusRejected => 'Rejected';
+
+  @override
+  String get ticketReplyLabel => 'Resolution note';
+
+  @override
+  String get ticketQueue => 'Ticket queue';
+
+  @override
+  String get ticketHandleProcessing => 'Start processing';
+
+  @override
+  String get ticketHandleResolved => 'Mark resolved';
+
+  @override
+  String get ticketHandleRejected => 'Reject';
+
+  @override
+  String get ticketHandled => 'Updated';
+
+  @override
+  String get ticketTarget => 'Target';
+
+  @override
+  String get ticketPriority => 'Priority';
+
+  @override
+  String get ticketPriorityLow => 'Low';
+
+  @override
+  String get ticketPriorityNormal => 'Normal';
+
+  @override
+  String get ticketPriorityHigh => 'High';
+
+  @override
+  String get ticketPriorityUrgent => 'Urgent';
+
+  @override
+  String get ticketAssignee => 'Assignee';
+
+  @override
+  String get ticketUnassigned => 'Unassigned';
+
+  @override
+  String get ticketAssignToMe => 'Assign to me';
+
+  @override
+  String get ticketClearAssignee => 'Clear assignee';
+
+  @override
+  String get ticketThreadTitle => 'Conversation';
+
+  @override
+  String get ticketMessageHint => 'Add a message…';
+
+  @override
+  String get ticketSend => 'Send';
+
+  @override
+  String get ticketReopenHint => 'Replying to a closed ticket will reopen it';
+
+  @override
+  String get ticketMuted => 'You are muted and cannot post right now';
+
+  @override
+  String get ticketBanned => 'This account is banned from this action';
+
+  @override
+  String get ticketPendingActivation =>
+      'Account not activated — verify your email first';
+
+  @override
+  String ticketUnreadReplies(int count) {
+    return '$count unread replies';
+  }
+
+  @override
+  String get ticketAttachments => 'Attachments';
+
+  @override
+  String get ticketAddAttachment => 'Add image';
+
+  @override
+  String get ticketUploadFailed => 'Attachment upload failed';
+
+  @override
+  String get ticketChangeStatus => 'Change status';
+
+  @override
+  String get ticketThreadEmptyTitle => 'No replies yet';
+
+  @override
+  String get ticketThreadEmptyDesc =>
+      'Send a message to start the conversation';
+
+  @override
+  String get ticketTargetPost => 'Post';
+
+  @override
+  String get ticketTargetComment => 'Comment';
+
+  @override
+  String get ticketTargetUser => 'User';
+
+  @override
+  String get ticketTargetForum => 'Forum';
+
+  @override
+  String ticketReplies(int count) {
+    return '$count replies';
+  }
+
+  @override
+  String get ticketAddFile => 'Add file';
+
+  @override
+  String get ticketStaffReply => 'Staff';
+
+  @override
+  String get ticketContentRequired =>
+      'Add a description or at least one attachment';
+
+  @override
+  String get ticketTypeName => 'Type';
+
+  @override
+  String get ticketUnknownUser => 'Unknown user';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get ticketSortByPriority => 'Priority';
+
+  @override
+  String get ticketSortByTime => 'Recent';
+
+  @override
+  String get ticketFilter => 'Filter';
+
+  @override
+  String get ticketFilterReset => 'Reset';
+
+  @override
+  String get ticketFilterApply => 'Apply';
+
+  @override
+  String get ticketCreatorFilter => 'Creator (username or UID)';
+
+  @override
+  String get ticketCreatorNotFound => 'No such user';
+
+  @override
+  String get ticketAllTickets => 'All tickets';
+
+  @override
+  String get ticketAttachmentLimit => 'Too many attachments';
+
+  @override
+  String get punishmentTitle => 'Punishments';
+
+  @override
+  String get punishmentNoticeLocked =>
+      'This notice stays until the punishment expires';
+
+  @override
+  String get punishmentCreate => 'Add punishment';
+
+  @override
+  String get punishmentKindLabel => 'Type';
+
+  @override
+  String get punishmentKindWarn => 'Warning';
+
+  @override
+  String get punishmentKindMute => 'Mute';
+
+  @override
+  String get punishmentKindBan => 'Ban';
+
+  @override
+  String get punishmentReasonLabel => 'Reason (required)';
+
+  @override
+  String get punishmentReasonRequired => 'A reason is required';
+
+  @override
+  String get punishmentDurationLabel => 'Duration';
+
+  @override
+  String get punishmentDurationPermanent => 'Permanent';
+
+  @override
+  String get punishmentRevoke => 'Revoke';
+
+  @override
+  String get punishmentActive => 'Active';
+
+  @override
+  String get punishmentInactive => 'Inactive';
+
+  @override
+  String get punishmentEmpty => 'No punishment records';
+
+  @override
+  String get punishmentCreateSuccess => 'Punishment applied';
+
+  @override
+  String get punishmentCreateFailed => 'Operation failed';
+
+  @override
   String get notificationFilterAll => 'All';
+
+  @override
+  String notificationSummary(int total, int unread) {
+    return '$total notifications · $unread unread';
+  }
+
+  @override
+  String get notificationEmptyDescription =>
+      'Announcements, punishments, friend requests and other system notices appear here';
+
+  @override
+  String get notificationViewAll => 'View all notifications';
+
+  @override
+  String get notificationNoMore => 'No more notifications';
+
+  @override
+  String get notificationCategoryOther => 'Other';
+
+  @override
+  String get notificationLockedBadge => 'Locked';
+
+  @override
+  String get notificationUnreadBadge => 'Unread';
 
   @override
   String get notificationFilterSystem => 'System';

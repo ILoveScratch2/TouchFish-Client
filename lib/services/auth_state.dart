@@ -405,6 +405,8 @@ class AuthState extends ChangeNotifier {
         return switch (result.error!) {
           'authFailed' => 'invalidCredentials',
           'tokenLimitReached' => 'sessionLimitReached',
+          'pendingActivation' => 'pendingActivation',
+          'accountBanned' => 'accountBanned',
           _ => 'networkError',
         };
       }
@@ -514,6 +516,7 @@ class AuthState extends ChangeNotifier {
           'externalNotLinked' => 'externalNotLinked',
           'externalTokenInvalid' => 'externalTokenInvalid',
           'userBanned' => 'userBanned',
+          'pendingActivation' => 'pendingActivation',
           'tokenLimitReached' => 'sessionLimitReached',
           _ => 'networkError',
         };

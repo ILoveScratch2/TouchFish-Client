@@ -7870,11 +7870,569 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get notificationSwipeToDelete;
 
+  /// No description provided for @loginErrorPendingActivation.
+  ///
+  /// In en, this message translates to:
+  /// **'Account not activated yet, please verify your email'**
+  String get loginErrorPendingActivation;
+
+  /// No description provided for @loginErrorBanned.
+  ///
+  /// In en, this message translates to:
+  /// **'This account has been banned'**
+  String get loginErrorBanned;
+
+  /// No description provided for @ticketReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get ticketReport;
+
+  /// No description provided for @ticketReportDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Report abusive content or users'**
+  String get ticketReportDesc;
+
+  /// No description provided for @ticketConsult.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback'**
+  String get ticketConsult;
+
+  /// No description provided for @ticketAppeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal'**
+  String get ticketAppeal;
+
+  /// No description provided for @ticketMyTickets.
+  ///
+  /// In en, this message translates to:
+  /// **'My tickets'**
+  String get ticketMyTickets;
+
+  /// No description provided for @ticketFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Help & feedback'**
+  String get ticketFeedback;
+
+  /// No description provided for @ticketComposeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get ticketComposeTitle;
+
+  /// No description provided for @ticketComposeContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get ticketComposeContent;
+
+  /// No description provided for @ticketComposeSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get ticketComposeSubmit;
+
+  /// No description provided for @ticketSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket submitted'**
+  String get ticketSubmitted;
+
+  /// No description provided for @ticketSubmitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit failed, please retry'**
+  String get ticketSubmitFailed;
+
+  /// No description provided for @ticketTypeDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'This ticket type is disabled'**
+  String get ticketTypeDisabled;
+
+  /// No description provided for @ticketEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No tickets yet'**
+  String get ticketEmpty;
+
+  /// No description provided for @ticketStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get ticketStatusOpen;
+
+  /// No description provided for @ticketStatusProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing'**
+  String get ticketStatusProcessing;
+
+  /// No description provided for @ticketStatusResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get ticketStatusResolved;
+
+  /// No description provided for @ticketStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get ticketStatusRejected;
+
+  /// No description provided for @ticketReplyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolution note'**
+  String get ticketReplyLabel;
+
+  /// No description provided for @ticketQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket queue'**
+  String get ticketQueue;
+
+  /// No description provided for @ticketHandleProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Start processing'**
+  String get ticketHandleProcessing;
+
+  /// No description provided for @ticketHandleResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark resolved'**
+  String get ticketHandleResolved;
+
+  /// No description provided for @ticketHandleRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get ticketHandleRejected;
+
+  /// No description provided for @ticketHandled.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get ticketHandled;
+
+  /// No description provided for @ticketTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Target'**
+  String get ticketTarget;
+
+  /// No description provided for @ticketPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get ticketPriority;
+
+  /// No description provided for @ticketPriorityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get ticketPriorityLow;
+
+  /// No description provided for @ticketPriorityNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get ticketPriorityNormal;
+
+  /// No description provided for @ticketPriorityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get ticketPriorityHigh;
+
+  /// No description provided for @ticketPriorityUrgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get ticketPriorityUrgent;
+
+  /// No description provided for @ticketAssignee.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignee'**
+  String get ticketAssignee;
+
+  /// No description provided for @ticketUnassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned'**
+  String get ticketUnassigned;
+
+  /// No description provided for @ticketAssignToMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign to me'**
+  String get ticketAssignToMe;
+
+  /// No description provided for @ticketClearAssignee.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear assignee'**
+  String get ticketClearAssignee;
+
+  /// No description provided for @ticketThreadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation'**
+  String get ticketThreadTitle;
+
+  /// No description provided for @ticketMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a message…'**
+  String get ticketMessageHint;
+
+  /// No description provided for @ticketSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get ticketSend;
+
+  /// No description provided for @ticketReopenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Replying to a closed ticket will reopen it'**
+  String get ticketReopenHint;
+
+  /// No description provided for @ticketMuted.
+  ///
+  /// In en, this message translates to:
+  /// **'You are muted and cannot post right now'**
+  String get ticketMuted;
+
+  /// No description provided for @ticketBanned.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is banned from this action'**
+  String get ticketBanned;
+
+  /// No description provided for @ticketPendingActivation.
+  ///
+  /// In en, this message translates to:
+  /// **'Account not activated — verify your email first'**
+  String get ticketPendingActivation;
+
+  /// No description provided for @ticketUnreadReplies.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} unread replies'**
+  String ticketUnreadReplies(int count);
+
+  /// No description provided for @ticketAttachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get ticketAttachments;
+
+  /// No description provided for @ticketAddAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Add image'**
+  String get ticketAddAttachment;
+
+  /// No description provided for @ticketUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment upload failed'**
+  String get ticketUploadFailed;
+
+  /// No description provided for @ticketChangeStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Change status'**
+  String get ticketChangeStatus;
+
+  /// No description provided for @ticketThreadEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No replies yet'**
+  String get ticketThreadEmptyTitle;
+
+  /// No description provided for @ticketThreadEmptyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a message to start the conversation'**
+  String get ticketThreadEmptyDesc;
+
+  /// No description provided for @ticketTargetPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Post'**
+  String get ticketTargetPost;
+
+  /// No description provided for @ticketTargetComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment'**
+  String get ticketTargetComment;
+
+  /// No description provided for @ticketTargetUser.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get ticketTargetUser;
+
+  /// No description provided for @ticketTargetForum.
+  ///
+  /// In en, this message translates to:
+  /// **'Forum'**
+  String get ticketTargetForum;
+
+  /// No description provided for @ticketReplies.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} replies'**
+  String ticketReplies(int count);
+
+  /// No description provided for @ticketAddFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Add file'**
+  String get ticketAddFile;
+
+  /// No description provided for @ticketStaffReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff'**
+  String get ticketStaffReply;
+
+  /// No description provided for @ticketContentRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a description or at least one attachment'**
+  String get ticketContentRequired;
+
+  /// No description provided for @ticketTypeName.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get ticketTypeName;
+
+  /// No description provided for @ticketUnknownUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown user'**
+  String get ticketUnknownUser;
+
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// No description provided for @ticketSortByPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get ticketSortByPriority;
+
+  /// No description provided for @ticketSortByTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get ticketSortByTime;
+
+  /// No description provided for @ticketFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get ticketFilter;
+
+  /// No description provided for @ticketFilterReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get ticketFilterReset;
+
+  /// No description provided for @ticketFilterApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get ticketFilterApply;
+
+  /// No description provided for @ticketCreatorFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Creator (username or UID)'**
+  String get ticketCreatorFilter;
+
+  /// No description provided for @ticketCreatorNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No such user'**
+  String get ticketCreatorNotFound;
+
+  /// No description provided for @ticketAllTickets.
+  ///
+  /// In en, this message translates to:
+  /// **'All tickets'**
+  String get ticketAllTickets;
+
+  /// No description provided for @ticketAttachmentLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attachments'**
+  String get ticketAttachmentLimit;
+
+  /// No description provided for @punishmentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Punishments'**
+  String get punishmentTitle;
+
+  /// No description provided for @punishmentNoticeLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'This notice stays until the punishment expires'**
+  String get punishmentNoticeLocked;
+
+  /// No description provided for @punishmentCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Add punishment'**
+  String get punishmentCreate;
+
+  /// No description provided for @punishmentKindLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get punishmentKindLabel;
+
+  /// No description provided for @punishmentKindWarn.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning'**
+  String get punishmentKindWarn;
+
+  /// No description provided for @punishmentKindMute.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute'**
+  String get punishmentKindMute;
+
+  /// No description provided for @punishmentKindBan.
+  ///
+  /// In en, this message translates to:
+  /// **'Ban'**
+  String get punishmentKindBan;
+
+  /// No description provided for @punishmentReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason (required)'**
+  String get punishmentReasonLabel;
+
+  /// No description provided for @punishmentReasonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A reason is required'**
+  String get punishmentReasonRequired;
+
+  /// No description provided for @punishmentDurationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get punishmentDurationLabel;
+
+  /// No description provided for @punishmentDurationPermanent.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanent'**
+  String get punishmentDurationPermanent;
+
+  /// No description provided for @punishmentRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke'**
+  String get punishmentRevoke;
+
+  /// No description provided for @punishmentActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get punishmentActive;
+
+  /// No description provided for @punishmentInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get punishmentInactive;
+
+  /// No description provided for @punishmentEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No punishment records'**
+  String get punishmentEmpty;
+
+  /// No description provided for @punishmentCreateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Punishment applied'**
+  String get punishmentCreateSuccess;
+
+  /// No description provided for @punishmentCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation failed'**
+  String get punishmentCreateFailed;
+
   /// No description provided for @notificationFilterAll.
   ///
   /// In en, this message translates to:
   /// **'All'**
   String get notificationFilterAll;
+
+  /// No description provided for @notificationSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{total} notifications · {unread} unread'**
+  String notificationSummary(int total, int unread);
+
+  /// No description provided for @notificationEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements, punishments, friend requests and other system notices appear here'**
+  String get notificationEmptyDescription;
+
+  /// No description provided for @notificationViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all notifications'**
+  String get notificationViewAll;
+
+  /// No description provided for @notificationNoMore.
+  ///
+  /// In en, this message translates to:
+  /// **'No more notifications'**
+  String get notificationNoMore;
+
+  /// No description provided for @notificationCategoryOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get notificationCategoryOther;
+
+  /// No description provided for @notificationLockedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get notificationLockedBadge;
+
+  /// No description provided for @notificationUnreadBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get notificationUnreadBadge;
 
   /// No description provided for @notificationFilterSystem.
   ///

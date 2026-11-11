@@ -18,6 +18,7 @@ import '../../models/forum_model.dart';
 import '../../models/sticker_model.dart';
 import '../../models/announcement_model.dart';
 import '../../models/notification_model.dart';
+import '../../models/support_ticket.dart';
 import '../../models/api_error.dart';
 import '../../models/file_attachment.dart';
 import '../server_connection_status_service.dart';
@@ -1896,6 +1897,9 @@ class TfApiClient {
             'AUTH_FAILED' => 'authFailed',
             'AUTH_TOKEN_LIMIT_REACHED' => 'tokenLimitReached',
             'AUTH_INVALID_PASSWORD' => 'authFailed',
+            'pending_activation' => 'pendingActivation',
+            // 封禁以前掉进 serverError，用户看到的是"网络错误"
+            'account_banned' => 'accountBanned',
             _ => 'serverError',
           };
           return TfLoginResult.error(code);
@@ -2690,6 +2694,7 @@ class TfApiClient {
       uid: uid,
       password: password,
     );
+    _lastContentError = _readRestrictionError(result);
     return _parseBool(result);
   }
 
@@ -2745,6 +2750,31 @@ class TfApiClient {
     }
   }
 
+  /// 最近一次内容写入错误码
+  String? _lastContentError;
+  String? get lastContentError => _lastContentError;
+
+  /// 只识别账号限制相关的错误
+  String? _readRestrictionError(String? result) {
+    if (result == null) return null;
+    final trimmed = result.trim();
+    if (!trimmed.startsWith('{')) return null;
+    try {
+      final data = jsonDecode(trimmed);
+      if (data is! Map) return null;
+      final error = data['error'] as String?;
+      if (error == null) return null;
+      const restricted = {
+        'account_muted',
+        'account_banned',
+        'pending_activation',
+      };
+      return restricted.contains(error) ? error : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<bool> addComment(
     int uid,
     String password,
@@ -2758,6 +2788,7 @@ class TfApiClient {
       uid: uid,
       password: password,
     );
+    _lastContentError = _readRestrictionError(result);
     return _parseBool(result);
   }
 
@@ -2960,6 +2991,335 @@ class TfApiClient {
     return _parseBool(result);
   }
 
+  Future<int?> createTicket(
+    int uid,
+    String password, {
+    required TicketType type,
+    required String title,
+    required String content,
+    String? targetType,
+    String? targetId,
+    TicketPriority priority = TicketPriority.normal,
+    List<String> attachments = const [],
+  }) async {
+    final result = await secretPost(
+      '/ticket/create',
+      {
+        'type': type.wire,
+        'title': title,
+        'content': content,
+        'priority': priority.wire,
+        if (targetType != null) 'target_type': targetType,
+        if (targetId != null) 'target_id': targetId,
+        if (attachments.isNotEmpty) 'attachments': attachments,
+      },
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return null;
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return null;
+      if (data['success'] != true) {
+        // 服务端用 error 区分类型被关闭和参数不对
+        _lastTicketError = data['error'] as String?;
+        return null;
+      }
+      _lastTicketError = null;
+      return (data['ticket_id'] as num?)?.toInt();
+    } catch (e) {
+      talker.error('createTicket parse failed', e);
+      return null;
+    }
+  }
+
+  /// 最近一次工单接口返回的错误
+  String? _lastTicketError;
+  String? get lastTicketError => _lastTicketError;
+
+  Future<List<SupportTicket>> listMyTickets(
+    int uid,
+    String password, {
+    int offset = 0,
+    int take = 30,
+  }) async {
+    final result = await secretPost(
+      '/ticket/list',
+      {'offset': offset, 'take': take},
+      uid: uid,
+      password: password,
+    );
+    return _parseTicketList(result, 'listMyTickets');
+  }
+
+  Future<List<SupportTicket>> listTicketQueue(
+    int uid,
+    String password, {
+    String? status,
+    bool includeClosed = false,
+    String sort = 'priority',
+    String? type,
+    String? priority,
+    int? creatorUid,
+    int offset = 0,
+    int take = 30,
+  }) async {
+    final result = await secretPost(
+      '/ticket/queue',
+      {
+        if (status != null) 'status': status,
+        if (includeClosed) 'scope': 'all',
+        'sort': sort,
+        if (type != null) 'type': type,
+        if (priority != null) 'priority': priority,
+        if (creatorUid != null) 'creator_uid': creatorUid,
+        'offset': offset,
+        'take': take,
+      },
+      uid: uid,
+      password: password,
+    );
+    return _parseTicketList(result, 'listTicketQueue');
+  }
+
+  List<SupportTicket> _parseTicketList(String? result, String caller) {
+    if (result == null) return const [];
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return const [];
+      final raw = data['tickets'];
+      if (raw is! List) return const [];
+      return raw
+          .whereType<Map>()
+          .map((item) => SupportTicket.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+    } catch (e) {
+      talker.error('$caller parse failed', e);
+      return const [];
+    }
+  }
+
+  Future<SupportTicket?> getTicketDetail(
+    int uid,
+    String password,
+    int ticketId,
+  ) async {
+    final result = await secretPost(
+      '/ticket/detail',
+      {'ticket_id': ticketId},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return null;
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return null;
+      return SupportTicket.fromJson(Map<String, dynamic>.from(data));
+    } catch (e) {
+      talker.error('getTicketDetail parse failed', e);
+      return null;
+    }
+  }
+
+  Future<int> getTicketPendingCount(int uid, String password) async {
+    final result = await secretPost(
+      '/ticket/pending_count',
+      const {},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return 0;
+    try {
+      final data = jsonDecode(result);
+      if (data is Map) return (data['count'] as num?)?.toInt() ?? 0;
+    } catch (e) {
+      talker.error('getTicketPendingCount parse failed', e);
+    }
+    return 0;
+  }
+
+  Future<int> getTicketUnreadCount(int uid, String password) async {
+    final result = await secretPost(
+      '/ticket/my_count',
+      const {},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return 0;
+    try {
+      final data = jsonDecode(result);
+      if (data is Map) return (data['unread'] as num?)?.toInt() ?? 0;
+    } catch (e) {
+      talker.error('getTicketUnreadCount parse failed', e);
+    }
+    return 0;
+  }
+
+  /// 在工单里发一条消息
+  Future<String?> sendTicketMessage(
+    int uid,
+    String password,
+    int ticketId,
+    String content, {
+    List<String> attachments = const [],
+  }) async {
+    final result = await secretPost(
+      '/ticket/message/send',
+      {
+        'ticket_id': ticketId,
+        'content': content,
+        if (attachments.isNotEmpty) 'attachments': attachments,
+      },
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return 'network';
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return 'invalid_response';
+      if (data['success'] == true) return null;
+      return data['error'] as String? ?? 'unknown';
+    } catch (e) {
+      talker.error('sendTicketMessage parse failed', e);
+      return 'invalid_response';
+    }
+  }
+
+  /// 改优先级或指派
+  Future<String?> updateTicketMeta(
+    int uid,
+    String password,
+    int ticketId, {
+    TicketPriority? priority,
+    int? assigneeUid,
+    bool clearAssignee = false,
+  }) async {
+    final result = await secretPost(
+      '/ticket/handle',
+      {
+        'ticket_id': ticketId,
+        if (priority != null) 'priority': priority.wire,
+        if (assigneeUid != null) 'assignee_uid': assigneeUid,
+        if (clearAssignee) 'clear_assignee': true,
+      },
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return 'network';
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return 'invalid_response';
+      if (data['success'] == true) return null;
+      return data['error'] as String? ?? 'unknown';
+    } catch (e) {
+      talker.error('updateTicketMeta parse failed', e);
+      return 'invalid_response';
+    }
+  }
+
+  /// 推进工单状态。返回服务端的错误码，`null` 表示成功。
+  Future<String?> handleTicket(
+    int uid,
+    String password,
+    int ticketId, {
+    required String status,
+    String? reply,
+  }) async {
+    final result = await secretPost(
+      '/ticket/handle',
+      {
+        'ticket_id': ticketId,
+        'status': status,
+        if (reply != null && reply.isNotEmpty) 'reply': reply,
+      },
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return 'network';
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return 'invalid_response';
+      if (data['success'] == true) return null;
+      return data['error'] as String? ?? 'unknown';
+    } catch (e) {
+      talker.error('handleTicket parse failed', e);
+      return 'invalid_response';
+    }
+  }
+
+
+  Future<String?> createPunishment(
+    int uid,
+    String password, {
+    required int targetUid,
+    required PunishmentKind kind,
+    required String reason,
+    int? durationSeconds,
+  }) async {
+    final result = await secretPost(
+      '/punishment/create',
+      {
+        'target_uid': targetUid,
+        'kind': kind.wire,
+        'reason': reason,
+        if (durationSeconds != null) 'duration_seconds': durationSeconds,
+      },
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return 'network';
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return 'invalid_response';
+      if (data['success'] == true) return null;
+      return data['error'] as String? ?? 'unknown';
+    } catch (e) {
+      talker.error('createPunishment parse failed', e);
+      return 'invalid_response';
+    }
+  }
+
+  Future<List<Punishment>> listPunishments(
+    int uid,
+    String password, {
+    int? targetUid,
+  }) async {
+    final result = await secretPost(
+      '/punishment/list',
+      {if (targetUid != null) 'target_uid': targetUid},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return const [];
+    try {
+      final data = jsonDecode(result);
+      if (data is! Map) return const [];
+      final raw = data['punishments'];
+      if (raw is! List) return const [];
+      return raw
+          .whereType<Map>()
+          .map((item) => Punishment.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+    } catch (e) {
+      talker.error('listPunishments parse failed', e);
+      return const [];
+    }
+  }
+
+  Future<bool> revokePunishment(
+    int uid,
+    String password,
+    int punishmentId,
+  ) async {
+    final result = await secretPost(
+      '/punishment/revoke',
+      {'punishment_id': punishmentId},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
   Future<bool> approveForum(int uid, String password, int queueId) async {
     final result = await secretPost(
       '/forum/approve_forum',
@@ -3057,7 +3417,8 @@ class TfApiClient {
 
   // notification
 
-  Future<List<NotificationInfo>> queryAllNotifications(
+  /// 返回 null 表示请求或解析失败
+  Future<List<NotificationInfo>?> queryAllNotifications(
     int uid,
     String password,
   ) async {
@@ -3067,7 +3428,7 @@ class TfApiClient {
       uid: uid,
       password: password,
     );
-    if (result == null) return [];
+    if (result == null) return null;
     try {
       final list = jsonDecode(result) as List<dynamic>;
       return list
@@ -3077,11 +3438,11 @@ class TfApiClient {
           .toList();
     } catch (e) {
       talker.error('queryAllNotifications parse failed', e);
-      return [];
+      return null;
     }
   }
 
-  Future<List<NotificationInfo>> queryNotificationsAfter(
+  Future<List<NotificationInfo>?> queryNotificationsAfter(
     int uid,
     String password,
     double timeStamp,
@@ -3092,7 +3453,7 @@ class TfApiClient {
       uid: uid,
       password: password,
     );
-    if (result == null) return [];
+    if (result == null) return null;
     try {
       final list = jsonDecode(result) as List<dynamic>;
       return list
@@ -3102,7 +3463,34 @@ class TfApiClient {
           .toList();
     } catch (e) {
       talker.error('queryNotificationsAfter parse failed', e);
-      return [];
+      return null;
+    }
+  }
+
+  /// 取比 [timeStamp] 更早的
+  Future<List<NotificationInfo>?> queryNotificationsBefore(
+    int uid,
+    String password,
+    double timeStamp, {
+    int limit = 50,
+  }) async {
+    final result = await secretPost(
+      '/notification/query_before',
+      {'time_stamp': timeStamp, 'limit': limit},
+      uid: uid,
+      password: password,
+    );
+    if (result == null) return null;
+    try {
+      final list = jsonDecode(result) as List<dynamic>;
+      return list
+          .map(
+            (e) => NotificationInfo.fromServerJson(e as Map<String, dynamic>),
+          )
+          .toList();
+    } catch (e) {
+      talker.error('queryNotificationsBefore parse failed', e);
+      return null;
     }
   }
 
@@ -3486,6 +3874,7 @@ class TfApiClient {
       uid: uid,
       password: password,
     );
+    _lastContentError = _readRestrictionError(result);
     try {
       final data = jsonDecode(result ?? '');
       if (data is Map<String, dynamic>) return data;

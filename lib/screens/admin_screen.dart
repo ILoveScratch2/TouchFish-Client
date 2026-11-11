@@ -3,8 +3,10 @@ import 'package:go_router/go_router.dart';
 
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
+import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/forum_pending_service.dart';
+import '../services/ticket_inbox_service.dart';
 import '../services/snackbar_service.dart';
 import '../utils/wide_screen_helper.dart';
 import '../widgets/admin_ui.dart';
@@ -20,19 +22,36 @@ class AdminScreen extends StatefulWidget {
 class _AdminScreenState extends State<AdminScreen> {
   final _forumPendingService = ForumPendingService.instance;
 
+  int _pendingTicketCount = 0;
+
   @override
   void initState() {
     super.initState();
     _forumPendingService.addListener(_onPendingChanged);
+    TicketInboxService.instance.addListener(_onTicketInboxChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _forumPendingService.refresh();
+      if (mounted) {
+        _forumPendingService.refresh();
+        _refreshPendingTicketCount();
+      }
     });
   }
 
   @override
   void dispose() {
     _forumPendingService.removeListener(_onPendingChanged);
+    TicketInboxService.instance.removeListener(_onTicketInboxChanged);
     super.dispose();
+  }
+
+  void _onTicketInboxChanged() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final count = TicketInboxService.instance.pendingCount;
+      if (count != _pendingTicketCount) {
+        setState(() => _pendingTicketCount = count);
+      }
+    });
   }
 
   void _onPendingChanged() {
@@ -41,12 +60,30 @@ class _AdminScreenState extends State<AdminScreen> {
 
   int get _pendingForumCount => _forumPendingService.pendingCount;
 
+  Future<void> _refreshPendingTicketCount() async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return;
+    final count = await TfApiClient.instance.getTicketPendingCount(
+      uid,
+      password,
+    );
+    if (!mounted) return;
+    setState(() => _pendingTicketCount = count);
+  }
+
   Future<void> _refreshPendingForumCount({bool showError = false}) async {
     await _forumPendingService.refresh();
     if (showError && mounted && _forumPendingService.error != null) {
       final l10n = AppLocalizations.of(context)!;
       TouchFishSnackbarService.instance.show(l10n.adminPendingForumsLoadFailed);
     }
+  }
+
+  Future<void> _openTicketQueue() async {
+    await context.push(AppRoutes.adminTickets);
+    if (!mounted) return;
+    await _refreshPendingTicketCount();
   }
 
   Future<void> _openPendingForums() async {
@@ -220,6 +257,18 @@ class _AdminScreenState extends State<AdminScreen> {
                         onTap: _openPendingForums,
                         trailing: _PendingForumCountBadge(
                           count: _pendingForumCount,
+                        ),
+                      ),
+                    ),
+                    card(
+                      _buildAdminActionCard(
+                        context,
+                        icon: Icons.support_agent_outlined,
+                        title: l10n.ticketQueue,
+                        description: l10n.ticketFeedback,
+                        onTap: _openTicketQueue,
+                        trailing: _PendingForumCountBadge(
+                          count: _pendingTicketCount,
                         ),
                       ),
                     ),

@@ -86,11 +86,11 @@ class _SettingsScreenState extends State<SettingsScreen>
     return ListenableBuilder(
       listenable: _settingsService,
       builder: (context, _) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final isWideScreen = WideScreenHelper.isWideWithWidth(
-              constraints.maxWidth,
-            );
+        // 同 main_screen
+        //整页包在 LayoutBuilder 里会让重建落到布局阶段
+        return Builder(
+          builder: (context) {
+            final isWideScreen = WideScreenHelper.isWide(context);
 
             return Scaffold(
               appBar: AppBar(

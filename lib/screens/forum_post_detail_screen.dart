@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../l10n/app_localizations.dart';
+import '../models/support_ticket.dart';
+import '../widgets/support/ticket_compose_sheet.dart';
 import '../models/forum_model.dart';
 import '../models/user_profile.dart';
 import '../widgets/account/profile_picture.dart';
@@ -307,6 +309,19 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
         title: Text(post.title.isNotEmpty ? post.title : l10n.forumPostDetail),
         actions: [
           ..._buildFullScreenActions(context, l10n),
+          // 举报入口
+          // 帖子详情
+          IconButton(
+            tooltip: l10n.ticketReport,
+            icon: const Icon(Icons.flag_outlined),
+            onPressed: () => showTicketComposeSheet(
+              context,
+              type: TicketType.report,
+              targetType: 'post',
+              targetId: '${widget.forumId}:${widget.postId}',
+              initialTitle: l10n.ticketReport,
+            ),
+          ),
           if (_canDeletePost(post))
             IconButton(
               tooltip: l10n.forumPostDelete,

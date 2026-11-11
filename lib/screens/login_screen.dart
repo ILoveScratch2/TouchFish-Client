@@ -224,6 +224,8 @@ class _LoginScreenState extends State<LoginScreen> {
       'externalNotLinked' => l10n.loginErrorExternalNotLinked,
       'externalTokenInvalid' => l10n.loginErrorExternalTokenInvalid,
       'userBanned' => l10n.loginErrorInvalidCredentials,
+      'pendingActivation' => l10n.loginErrorPendingActivation,
+      'accountBanned' => l10n.loginErrorBanned,
       'sessionLimitReached' => l10n.loginErrorSessionLimit,
       'duplicateLogin' => l10n.loginErrorDuplicateInstance,
       _ => l10n.loginErrorNetwork,

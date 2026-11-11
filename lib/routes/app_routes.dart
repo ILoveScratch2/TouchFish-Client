@@ -4,6 +4,7 @@ import '../screens/welcome_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/main_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/tickets_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/register_step2_screen.dart';
 import '../screens/register_step3_screen.dart';
@@ -19,6 +20,7 @@ import '../screens/forum_detail_screen.dart';
 import '../screens/forum_post_detail_screen.dart';
 import '../screens/admin_screen.dart';
 import '../screens/account_screen.dart';
+import '../screens/notifications_screen.dart';
 import '../screens/pending_forums_screen.dart';
 import '../screens/default_assets_screen.dart';
 import '../screens/user_profile_screen.dart';
@@ -60,10 +62,13 @@ class AppRoutes {
   static const String groupProfile = '/group/:gid';
   static const String forward = '/forward';
   static const String account = '/account';
+  static const String notifications = '/notifications';
   static const String admin = '/admin';
   static const String adminPendingForums = '/admin/pending-forums';
   static const String adminDefaultAssets = '/admin/default-assets';
   static const String adminServerSettings = '/admin/server-settings';
+  static const String adminTickets = '/admin/tickets';
+  static const String tickets = '/tickets';
   static const String adminAccountManagement = '/admin/account-management';
   static const String settings = '/settings';
   static const String register = '/register';
@@ -91,6 +96,7 @@ class AppRoutes {
     welcome,
     login,
     settings,
+    tickets,
     register,
     registerStep2,
     registerStep3,
@@ -375,6 +381,10 @@ class AppRoutes {
             GoRoute(
               path: settings,
               builder: (context, state) => const SettingsScreen(),
+            ),
+            GoRoute(
+              path: tickets,
+              builder: (context, state) => const TicketsScreen(),
             ),
             GoRoute(
               path: register,
@@ -699,6 +709,10 @@ class AppRoutes {
                       ),
                     ),
                     GoRoute(
+                      path: notifications,
+                      builder: (context, state) => const NotificationsScreen(),
+                    ),
+                    GoRoute(
                       path: stickerMarket,
                       builder: (context, state) =>
                           const StickerMarketplaceScreen(),
@@ -722,6 +736,20 @@ class AppRoutes {
                   },
                   pageBuilder: (context, state) =>
                       _mainSectionPage(context, state, const AdminScreen()),
+                ),
+                GoRoute(
+                  path: adminTickets,
+                  redirect: (context, state) {
+                    return AuthState.instance.currentUser?.hasAdminAccess ==
+                            true
+                        ? null
+                        : AppRoutes.account;
+                  },
+                  pageBuilder: (context, state) => _mainSectionPage(
+                    context,
+                    state,
+                    const TicketsScreen(adminMode: true),
+                  ),
                 ),
                 GoRoute(
                   path: adminPendingForums,

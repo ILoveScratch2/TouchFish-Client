@@ -30,6 +30,7 @@ import 'services/app_update_flow.dart';
 import 'services/background_permission_service.dart';
 import 'services/desktop_app_lifecycle_service.dart';
 import 'services/forum_pending_service.dart';
+import 'services/ticket_inbox_service.dart';
 import 'services/single_instance_service.dart';
 import 'services/feature_flags.dart';
 import 'services/notification_service.dart';
@@ -89,7 +90,7 @@ Widget _buildErrorWidget(FlutterErrorDetails details) {
 Future<void> main() async {
   await runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
-    // 一张坏卡片不该把整页变成红屏
+    // 一张坏卡片不该把整页 BOOM
     ErrorWidget.builder = _buildErrorWidget;
     registerTalkerErrorHandlers();
     MediaKit.ensureInitialized();
@@ -136,7 +137,7 @@ Future<void> main() async {
       };
     }
 
-    // 窗口焦点/应用生命周期状态：聊天页靠它区分"失焦期间的未读"与"真的看到了"
+    // 窗口焦点/应用生命周期状态
     await AppForegroundService.instance.initialize();
 
     final prefs = await SharedPreferences.getInstance();
@@ -186,11 +187,10 @@ Future<void> main() async {
         await DesktopAppLifecycleService.instance.afterWindowReady();
         await DesktopAppLifecycleService.instance.restoreWindowState();
         // 上次退出时窗口隐藏在托盘里：本次启动直接驻留托盘，不显示窗口
-        // （可通过托盘菜单或再次启动唤出）。
         if (!DesktopAppLifecycleService.instance.wasHiddenInTray) {
           await windowManager.show();
           await windowManager.focus();
-          // initialize() 早于窗口显示，这里显式纠正前台状态
+          // initialize() 早于窗口显示
           AppForegroundService.instance.setWindowVisible(true);
         }
       });
@@ -371,9 +371,6 @@ class _StartupRecoveryResult {
   });
 }
 
-/// Provides Material localizations for the [och] language code by proxying
-/// to Simplified Chinese, since [GlobalMaterialLocalizations] does not support
-/// ISO 639-3 codes like [och].
 class _OchMaterialLocalizationsDelegate
     extends LocalizationsDelegate<MaterialLocalizations> {
   const _OchMaterialLocalizationsDelegate();
@@ -389,8 +386,7 @@ class _OchMaterialLocalizationsDelegate
   bool shouldReload(_OchMaterialLocalizationsDelegate old) => false;
 }
 
-/// Provides Cupertino localizations for the [och] language code by proxying
-/// to Simplified Chinese, for the same reason as [_OchMaterialLocalizationsDelegate].
+// 超级 i18n 给清朝使用
 class _OchCupertinoLocalizationsDelegate
     extends LocalizationsDelegate<CupertinoLocalizations> {
   const _OchCupertinoLocalizationsDelegate();
@@ -410,7 +406,7 @@ class TouchFishApp extends StatefulWidget {
   final bool isFirstLaunch;
   final bool hasSavedSession;
 
-  /// 本地还记着账号（`auth_uid`），但凭据可能暂时读不到。
+  /// 本地账号（`auth_uid`），凭据可能暂时无法读取
   /// 用于决定要不要尝试恢复、以及是否展示恢复失败对话框。
   final bool hasRememberedUid;
   final bool didResetLocalSettings;
@@ -478,14 +474,14 @@ class _TouchFishAppState extends State<TouchFishApp>
   }
 
   Future<void> _runStartupChecks() async {
-    // Android: request background (battery-optimization) permission.
+    // Android 请求后台权限
     if (!kIsWeb && Platform.isAndroid) {
       unawaited(
         BackgroundPermissionService.instance.requestBackgroundPermissions(),
       );
     }
 
-    // Non-web: check for updates once per launch.
+    // Non-web 检查更新
     if (!kIsWeb) {
       final result = await AppUpdateService.instance.checkForUpdate();
       if (!mounted || !result.hasUpdate) return;
@@ -507,6 +503,7 @@ class _TouchFishAppState extends State<TouchFishApp>
       unawaited(ChatWsService.instance.connect());
       NotificationService.instance.startPolling();
       ForumPendingService.instance.startWatching();
+      TicketInboxService.instance.startWatching();
       _startAndroidBackgroundServiceIfNeeded();
     }
   }
@@ -1028,9 +1025,7 @@ class _TouchFishAppState extends State<TouchFishApp>
     final onTertiary = _onColorFor(tertiary);
     final onError = _onColorFor(error);
 
-    // 表面层级必须和默认主题同向：亮色下容器逐级加深，暗色下逐级提亮。
-    // 卡片取 surfaceContainerLow（比页面深一点点），浮层取
-    // surfaceContainerLowest（比卡片浅），两者才都读得出来。
+    // 表面层级必须和默认主题同向
     Color step(double t) => Color.lerp(
       surface,
       isDark ? Colors.white : Colors.black,

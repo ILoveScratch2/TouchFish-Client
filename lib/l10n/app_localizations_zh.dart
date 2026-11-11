@@ -4097,7 +4097,292 @@ class AppLocalizationsZh extends AppLocalizations {
   String get notificationSwipeToDelete => '删除';
 
   @override
-  String get notificationFilterAll => '全部';
+  String get loginErrorPendingActivation => '账号尚未激活，请先完成邮箱验证';
+
+  @override
+  String get loginErrorBanned => '账号已被封禁，如有异议可在登录页查看帮助或联系管理员';
+
+  @override
+  String get ticketReport => '举报';
+
+  @override
+  String get ticketReportDesc => '举报违规内容或用户';
+
+  @override
+  String get ticketConsult => '意见建议';
+
+  @override
+  String get ticketAppeal => '处罚申诉';
+
+  @override
+  String get ticketMyTickets => '我的工单';
+
+  @override
+  String get ticketFeedback => '帮助与反馈';
+
+  @override
+  String get ticketComposeTitle => '标题';
+
+  @override
+  String get ticketComposeContent => '详细描述';
+
+  @override
+  String get ticketComposeSubmit => '提交';
+
+  @override
+  String get ticketSubmitted => '工单已提交';
+
+  @override
+  String get ticketSubmitFailed => '提交失败，请稍后重试';
+
+  @override
+  String get ticketTypeDisabled => '该类工单暂未开放';
+
+  @override
+  String get ticketEmpty => '暂无工单';
+
+  @override
+  String get ticketStatusOpen => '待处理';
+
+  @override
+  String get ticketStatusProcessing => '处理中';
+
+  @override
+  String get ticketStatusResolved => '已处理';
+
+  @override
+  String get ticketStatusRejected => '未通过';
+
+  @override
+  String get ticketReplyLabel => '处理说明';
+
+  @override
+  String get ticketQueue => '工单队列';
+
+  @override
+  String get ticketHandleProcessing => '开始处理';
+
+  @override
+  String get ticketHandleResolved => '标记已处理';
+
+  @override
+  String get ticketHandleRejected => '驳回';
+
+  @override
+  String get ticketHandled => '已更新';
+
+  @override
+  String get ticketTarget => '相关对象';
+
+  @override
+  String get ticketPriority => '优先级';
+
+  @override
+  String get ticketPriorityLow => '低';
+
+  @override
+  String get ticketPriorityNormal => '普通';
+
+  @override
+  String get ticketPriorityHigh => '高';
+
+  @override
+  String get ticketPriorityUrgent => '紧急';
+
+  @override
+  String get ticketAssignee => '负责人';
+
+  @override
+  String get ticketUnassigned => '未指派';
+
+  @override
+  String get ticketAssignToMe => '指派给我';
+
+  @override
+  String get ticketClearAssignee => '取消指派';
+
+  @override
+  String get ticketThreadTitle => '对话记录';
+
+  @override
+  String get ticketMessageHint => '补充说明…';
+
+  @override
+  String get ticketSend => '发送';
+
+  @override
+  String get ticketReopenHint => '已结单的工单，回复后会重新打开';
+
+  @override
+  String get ticketMuted => '你已被禁言，暂时无法发言';
+
+  @override
+  String get ticketBanned => '账号已被封禁，无法进行该操作';
+
+  @override
+  String get ticketPendingActivation => '账号尚未激活，请先完成邮箱验证';
+
+  @override
+  String ticketUnreadReplies(int count) {
+    return '$count 条未读回复';
+  }
+
+  @override
+  String get ticketAttachments => '附件';
+
+  @override
+  String get ticketAddAttachment => '添加图片';
+
+  @override
+  String get ticketUploadFailed => '附件上传失败';
+
+  @override
+  String get ticketChangeStatus => '更改状态';
+
+  @override
+  String get ticketThreadEmptyTitle => '还没有回复';
+
+  @override
+  String get ticketThreadEmptyDesc => '发送一条消息，开始对话';
+
+  @override
+  String get ticketTargetPost => '帖子';
+
+  @override
+  String get ticketTargetComment => '评论';
+
+  @override
+  String get ticketTargetUser => '用户';
+
+  @override
+  String get ticketTargetForum => '版块';
+
+  @override
+  String ticketReplies(int count) {
+    return '$count 条回复';
+  }
+
+  @override
+  String get ticketAddFile => '添加附件';
+
+  @override
+  String get ticketStaffReply => '客服';
+
+  @override
+  String get ticketContentRequired => '请填写描述或至少添加一个附件';
+
+  @override
+  String get ticketTypeName => '类型';
+
+  @override
+  String get ticketUnknownUser => '未知用户';
+
+  @override
+  String get refresh => '刷新';
+
+  @override
+  String get ticketSortByPriority => '紧急度';
+
+  @override
+  String get ticketSortByTime => '时间';
+
+  @override
+  String get ticketFilter => '筛选';
+
+  @override
+  String get ticketFilterReset => '重置';
+
+  @override
+  String get ticketFilterApply => '应用';
+
+  @override
+  String get ticketCreatorFilter => '创建者（用户名或 UID）';
+
+  @override
+  String get ticketCreatorNotFound => '找不到该用户';
+
+  @override
+  String get ticketAllTickets => '全部工单';
+
+  @override
+  String get ticketAttachmentLimit => '附件数量超出上限';
+
+  @override
+  String get punishmentTitle => '处罚记录';
+
+  @override
+  String get punishmentNoticeLocked => '处罚未到期，该通知暂不可删除';
+
+  @override
+  String get punishmentCreate => '添加处罚';
+
+  @override
+  String get punishmentKindLabel => '类型';
+
+  @override
+  String get punishmentKindWarn => '警告';
+
+  @override
+  String get punishmentKindMute => '禁言';
+
+  @override
+  String get punishmentKindBan => '封禁';
+
+  @override
+  String get punishmentReasonLabel => '理由（必填）';
+
+  @override
+  String get punishmentReasonRequired => '请填写处罚理由';
+
+  @override
+  String get punishmentDurationLabel => '时长';
+
+  @override
+  String get punishmentDurationPermanent => '永久';
+
+  @override
+  String get punishmentRevoke => '解除处罚';
+
+  @override
+  String get punishmentActive => '生效中';
+
+  @override
+  String get punishmentInactive => '已失效';
+
+  @override
+  String get punishmentEmpty => '暂无处罚记录';
+
+  @override
+  String get punishmentCreateSuccess => '处罚已生效';
+
+  @override
+  String get punishmentCreateFailed => '操作失败';
+
+  @override
+  String get notificationFilterAll => '所有';
+
+  @override
+  String notificationSummary(int total, int unread) {
+    return '共 $total 条 · 未读 $unread 条';
+  }
+
+  @override
+  String get notificationEmptyDescription => '公告、处罚、好友申请等系统通知都会出现在这里';
+
+  @override
+  String get notificationViewAll => '查看全部通知';
+
+  @override
+  String get notificationNoMore => '没有更多通知了';
+
+  @override
+  String get notificationCategoryOther => '其它';
+
+  @override
+  String get notificationLockedBadge => '未到期不可删';
+
+  @override
+  String get notificationUnreadBadge => '未读';
 
   @override
   String get notificationFilterSystem => '系统';

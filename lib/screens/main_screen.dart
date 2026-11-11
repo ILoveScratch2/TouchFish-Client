@@ -173,11 +173,10 @@ class _MainScreenState extends State<MainScreen> {
           final hasBackgroundImage =
               backgroundImagePath != null && backgroundImagePath.isNotEmpty;
 
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = WideScreenHelper.isWideWithWidth(
-                constraints.maxWidth,
-              );
+          // 宽度用 MediaQuery（构建阶段）而不是 LayoutBuilder（布局阶段）
+          return Builder(
+            builder: (context) {
+              final isWide = WideScreenHelper.isWide(context);
 
               if (isWide) {
                 return SafeArea(

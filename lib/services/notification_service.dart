@@ -6,6 +6,7 @@ import '../models/app_notification.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import 'chat_data_service.dart';
+import 'notification_local_store.dart';
 import 'chat_ws_service.dart';
 import 'app_notification_service.dart';
 import '../utils/talker.dart';
@@ -24,7 +25,16 @@ class NotificationService extends ChangeNotifier {
   static const _keyLastFetchTime = 'notif_last_fetch_time';
 
   final List<NotificationInfo> _allNotifications = [];
+  final NotificationLocalStore _localStore = NotificationLocalStore.instance;
+  Timer? _persistTimer;
+
+  /// 向下翻页状态。
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  static const int _pageSize = 50;
   final Set<int> _handledFriendSenders = {};
+  /// 本次会话已经强提醒过的处罚通知
+  final Set<String> _presentedPunishments = {};
   final Set<String> _handledInviteKeys = {};
   final StreamController<int> _essenceChanges =
       StreamController<int>.broadcast();
@@ -35,6 +45,8 @@ class NotificationService extends ChangeNotifier {
   Duration _pollInterval = const Duration(seconds: 30);
   bool _isLoading = false;
   bool _isInitialLoad = true;
+  /// 本进程/本账号的首次拉取全量
+  bool _needsFullReload = true;
   bool _isFirstFetchForSession = true;
   String? _error;
   double _lastFetchTime = 0;
@@ -44,9 +56,6 @@ class NotificationService extends ChangeNotifier {
 
   List<NotificationInfo> get allNotifications =>
       List.unmodifiable(_allNotifications);
-
-  /// 系统事件通知（new api通知表只存系统事件，消息不再混入）让我们感谢 xsfx的恩情还不完
-  List<NotificationInfo> get nonMessageNotifications => allNotifications;
 
   int get unreadCount => _unreadCount;
 
@@ -69,6 +78,18 @@ class NotificationService extends ChangeNotifier {
       .toList();
   List<NotificationInfo> get forumNotifications =>
       _allNotifications.where((n) => n.isForumEvent).toList();
+
+  /// 系统类
+  /// 不属于好友/论坛/群组的都算
+  List<NotificationInfo> get systemNotifications => _allNotifications
+      .where(
+        (n) =>
+            !n.isMessageEvent &&
+            !n.isFriendEvent &&
+            !n.isForumEvent &&
+            !n.isGroupEvent,
+      )
+      .toList();
 
   int get announcementUnreadCount =>
       categoryUnreadCount(announcementNotifications);
@@ -121,6 +142,7 @@ class NotificationService extends ChangeNotifier {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
+    if (_isLoading) return;
     final baseUrl = await TfApiClient.instance.getBaseUrl();
 
     if (_activeUid != uid || _activeBaseUrl != baseUrl) {
@@ -130,30 +152,53 @@ class NotificationService extends ChangeNotifier {
       _handledFriendSenders.clear();
       _handledInviteKeys.clear();
       _lastFetchTime = 0;
+      _needsFullReload = true;
       _isFirstFetchForSession = true;
       await _loadFetchTime(baseUrl, uid);
+      await _loadLocalCache(baseUrl, uid);
     }
 
     _isLoading = true;
     _error = null;
 
     try {
-      final since = _lastFetchTime > 0
-          ? _lastFetchTime
-          : (DateTime.now().millisecondsSinceEpoch / 1000) - 7 * 86400;
-      final fetched = await TfApiClient.instance.queryNotificationsAfter(
-        uid,
-        password,
-        since,
-      );
+      final fullReload = _needsFullReload || _isInitialLoad;
+      _needsFullReload = false;
+      final fetched = fullReload
+          ? await TfApiClient.instance.queryAllNotifications(uid, password)
+          : _lastFetchTime > 0
+          ? await TfApiClient.instance.queryNotificationsAfter(
+              uid,
+              password,
+              _lastFetchTime,
+            )
+          : await TfApiClient.instance.queryAllNotifications(uid, password);
 
       if (_activeUid != uid || _activeBaseUrl != baseUrl) return;
+
+      if (fetched == null) {
+        // 请求失败
+        talker.warning('NotificationService: fetch failed, keep local cache');
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
 
       talker.info(
         'NotificationService: fetched ${fetched.length} notifications',
       );
 
-      if (fetched.isNotEmpty) {
+      if (fullReload) {
+        // 全量拉取以服务端为准
+        _isInitialLoad = false;
+        _hasMore = fetched.length >= 500;
+        if (!_sameContentAs(fetched)) {
+          _allNotifications
+            ..clear()
+            ..addAll(fetched)
+            ..sort((a, b) => b.timeStamp.compareTo(a.timeStamp));
+        }
+      } else if (fetched.isNotEmpty) {
         _isInitialLoad = false;
         final existingKeys = _allNotifications
             .map((n) => n.identityKey)
@@ -187,6 +232,8 @@ class NotificationService extends ChangeNotifier {
         }
         _allNotifications.sort((a, b) => b.timeStamp.compareTo(a.timeStamp));
       }
+      _presentUnreadPunishments(fetched);
+      _schedulePersist();
 
       _isInitialLoad = false;
       _isFirstFetchForSession = false;
@@ -208,6 +255,121 @@ class NotificationService extends ChangeNotifier {
     }
   }
 
+  void _presentUnreadPunishments(Iterable<NotificationInfo> fetched) {
+    for (final notification in fetched) {
+      if (!notification.isPunishmentEvent) continue;
+      if (notification.readAt != null) continue;
+      if (!_presentedPunishments.add(notification.identityKey)) continue;
+      unawaited(
+        AppNotificationService.instance.presentUrgent(
+          AppNotification.fromNotificationInfo(notification),
+        ),
+      );
+    }
+  }
+
+  /// 服务端结果与当前列表是否等
+  bool _sameContentAs(List<NotificationInfo> fetched) {
+    if (fetched.length != _allNotifications.length) return false;
+    String signature(NotificationInfo n) =>
+        '${n.identityKey}|${n.readAt ?? ''}|${n.locked}';
+    final current = _allNotifications.map(signature).toSet();
+    final incoming = fetched.map(signature).toSet();
+    return current.length == incoming.length &&
+        current.containsAll(incoming);
+  }
+
+  /// 读本地缓存
+  Future<void> _loadLocalCache(String baseUrl, int uid) async {
+    final cached = await _localStore.load(baseUrl, uid);
+    if (cached.isEmpty) return;
+    if (_activeUid != uid || _activeBaseUrl != baseUrl) return;
+    final existingKeys = _allNotifications.map((n) => n.identityKey).toSet();
+    for (final n in cached) {
+      if (existingKeys.add(n.identityKey)) _allNotifications.add(n);
+    }
+    _allNotifications.sort((a, b) => b.timeStamp.compareTo(a.timeStamp));
+    notifyListeners();
+  }
+
+  /// 合并写
+  void _schedulePersist() {
+    final uid = _activeUid;
+    final baseUrl = _activeBaseUrl;
+    if (uid == null || baseUrl == null) return;
+    _persistTimer?.cancel();
+    _persistTimer = Timer(const Duration(milliseconds: 500), () {
+      unawaited(
+        _localStore.save(baseUrl, uid, List.unmodifiable(_allNotifications)),
+      );
+    });
+  }
+
+  bool get isLoadingMore => _loadingMore;
+
+  /// 还有更早的通知
+  bool get hasMore => _hasMore;
+
+  Future<bool> loadMoreNotifications() async {
+    if (_loadingMore || !_hasMore) return false;
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return false;
+
+    var oldest = double.infinity;
+    for (final n in _allNotifications) {
+      if (n.timeStamp < oldest) oldest = n.timeStamp;
+    }
+    if (oldest.isInfinite) return false;
+
+    final baseUrl = await TfApiClient.instance.getBaseUrl();
+    if (_activeUid != uid || _activeBaseUrl != baseUrl) return false;
+
+    _loadingMore = true;
+    notifyListeners();
+    final page = await TfApiClient.instance.queryNotificationsBefore(
+      uid,
+      password,
+      oldest,
+      limit: _pageSize,
+    );
+    // 请求期间换账号/换服务器
+    if (_activeUid != uid || _activeBaseUrl != baseUrl) {
+      _loadingMore = false;
+      return false;
+    }
+    _loadingMore = false;
+
+    if (page == null) {
+      // 失败
+      //保留 _hasMore
+      notifyListeners();
+      return false;
+    }
+    if (page.isEmpty) {
+      _hasMore = false;
+      notifyListeners();
+      return false;
+    }
+
+    final existingKeys = _allNotifications.map((n) => n.identityKey).toSet();
+    var added = 0;
+    for (final n in page) {
+      if (existingKeys.add(n.identityKey)) {
+        _allNotifications.add(n);
+        added++;
+      }
+    }
+    _allNotifications.sort((a, b) => b.timeStamp.compareTo(a.timeStamp));
+    // 拉到的这一页不足一页
+    // 没有更早
+    if (page.length < _pageSize) _hasMore = false;
+    talker.info('NotificationService: loaded $added older notifications');
+    _schedulePersist();
+    notifyListeners();
+    return added > 0;
+  }
+
   Future<void> _refreshUnreadCount() async {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
@@ -226,8 +388,31 @@ class NotificationService extends ChangeNotifier {
     _unreadCount = count;
   }
 
+  /// 测试用：直接注入通知列表
+  @visibleForTesting
+  void debugReplaceNotifications(
+    List<NotificationInfo> notifications, {
+    int? unreadCount,
+  }) {
+    _allNotifications
+      ..clear()
+      ..addAll(notifications);
+    if (unreadCount != null) _unreadCount = unreadCount;
+    notifyListeners();
+  }
+
+  /// 测试用：直接设定
+  @visibleForTesting
+  void debugSetHasMore(bool value) {
+    _hasMore = value;
+    notifyListeners();
+  }
+
   Future<void> forceRefresh() async {
     _isInitialLoad = true;
+    _needsFullReload = true;
+    // 强制刷新要能盖掉正在进行的拉取
+    _isLoading = false;
     _allNotifications.clear();
     _handledFriendSenders.clear();
     _lastFetchTime = 0;
@@ -294,6 +479,8 @@ class NotificationService extends ChangeNotifier {
       _listeningWsState = false;
     }
     _wsAuthenticated = false;
+    // 换账号或登出后要能对新会话重新提醒一次
+    _presentedPunishments.clear();
   }
 
   void _onWsEvent(ChatWsEvent event) {
@@ -371,6 +558,7 @@ class NotificationService extends ChangeNotifier {
     );
     _unreadCount = _unreadCount >= updated ? _unreadCount - updated : 0;
     notifyListeners();
+    _schedulePersist();
     await _refreshUnreadCount();
     notifyListeners();
     return true;
@@ -414,6 +602,9 @@ class NotificationService extends ChangeNotifier {
   Future<bool> markAnnouncementRead() =>
       _markCategoryRead(announcementNotifications);
 
+  /// 系统类
+  Future<bool> markSystemRead() => _markCategoryRead(systemNotifications);
+
   Future<bool> markFriendRead() => _markCategoryRead(friendNotifications);
 
   Future<bool> markInviteRead() => _markCategoryRead(inviteNotifications);
@@ -454,12 +645,15 @@ class NotificationService extends ChangeNotifier {
     final password = AuthState.instance.password;
     if (uid == null || password == null) return false;
     if (notification.id <= 0) return false;
+    // 未到期的处罚通知不可删除
+    if (notification.locked) return false;
 
     final index = _allNotifications.indexWhere((n) => n.id == notification.id);
     if (index == -1) return false;
     final removed = _allNotifications.removeAt(index);
     if (removed.readAt == null && _unreadCount > 0) _unreadCount--;
     notifyListeners();
+    _schedulePersist();
 
     final success = await TfApiClient.instance.deleteNotificationsByIds(
       uid,
