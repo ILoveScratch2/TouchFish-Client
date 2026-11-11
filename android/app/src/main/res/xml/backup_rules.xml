@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12 及以下的备份规则
+
+  secure storage 密钥不可备份，备份也无法恢复
+-->
+<full-backup-content>
+    <!-- 值密文（
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />默认 sharedPreferencesName = "FlutterSecureStorage"） -->
+    <!-- KeyStore 密钥 AES key -->
+    <exclude domain="sharedpref" path="FlutterSecureKeyStorage.xml" />
+    <!-- 插件配置 -->
+    <exclude domain="sharedpref" path="FlutterSecureStorageConfiguration.xml" />
+</full-backup-content>

@@ -5,8 +5,8 @@ import '../utils/talker.dart';
 
 /// 敏感凭据（登录密码 / JWT / refresh token）的加密存储。
 ///
-/// - Android: Keystore（EncryptedSharedPreferences）
-/// - iOS / macOS: Keychain
+/// - Android: Keystore（v10 起为自定义密码套件，RSA-OAEP AES-GCM key
+/// - iOS / macOS: Keychain（需要 entitlements  keychain-access-groups
 /// - Windows: Credential Manager；Linux: libsecret
 /// - Web: WebCrypto（需要 HTTPS 或 localhost 这类安全上下文）
 ///
@@ -22,7 +22,15 @@ class SecureCredentials {
   static const String _probeKey = '__touchfish_secure_probe__';
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    aOptions: AndroidOptions(
+      // 密钥解包失败时插件默认（v10 起）会自动清空全部数据再重试。这里关掉：
+      // 清空之后 probe() 的写入会“成功”，isAvailable 变成 true，结果是登录态被
+      // 静默丢弃；抛异常反而能让 probe() 判定不可用并走上面的降级路径。
+      resetOnError: false,
+      // v9 用的是 EncryptedSharedPreferences（Jetpack Security / Tink），v10 换成
+      // 自定义密码套件。保持 true，让老版本的密文在首次访问时自动迁移而不是被丢弃。
+      migrateOnAlgorithmChange: true,
+    ),
   );
 
   /// 探测失败后多久允许重试。
