@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show FlutterView;
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/cupertino.dart'
+    show CupertinoLocalizations, CupertinoPageTransitionsBuilder;
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -18,6 +19,7 @@ import 'models/settings_service.dart';
 import 'routes/app_routes.dart';
 import 'theme/app_theme.dart';
 import 'services/auth_state.dart';
+import 'services/font_loader_service.dart';
 import 'services/api/tf_api_client.dart';
 import 'services/rsa_key_trust_service.dart';
 import 'services/app_foreground_service.dart';
@@ -120,6 +122,11 @@ Future<void> main() async {
 
     final startupRecovery = await _performStartupRecovery(isDesktop: isDesktop);
     await SettingsService.instance.init();
+    // 重新加载已配置的字体，避免重启后回退到系统默认字体。
+    final configuredFont = AppState.instance.fontFamily;
+    if (configuredFont != null && configuredFont.isNotEmpty) {
+      await FontLoaderService.instance.loadFont(configuredFont);
+    }
     await FeatureFlags.instance.init();
     await LockService.instance.init();
     await IpOverrideService.instance.ensureDefaultDomain();
