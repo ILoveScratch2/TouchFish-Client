@@ -15,7 +15,7 @@ void main() {
     await SettingsService.instance.init();
   });
 
-  testWidgets('renders text in the Solian-style inline preview', (
+  testWidgets('renders text in very good inline preview', (
     tester,
   ) async {
     const content = 'first line\nsecond line';

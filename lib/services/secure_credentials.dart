@@ -2,19 +2,35 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../utils/talker.dart';
+import 'web_secure_context_stub.dart'
+    if (dart.library.js_interop) 'web_secure_context_web.dart';
+
+/// 加密存储的可用状态
+enum SecureStorageStatus {
+  /// 尚未探测
+  unknown,
+
+  /// 加密存储可用
+  secure,
+
+  /// 没有可用的加密存储
+  unavailable,
+
+  /// Web 端非安全上下文
+  insecureWebContext,
+}
 
 /// 敏感凭据（登录密码 / JWT / refresh token）的加密存储。
 ///
-/// - Android: Keystore（v10 起为自定义密码套件，RSA-OAEP AES-GCM key
-/// - iOS / macOS: Keychain（需要 entitlements  keychain-access-groups
-/// - Windows: Credential Manager；Linux: libsecret
-/// - Web: WebCrypto（需要 HTTPS 或 localhost 这类安全上下文）
+/// 各平台后端：
+/// - Android：Keystore v10 起 RSA-OAEP 安全存储 AES-GCM 密钥
+/// - iOS / macOS：Keychain 需要 entitlements keychain-access-groups
+/// - Windows：Credential Manager
+/// - Linux：libsecret
+/// - Web：WebCrypto 使用安全上下文
 ///
-/// 平台不支持时 [isAvailable] 为 false，调用方需要自行决定降级策略
-/// （[AuthState] 的降级是：token / refresh token / 密码都退回 SharedPreferences，
-///  也就是和接入本类之前一样明文落盘——legacy 模式重新登录需要密码，
-///  不能为了“看起来安全”直接把登录态丢掉）。
-class SecureCredentials {
+/// 平台不支持时 [isAvailable] 为 false
+class SecureCredentials extends ChangeNotifier {
   SecureCredentials._();
 
   static final SecureCredentials instance = SecureCredentials._();
@@ -23,34 +39,60 @@ class SecureCredentials {
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(
-      // 密钥解包失败时插件默认（v10 起）会自动清空全部数据再重试。这里关掉：
-      // 清空之后 probe() 的写入会“成功”，isAvailable 变成 true，结果是登录态被
-      // 静默丢弃；抛异常反而能让 probe() 判定不可用并走上面的降级路径。
+      // 密钥解包失败时会自动清空全部数据再重试
+      // 关闭该功能
       resetOnError: false,
-      // v9 用的是 EncryptedSharedPreferences（Jetpack Security / Tink），v10 换成
-      // 自定义密码套件。保持 true，让老版本的密文在首次访问时自动迁移而不是被丢弃。
+      // v9 使用 EncryptedSharedPreferences
+      // v10 使用自定义密码
       migrateOnAlgorithmChange: true,
     ),
   );
 
-  /// 探测失败后多久允许重试。
-  ///
-  /// 不能把 `false` 永久缓存：Keychain / libsecret 可能只是启动时还没解锁，
-  /// 冻结失败会让本次进程余下的所有凭据都退回 SharedPreferences 明文。
+  /// 探测失败后多久允许重试
   @visibleForTesting
   static Duration unavailableRetryDelay = const Duration(seconds: 30);
 
+  /// 平台判定与安全上下文判定
+  @visibleForTesting
+  static bool Function() isWebPlatform = () => kIsWeb;
+
+  @visibleForTesting
+  static bool Function() webIsSecureContext = () => isSecureWebContext;
+
   bool? _available;
   DateTime? _unavailableAt;
+  SecureStorageStatus _status = SecureStorageStatus.unknown;
 
   bool get isAvailable => _available == true;
 
-  /// 探测当前平台是否真的可用（插件缺失、缺少密钥环、非安全上下文都会失败）。
-  /// 成功的结果会缓存；失败只缓存 [unavailableRetryDelay] 这么久。
+  /// 当前状态
+  SecureStorageStatus get status => _status;
+
+  /// Web 端无法使用加密存储
+  bool get isInsecureWebContext =>
+      _status == SecureStorageStatus.insecureWebContext;
+
+  /// 探测当前平台是否真的可用
   ///
-  /// [force] 会跳过失败冷却（用于启动时凭据读不到的唯一一次补救探测）。
+  /// [force] 跳过失败冷却
   Future<bool> probe({bool force = false}) async {
     if (_available == true) return true;
+
+    // 非安全上下文的判定在冷却前
+    if (_isInsecureWebContext()) {
+      final changed = _status != SecureStorageStatus.insecureWebContext;
+      _available = false;
+      _unavailableAt = DateTime.now();
+      _setStatus(SecureStorageStatus.insecureWebContext);
+      if (changed) {
+        talker.warning(
+          'TOUCHFISH SecureCredentials: ilovescratch 温馨提醒：currently WebCrypto is not available!'
+          'will use unencrypted local storage',
+        );
+      }
+      return false;
+    }
+
     final unavailableAt = _unavailableAt;
     if (!force &&
         _available == false &&
@@ -65,15 +107,36 @@ class SecureCredentials {
       final ok = value == '1';
       _available = ok;
       _unavailableAt = ok ? null : DateTime.now();
+      _setStatus(
+        ok ? SecureStorageStatus.secure : SecureStorageStatus.unavailable,
+      );
       if (!ok) {
         talker.warning('SecureCredentials: probe returned unexpected value');
       }
     } catch (e) {
       _available = false;
       _unavailableAt = DateTime.now();
+      _setStatus(SecureStorageStatus.unavailable);
       talker.warning('SecureCredentials unavailable, falling back: $e');
     }
     return _available!;
+  }
+
+  bool _isInsecureWebContext() =>
+      isWebPlatform() && !webIsSecureContext();
+
+  void _setStatus(SecureStorageStatus next) {
+    if (_status == next) return;
+    _status = next;
+    notifyListeners();
+  }
+
+  /// 仅测试用：清空探测缓存
+  @visibleForTesting
+  void resetProbeState() {
+    _available = null;
+    _unavailableAt = null;
+    _status = SecureStorageStatus.unknown;
   }
 
   Future<String?> read(String key) async {

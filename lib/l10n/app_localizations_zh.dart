@@ -161,6 +161,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get savedSessionRestoreFailedMessage => '无法在服务器使用该会话，请检查网络连接或登录凭据';
 
   @override
+  String get insecureStorageBannerTitle => '登录凭据将以未加密方式保存';
+
+  @override
+  String get insecureStorageBannerMessage =>
+      '当前页面未通过 HTTPS 访问，浏览器不提供加密存储能力。登录令牌与密码只能以明文保存在本地存储中，请改用 HTTPS 地址访问。';
+
+  @override
+  String get insecureStorageBannerDismiss => '知道了';
+
+  @override
   String get sessionDevicesTitle => '设备管理';
 
   @override

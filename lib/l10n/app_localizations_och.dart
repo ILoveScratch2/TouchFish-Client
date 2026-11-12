@@ -161,6 +161,16 @@ class AppLocalizationsOch extends AppLocalizations {
   String get savedSessionRestoreFailedMessage => '服器不能用此會話，請察網絡之連與登入之憑。';
 
   @override
+  String get insecureStorageBannerTitle => '登入之憑將以未加密之式存';
+
+  @override
+  String get insecureStorageBannerMessage =>
+      '此頁未由 HTTPS 而入，瀏覽器不予加密之能。令牌與密碼惟以明文存於本地，宜改由 HTTPS 入之。';
+
+  @override
+  String get insecureStorageBannerDismiss => '知之';
+
+  @override
   String get sessionDevicesTitle => '設備管理';
 
   @override

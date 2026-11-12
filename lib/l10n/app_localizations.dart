@@ -400,6 +400,24 @@ abstract class AppLocalizations {
   /// **'This session can\'t be used on the server. Check your network connection or login credentials.'**
   String get savedSessionRestoreFailedMessage;
 
+  /// No description provided for @insecureStorageBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Credentials are stored unencrypted'**
+  String get insecureStorageBannerTitle;
+
+  /// No description provided for @insecureStorageBannerMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This page is not served over HTTPS, so the browser blocks encrypted storage. Your session token and password can only be kept in plain local storage. Open the site over HTTPS to restore protection.'**
+  String get insecureStorageBannerMessage;
+
+  /// No description provided for @insecureStorageBannerDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get insecureStorageBannerDismiss;
+
   /// No description provided for @sessionDevicesTitle.
   ///
   /// In en, this message translates to:

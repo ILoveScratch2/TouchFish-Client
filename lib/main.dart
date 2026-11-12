@@ -2,8 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show FlutterView;
-import 'package:flutter/cupertino.dart'
-    show CupertinoLocalizations, CupertinoPageTransitionsBuilder;
+import 'package:flutter/cupertino.dart' show CupertinoLocalizations;
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -48,6 +47,7 @@ import 'widgets/app_alert_dialog.dart';
 import 'widgets/rsa_key_prompts.dart';
 import 'widgets/app_virtual_keyboard.dart';
 import 'widgets/notification_overlay.dart';
+import 'widgets/insecure_storage_banner.dart';
 import 'widgets/custom_title_bar.dart';
 import 'widgets/server_connection_banner.dart';
 import 'widgets/snackbar_overlay.dart';
@@ -842,43 +842,52 @@ class _TouchFishAppState extends State<TouchFishApp>
                     16,
                     12,
                   ),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    transitionBuilder: (child, animation) {
-                      final curved = CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeOutCubic,
-                        reverseCurve: Curves.easeInCubic,
-                      );
-                      return FadeTransition(
-                        opacity: curved,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, -0.2),
-                            end: Offset.zero,
-                          ).animate(curved),
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: service.isVisible && AuthState.instance.isLoggedIn
-                        ? ServerConnectionBanner(
-                            key: ValueKey(service.phase),
-                            phase: service.phase,
-                            onTap:
-                                service.phase ==
-                                    ServerConnectionBannerPhase.disconnected
-                                ? () {
-                                    unawaited(
-                                      ServerConnectionStatusService.instance
-                                          .retryConnection(),
-                                    );
-                                  }
-                                : null,
-                          )
-                        : const SizedBox.shrink(key: ValueKey('hidden')),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder: (child, animation) {
+                          final curved = CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutCubic,
+                            reverseCurve: Curves.easeInCubic,
+                          );
+                          return FadeTransition(
+                            opacity: curved,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0, -0.2),
+                                end: Offset.zero,
+                              ).animate(curved),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child:
+                            service.isVisible && AuthState.instance.isLoggedIn
+                            ? ServerConnectionBanner(
+                                key: ValueKey(service.phase),
+                                phase: service.phase,
+                                onTap:
+                                    service.phase ==
+                                        ServerConnectionBannerPhase.disconnected
+                                    ? () {
+                                        unawaited(
+                                          ServerConnectionStatusService.instance
+                                              .retryConnection(),
+                                        );
+                                      }
+                                    : null,
+                              )
+                            : const SizedBox.shrink(key: ValueKey('hidden')),
+                      ),
+                      // Web 端非 HTTPS 访问：加密存储不可用，凭据已退回明文，
+                      // 这里常驻一条可见的警告（可在本次会话内关闭）。
+                      const InsecureStorageBanner(),
+                    ],
                   ),
                 ),
               ),

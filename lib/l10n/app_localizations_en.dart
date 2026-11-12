@@ -171,6 +171,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'This session can\'t be used on the server. Check your network connection or login credentials.';
 
   @override
+  String get insecureStorageBannerTitle => 'Credentials are stored unencrypted';
+
+  @override
+  String get insecureStorageBannerMessage =>
+      'This page is not served over HTTPS, so the browser blocks encrypted storage. Your session token and password can only be kept in plain local storage. Open the site over HTTPS to restore protection.';
+
+  @override
+  String get insecureStorageBannerDismiss => 'Dismiss';
+
+  @override
   String get sessionDevicesTitle => 'Session Devices';
 
   @override
