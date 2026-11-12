@@ -75,6 +75,16 @@ set_target_properties(${BINARY_NAME}
 include(flutter/generated_plugins.cmake)
 
 
+# libayatana-appindicator3 (Ubuntu 24.04) 将 app_indicator_new 标记废弃
+# 而 tray_manager 0.5.3 仍然调用它
+foreach(plugin ${FLUTTER_PLUGIN_LIST})
+  if(TARGET ${plugin}_plugin)
+    target_compile_options(${plugin}_plugin PRIVATE
+      -Wno-error=deprecated-declarations)
+  endif()
+endforeach()
+
+
 # === Installation ===
 # By default, "installing" just makes a relocatable bundle in the build
 # directory.
