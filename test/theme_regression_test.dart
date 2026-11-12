@@ -3,17 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:touchfish_client/theme/app_theme.dart';
 import 'package:touchfish_client/theme/tokens.dart';
 
-/// 主题层回归测试。
+/// 主题层回归测试
 ///
-/// 背景：主题层曾两次引入「TextStyle 的 inherit 不一致」问题——
-/// 把 `theme.textTheme.*` 写进子主题的 `textStyle` 字段后，
-/// `AnimatedDefaultTextStyle` 在做 `TextStyle.lerp` 时抛
-/// `Failed to interpolate TextStyles with different inherit values`。
-/// 断言在 debug 下被吞掉，表现为列表变宽、行高异常，极难排查。
-///
-/// 本测试把常见 Material 组件放在自定义主题里跑一遍，确保：
-/// 1. 不抛异常（等于守住 inherit 一致性）；
-/// 2. 关键几何尺寸与 M3 默认主题完全一致（等于守住"不要顺手改默认值"）。
+/// 曾两次引入 TextStyle 的 inherit 不一致
+/// 把 `theme.textTheme.*` 写进子主题的 `textStyle` 字段后 `AnimatedDefaultTextStyle` 在 `TextStyle.lerp` 时 `Failed to interpolate TextStyles with different inherit values`。
 ThemeData _baseline(ColorScheme scheme) =>
     ThemeData(colorScheme: scheme, useMaterial3: true);
 
@@ -110,7 +103,7 @@ void main() {
     expect(theme.cardTheme.color, scheme.surfaceContainerLow);
     expect(
       theme.cardTheme.color,
-      isNot(theme.scaffoldBackgroundColor ?? scheme.surface),
+      isNot(theme.scaffoldBackgroundColor),
       reason: '卡片底色与页面同色时卡片会隐形',
     );
   });
