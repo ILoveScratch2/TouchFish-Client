@@ -6121,4 +6121,101 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loginOr => 'or';
+
+  @override
+  String get permissionBatteryTitle => 'Battery optimization must be disabled';
+
+  @override
+  String get permissionBatteryMessage =>
+      'To keep receiving messages reliably, TouchFish Client needs battery optimization disabled.';
+
+  @override
+  String get permissionBatteryDontAskAgain => 'Don\'t ask again';
+
+  @override
+  String get permissionBatteryGranted =>
+      'Battery optimization is off. Background messages can be received.';
+
+  @override
+  String get permissionBatteryStillOn =>
+      'Battery optimization is still on. Some systems may delay or drop background messages. You can retry later under Settings - About.';
+
+  @override
+  String get permissionGuideTitle => 'Permissions';
+
+  @override
+  String get permissionGuideIntro =>
+      'TouchFish Client asks for the permissions below only after you confirm. Each one states its purpose; enable only what you need and change it anytime under Settings - About.';
+
+  @override
+  String get permissionGuideConfirm => 'Confirm and request';
+
+  @override
+  String get permissionGuideSkip => 'Skip';
+
+  @override
+  String get permissionStatusTitle => 'Permission status';
+
+  @override
+  String get permissionStatusDesc =>
+      'Review each permission on this device. Tap to request it or open system settings.';
+
+  @override
+  String get permissionStatusGranted => 'Granted';
+
+  @override
+  String get permissionStatusDenied => 'Not granted';
+
+  @override
+  String get permissionStatusPermanentlyDenied =>
+      'Denied, enable in system settings';
+
+  @override
+  String get permissionStatusRestricted => 'Restricted by system';
+
+  @override
+  String get permissionStatusNotApplicable => 'Not supported on this platform';
+
+  @override
+  String get permissionStatusUnknown => 'Unknown';
+
+  @override
+  String get permissionStatusActionGrant => 'Request';
+
+  @override
+  String get permissionStatusActionSettings => 'Settings';
+
+  @override
+  String get permissionNameNotification => 'Notifications';
+
+  @override
+  String get permissionReasonNotification =>
+      'New message alerts; in-app banners still work without it.';
+
+  @override
+  String get permissionNameBattery => 'Battery optimization';
+
+  @override
+  String get permissionReasonBattery =>
+      'Keeps the background connection alive for timely messages.';
+
+  @override
+  String get permissionNameCamera => 'Camera';
+
+  @override
+  String get permissionReasonCamera =>
+      'Take avatars, send photos and scan QR codes.';
+
+  @override
+  String get permissionNameMicrophone => 'Microphone';
+
+  @override
+  String get permissionReasonMicrophone =>
+      'Record voice messages and voice calls.';
+
+  @override
+  String get permissionOnDemand => 'Requested on use';
+
+  @override
+  String get permissionRequestFailed => 'Permission request incomplete';
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../screens/welcome_screen.dart';
 import '../screens/login_screen.dart';
+import '../screens/permission_onboarding_screen.dart';
+import '../screens/battery_optimization_screen.dart';
 import '../screens/main_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/tickets_screen.dart';
@@ -89,6 +91,8 @@ class AppRoutes {
   static const String browserHistory = '/browser/history';
   static const String browserBookmarks = '/browser/bookmarks';
   static const String call = '/call';
+  static const String permissionOnboarding = '/permissions/onboarding';
+  static const String batteryPermission = '/permissions/battery';
 
   static String callPath(int peerUid) => '$call/$peerUid';
 
@@ -104,6 +108,10 @@ class AppRoutes {
     forgotPassword,
     about,
     licenses,
+    // 权限引导 / 电池优化提示在登录前就可能出现（Welcome 之后、启动检查时），
+    // 不放进公开路径会被 authRedirect 打回登录页。
+    permissionOnboarding,
+    batteryPermission,
   };
 
   static const List<String> _sectionOrder = [
@@ -377,6 +385,14 @@ class AppRoutes {
             GoRoute(
               path: login,
               builder: (context, state) => const LoginScreen(),
+            ),
+            GoRoute(
+              path: permissionOnboarding,
+              builder: (context, state) => const PermissionOnboardingScreen(),
+            ),
+            GoRoute(
+              path: batteryPermission,
+              builder: (context, state) => const BatteryOptimizationScreen(),
             ),
             GoRoute(
               path: settings,

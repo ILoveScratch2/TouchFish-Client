@@ -2,17 +2,14 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import '../utils/talker.dart';
 import 'api/tf_api_client.dart';
 import 'auth_state.dart';
 import 'app_notification_service.dart';
 
-/// Manages Android permissions that let the app keep running in the
-/// background (battery-optimization exemption) and the foreground
-/// background notification service (开机自启、常驻)。
-/// On other platforms this service is a no-op.
+
+/// 电池优化豁免不在这里申请
 class BackgroundPermissionService {
   BackgroundPermissionService._();
   static final BackgroundPermissionService instance =
@@ -24,7 +21,6 @@ class BackgroundPermissionService {
 
   static bool _routeHandlerInstalled = false;
 
-  bool _requested = false;
   bool _serviceStarted = false;
 
   void installNotificationRouteHandler() {
@@ -48,32 +44,8 @@ class BackgroundPermissionService {
     }
   }
 
-  /// Requests battery-optimization exemption on Android so the app is
-  /// less likely to be killed while running in the background.
-  Future<void> requestBackgroundPermissions() async {
-    if (_requested || kIsWeb || !Platform.isAndroid) return;
-    _requested = true;
 
-    try {
-      final status = await Permission.ignoreBatteryOptimizations.status;
-      if (status.isGranted) return;
 
-      final result = await Permission.ignoreBatteryOptimizations.request();
-      talker.info(
-        'Android background (battery optimization) permission: $result',
-      );
-    } catch (error, stackTrace) {
-      talker.error(
-        'Failed to request Android background permission',
-        error,
-        stackTrace,
-      );
-    }
-  }
-
-  /// Starts the Android foreground background notification service.
-  /// This lets the app receive and display chat notifications even when
-  /// the main process is killed. Like WeChat.
   Future<void> startBackgroundService() async {
     if (kIsWeb || !Platform.isAndroid || _serviceStarted) return;
     _serviceStarted = true;

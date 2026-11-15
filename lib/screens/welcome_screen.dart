@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
+import '../services/permission_center.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -11,9 +12,15 @@ class WelcomeScreen extends StatelessWidget {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isFirstLaunch', false);
 
-    if (context.mounted) {
-      context.go(AppRoutes.login);
+    if (!context.mounted) return;
+
+    if (PermissionCenter.instance.isSupported &&
+        !PermissionCenter.instance.onboardingHandled) {
+      context.go(AppRoutes.permissionOnboarding);
+      return;
     }
+
+    context.go(AppRoutes.login);
   }
 
   @override

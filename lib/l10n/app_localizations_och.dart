@@ -5818,4 +5818,92 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get loginOr => '或';
+
+  @override
+  String get permissionBatteryTitle => '須罷電池省電';
+
+  @override
+  String get permissionBatteryMessage => '為使信音不絕，TouchFish Client 須罷電池省電。';
+
+  @override
+  String get permissionBatteryDontAskAgain => '不復示';
+
+  @override
+  String get permissionBatteryGranted => '省電既罷，後臺之信可通。';
+
+  @override
+  String get permissionBatteryStillOn => '省電未罷，恐有遲滯；可於「設置 - 本」再試。';
+
+  @override
+  String get permissionGuideTitle => '請權';
+
+  @override
+  String get permissionGuideIntro =>
+      'TouchFish Client 必待君許，方請諸權。各註其用，可擇而取之，後於「設置 - 本」改之。';
+
+  @override
+  String get permissionGuideConfirm => '許而請之';
+
+  @override
+  String get permissionGuideSkip => '且緩';
+
+  @override
+  String get permissionStatusTitle => '權狀';
+
+  @override
+  String get permissionStatusDesc => '觀諸權之狀，點則請之，或赴系統之設。';
+
+  @override
+  String get permissionStatusGranted => '已許';
+
+  @override
+  String get permissionStatusDenied => '未許';
+
+  @override
+  String get permissionStatusPermanentlyDenied => '已拒，須於系統設中開之';
+
+  @override
+  String get permissionStatusRestricted => '為系統所限';
+
+  @override
+  String get permissionStatusNotApplicable => '此臺弗與';
+
+  @override
+  String get permissionStatusUnknown => '未詳';
+
+  @override
+  String get permissionStatusActionGrant => '請';
+
+  @override
+  String get permissionStatusActionSettings => '系統設';
+
+  @override
+  String get permissionNameNotification => '知會';
+
+  @override
+  String get permissionReasonNotification => '新信之告；未許則止見應用內之橫幅。';
+
+  @override
+  String get permissionNameBattery => '電池省電';
+
+  @override
+  String get permissionReasonBattery => '維後臺之連，信至即達。';
+
+  @override
+  String get permissionNameCamera => '鏡';
+
+  @override
+  String get permissionReasonCamera => '攝像、發圖、掃碼。';
+
+  @override
+  String get permissionNameMicrophone => '話筒';
+
+  @override
+  String get permissionReasonMicrophone => '錄語音、通語音。';
+
+  @override
+  String get permissionOnDemand => '用之乃請';
+
+  @override
+  String get permissionRequestFailed => '請權未畢';
 }

@@ -19,6 +19,7 @@ import '../utils/talker.dart';
 import '../utils/wide_screen_helper.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/local_storage_settings.dart';
+import '../widgets/permission_status_panel.dart';
 import '../services/media_proxy_service.dart';
 import '../services/ip_override_service.dart';
 import '../services/server_connection_status_service.dart';
@@ -311,6 +312,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       if (item.key == 'browserUserAgent') return isAndroid;
       if (item.key == 'browserMixedContent') return isAndroid;
       if (item.key == 'launchInAppBrowser') return isAndroid;
+      if (item.key == 'permissionStatus') return isAndroid;
       return true;
     }).toList();
     return ListView.builder(
@@ -421,6 +423,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         }
         if (item.key == 'lockNow') {
           return _buildLockNowSetting(context, l10n);
+        }
+        if (item.key == 'permissionStatus') {
+          return const PermissionStatusPanel();
         }
         return const SizedBox.shrink();
     }
@@ -2511,6 +2516,10 @@ class _SettingsScreenState extends State<SettingsScreen>
       // About
       case 'settingsAboutAppTitle':
         return l10n.settingsAboutAppTitle;
+      case 'permissionStatusTitle':
+        return l10n.permissionStatusTitle;
+      case 'permissionStatusDesc':
+        return l10n.permissionStatusDesc;
       // Security
       case 'settingsSecurityMasterPasswordTitle':
         return l10n.settingsSecurityMasterPasswordTitle;

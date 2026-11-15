@@ -783,6 +783,14 @@ class SettingsData {
           defaultValue: null,
           icon: Icons.info_outline,
         ),
+        SettingItem(
+          key: 'permissionStatus',
+          titleKey: 'permissionStatusTitle',
+          descriptionKey: 'permissionStatusDesc',
+          type: SettingType.customWidget,
+          defaultValue: null,
+          icon: Icons.verified_user_outlined,
+        ),
       ],
     ),
   ];

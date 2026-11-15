@@ -5828,4 +5828,94 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get loginOr => '或';
+
+  @override
+  String get permissionBatteryTitle => '需要关闭电池优化';
+
+  @override
+  String get permissionBatteryMessage =>
+      '为保证可持续接收消息，TouchFish Client 需要关闭电池优化。';
+
+  @override
+  String get permissionBatteryDontAskAgain => '不再提示';
+
+  @override
+  String get permissionBatteryGranted => '电池优化已关闭，后台消息可正常接收。';
+
+  @override
+  String get permissionBatteryStillOn =>
+      '仍未关闭电池优化，部分系统可能延迟或中断后台消息；可稍后在「设置 - 关于」中重试。';
+
+  @override
+  String get permissionGuideTitle => '权限申请';
+
+  @override
+  String get permissionGuideIntro =>
+      'TouchFish Client 只会在你确认后申请下列权限。每项都注明了用途，你可以只开启需要的部分，之后随时能在「设置 - 关于」中调整。';
+
+  @override
+  String get permissionGuideConfirm => '确认并申请';
+
+  @override
+  String get permissionGuideSkip => '跳过';
+
+  @override
+  String get permissionStatusTitle => '权限状态';
+
+  @override
+  String get permissionStatusDesc => '查看当前设备上各项权限的授权状态，点击可前往申请或打开系统设置。';
+
+  @override
+  String get permissionStatusGranted => '已授权';
+
+  @override
+  String get permissionStatusDenied => '未授权';
+
+  @override
+  String get permissionStatusPermanentlyDenied => '已拒绝，需在系统设置中开启';
+
+  @override
+  String get permissionStatusRestricted => '受系统限制';
+
+  @override
+  String get permissionStatusNotApplicable => '当前平台不支持';
+
+  @override
+  String get permissionStatusUnknown => '未知';
+
+  @override
+  String get permissionStatusActionGrant => '申请';
+
+  @override
+  String get permissionStatusActionSettings => '系统设置';
+
+  @override
+  String get permissionNameNotification => '通知';
+
+  @override
+  String get permissionReasonNotification => '接收新消息提醒；未授权时仅显示应用内横幅。';
+
+  @override
+  String get permissionNameBattery => '电池优化';
+
+  @override
+  String get permissionReasonBattery => '保持后台连接，及时收到消息。';
+
+  @override
+  String get permissionNameCamera => '相机';
+
+  @override
+  String get permissionReasonCamera => '拍摄头像、发送照片与扫描二维码。';
+
+  @override
+  String get permissionNameMicrophone => '麦克风';
+
+  @override
+  String get permissionReasonMicrophone => '录制语音消息与语音通话。';
+
+  @override
+  String get permissionOnDemand => '使用时申请';
+
+  @override
+  String get permissionRequestFailed => '权限申请未完成';
 }

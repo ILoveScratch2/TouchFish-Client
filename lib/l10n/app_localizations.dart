@@ -11181,6 +11181,180 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'or'**
   String get loginOr;
+
+  /// No description provided for @permissionBatteryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery optimization must be disabled'**
+  String get permissionBatteryTitle;
+
+  /// No description provided for @permissionBatteryMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'To keep receiving messages reliably, TouchFish Client needs battery optimization disabled.'**
+  String get permissionBatteryMessage;
+
+  /// No description provided for @permissionBatteryDontAskAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t ask again'**
+  String get permissionBatteryDontAskAgain;
+
+  /// No description provided for @permissionBatteryGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery optimization is off. Background messages can be received.'**
+  String get permissionBatteryGranted;
+
+  /// No description provided for @permissionBatteryStillOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery optimization is still on. Some systems may delay or drop background messages. You can retry later under Settings - About.'**
+  String get permissionBatteryStillOn;
+
+  /// No description provided for @permissionGuideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get permissionGuideTitle;
+
+  /// No description provided for @permissionGuideIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish Client asks for the permissions below only after you confirm. Each one states its purpose; enable only what you need and change it anytime under Settings - About.'**
+  String get permissionGuideIntro;
+
+  /// No description provided for @permissionGuideConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm and request'**
+  String get permissionGuideConfirm;
+
+  /// No description provided for @permissionGuideSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get permissionGuideSkip;
+
+  /// No description provided for @permissionStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission status'**
+  String get permissionStatusTitle;
+
+  /// No description provided for @permissionStatusDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Review each permission on this device. Tap to request it or open system settings.'**
+  String get permissionStatusDesc;
+
+  /// No description provided for @permissionStatusGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Granted'**
+  String get permissionStatusGranted;
+
+  /// No description provided for @permissionStatusDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Not granted'**
+  String get permissionStatusDenied;
+
+  /// No description provided for @permissionStatusPermanentlyDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied, enable in system settings'**
+  String get permissionStatusPermanentlyDenied;
+
+  /// No description provided for @permissionStatusRestricted.
+  ///
+  /// In en, this message translates to:
+  /// **'Restricted by system'**
+  String get permissionStatusRestricted;
+
+  /// No description provided for @permissionStatusNotApplicable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not supported on this platform'**
+  String get permissionStatusNotApplicable;
+
+  /// No description provided for @permissionStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get permissionStatusUnknown;
+
+  /// No description provided for @permissionStatusActionGrant.
+  ///
+  /// In en, this message translates to:
+  /// **'Request'**
+  String get permissionStatusActionGrant;
+
+  /// No description provided for @permissionStatusActionSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get permissionStatusActionSettings;
+
+  /// No description provided for @permissionNameNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get permissionNameNotification;
+
+  /// No description provided for @permissionReasonNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'New message alerts; in-app banners still work without it.'**
+  String get permissionReasonNotification;
+
+  /// No description provided for @permissionNameBattery.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery optimization'**
+  String get permissionNameBattery;
+
+  /// No description provided for @permissionReasonBattery.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps the background connection alive for timely messages.'**
+  String get permissionReasonBattery;
+
+  /// No description provided for @permissionNameCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get permissionNameCamera;
+
+  /// No description provided for @permissionReasonCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Take avatars, send photos and scan QR codes.'**
+  String get permissionReasonCamera;
+
+  /// No description provided for @permissionNameMicrophone.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone'**
+  String get permissionNameMicrophone;
+
+  /// No description provided for @permissionReasonMicrophone.
+  ///
+  /// In en, this message translates to:
+  /// **'Record voice messages and voice calls.'**
+  String get permissionReasonMicrophone;
+
+  /// No description provided for @permissionOnDemand.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested on use'**
+  String get permissionOnDemand;
+
+  /// No description provided for @permissionRequestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission request incomplete'**
+  String get permissionRequestFailed;
 }
 
 class _AppLocalizationsDelegate

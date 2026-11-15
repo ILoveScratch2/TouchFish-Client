@@ -117,7 +117,8 @@ class MainActivity : FlutterActivity() {
      *
      * - Android 10+（API 29+）：使用 MediaStore.Downloads，无需任何存储权限，
      *   文件保存在 /storage/emulated/0/Download 且卸载应用后仍保留。
-     * - Android 9 及以下：直接写 raw 路径，配合 WRITE_EXTERNAL_STORAGE 权限。
+     * - Android 9 及以下：直接写 raw 路径配合 WRITE_EXTERNAL_STORAGE 权限。
+     *  WRITE_EXTERNAL_STORAGE 不会自动申请可能失败
      *
      * @return 保存后的完整路径（可供 open_file 直接打开触发安装器）
      */

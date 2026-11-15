@@ -17,6 +17,7 @@ import '../utils/l10n.dart';
 import '../utils/notification_avatar_attachment.dart';
 import '../utils/talker.dart';
 import 'inline_reply_service.dart';
+import 'permission_center.dart';
 
 const appNotificationBaseDuration = Duration(seconds: 5);
 
@@ -678,7 +679,18 @@ class AppNotificationService extends ChangeNotifier
         !SettingsService.instance.getValue<bool>('systemNotifications', true)) {
       return;
     }
+    if (SettingsService.instance.getValue<bool>(
+      PermissionCenter.notificationPromptedKey,
+      false,
+    )) {
+      _permissionRequested = true;
+      return;
+    }
     _permissionRequested = true;
+    await SettingsService.instance.setValue(
+      PermissionCenter.notificationPromptedKey,
+      true,
+    );
     await _localNotifications
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin

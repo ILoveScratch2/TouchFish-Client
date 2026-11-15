@@ -36,6 +36,7 @@ import 'services/single_instance_service.dart';
 import 'services/feature_flags.dart';
 import 'services/notification_service.dart';
 import 'services/presence_service.dart';
+import 'services/permission_center.dart';
 import 'services/server_connection_status_service.dart';
 import 'services/ip_override_service.dart';
 import 'services/lock_service.dart';
@@ -481,12 +482,8 @@ class _TouchFishAppState extends State<TouchFishApp>
   }
 
   Future<void> _runStartupChecks() async {
-    // Android 请求后台权限
-    if (!kIsWeb && Platform.isAndroid) {
-      unawaited(
-        BackgroundPermissionService.instance.requestBackgroundPermissions(),
-      );
-    }
+    // Android 电池优化：不再直接弹系统框，改为展示说明页由用户决定。
+    unawaited(_maybePromptBatteryOptimization());
 
     // Non-web 检查更新
     if (!kIsWeb) {
@@ -501,6 +498,33 @@ class _TouchFishAppState extends State<TouchFishApp>
         currentVersion: result.currentVersion,
       );
     }
+  }
+
+  /// 电池优化豁免的询问式提示。
+  ///
+  /// 旧行为是启动即调用 `Permission.ignoreBatteryOptimizations.request()`，
+  /// 用户没有拒绝的余地；现在先展示 [AppRoutes.batteryPermission] 说明页，
+  /// 点「确定」才真正发起申请，取消则跳过并可在页内勾选「不再提示」。
+  Future<void> _maybePromptBatteryOptimization() async {
+    if (kIsWeb || !Platform.isAndroid) return;
+    // 尚未登录（也没有可恢复的账号）时不打扰，避免盖在登录页上。
+    if (!AuthState.instance.isLoggedIn && !widget.hasRememberedUid) return;
+
+    final center = PermissionCenter.instance;
+    if (center.batteryPromptMuted) return;
+
+    final status = await center.statusOf(TfPermissionKind.batteryOptimization);
+    if (status.isGranted || status == TfPermissionStatus.notApplicable) return;
+    if (!mounted) return;
+
+    final navigatorContext = _router.routerDelegate.navigatorKey.currentContext;
+    if (navigatorContext == null || !navigatorContext.mounted) return;
+    // 防止重复叠加（例如启动检查与恢复流程先后触发）。
+    if (_router.routerDelegate.currentConfiguration.uri.path ==
+        AppRoutes.batteryPermission) {
+      return;
+    }
+    await _router.push(AppRoutes.batteryPermission);
   }
 
   void _startNotificationPollingIfLoggedIn() {
