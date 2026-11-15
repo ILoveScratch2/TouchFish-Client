@@ -291,9 +291,11 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   Widget _buildSettingsContent(BuildContext context, SettingCategory category) {
     final l10n = AppLocalizations.of(context)!;
-    final categoryData = SettingsData.categories.firstWhere(
+    final categoryIndex = SettingsData.categories.indexWhere(
       (c) => c.category == category,
     );
+    if (categoryIndex < 0) return const SizedBox.shrink();
+    final categoryData = SettingsData.categories[categoryIndex];
     // 通知分级仅 Android 平台可用；其他平台隐藏该设置项（保持原行为）。
     final isAndroid =
         !kIsWeb &&
@@ -822,10 +824,16 @@ class _SettingsScreenState extends State<SettingsScreen>
           item.defaultValue as String,
         );
 
-        final selectedLabel = _getSettingTitle(
-          l10n,
-          item.options!.firstWhere((o) => o.value == value).labelKey,
-        );
+        // 已存的值可能是旧版本写过、当前选项表里已不存在的值；找不到时
+        // 直接回显原值，不要让下拉框因为 StateError 把整个设置页崩掉。
+        var selectedLabelKey = value;
+        for (final option in item.options!) {
+          if (option.value == value) {
+            selectedLabelKey = option.labelKey;
+            break;
+          }
+        }
+        final selectedLabel = _getSettingTitle(l10n, selectedLabelKey);
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
@@ -882,10 +890,18 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                       onChanged: (newValue) async {
                         if (newValue != null) {
-                          final option = item.options!.firstWhere(
-                            (o) =>
-                                _getSettingTitle(l10n, o.labelKey) == newValue,
-                          );
+                          // 文案来自 options，理论上必然能反查到；但
+                          // _getSettingTitle 对未知 key 会回显 key 本身，
+                          // 万一两边不同步也不该崩在 onChanged 里。
+                          SettingOption? option;
+                          for (final o in item.options!) {
+                            if (_getSettingTitle(l10n, o.labelKey) ==
+                                newValue) {
+                              option = o;
+                              break;
+                            }
+                          }
+                          if (option == null) return;
                           await _settingsService.setValue(
                             item.key,
                             option.value,
@@ -893,7 +909,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                           if (item.key == 'ipOverrideMode') {
                             await IpOverrideService.instance.setMode(
                               IpOverrideMode.values.firstWhere(
-                                (mode) => mode.name == option.value,
+                                (mode) => mode.name == option!.value,
+                                orElse: () => IpOverrideMode.off,
                               ),
                             );
                           }

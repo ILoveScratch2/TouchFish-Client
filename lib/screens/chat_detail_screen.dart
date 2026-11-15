@@ -101,7 +101,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   Timer? _draftTimer;
   bool _suppressDraftSave = false;
   int _roomGeneration = 0;
-  Set<String> _entranceKeys = const {};
+  /// 本次新增消息的 stable key（入场动画用）
+  final ValueNotifier<Set<String>> _entranceKeys = ValueNotifier<Set<String>>(
+    const {},
+  );
   Timer? _entranceKeysTimer;
   Timer? _groupMetaRefreshTimer;
   List<PinnedMessage> _pinnedMessages = [];
@@ -115,7 +118,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   StreamSubscription<int>? _essenceSub;
   bool _fetchingPins = false;
   Timer? _weakNetworkTimer;
-  /// 复合键 "uid:scope" -> TypingStatus（同一用户可同时 typing + uploading）。
+  /// 复合 "uid:scope" -> TypingStatus（同一用户可同时 typing + uploading）。
   final Map<String, TypingStatus> _activityStatuses = {};
   StreamSubscription<ChatWsEvent>? _typingSub;
   Timer? _typingCleanupTimer;
@@ -124,12 +127,12 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   DateTime? _lastUploadProgressSentAt;
   final Map<String, double> _lastUploadProgressByRoom = {};
 
-  /// 回执补查的节流（见 _refreshReadReceipt）。
+  /// 回执补查
   final ReadReceiptThrottle _readReceiptThrottle = ReadReceiptThrottle();
 
-  /// 已上报过的最高已读 mid（换房间 / WS 重连时清空）。
+  /// 已上报过的最高已读 mid
   ///
-  /// 滚动会高频触发上报判定，靠它把「同一条只报一次」做成幂等，不必再引入定时器。
+  /// 滚动会高频触发上报判定
   int? _lastReportedReadMid;
 
   String get _contactUid {
@@ -141,7 +144,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     return id;
   }
 
-  // ---- Riverpod 状态访问器 ----
+  // Riverpod 状态访问器
   List<ChatMessage> get _messages => ref.read(roomMessagesProvider(_contactUid));
 
   ChatRoomUiState get _uiState => ref.read(chatRoomStateProvider(_contactUid));
@@ -302,7 +305,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _readReceiptThrottle.reset();
     _lastReportedReadMid = null;
     _entranceKeysTimer?.cancel();
-    _entranceKeys = const {};
+    _entranceKeys.value = const {};
     _groupMetaRefreshTimer?.cancel();
     _groupMetaRefreshTimer = null;
     _suppressDraftSave = true;
@@ -403,6 +406,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _groupMetaRefreshTimer?.cancel();
     unawaited(_saveDraft());
     _messageController.dispose();
+    _entranceKeys.dispose();
     _scrollListenerAttached?.removeListener(_onScroll);
     _scrollListenerAttached = null;
     super.dispose();
@@ -1037,11 +1041,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     // 插入的新 item 比 provider 通知晚一帧，key 要留到气泡真正构建出来。
     final entranceKeys = newlyAppendedMessageKeys(prev ?? const [], next);
     if (entranceKeys.isNotEmpty) {
-      _entranceKeys = entranceKeys;
+      _entranceKeys.value = entranceKeys;
       _entranceKeysTimer?.cancel();
       _entranceKeysTimer = Timer(const Duration(milliseconds: 500), () {
         if (!mounted || !_treeActive) return;
-        setState(() => _entranceKeys = const {});
+        _entranceKeys.value = const {};
       });
     }
 
@@ -1058,11 +1062,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     if (countChanged || lastIdChanged) {
       _markVisibleMessagesRead(previousLastId: previousLastId);
     }
-    // 消息 key：供“跳到引用/跳到消息”的精确 ensureVisible 使用
-    for (final message in next) {
-      final mid = message.mid;
-      if (mid != null) _messageKeys.putIfAbsent(mid, GlobalKey.new);
-    }
+    // 消息 key
     if (_currentRoom?.type == ChatType.group) {
       _scheduleGroupMetaRefresh();
     }
@@ -2564,11 +2564,29 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     });
   }
 
+  /// 为「即将跳转到的消息」按需挂一个 GlobalKey。
+  ///
+  /// 返回 true 表示本次新建了 key：调用方需要等一帧让列表用新 key 构建出
+  /// 该 item 后再定位，否则拿不到 context。返回 false 表示 key 已存在。
+  ///
+  /// 这样 key 的数量只与「用户跳转过多少条消息」相关，而不是房间消息总数。
+  bool _ensureMessageKey(int mid) {
+    if (_messageKeys.containsKey(mid)) return false;
+    setState(() => _messageKeys[mid] = GlobalKey(debugLabel: 'msg-$mid'));
+    return true;
+  }
+
   void _scrollToQuotedMessage(int mid) {
     _followBottom = false;
     _flashMessage(mid);
     final index = _messages.indexWhere((message) => message.mid == mid);
     if (index < 0) return;
+    if (_ensureMessageKey(mid)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _scrollToQuotedMessage(mid);
+      });
+      return;
+    }
     final targetContext = _messageKeys[mid]?.currentContext;
     if (targetContext != null) {
       Scrollable.ensureVisible(
@@ -2613,6 +2631,16 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final message = _messages[index];
     final mid = message.mid;
     _flashMessage(mid);
+
+    // 首次跳转到这条消息
+    if (mid != null && _ensureMessageKey(mid)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final latest = _indexOfMessage(message);
+        if (latest >= 0) _scrollToMessageIndex(latest);
+      });
+      return;
+    }
 
     // 目标上下文已就绪：瞬时精确对齐（无动画）
     final targetContext = mid != null
@@ -3157,8 +3185,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    final messages = ref.watch(roomMessagesProvider(_contactUid));
-    // 只 watch 真正影响本页
+    // 消息列表的订阅不放在页面级 watch：否则房间里每来一条消息都会重建
+    // 整个页面（AppBar / 输入栏 / 侧栏 / 置顶条全部跟着重跑）。
+    // 它由下方列表区域的 Consumer 自己订阅，这里只 watch 页面骨架。
     final chatRoomState = chatRoomStateProvider(_contactUid);
     final scrollController = ref.watch(
       chatRoomState.select((s) => s.scrollController),
@@ -3174,19 +3203,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final gallery = ref.watch(imageGalleryProvider(_contactUid));
     ref.listen(roomMessagesProvider(_contactUid), _onProviderMessagesChanged);
 
-    // 入场动画标记由 ref.listen 回调维护，build 只读
-    final entranceKeys = _entranceKeys;
-
     final typingStatuses = _typingStatuses;
-    final uploadingStatuses = _uploadingStatuses;
-
-    // 对方上传中的占位消息，合成到消息列表末尾（视觉底部）。
-    // 再按 mid 去重：列表项会挂 GlobalKey，同 mid 重复会让两个 widget 撞同一把 key。
-    final displayMessages = ChatMessage.dedupeByMid(
-      uploadingStatuses.isEmpty
-          ? messages
-          : [...messages, ..._buildUploadPlaceholderMessages()],
-    );
 
     if (_currentRoom == null) {
       return Scaffold(
@@ -3365,45 +3382,66 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                         child: ValueListenableBuilder<int>(
                           valueListenable:
                               ChatDataService.instance.readReceiptRevision,
-                          builder: (context, _, _) => MessageListView(
-                            messages: displayMessages,
-                            entranceKeys: entranceKeys,
-                            messageKeys: _messageKeys,
-                            scrollController: scrollController,
-                            galleryItems: gallery.items,
-                            imageIndexById: gallery.indexById,
-                            essenceMids: _essenceMids,
-                            pinnedMessages: _pinnedMessages,
-                            essenceEnabled: _essenceEnabled,
-                            currentRoom: room,
-                            canModerateGroup: _canModerateGroup,
-                            onRefresh: _onRefresh,
-                            onReply: _startReply,
-                            onForward: _startForward,
-                            onRecall: _recallMessage,
-                            onDelete: _deleteLocalMessage,
-                            onRetry: _resendMessage,
-                            onQuoteTap: _scrollToQuotedMessage,
-                            onPinToggle: _togglePin,
-                            onEssenceToggle: _toggleEssence,
-                            canRecall: _canRecall,
-                            canDeleteLocally: _canDeleteLocally,
-                            noMessagesText: l10n.chatDetailNoMessages,
-                            colorScheme: colorScheme,
-                            isLoading: _isLoadingMessages,
-                            errorText: _messagesError,
-                            highlightedMid: _flashMid,
-                            isSelectionMode: isSelectionMode,
-                            selectedMessageKeys: selectedMessageIds,
-                            onEnterSelectionMode: _enterSelection,
-                            onToggleSelection: _toggleSelection,
-                            readReceiptEnabled: FeatureFlags.instance.readReceipt,
-                            peerReadSeq: room.type == ChatType.group
-                                ? null
-                                : ChatDataService.instance.peerReadSeq(_contactUid),
-                            groupReadCounts: room.type == ChatType.group
-                                ? ChatDataService.instance.groupReadCounts
-                                : const {},
+                          builder: (context, _, _) => Consumer(
+                            builder: (context, messageRef, _) {
+                              final messages = messageRef.watch(
+                                roomMessagesProvider(_contactUid),
+                              );
+                              return ValueListenableBuilder<Set<String>>(
+                                valueListenable: _entranceKeys,
+                                builder: (context, entranceKeys, _) {
+                                  // 对方上传中的占位消息
+                                  final displayMessages = ChatMessage.dedupeByMid(
+                                    _uploadingStatuses.isEmpty
+                                        ? messages
+                                        : [
+                                            ...messages,
+                                            ..._buildUploadPlaceholderMessages(),
+                                          ],
+                                  );
+                                  return MessageListView(
+                                    messages: displayMessages,
+                                    entranceKeys: entranceKeys,
+                                    messageKeys: _messageKeys,
+                                    scrollController: scrollController,
+                                    galleryItems: gallery.items,
+                                    imageIndexById: gallery.indexById,
+                                    essenceMids: _essenceMids,
+                                    pinnedMessages: _pinnedMessages,
+                                    essenceEnabled: _essenceEnabled,
+                                    currentRoom: room,
+                                    canModerateGroup: _canModerateGroup,
+                                    onRefresh: _onRefresh,
+                                    onReply: _startReply,
+                                    onForward: _startForward,
+                                    onRecall: _recallMessage,
+                                    onDelete: _deleteLocalMessage,
+                                    onRetry: _resendMessage,
+                                    onQuoteTap: _scrollToQuotedMessage,
+                                    onPinToggle: _togglePin,
+                                    onEssenceToggle: _toggleEssence,
+                                    canRecall: _canRecall,
+                                    canDeleteLocally: _canDeleteLocally,
+                                    noMessagesText: l10n.chatDetailNoMessages,
+                                    colorScheme: colorScheme,
+                                    isLoading: _isLoadingMessages,
+                                    errorText: _messagesError,
+                                    highlightedMid: _flashMid,
+                                    isSelectionMode: isSelectionMode,
+                                    selectedMessageKeys: selectedMessageIds,
+                                    onEnterSelectionMode: _enterSelection,
+                                    onToggleSelection: _toggleSelection,
+                                    readReceiptEnabled: FeatureFlags.instance.readReceipt,
+                                    peerReadSeq: room.type == ChatType.group
+                                        ? null
+                                        : ChatDataService.instance.peerReadSeq(_contactUid),
+                                    groupReadCounts: room.type == ChatType.group
+                                        ? ChatDataService.instance.groupReadCounts
+                                        : const {},
+                                  );
+                                },
+                              );
+                            },
                           ),
                         ),
                       ),

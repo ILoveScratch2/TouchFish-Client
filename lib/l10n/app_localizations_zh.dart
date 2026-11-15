@@ -165,7 +165,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get insecureStorageBannerMessage =>
-      '当前页面未通过 HTTPS 访问，浏览器不提供加密存储能力。登录令牌与密码只能以明文保存在本地存储中，请改用 HTTPS 地址访问。';
+      'WebCrypto 在 HTTP 下不可用，凭据将不会以加密方式安全存储';
 
   @override
   String get insecureStorageBannerDismiss => '知道了';

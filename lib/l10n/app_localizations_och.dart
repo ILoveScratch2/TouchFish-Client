@@ -164,8 +164,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get insecureStorageBannerTitle => '登入之憑將以未加密之式存';
 
   @override
-  String get insecureStorageBannerMessage =>
-      '此頁未由 HTTPS 而入，瀏覽器不予加密之能。令牌與密碼惟以明文存於本地，宜改由 HTTPS 入之。';
+  String get insecureStorageBannerMessage => 'WebCrypto 不可於 HTTP，憑證將不以加密安存';
 
   @override
   String get insecureStorageBannerDismiss => '知之';

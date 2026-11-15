@@ -108,10 +108,9 @@ class ChatDataService extends ChangeNotifier {
   bool _batchRoomNotify = false;
   final Set<String> _batchedRoomNotifyQueue = {};
 
-  // 增量批量摄入：批内不逐条排序/落库/全量通知，批末统一提交一次
+  // 增量批量摄入：批内不逐条落库/全量通知，批末统一提交一次
   bool _batchIngest = false;
   final Map<String, Map<String, ChatMessage>> _pendingIngest = {};
-  final Set<String> _ingestDirtyRooms = {};
 
   // 追加式索引（仅作候选集提示，命中后仍会校验）：
   // mid -> roomId 用于撤回时定位房间；fileHash -> roomIds 用于媒体元数据定向更新
@@ -237,10 +236,11 @@ class ChatDataService extends ChangeNotifier {
     _unreadRebaseSeq.clear();
   }
 
-  /// 开始一次批量摄入（配合 [_endIngest] 使用）。
+  /// 开始一次批量（配合 [_endIngest] 使用）。
   void _beginIngest() => _batchIngest = true;
 
-  /// 结束批量摄入：提交待落库消息、对各变更房间各排序一次、刷新房间列表。
+  /// 结束批量：提交待落库消息、刷新房间列表。
+  
   void _endIngest() {
     _batchIngest = false;
     for (final entry in _pendingIngest.entries) {
@@ -250,10 +250,6 @@ class ChatDataService extends ChangeNotifier {
       }
     }
     _pendingIngest.clear();
-    for (final roomId in _ingestDirtyRooms) {
-      _messageCache[roomId]?.sort(_compareMessages);
-    }
-    _ingestDirtyRooms.clear();
     _sortRooms();
   }
 
@@ -266,8 +262,7 @@ class ChatDataService extends ChangeNotifier {
     }
   }
 
-  /// 该消息序号是否高于房间的服务端未读重定基线。
-  /// 低于/等于基线的同步消息已在服务端未读计数内，本地不再重复累计。
+  /// 该消息序号是否高于房间的服务端未读重定
   bool _aboveUnreadRebase(String roomId, int? seq) {
     final rebase = _unreadRebaseSeq[roomId];
     if (rebase == null || seq == null) return true;
@@ -289,10 +284,7 @@ class ChatDataService extends ChangeNotifier {
     return (await refreshMessagesForContact(roomId)).messages;
   }
 
-  /// 按服务端消息 id（mid）定位消息，用于置顶消息等内容预览。
-  ///
-  /// 依次从内存缓存、本地库查找；仍缺失且 [allowServerFetch] 为 true 时，
-  /// 从服务端 /message/history 向前翻页（有界）补拉该消息，不影响当前可见列表。
+  /// 按服务端消息 id（mid）定位消息
   Future<ChatMessage?> findMessageByMid(
     String roomId,
     int mid, {
@@ -310,8 +302,6 @@ class ChatDataService extends ChangeNotifier {
     final generation = _generation;
     final rk = roomKey(roomId);
     var beforeMid = 0;
-    // 置顶/引用跳转的兜底补拉：3 页（150 条）足够覆盖绝大多数场景，
-    // 再多会串行阻塞十几秒、且每页都在 UI isolate 解密解析。
     const maxPages = 3;
     for (var pageCount = 0; pageCount < maxPages; pageCount++) {
       if (_generation != generation || AuthState.instance.uid != uid) {
@@ -906,32 +896,59 @@ class ChatDataService extends ChangeNotifier {
   int _compareMessages(ChatMessage a, ChatMessage b) =>
       ChatMessage.compareByOrder(a, b, _messageDedupKey);
 
-  bool _containsMessage(List<ChatMessage> messages, ChatMessage candidate) {
-    final key = _messageDedupKey(candidate);
-    if (messages.any((m) => _messageDedupKey(m) == key)) return true;
-    // 如果 candidate 有 mid，检查是否有消息的 mid 与之匹配
-    final candidateMid = candidate.mid;
-    if (candidateMid != null) {
-      return messages.any((m) => m.mid == candidateMid);
-    }
-    return false;
-  }
+  bool _containsMessage(List<ChatMessage> messages, ChatMessage candidate) =>
+      _indexOfMessage(messages, candidate) != null;
 
+  /// 定位同一条消息在列表中的下标
   int? _indexOfMessage(List<ChatMessage> messages, ChatMessage candidate) {
-    final key = _messageDedupKey(candidate);
-    for (var i = 0; i < messages.length; i++) {
-      if (_messageDedupKey(messages[i]) == key) return i;
-    }
+    final candidateClientMid = candidate.clientMid;
+    final hasClientMid =
+        candidateClientMid != null && candidateClientMid.isNotEmpty;
+    final candidateId = candidate.id;
     final candidateMid = candidate.mid;
-    if (candidateMid != null) {
-      for (var i = 0; i < messages.length; i++) {
-        if (messages[i].mid == candidateMid) return i;
+    for (var i = 0; i < messages.length; i++) {
+      final message = messages[i];
+      if (hasClientMid) {
+        if (message.clientMid == candidateClientMid) return i;
+      } else {
+        final otherClientMid = message.clientMid;
+        if ((otherClientMid == null || otherClientMid.isEmpty) &&
+            message.id == candidateId) {
+          return i;
+        }
       }
+      if (candidateMid != null && message.mid == candidateMid) return i;
     }
     return null;
   }
 
-  /// 服务端回声（MESSAGE.NEW 推回给自己）/补拉命中本地待确认消息时，
+  /// 把消息插入已排序列表
+  void _insertSorted(List<ChatMessage> mutable, ChatMessage message) {
+    var lo = 0;
+    var hi = mutable.length;
+    while (lo < hi) {
+      final mid = (lo + hi) >> 1;
+      if (_compareMessages(mutable[mid], message) < 0) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+    mutable.insert(lo, message);
+  }
+
+  /// 替换列表中已存在的一条消息并保持有序
+  List<ChatMessage> _replaceSorted(
+    List<ChatMessage> cached,
+    int index,
+    ChatMessage replacement,
+  ) {
+    final updated = List<ChatMessage>.from(cached)..removeAt(index);
+    _insertSorted(updated, replacement);
+    return updated;
+  }
+
+  /// 服务端回声
   /// 采用服务端身份字段，让已确认消息获得服务端序号与发送时间，
   /// 后续实时消息即可按服务端序号正确排序（不再依赖设备时钟）。
   ChatMessage _adoptServerFields(ChatMessage existing, ChatMessage incoming) {
@@ -1125,7 +1142,6 @@ class ChatDataService extends ChangeNotifier {
       final idx = msgs.indexWhere((m) => m.clientMid == clientMid);
       if (idx != -1) {
         final existing = msgs[idx];
-        final updated = List<ChatMessage>.from(msgs, growable: true);
         final changed = existing.copyWith(
           id: serverMid?.toString() ?? existing.id,
           mid: serverMid ?? existing.mid,
@@ -1134,15 +1150,18 @@ class ChatDataService extends ChangeNotifier {
           ackError: error,
           clearAckError: error == null,
         );
-        updated[idx] = changed;
-        if (roomSeq != null && roomSeq != existing.roomSeq) {
-          updated.sort(_compareMessages);
-        }
+        // ACK 带来 roomSeq 后排序位置会变（无 seq 的待确认消息原本在末尾），
+        // 只重排这一条而不是整表。
+        final updated = roomSeq != null && roomSeq != existing.roomSeq
+            ? _replaceSorted(msgs, idx, changed)
+            : (List<ChatMessage>.from(msgs, growable: true)..[idx] = changed);
         _messageCache[roomId] = updated;
         _pendingClientMidRooms.remove(clientMid);
         _indexMessages(roomId, [changed]);
         unawaited(_localStore.saveMessage(roomId, changed));
-        if (idx == updated.length - 1 && serverMid != null) {
+        if (updated.isNotEmpty &&
+            identical(updated.last, changed) &&
+            serverMid != null) {
           final roomIndex = _rooms.indexWhere((room) => room.id == roomId);
           if (roomIndex >= 0) {
             _rooms[roomIndex] = _rooms[roomIndex].copyWith(
@@ -1199,15 +1218,109 @@ class ChatDataService extends ChangeNotifier {
         result.add(m);
       }
     }
-    for (final recalled in result.where((message) => message.isDeleted)) {
-      final mid = recalled.mid;
-      if (mid != null) result = applyRecallToMessages(result, mid);
+    if (result.isEmpty) return result;
+    final recalledMids = <int>{
+      for (final message in result)
+        if (message.isDeleted && message.mid != null) message.mid!,
+    };
+    if (recalledMids.isEmpty) return result;
+    return applyRecallsToMessages(result, recalledMids);
+  }
+
+  /// 把更早的一页消息并入已排序缓存
+  List<ChatMessage> _attachOlderMessages(
+    List<ChatMessage> cached,
+    List<ChatMessage> older,
+    List<ChatMessage> local,
+  ) {
+    final knownMids = <int>{};
+    final knownClientMids = <String>{};
+    final knownBareIds = <String>{};
+    for (final message in cached) {
+      final mid = message.mid;
+      if (mid != null) knownMids.add(mid);
+      final clientMid = message.clientMid;
+      if (clientMid != null && clientMid.isNotEmpty) {
+        knownClientMids.add(clientMid);
+      } else {
+        knownBareIds.add(message.id);
+      }
     }
-    return result;
+
+    final incoming = <ChatMessage>[];
+    for (final message in older) {
+      if (!_claimIncoming(message, knownMids, knownClientMids, knownBareIds)) {
+        continue;
+      }
+      incoming.add(message);
+    }
+    for (final message in local) {
+      if (!_claimIncoming(message, knownMids, knownClientMids, knownBareIds)) {
+        continue;
+      }
+      incoming.add(message);
+    }
+    if (incoming.isEmpty) return cached;
+    incoming.sort(_compareMessages);
+    return _mergeSortedLists(incoming, cached);
+  }
+
+  @visibleForTesting
+  List<ChatMessage> debugAttachOlderMessages(
+    List<ChatMessage> cached,
+    List<ChatMessage> older,
+    List<ChatMessage> local,
+  ) => _attachOlderMessages(cached, older, local);
+
+  static bool _claimIncoming(
+    ChatMessage message,
+    Set<int> knownMids,
+    Set<String> knownClientMids,
+    Set<String> knownBareIds,
+  ) {
+    final clientMid = message.clientMid;
+    final hasClientMid = clientMid != null && clientMid.isNotEmpty;
+    if (hasClientMid) {
+      if (!knownClientMids.add(clientMid)) return false;
+    } else if (!knownBareIds.add(message.id)) {
+      return false;
+    }
+    final mid = message.mid;
+    if (mid != null && !knownMids.add(mid)) return false;
+    return true;
+  }
+
+  /// 线性合并
+  List<ChatMessage> _mergeSortedLists(
+    List<ChatMessage> first,
+    List<ChatMessage> second,
+  ) {
+    if (first.isEmpty) return second;
+    if (second.isEmpty) return first;
+    final merged = List<ChatMessage>.filled(
+      first.length + second.length,
+      first.first,
+    );
+    var i = 0;
+    var j = 0;
+    var k = 0;
+    while (i < first.length && j < second.length) {
+      if (_compareMessages(first[i], second[j]) <= 0) {
+        merged[k++] = first[i++];
+      } else {
+        merged[k++] = second[j++];
+      }
+    }
+    while (i < first.length) {
+      merged[k++] = first[i++];
+    }
+    while (j < second.length) {
+      merged[k++] = second[j++];
+    }
+    return merged;
   }
 
   // --- Real-time events ---
-
   void _onWsEvent(ChatWsEvent event) {
     if (event.type == 'message.ack') {
       final data = event.notification;
@@ -1440,8 +1553,7 @@ class ChatDataService extends ChangeNotifier {
     final matchIdx = _indexOfMessage(cached, msg);
     var listChanged = false;
     if (matchIdx == null) {
-      cached.add(msg);
-      if (!_batchIngest) cached.sort(_compareMessages);
+      _insertSorted(cached, msg);
       _messageCache[roomId] = cached;
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
@@ -1451,9 +1563,7 @@ class ChatDataService extends ChangeNotifier {
     } else {
       final upgraded = _adoptServerFields(cached[matchIdx], msg);
       if (!identical(upgraded, cached[matchIdx])) {
-        final updated = List<ChatMessage>.from(cached);
-        updated[matchIdx] = upgraded;
-        if (!_batchIngest) updated.sort(_compareMessages);
+        final updated = _replaceSorted(cached, matchIdx, upgraded);
         _messageCache[roomId] = updated;
         _touchCacheRoom(roomId);
         _evictCacheIfNeeded();
@@ -1484,12 +1594,12 @@ class ChatDataService extends ChangeNotifier {
                   currentUsername: username,
                 )));
 
-    if (!_rooms.any((r) => r.id == roomId)) {
+    final roomIndex = _rooms.indexWhere((r) => r.id == roomId);
+    if (roomIndex < 0) {
       _addNewRoom(roomId, msg, unreadCount: shouldCountUnread ? 1 : 0);
     } else {
-      final idx = _rooms.indexWhere((r) => r.id == roomId);
-      final lastTime = _rooms[idx].lastMessageTime;
-      var updated = _rooms[idx];
+      final lastTime = _rooms[roomIndex].lastMessageTime;
+      var updated = _rooms[roomIndex];
       if (lastTime == null || msg.timestamp.isAfter(lastTime)) {
         updated = updated.copyWith(
           lastMessage: msg.text,
@@ -1500,13 +1610,10 @@ class ChatDataService extends ChangeNotifier {
       if (shouldCountUnread) {
         updated = updated.copyWith(unreadCount: updated.unreadCount + 1);
       }
-      _rooms[idx] = updated;
+      _rooms[roomIndex] = updated;
     }
     // 未读早于房间通知
-    if (listChanged) {
-      _notifyRoom(roomId);
-      if (_batchIngest) _ingestDirtyRooms.add(roomId);
-    }
+    if (listChanged) _notifyRoom(roomId);
     unawaited(_ensureGroupInfo(roomId));
     if (!_batchIngest) {
       _sortRooms();
@@ -1525,8 +1632,7 @@ class ChatDataService extends ChangeNotifier {
     final matchIdx = _indexOfMessage(cached, msg);
     var listChanged = false;
     if (matchIdx == null) {
-      cached.add(msg);
-      cached.sort(_compareMessages);
+      _insertSorted(cached, msg);
       _messageCache[roomId] = cached;
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
@@ -1536,9 +1642,7 @@ class ChatDataService extends ChangeNotifier {
     } else {
       final upgraded = _adoptServerFields(cached[matchIdx], msg);
       if (!identical(upgraded, cached[matchIdx])) {
-        final updated = List<ChatMessage>.from(cached);
-        updated[matchIdx] = upgraded;
-        updated.sort(_compareMessages);
+        final updated = _replaceSorted(cached, matchIdx, upgraded);
         _messageCache[roomId] = updated;
         _touchCacheRoom(roomId);
         _evictCacheIfNeeded();
@@ -1590,21 +1694,24 @@ class ChatDataService extends ChangeNotifier {
     _sortRooms();
     notifyListeners();
     if (shouldNotify && _shouldSendNotification(roomId)) {
-      final room = _rooms.firstWhere((room) => room.id == roomId);
-      unawaited(
-        AppNotificationService.instance.present(
-          AppNotification(
-            id: '$roomId:${msg.id}',
-            title: room.name,
-            body: msg.text,
-            avatarUrl: msg.senderAvatar ?? room.avatar,
-            route: '/chat/$roomId',
-            topic: isGroupRoom(roomId) ? 'message.group' : 'message.private',
-            senderKey: roomId,
-            roomId: roomId,
+      final notifyIndex = _rooms.indexWhere((room) => room.id == roomId);
+      if (notifyIndex >= 0) {
+        final room = _rooms[notifyIndex];
+        unawaited(
+          AppNotificationService.instance.present(
+            AppNotification(
+              id: '$roomId:${msg.id}',
+              title: room.name,
+              body: msg.text,
+              avatarUrl: msg.senderAvatar ?? room.avatar,
+              route: '/chat/$roomId',
+              topic: isGroupRoom(roomId) ? 'message.group' : 'message.private',
+              senderKey: roomId,
+              roomId: roomId,
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
   }
 
@@ -1899,8 +2006,7 @@ class ChatDataService extends ChangeNotifier {
     }
     final cached = _messageCache[roomId] ?? [];
     if (!_containsMessage(cached, msg)) {
-      cached.add(msg);
-      cached.sort(_compareMessages);
+      _insertSorted(cached, msg);
       _messageCache[roomId] = cached;
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
@@ -2114,17 +2220,30 @@ class ChatDataService extends ChangeNotifier {
     int mid, {
     DateTime? deletedAt,
     int? deletedBy,
+  }) => applyRecallsToMessages(
+    messages,
+    {mid},
+    deletedAt: deletedAt,
+    deletedBy: deletedBy,
+  );
+  static List<ChatMessage> applyRecallsToMessages(
+    List<ChatMessage> messages,
+    Set<int> mids, {
+    DateTime? deletedAt,
+    int? deletedBy,
   }) {
+    if (mids.isEmpty) return messages;
     var changed = false;
     final updated = messages.map((message) {
       var next = message;
-      if (message.mid == mid && !message.isDeleted) {
+      if (mids.contains(message.mid) && !message.isDeleted) {
         next = message.asTombstone(at: deletedAt, by: deletedBy);
         changed = true;
       }
       final quote = next.quotePreview;
-      if (quote?.mid == mid &&
-          (!quote!.isDeleted ||
+      if (quote != null &&
+          mids.contains(quote.mid) &&
+          (!quote.isDeleted ||
               quote.content.isNotEmpty ||
               quote.contentType != 'plain')) {
         next = next.copyWith(quotePreview: quote.asRecalled());
@@ -2354,10 +2473,15 @@ class ChatDataService extends ChangeNotifier {
     }
 
     final olderFilled = _fillSenderInfo(olderMsgs);
-    // 用 await 完成后的最新缓存合并，而不是开头捕获的 cached
-    final currentCache = _messageCache[roomId] ?? [];
-    final merged = _mergeMessages(olderFilled, [...localMsgs, ...currentCache]);
-    merged.sort(_compareMessages);
+    // 用 await 完成后的最新缓存合并，而不是开头捕获的 cached。
+    // 只需把「新拿到的一页」并进缓存：整个缓存已经有序，逐页重建
+    // （复制两份 5 万条 + 全量排序 + 两个 Set）会让每次翻页都卡住。
+    final currentCache = _messageCache[roomId] ?? const <ChatMessage>[];
+    final merged = _attachOlderMessages(
+      currentCache,
+      olderFilled,
+      localMsgs,
+    );
 
     _messageCache[roomId] = merged;
     _touchCacheRoom(roomId);

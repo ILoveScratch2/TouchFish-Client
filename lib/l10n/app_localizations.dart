@@ -403,13 +403,13 @@ abstract class AppLocalizations {
   /// No description provided for @insecureStorageBannerTitle.
   ///
   /// In en, this message translates to:
-  /// **'Credentials are stored unencrypted'**
+  /// **'Credentials are Unencrypted'**
   String get insecureStorageBannerTitle;
 
   /// No description provided for @insecureStorageBannerMessage.
   ///
   /// In en, this message translates to:
-  /// **'This page is not served over HTTPS, so the browser blocks encrypted storage. Your session token and password can only be kept in plain local storage. Open the site over HTTPS to restore protection.'**
+  /// **'WebCrypto is not available in HTTP, credentials won\'t be securely stored'**
   String get insecureStorageBannerMessage;
 
   /// No description provided for @insecureStorageBannerDismiss.

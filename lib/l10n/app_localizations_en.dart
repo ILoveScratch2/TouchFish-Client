@@ -171,11 +171,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'This session can\'t be used on the server. Check your network connection or login credentials.';
 
   @override
-  String get insecureStorageBannerTitle => 'Credentials are stored unencrypted';
+  String get insecureStorageBannerTitle => 'Credentials are Unencrypted';
 
   @override
   String get insecureStorageBannerMessage =>
-      'This page is not served over HTTPS, so the browser blocks encrypted storage. Your session token and password can only be kept in plain local storage. Open the site over HTTPS to restore protection.';
+      'WebCrypto is not available in HTTP, credentials won\'t be securely stored';
 
   @override
   String get insecureStorageBannerDismiss => 'Dismiss';
