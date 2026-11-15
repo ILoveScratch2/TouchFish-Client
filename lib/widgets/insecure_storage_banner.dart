@@ -91,10 +91,13 @@ class _BannerCard extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: onDismiss,
-                  icon: const Icon(Icons.close_rounded, size: 18),
+                  // 这里不能用 tooltip
+                  icon: Semantics(
+                    label: l10n.insecureStorageBannerDismiss,
+                    child: const Icon(Icons.close_rounded, size: 18),
+                  ),
                   color: foreground,
                   visualDensity: VisualDensity.compact,
-                  tooltip: l10n.insecureStorageBannerDismiss,
                 ),
               ],
             ),
