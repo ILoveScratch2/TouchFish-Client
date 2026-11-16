@@ -109,6 +109,7 @@ class _ServerSelectorState extends State<ServerSelector> {
 
   Future<void> _loadServers() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     final serversJson = prefs.getStringList('serversV2');
 
     if (serversJson != null && serversJson.isNotEmpty) {
@@ -135,17 +136,20 @@ class _ServerSelectorState extends State<ServerSelector> {
               ),
             )
             .toList();
+        if (!mounted) return;
         setState(() {
           _servers = migratedServers;
           _isLoading = false;
         });
         await _saveServers();
       } else {
+        if (!mounted) return;
         setState(() {
           _isLoading = false;
         });
       }
     }
+    if (!mounted) return;
     _probeSelectedServer();
   }
 
@@ -194,12 +198,15 @@ class _ServerSelectorState extends State<ServerSelector> {
             await ChatWsService.instance.disconnect();
             await AuthState.instance.logout();
           }
-          setState(() => _selectedIndex = index);
+          _selectedIndex = index;
+          if (mounted) {
+            setState(() {});
+          }
           await _saveServers();
           TfApiClient.instance.invalidateCache();
           DomainTrustService.instance.refreshServerHost();
           unawaited(ServerBrandingService.instance.refresh());
-          _probeSelectedServer();
+          if (mounted) _probeSelectedServer();
           widget.onServerChanged?.call();
           if (context.mounted) Navigator.pop(context);
         },
@@ -208,10 +215,10 @@ class _ServerSelectorState extends State<ServerSelector> {
             await ChatWsService.instance.disconnect();
             await AuthState.instance.logout();
           }
-          setState(() {
-            _servers.add(server);
-            _selectedIndex = _servers.length - 1;
-          });
+          _servers.add(server);
+          _selectedIndex = _servers.length - 1;
+          if (!mounted) return;
+          setState(() {});
           await _saveServers();
           TfApiClient.instance.invalidateCache();
           DomainTrustService.instance.refreshServerHost();
@@ -224,7 +231,9 @@ class _ServerSelectorState extends State<ServerSelector> {
             await ChatWsService.instance.disconnect();
             await AuthState.instance.logout();
           }
-          setState(() => _servers[index] = server);
+          _servers[index] = server;
+          if (!mounted) return;
+          setState(() {});
           await _saveServers();
           if (index == _selectedIndex) {
             TfApiClient.instance.invalidateCache();
@@ -236,12 +245,12 @@ class _ServerSelectorState extends State<ServerSelector> {
         },
         onDelete: (index) async {
           if (_servers.length > 1) {
-            setState(() {
-              _servers.removeAt(index);
-              if (_selectedIndex >= _servers.length) {
-                _selectedIndex = _servers.length - 1;
-              }
-            });
+            _servers.removeAt(index);
+            if (_selectedIndex >= _servers.length) {
+              _selectedIndex = _servers.length - 1;
+            }
+            if (!mounted) return;
+            setState(() {});
             await _saveServers();
             TfApiClient.instance.invalidateCache();
             DomainTrustService.instance.refreshServerHost();
@@ -379,7 +388,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
     String? apiPortError;
     String? tcpPortError;
 
-    showDialog(
+    final dialog = showDialog<void>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
@@ -588,6 +597,13 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
         },
       ),
     );
+    unawaited(dialog.whenComplete(() {
+      displayNameController.dispose();
+      addressController.dispose();
+      apiPortController.dispose();
+      tcpPortController.dispose();
+      rsaPemController.dispose();
+    }));
   }
 
   void _showEditDialog(int index) {
@@ -596,6 +612,9 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
       text: server.displayName,
     );
     final rsaPemController = TextEditingController();
+    final addressController = TextEditingController(text: server.address);
+    final apiPortController = TextEditingController(text: server.apiPort);
+    final tcpPortController = TextEditingController(text: server.tcpPort);
     final l10n = AppLocalizations.of(context)!;
     final authority = _serverAuthority(server);
 
@@ -604,24 +623,20 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
     bool autoDetectTcpPort = server.autoDetectTcpPort;
     bool rsaPemValid = true;
 
-    showDialog(
+    // 已在展示前预取
+    unawaited(() async {
+      final saved = await RsaKeyTrustService.instance.savedKeyFor(authority);
+      if (saved == null || saved.trim().isEmpty) return;
+      final normalized = TfCrypto.normalizePem(saved);
+      if (rsaPemController.text.trim().isEmpty) {
+        rsaPemController.text = normalized;
+      }
+    }());
+
+    final dialog = showDialog<void>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
-          Future<void> loadSavedPem() async {
-            final saved = await RsaKeyTrustService.instance.savedKeyFor(
-              authority,
-            );
-            if (saved != null && saved.trim().isNotEmpty) {
-              final normalized = TfCrypto.normalizePem(saved);
-              if (context.mounted && rsaPemController.text.trim().isEmpty) {
-                setDialogState(() => rsaPemController.text = normalized);
-              }
-            }
-          }
-
-          unawaited(loadSavedPem());
-
           return AlertDialog(
             title: Text(l10n.serverEdit),
             content: SingleChildScrollView(
@@ -643,7 +658,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                   SizedBox(
                     height: 80,
                     child: TextField(
-                      controller: TextEditingController(text: server.address),
+                      controller: addressController,
                       enabled: false,
                       decoration: InputDecoration(
                         labelText: l10n.serverAddress,
@@ -654,7 +669,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                   SizedBox(
                     height: 80,
                     child: TextField(
-                      controller: TextEditingController(text: server.apiPort),
+                      controller: apiPortController,
                       enabled: false,
                       decoration: InputDecoration(
                         labelText: l10n.serverApiPort,
@@ -665,7 +680,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                   SizedBox(
                     height: 80,
                     child: TextField(
-                      controller: TextEditingController(text: server.tcpPort),
+                      controller: tcpPortController,
                       enabled: false,
                       decoration: InputDecoration(
                         labelText: l10n.serverTcpPort,
@@ -751,6 +766,13 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
         },
       ),
     );
+    unawaited(dialog.whenComplete(() {
+      displayNameController.dispose();
+      rsaPemController.dispose();
+      addressController.dispose();
+      apiPortController.dispose();
+      tcpPortController.dispose();
+    }));
   }
 
   @override

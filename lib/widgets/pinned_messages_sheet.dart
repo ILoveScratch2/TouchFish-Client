@@ -132,17 +132,21 @@ class _PinnedMessageTile extends StatelessWidget {
     this.onUnpin,
   });
 
+  static final DateFormat _fullTimeFormat = DateFormat('yyyy/MM/dd HH:mm');
+  static final DateFormat _shortTimeFormat = DateFormat('MM/dd HH:mm');
+  static final DateFormat _clockFormat = DateFormat('HH:mm');
+
   String _formatTime(double epoch) {
     final dt = DateTime.fromMillisecondsSinceEpoch(
       (epoch * 1000).toInt(),
     );
     final now = DateTime.now();
     if (now.difference(dt).inDays > 365) {
-      return DateFormat('yyyy/MM/dd HH:mm').format(dt);
+      return _fullTimeFormat.format(dt);
     } else if (now.difference(dt).inDays > 0) {
-      return DateFormat('MM/dd HH:mm').format(dt);
+      return _shortTimeFormat.format(dt);
     }
-    return DateFormat('HH:mm').format(dt);
+    return _clockFormat.format(dt);
   }
 
   @override

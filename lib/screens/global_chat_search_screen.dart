@@ -18,6 +18,7 @@ class _GlobalChatSearchScreenState extends State<GlobalChatSearchScreen> {
   Timer? _debounce;
   List<LocalMessageSearchResult> _results = const [];
   bool _loading = false;
+  int _searchSeq = 0;
 
   @override
   void dispose() {
@@ -28,15 +29,22 @@ class _GlobalChatSearchScreenState extends State<GlobalChatSearchScreen> {
 
   void _search(String value) {
     _debounce?.cancel();
+    final seq = ++_searchSeq;
     if (value.trim().isEmpty) {
-      setState(() => _results = const []);
+      setState(() {
+        _results = const [];
+        _loading = false;
+      });
       return;
     }
     _debounce = Timer(const Duration(milliseconds: 250), () async {
       setState(() => _loading = true);
       final results = await ChatDataService.instance.searchAllRoomsMessages(value);
-      if (!mounted) return;
-      setState(() { _results = results; _loading = false; });
+      if (!mounted || seq != _searchSeq) return;
+      setState(() {
+        _results = results;
+        _loading = false;
+      });
     });
   }
 

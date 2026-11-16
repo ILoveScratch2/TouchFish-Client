@@ -87,6 +87,7 @@ class _VoiceRecordBarState extends State<VoiceRecordBar> {
         noiseSuppress: isMobile,
       );
       await _recorder.start(config, path: path);
+      if (!mounted) return;
       _recordingPath = path;
       _stopwatch
         ..reset()
@@ -134,6 +135,15 @@ class _VoiceRecordBarState extends State<VoiceRecordBar> {
       talker.error('VoiceRecorder stop failed', e);
     }
     final shouldDiscard = cancel || finalPath == null || durationMs < 400;
+    if (!mounted) {
+      if (finalPath != null) {
+        try {
+          final file = File(finalPath);
+          if (await file.exists()) await file.delete();
+        } catch (_) {}
+      }
+      return;
+    }
     setState(() {
       _isRecording = false;
       _cancelArmed = false;
@@ -147,11 +157,13 @@ class _VoiceRecordBarState extends State<VoiceRecordBar> {
           if (await file.exists()) await file.delete();
         } catch (_) {}
       }
+      if (!mounted) return;
       setState(() => _duration = Duration.zero);
       return;
     }
 
     final recordedPath = finalPath;
+    if (!mounted) return;
     setState(() => _isSending = true);
     try {
       await widget.onRecorded(recordedPath, durationMs);

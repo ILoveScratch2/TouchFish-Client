@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -19,9 +18,6 @@ import '../widgets/command_palette.dart';
 
 class MainScreen extends StatefulWidget {
   final Widget child;
-
-  /// 由 `StatefulShellRoute` 注入
-  /// 点击导航项时切换到对应 branch
   final ValueChanged<int>? onBranchSelected;
 
   const MainScreen({super.key, required this.child, this.onBranchSelected});
@@ -148,7 +144,8 @@ class _MainScreenState extends State<MainScreen> {
     Haptics.selection();
     final onBranchSelected = widget.onBranchSelected;
     if (onBranchSelected != null) {
-      // 不销毁目标 tab，仅切换 IndexedStack 索引
+      // 不销毁目标
+      //仅切换 IndexedStack 索引
       onBranchSelected(branchIndex);
       return;
     }
@@ -173,7 +170,8 @@ class _MainScreenState extends State<MainScreen> {
           final hasBackgroundImage =
               backgroundImagePath != null && backgroundImagePath.isNotEmpty;
 
-          // 宽度用 MediaQuery（构建阶段）而不是 LayoutBuilder（布局阶段）
+          // 宽度用 MediaQuery（构建）
+          // not LayoutBuilder（布局）
           return Builder(
             builder: (context) {
               final isWide = WideScreenHelper.isWide(context);
@@ -398,6 +396,7 @@ class _MainScreenState extends State<MainScreen> {
         topLeft: Radius.circular(16),
         topRight: Radius.circular(16),
       ),
+      // little influence
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
@@ -427,7 +426,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-/// 桌面端全局命令面板快捷键（Ctrl/Cmd+K）；非桌面平台透传 [child]。
+/// 桌面端全局命令面板快捷键（Ctrl/Cmd+K）
 class _CommandPaletteScope extends StatelessWidget {
   final Widget child;
 
@@ -436,8 +435,6 @@ class _CommandPaletteScope extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!isDesktopWindowed) return child;
-    // 订阅设置，让「命令面板」开关立刻生效（注册 / 注销快捷键），
-    // 不必等页面因别的理由重建。
     return ListenableBuilder(
       listenable: SettingsService.instance,
       builder: (context, _) {

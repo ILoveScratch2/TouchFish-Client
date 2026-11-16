@@ -977,6 +977,7 @@ class TfApiClient {
 
   RSAPublicKey? _cachedPubKey;
   String? _cachedBaseUrl;
+  String? _cachedPem;
   TfServerConfig? _cachedServerConfig;
   String? _cachedAppVersion;
 
@@ -1216,6 +1217,7 @@ class TfApiClient {
   void invalidateCache() {
     _cachedPubKey = null;
     _cachedBaseUrl = null;
+    _cachedPem = null;
     _cachedServerConfig = null;
   }
 
@@ -1237,8 +1239,15 @@ class TfApiClient {
       RsaKeyTrustService.authorityOfBaseUrl(baseUrl),
     );
     if (savedPem != null && savedPem.trim().isNotEmpty) {
+      if (_cachedPubKey != null && _cachedPem == savedPem) {
+        return _cachedPubKey!;
+      }
       try {
-        return TfCrypto.parseRsaPublicKey(savedPem);
+        final parsed = TfCrypto.parseRsaPublicKey(savedPem);
+        _cachedPubKey = parsed;
+        _cachedBaseUrl = baseUrl;
+        _cachedPem = savedPem;
+        return parsed;
       } catch (e) {
         talker.warning('Failed to parse saved RSA public key', e);
       }
@@ -1251,6 +1260,7 @@ class TfApiClient {
     final pubKey = TfCrypto.parseRsaPublicKey(pem);
     _cachedPubKey = pubKey;
     _cachedBaseUrl = baseUrl;
+    _cachedPem = pem;
     return pubKey;
   }
 
@@ -1380,6 +1390,10 @@ class TfApiClient {
     void Function(int statusCode)? onStatus,
   }) async {
     try {
+      // 记录本次请求使用的 token：如果 401 返回时 token 已经被别的请求换过，
+      // 说明是"错峰返回"的旧 401，直接重试即可，不必再轮换一次 refresh token
+      // （refresh token 一次一换，重复轮换会触发风控/踢下线）。
+      final tokenAtRequest = _authToken;
       var result = await _secretPostInternal(
         path,
         body,
@@ -1390,17 +1404,20 @@ class TfApiClient {
       final data = _parseJsonMap(result);
       if (data != null && ApiError.fromResponse(data).isTokenExpired) {
         final handler = _tokenExpiredHandler;
-        if (handler != null) {
+        final tokenAlreadyRotated =
+            tokenAtRequest != null && _authToken != tokenAtRequest;
+        if (handler != null && !tokenAlreadyRotated) {
           final relogged = await handler();
-          if (relogged) {
-            result = await _secretPostInternal(
-              path,
-              body,
-              uid: uid,
-              password: password,
-              onStatus: onStatus,
-            );
-          }
+          if (!relogged) return result;
+        }
+        if (tokenAlreadyRotated || handler != null) {
+          result = await _secretPostInternal(
+            path,
+            body,
+            uid: uid,
+            password: password,
+            onStatus: onStatus,
+          );
         }
       }
       return result;

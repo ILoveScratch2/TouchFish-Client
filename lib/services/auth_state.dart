@@ -38,6 +38,7 @@ class AuthState extends ChangeNotifier {
   String? _refreshToken;
   int? _refreshExpiresAt;
   TfAuthMode _authMode = TfAuthMode.jwt;
+  int _sessionEpoch = 0;
   bool _degradedToLegacy = false;
   String? _deprecationNotice;
   bool _deprecationNoticeShown = false;
@@ -56,10 +57,9 @@ class AuthState extends ChangeNotifier {
   UserProfile? get currentUser => _currentUser;
   int? get uid => _uid;
 
-  /// 已保存会话的 uid（`init()` 就会填充）。
+  /// 已保存会话的 uid
   ///
-  /// 通知栏快捷回复这类后台 isolate 不会执行 `main()`，只调 `init()` 时
-  /// [uid] 仍是 null，必须用它兜底。
+  /// 通知栏快捷回复这类后台 isolate 不会执行 `main()`
   int? get rememberedUid => _rememberedUid;
 
   /// JWT 模式下若内存密码不可用（token 恢复会话），返回空串占位
@@ -101,8 +101,7 @@ class AuthState extends ChangeNotifier {
     _refreshExpiresAt = prefs.getInt(_kRefreshExpiresAtKey);
     await _loadSecrets(prefs);
     if (_rememberedUid != null && _token == null && _rememberedPassword == null) {
-      // 凭据只在安全存储里时，启动时一次探测失败（Keychain 未解锁、插件刚好
-      // 还没就绪）会让人被静默登出。这里强制重探一次并重读。
+      // 凭据只在安全存储里时，启动时一次探测失败
       await _reloadSecretsFromSecure();
     }
     _authMode = _token != null ? TfAuthMode.jwt : TfAuthMode.legacy;
@@ -189,6 +188,7 @@ class AuthState extends ChangeNotifier {
 
   Future<bool> restoreSavedSession() async {
     if (_rememberedUid == null) return false;
+    final epoch = _sessionEpoch;
 
     _savedSessionRestoreStatus = SavedSessionRestoreStatus.restoring;
     _notifySessionChanged();
@@ -236,10 +236,7 @@ class AuthState extends ChangeNotifier {
           return false;
         }
 
-        // access token 被拒绝时，尝试用 refresh token 轮换恢复。
-        // 走 refreshAccessToken 单飞：refresh token 用一次就轮换，
-        // 分散的刷新路径（这里 + TokenRefreshManager）必然有一方失败。
-        // 此时 _uid 还没赋值，所以显式把目标 uid 传进去。
+        // access token 被拒绝时，尝试用 refresh token 轮换恢复
         if (valid == false && _refreshToken != null && _refreshToken!.isNotEmpty) {
           _rememberedUsername ??= profile?.username;
           if (await refreshAccessToken(uid: savedUid)) {
@@ -263,6 +260,14 @@ class AuthState extends ChangeNotifier {
             return false;
           }
           final baseUrl = await TfApiClient.instance.getBaseUrl();
+          if (epoch != _sessionEpoch) {
+            // 恢复期间已经登出或切换了账号
+            unawaited(MultiInstanceGuard.instance.release());
+            talker.info(
+              'AuthState.restoreSavedSession: session changed during restore, dropped.',
+            );
+            return false;
+          }
           LocalMessageStore.instance.configureScope(baseUrl, savedUid);
           _uid = savedUid;
           _password = null;
@@ -274,11 +279,11 @@ class AuthState extends ChangeNotifier {
           // 启动 token 自动刷新
           TokenRefreshManager.instance.startAutoRefresh(_tokenExpiresAt);
           _notifySessionChanged();
-          // 恢复成功后补一次本人资料刷新（含被隐藏的邮箱与 public_email 开关）
+          // 恢复成功后本人资料刷新
           unawaited(refreshProfile());
           return true;
         }
-        // token 被服务器明确拒绝（过期/吊销）且无法 refresh
+        // token 被服务器明确拒绝
         _restoreFailureReason = RestoreFailureReason.tokenExpired;
         talker.warning(
           'AuthState.restoreSavedSession: saved JWT was rejected by the server.',
@@ -292,7 +297,7 @@ class AuthState extends ChangeNotifier {
           legacyMode: true,
         );
         if (result.error == null && profile != null) {
-          // 多开互斥：同一服务器同一账号已被其它实例登录时，不在此实例恢复。
+          // 多开互斥
           final acquired = await MultiInstanceGuard.instance.acquire(
             uid: savedUid,
             username: profile.username,
@@ -304,6 +309,13 @@ class AuthState extends ChangeNotifier {
             _restoreFailureReason = RestoreFailureReason.duplicateSession;
             _savedSessionRestoreStatus = SavedSessionRestoreStatus.failed;
             _notifySessionChanged();
+            return false;
+          }
+          if (epoch != _sessionEpoch) {
+            unawaited(MultiInstanceGuard.instance.release());
+            talker.info(
+              'AuthState.restoreSavedSession: session changed during legacy restore, dropped.',
+            );
             return false;
           }
           final baseUrl = await TfApiClient.instance.getBaseUrl();
@@ -344,7 +356,8 @@ class AuthState extends ChangeNotifier {
       }
     } catch (e, stackTrace) {
       talker.error('AuthState.restoreSavedSession failed', e, stackTrace);
-      // 网络/服务器异常：保留凭据，由 UI 提供重试
+      // 网络/服务器异常
+      // 保留凭据，由 UI 提供重试
       _restoreFailureReason = RestoreFailureReason.network;
       _savedSessionRestoreStatus = SavedSessionRestoreStatus.failed;
       _notifySessionChanged();
@@ -411,7 +424,7 @@ class AuthState extends ChangeNotifier {
         };
       }
 
-      // 多开互斥：先占位，成功后才会在本实例建立会话；被占则拒绝并吊销刚签发的 token。
+      // 多开互斥
       final acquired = await MultiInstanceGuard.instance.acquire(
         uid: uid,
         username: profile.username,
@@ -447,6 +460,8 @@ class AuthState extends ChangeNotifier {
       );
 
       final baseUrl = await TfApiClient.instance.getBaseUrl();
+      // 会话落定
+      _sessionEpoch++;
       LocalMessageStore.instance.configureScope(baseUrl, uid);
       _uid = uid;
       _currentUser = profile;
@@ -478,14 +493,8 @@ class AuthState extends ChangeNotifier {
     }
   }
 
-  /// 用外部登录平台（TouchFish Auth）的凭据换取本服务器会话。
-  ///
-  /// 与 [login] 走同一套收口逻辑（多开互斥 / 本地消息库分区 / token 自动刷新），
-  /// 否则会出现"已登录但 WS 与本地库未配置 scope"的半登录态。
-  ///
-  /// 返回 null 表示成功；否则返回错误标识，供调用方映射文案。
+  /// 用外部登录平台（TouchFish Auth）的凭据换取本服务器会话
   Future<String?> loginWithExternalSession(String externalToken) async {
-    // 回滚要覆盖整个函数（含 catch 里的异常），所以状态放在 try 之外。
     final previousToken = _token;
     final previousMode = _authMode;
     final previousDegraded = _degradedToLegacy;
@@ -498,7 +507,7 @@ class AuthState extends ChangeNotifier {
         token: previousToken,
         legacyMode: previousMode == TfAuthMode.legacy,
       );
-      // 同步切回内存登录态，否则「HTTP 层旧 token / 内存新 token」半登录残留。
+      // 同步切回
       _token = previousToken;
       _authMode = previousMode;
       _degradedToLegacy = previousDegraded;
@@ -525,9 +534,6 @@ class AuthState extends ChangeNotifier {
         return 'serverError';
       }
       issuedToken = result.token;
-
-      // 只把 token 交给 HTTP 层，供 getSelfProfile 使用；
-      // 认证状态本身等校验通过后再写，避免"半登录"残留。
       TfApiClient.instance.setAuthContext(token: result.token, legacyMode: false);
 
       final profile = await TfApiClient.instance.getSelfProfile();
@@ -550,9 +556,7 @@ class AuthState extends ChangeNotifier {
         return 'duplicateLogin';
       }
 
-      // 校验全部通过，开始落状态。committed 暂不置 true——
-      // 落盘/通知等副作用若失败，catch 里的 rollback() 需要把内存与 HTTP 层
-      // 一并切回原状；只有所有副作用都完成后才标记不可回滚。
+      // 校验全部通过
       _token = result.token;
       _tokenExpiresAt = result.expiresAt;
       _refreshToken = result.refreshToken;
@@ -562,12 +566,14 @@ class AuthState extends ChangeNotifier {
       TfApiClient.instance.setAuthContext(token: _token, legacyMode: false);
 
       final baseUrl = await TfApiClient.instance.getBaseUrl();
+      // 会话落定
+      _sessionEpoch++;
       LocalMessageStore.instance.configureScope(baseUrl, uid);
       _uid = uid;
       _currentUser = profile;
       _rememberedUid = uid;
       _rememberedUsername = profile.username;
-      // 外部登录不掌握服务器密码，静默重登只能依赖 refresh token。
+      // 不掌握服务器密码
       _password = null;
       _rememberedPassword = null;
       _savedSessionRestoreStatus = SavedSessionRestoreStatus.idle;
@@ -583,21 +589,17 @@ class AuthState extends ChangeNotifier {
 
       TokenRefreshManager.instance.startAutoRefresh(_tokenExpiresAt);
       _notifySessionChanged();
-      // 所有副作用完成，此后再失败也不回滚（会话在服务端已成立、UI 已通知）。
+      // 完成
       committed = true;
       return null;
     } catch (e) {
-      // 落盘/SharedPreferences 等失败时也要把 HTTP 层切回原状态，
-      // 否则后续请求会带着一个"没有对应会话"的 token。
       rollback();
       talker.error('AuthState.loginWithExternalSession failed', e);
       return 'networkError';
     }
   }
 
-  /// 静默重登（JWT 模式，运行时 token 失效时优先用 refresh token 换新 token，
-  /// 无 refresh token 时才回退到内存密码重新登录）。
-  /// 无法自愈时触发会话过期强制登出。
+  /// 静默重登
   Future<bool> relogin() async {
     if (_uid == null) return false;
     if (_authMode != TfAuthMode.jwt) return false;
@@ -614,7 +616,7 @@ class AuthState extends ChangeNotifier {
     }
   }
 
-  /// 会话失效强制登出：置位一次性提示后清空会话
+  /// 会话失效强制登出
   Future<void> _handleSessionExpired() async {
     if (_sessionExpiredNotice) return;
     _sessionExpiredNotice = true;
@@ -623,13 +625,13 @@ class AuthState extends ChangeNotifier {
 
   Future<bool> _doRelogin() async {
     try {
-      // 优先用 refresh token 轮换（无需密码）；单飞，避免与定时刷新重复轮换
+      // 优先用 refresh token 轮换
       if (await refreshAccessToken()) {
         TokenRefreshManager.instance.startAutoRefresh(_tokenExpiresAt);
         return true;
       }
 
-      // 回退：用内存密码重新登录（仅当仍持有密码时）
+      // 回退：用内存密码重新登录
       if (_password == null) return false;
       final result = await TfApiClient.instance.login(
         _uid!,
@@ -649,12 +651,7 @@ class AuthState extends ChangeNotifier {
     }
   }
 
-  /// 用当前 refresh token 换一次新 token
-  ///
-  /// 服务端的 refresh token 是「用一次就轮换」的 compare-and-swap：同一条 refresh
-  /// token 第二次使用必然失败。因此所有刷新路径都必须经过这里，不能各自调用
-  /// `TfApiClient.refreshToken`。
-  /// [uid] 只在 restoreSavedSession 里用：那时 _uid 还没有赋值。
+  /// 用当前 refresh token 换
   Future<bool> refreshAccessToken({int? uid}) {
     final targetUid = uid ?? _uid;
     if (targetUid == null || _authMode != TfAuthMode.jwt) {
@@ -662,8 +659,6 @@ class AuthState extends ChangeNotifier {
     }
     final pending = _refreshFuture;
     if (pending != null) return pending;
-    // 存进字段的必须就是返回给调用方的那个 future：否则「已完成但 whenComplete
-    // 还没跑」的窗口里，新调用会拿到上一次的旧结果而不真正刷新。
     late final Future<bool> future;
     future = _refreshAccessTokenOnce(targetUid).whenComplete(() {
       if (identical(_refreshFuture, future)) _refreshFuture = null;
@@ -677,8 +672,14 @@ class AuthState extends ChangeNotifier {
     if (refreshToken == null || refreshToken.isEmpty) return false;
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     if (_refreshExpiresAt != null && _refreshExpiresAt! <= now) return false;
+    final epoch = _sessionEpoch;
     try {
       final result = await TfApiClient.instance.refreshToken(refreshToken);
+      if (epoch != _sessionEpoch) {
+        // 刷新期间已登出/换账号：不要把新 token 写回旧会话。
+        talker.info('AuthState.refreshAccessToken: session changed, dropped.');
+        return false;
+      }
       if (result == null || result.error != null || result.token == null) {
         return false;
       }
@@ -689,7 +690,7 @@ class AuthState extends ChangeNotifier {
     }
   }
 
-  /// 把一次成功的登录/刷新结果写回内存与本地存储。
+  /// 写回内存与本地存储
   Future<bool> _applyTokenResult(TfLoginResult result, {int? uid}) async {
     final token = result.token;
     final targetUid = uid ?? _uid;
@@ -714,6 +715,7 @@ class AuthState extends ChangeNotifier {
   Future<void> logout() async {
     // 停止 token 自动刷新
     TokenRefreshManager.instance.stop();
+    _sessionEpoch++;
     // 先快照当前 token 并请求服务器吊销
     final currentToken = isJwtMode ? _token : null;
     if (currentToken != null) {
@@ -738,7 +740,7 @@ class AuthState extends ChangeNotifier {
     TfApiClient.instance.setAuthContext(token: null, legacyMode: true);
     _notifySessionChanged();
     LocalMessageStore.instance.clearScope();
-    // 释放多开互斥占位（fail-open：非桌面/未开启时 no-op）
+    // 释放多开
     await MultiInstanceGuard.instance.release();
     final prefs = await SharedPreferences.getInstance();
     await _clearStorage(prefs);
@@ -747,8 +749,7 @@ class AuthState extends ChangeNotifier {
   Future<void> refreshProfile() async {
     if (_uid == null) return;
     try {
-      // 本人资料优先走鉴权端点：能看到被隐藏的真实邮箱与 public_email 开关；
-      // 旧服务器没有该端点时回退到公开查询（行为与以前一致）。
+      // 本人资料优先走鉴权端点
       final profile =
           await TfApiClient.instance.getSelfProfile(
             uid: _uid,
@@ -803,14 +804,14 @@ class AuthState extends ChangeNotifier {
       await prefs.setString(key, value);
       return true;
     } catch (e) {
-      talker.warning('AuthState: 写入 $key 失败，清理本地消息缓存后重试（$e）');
+      talker.warning('AuthState: 写入 $key 失败，清理本地消息缓存后重试（$e）Well, user wont see this');
     }
     try {
       await LocalMessageStore.instance.emergencyTrimForQuota();
       await prefs.setString(key, value);
       return true;
     } catch (e) {
-      talker.error('AuthState: 写入 $key 仍然失败 $e');
+      talker.error('AuthState: 写入 $key 仍然boom $e');
       return false;
     }
   }
@@ -867,8 +868,6 @@ class AuthState extends ChangeNotifier {
       await prefs.remove(key);
       return;
     }
-    // 回退到明文必须留下痕迹：probe 成功但写失败（Keychain 锁住、磁盘满）
-    // 时用户会以为凭据在加密存储里，实际在 SharedPreferences。
     talker.warning(
       'AuthState: $key stored in SharedPreferences ('
       '${hasSecure ? 'secure storage write failed' : 'secure storage unavailable'})',

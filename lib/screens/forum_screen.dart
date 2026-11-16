@@ -48,7 +48,6 @@ class _ForumScreenState extends State<ForumScreen> {
   @override
   void initState() {
     super.initState();
-    _notificationService.addListener(_onNotificationsChanged);
     _loadForums();
   }
 
@@ -69,7 +68,6 @@ class _ForumScreenState extends State<ForumScreen> {
   @override
   void dispose() {
     _router?.routerDelegate.removeListener(_onRouteChanged);
-    _notificationService.removeListener(_onNotificationsChanged);
     super.dispose();
   }
 
@@ -83,10 +81,6 @@ class _ForumScreenState extends State<ForumScreen> {
         loc == AppRoutes.forum && _lastLocation != AppRoutes.forum;
     _lastLocation = loc;
     if (returnedToList && mounted) _loadForums(showLoading: false);
-  }
-
-  void _onNotificationsChanged() {
-    if (mounted) setState(() {});
   }
 
   void _showNotifications() {
@@ -274,17 +268,8 @@ class _ForumScreenState extends State<ForumScreen> {
     introController.dispose();
   }
 
-  Widget _notificationButton(AppLocalizations l10n) {
-    return IconButton(
-      tooltip: l10n.notificationTabNotifications,
-      onPressed: _showNotifications,
-      icon: _notificationService.forumUnreadCount > 0
-          ? Badge(
-              label: Text('${_notificationService.forumUnreadCount}'),
-              child: const Icon(Icons.notifications_outlined),
-            )
-          : const Icon(Icons.notifications_outlined),
-    );
+  Widget _notificationButton() {
+    return _ForumNotificationButton(onPressed: _showNotifications);
   }
 
   @override
@@ -307,7 +292,7 @@ class _ForumScreenState extends State<ForumScreen> {
               onPressed: () => context.push('/forum/search'),
               icon: const Icon(Icons.search),
             ),
-            _notificationButton(l10n),
+            _notificationButton(),
           ],
           bottom: TabBar(
             tabs: [
@@ -360,7 +345,7 @@ class _ForumScreenState extends State<ForumScreen> {
                 onPressed: () => context.push('/forum/search'),
                 icon: const Icon(Icons.search),
               ),
-              _notificationButton(l10n),
+              _notificationButton(),
             ],
           ),
           TabBar(
@@ -478,6 +463,34 @@ class _ForumListTile extends StatelessWidget {
           trailing: const Icon(Icons.chevron_right),
         ),
       ),
+    );
+  }
+}
+
+
+class _ForumNotificationButton extends StatelessWidget {
+  const _ForumNotificationButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return ListenableBuilder(
+      listenable: NotificationService.instance,
+      builder: (context, _) {
+        final unread = NotificationService.instance.forumUnreadCount;
+        return IconButton(
+          tooltip: l10n.notificationTabNotifications,
+          onPressed: onPressed,
+          icon: unread > 0
+              ? Badge(
+                  label: Text('$unread'),
+                  child: const Icon(Icons.notifications_outlined),
+                )
+              : const Icon(Icons.notifications_outlined),
+        );
+      },
     );
   }
 }

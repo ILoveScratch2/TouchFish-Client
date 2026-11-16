@@ -11,11 +11,11 @@ import 'chat_ws_service.dart';
 import 'app_notification_service.dart';
 import '../utils/talker.dart';
 
-/// 通知中心服务（仅系统事件）。
+/// 通知中心服务（仅系统事件）
 ///
-/// 消息不再经由此通道！！！！！！！！！！：消息实时 MESSAGE.NEW，断线补拉
-/// /message/sync。通知的已读状态由服务端维护（read_at），未读数与
-/// 标记已读均调用服务端 API，多端同步。
+/// 消息不再经由此通道！！！！！！！！！！
+/// 消息实时 MESSAGE.NEW
+/// /message/sync
 class NotificationService extends ChangeNotifier {
   static NotificationService? _instance;
   static NotificationService get instance =>
@@ -25,6 +25,9 @@ class NotificationService extends ChangeNotifier {
   static const _keyLastFetchTime = 'notif_last_fetch_time';
 
   final List<NotificationInfo> _allNotifications = [];
+
+  /// 内存中保留的通知条数上限
+  static const int _maxInMemoryNotifications = 300;
   final NotificationLocalStore _localStore = NotificationLocalStore.instance;
   Timer? _persistTimer;
 
@@ -231,6 +234,12 @@ class NotificationService extends ChangeNotifier {
           }
         }
         _allNotifications.sort((a, b) => b.timeStamp.compareTo(a.timeStamp));
+        if (_allNotifications.length > _maxInMemoryNotifications) {
+          _allNotifications.removeRange(
+            _maxInMemoryNotifications,
+            _allNotifications.length,
+          );
+        }
       }
       _presentUnreadPunishments(fetched);
       _schedulePersist();
@@ -440,7 +449,7 @@ class NotificationService extends ChangeNotifier {
     _syncPollTimer();
   }
 
-  /// WS 已认证时停止轮询：NOTIFICATION.NEW 已经实时推送，轮询纯属重复请求。
+  /// WS 已认证时停止轮询
   void _syncPollTimer() {
     if (ChatWsService.instance.isAuthenticated) {
       if (_pollTimer != null) {
@@ -462,8 +471,7 @@ class NotificationService extends ChangeNotifier {
       talker.info('NotificationService: WS offline, polling resumed');
     }
     if (_wsAuthenticated && !wasAuthenticated) {
-      // 重连成功必须补拉一次：断线期间（以及服务端因发送队列满而丢弃 WS 帧时）
-      // 写入的通知没有任何重放机制，而轮询此刻是暂停的，不补拉就一直看不到。
+      // 重连成功补拉
       talker.info('NotificationService: WS re-authenticated, catching up');
       unawaited(fetchNotifications());
     }
@@ -472,6 +480,9 @@ class NotificationService extends ChangeNotifier {
   void stopPolling() {
     _pollTimer?.cancel();
     _pollTimer = null;
+    // 持久化 Timer 也必须取消
+    _persistTimer?.cancel();
+    _persistTimer = null;
     _wsSubscription?.cancel();
     _wsSubscription = null;
     if (_listeningWsState) {
@@ -592,10 +603,7 @@ class NotificationService extends ChangeNotifier {
     return updated;
   }
 
-  /// 标记单条通知已读。
-  ///
-  /// 通知中心里点开某一条就该消掉那一条的红点，而不是把整类全部清掉——
-  /// 后者会让用户丢掉"这一批里我还没看的是哪几条"的信息。
+  /// 标记单条通知已读
   Future<bool> markReadFor(NotificationInfo notification) =>
       _markCategoryRead([notification]);
 
@@ -634,12 +642,7 @@ class NotificationService extends ChangeNotifier {
     return success;
   }
 
-  /// 删除单条通知。
-  ///
-  /// 先本地移除再发请求（乐观更新）：列表本来就在用户眼前，
-  /// 等一个来回再消掉卡片会让人以为没删成功而重复操作。
-  /// 请求失败时用 [fetchNotifications] 拉回真实状态，不做手工回滚——
-  /// 本地回滚要处理"期间又来了新通知"的插入位置，容易错。
+  /// 删除单条通知
   Future<bool> deleteFor(NotificationInfo notification) async {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;

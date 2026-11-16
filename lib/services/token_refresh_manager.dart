@@ -14,6 +14,9 @@ class TokenRefreshManager {
   int _consecutiveFailures = 0;
   DateTime? _lastRefreshAttempt;
 
+  /// 已停止（登出）
+  bool _stopped = false;
+
   /// 预刷新阈值：提前 5 分钟
   static const _preRefreshThreshold = Duration(minutes: 5);
 
@@ -29,6 +32,7 @@ class TokenRefreshManager {
   /// 启动自动刷新（登录后调用）
   void startAutoRefresh(int? tokenExpiresAt) {
     _preRefreshTimer?.cancel();
+    _stopped = false;
     _consecutiveFailures = 0;
     _lastRefreshAttempt = null;
 
@@ -63,7 +67,12 @@ class TokenRefreshManager {
   void stop() {
     _preRefreshTimer?.cancel();
     _preRefreshTimer = null;
+    _stopped = true;
+    final inProgress = _refreshInProgress;
     _refreshInProgress = null;
+    if (inProgress != null && !inProgress.isCompleted) {
+      inProgress.complete(false);
+    }
     _consecutiveFailures = 0;
     _lastRefreshAttempt = null;
   }
@@ -76,8 +85,16 @@ class TokenRefreshManager {
     });
   }
 
+  static void _completeSafely(Completer<bool> completer, bool value) {
+    if (!completer.isCompleted) completer.complete(value);
+  }
+
   /// 执行刷新（带互斥锁）
   Future<bool> _performRefresh() async {
+    if (_stopped) {
+      talker.info('TokenRefreshManager: skipped, manager stopped');
+      return false;
+    }
     // 刷新互斥：如果已有刷新在进行中，等待其完成
     final inProgress = _refreshInProgress;
     if (inProgress != null) {
@@ -106,7 +123,7 @@ class TokenRefreshManager {
 
       if (refreshToken == null || refreshToken.isEmpty) {
         talker.warning('TokenRefreshManager: no refresh token available');
-        completer.complete(false);
+        _completeSafely(completer, false);
         return false;
       }
 
@@ -123,7 +140,7 @@ class TokenRefreshManager {
 
         if (_consecutiveFailures >= _maxConsecutiveFailures) {
           talker.error('TokenRefreshManager: max failures reached, triggering session expiry');
-          completer.complete(false);
+          _completeSafely(completer, false);
           unawaited(authState.logout());
           return false;
         }
@@ -132,7 +149,7 @@ class TokenRefreshManager {
         final retryDelay = _calculateBackoffDelay(_consecutiveFailures);
         talker.info('TokenRefreshManager: retrying in ${retryDelay.inSeconds}s');
         unawaited(_scheduleRefresh(retryDelay));
-        completer.complete(false);
+        _completeSafely(completer, false);
         return false;
       }
 
@@ -143,7 +160,7 @@ class TokenRefreshManager {
       // 调度下一次刷新
       startAutoRefresh(authState.tokenExpiresAt);
 
-      completer.complete(true);
+      _completeSafely(completer, true);
       return true;
     } catch (e, stackTrace) {
       _consecutiveFailures++;
@@ -155,7 +172,7 @@ class TokenRefreshManager {
 
       if (_consecutiveFailures >= _maxConsecutiveFailures) {
         talker.error('TokenRefreshManager: max failures reached, triggering session expiry');
-        completer.complete(false);
+        _completeSafely(completer, false);
         unawaited(AuthState.instance.logout());
         return false;
       }
@@ -163,7 +180,7 @@ class TokenRefreshManager {
       final retryDelay = _calculateBackoffDelay(_consecutiveFailures);
       talker.info('TokenRefreshManager: retrying in ${retryDelay.inSeconds}s');
       unawaited(_scheduleRefresh(retryDelay));
-      completer.complete(false);
+      _completeSafely(completer, false);
       return false;
     } finally {
       _refreshInProgress = null;

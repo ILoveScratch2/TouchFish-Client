@@ -45,19 +45,25 @@ class AudioPlayer extends HookWidget {
 
     useEffect(() {
       var disposed = false;
-      player.stream.position.listen((value) {
-        position.value = value;
-        if (!sliderWorking.value) sliderPosition.value = position.value;
-      });
-      player.stream.buffer.listen((value) {
-        durationBuffered.value = value;
-      });
-      player.stream.duration.listen((value) {
-        duration.value = value;
-      });
-      player.stream.playing.listen((value) {
-        isPlaying.value = value;
-      });
+      final subs = <StreamSubscription<dynamic>>[
+        player.stream.position.listen((value) {
+          if (disposed) return;
+          position.value = value;
+          if (!sliderWorking.value) sliderPosition.value = position.value;
+        }),
+        player.stream.buffer.listen((value) {
+          if (disposed) return;
+          durationBuffered.value = value;
+        }),
+        player.stream.duration.listen((value) {
+          if (disposed) return;
+          duration.value = value;
+        }),
+        player.stream.playing.listen((value) {
+          if (disposed) return;
+          isPlaying.value = value;
+        }),
+      ];
 
       unawaited(() async {
         String mediaSource;
@@ -74,7 +80,10 @@ class AudioPlayer extends HookWidget {
 
       return () {
         disposed = true;
-        player.dispose();
+        for (final sub in subs) {
+          unawaited(sub.cancel());
+        }
+        unawaited(player.dispose());
       };
     }, []);
 

@@ -11,6 +11,9 @@ import '../widgets/ui/error_state.dart';
 import '../widgets/ui/skeleton.dart';
 import 'forum_post_compose_screen.dart';
 
+/// 草稿时间格式
+final DateFormat _draftTimeFormat = DateFormat('MM/dd HH:mm');
+
 /// 草稿箱
 class DraftBoxScreen extends StatefulWidget {
   const DraftBoxScreen({super.key});
@@ -204,7 +207,7 @@ class _DraftTile extends StatelessWidget {
                           _MetaChip(
                             icon: Symbols.schedule,
                             label: l10n.draftsUpdatedAt(
-                              DateFormat('MM/dd HH:mm').format(updatedAt),
+                              _draftTimeFormat.format(updatedAt),
                             ),
                           ),
                         if (draft.attachments.isNotEmpty)

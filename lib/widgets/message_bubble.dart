@@ -1367,6 +1367,22 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     return const SizedBox.shrink();
   }
 
+  static final DateFormat _hmFormat = DateFormat.Hm();
+  static final Map<String, DateFormat> _weekdayFormats = {};
+  static final Map<String, DateFormat> _dateOnlyFormats = {};
+  static final Map<String, String> _resolvedLocaleNames = {};
+  static String _localeName(Locale locale) =>
+      _resolvedLocaleNames.putIfAbsent(locale.toString(), () {
+        if (locale.languageCode == 'och') return 'zh';
+        final full = locale.toString();
+        try {
+          DateFormat.E(full).format(DateTime(2000));
+          return full;
+        } catch (_) {
+          return locale.languageCode;
+        }
+      });
+
   String _formatTime(DateTime time, BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
@@ -1374,26 +1390,24 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     final messageDate = DateTime(time.year, time.month, time.day);
 
     if (messageDate == today) {
-      return DateFormat.Hm().format(time);
+      return _hmFormat.format(time);
     }
-    final locale = Localizations.localeOf(context);
+    final localeName = _localeName(Localizations.localeOf(context));
     if (messageDate == today.subtract(const Duration(days: 1))) {
-      return '${l10n.chatYesterday} ${DateFormat.Hm().format(time)}';
+      return '${l10n.chatYesterday} ${_hmFormat.format(time)}';
     }
     if (now.difference(time).inDays < 7) {
-      try {
-        return '${DateFormat.E(locale.toString()).format(time)} ${DateFormat.Hm().format(time)}';
-      } catch (e) {
-        return '${DateFormat.E(locale.languageCode == 'och' ? 'zh' : locale.languageCode).format(time)} ${DateFormat.Hm().format(time)}';
-      }
+      final weekday = _weekdayFormats.putIfAbsent(
+        localeName,
+        () => DateFormat.E(localeName),
+      );
+      return '${weekday.format(time)} ${_hmFormat.format(time)}';
     }
-    try {
-      return DateFormat.MMMd(locale.toString()).add_Hm().format(time);
-    } catch (e) {
-      return DateFormat.MMMd(
-        locale.languageCode == 'och' ? 'zh' : locale.languageCode,
-      ).add_Hm().format(time);
-    }
+    final dateOnly = _dateOnlyFormats.putIfAbsent(
+      localeName,
+      () => DateFormat.MMMd(localeName).add_Hm(),
+    );
+    return dateOnly.format(time);
   }
 
   Widget _buildMessageContent(

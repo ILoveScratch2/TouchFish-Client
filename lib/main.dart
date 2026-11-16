@@ -56,7 +56,6 @@ import 'widgets/task_overlay.dart';
 import 'utils/web_splash_stub.dart'
     if (dart.library.js) 'utils/web_splash_web.dart';
 
-/// 组件构建期抛异常时的 UI
 Widget _buildErrorWidget(FlutterErrorDetails details) {
   return Directionality(
     textDirection: TextDirection.ltr,
@@ -93,7 +92,8 @@ Widget _buildErrorWidget(FlutterErrorDetails details) {
 Future<void> main() async {
   await runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
-    // 一张坏卡片不该把整页 BOOM
+    // 优雅一点提示
+    // 而且这样一个 bug 不会整页全 BOOM
     ErrorWidget.builder = _buildErrorWidget;
     registerTalkerErrorHandlers();
     MediaKit.ensureInitialized();
@@ -125,14 +125,18 @@ Future<void> main() async {
     await SettingsService.instance.init();
     // 重新加载已配置的字体，避免重启后回退到系统默认字体。
     final configuredFont = AppState.instance.fontFamily;
-    if (configuredFont != null && configuredFont.isNotEmpty) {
-      await FontLoaderService.instance.loadFont(configuredFont);
-    }
-    await FeatureFlags.instance.init();
-    await LockService.instance.init();
-    await IpOverrideService.instance.ensureDefaultDomain();
+    // 并行初始化，
+    // 避免串行等待 IO
+    await Future.wait([
+      if (configuredFont != null && configuredFont.isNotEmpty)
+        FontLoaderService.instance.loadFont(configuredFont),
+      LockService.instance.init(),
+      IpOverrideService.instance.ensureDefaultDomain(),
+      AppForegroundService.instance.initialize(),
+    ]);
     await IpOverrideService.instance.refreshGlobal();
-    // 预热文件缓存（初始化缓存管理器并执行容量检查）
+    await FeatureFlags.instance.init();
+    // 文件缓存
     unawaited(FileCacheService.instance.warmup());
 
     if (isDesktop) {
@@ -144,9 +148,6 @@ Future<void> main() async {
         unawaited(DesktopAppLifecycleService.instance.showWindow());
       };
     }
-
-    // 窗口焦点/应用生命周期状态
-    await AppForegroundService.instance.initialize();
 
     final prefs = await SharedPreferences.getInstance();
 
@@ -414,8 +415,8 @@ class TouchFishApp extends StatefulWidget {
   final bool isFirstLaunch;
   final bool hasSavedSession;
 
-  /// 本地账号（`auth_uid`），凭据可能暂时无法读取
-  /// 用于决定要不要尝试恢复、以及是否展示恢复失败对话框。
+  /// 本地账号（`auth_uid`）
+  /// 凭据可能暂时无法读取
   final bool hasRememberedUid;
   final bool didResetLocalSettings;
 
@@ -676,7 +677,7 @@ class _TouchFishAppState extends State<TouchFishApp>
     }
   }
 
-  /// 恢复成功后若为首次连接，提示保存 RSA 密钥。
+  /// 恢复成功后若为首次连接，提示保存 RSA
   void _maybePromptFirstConnectAfterRestore(BuildContext context) {
     final result = _pendingRestoreKeyCheck;
     _pendingRestoreKeyCheck = null;

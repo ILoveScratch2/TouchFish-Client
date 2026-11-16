@@ -70,12 +70,12 @@ class MessageListView extends StatelessWidget {
   final String noMessagesText;
   final ColorScheme colorScheme;
 
-  /// 需要闪烁提示落点的消息
+  /// 需要闪烁提示
   final int? highlightedMid;
 
   final bool isLoading;
 
-  /// 首屏加载失败文案
+  /// 首屏加载失败
   final String? errorText;
 
   final bool isSelectionMode;
@@ -83,18 +83,18 @@ class MessageListView extends StatelessWidget {
   final ValueChanged<ChatMessage> onEnterSelectionMode;
   final ValueChanged<ChatMessage> onToggleSelection;
 
-  /// 已读回执：全服开关是否开启。
+  /// 已读回执
   final bool readReceiptEnabled;
 
-  /// 私聊：对方已读序号
-  /// 群聊：mid -> 已读人数。
+  /// 私聊:对方已读序号
+  /// 群聊：mid 已读人数。
   final int? peerReadSeq;
   final Map<int, int> groupReadCounts;
 
-  /// 本轮新增消息（见 [newlyAppendedMessageKeys]），这些气泡播一次入场动画。
+  /// 本轮新增消息
   final Set<String> entranceKeys;
 
-  /// mid -> GlobalKey：让父级能用 currentContext 精确定位到某条消息。
+  /// mid GlobalKey
   final Map<int, GlobalKey> messageKeys;
 
   const MessageListView({
@@ -137,9 +137,11 @@ class MessageListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: SettingsService.instance,
-      builder: (context, _) => _buildList(context),
+    return ValueListenableBuilder<int>(
+      valueListenable: SettingsService.instance.revisionOf(
+        'messageDisplayStyle',
+      ),
+      builder: (context, _, _) => _buildList(context),
     );
   }
 
@@ -149,7 +151,7 @@ class MessageListView extends StatelessWidget {
       'messageDisplayStyle',
       'bubble',
     );
-    // 置顶/精华判断提到这里做一次 Set，itemBuilder 内即为常数时间
+    // 置顶/精华判断
     final pinnedMidSet = <int>{for (final p in pinnedMessages) p.messageId};
     final essenceMidSet = essenceMids.toSet();
 
@@ -183,7 +185,9 @@ class MessageListView extends StatelessWidget {
         (themePlatform == TargetPlatform.android ||
             themePlatform == TargetPlatform.iOS);
 
-    // 列表 reverse + 新消息插在 index 0，所有既有气泡的 index 都会平移，神秘 bug 调试半天
+    // 列表 reverse + 新消息在 index 0
+    // 所有既有气泡的 index 都会平移
+    // 神秘 bug 调试半天
     Map<String, int>? indexByStableKey;
     int? findChildIndex(Key key) {
       if (key is! ValueKey<String>) return null;
@@ -232,7 +236,7 @@ class MessageListView extends StatelessWidget {
         // 不然会 sb reload
         final stableKey = chatMessageStableKey(message);
 
-        // 占位消息（对方上传中）不参与滑动回复等交互，但保留头像/名称展示
+        // 占位消息（对方上传中）
         if (message.isPlaceholder) {
           return MessageBubble(
             key: ValueKey('bubble-$stableKey'),
@@ -314,7 +318,6 @@ class MessageListView extends StatelessWidget {
         );
 
         // 外层键始终存在
-        // findChildIndexCallback 依赖 'swipe-' 前缀定位
         final keyed = KeyedSubtree(
           key: ValueKey('$_swipeKeyPrefix$stableKey'),
           child: selectionWrapped,

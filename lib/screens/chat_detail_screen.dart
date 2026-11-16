@@ -116,10 +116,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   bool _essenceEnabled = true;
   String? _fetchingEssenceRoomId;
   StreamSubscription<int>? _essenceSub;
-  bool _fetchingPins = false;
+  String? _fetchingPinsRoomId;
   Timer? _weakNetworkTimer;
-  /// 复合 "uid:scope" -> TypingStatus（同一用户可同时 typing + uploading）。
+  /// 复合
   final Map<String, TypingStatus> _activityStatuses = {};
+  final ValueNotifier<int> _activityRevision = ValueNotifier<int>(0);
   StreamSubscription<ChatWsEvent>? _typingSub;
   Timer? _typingCleanupTimer;
   // 上传进度桥接状态
@@ -222,17 +223,17 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _attachScrollListener();
     _messageController.addListener(_scheduleDraftSave);
     _typingCleanupTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_activityStatuses.isEmpty) return;
       final cutoff = DateTime.now().subtract(const Duration(seconds: 5));
       final expired = _activityStatuses.entries
           .where((entry) => entry.value.updatedAt.isBefore(cutoff))
           .map((entry) => entry.key)
           .toList();
       if (expired.isEmpty || !mounted) return;
-      setState(() {
-        for (final key in expired) {
-          _activityStatuses.remove(key);
-        }
-      });
+      for (final key in expired) {
+        _activityStatuses.remove(key);
+      }
+      _activityRevision.value++;
     });
   }
 
@@ -300,7 +301,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _essenceMids = [];
     _essenceEnabled = true;
     _fetchingEssenceRoomId = null;
-    _activityStatuses.clear();
+    if (_activityStatuses.isNotEmpty) {
+      _activityStatuses.clear();
+      _activityRevision.value++;
+    }
     // 换房间后旧房间的回执节流状态不能让新房间的首次查询被跳过。
     _readReceiptThrottle.reset();
     _lastReportedReadMid = null;
@@ -407,6 +411,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     unawaited(_saveDraft());
     _messageController.dispose();
     _entranceKeys.dispose();
+    _activityRevision.dispose();
     _scrollListenerAttached?.removeListener(_onScroll);
     _scrollListenerAttached = null;
     super.dispose();
@@ -518,24 +523,24 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
     final compositeKey = '$uid:$scope';
 
-    setState(() {
-      if (event.type == 'typing.start') {
-        // 乱序保护！！！！！
-        final existing = _activityStatuses[compositeKey];
-        if (existing != null && serverTime.isBefore(existing.timestamp)) {
-          return;
-        }
-        _activityStatuses[compositeKey] = TypingStatus(
-          uid: uid,
-          scope: scope,
-          updatedAt: DateTime.now(),
-          timestamp: serverTime,
-          progress: scope == 'uploading' ? progress : null,
-        );
-      } else {
-        _activityStatuses.remove(compositeKey);
+    if (event.type == 'typing.start') {
+      // 乱序保护！！！！！
+      final existing = _activityStatuses[compositeKey];
+      if (existing != null && serverTime.isBefore(existing.timestamp)) {
+        // 提前返回
+        return;
       }
-    });
+      _activityStatuses[compositeKey] = TypingStatus(
+        uid: uid,
+        scope: scope,
+        updatedAt: DateTime.now(),
+        timestamp: serverTime,
+        progress: scope == 'uploading' ? progress : null,
+      );
+    } else {
+      if (_activityStatuses.remove(compositeKey) == null) return;
+    }
+    _activityRevision.value++;
   }
 
   /// 正在输入（typing）的活跃状态
@@ -1086,7 +1091,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _mentionUsers.clear();
     _pinnedMessages.clear();
     _pinnedMessageContents.clear();
-    _fetchingPins = false;
+    _fetchingPinsRoomId = null;
     if (profile != null && _contactUid.startsWith('U')) {
       _mentionUsers.add(
         MentionUser(
@@ -1530,20 +1535,22 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   }
 
   Future<void> _fetchPinnedMessages() async {
-    if (_fetchingPins) return;
+    // 按房去重
+    final roomId = _contactUid;
+    if (_fetchingPinsRoomId == roomId) return;
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
-    final gid = int.tryParse(_contactUid.substring(1));
+    final gid = int.tryParse(roomId.substring(1));
     if (uid == null || password == null || gid == null) return;
 
-    _fetchingPins = true;
+    _fetchingPinsRoomId = roomId;
     try {
       final pins = await TfApiClient.instance.getPinnedMessages(
         uid,
         password,
         gid,
       );
-      if (!mounted) return;
+      if (!mounted || roomId != _contactUid) return;
       final currentMessageId =
           _pinnedMessages.isNotEmpty &&
               _pinCurrentPage >= 0 &&
@@ -1568,7 +1575,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     } catch (_) {
       // server eror 不能一直 retry 啦
     } finally {
-      _fetchingPins = false;
+      if (_fetchingPinsRoomId == roomId) _fetchingPinsRoomId = null;
     }
   }
 
@@ -3203,8 +3210,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final gallery = ref.watch(imageGalleryProvider(_contactUid));
     ref.listen(roomMessagesProvider(_contactUid), _onProviderMessagesChanged);
 
-    final typingStatuses = _typingStatuses;
-
     if (_currentRoom == null) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.chatDetailLoading)),
@@ -3390,16 +3395,20 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                               return ValueListenableBuilder<Set<String>>(
                                 valueListenable: _entranceKeys,
                                 builder: (context, entranceKeys, _) {
-                                  // 对方上传中的占位消息
-                                  final displayMessages = ChatMessage.dedupeByMid(
-                                    _uploadingStatuses.isEmpty
-                                        ? messages
-                                        : [
-                                            ...messages,
-                                            ..._buildUploadPlaceholderMessages(),
-                                          ],
-                                  );
-                                  return MessageListView(
+                                  return ValueListenableBuilder<int>(
+                                    valueListenable: _activityRevision,
+                                    builder: (context, _, _) {
+                                      // 对方上传中的占位消息
+                                      final displayMessages =
+                                          ChatMessage.dedupeByMid(
+                                        _uploadingStatuses.isEmpty
+                                            ? messages
+                                            : [
+                                                ...messages,
+                                                ..._buildUploadPlaceholderMessages(),
+                                              ],
+                                      );
+                                      return MessageListView(
                                     messages: displayMessages,
                                     entranceKeys: entranceKeys,
                                     messageKeys: _messageKeys,
@@ -3438,6 +3447,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                     groupReadCounts: room.type == ChatType.group
                                         ? ChatDataService.instance.groupReadCounts
                                         : const {},
+                                      );
+                                    },
                                   );
                                 },
                               );
@@ -3496,16 +3507,22 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   ),
                 );
               },
-              child: typingStatuses.isNotEmpty
-                  ? TypingIndicator(
-                      key: ValueKey(
-                        typingStatuses.map((s) => s.compositeKey).toList(),
-                      ),
-                      typingStatuses: typingStatuses,
-                    )
-                  : const SizedBox.shrink(
-                      key: ValueKey('typing-indicator-none'),
-                    ),
+              child: ValueListenableBuilder<int>(
+                valueListenable: _activityRevision,
+                builder: (context, _, _) {
+                  final typingStatuses = _typingStatuses;
+                  return typingStatuses.isNotEmpty
+                      ? TypingIndicator(
+                          key: ValueKey(
+                            typingStatuses.map((s) => s.compositeKey).toList(),
+                          ),
+                          typingStatuses: typingStatuses,
+                        )
+                      : const SizedBox.shrink(
+                          key: ValueKey('typing-indicator-none'),
+                        );
+                },
+              ),
             ),
             RoomSelectionMode(
               visible: isSelectionMode,

@@ -2,18 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../models/chat_model.dart';
+import '../services/chat_data_service.dart';
 import 'account/online_avatar_badge.dart';
 import 'optimized_image.dart';
 import 'ui/empty_state.dart';
 import 'ui/refreshable.dart';
 
 class ContactListWidget extends StatelessWidget {
-  final List<Contact> contacts;
+  final List<Contact>? contacts;
 
-  const ContactListWidget({super.key, required this.contacts});
+  const ContactListWidget({super.key, this.contacts});
 
   @override
   Widget build(BuildContext context) {
+    final provided = contacts;
+    if (provided != null) {
+      return _buildList(context, provided);
+    }
+    return ListenableBuilder(
+      listenable: ChatDataService.instance,
+      builder: (context, _) =>
+          _buildList(context, ChatDataService.instance.contacts),
+    );
+  }
+
+  Widget _buildList(BuildContext context, List<Contact> contacts) {
     if (contacts.isEmpty) {
       return ScrollableFill(
         child: EmptyState(

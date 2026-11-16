@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -18,13 +19,23 @@ class SettingsService extends ChangeNotifier {
 
   SettingsService._();
 
+  /// 单设置项变更
+  final Map<String, ValueNotifier<int>> _keyRevisions = {};
+
+  ValueListenable<int> revisionOf(String key) =>
+      _keyRevisions.putIfAbsent(key, () => ValueNotifier<int>(0));
+
+  void _bumpRevision(String key) {
+    final notifier = _keyRevisions[key];
+    if (notifier != null) notifier.value++;
+  }
+
   Future<void> init() async {
     if (_initialized) return;
     _prefs = await SharedPreferences.getInstance();
     _initialized = true;
   }
 
-  // Get setting value - return default if not found
   T getValue<T>(String key, T defaultValue) {
     if (!_initialized) return defaultValue;
 
@@ -53,7 +64,6 @@ class SettingsService extends ChangeNotifier {
     }
   }
 
-  // Set setting value - notify listeners
   Future<void> setValue(String key, dynamic value) async {
     if (!_initialized) await init();
 
@@ -67,6 +77,7 @@ class SettingsService extends ChangeNotifier {
       await _prefs.setDouble(key, value);
     }
 
+    _bumpRevision(key);
     notifyListeners();
   }
 
@@ -81,12 +92,14 @@ class SettingsService extends ChangeNotifier {
       await _prefs.remove(key);
     }
 
+    _bumpRevision(key);
     notifyListeners();
   }
 
   Future<void> remove(String key) async {
     if (!_initialized) await init();
     await _prefs.remove(key);
+    _bumpRevision(key);
     notifyListeners();
   }
 
@@ -104,7 +117,6 @@ class SettingsService extends ChangeNotifier {
     return allItems;
   }
 
-  // Reset all settings to default
   Future<void> resetToDefaults() async {
     if (!_initialized) await init();
 

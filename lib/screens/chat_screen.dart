@@ -262,9 +262,16 @@ class _ChatListScreenState extends State<ChatListScreen>
   List<ChatRoom> get _chatRooms => _chatData.rooms;
   List<Contact> get _contacts => _chatData.contacts;
 
+  bool? _lastLoading;
+  int? _lastInviteUnread;
+  int? _lastFriendUnread;
+
   @override
   void initState() {
     super.initState();
+    _lastLoading = _chatData.isLoading;
+    _lastInviteUnread = NotificationService.instance.inviteUnreadCount;
+    _lastFriendUnread = NotificationService.instance.friendUnreadCount;
     _tabController = TabController(
       length: 2,
       vsync: this,
@@ -294,6 +301,17 @@ class _ChatListScreenState extends State<ChatListScreen>
 
   void _onDataChanged() {
     if (!mounted) return;
+    final loading = _chatData.isLoading;
+    final inviteUnread = _notificationService.inviteUnreadCount;
+    final friendUnread = _notificationService.friendUnreadCount;
+    if (loading == _lastLoading &&
+        inviteUnread == _lastInviteUnread &&
+        friendUnread == _lastFriendUnread) {
+      return;
+    }
+    _lastLoading = loading;
+    _lastInviteUnread = inviteUnread;
+    _lastFriendUnread = friendUnread;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) setState(() {});
     });
@@ -479,10 +497,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                     children: [
                       PullToRefresh.list(
                         onRefresh: _refreshData,
-                        child: ChatListWidget(
-                          chatRooms: _chatRooms,
-                          isLoading: _chatData.isLoading,
-                        ),
+                        child: const ChatListWidget(),
                       ),
                       PullToRefresh.list(
                         onRefresh: _refreshData,
@@ -491,7 +506,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                             _buildFriendRequestsEntry(context, l10n),
                             const Divider(height: 1),
                             Expanded(
-                              child: ContactListWidget(contacts: _contacts),
+                              child: const ContactListWidget(),
                             ),
                           ],
                         ),
@@ -718,10 +733,7 @@ class _ChatListScreenState extends State<ChatListScreen>
               children: [
                 PullToRefresh.list(
                   onRefresh: _refreshData,
-                  child: ChatListWidget(
-                          chatRooms: _chatRooms,
-                          isLoading: _chatData.isLoading,
-                        ),
+                  child: const ChatListWidget(),
                 ),
                 PullToRefresh.list(
                   onRefresh: _refreshData,
@@ -730,7 +742,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                       _buildFriendRequestsEntry(context, l10n),
                       const Divider(height: 1),
                       Expanded(
-                        child: ContactListWidget(contacts: _contacts),
+                        child: const ContactListWidget(),
                       ),
                     ],
                   ),

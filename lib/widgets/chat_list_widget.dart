@@ -28,22 +28,36 @@ Widget ensureProviderScope(BuildContext context, Widget child) {
 }
 
 class ChatListWidget extends StatelessWidget {
-  final List<ChatRoom> chatRooms;
+  /// 不传则自行订阅
+  final List<ChatRoom>? chatRooms;
 
   /// 展示骨架屏，
   final bool isLoading;
 
   const ChatListWidget({
     super.key,
-    required this.chatRooms,
+    this.chatRooms,
     this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ensureProviderScope(
-      context,
-      _ChatListContent(chatRooms: chatRooms, isLoading: isLoading),
+    final rooms = chatRooms;
+    if (rooms != null) {
+      return ensureProviderScope(
+        context,
+        _ChatListContent(chatRooms: rooms, isLoading: isLoading),
+      );
+    }
+    return ListenableBuilder(
+      listenable: ChatDataService.instance,
+      builder: (context, _) => ensureProviderScope(
+        context,
+        _ChatListContent(
+          chatRooms: ChatDataService.instance.rooms,
+          isLoading: ChatDataService.instance.isLoading,
+        ),
+      ),
     );
   }
 }
@@ -355,6 +369,10 @@ class _ChatRoomTileState extends ConsumerState<_ChatRoomTile> {
   }
 }
 
+final DateFormat _roomTimeFormat = DateFormat('HH:mm');
+final DateFormat _roomDateFormat = DateFormat('MM/dd');
+final Map<String, DateFormat> _roomWeekdayFormats = {};
+
 String _formatRoomTime(DateTime time, BuildContext context) {
   final l10n = AppLocalizations.of(context)!;
   final now = DateTime.now();
@@ -362,7 +380,7 @@ String _formatRoomTime(DateTime time, BuildContext context) {
 
   if (difference.inDays == 0) {
     // 今天显示时间
-    return DateFormat('HH:mm').format(time);
+    return _roomTimeFormat.format(time);
   } else if (difference.inDays == 1) {
     // 昨天就是昨天
     return l10n.chatYesterday;
@@ -370,9 +388,13 @@ String _formatRoomTime(DateTime time, BuildContext context) {
     // 一周内显示星期
     final locale = Localizations.localeOf(context);
     final dateLocale = locale.languageCode == 'och' ? 'zh' : locale.toString();
-    return DateFormat.E(dateLocale).format(time);
+    final weekday = _roomWeekdayFormats.putIfAbsent(
+      dateLocale,
+      () => DateFormat.E(dateLocale),
+    );
+    return weekday.format(time);
   } else {
     // 超过一周显示日期
-    return DateFormat('MM/dd').format(time);
+    return _roomDateFormat.format(time);
   }
 }
