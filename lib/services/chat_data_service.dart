@@ -77,11 +77,11 @@ class ChatDataService extends ChangeNotifier {
   static ChatDataService get instance => _instance ??= ChatDataService._();
   ChatDataService._();
 
-  /// build 阶段的通知
+  /// build 阶段的通知是否已排帧末
   bool _deferredNotifyScheduled = false;
   @override
   void notifyListeners() {
-    final phase = SchedulerBinding.instance.schedulerPhase;
+    final phase = _safeSchedulerPhase;
     if (phase == SchedulerPhase.persistentCallbacks ||
         phase == SchedulerPhase.midFrameMicrotasks) {
       if (_deferredNotifyScheduled) return;
@@ -93,6 +93,15 @@ class ChatDataService extends ChangeNotifier {
       return;
     }
     super.notifyListeners();
+  }
+
+  /// 纯 Dart 单测
+  static SchedulerPhase? get _safeSchedulerPhase {
+    try {
+      return SchedulerBinding.instance.schedulerPhase;
+    } on FlutterError {
+      return null;
+    }
   }
 
   final StreamController<({String clientMid, String error})>
