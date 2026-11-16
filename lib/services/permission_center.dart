@@ -47,6 +47,12 @@ class PermissionCenter {
   bool get onboardingHandled =>
       SettingsService.instance.getValue<bool>(onboardingHandledKey, false);
 
+  bool _batteryPromptShown = false;
+
+  bool get batteryPromptShown => _batteryPromptShown;
+
+  void markBatteryPromptShown() => _batteryPromptShown = true;
+
   Future<void> muteBatteryPrompt() =>
       SettingsService.instance.setValue(batteryPromptMutedKey, true);
 

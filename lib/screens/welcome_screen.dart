@@ -1,18 +1,35 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
+import '../services/battery_prompt_flow.dart';
 import '../services/permission_center.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
 
-  Future<void> _completeWelcome(BuildContext context) async {
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(maybeShowBatteryOptimizationPrompt(context));
+    });
+  }
+
+  Future<void> _completeWelcome() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isFirstLaunch', false);
 
-    if (!context.mounted) return;
+    if (!mounted) return;
 
     if (PermissionCenter.instance.isSupported &&
         !PermissionCenter.instance.onboardingHandled) {
@@ -112,7 +129,7 @@ class WelcomeScreen extends StatelessWidget {
 
               // Start Button
               FilledButton(
-                onPressed: () => _completeWelcome(context),
+                onPressed: _completeWelcome,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 32,
