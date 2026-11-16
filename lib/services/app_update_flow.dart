@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -16,29 +15,37 @@ class AppUpdateFlow {
 
   bool _running = false;
 
+  /// 展示更新提示
   Future<void> promptIfNeeded(
     BuildContext context, {
     required String? remoteVersion,
     required String? currentVersion,
+    List<String> changes = const [],
+    bool force = false,
   }) async {
-    if (_running || remoteVersion == null || !context.mounted) return;
+    if (_running || !context.mounted) return;
+    // 非强制场景下必须知道远端版本
+    if (!force && remoteVersion == null) return;
     _running = true;
     try {
       final l10n = AppLocalizations.of(context);
-      // Fetch changelog (rendered as Markdown) for the update dialog.
+      final targetVersion = remoteVersion ?? currentVersion ?? '';
+
       String? changelog;
-      try {
-        changelog = await AppUpdateService.instance.fetchChangelog();
-      } catch (_) {
-        changelog = null;
+      if (changes.isEmpty) {
+        try {
+          changelog = await AppUpdateService.instance.fetchChangelog();
+        } catch (_) {
+          changelog = null;
+        }
+        if (!context.mounted) return;
       }
-      if (!context.mounted) return;
 
       final message = l10n?.updateAvailableMessage(
             currentVersion ?? '',
-            remoteVersion,
+            targetVersion,
           ) ??
-          'Current: $currentVersion\nLatest: $remoteVersion';
+          'Current: $currentVersion\nLatest: $targetVersion';
 
       final shouldUpdate = await showDialog<bool>(
         context: context,
@@ -53,7 +60,34 @@ class AppUpdateFlow {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(message),
-                if (changelog != null && changelog.trim().isNotEmpty) ...[
+                if (changes.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  const Divider(height: 1),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n?.updateChangelogTitle ?? 'Changelog',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  for (final change in changes)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('•  ', style: Theme.of(context).textTheme.bodyMedium),
+                          Expanded(
+                            child: Text(
+                              change,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ] else if (changelog != null && changelog.trim().isNotEmpty) ...[
                   const SizedBox(height: 16),
                   const Divider(height: 1),
                   const SizedBox(height: 8),
@@ -103,59 +137,113 @@ class AppUpdateFlow {
       );
 
       if (shouldUpdate == true && context.mounted) {
-        await _performUpdateFlow(context, remoteVersion);
+        await _performUpdateFlow(context, targetVersion);
       }
     } finally {
       _running = false;
     }
   }
 
+  /// 强制完整更新流程
+  Future<void> forceUpdateFlow(BuildContext context, {String? version}) async {
+    if (!context.mounted) return;
+    final service = AppUpdateService.instance;
+    final result = await service.forceUpdateCheck();
+    if (!context.mounted) return;
+    final target = version ?? result.remoteVersion ?? await service.currentVersion();
+    if (target == null || !context.mounted) return;
+    await promptIfNeeded(
+      context,
+      remoteVersion: target,
+      currentVersion: result.currentVersion,
+      changes: result.changes,
+      force: true,
+    );
+  }
+
   Future<void> _performUpdateFlow(
     BuildContext context,
     String remoteVersion,
   ) async {
+    if (remoteVersion.isEmpty) return;
     final service = AppUpdateService.instance;
-    final downloadUrl = AppUpdateService.downloadUrlFor(remoteVersion);
+    final target = await AppUpdateService.resolveUpdateTarget(remoteVersion);
+    if (!context.mounted) return;
 
-    if (!kIsWeb && Platform.isWindows) {
-      await _runDownloadThenExit(context, downloadUrl, onComplete: () async {
-        final path = await service.downloadUpdate(downloadUrl);
-        return path;
-      }, afterDownload: (path) async {
-        await service.launchFile(path!);
-        exit(0);
-      });
-      return;
+    switch (target.delivery) {
+      case UpdateDelivery.installer:
+        await _runDownloadThenExit(context, target.downloadUrl!, onComplete: () async {
+          return service.downloadUpdate(target.downloadUrl!);
+        }, afterDownload: (path) async {
+          await service.launchFile(path!);
+          exit(0);
+        });
+      case UpdateDelivery.diskImage:
+        await _runDownloadThenExit(context, target.downloadUrl!, onComplete: () async {
+          return service.downloadUpdate(target.downloadUrl!);
+        }, afterDownload: (path) async {
+          // 打开 DMG 会挂载卷，用户在 Finder 里把应用拖进「应用程序」即完成替换。
+          await service.revealFile(path!);
+          if (context.mounted) {
+            final l10n = AppLocalizations.of(context);
+            await showTouchFishInfoDialog<void>(
+              context,
+              title: l10n?.updateDownloadedTitle,
+              message: l10n?.updateDmgHint ??
+                  'The disk image is mounted. Drag the app into Applications '
+                      'to finish updating.',
+              actions: [
+                TouchFishDialogAction(label: l10n?.commonOk ?? 'OK'),
+              ],
+            );
+          }
+          exit(0);
+        });
+      case UpdateDelivery.apk:
+        await _performAndroidUpdateFlow(context, target.downloadUrl!);
+      case UpdateDelivery.external:
+        await _openExternalUpdatePage(context, target);
     }
+  }
+  Future<void> _openExternalUpdatePage(
+    BuildContext context,
+    UpdateTarget target,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final pageUrl = target.pageUrl.toString();
+    final confirmed = await showTouchFishInfoDialog<bool>(
+      context,
+      title: l10n?.updateManualTitle ?? 'Get the update manually',
+      message:
+          l10n?.updateManualMessage(pageUrl) ??
+          'This platform is managed by its package manager, so the app will '
+              'not replace its own files.\n\nPlease download the new version '
+              'from:\n$pageUrl',
+      actions: [
+        TouchFishDialogAction(
+          label: l10n?.updateLater ?? 'Later',
+          result: false,
+        ),
+        TouchFishDialogAction(
+          label: l10n?.updateOpenReleasePage ?? 'Open release page',
+          result: true,
+          isPrimary: true,
+        ),
+      ],
+    );
+    if (confirmed != true) return;
 
-    if (!kIsWeb && (Platform.isMacOS || Platform.isLinux)) {
-      await _runDownloadThenExit(context, downloadUrl, onComplete: () async {
-        final path = await service.downloadUpdate(downloadUrl);
-        return path;
-      }, afterDownload: (path) async {
-        await service.revealFile(path!);
-        if (context.mounted) {
-          final l10n = AppLocalizations.of(context);
-          await showTouchFishInfoDialog<void>(
-            context,
-            title: l10n?.updateDownloadedTitle,
-            message: l10n?.updateExtractHint ?? 'Update downloaded. Please extract manually.',
-            actions: [
-              TouchFishDialogAction(label: l10n?.commonOk ?? 'OK'),
-            ],
-          );
-        }
-        exit(0);
-      });
-      return;
+    try {
+      final opened = await launchUrl(
+        target.pageUrl,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened) {
+        talker.warning('Failed to open release page at $pageUrl');
+      }
+    } catch (error, stackTrace) {
+      talker.error('Failed to open release page', error, stackTrace);
     }
-
-    if (!kIsWeb && Platform.isAndroid) {
-      await _performAndroidUpdateFlow(context, downloadUrl);
-      return;
-    }
-
-    await launchUrl(Uri.parse(downloadUrl));
   }
 
   /// Android 更新流程：

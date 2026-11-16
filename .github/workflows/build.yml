@@ -114,18 +114,25 @@ jobs:
       
       - name: Create macOS DMG
         run: dart run dmg --no-sign --no-notarization --license-path "./LICENSE"
-      
+
+      - name: Rename macOS DMG to a stable name
+        run: |
+          set -euo pipefail
+          src=$(ls build/macos/Build/Products/Release/*.dmg | head -n 1)
+          mv "$src" touchfish-macos.dmg
+          ls -lh touchfish-macos.dmg
+
       - name: Create macOS archive
         run: |
           cd build/macos/Build/Products/Release
           zip -r ../../../../../touchfish-macos.zip touchfish_client.app
-      
+
       - name: Upload macOS DMG artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-dmg
-          path: build/macos/Build/Products/Release/*.dmg
-      
+          path: touchfish-macos.dmg
+
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:

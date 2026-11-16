@@ -5067,6 +5067,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get updateExtractHint => '更新包已下载。请手动解压并替换应用后完成更新。';
 
   @override
+  String get updateDmgHint => '更新包已下载并已挂载，请把应用拖到「应用程序」文件夹覆盖旧版本，然后重新打开。';
+
+  @override
   String get updateDownloadFailedTitle => '下载失败';
 
   @override
@@ -5079,6 +5082,86 @@ class AppLocalizationsZh extends AppLocalizations {
   String updateApkSaveHint(String apkPath) {
     return 'APK 将保存到以下位置：\n$apkPath';
   }
+
+  @override
+  String get updateManualTitle => '请手动获取更新';
+
+  @override
+  String updateManualMessage(String pageUrl) {
+    return '当前平台的安装由包管理器或系统负责，应用不会自行覆盖安装文件。\n\n请到发布页获取新版本：\n$pageUrl';
+  }
+
+  @override
+  String get updateOpenReleasePage => '打开发布页';
+
+  @override
+  String get updateSetupTitle => '更新设置';
+
+  @override
+  String get updateSetupHeadline => '保持最新';
+
+  @override
+  String get updateSetupIntro =>
+      'TouchFish Client 可以在启动时检查是否有新版本。只会读取版本号，不会上传任何设备信息。';
+
+  @override
+  String get updateAutoCheckTitle => '自动检查更新';
+
+  @override
+  String get updateAutoCheckDescription => '每次启动读取一次最新版本号，只有确实有新版本时才提示。';
+
+  @override
+  String get updateSetupCurrentVersion => '当前版本';
+
+  @override
+  String get updateSetupFootNote => '之后可随时在「设置 - 关于」中调整，也可以在那里手动检查更新。';
+
+  @override
+  String get updateSetupContinue => '继续';
+
+  @override
+  String get updateSetupSkip => '跳过';
+
+  @override
+  String get aboutUpdateSection => '更新';
+
+  @override
+  String get aboutLatestVersion => '最新版本';
+
+  @override
+  String get aboutUpdateChecking => '检查中…';
+
+  @override
+  String get aboutUpdateUnavailable => '暂时无法获取';
+
+  @override
+  String get aboutUpdateUpToDate => '已是最新版本';
+
+  @override
+  String get aboutUpdateAvailable => '有新版本可用';
+
+  @override
+  String aboutUpdateLatestValue(String version, String status) {
+    return '$version（$status）';
+  }
+
+  @override
+  String get aboutUpdateChangesTitle => '本版本变动';
+
+  @override
+  String get aboutUpdateCheckNow => '检查更新';
+
+  @override
+  String get aboutUpdateCheckNowDescription => '不必等待下次启动，立即检查一次';
+
+  @override
+  String get aboutUpdateCheckFailed => '无法连接更新服务器';
+
+  @override
+  String get debugForceUpdate => '强制触发更新流程';
+
+  @override
+  String get debugForceUpdateDescription => '即使当前已是最新版本，也走一遍更新提示与下载流程';
 
   @override
   String get domainTrustLinkWarningTitle => '链接跳转确认';

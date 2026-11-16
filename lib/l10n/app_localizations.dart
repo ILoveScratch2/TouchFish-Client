@@ -9730,6 +9730,12 @@ abstract class AppLocalizations {
   /// **'Update downloaded. Please extract the archive manually and replace the app to complete the update.'**
   String get updateExtractHint;
 
+  /// No description provided for @updateDmgHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The disk image has been downloaded and mounted. Drag the app into the Applications folder to replace the old version, then reopen it.'**
+  String get updateDmgHint;
+
   /// No description provided for @updateDownloadFailedTitle.
   ///
   /// In en, this message translates to:
@@ -9753,6 +9759,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The APK will be saved to:\n{apkPath}'**
   String updateApkSaveHint(String apkPath);
+
+  /// No description provided for @updateManualTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get the update manually'**
+  String get updateManualTitle;
+
+  /// No description provided for @updateManualMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'On this platform the installation is managed by the package manager or the system, so the app will not overwrite its own files.\n\nPlease get the new version from:\n{pageUrl}'**
+  String updateManualMessage(String pageUrl);
+
+  /// No description provided for @updateOpenReleasePage.
+  ///
+  /// In en, this message translates to:
+  /// **'Open release page'**
+  String get updateOpenReleasePage;
+
+  /// No description provided for @updateSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update settings'**
+  String get updateSetupTitle;
+
+  /// No description provided for @updateSetupHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay up to date'**
+  String get updateSetupHeadline;
+
+  /// No description provided for @updateSetupIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'TouchFish Client can check whether a newer version exists when it starts. Only the version number is read; no device information is uploaded.'**
+  String get updateSetupIntro;
+
+  /// No description provided for @updateAutoCheckTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for updates automatically'**
+  String get updateAutoCheckTitle;
+
+  /// No description provided for @updateAutoCheckDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Reads the latest version once per launch and only notifies you when there is something new.'**
+  String get updateAutoCheckDescription;
+
+  /// No description provided for @updateSetupCurrentVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Current version'**
+  String get updateSetupCurrentVersion;
+
+  /// No description provided for @updateSetupFootNote.
+  ///
+  /// In en, this message translates to:
+  /// **'You can change this at any time in Settings → About, where you can also check for updates manually.'**
+  String get updateSetupFootNote;
+
+  /// No description provided for @updateSetupContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get updateSetupContinue;
+
+  /// No description provided for @updateSetupSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get updateSetupSkip;
+
+  /// No description provided for @aboutUpdateSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates'**
+  String get aboutUpdateSection;
+
+  /// No description provided for @aboutLatestVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest version'**
+  String get aboutLatestVersion;
+
+  /// No description provided for @aboutUpdateChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking...'**
+  String get aboutUpdateChecking;
+
+  /// No description provided for @aboutUpdateUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get aboutUpdateUnavailable;
+
+  /// No description provided for @aboutUpdateUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to date'**
+  String get aboutUpdateUpToDate;
+
+  /// No description provided for @aboutUpdateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'New version available'**
+  String get aboutUpdateAvailable;
+
+  /// No description provided for @aboutUpdateLatestValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{version} · {status}'**
+  String aboutUpdateLatestValue(String version, String status);
+
+  /// No description provided for @aboutUpdateChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s new'**
+  String get aboutUpdateChangesTitle;
+
+  /// No description provided for @aboutUpdateCheckNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for updates'**
+  String get aboutUpdateCheckNow;
+
+  /// No description provided for @aboutUpdateCheckNowDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Check right now instead of waiting for the next launch'**
+  String get aboutUpdateCheckNowDescription;
+
+  /// No description provided for @aboutUpdateCheckFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach the update server'**
+  String get aboutUpdateCheckFailed;
+
+  /// No description provided for @debugForceUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Force update flow'**
+  String get debugForceUpdate;
+
+  /// No description provided for @debugForceUpdateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs the update prompt and download flow even when this build is already the latest'**
+  String get debugForceUpdateDescription;
 
   /// No description provided for @domainTrustLinkWarningTitle.
   ///

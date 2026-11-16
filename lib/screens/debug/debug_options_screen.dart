@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../widgets/app_alert_dialog.dart';
+import '../../services/app_update_flow.dart';
 import '../../services/chat_data_service.dart';
 import '../../services/snackbar_service.dart';
 import './api_test_screen.dart';
@@ -186,6 +187,17 @@ class DebugOptionsScreen extends StatelessWidget {
             title: Text(l10n.debugClearMessageDatabase),
             subtitle: Text(l10n.debugClearMessageDatabaseDescription),
             onTap: () => _clearMessageDatabase(context),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(
+              Icons.system_update_alt_rounded,
+              color: colorScheme.primary,
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+            title: Text(l10n.debugForceUpdate),
+            subtitle: Text(l10n.debugForceUpdateDescription),
+            onTap: () => AppUpdateFlow.instance.forceUpdateFlow(context),
           ),
           const Divider(height: 1),
         ],

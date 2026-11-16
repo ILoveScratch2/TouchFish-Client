@@ -2035,6 +2035,7 @@
   "updateChangelogTitle": "Changelog",
   "updateDownloadedTitle": "Download complete",
   "updateExtractHint": "Update downloaded. Please extract the archive manually and replace the app to complete the update.",
+  "updateDmgHint": "The disk image has been downloaded and mounted. Drag the app into the Applications folder to replace the old version, then reopen it.",
   "updateDownloadFailedTitle": "Download failed",
   "updateDownloadFailedMessage": "Update download failed. Please check your network and try again.",
   "updateDownloadStartTitle": "Start update download",
@@ -2046,6 +2047,45 @@
       }
     }
   },
+  "updateManualTitle": "Get the update manually",
+  "updateManualMessage": "On this platform the installation is managed by the package manager or the system, so the app will not overwrite its own files.\n\nPlease get the new version from:\n{pageUrl}",
+  "@updateManualMessage": {
+    "placeholders": {
+      "pageUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "updateOpenReleasePage": "Open release page",
+
+  "updateSetupTitle": "Update settings",
+  "updateSetupHeadline": "Stay up to date",
+  "updateSetupIntro": "TouchFish Client can check whether a newer version exists when it starts. Only the version number is read; no device information is uploaded.",
+  "updateAutoCheckTitle": "Check for updates automatically",
+  "updateAutoCheckDescription": "Reads the latest version once per launch and only notifies you when there is something new.",
+  "updateSetupCurrentVersion": "Current version",
+  "updateSetupFootNote": "You can change this at any time in Settings → About, where you can also check for updates manually.",
+  "updateSetupContinue": "Continue",
+  "updateSetupSkip": "Skip",
+  "aboutUpdateSection": "Updates",
+  "aboutLatestVersion": "Latest version",
+  "aboutUpdateChecking": "Checking...",
+  "aboutUpdateUnavailable": "Unavailable",
+  "aboutUpdateUpToDate": "Up to date",
+  "aboutUpdateAvailable": "New version available",
+  "aboutUpdateLatestValue": "{version} · {status}",
+  "@aboutUpdateLatestValue": {
+    "placeholders": {
+      "version": {"type": "String"},
+      "status": {"type": "String"}
+    }
+  },
+  "aboutUpdateChangesTitle": "What's new",
+  "aboutUpdateCheckNow": "Check for updates",
+  "aboutUpdateCheckNowDescription": "Check right now instead of waiting for the next launch",
+  "aboutUpdateCheckFailed": "Could not reach the update server",
+  "debugForceUpdate": "Force update flow",
+  "debugForceUpdateDescription": "Runs the update prompt and download flow even when this build is already the latest",
 
   "domainTrustLinkWarningTitle": "Confirm Navigation",
   "domainTrustLinkUntrustedMessage": "This link points to an untrusted domain. Only continue if you are sure the link is safe.",

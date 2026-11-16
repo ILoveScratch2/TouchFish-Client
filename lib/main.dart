@@ -37,6 +37,7 @@ import 'services/feature_flags.dart';
 import 'services/notification_service.dart';
 import 'services/presence_service.dart';
 import 'services/battery_prompt_flow.dart';
+import 'services/update_preferences.dart';
 import 'services/server_connection_status_service.dart';
 import 'services/ip_override_service.dart';
 import 'services/lock_service.dart';
@@ -486,19 +487,43 @@ class _TouchFishAppState extends State<TouchFishApp>
     // Android 电池优化：不再直接弹系统框，改为展示说明页由用户决定。
     unawaited(_maybePromptBatteryOptimization());
 
-    // Non-web 检查更新
-    if (!kIsWeb) {
-      final result = await AppUpdateService.instance.checkForUpdate();
-      if (!mounted || !result.hasUpdate) return;
-      final navigatorContext =
-          _router.routerDelegate.navigatorKey.currentContext;
-      if (navigatorContext == null || !navigatorContext.mounted) return;
-      await AppUpdateFlow.instance.promptIfNeeded(
-        navigatorContext,
-        remoteVersion: result.remoteVersion,
-        currentVersion: result.currentVersion,
-      );
+    // 更新偏好引导
+    unawaited(_maybePromptUpdatePreferences());
+
+    // 启动检查更新
+    if (UpdatePreferences.shouldAutoCheck) {
+      await _autoCheckForUpdate();
     }
+  }
+
+  Future<void> _maybePromptUpdatePreferences() async {
+    if (kIsWeb || UpdatePreferences.setupHandled) return;
+    if (!AuthState.instance.isLoggedIn && !widget.hasRememberedUid) return;
+
+    final navigatorContext = _router.routerDelegate.navigatorKey.currentContext;
+    if (navigatorContext == null || !navigatorContext.mounted) return;
+    final path = _router.routerDelegate.currentConfiguration.uri.path;
+    if (path == AppRoutes.updateSetup ||
+        path == AppRoutes.permissionOnboarding ||
+        path == AppRoutes.welcome) {
+      return;
+    }
+    await maybeShowUpdatePreferencePrompt(navigatorContext);
+  }
+
+  /// 自动检查
+  Future<void> _autoCheckForUpdate() async {
+    if (kIsWeb) return;
+    final result = await AppUpdateService.instance.checkForUpdate();
+    if (!mounted || !result.hasUpdate) return;
+    final navigatorContext = _router.routerDelegate.navigatorKey.currentContext;
+    if (navigatorContext == null || !navigatorContext.mounted) return;
+    await AppUpdateFlow.instance.promptIfNeeded(
+      navigatorContext,
+      remoteVersion: result.remoteVersion,
+      currentVersion: result.currentVersion,
+      changes: result.changes,
+    );
   }
 
   /// 电池优化豁免的询问式提示

@@ -5059,6 +5059,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get updateExtractHint => '更新包已下載。請自行解壓並更替應用程式以完成更新。';
 
   @override
+  String get updateDmgHint => '更新包已下載並已掛載，請將應用程式拖到「應用程式」資料夾覆蓋舊版本，然後重新開啟。';
+
+  @override
   String get updateDownloadFailedTitle => '下載未成';
 
   @override
@@ -5071,6 +5074,85 @@ class AppLocalizationsOch extends AppLocalizations {
   String updateApkSaveHint(String apkPath) {
     return 'APK 將存於：\n$apkPath';
   }
+
+  @override
+  String get updateManualTitle => '請手動取得更新';
+
+  @override
+  String updateManualMessage(String pageUrl) {
+    return '此平台的安裝由套件管理員或系統負責，應用不會自行覆蓋安裝檔案。\n\n請至發佈頁取得新版本：\n$pageUrl';
+  }
+
+  @override
+  String get updateOpenReleasePage => '開啟發佈頁';
+
+  @override
+  String get updateSetupTitle => '更新之設';
+
+  @override
+  String get updateSetupHeadline => '常新';
+
+  @override
+  String get updateSetupIntro => 'TouchFish 用戶端可於啟動時察有新版本否。所取者惟版本號，不傳他物。';
+
+  @override
+  String get updateAutoCheckTitle => '自察更新';
+
+  @override
+  String get updateAutoCheckDescription => '每啟一察，有新版本乃告。';
+
+  @override
+  String get updateSetupCurrentVersion => '今之版本';
+
+  @override
+  String get updateSetupFootNote => '後可於「設置 - 關於」改之，亦可於彼處手察。';
+
+  @override
+  String get updateSetupContinue => '續';
+
+  @override
+  String get updateSetupSkip => '略過';
+
+  @override
+  String get aboutUpdateSection => '更新';
+
+  @override
+  String get aboutLatestVersion => '最新之版本';
+
+  @override
+  String get aboutUpdateChecking => '察之…';
+
+  @override
+  String get aboutUpdateUnavailable => '暫不可得';
+
+  @override
+  String get aboutUpdateUpToDate => '已為最新';
+
+  @override
+  String get aboutUpdateAvailable => '有新版本';
+
+  @override
+  String aboutUpdateLatestValue(String version, String status) {
+    return '$version（$status）';
+  }
+
+  @override
+  String get aboutUpdateChangesTitle => '此版本所改';
+
+  @override
+  String get aboutUpdateCheckNow => '察更新';
+
+  @override
+  String get aboutUpdateCheckNowDescription => '不必待下次啟動，即察之';
+
+  @override
+  String get aboutUpdateCheckFailed => '不能連更新之伺服';
+
+  @override
+  String get debugForceUpdate => '強行更新之程';
+
+  @override
+  String get debugForceUpdateDescription => '雖已為最新，亦行更新之示與下載';
 
   @override
   String get domainTrustLinkWarningTitle => '連結跳轉確認';

@@ -2010,6 +2010,7 @@
   "updateChangelogTitle": "更新銘文",
   "updateDownloadedTitle": "下載已成",
   "updateExtractHint": "更新包已下載。請自行解壓並更替應用程式以完成更新。",
+  "updateDmgHint": "更新包已下載並已掛載，請將應用程式拖到「應用程式」資料夾覆蓋舊版本，然後重新開啟。",
   "updateDownloadFailedTitle": "下載未成",
   "updateDownloadFailedMessage": "更新下載未成，請查網絡後再試。",
   "updateDownloadStartTitle": "始下載更新",
@@ -2021,6 +2022,39 @@
       }
     }
   },
+  "updateManualTitle": "請手動取得更新",
+  "updateManualMessage": "此平台的安裝由套件管理員或系統負責，應用不會自行覆蓋安裝檔案。\n\n請至發佈頁取得新版本：\n{pageUrl}",
+  "@updateManualMessage": {
+    "placeholders": {
+      "pageUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "updateOpenReleasePage": "開啟發佈頁",
+
+  "updateSetupTitle": "更新之設",
+  "updateSetupHeadline": "常新",
+  "updateSetupIntro": "TouchFish 用戶端可於啟動時察有新版本否。所取者惟版本號，不傳他物。",
+  "updateAutoCheckTitle": "自察更新",
+  "updateAutoCheckDescription": "每啟一察，有新版本乃告。",
+  "updateSetupCurrentVersion": "今之版本",
+  "updateSetupFootNote": "後可於「設置 - 關於」改之，亦可於彼處手察。",
+  "updateSetupContinue": "續",
+  "updateSetupSkip": "略過",
+  "aboutUpdateSection": "更新",
+  "aboutLatestVersion": "最新之版本",
+  "aboutUpdateChecking": "察之…",
+  "aboutUpdateUnavailable": "暫不可得",
+  "aboutUpdateUpToDate": "已為最新",
+  "aboutUpdateAvailable": "有新版本",
+  "aboutUpdateLatestValue": "{version}（{status}）",
+  "aboutUpdateChangesTitle": "此版本所改",
+  "aboutUpdateCheckNow": "察更新",
+  "aboutUpdateCheckNowDescription": "不必待下次啟動，即察之",
+  "aboutUpdateCheckFailed": "不能連更新之伺服",
+  "debugForceUpdate": "強行更新之程",
+  "debugForceUpdateDescription": "雖已為最新，亦行更新之示與下載",
 
   "domainTrustLinkWarningTitle": "連結跳轉確認",
   "domainTrustLinkUntrustedMessage": "此連結來自不受信任的網域，請確認連結安全後再開啟。",

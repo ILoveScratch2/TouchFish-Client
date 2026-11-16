@@ -1999,6 +1999,7 @@
   "updateChangelogTitle": "更新日志",
   "updateDownloadedTitle": "下载完成",
   "updateExtractHint": "更新包已下载。请手动解压并替换应用后完成更新。",
+  "updateDmgHint": "更新包已下载并已挂载，请把应用拖到「应用程序」文件夹覆盖旧版本，然后重新打开。",
   "updateDownloadFailedTitle": "下载失败",
   "updateDownloadFailedMessage": "更新下载失败，请检查网络后重试。",
   "updateDownloadStartTitle": "开始下载更新",
@@ -2010,6 +2011,45 @@
       }
     }
   },
+  "updateManualTitle": "请手动获取更新",
+  "updateManualMessage": "当前平台的安装由包管理器或系统负责，应用不会自行覆盖安装文件。\n\n请到发布页获取新版本：\n{pageUrl}",
+  "@updateManualMessage": {
+    "placeholders": {
+      "pageUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "updateOpenReleasePage": "打开发布页",
+
+  "updateSetupTitle": "更新设置",
+  "updateSetupHeadline": "保持最新",
+  "updateSetupIntro": "TouchFish Client 可以在启动时检查是否有新版本。只会读取版本号，不会上传任何设备信息。",
+  "updateAutoCheckTitle": "自动检查更新",
+  "updateAutoCheckDescription": "每次启动读取一次最新版本号，只有确实有新版本时才提示。",
+  "updateSetupCurrentVersion": "当前版本",
+  "updateSetupFootNote": "之后可随时在「设置 - 关于」中调整，也可以在那里手动检查更新。",
+  "updateSetupContinue": "继续",
+  "updateSetupSkip": "跳过",
+  "aboutUpdateSection": "更新",
+  "aboutLatestVersion": "最新版本",
+  "aboutUpdateChecking": "检查中…",
+  "aboutUpdateUnavailable": "暂时无法获取",
+  "aboutUpdateUpToDate": "已是最新版本",
+  "aboutUpdateAvailable": "有新版本可用",
+  "aboutUpdateLatestValue": "{version}（{status}）",
+  "@aboutUpdateLatestValue": {
+    "placeholders": {
+      "version": {"type": "String"},
+      "status": {"type": "String"}
+    }
+  },
+  "aboutUpdateChangesTitle": "本版本变动",
+  "aboutUpdateCheckNow": "检查更新",
+  "aboutUpdateCheckNowDescription": "不必等待下次启动，立即检查一次",
+  "aboutUpdateCheckFailed": "无法连接更新服务器",
+  "debugForceUpdate": "强制触发更新流程",
+  "debugForceUpdateDescription": "即使当前已是最新版本，也走一遍更新提示与下载流程",
 
   "domainTrustLinkWarningTitle": "链接跳转确认",
   "domainTrustLinkUntrustedMessage": "此链接来自未经受信任的域名，请确认链接安全后再打开。",

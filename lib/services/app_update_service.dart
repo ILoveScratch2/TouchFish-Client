@@ -1,6 +1,8 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:ffi' show Abi;
+import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -11,21 +13,84 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../utils/talker.dart';
 
+/// 更新包的投递方式
+enum UpdateDelivery {
+  /// 下载后直接运行安装器
+  installer,
+
+  /// 下载后打开磁盘映像
+  diskImage,
+
+  /// 下载 APK 并交给系统安装器
+  apk,
+
+  /// 不在应用内下载，交给浏览器 / 包管理器
+  external,
+}
+
+/// 运行环境归类
+enum UpdateHost { windows, macOS, linux, android, other }
+
+/// Android 打包所用 ABI
+enum AndroidAbi {
+  arm64V8('arm64-v8a'),
+  armeabiV7a('armeabi-v7a'),
+  x86_64('x86_64');
+
+  const AndroidAbi(this.abiName);
+
+  final String abiName;
+
+  String get apkFileName => 'touchfish-android-$abiName.apk';
+}
+
+@immutable
+class UpdateTarget {
+  const UpdateTarget({
+    required this.delivery,
+    required this.pageUrl,
+    this.downloadUrl,
+  });
+
+  final UpdateDelivery delivery;
+
+  final String? downloadUrl;
+
+  final Uri pageUrl;
+
+  bool get needsDownload => delivery != UpdateDelivery.external;
+}
+
 class VersionCheckResult {
   final bool hasUpdate;
   final String? remoteVersion;
   final String? currentVersion;
   final String? error;
 
+  /// 最新版本附带的变动说明
+  final List<String> changes;
+
+  /// 本次强制触发
+  final bool forced;
+
   const VersionCheckResult({
     required this.hasUpdate,
     this.remoteVersion,
     this.currentVersion,
     this.error,
+    this.changes = const [],
+    this.forced = false,
   });
 }
 
-@visibleForTesting
+@immutable
+class LatestReleaseFeed {
+  const LatestReleaseFeed({required this.version, this.changes = const []});
+
+  final String version;
+  final List<String> changes;
+}
+
 int compareVersions(String a, String b) {
   final aParts = a
       .split('+')
@@ -54,8 +119,11 @@ class AppUpdateService {
   AppUpdateService._();
   static final AppUpdateService instance = AppUpdateService._();
 
-  static const String versionCheckUrl =
-      'http://touchfish.xin/tfv5/tfc_newest.html';
+  /// 最新版本清单：纯文本
+  /// 第一行是版本号，其余行是本版本变动说明。
+  static const String latestVersionUrl =
+      'https://touchfish.xin/updates/tfc/latest';
+
   static const String changelogUrl =
       'http://touchfish.xin/tfv5/tfc_changelog.html';
   static const String downloadBaseUrl =
@@ -65,92 +133,181 @@ class AppUpdateService {
     'touchfish/background_notification',
   );
 
+
+  static final RegExp _versionToken = RegExp(
+    r'v?([0-9]+(?:\.[0-9]+){0,3}(?:-[A-Za-z0-9._-]+)?)',
+    caseSensitive: false,
+  );
+
+  /// 测试注入点
+  @visibleForTesting
+  http.Client? httpClientOverride;
+
+  /// 测试注入点
+  @visibleForTesting
+  String? currentVersionOverride;
+
+  /// 默认客户端延迟创建
+  http.Client? _defaultClient;
+
+  http.Client get _client =>
+      httpClientOverride ?? (_defaultClient ??= http.Client());
+
   bool _checked = false;
+  VersionCheckResult? _lastResult;
 
   bool get hasChecked => _checked;
 
-  Future<VersionCheckResult> checkForUpdate() async {
+  /// 最近一次检查结果，未检查过时为 null。用于界面展示，不触发网络。
+  VersionCheckResult? get lastResult => _lastResult;
+
+  /// 读取本机版本号；平台信息不可用时返回 null。
+  Future<String?> currentVersion() async {
+    final override = currentVersionOverride;
+    if (override != null) return override;
+    try {
+      final info = await PackageInfo.fromPlatform();
+      return info.version;
+    } catch (error) {
+      talker.warning('Failed to read local app version: $error');
+      return null;
+    }
+  }
+
+  /// 拉取并解析 [latestVersionUrl]。失败或内容不可解析时返回 null。
+  Future<LatestReleaseFeed?> fetchLatestFeed() async {
+    if (kIsWeb) return null;
+    try {
+      final response = await _client
+          .get(
+            Uri.parse(latestVersionUrl),
+            headers: const {
+              // 版本号是强时效数据，要求各层缓存都回源。
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache',
+            },
+          )
+          .timeout(const Duration(seconds: 12));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        talker.warning(
+          'Latest version fetch failed: HTTP ${response.statusCode}',
+        );
+        return null;
+      }
+      final feed = parseLatestFeed(
+        utf8.decode(response.bodyBytes, allowMalformed: true),
+      );
+      if (feed == null) {
+        talker.warning('Latest version fetch failed: unparsable payload');
+      }
+      return feed;
+    } catch (error, stackTrace) {
+      talker.warning('Latest version fetch failed: $error', error, stackTrace);
+      return null;
+    }
+  }
+
+  /// 检查是否有新版本。
+  Future<VersionCheckResult> checkForUpdate({bool force = false}) async {
     if (kIsWeb) {
       return const VersionCheckResult(hasUpdate: false);
     }
-    if (_checked) {
-      return const VersionCheckResult(hasUpdate: false);
-    }
 
-    String? currentVersion;
-    try {
-      final info = await PackageInfo.fromPlatform();
-      currentVersion = info.version;
-    } catch (error) {
-      talker.warning('Failed to read local app version: $error');
-    }
+    final current = await currentVersion();
+    final feed = await fetchLatestFeed();
 
-    String? remoteVersion;
-    try {
-      final response = await http
-          .get(Uri.parse(versionCheckUrl))
-          .timeout(const Duration(seconds: 10));
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        talker.warning('Version check failed: HTTP ${response.statusCode}');
-        return VersionCheckResult(
-          hasUpdate: false,
-          currentVersion: currentVersion,
-          error: 'HTTP ${response.statusCode}',
-        );
-      }
-      remoteVersion = _parseVersionFromHtml(response.body);
-      if (remoteVersion == null) {
-        talker.warning('Version check failed: could not parse version');
-        return VersionCheckResult(
-          hasUpdate: false,
-          currentVersion: currentVersion,
-          error: 'Could not parse version',
-        );
-      }
-    } catch (error) {
-      talker.warning('Version check failed: $error');
-      return VersionCheckResult(
-        hasUpdate: false,
-        currentVersion: currentVersion,
-        error: error.toString(),
+    if (feed == null) {
+      final failed = VersionCheckResult(
+        hasUpdate: force,
+        currentVersion: current,
+        remoteVersion: force ? current : null,
+        error: 'Latest version unavailable',
+        forced: force,
       );
+      _checked = true;
+      _lastResult = failed;
+      return failed;
     }
 
-    _checked = true;
+    final remote = feed.version;
+    final isDevBuild = remote.toLowerCase().contains('dev-build');
+    final isNewer = current != null && compareVersions(remote, current) > 0;
+    // dev-build 是构建流水线的内部标记，不参与比较。
+    final hasUpdate = force || (!isDevBuild && current != null && isNewer);
 
-    if (remoteVersion.toLowerCase().contains('dev-build')) {
-      return VersionCheckResult(
-        hasUpdate: false,
-        remoteVersion: remoteVersion,
-        currentVersion: currentVersion,
-      );
-    }
-
-    if (currentVersion == null) {
-      return VersionCheckResult(
-        hasUpdate: false,
-        remoteVersion: remoteVersion,
-        currentVersion: currentVersion,
-      );
-    }
-
-    return VersionCheckResult(
-      hasUpdate: remoteVersion != currentVersion,
-      remoteVersion: remoteVersion,
-      currentVersion: currentVersion,
+    final result = VersionCheckResult(
+      hasUpdate: hasUpdate,
+      remoteVersion: remote,
+      currentVersion: current,
+      changes: feed.changes,
+      forced: force,
     );
+    _checked = true;
+    _lastResult = result;
+    return result;
   }
 
+  /// 强制走一遍更新流程（测试 / 调试用）。远端不可达时以本机版本作为
+  /// 目标版本，保证弹窗与下载环节仍可被验证。
+  Future<VersionCheckResult> forceUpdateCheck() => checkForUpdate(force: true);
+
+  /// 解析 `latest` 纯文本。
+  ///
+  /// 第一行是版本号，其余非空行是变动说明。识别并拒绝 HTML 错误页
+  /// （nginx 404 会返回 `<html>…`，不能被当成版本号）。
   @visibleForTesting
-  static String? parseVersionFromHtml(String html) {
-    return _parseVersionFromHtml(html);
+  static LatestReleaseFeed? parseLatestFeed(String body) {
+    final normalized = body
+        .replaceAll('\r\n', '\n')
+        .replaceAll('\r', '\n')
+        .replaceAll('\uFEFF', '');
+    final trimmedBody = normalized.trim();
+    if (trimmedBody.isEmpty || trimmedBody.startsWith('<')) return null;
+
+    final lines = normalized.split('\n');
+    String? version;
+    final changes = <String>[];
+
+    for (final rawLine in lines) {
+      final line = rawLine.trim();
+      if (line.isEmpty) continue;
+
+      if (version == null) {
+        final match = _versionToken.firstMatch(line);
+        if (match == null) return null;
+        version = match.group(1)!.trim();
+        // 同一行 `1.2.3 —— 修了点东西` 这种写法，破折号之后也算一条说明。
+        final rest = line.substring(match.end).replaceFirst(
+          RegExp(r'^[\s\-–—:：|]+'),
+          '',
+        );
+        if (rest.isNotEmpty) changes.add(rest);
+        continue;
+      }
+
+      final bullet = line
+          .replaceFirst(RegExp(r'^[-*•·]\s*'), '')
+          .replaceFirst(RegExp(r'^\d+[.)]\s*'), '')
+          .replaceFirst(RegExp(r'^#+\s*'), '')
+          .trim();
+      if (bullet.isEmpty) continue;
+      changes.add(bullet);
+      if (changes.length >= 6) break;
+    }
+
+    if (version == null) return null;
+    return LatestReleaseFeed(version: version, changes: List.unmodifiable(changes));
   }
+
+  /// 仅取版本号，便于测试与轻量调用。
+  @visibleForTesting
+  static String? parseLatestVersion(String body) => parseLatestFeed(body)?.version;
 
   /// Fetches the changelog markdown from the server. Returns null when the
   /// network request fails.
   Future<String?> fetchChangelog() async {
     try {
-      final response = await http
+      final response = await _client
           .get(Uri.parse(changelogUrl))
           .timeout(const Duration(seconds: 10));
       if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -164,42 +321,149 @@ class AppUpdateService {
     }
   }
 
-  static String? _parseVersionFromHtml(String html) {
-    final tagMatch = RegExp(
-      r'<version[^>]*>([^<]+)</version>',
-      caseSensitive: false,
-    ).firstMatch(html);
-    if (tagMatch != null) {
-      final candidate = tagMatch.group(1)?.trim();
-      if (candidate != null && candidate.isNotEmpty) return candidate;
+  /// 从 changelog markdown 中截取前若干条要点，用于「最新版本变动」。
+  ///
+  /// 只取顶层列表项：标题与正文段落不参与，避免在关于页塞进大段文字。
+  @visibleForTesting
+  static List<String> extractChangelogHighlights(
+    String markdown, {
+    int limit = 4,
+  }) {
+    final lines = markdown.replaceAll('\r\n', '\n').split('\n');
+    final highlights = <String>[];
+    for (final rawLine in lines) {
+      final line = rawLine.trim();
+      final match = RegExp(r'^[-*+]\s+(.*)$').firstMatch(line);
+      if (match == null) continue;
+      final text = match
+          .group(1)!
+          .replaceAll(RegExp(r'\*\*|__|`'), '')
+          .trim();
+      if (text.isEmpty) continue;
+      highlights.add(text);
+      if (highlights.length >= limit) break;
     }
-    final plainMatch = RegExp(
-      r'([0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9._-]+)?)',
-    ).firstMatch(html);
-    if (plainMatch != null) return plainMatch.group(1);
-    // Only treat plain, short text as a version. Skip HTML markup.
-    if (html.contains('<')) {
-      return null;
+    return highlights;
+  }
+
+  /// 发布页地址：Linux 等不接管安装的平台，以及「手动下载」入口都用它。
+  static String releasePageUrlFor(String version) =>
+      'https://github.com/ILoveScratch2/TouchFish-Client/releases/tag/'
+      '${Uri.encodeComponent(version)}';
+
+  static UpdateHost get currentHost {
+    if (kIsWeb) return UpdateHost.other;
+    if (Platform.isWindows) return UpdateHost.windows;
+    if (Platform.isMacOS) return UpdateHost.macOS;
+    if (Platform.isLinux) return UpdateHost.linux;
+    if (Platform.isAndroid) return UpdateHost.android;
+    return UpdateHost.other;
+  }
+
+  /// 测试注入点：强制指定 Android ABI，绕开 `device_info_plus` 平台通道。
+  @visibleForTesting
+  AndroidAbi? androidAbiOverride;
+
+  /// 解析本机 Android ABI。
+  ///
+  /// 优先读系统的 `SUPPORTED_ABIS`（按设备偏好排序，arm64 设备会排在
+  /// armeabi-v7a 之前），通道不可用时回退到当前进程的 ABI。
+  Future<AndroidAbi> resolveAndroidAbi() async {
+    final override = androidAbiOverride;
+    if (override != null) return override;
+    try {
+      final info = await DeviceInfoPlugin().androidInfo;
+      final resolved = pickAndroidAbi(info.supportedAbis);
+      if (resolved != null) return resolved;
+    } catch (error) {
+      talker.warning('Failed to read Android ABIs: $error');
     }
-    final trimmed = html.trim();
-    if (trimmed.isNotEmpty && trimmed.length < 128) return trimmed;
+    return androidAbiFromProcess();
+  }
+
+  /// 按系统给的优先顺序挑第一个有产物的 ABI（arm64-v8a 优先于 armeabi-v7a）。
+  @visibleForTesting
+  static AndroidAbi? pickAndroidAbi(List<String> supportedAbis) {
+    for (final raw in supportedAbis) {
+      switch (raw.toLowerCase().trim()) {
+        case 'arm64-v8a':
+          return AndroidAbi.arm64V8;
+        case 'armeabi-v7a':
+        case 'armeabi':
+          return AndroidAbi.armeabiV7a;
+        case 'x86_64':
+          return AndroidAbi.x86_64;
+      }
+    }
     return null;
   }
 
-  static String downloadUrlFor(String version) {
-    String fileName;
-    if (!kIsWeb && Platform.isAndroid) {
-      fileName = 'touchfish-android-armeabi-v7a.apk';
-    } else if (!kIsWeb && Platform.isWindows) {
-      fileName = 'windows-x86_64-setup.exe';
-    } else if (!kIsWeb && Platform.isMacOS) {
-      fileName = 'touchfish-macos.zip';
-    } else if (!kIsWeb && Platform.isLinux) {
-      fileName = 'touchfish-linux-x64.zip';
-    } else {
-      throw UnsupportedError('No download available for this platform');
+  /// 当前进程的 ABI。分架构包与进程架构一致，因此这一步的结果直接可用。
+  @visibleForTesting
+  static AndroidAbi androidAbiFromProcess() {
+    final abi = Abi.current();
+    if (abi == Abi.androidArm64) return AndroidAbi.arm64V8;
+    if (abi == Abi.androidArm || abi == Abi.androidIA32) {
+      // androidIA32（x86 32 位）没有对应产物，只能给最接近的 32 位包。
+      return AndroidAbi.armeabiV7a;
     }
-    return '$downloadBaseUrl/${Uri.encodeComponent(version)}/$fileName';
+    if (abi == Abi.androidX64) return AndroidAbi.x86_64;
+    // 非 Android 宿主（测试环境）一律按现代 64 位设备处理。
+    return AndroidAbi.arm64V8;
+  }
+
+  /// 解析某版本在当前平台的更新产物。
+  ///
+  /// Linux 走 [UpdateDelivery.external]：发行版包由包管理器维护（仓库内
+  /// 附带 PKGBUILD），应用内直接覆盖安装目录会与包管理冲突，因此只引导
+  /// 用户去发布页取包。
+  static Future<UpdateTarget> resolveUpdateTarget(String version) async {
+    final host = currentHost;
+    final abi = host == UpdateHost.android
+        ? await AppUpdateService.instance.resolveAndroidAbi()
+        : null;
+    return resolveUpdateTargetFor(version, host, androidAbi: abi);
+  }
+
+  /// 可注入平台的解析实现，便于覆盖各平台分支。
+  @visibleForTesting
+  static UpdateTarget resolveUpdateTargetFor(
+    String version,
+    UpdateHost host, {
+    AndroidAbi? androidAbi,
+  }) {
+    final pageUrl = Uri.parse(releasePageUrlFor(version));
+    final encodedVersion = Uri.encodeComponent(version);
+    String direct(String fileName) =>
+        '$downloadBaseUrl/$encodedVersion/$fileName';
+
+    switch (host) {
+      case UpdateHost.android:
+        final abi = androidAbi ?? AndroidAbi.arm64V8;
+        return UpdateTarget(
+          delivery: UpdateDelivery.apk,
+          downloadUrl: direct(abi.apkFileName),
+          pageUrl: pageUrl,
+        );
+      case UpdateHost.windows:
+        return UpdateTarget(
+          delivery: UpdateDelivery.installer,
+          downloadUrl: direct('windows-x86_64-setup.exe'),
+          pageUrl: pageUrl,
+        );
+      case UpdateHost.macOS:
+        // CI 会把 DMG 重命名为固定名，避免依赖 dmg 工具按版本号生成的默认名。
+        return UpdateTarget(
+          delivery: UpdateDelivery.diskImage,
+          downloadUrl: direct('touchfish-macos.dmg'),
+          pageUrl: pageUrl,
+        );
+      case UpdateHost.linux:
+      case UpdateHost.other:
+        // Linux 的 zip 只是构建产物，装完通常由包管理器接管；
+        // Web / iOS 也没有可在应用内安装的包。
+        return UpdateTarget(delivery: UpdateDelivery.external, pageUrl: pageUrl);
+    }
   }
 
   /// 计算下载文件最终的完整保存路径（用于下载前的界面展示）。

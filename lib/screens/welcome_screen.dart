@@ -7,6 +7,7 @@ import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../services/battery_prompt_flow.dart';
 import '../services/permission_center.dart';
+import '../services/update_preferences.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -34,6 +35,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     if (PermissionCenter.instance.isSupported &&
         !PermissionCenter.instance.onboardingHandled) {
       context.go(AppRoutes.permissionOnboarding);
+      return;
+    }
+
+    // 更新偏好
+    if (!UpdatePreferences.setupHandled) {
+      context.go(AppRoutes.updateSetup);
       return;
     }
 

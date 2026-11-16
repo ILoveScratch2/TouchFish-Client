@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../services/permission_center.dart';
+import '../services/update_preferences.dart';
 import '../theme/tokens.dart';
 import '../utils/talker.dart';
 
@@ -72,6 +73,10 @@ class _PermissionOnboardingScreenState
     }
 
     if (!mounted) return;
+    if (!UpdatePreferences.setupHandled) {
+      context.go(AppRoutes.updateSetup);
+      return;
+    }
     context.go(AppRoutes.login);
   }
 

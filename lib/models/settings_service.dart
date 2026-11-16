@@ -36,6 +36,13 @@ class SettingsService extends ChangeNotifier {
     _initialized = true;
   }
 
+  /// 测试用
+  @visibleForTesting
+  void debugReset() {
+    _initialized = false;
+    _keyRevisions.clear();
+  }
+
   T getValue<T>(String key, T defaultValue) {
     if (!_initialized) return defaultValue;
 

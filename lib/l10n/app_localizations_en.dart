@@ -5304,6 +5304,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Update downloaded. Please extract the archive manually and replace the app to complete the update.';
 
   @override
+  String get updateDmgHint =>
+      'The disk image has been downloaded and mounted. Drag the app into the Applications folder to replace the old version, then reopen it.';
+
+  @override
   String get updateDownloadFailedTitle => 'Download failed';
 
   @override
@@ -5317,6 +5321,90 @@ class AppLocalizationsEn extends AppLocalizations {
   String updateApkSaveHint(String apkPath) {
     return 'The APK will be saved to:\n$apkPath';
   }
+
+  @override
+  String get updateManualTitle => 'Get the update manually';
+
+  @override
+  String updateManualMessage(String pageUrl) {
+    return 'On this platform the installation is managed by the package manager or the system, so the app will not overwrite its own files.\n\nPlease get the new version from:\n$pageUrl';
+  }
+
+  @override
+  String get updateOpenReleasePage => 'Open release page';
+
+  @override
+  String get updateSetupTitle => 'Update settings';
+
+  @override
+  String get updateSetupHeadline => 'Stay up to date';
+
+  @override
+  String get updateSetupIntro =>
+      'TouchFish Client can check whether a newer version exists when it starts. Only the version number is read; no device information is uploaded.';
+
+  @override
+  String get updateAutoCheckTitle => 'Check for updates automatically';
+
+  @override
+  String get updateAutoCheckDescription =>
+      'Reads the latest version once per launch and only notifies you when there is something new.';
+
+  @override
+  String get updateSetupCurrentVersion => 'Current version';
+
+  @override
+  String get updateSetupFootNote =>
+      'You can change this at any time in Settings → About, where you can also check for updates manually.';
+
+  @override
+  String get updateSetupContinue => 'Continue';
+
+  @override
+  String get updateSetupSkip => 'Skip';
+
+  @override
+  String get aboutUpdateSection => 'Updates';
+
+  @override
+  String get aboutLatestVersion => 'Latest version';
+
+  @override
+  String get aboutUpdateChecking => 'Checking...';
+
+  @override
+  String get aboutUpdateUnavailable => 'Unavailable';
+
+  @override
+  String get aboutUpdateUpToDate => 'Up to date';
+
+  @override
+  String get aboutUpdateAvailable => 'New version available';
+
+  @override
+  String aboutUpdateLatestValue(String version, String status) {
+    return '$version · $status';
+  }
+
+  @override
+  String get aboutUpdateChangesTitle => 'What\'s new';
+
+  @override
+  String get aboutUpdateCheckNow => 'Check for updates';
+
+  @override
+  String get aboutUpdateCheckNowDescription =>
+      'Check right now instead of waiting for the next launch';
+
+  @override
+  String get aboutUpdateCheckFailed => 'Could not reach the update server';
+
+  @override
+  String get debugForceUpdate => 'Force update flow';
+
+  @override
+  String get debugForceUpdateDescription =>
+      'Runs the update prompt and download flow even when this build is already the latest';
 
   @override
   String get domainTrustLinkWarningTitle => 'Confirm Navigation';

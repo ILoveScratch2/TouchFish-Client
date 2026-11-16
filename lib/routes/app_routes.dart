@@ -4,6 +4,7 @@ import '../screens/welcome_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/permission_onboarding_screen.dart';
 import '../screens/battery_optimization_screen.dart';
+import '../screens/update_setup_screen.dart';
 import '../screens/main_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/tickets_screen.dart';
@@ -93,6 +94,7 @@ class AppRoutes {
   static const String call = '/call';
   static const String permissionOnboarding = '/permissions/onboarding';
   static const String batteryPermission = '/permissions/battery';
+  static const String updateSetup = '/updates/setup';
 
   static String callPath(int peerUid) => '$call/$peerUid';
 
@@ -112,6 +114,8 @@ class AppRoutes {
     // 不放进公开路径会被 authRedirect 打回登录页。
     permissionOnboarding,
     batteryPermission,
+    // 更新偏好引导同样位于登录之前（Welcome → 权限引导 → 更新偏好 → 登录）。
+    updateSetup,
   };
 
   static const List<String> _sectionOrder = [
@@ -393,6 +397,10 @@ class AppRoutes {
             GoRoute(
               path: batteryPermission,
               builder: (context, state) => const BatteryOptimizationScreen(),
+            ),
+            GoRoute(
+              path: updateSetup,
+              builder: (context, state) => const UpdateSetupScreen(),
             ),
             GoRoute(
               path: settings,
