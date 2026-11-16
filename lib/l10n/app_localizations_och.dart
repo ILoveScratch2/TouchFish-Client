@@ -5906,4 +5906,58 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get permissionRequestFailed => '請權未畢';
+
+  @override
+  String get externalAuthChannelTitle => '擇登入之途';
+
+  @override
+  String get externalAuthChannelInApp => '應用內瀏覽器';
+
+  @override
+  String get externalAuthChannelInAppHint => '不出應用而畢其登';
+
+  @override
+  String get externalAuthChannelBrowser => '系統瀏覽器';
+
+  @override
+  String get externalAuthChannelBrowserHint => '復用瀏覽器已登之帳；Google 等阻應用內登入';
+
+  @override
+  String get externalAuthChannelBrowserUnsupported => '今授權服器未支持自動回傳';
+
+  @override
+  String get externalAuthManualChannel => '手動輸入票據';
+
+  @override
+  String get externalAuthManualChannelHint => '自動回傳失敗時嘅後備：將授權頁上嘅一次性票據複製返嚟';
+
+  @override
+  String get externalAuthManualTitle => '手動輸入票據';
+
+  @override
+  String get externalAuthManualHint => '喺授權頁面複製一次性票據，貼到呢度完成登入。';
+
+  @override
+  String get externalAuthManualFieldLabel => '一次性票據';
+
+  @override
+  String get externalAuthManualPaste => '從剪貼簿貼上';
+
+  @override
+  String get externalAuthManualOpenPage => '開啟授權頁';
+
+  @override
+  String get externalAuthManualClipboardEmpty => '剪貼簿冇可用嘅票據';
+
+  @override
+  String get externalAuthManualConfirm => '繼續登入';
+
+  @override
+  String get externalAuthAutoReturnFailed => '未收到自動回傳，可以改用「手動輸入票據」繼續登入';
+
+  @override
+  String get externalAuthWaitingBrowser => '正在等待瀏覽器送回票據…';
+
+  @override
+  String get externalAuthCancelWait => '取消等待';
 }

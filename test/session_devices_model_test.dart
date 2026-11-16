@@ -29,7 +29,7 @@ void main() {
       expect(info.deviceName, 'iPhone 15');
       expect(info.label, 'My Phone');
       expect(info.platform, 5);
-      expect(info.location, 'Beijing');
+      expect(info.ip, '192.168.1.1');
     });
 
     test('falls back to legacy fields when device fields are absent', () {

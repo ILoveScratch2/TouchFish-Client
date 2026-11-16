@@ -744,7 +744,6 @@ class TfAuthTokenInfo {
   final String deviceName;
   final String label;
   final int platform;
-  final String location;
 
   const TfAuthTokenInfo({
     required this.jti,
@@ -759,7 +758,6 @@ class TfAuthTokenInfo {
     this.deviceName = '',
     this.label = '',
     this.platform = 0,
-    this.location = '',
   });
 
   factory TfAuthTokenInfo.fromJson(Map<String, dynamic> json) {
@@ -781,7 +779,6 @@ class TfAuthTokenInfo {
       deviceName: json['device_name'] as String? ?? '',
       label: json['label'] as String? ?? '',
       platform: (json['platform'] as num?)?.toInt() ?? 0,
-      location: json['location'] as String? ?? '',
     );
   }
 }

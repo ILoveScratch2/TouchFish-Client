@@ -77,7 +77,7 @@ class ChatDataService extends ChangeNotifier {
   static ChatDataService get instance => _instance ??= ChatDataService._();
   ChatDataService._();
 
-  /// build 阶段的通知是否已排帧末
+  // 帧末通知是否已排队
   bool _deferredNotifyScheduled = false;
   @override
   void notifyListeners() {
@@ -95,7 +95,7 @@ class ChatDataService extends ChangeNotifier {
     super.notifyListeners();
   }
 
-  /// 纯 Dart 单测
+  // 纯 Dart 单测
   static SchedulerPhase? get _safeSchedulerPhase {
     try {
       return SchedulerBinding.instance.schedulerPhase;

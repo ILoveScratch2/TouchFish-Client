@@ -61,12 +61,19 @@ class ExternalAuthConfig {
     required this.authorizationEndpoint,
     required this.ticketEndpoint,
     required this.methods,
+    this.responseModes = const ['bridge'],
   });
 
   final String issuer;
   final String authorizationEndpoint;
   final String ticketEndpoint;
   final List<ExternalAuthMethod> methods;
+
+  /// 授权结果回传方式
+  final List<String> responseModes;
+
+  /// 平台是否支持本机回环
+  bool get supportsLoopback => responseModes.contains('loopback');
 
   static ExternalAuthConfig? tryParse(Map<String, dynamic> json) {
     final issuer = json['issuer'];
@@ -75,6 +82,14 @@ class ExternalAuthConfig {
     if (issuer is! String || authorize is! String || ticket is! String) {
       return null;
     }
+    final rawModes = json['response_modes'];
+    final responseModes = rawModes is List
+        ? rawModes
+              .whereType<String>()
+              .map((value) => value.trim().toLowerCase())
+              .where((value) => value.isNotEmpty)
+              .toList(growable: false)
+        : const <String>['bridge'];
     final raw = json['methods'];
     final methods = <ExternalAuthMethod>[];
     if (raw is List) {
@@ -92,6 +107,9 @@ class ExternalAuthConfig {
       authorizationEndpoint: authorize,
       ticketEndpoint: ticket,
       methods: methods.where((method) => method.enabled).toList(growable: false),
+      responseModes: responseModes.isEmpty
+          ? const <String>['bridge']
+          : responseModes,
     );
   }
 

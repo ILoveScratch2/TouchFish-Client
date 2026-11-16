@@ -5918,4 +5918,59 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get permissionRequestFailed => '权限申请未完成';
+
+  @override
+  String get externalAuthChannelTitle => '选择登录方式';
+
+  @override
+  String get externalAuthChannelInApp => '应用内浏览器';
+
+  @override
+  String get externalAuthChannelInAppHint => '不离开本应用即可完成登录';
+
+  @override
+  String get externalAuthChannelBrowser => '系统浏览器';
+
+  @override
+  String get externalAuthChannelBrowserHint =>
+      '复用浏览器里已登录的账号；Google 等平台会阻止应用内登录';
+
+  @override
+  String get externalAuthChannelBrowserUnsupported => '当前授权服务器不支持自动回传';
+
+  @override
+  String get externalAuthManualChannel => '手动输入票据';
+
+  @override
+  String get externalAuthManualChannelHint => '自动回传失败时的兜底：把授权页上的一次性票据复制回来';
+
+  @override
+  String get externalAuthManualTitle => '手动输入票据';
+
+  @override
+  String get externalAuthManualHint => '在授权页面复制一次性票据，粘贴到这里完成登录。';
+
+  @override
+  String get externalAuthManualFieldLabel => '一次性票据';
+
+  @override
+  String get externalAuthManualPaste => '从剪贴板粘贴';
+
+  @override
+  String get externalAuthManualOpenPage => '打开授权页';
+
+  @override
+  String get externalAuthManualClipboardEmpty => '剪贴板里没有可用的票据';
+
+  @override
+  String get externalAuthManualConfirm => '继续登录';
+
+  @override
+  String get externalAuthAutoReturnFailed => '没有收到自动回传，可改用「手动输入票据」继续登录';
+
+  @override
+  String get externalAuthWaitingBrowser => '正在等待浏览器把票据送回…';
+
+  @override
+  String get externalAuthCancelWait => '取消等待';
 }

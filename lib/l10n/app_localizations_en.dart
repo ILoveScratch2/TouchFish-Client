@@ -6218,4 +6218,66 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get permissionRequestFailed => 'Permission request incomplete';
+
+  @override
+  String get externalAuthChannelTitle => 'Choose how to sign in';
+
+  @override
+  String get externalAuthChannelInApp => 'In-app browser';
+
+  @override
+  String get externalAuthChannelInAppHint =>
+      'Finish signing in without leaving the app';
+
+  @override
+  String get externalAuthChannelBrowser => 'System browser';
+
+  @override
+  String get externalAuthChannelBrowserHint =>
+      'Reuses the account already signed in to your browser; Google and others block in-app sign-in';
+
+  @override
+  String get externalAuthChannelBrowserUnsupported =>
+      'This authorization server cannot hand the result back automatically';
+
+  @override
+  String get externalAuthManualChannel => 'Enter ticket manually';
+
+  @override
+  String get externalAuthManualChannelHint =>
+      'Fallback when the automatic hand-back fails: copy the one-time ticket from the authorization page';
+
+  @override
+  String get externalAuthManualTitle => 'Enter ticket manually';
+
+  @override
+  String get externalAuthManualHint =>
+      'Copy the one-time ticket from the authorization page and paste it here to finish signing in.';
+
+  @override
+  String get externalAuthManualFieldLabel => 'One-time ticket';
+
+  @override
+  String get externalAuthManualPaste => 'Paste from clipboard';
+
+  @override
+  String get externalAuthManualOpenPage => 'Open authorization page';
+
+  @override
+  String get externalAuthManualClipboardEmpty =>
+      'No usable ticket in the clipboard';
+
+  @override
+  String get externalAuthManualConfirm => 'Continue';
+
+  @override
+  String get externalAuthAutoReturnFailed =>
+      'No automatic hand-back received. Use \"Enter ticket manually\" to continue.';
+
+  @override
+  String get externalAuthWaitingBrowser =>
+      'Waiting for the browser to hand the ticket back…';
+
+  @override
+  String get externalAuthCancelWait => 'Cancel';
 }

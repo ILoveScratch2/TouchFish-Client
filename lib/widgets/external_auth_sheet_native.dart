@@ -1,7 +1,12 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+
+import '../l10n/app_localizations.dart';
+import '../utils/talker.dart';
+import 'external_auth_ticket_dialog.dart';
 
 /// hosted 授权页的回传结果。
 class ExternalAuthResult {
@@ -21,6 +26,7 @@ class ExternalAuthSheet extends StatefulWidget {
     required this.uri,
     this.title = 'TouchFish Auth',
     this.allowedHosts = const [],
+    this.allowManualEntry = false,
   });
 
   final Uri uri;
@@ -28,12 +34,14 @@ class ExternalAuthSheet extends StatefulWidget {
   /// 第三方登录涉及的外部域名（GitHub 等）
   final List<String> allowedHosts;
   final String title;
+  final bool allowManualEntry;
 
   static Future<ExternalAuthResult?> show(
     BuildContext context,
     Uri uri, {
     String title = 'TouchFish Auth',
     List<String> allowedHosts = const [],
+    bool allowManualEntry = false,
   }) {
     return showModalBottomSheet<ExternalAuthResult>(
       context: context,
@@ -43,6 +51,7 @@ class ExternalAuthSheet extends StatefulWidget {
         uri: uri,
         title: title,
         allowedHosts: allowedHosts,
+        allowManualEntry: allowManualEntry,
       ),
     );
   }
@@ -54,6 +63,7 @@ class ExternalAuthSheet extends StatefulWidget {
 class _ExternalAuthSheetState extends State<ExternalAuthSheet> {
   String? _error;
   String? _blockedNavigation;
+  InAppWebViewController? _controller;
 
   /// 授权服务器同源判定
   bool _isAuthOrigin(Uri? target) {
@@ -81,6 +91,7 @@ class _ExternalAuthSheetState extends State<ExternalAuthSheet> {
   }
 
   void _onWebViewCreated(InAppWebViewController controller) {
+    _controller = controller;
     controller.addJavaScriptHandler(
       handlerName: 'touchfishAuthDone',
       callback: (args) async {
@@ -91,6 +102,8 @@ class _ExternalAuthSheetState extends State<ExternalAuthSheet> {
         // 放行 github.com 之后，桥仍必须只接受同源页面的回传
         final current = await controller.getUrl();
         if (!_isAuthOrigin(current)) return;
+        // 授权成功后不再保留这次会话在 WebView 里的痕迹
+        await _purgeWebData(controller);
         if (!mounted) return;
         Navigator.pop(
           context,
@@ -103,9 +116,51 @@ class _ExternalAuthSheetState extends State<ExternalAuthSheet> {
     );
   }
 
+  /// 清除 WebView 的 cookie / 站点数
+  Future<void> _purgeWebData(InAppWebViewController controller) async {
+    try {
+      await CookieManager.instance().deleteAllCookies();
+    } catch (e) {
+      talker.warning('rm -rf cookies failed? : $e');
+    }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      // WebStorage 只有 Android 实现
+      try {
+        await WebStorageManager.instance().deleteAllData();
+      } catch (e) {
+        talker.warning('externalauth clear failed: $e');
+      }
+    }
+    try {
+      await controller.evaluateJavascript(
+        source: 'try{localStorage.clear();sessionStorage.clear();}catch(e){}',
+      );
+    } catch (e) {
+      talker.warning('externalauth clear storage failed: $e');
+    }
+    try {
+      await InAppWebViewController.clearAllCache();
+    } catch (e) {
+      talker.warning('externalauth clear failed: $e');
+    }
+  }
+
+  /// 手动粘贴票据
+  Future<void> _openManualEntry() async {
+    final ticket = await ExternalAuthTicketDialog.show(context);
+    if (ticket == null || ticket.isEmpty || !mounted) return;
+    final controller = _controller;
+    if (controller != null) {
+      await _purgeWebData(controller);
+    }
+    if (!mounted) return;
+    Navigator.pop(context, ExternalAuthResult(ticket: ticket));
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.9,
       child: Column(
@@ -201,6 +256,23 @@ class _ExternalAuthSheetState extends State<ExternalAuthSheet> {
                     },
                   ),
           ),
+          if (widget.allowManualEntry) ...[
+            const Divider(height: 1),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _openManualEntry,
+                    icon: const Icon(Icons.content_paste_go, size: 18),
+                    label: Text(l10n.externalAuthManualChannel),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -479,10 +479,6 @@ class _SessionDevicesScreenState extends State<SessionDevicesScreen> {
                       ),
                       if (token.ip.isNotEmpty)
                         Text('${l10n.sessionDevicesIpLabel} ${token.ip}'),
-                      if (token.location.isNotEmpty)
-                        Text(
-                          '${l10n.sessionDevicesLocation}: ${token.location}',
-                        ),
                       Text(
                         '${l10n.sessionDevicesIssuedAtLabel} '
                         '${_formatTime(token.issuedAt)} · '

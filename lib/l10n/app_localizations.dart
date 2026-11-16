@@ -11355,6 +11355,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Permission request incomplete'**
   String get permissionRequestFailed;
+
+  /// No description provided for @externalAuthChannelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how to sign in'**
+  String get externalAuthChannelTitle;
+
+  /// No description provided for @externalAuthChannelInApp.
+  ///
+  /// In en, this message translates to:
+  /// **'In-app browser'**
+  String get externalAuthChannelInApp;
+
+  /// No description provided for @externalAuthChannelInAppHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish signing in without leaving the app'**
+  String get externalAuthChannelInAppHint;
+
+  /// No description provided for @externalAuthChannelBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'System browser'**
+  String get externalAuthChannelBrowser;
+
+  /// No description provided for @externalAuthChannelBrowserHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reuses the account already signed in to your browser; Google and others block in-app sign-in'**
+  String get externalAuthChannelBrowserHint;
+
+  /// No description provided for @externalAuthChannelBrowserUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This authorization server cannot hand the result back automatically'**
+  String get externalAuthChannelBrowserUnsupported;
+
+  /// No description provided for @externalAuthManualChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter ticket manually'**
+  String get externalAuthManualChannel;
+
+  /// No description provided for @externalAuthManualChannelHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Fallback when the automatic hand-back fails: copy the one-time ticket from the authorization page'**
+  String get externalAuthManualChannelHint;
+
+  /// No description provided for @externalAuthManualTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter ticket manually'**
+  String get externalAuthManualTitle;
+
+  /// No description provided for @externalAuthManualHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the one-time ticket from the authorization page and paste it here to finish signing in.'**
+  String get externalAuthManualHint;
+
+  /// No description provided for @externalAuthManualFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'One-time ticket'**
+  String get externalAuthManualFieldLabel;
+
+  /// No description provided for @externalAuthManualPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste from clipboard'**
+  String get externalAuthManualPaste;
+
+  /// No description provided for @externalAuthManualOpenPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Open authorization page'**
+  String get externalAuthManualOpenPage;
+
+  /// No description provided for @externalAuthManualClipboardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No usable ticket in the clipboard'**
+  String get externalAuthManualClipboardEmpty;
+
+  /// No description provided for @externalAuthManualConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get externalAuthManualConfirm;
+
+  /// No description provided for @externalAuthAutoReturnFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'No automatic hand-back received. Use \"Enter ticket manually\" to continue.'**
+  String get externalAuthAutoReturnFailed;
+
+  /// No description provided for @externalAuthWaitingBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the browser to hand the ticket back…'**
+  String get externalAuthWaitingBrowser;
+
+  /// No description provided for @externalAuthCancelWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get externalAuthCancelWait;
 }
 
 class _AppLocalizationsDelegate

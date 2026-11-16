@@ -1,22 +1,31 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
+import '../models/external_auth_config.dart';
 import '../routes/app_routes.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/external_auth_loopback.dart';
 import '../services/external_auth_service.dart';
 import '../services/rsa_key_trust_service.dart';
 import '../services/server_branding_service.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/external_auth_sheet.dart';
+import '../widgets/external_auth_ticket_dialog.dart';
 import '../widgets/rsa_key_prompts.dart';
 import '../widgets/server_selector.dart';
 import '../widgets/network_indicator.dart';
 import '../widgets/provider_mark.dart';
+import '../widgets/sheet_scaffold.dart';
 import '../utils/talker.dart';
+
+/// 外部登录的三条通道
+enum _ExternalAuthChannel { inApp, systemBrowser, manual }
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -30,6 +39,17 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
+
+  /// 正在等待系统浏览器回传
+  bool _externalAuthWaiting = false;
+
+  int _externalAuthFlowId = 0;
+
+  /// 等待回传期间手动粘贴所需的上下文
+  String? _externalAuthPendingState;
+  String? _externalAuthPendingBaseUrl;
+  String? _externalAuthPendingProviderId;
+
   List<ConnectivityResult> _connectionStatus = [ConnectivityResult.none];
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   RsaKeyCheckResult? _pendingFirstConnectResult;
@@ -144,6 +164,8 @@ class _LoginScreenState extends State<LoginScreen> {
         'invalidCredentials' => l10n.loginErrorInvalidCredentials,
         'sessionLimitReached' => l10n.loginErrorSessionLimit,
         'duplicateLogin' => l10n.loginErrorDuplicateInstance,
+        'pendingActivation' => l10n.loginErrorPendingActivation,
+        'accountBanned' => l10n.loginErrorBanned,
         'networkError' => l10n.loginErrorNetwork,
         _ => l10n.loginErrorNetwork,
       };
@@ -162,10 +184,82 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    // Web
+    final channel = kIsWeb
+        ? _ExternalAuthChannel.inApp
+        : await _pickExternalAuthChannel(l10n, providerId: providerId);
+    if (channel == null || !mounted) return;
+
     final keyOk = await _verifyRsaKeyBeforeLogin();
     if (!mounted) return;
     if (!keyOk) return;
 
+    if (channel == _ExternalAuthChannel.systemBrowser) {
+      await _loginWithExternalBrowser(providerId: providerId);
+    } else if (channel == _ExternalAuthChannel.manual) {
+      await _loginWithExternalManual(providerId: providerId);
+    } else {
+      await _loginWithExternalWebView(providerId: providerId, config: config);
+    }
+  }
+
+  /// 底部弹出登录通道选择
+  Future<_ExternalAuthChannel?> _pickExternalAuthChannel(
+    AppLocalizations l10n, {
+    String? providerId,
+  }) {
+    final loopbackReady = ExternalAuthService.instance.supportsLoopback;
+    return showAppSheet<_ExternalAuthChannel>(
+      context: context,
+      builder: (sheetContext) => SheetScaffold(
+        titleText: l10n.externalAuthChannelTitle,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.travel_explore),
+              title: Text(l10n.externalAuthChannelInApp),
+              subtitle: Text(l10n.externalAuthChannelInAppHint),
+              onTap: () =>
+                  Navigator.pop(sheetContext, _ExternalAuthChannel.inApp),
+            ),
+            ListTile(
+              enabled: loopbackReady,
+              leading: const Icon(Icons.open_in_browser),
+              title: Text(l10n.externalAuthChannelBrowser),
+              subtitle: Text(
+                loopbackReady
+                    ? l10n.externalAuthChannelBrowserHint
+                    : l10n.externalAuthChannelBrowserUnsupported,
+              ),
+              onTap: loopbackReady
+                  ? () => Navigator.pop(
+                      sheetContext,
+                      _ExternalAuthChannel.systemBrowser,
+                    )
+                  : null,
+            ),
+            ListTile(
+              leading: const Icon(Icons.content_paste_go),
+              title: Text(l10n.externalAuthManualChannel),
+              subtitle: Text(l10n.externalAuthManualChannelHint),
+              onTap: () =>
+                  Navigator.pop(sheetContext, _ExternalAuthChannel.manual),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 应用内
+  Future<void> _loginWithExternalWebView({
+    String? providerId,
+    required ExternalAuthConfig config,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final service = ExternalAuthService.instance;
     final state = _randomStateToken();
     final baseUrl = await TfApiClient.instance.getBaseUrl();
     final uri = providerId == null
@@ -190,12 +284,14 @@ class _LoginScreenState extends State<LoginScreen> {
       allowedHosts: providerId == null
           ? const []
           : service.allowedHostsFor(providerId),
+      allowManualEntry: true,
     );
     if (!mounted) return;
     if (result == null) return; // 用户关闭了授权页
 
-    if (result.state == null || result.state != state) {
-      // 严格要求回传的 state 与本机生成的一致
+    if (result.state != null && result.state != state) {
+      // 页面回传的 state 必须与本机生成的一致。
+      // 手动粘贴拿不到 state（票据本身一次性且绑定 client_id），这种情况放行。
       TouchFishSnackbarService.instance.show(l10n.loginErrorNetwork);
       return;
     }
@@ -208,8 +304,187 @@ class _LoginScreenState extends State<LoginScreen> {
       TouchFishSnackbarService.instance.show(l10n.loginErrorTicketExchange);
       return;
     }
+    await _finishExternalLogin(externalToken);
+  }
 
-    final error = await AuthState.instance.loginWithExternalSession(externalToken);
+  /// 系统浏览器通道
+  Future<void> _loginWithExternalBrowser({String? providerId}) async {
+    final l10n = AppLocalizations.of(context)!;
+    final service = ExternalAuthService.instance;
+    final loopback = await ExternalAuthLoopback.start();
+    if (!mounted) {
+      await loopback?.close();
+      return;
+    }
+    if (loopback == null) {
+      TouchFishSnackbarService.instance.show(
+        l10n.externalAuthChannelBrowserUnsupported,
+      );
+      return;
+    }
+
+    final pkce = ExternalAuthPkce.generate();
+    try {
+      final baseUrl = await TfApiClient.instance.getBaseUrl();
+      final uri = providerId == null
+          ? service.buildAuthorizeUri(
+              state: pkce.state,
+              target: baseUrl,
+              redirectUri: loopback.redirectUri,
+              codeChallenge: pkce.challenge,
+            )
+          : service.buildProviderStartUri(
+              providerId: providerId,
+              state: pkce.state,
+              target: baseUrl,
+              redirectUri: loopback.redirectUri,
+              codeChallenge: pkce.challenge,
+            );
+      if (uri == null) {
+        TouchFishSnackbarService.instance.show(l10n.loginErrorNetwork);
+        return;
+      }
+
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!mounted) return;
+      if (!launched) {
+        TouchFishSnackbarService.instance.show(l10n.loginErrorNetwork);
+        return;
+      }
+      final flowId = ++_externalAuthFlowId;
+      setState(() {
+        _externalAuthWaiting = true;
+        _externalAuthPendingState = pkce.state;
+        _externalAuthPendingBaseUrl = baseUrl;
+        _externalAuthPendingProviderId = providerId;
+      });
+
+      final ticket = await loopback.waitForTicket(pkce.state);
+      if (!mounted || flowId != _externalAuthFlowId) return;
+      setState(() {
+        _externalAuthWaiting = false;
+        _externalAuthPendingState = null;
+        _externalAuthPendingBaseUrl = null;
+        _externalAuthPendingProviderId = null;
+      });
+      if (ticket == null) {
+        // 没等到回环回调：给出手动粘贴的出路，而不是直接失败
+        await _openManualTicketDialog(
+          providerId: providerId,
+          state: pkce.state,
+          baseUrl: baseUrl,
+        );
+        return;
+      }
+
+      final externalToken = await service.exchangeTicket(
+        ticket,
+        codeVerifier: pkce.verifier,
+      );
+      if (!mounted) return;
+      if (externalToken == null) {
+        TouchFishSnackbarService.instance.show(l10n.loginErrorTicketExchange);
+        return;
+      }
+      await _finishExternalLogin(externalToken);
+    } catch (e, stackTrace) {
+      talker.error('ExternalAuth browser flow failed', e, stackTrace);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      TouchFishSnackbarService.instance.show(l10n.loginErrorNetwork);
+    } finally {
+      await loopback.close();
+    }
+  }
+
+  /// 手动
+  Future<void> _loginWithExternalManual({String? providerId}) async {
+    final state = _randomStateToken();
+    final baseUrl = await TfApiClient.instance.getBaseUrl();
+    if (!mounted) return;
+    await _openManualTicketDialog(
+      providerId: providerId,
+      state: state,
+      baseUrl: baseUrl,
+    );
+  }
+
+  /// 弹出票据输入框并完成登录
+  Future<void> _openManualTicketDialog({
+    String? providerId,
+    required String state,
+    required String baseUrl,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final service = ExternalAuthService.instance;
+    _externalAuthFlowId++;
+    if (mounted && _externalAuthWaiting) {
+      setState(() {
+        _externalAuthWaiting = false;
+        _externalAuthPendingState = null;
+        _externalAuthPendingBaseUrl = null;
+        _externalAuthPendingProviderId = null;
+      });
+    }
+
+    final ticket = await ExternalAuthTicketDialog.show(
+      context,
+      onOpenAuthorizePage: () => _openManualAuthorizePage(
+        providerId: providerId,
+        state: state,
+        baseUrl: baseUrl,
+      ),
+    );
+    if (ticket == null || ticket.isEmpty || !mounted) return;
+
+    setState(() => _isLoading = true);
+    final externalToken = await service.exchangeTicket(ticket);
+    if (!mounted) return;
+    if (externalToken == null) {
+      setState(() => _isLoading = false);
+      TouchFishSnackbarService.instance.show(l10n.loginErrorTicketExchange);
+      return;
+    }
+    await _finishExternalLogin(externalToken);
+  }
+
+  /// 取消等待
+  void _cancelExternalAuthWait() {
+    _externalAuthFlowId++;
+    if (!mounted) return;
+    setState(() {
+      _externalAuthWaiting = false;
+      _externalAuthPendingState = null;
+      _externalAuthPendingBaseUrl = null;
+      _externalAuthPendingProviderId = null;
+    });
+  }
+
+  /// 打开 bridge 模式的授权页
+  Future<bool> _openManualAuthorizePage({
+    String? providerId,
+    required String state,
+    required String baseUrl,
+  }) async {
+    final service = ExternalAuthService.instance;
+    final uri = providerId == null
+        ? service.buildAuthorizeUri(state: state, target: baseUrl)
+        : service.buildProviderStartUri(
+            providerId: providerId,
+            state: state,
+            target: baseUrl,
+          );
+    if (uri == null) return false;
+    return launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+  Future<void> _finishExternalLogin(String externalToken) async {
+    final l10n = AppLocalizations.of(context)!;
+    final error = await AuthState.instance.loginWithExternalSession(
+      externalToken,
+    );
     if (!mounted) return;
     setState(() => _isLoading = false);
 
@@ -632,19 +907,81 @@ class _LoginScreenState extends State<LoginScreen> {
                                   width: double.infinity,
                                   height: 48,
                                   child: OutlinedButton.icon(
-                                    onPressed: _isLoading
+                                    onPressed: _externalAuthWaiting
+                                        ? () {
+                                            final pendingState =
+                                                _externalAuthPendingState;
+                                            final pendingBaseUrl =
+                                                _externalAuthPendingBaseUrl;
+                                            if (pendingState == null ||
+                                                pendingBaseUrl == null) {
+                                              _cancelExternalAuthWait();
+                                              return;
+                                            }
+                                            _openManualTicketDialog(
+                                              providerId:
+                                                  _externalAuthPendingProviderId,
+                                              state: pendingState,
+                                              baseUrl: pendingBaseUrl,
+                                            );
+                                          }
+                                        : _isLoading
                                         ? null
                                         : () => _loginWithExternalAuth(),
-                                    icon: const Icon(
-                                      Icons.verified_user_outlined,
+                                    icon: Icon(
+                                      _externalAuthWaiting
+                                          ? Icons.content_paste_go
+                                          : Icons.verified_user_outlined,
                                     ),
                                     label: Text(
-                                      AppLocalizations.of(
-                                        context,
-                                      )!.loginExternalAuth,
+                                      _externalAuthWaiting
+                                          ? AppLocalizations.of(
+                                              context,
+                                            )!.externalAuthManualChannel
+                                          : AppLocalizations.of(
+                                              context,
+                                            )!.loginExternalAuth,
                                     ),
                                   ),
                                 ),
+                                if (_externalAuthWaiting) ...[
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.externalAuthWaitingBrowser,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: _cancelExternalAuthWait,
+                                        child: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.externalAuthCancelWait,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                                 if (providers.isNotEmpty) ...[
                                   const SizedBox(height: 16),
                                   Row(

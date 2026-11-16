@@ -1,10 +1,42 @@
 import 'dart:convert';
+import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/external_auth_config.dart';
 import 'api/tf_api_client.dart';
+
+/// 系统浏览器 PKCE 材料
+class ExternalAuthPkce {
+  const ExternalAuthPkce({
+    required this.verifier,
+    required this.challenge,
+    required this.state,
+  });
+
+  final String verifier;
+  final String challenge;
+  final String state;
+
+  factory ExternalAuthPkce.generate() {
+    final verifier = _randomUrlSafe(48);
+    final digest = sha256.convert(utf8.encode(verifier));
+    return ExternalAuthPkce(
+      verifier: verifier,
+      challenge: base64Url.encode(digest.bytes).replaceAll('=', ''),
+      state: _randomUrlSafe(24),
+    );
+  }
+}
+
+String _randomUrlSafe(int bytes) {
+  final random = Random.secure();
+  return base64Url
+      .encode(List<int>.generate(bytes, (_) => random.nextInt(256)))
+      .replaceAll('=', '');
+}
 
 
 class ExternalAuthService extends ChangeNotifier {
@@ -25,6 +57,9 @@ class ExternalAuthService extends ChangeNotifier {
 
   bool get isAvailable => _config != null && _config!.methods.isNotEmpty;
   bool get isConfigured => _authUrl != null && _authUrl!.isNotEmpty;
+
+  /// 授权服务器是否支持本机回环投递
+  bool get supportsLoopback => _config?.supportsLoopback ?? false;
 
   String? get authUrl => _authUrl;
 
@@ -89,21 +124,28 @@ class ExternalAuthService extends ChangeNotifier {
     }
   }
 
+  /// 构造授权入口
   Uri? buildAuthorizeUri({
     required String state,
     String clientId = 'touchfish',
     String? target,
+    String? redirectUri,
+    String? codeChallenge,
   }) {
     final config = _config;
     if (config == null) return null;
     final uri = Uri.tryParse(config.authorizationEndpoint);
     if (uri == null) return null;
+    final loopback = redirectUri != null && redirectUri.isNotEmpty;
     return uri.replace(queryParameters: {
       ...uri.queryParameters,
       'client_id': clientId,
       'state': state,
-      'response_mode': 'bridge',
+      'response_mode': loopback ? 'loopback' : 'bridge',
       if (target != null && target.isNotEmpty) 'target': target,
+      if (loopback) 'redirect': redirectUri,
+      if (loopback && codeChallenge != null) 'code_challenge': codeChallenge,
+      if (loopback && codeChallenge != null) 'code_challenge_method': 'S256',
     });
   }
 
@@ -113,6 +155,8 @@ class ExternalAuthService extends ChangeNotifier {
     required String state,
     String clientId = 'touchfish',
     String? target,
+    String? redirectUri,
+    String? codeChallenge,
   }) {
     final config = _config;
     final base = _baseUrl;
@@ -122,6 +166,8 @@ class ExternalAuthService extends ChangeNotifier {
       state: state,
       clientId: clientId,
       target: target,
+      redirectUri: redirectUri,
+      codeChallenge: codeChallenge,
     );
     if (authorize == null) return null;
     final relative = authorize.hasQuery
@@ -145,7 +191,13 @@ class ExternalAuthService extends ChangeNotifier {
   }
 
   /// 一次性 ticket 换 external_token。
-  Future<String?> exchangeTicket(String ticket, {String clientId = 'touchfish'}) async {
+  ///
+  /// [codeVerifier] 仅 loopback
+  Future<String?> exchangeTicket(
+    String ticket, {
+    String clientId = 'touchfish',
+    String? codeVerifier,
+  }) async {
     final config = _config;
     if (config == null) return null;
     try {
@@ -153,7 +205,11 @@ class ExternalAuthService extends ChangeNotifier {
           .post(
             Uri.parse(config.ticketEndpoint),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'ticket': ticket, 'client_id': clientId}),
+            body: jsonEncode({
+              'ticket': ticket,
+              'client_id': clientId,
+              'code_verifier': ?codeVerifier,
+            }),
           )
           .timeout(_timeout);
       if (response.statusCode != 200) return null;
