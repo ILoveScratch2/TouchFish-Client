@@ -7,8 +7,10 @@ import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
 import '../services/snackbar_service.dart';
+import '../utils/talker.dart';
 import '../widgets/optimized_image.dart';
 import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/error_state.dart';
 import '../widgets/ui/loading_indicator.dart';
 import '../widgets/ui/refreshable.dart';
 
@@ -35,7 +37,8 @@ class GroupEssenceScreen extends StatefulWidget {
 }
 
 class _GroupEssenceScreenState extends State<GroupEssenceScreen> {
-  List<int> _essenceMids = [];
+  /// 已按 mid 降序排好
+  List<int> _sortedMids = const [];
   final Map<int, ChatMessage?> _messages = {};
   bool _isLoading = true;
   bool _isAdmin = false;
@@ -43,11 +46,6 @@ class _GroupEssenceScreenState extends State<GroupEssenceScreen> {
 
   int get _uid => AuthState.instance.uid ?? 0;
   String get _password => AuthState.instance.password ?? '';
-
-  List<int> get _sortedMids {
-    final mids = [..._essenceMids]..sort((a, b) => b.compareTo(a));
-    return mids;
-  }
 
   @override
   void initState() {
@@ -74,36 +72,44 @@ class _GroupEssenceScreenState extends State<GroupEssenceScreen> {
       var page = await chatData.refreshMessagesForContact(roomId);
       var cached = chatData.getMessages(roomId);
       final wanted = mids.toSet();
-      for (var attempt = 0;
-          wanted.any((mid) => !cached.any((message) => message.mid == mid)) &&
-              page.hasMore &&
-              attempt < 100;
-          attempt++) {
+      // 回溯历史以填充本地缺失的精华消息
+      var present = cached.map((m) => m.mid).whereType<int>().toSet();
+      var attempts = 0;
+      while (wanted.difference(present).isNotEmpty &&
+          page.hasMore &&
+          attempts < 10) {
+        final before = cached.length;
         page = await chatData.loadOlderMessages(roomId);
         cached = chatData.getMessages(roomId);
+        present = cached.map((m) => m.mid).whereType<int>().toSet();
+        attempts++;
+        // 没有新消息说明已经到底
+        if (cached.length == before) break;
       }
       final byMid = <int, ChatMessage>{};
       for (final message in cached) {
         final mid = message.mid;
         if (mid != null) byMid[mid] = message;
       }
+      final sortedMids = [...mids]..sort((a, b) => b.compareTo(a));
       final isAdmin = await _checkAdmin(uid, password);
       if (!mounted) return;
       setState(() {
-        _essenceMids = mids;
+        _sortedMids = sortedMids;
         _messages
           ..clear()
-          ..addEntries(_essenceMids.map((mid) => MapEntry(mid, byMid[mid])));
+          ..addEntries(sortedMids.map((mid) => MapEntry(mid, byMid[mid])));
         _isAdmin = isAdmin;
         _isLoading = false;
         _loadFailed = false;
       });
-    } catch (_) {
+    } catch (e) {
+      talker.error('GroupEssence load failed', e);
       if (mounted) {
         setState(() {
-        _isLoading = false;
-        _loadFailed = true;
-      });
+          _isLoading = false;
+          _loadFailed = true;
+        });
       }
     }
   }
@@ -149,21 +155,20 @@ class _GroupEssenceScreenState extends State<GroupEssenceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(widget.groupName)),
       body: _isLoading
           ? const LoadingIndicator()
           : _loadFailed
-              ? Center(
-                  child: FilledButton.icon(
-                    onPressed: _load,
-                    icon: const Icon(Icons.refresh),
-                    label: Text(AppLocalizations.of(context)!.retry),
-                  ),
-                )
-          : _essenceMids.isEmpty
-              ? _buildEmpty(context)
-              : _buildList(context),
+          ? ErrorState(
+              title: l10n.commonLoadFailed,
+              onRetry: _load,
+              retryLabel: l10n.retry,
+            )
+          : _sortedMids.isEmpty
+          ? _buildEmpty(context)
+          : _buildList(context),
     );
   }
 

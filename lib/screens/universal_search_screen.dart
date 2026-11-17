@@ -16,6 +16,7 @@ import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../widgets/optimized_image.dart';
 import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/error_state.dart';
 import '../widgets/ui/load_more_footer.dart';
 import '../widgets/ui/refreshable.dart';
 
@@ -38,6 +39,10 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
   String _query = '';
   bool _searching = false;
   String? _baseUrl;
+
+  /// 请求序号
+  int _requestToken = 0;
+  String? _serverErrorText;
 
   List<UserSearchEntry> _users = const [];
   List<GroupSearchEntry> _groups = const [];
@@ -94,6 +99,7 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
           _local = const [];
           _groupsHasMore = false;
           _searching = false;
+          _serverErrorText = null;
         });
       }
       return;
@@ -107,6 +113,7 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
           _local = const [];
           _groupsHasMore = false;
           _searching = false;
+          _serverErrorText = null;
         });
       }
       return;
@@ -115,7 +122,13 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
 
-    if (mounted) setState(() => _searching = true);
+    final token = ++_requestToken;
+    if (mounted) {
+      setState(() {
+        _searching = true;
+        _serverErrorText = null;
+      });
+    }
 
     final localFuture = ChatDataService.instance.searchAllRoomsMessages(query);
     final usersFuture = (uid == null || password == null)
@@ -151,8 +164,17 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
     final local = await localFuture;
     if (!mounted) return;
 
-    // 结果过期（用户已改了关键词）时丢弃
-    if (_controller.text.trim() != query) return;
+    if (token != _requestToken) return;
+    if (_controller.text.trim() != query) {
+      setState(() => _searching = false);
+      return;
+    }
+
+    final errorText = serverError != null
+        ? localizeApiError(context, serverError)
+        : serverFailed
+        ? AppLocalizations.of(context)!.commonLoadFailed
+        : null;
 
     setState(() {
       _query = query;
@@ -160,20 +182,9 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
       _groups = groupPage.groups;
       _groupsHasMore = groupPage.hasMore;
       _local = local;
+      _serverErrorText = errorText;
       _searching = false;
     });
-
-    if (serverError != null) {
-      TouchFishSnackbarService.instance.show(
-        localizeApiError(context, serverError),
-        type: SnackbarType.error,
-      );
-    } else if (serverFailed) {
-      TouchFishSnackbarService.instance.show(
-        AppLocalizations.of(context)!.commonFailedOperation,
-        type: SnackbarType.error,
-      );
-    }
   }
 
   Future<void> _refresh() => _search(_controller.text);
@@ -437,7 +448,7 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
     if (_local.isEmpty) {
       return PullToRefresh.content(
         onRefresh: _refresh,
-        child: _emptyIfSettled(l10n),
+        child: _emptyIfSettled(l10n, serverBacked: false),
       );
     }
     return PullToRefresh.list(
@@ -479,7 +490,15 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
     );
   }
 
-  Widget _emptyIfSettled(AppLocalizations l10n) {
+  Widget _emptyIfSettled(AppLocalizations l10n, {bool serverBacked = true}) {
+    if (serverBacked && _serverErrorText != null && _query.isNotEmpty) {
+      return ErrorState(
+        title: l10n.commonLoadFailed,
+        description: _serverErrorText,
+        onRetry: _refresh,
+        retryLabel: l10n.retry,
+      );
+    }
     final IconData icon;
     final String message;
     if (_query.isEmpty) {

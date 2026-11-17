@@ -139,6 +139,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get loginErrorNetwork => '網絡有誤，請重試';
 
   @override
+  String get loginErrorServer => '伺服器錯誤，請稍後重試';
+
+  @override
   String get loginErrorSessionLimit => '登入裝置數量已達上限';
 
   @override
@@ -561,6 +564,9 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get browserLoadingFailed => '載頁未成';
+
+  @override
+  String get browserErrorDetails => '錯誤詳情';
 
   @override
   String get browserRetry => '復試';
@@ -4447,6 +4453,9 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get commonFailedOperation => '操作未成，請重試';
+
+  @override
+  String get commonLoadFailed => '載入失敗';
 
   @override
   String get commonUserNotFound => '未找到該用戶';

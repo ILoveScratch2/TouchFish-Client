@@ -15,6 +15,7 @@ import '../widgets/account/profile_picture.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/optimized_image.dart';
 import '../widgets/text_entry_dialog.dart';
+import '../widgets/ui/error_state.dart';
 import '../widgets/ui/loading_indicator.dart';
 
 class GroupManagementScreen extends StatefulWidget {
@@ -36,6 +37,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
   List<Map<String, dynamic>> _members = [];
   List<Map<String, dynamic>> _joinRequests = [];
   bool _isLoading = true;
+  bool _loadFailed = false;
   int? _currentUserRole;
   String? _groupAvatarUrl;
   String? _baseUrl;
@@ -53,9 +55,10 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
     _load();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool silent = false}) async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
+    if (_loadFailed && !silent) setState(() => _loadFailed = false);
+    if (!silent) setState(() => _isLoading = true);
     try {
       _baseUrl ??= await TfApiClient.instance.getBaseUrl();
       _groupAvatarUrl =
@@ -90,11 +93,13 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
       }
     } catch (e) {
       talker.error('GroupManagement load failed', e);
+      if (mounted) setState(() => _loadFailed = true);
     }
     if (mounted) setState(() => _isLoading = false);
   }
 
   Future<void> _toggleAdmin(int targetUid, bool currentlyAdmin) async {
+    final l10n = AppLocalizations.of(context)!;
     final ok = await TfApiClient.instance.setGroupAdmin(
       _uid,
       _password,
@@ -102,17 +107,29 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
       targetUid,
       !currentlyAdmin,
     );
-    if (ok) _load();
+    if (!mounted) return;
+    if (!ok) {
+      _showSnack(l10n.commonFailedOperation);
+      return;
+    }
+    // 静默刷新
+    await _load(silent: true);
   }
 
   Future<void> _removeMember(int targetUid) async {
+    final l10n = AppLocalizations.of(context)!;
     final ok = await TfApiClient.instance.removeGroupMember(
       _uid,
       _password,
       widget.gid,
       targetUid,
     );
-    if (ok) _load();
+    if (!mounted) return;
+    if (!ok) {
+      _showSnack(l10n.commonFailedOperation);
+      return;
+    }
+    await _load(silent: true);
   }
 
   Future<void> _transferOwner(AppLocalizations l10n, int newOwner) async {
@@ -137,7 +154,12 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
         widget.gid,
         newOwner,
       );
-      if (ok) _load();
+      if (!mounted) return;
+      if (!ok) {
+        _showSnack(l10n.commonFailedOperation);
+        return;
+      }
+      await _load(silent: true);
     }
   }
 
@@ -187,7 +209,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
       }
       return;
     }
-    _load();
+    await _load(silent: true);
   }
 
   Future<void> _toggleSetting(String key, bool value) async {
@@ -443,7 +465,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
       }
     } catch (e) {
       talker.error('GroupManagement uploadAvatar failed', e);
-      _showSnack('${l10n.commonFailedOperation}: $e');
+      _showSnack(l10n.commonFailedOperation);
     }
   }
 
@@ -468,6 +490,12 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
       ),
       body: _isLoading
           ? const LoadingIndicator()
+          : _loadFailed
+          ? ErrorState(
+              title: l10n.commonLoadFailed,
+              onRetry: _load,
+              retryLabel: l10n.retry,
+            )
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [

@@ -358,6 +358,12 @@ abstract class AppLocalizations {
   /// **'Network error, please try again'**
   String get loginErrorNetwork;
 
+  /// No description provided for @loginErrorServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Server error, please try again later'**
+  String get loginErrorServer;
+
   /// No description provided for @loginErrorSessionLimit.
   ///
   /// In en, this message translates to:
@@ -1191,6 +1197,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load page'**
   String get browserLoadingFailed;
+
+  /// No description provided for @browserErrorDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Error details'**
+  String get browserErrorDetails;
 
   /// No description provided for @browserRetry.
   ///
@@ -8547,6 +8559,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Operation failed, please retry'**
   String get commonFailedOperation;
+
+  /// No description provided for @commonLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load'**
+  String get commonLoadFailed;
 
   /// No description provided for @commonUserNotFound.
   ///

@@ -4,12 +4,14 @@ import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/file_service.dart';
 import '../services/snackbar_service.dart';
+import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../l10n/app_localizations.dart';
 import '../models/file_attachment.dart';
 import '../widgets/file_attachment_view.dart';
 import '../widgets/file_thumbnail.dart';
 import '../widgets/sheet_scaffold.dart';
+import '../widgets/ui/error_state.dart';
 import '../widgets/ui/loading_indicator.dart';
 
 class StorageManagementScreen extends StatefulWidget {
@@ -64,9 +66,11 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+      talker.error('StorageManagement load failed', e);
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        // 只记录失败类型，原始异常进日志，不直接展示给用户。
+        _error = 'loadFailed';
       });
     }
   }
@@ -316,21 +320,12 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     }
 
     if (_error != null) {
-      final msg = _error == 'notLoggedIn' ? l10n.storageNotLoggedIn : _error!;
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: colorScheme.error),
-            const SizedBox(height: 16),
-            Text(msg, style: TextStyle(color: colorScheme.error)),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadData,
-              child: Text(l10n.storageRetry),
-            ),
-          ],
-        ),
+      return ErrorState(
+        title: _error == 'notLoggedIn'
+            ? l10n.storageNotLoggedIn
+            : l10n.commonLoadFailed,
+        onRetry: _loadData,
+        retryLabel: l10n.storageRetry,
       );
     }
 

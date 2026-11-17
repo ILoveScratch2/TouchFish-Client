@@ -70,18 +70,24 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
 
   Future<void> _resolveSenderNames(List<Announcement> list) async {
     final uids = list.map((a) => a.sender).toSet().toList();
-    final futures = uids.map((uid) => TfApiClient.instance.getUserByUid(uid));
-    final profiles = await Future.wait(futures);
     final nameMap = <int, String>{};
-    for (final p in profiles) {
-      if (p != null) nameMap[int.parse(p.uid)] = p.username;
-    }
-    for (final a in list) {
-      final name = nameMap[a.sender];
-      if (name != null) {
-        final idx = list.indexOf(a);
-        list[idx] = a.copyWith(senderName: name);
+    // 分批拉取
+    const batchSize = 5;
+    for (var i = 0; i < uids.length; i += batchSize) {
+      final batch = uids.skip(i).take(batchSize);
+      final profiles = await Future.wait(
+        batch.map((uid) => TfApiClient.instance.getUserByUid(uid)),
+      );
+      for (final p in profiles) {
+        if (p == null) continue;
+        final id = int.tryParse(p.uid);
+        if (id != null) nameMap[id] = p.username;
       }
+    }
+    // 按下标写回
+    for (var i = 0; i < list.length; i++) {
+      final name = nameMap[list[i].sender];
+      if (name != null) list[i] = list[i].copyWith(senderName: name);
     }
   }
 
@@ -402,6 +408,7 @@ class _AnnouncementCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
                   Icons.campaign_outlined,
@@ -409,14 +416,29 @@ class _AnnouncementCard extends StatelessWidget {
                   color: theme.colorScheme.primary,
                 ),
                 const SizedBox(width: 10),
-                Text(
-                  senderLabel,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        senderLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        timeLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const Spacer(),
                 if (isAdmin) ...[
                   IconButton(
                     icon: const Icon(Icons.edit_outlined),
@@ -434,12 +456,6 @@ class _AnnouncementCard extends StatelessWidget {
                     onPressed: onDelete,
                   ),
                 ],
-                Text(
-                  timeLabel,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 12),

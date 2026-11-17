@@ -139,6 +139,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get loginErrorNetwork => '网络错误，请重试';
 
   @override
+  String get loginErrorServer => '服务器错误，请稍后重试';
+
+  @override
   String get loginErrorSessionLimit => '登录设备数量已达上限';
 
   @override
@@ -564,6 +567,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get browserLoadingFailed => '页面加载失败';
+
+  @override
+  String get browserErrorDetails => '错误详情';
 
   @override
   String get browserRetry => '重试';
@@ -4451,6 +4457,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get commonFailedOperation => '操作失败，请重试';
+
+  @override
+  String get commonLoadFailed => '加载失败';
 
   @override
   String get commonUserNotFound => '未找到该用户';

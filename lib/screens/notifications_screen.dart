@@ -10,6 +10,7 @@ import '../services/notification_service.dart';
 import '../services/snackbar_service.dart';
 import '../theme/tokens.dart';
 import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/error_state.dart';
 import '../widgets/ui/loading_indicator.dart';
 
 enum NotificationFilter { all, system, forum, friend, group }
@@ -228,6 +229,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               Expanded(
                 child: service.isLoading && notifs.isEmpty
                     ? const LoadingIndicator()
+                    : service.error != null && notifs.isEmpty
+                    ? ErrorState(
+                        title: l10n.commonLoadFailed,
+                        onRetry: () =>
+                            NotificationService.instance.forceRefresh(),
+                        retryLabel: l10n.retry,
+                      )
                     : notifs.isEmpty
                     ? EmptyState(
                         icon: Icons.notifications_none,

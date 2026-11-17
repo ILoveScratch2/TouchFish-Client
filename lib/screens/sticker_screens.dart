@@ -9,7 +9,10 @@ import '../l10n/app_localizations.dart';
 import '../models/sticker_model.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../utils/talker.dart';
 import '../widgets/stickers/sticker_image.dart';
+import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/error_state.dart';
 import '../widgets/ui/loading_indicator.dart';
 
 
@@ -27,6 +30,7 @@ class _StickerMarketplaceScreenState extends State<StickerMarketplaceScreen>
   List<StickerPack> _market = const [];
   List<OwnedStickerPack> _owned = const [];
   bool _loading = true;
+  bool _loadFailed = false;
   String _order = 'usage';
 
   @override
@@ -45,7 +49,10 @@ class _StickerMarketplaceScreenState extends State<StickerMarketplaceScreen>
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _loadFailed = false;
+    });
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     try {
@@ -65,8 +72,14 @@ class _StickerMarketplaceScreenState extends State<StickerMarketplaceScreen>
         _owned = owned;
         _loading = false;
       });
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
+    } catch (e) {
+      talker.error('Sticker market load failed', e);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _loadFailed = true;
+        });
+      }
     }
   }
 
@@ -140,6 +153,12 @@ class _StickerMarketplaceScreenState extends State<StickerMarketplaceScreen>
           Expanded(
             child: _loading
                 ? const LoadingIndicator()
+                : _loadFailed
+                ? ErrorState(
+                    title: l10n.stickerLoadError,
+                    onRetry: _load,
+                    retryLabel: l10n.retry,
+                  )
                 : TabBarView(
                     controller: _tabs,
                     children: [
@@ -153,11 +172,24 @@ class _StickerMarketplaceScreenState extends State<StickerMarketplaceScreen>
     );
   }
 
+  Widget _buildEmptyScrollable(Widget child) {
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [SliverFillRemaining(hasScrollBody: false, child: child)],
+      ),
+    );
+  }
+
   Widget _buildMarketTab(ColorScheme cs, AppLocalizations l10n) {
     if (_market.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(children: const [SizedBox.shrink()]),
+      final searching = _search.text.trim().isNotEmpty;
+      return _buildEmptyScrollable(
+        EmptyState(
+          icon: Symbols.sticky_note_2,
+          title: searching ? l10n.searchNoResults : l10n.stickerNoPacks,
+        ),
       );
     }
     return RefreshIndicator(
@@ -180,9 +212,11 @@ class _StickerMarketplaceScreenState extends State<StickerMarketplaceScreen>
 
   Widget _buildOwnedTab(ColorScheme cs, AppLocalizations l10n) {
     if (_owned.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(children: const [SizedBox.shrink()]),
+      return _buildEmptyScrollable(
+        EmptyState(
+          icon: Symbols.bookmark,
+          title: l10n.stickerNoPacks,
+        ),
       );
     }
     return RefreshIndicator(
@@ -483,6 +517,7 @@ class MyStickerPacksScreen extends StatefulWidget {
 class _MyStickerPacksScreenState extends State<MyStickerPacksScreen> {
   List<StickerPack> _packs = const [];
   bool _loading = true;
+  bool _loadFailed = false;
 
   @override
   void initState() {
@@ -493,78 +528,56 @@ class _MyStickerPacksScreenState extends State<MyStickerPacksScreen> {
   Future<void> _load() async {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
-    if (uid == null || password == null) return;
-    setState(() => _loading = true);
+    if (uid == null || password == null) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _loadFailed = true;
+        });
+      }
+      return;
+    }
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _loadFailed = false;
+      });
+    }
     try {
       final result =
           await TfApiClient.instance.getCreatedStickerPacks(uid, password);
-      if (mounted) setState(() { _packs = result; _loading = false; });
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _packs = result;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      talker.error('My sticker packs load failed', e);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _loadFailed = true;
+        });
+      }
     }
   }
 
   Future<void> _create() async {
-    final l10n = AppLocalizations.of(context)!;
-    final name = TextEditingController();
-    final prefix = TextEditingController();
-    final description = TextEditingController();
-    final accepted = await showDialog<bool>(
+    final draft = await showDialog<_PackDraft>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.stickerCreatePack),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: name,
-              decoration: InputDecoration(labelText: l10n.stickerPackName),
-              autofocus: true,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: prefix,
-              decoration: InputDecoration(
-                labelText: l10n.stickerPackPrefix,
-                helperText: 'Only letters, digits, _ and -',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: description,
-              decoration:
-                  InputDecoration(labelText: l10n.stickerPackDescription),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.stickerPackCreate),
-          ),
-        ],
-      ),
+      builder: (_) => const _CreatePackDialog(),
     );
-    final nameText = name.text.trim();
-    final prefixText = prefix.text.trim();
-    final descriptionText = description.text.trim();
-    name.dispose();
-    prefix.dispose();
-    description.dispose();
-    if (accepted != true) return;
+    if (draft == null) return;
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
     await TfApiClient.instance.createStickerPack(
       uid,
       password,
-      name: nameText,
-      prefix: prefixText,
-      description: descriptionText,
+      name: draft.name,
+      prefix: draft.prefix,
+      description: draft.description,
     );
     await _load();
   }
@@ -582,6 +595,12 @@ class _MyStickerPacksScreenState extends State<MyStickerPacksScreen> {
       ),
       body: _loading
           ? const LoadingIndicator()
+          : _loadFailed
+          ? ErrorState(
+              title: l10n.stickerLoadError,
+              onRetry: _load,
+              retryLabel: l10n.retry,
+            )
           : _packs.isEmpty
               ? Center(
                   child: Column(
@@ -713,36 +732,15 @@ class _StickerPackEditorScreenState extends State<StickerPackEditorScreen> {
     final bytes = file?.bytes;
     if (file == null || bytes == null) return;
     if (!mounted) return;
-    final l10n = AppLocalizations.of(context)!;
-    final slug = TextEditingController(
-      text: file.name
-          .split('.')
-          .first
-          .replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '-'),
-    );
-    final accepted = await showDialog<bool>(
+    final initialSlug = file.name
+        .split('.')
+        .first
+        .replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '-');
+    final slugText = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.stickerAddSticker),
-        content: TextField(
-          controller: slug,
-          decoration: InputDecoration(labelText: l10n.stickerSlugLabel),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.stickerAdd),
-          ),
-        ],
-      ),
+      builder: (_) => _AddStickerDialog(initialSlug: initialSlug),
     );
-    final slugText = slug.text.trim();
-    slug.dispose();
-    if (accepted != true || slugText.isEmpty) return;
+    if (slugText == null || slugText.isEmpty) return;
     setState(() => _busy = true);
     try {
       final uploaded = await TfApiClient.instance.uploadSticker(
@@ -997,6 +995,137 @@ class _StickerPackEditorScreenState extends State<StickerPackEditorScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PackDraft {
+  const _PackDraft({
+    required this.name,
+    required this.prefix,
+    required this.description,
+  });
+
+  final String name;
+  final String prefix;
+  final String description;
+}
+
+/// 对话框自己持有并释放
+class _CreatePackDialog extends StatefulWidget {
+  const _CreatePackDialog();
+
+  @override
+  State<_CreatePackDialog> createState() => _CreatePackDialogState();
+}
+
+class _CreatePackDialogState extends State<_CreatePackDialog> {
+  final _name = TextEditingController();
+  final _prefix = TextEditingController();
+  final _description = TextEditingController();
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _prefix.dispose();
+    _description.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    Navigator.pop(
+      context,
+      _PackDraft(
+        name: _name.text.trim(),
+        prefix: _prefix.text.trim(),
+        description: _description.text.trim(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(l10n.stickerCreatePack),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _name,
+            autofocus: true,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(labelText: l10n.stickerPackName),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _prefix,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: l10n.stickerPackPrefix,
+              helperText: 'Only letters, digits, _ and -',
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _description,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _submit(),
+            decoration: InputDecoration(labelText: l10n.stickerPackDescription),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.commonCancel),
+        ),
+        FilledButton(onPressed: _submit, child: Text(l10n.stickerPackCreate)),
+      ],
+    );
+  }
+}
+
+/// 添加贴图时的 slug 输入
+class _AddStickerDialog extends StatefulWidget {
+  const _AddStickerDialog({required this.initialSlug});
+
+  final String initialSlug;
+
+  @override
+  State<_AddStickerDialog> createState() => _AddStickerDialogState();
+}
+
+class _AddStickerDialogState extends State<_AddStickerDialog> {
+  late final _slug = TextEditingController(text: widget.initialSlug);
+
+  @override
+  void dispose() {
+    _slug.dispose();
+    super.dispose();
+  }
+
+  void _submit() => Navigator.pop(context, _slug.text.trim());
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(l10n.stickerAddSticker),
+      content: TextField(
+        controller: _slug,
+        autofocus: true,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => _submit(),
+        decoration: InputDecoration(labelText: l10n.stickerSlugLabel),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.commonCancel),
+        ),
+        FilledButton(onPressed: _submit, child: Text(l10n.stickerAdd)),
+      ],
     );
   }
 }

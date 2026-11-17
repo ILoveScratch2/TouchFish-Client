@@ -167,7 +167,8 @@ class _LoginScreenState extends State<LoginScreen> {
         'pendingActivation' => l10n.loginErrorPendingActivation,
         'accountBanned' => l10n.loginErrorBanned,
         'networkError' => l10n.loginErrorNetwork,
-        _ => l10n.loginErrorNetwork,
+        'serverError' => l10n.loginErrorServer,
+        _ => l10n.loginErrorServer,
       };
       TouchFishSnackbarService.instance.show(msg);
     }

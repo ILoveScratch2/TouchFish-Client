@@ -3759,8 +3759,8 @@ class TfApiClient {
     return _parseBool(result);
   }
 
-  /// 待处理的好友申请列表（含申请留言）。
-  Future<List<FriendRequestEntry>> queryFriendRequests(
+  /// 待处理的好友申请列表（含申请留言）
+  Future<List<FriendRequestEntry>?> queryFriendRequests(
     int uid,
     String password,
   ) async {
@@ -3770,7 +3770,7 @@ class TfApiClient {
       uid: uid,
       password: password,
     );
-    if (result == null) return [];
+    if (result == null) return null;
     try {
       return (jsonDecode(result) as List<dynamic>)
           .map(
@@ -3781,7 +3781,7 @@ class TfApiClient {
           .toList();
     } catch (e) {
       talker.error('queryFriendRequests parse failed', e);
-      return [];
+      return null;
     }
   }
 

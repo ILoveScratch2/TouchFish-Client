@@ -41,7 +41,7 @@ class _LockScreenState extends State<LockScreen> {
     } catch (_) {
       if (mounted) setState(() => _error = l10n.lockErrorUnknown);
     } finally {
-      if (mounted && !LockService.instance.isLocked) setState(() => _busy = false);
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -63,7 +63,8 @@ class _LockScreenState extends State<LockScreen> {
     } catch (_) {
       if (mounted) setState(() => _error = l10n.lockErrorUnknown);
     } finally {
-      if (mounted && !LockService.instance.isLocked) setState(() => _busy = false);
+      // 同上：取消/失败时锁仍存在，不能把 isLocked 当作复位条件。
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -144,9 +145,14 @@ class _LockScreenState extends State<LockScreen> {
                           obscureText: true,
                           autofocus: true,
                           enabled: !_busy,
+                          textInputAction: TextInputAction.done,
                           onSubmitted: (_) => _unlockWithPassword(),
+                          onChanged: (_) {
+                            if (_error != null) setState(() => _error = null);
+                          },
                           decoration: InputDecoration(
                             labelText: l10n.lockPasswordLabel,
+                            errorText: _error,
                             suffixIcon: service.isBiometricEnabled
                                 ? IconButton(
                                     icon: const Icon(Symbols.fingerprint),
@@ -158,16 +164,6 @@ class _LockScreenState extends State<LockScreen> {
                                 : null,
                           ),
                         ),
-                        if (_error != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Text(
-                              _error!,
-                              style: TextStyle(
-                                color: theme.colorScheme.error,
-                              ),
-                            ),
-                          ),
                         const SizedBox(height: 16),
                         FilledButton(
                           onPressed: _busy ? null : _unlockWithPassword,

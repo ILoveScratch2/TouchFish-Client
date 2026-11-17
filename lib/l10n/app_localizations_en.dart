@@ -146,6 +146,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginErrorNetwork => 'Network error, please try again';
 
   @override
+  String get loginErrorServer => 'Server error, please try again later';
+
+  @override
   String get loginErrorSessionLimit => 'Too many logged-in devices';
 
   @override
@@ -594,6 +597,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get browserLoadingFailed => 'Failed to load page';
+
+  @override
+  String get browserErrorDetails => 'Error details';
 
   @override
   String get browserRetry => 'Retry';
@@ -4661,6 +4667,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonFailedOperation => 'Operation failed, please retry';
+
+  @override
+  String get commonLoadFailed => 'Failed to load';
 
   @override
   String get commonUserNotFound => 'User not found';

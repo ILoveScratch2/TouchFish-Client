@@ -10,6 +10,7 @@ import '../services/chat_data_service.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/error_state.dart';
 import '../widgets/ui/loading_indicator.dart';
 import '../widgets/ui/refreshable.dart';
 
@@ -25,6 +26,7 @@ class FriendRequestsScreen extends StatefulWidget {
 
 class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
   bool _isLoading = true;
+  bool _loadFailed = false;
   List<FriendRequestEntry> _requests = const [];
   final Set<int> _processing = {};
 
@@ -41,14 +43,21 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
       if (mounted) setState(() => _isLoading = false);
       return;
     }
-    if (mounted) setState(() => _isLoading = true);
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _loadFailed = false;
+      });
+    }
     final requests = await TfApiClient.instance.queryFriendRequests(
       uid,
       password,
     );
     if (!mounted) return;
     setState(() {
-      _requests = requests;
+      // null 表示请求失败
+      _loadFailed = requests == null;
+      if (requests != null) _requests = requests;
       _isLoading = false;
     });
   }
@@ -108,6 +117,15 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
       ),
       body: _isLoading
           ? const LoadingIndicator()
+          : _loadFailed
+          ? PullToRefresh.content(
+              onRefresh: _load,
+              child: ErrorState(
+                title: l10n.commonLoadFailed,
+                onRetry: _load,
+                retryLabel: l10n.retry,
+              ),
+            )
           : _requests.isEmpty
           ? PullToRefresh.content(onRefresh: _load, child: _buildEmpty(l10n))
           : PullToRefresh.list(

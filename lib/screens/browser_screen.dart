@@ -1340,16 +1340,7 @@ class _BrowserScreenState extends State<BrowserScreen> {
                 ],
                 if (errorText != null) ...[
                   const SizedBox(height: 4),
-                  Text(
-                    errorText,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontFamily: 'monospace',
-                      fontSize: 11,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
+                  _BrowserErrorDetail(raw: errorText),
                 ],
                 const SizedBox(height: 16),
                 Wrap(
@@ -1913,5 +1904,49 @@ class _TabWebView extends StatelessWidget {
     final value = int.tryParse(s, radix: 16);
     if (value == null) return null;
     return Color(value);
+  }
+}
+
+class _BrowserErrorDetail extends StatefulWidget {
+  const _BrowserErrorDetail({required this.raw});
+
+  final String raw;
+
+  @override
+  State<_BrowserErrorDetail> createState() => _BrowserErrorDetailState();
+}
+
+class _BrowserErrorDetailState extends State<_BrowserErrorDetail> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 420),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextButton(
+            onPressed: () => setState(() => _expanded = !_expanded),
+            child: Text(
+              l10n.browserErrorDetails,
+              style: theme.textTheme.labelSmall,
+            ),
+          ),
+          if (_expanded)
+            SelectableText(
+              widget.raw,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontFamily: 'monospace',
+                fontSize: 11,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
