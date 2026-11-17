@@ -26,6 +26,8 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
+  bool _markingAll = false;
+
   NotificationFilter _filter = NotificationFilter.all;
 
   /// 触底补拉更早通知的距离
@@ -106,22 +108,51 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  /// 长按通知
+  Future<void> _showNotificationActions(NotificationInfo notif) async {
+    final l10n = AppLocalizations.of(context)!;
+    final delete = await showModalBottomSheet<bool>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: Text(l10n.notificationDelete),
+              onTap: () => Navigator.pop(sheetContext, true),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (delete == true) await _deleteNotification(notif);
+  }
+
   Future<void> _markAllRead() async {
     final service = NotificationService.instance;
-    switch (_filter) {
-      case NotificationFilter.all:
-        await service.markSystemRead();
-        await service.markFriendRead();
-        await service.markInviteRead();
-        await service.markForumRead();
-      case NotificationFilter.system:
-        await service.markSystemRead();
-      case NotificationFilter.forum:
-        await service.markForumRead();
-      case NotificationFilter.friend:
-        await service.markFriendRead();
-      case NotificationFilter.group:
-        await service.markInviteRead();
+    if (mounted) setState(() => _markingAll = true);
+    try {
+      switch (_filter) {
+        case NotificationFilter.all:
+          await Future.wait([
+            service.markSystemRead(),
+            service.markFriendRead(),
+            service.markInviteRead(),
+            service.markForumRead(),
+          ]);
+        case NotificationFilter.system:
+          await service.markSystemRead();
+        case NotificationFilter.forum:
+          await service.markForumRead();
+        case NotificationFilter.friend:
+          await service.markFriendRead();
+        case NotificationFilter.group:
+          await service.markInviteRead();
+      }
+    } finally {
+      if (mounted) setState(() => _markingAll = false);
     }
   }
 
@@ -160,8 +191,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             actions: [
               if (unread > 0)
                 TextButton(
-                  onPressed: _markAllRead,
-                  child: Text(l10n.notificationMarkAllRead),
+                  onPressed: _markingAll ? null : _markAllRead,
+                  child: _markingAll
+                      ? const SizedBox.square(
+                          dimension: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(l10n.notificationMarkAllRead),
                 ),
               IconButton(
                 tooltip: l10n.refresh,
@@ -263,9 +299,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             direction: DismissDirection.endToStart,
                             background: _buildDeleteBackground(context),
                             confirmDismiss: (_) => _deleteNotification(notif),
-                            child: _NotificationCard(
-                              notification: notif,
-                              onTap: () => _openNotification(notif),
+                            child: Semantics(
+                              onDismiss: () => _deleteNotification(notif),
+                              child: GestureDetector(
+                                onLongPress: () => _showNotificationActions(notif),
+                                child: _NotificationCard(
+                                  notification: notif,
+                                  onTap: () => _openNotification(notif),
+                                ),
+                              ),
                             ),
                           );
                         },
@@ -437,7 +479,7 @@ class _NotificationCard extends StatelessWidget {
                 height: TFSize.avatarMd,
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(TFRadius.sm),
+                  borderRadius: BorderRadius.circular(TFRadius.md),
                 ),
                 child: Icon(icon, color: accent, size: TFSize.iconMd),
               ),

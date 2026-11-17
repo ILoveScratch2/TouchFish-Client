@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
+import '../theme/tokens.dart';
 import '../models/user_profile.dart';
 import '../widgets/markdown_renderer.dart';
 import '../models/settings_service.dart';
@@ -17,7 +18,8 @@ import '../utils/clipboard_utils.dart';
 import '../widgets/text_entry_dialog.dart';
 import '../widgets/ui/loading_indicator.dart';
 
-const double _kProfileMaxWidth = 680;
+/// TFSize.contentMaxWidth 对齐
+const double _kProfileMaxWidth = TFSize.contentMaxWidth;
 
 class UserProfileScreen extends StatefulWidget {
   final String userId;
@@ -97,7 +99,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = e.toString();
+          _error = 'loadFailed';
         });
       }
     }
@@ -372,7 +374,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: colorScheme.surface, width: 4),
+            border: Border.all(color: colorScheme.outlineVariant, width: 4),
           ),
           child: ProfilePictureWidget(
             avatarUrl: profile.avatar,

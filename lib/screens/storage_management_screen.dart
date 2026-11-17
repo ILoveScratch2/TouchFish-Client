@@ -12,8 +12,13 @@ import '../models/file_attachment.dart';
 import '../widgets/file_attachment_view.dart';
 import '../widgets/file_thumbnail.dart';
 import '../widgets/sheet_scaffold.dart';
+import '../widgets/ui/empty_state.dart';
 import '../widgets/ui/error_state.dart';
 import '../widgets/ui/loading_indicator.dart';
+import '../theme/tokens.dart';
+
+/// 存储页的失败类型
+enum StorageError { notLoggedIn, loadFailed }
 
 class StorageManagementScreen extends StatefulWidget {
   const StorageManagementScreen({super.key});
@@ -27,8 +32,11 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
   List<Map<String, dynamic>> _files = [];
   Map<String, dynamic>? _storageInfo;
   bool _isLoading = true;
-  bool _isUploading = false;
-  String? _error;
+
+  /// 上传进度 0..1
+  double? _uploadProgress;
+  bool get _isUploading => _uploadProgress != null;
+  StorageError? _error;
 
   @override
   void initState() {
@@ -47,7 +55,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     if (uid == null || password == null) {
       setState(() {
         _isLoading = false;
-        _error = 'notLoggedIn';
+        _error = StorageError.notLoggedIn;
       });
       return;
     }
@@ -71,7 +79,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
       setState(() {
         _isLoading = false;
         // 只记录失败类型，原始异常进日志，不直接展示给用户。
-        _error = 'loadFailed';
+        _error = StorageError.loadFailed;
       });
     }
   }
@@ -111,7 +119,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
       return;
     }
 
-    setState(() => _isUploading = true);
+    setState(() => _uploadProgress = 0);
 
     try {
       // 超过阈值的文件内部会走分块上传，避免把整个文件塞进一个加密请求。
@@ -120,6 +128,16 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
         password: password,
         fileName: file.name,
         bytes: bytes,
+        onProgress: (transferred) {
+          if (!mounted || _uploadProgress == null) return;
+          final total = bytes.length;
+          if (total <= 0) return;
+          final value = (transferred / total).clamp(0.0, 1.0);
+          // 变化不足时不重建。
+          final current = _uploadProgress!;
+          if (value < 1 && (value - current).abs() < 0.01) return;
+          setState(() => _uploadProgress = value);
+        },
       );
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
@@ -133,14 +151,13 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
           l10n.storageUploadFailed,
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      talker.error('Storage upload failed', e, stack);
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
-      TouchFishSnackbarService.instance.show(
-        '${l10n.storageUploadError}: $e',
-      );
+      TouchFishSnackbarService.instance.show(l10n.storageUploadError);
     } finally {
-      if (mounted) setState(() => _isUploading = false);
+      if (mounted) setState(() => _uploadProgress = null);
     }
   }
 
@@ -284,16 +301,14 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.storageTitle),
+        title: Text(
+          _uploadProgress == null
+              ? l10n.storageTitle
+              : '${l10n.storageTitle} · ${(_uploadProgress! * 100).round()}%',
+        ),
         actions: [
           IconButton(
-            icon: _isUploading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.upload_file),
+            icon: const Icon(Icons.upload_file),
             tooltip: l10n.storageUploadFile,
             onPressed: _isUploading ? null : _uploadFile,
           ),
@@ -303,6 +318,16 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
             onPressed: _isLoading ? null : _loadData,
           ),
         ],
+        // 上传进度条
+        bottom: _uploadProgress == null
+            ? null
+            : PreferredSize(
+                preferredSize: const Size.fromHeight(3),
+                child: LinearProgressIndicator(
+                  value: _uploadProgress,
+                  minHeight: 3,
+                ),
+              ),
       ),
       body: _buildBody(l10n, colorScheme),
     );
@@ -315,7 +340,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
 
     if (_error != null) {
       return ErrorState(
-        title: _error == 'notLoggedIn'
+        title: _error == StorageError.notLoggedIn
             ? l10n.storageNotLoggedIn
             : l10n.commonLoadFailed,
         onRetry: _loadData,
@@ -393,25 +418,20 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
 
   Widget _buildFileList(AppLocalizations l10n, ColorScheme colorScheme) {
     if (_files.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      return RefreshIndicator(
+        onRefresh: _loadData,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            Icon(
-              Icons.cloud_off,
-              size: 64,
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.storageNoFiles,
-              style: TextStyle(color: colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: _uploadFile,
-              icon: const Icon(Icons.upload_file),
-              label: Text(l10n.storageUploadFile),
+            SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
+            EmptyState(
+              icon: Icons.cloud_off,
+              title: l10n.storageNoFiles,
+              action: FilledButton.tonalIcon(
+                onPressed: _uploadFile,
+                icon: const Icon(Icons.upload_file),
+                label: Text(l10n.storageUploadFile),
+              ),
             ),
           ],
         ),
@@ -496,25 +516,30 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'dereference',
-                child: ListTile(
-                  leading: const Icon(Icons.link_off, size: 20),
-                  title: Text(l10n.storageDereference),
-                  contentPadding: EdgeInsets.zero,
+                child: Row(
+                  children: [
+                    const Icon(Icons.link_off, size: 20),
+                    const SizedBox(width: TFSpace.md),
+                    Text(l10n.storageDereference, maxLines: 1),
+                  ],
                 ),
               ),
               PopupMenuItem(
                 value: 'delete',
-                child: ListTile(
-                  leading: Icon(
-                    Icons.delete_outline,
-                    size: 20,
-                    color: colorScheme.error,
-                  ),
-                  title: Text(
-                    l10n.storageDeleteFile,
-                    style: TextStyle(color: colorScheme.error),
-                  ),
-                  contentPadding: EdgeInsets.zero,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.delete_outline,
+                      size: 20,
+                      color: colorScheme.error,
+                    ),
+                    const SizedBox(width: TFSpace.md),
+                    Text(
+                      l10n.storageDeleteFile,
+                      maxLines: 1,
+                      style: TextStyle(color: colorScheme.error),
+                    ),
+                  ],
                 ),
               ),
             ],

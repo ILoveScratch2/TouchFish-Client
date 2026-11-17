@@ -31,6 +31,7 @@ import '../services/lock_service.dart';
 import '../services/lock_screen_visibility_service.dart';
 import 'connectivity_self_check_screen.dart';
 import 'rsa_key_management_screen.dart';
+import '../widgets/ui/setting_tile.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -643,21 +644,17 @@ class _SettingsScreenState extends State<SettingsScreen>
                   subtitle: Text(l10n.settingsSecurityMasterPasswordDesc),
                 ),
                 const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.lock_outline),
-                  title: Text(
-                    enabled
-                        ? l10n.settingsSecurityChangePassword
-                        : l10n.settingsSecuritySetPassword,
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
+                SettingNavTile(
+                  icon: Icons.lock_outline,
+                  title: enabled
+                      ? l10n.settingsSecurityChangePassword
+                      : l10n.settingsSecuritySetPassword,
                   onTap: () => _handlePasswordAction(context, change: enabled),
                 ),
                 if (enabled)
-                  ListTile(
-                    leading: const Icon(Icons.lock_open),
-                    title: Text(l10n.settingsSecurityDisablePassword),
-                    trailing: const Icon(Icons.chevron_right),
+                  SettingNavTile(
+                    icon: Icons.lock_open,
+                    title: l10n.settingsSecurityDisablePassword,
                     onTap: () => _handleDisablePassword(context),
                   ),
               ],
@@ -807,13 +804,12 @@ class _SettingsScreenState extends State<SettingsScreen>
         return Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
           child: Card(
-            child: ListTile(
-              enabled: enabled,
-              leading: const Icon(Icons.lock),
-              title: Text(l10n.settingsSecurityLockNowTitle),
-              subtitle: Text(l10n.settingsSecurityLockNowDesc),
-              trailing: const Icon(Icons.chevron_right),
+            child: SettingNavTile(
+              icon: Icons.lock,
+              title: l10n.settingsSecurityLockNowTitle,
+              subtitle: l10n.settingsSecurityLockNowDesc,
               onTap: () => LockService.instance.lock(),
+              enabled: enabled,
             ),
           ),
         );
@@ -2014,7 +2010,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     List<String> domains,
   ) async {
     final controller = TextEditingController(text: domains.join('\n'));
-    final result = await showDialog<String>(
+    final result = await showDialog<({bool reset, String text})>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(_getSettingTitle(l10n, 'settingsTrustedDomainsTitle')),
@@ -2028,7 +2024,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext, 'reset'),
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              (reset: true, text: ''),
+            ),
             child: Text(l10n.settingsTrustedDomainsReset),
           ),
           TextButton(
@@ -2036,7 +2035,10 @@ class _SettingsScreenState extends State<SettingsScreen>
             child: Text(l10n.cancel),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              (reset: false, text: controller.text),
+            ),
             child: Text(l10n.confirm),
           ),
         ],
@@ -2044,11 +2046,27 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
     controller.dispose();
     if (result == null) return;
-    if (result == 'reset') {
+    if (!context.mounted) return;
+    if (result.reset) {
+      final confirmed = await showTouchFishInfoDialog<bool>(
+        context,
+        title: l10n.settingsTrustedDomainsReset,
+        message: l10n.settingsTrustedDomainsResetConfirm,
+        icon: Icons.restart_alt,
+        actions: [
+          TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
+          TouchFishDialogAction<bool>(
+            label: l10n.settingsTrustedDomainsReset,
+            result: true,
+            isPrimary: true,
+          ),
+        ],
+      );
+      if (confirmed != true) return;
       await DomainTrustService.instance.resetTrustedDomains();
     } else {
       await DomainTrustService.instance.setTrustedDomains(
-        result
+        result.text
             .split(RegExp(r'[\n,]'))
             .map((v) => v.trim())
             .where((v) => v.isNotEmpty)
@@ -2070,13 +2088,11 @@ class _SettingsScreenState extends State<SettingsScreen>
       builder: (context, _) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Card(
-          child: ListTile(
-            leading: const Icon(Icons.network_check),
-            title: Text(_getSettingTitle(l10n, item.titleKey)),
-            subtitle: Text(
-              '${ServerConnectionStatusService.instance.phase.name} · ${IpOverrideService.instance.mode.name} · ${IpOverrideService.instance.entries.isEmpty ? l10n.settingsIpOverrideNoEntry : IpOverrideService.instance.entries.first.ip}',
-            ),
-            trailing: const Icon(Icons.chevron_right),
+          child: SettingNavTile(
+            icon: Icons.network_check,
+            title: _getSettingTitle(l10n, item.titleKey),
+            subtitle:
+                '${ServerConnectionStatusService.instance.phase.name} · ${IpOverrideService.instance.mode.name} · ${IpOverrideService.instance.entries.isEmpty ? l10n.settingsIpOverrideNoEntry : IpOverrideService.instance.entries.first.ip}',
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -2763,10 +2779,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                   : null,
             ),
             const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.image_outlined),
-              title: Text(l10n.settingsBackgroundImageSelect),
-              trailing: const Icon(Icons.chevron_right),
+            SettingNavTile(
+              icon: Icons.image_outlined,
+              title: l10n.settingsBackgroundImageSelect,
               onTap: () async {
                 final picker = ImagePicker();
                 final image = await picker.pickImage(
@@ -2903,7 +2918,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       if (context.mounted) {
         final l10n = AppLocalizations.of(context)!;
         TouchFishSnackbarService.instance.show(
-          l10n.settingsBackgroundImageGenColorError(e.toString()),
+          l10n.settingsBackgroundImageGenColorError,
         );
       }
     }
@@ -2962,10 +2977,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                 l10n.settingsCustomThemeError,
                 'error',
               ),
-              ListTile(
-                leading: const Icon(Icons.refresh),
-                title: Text(l10n.settingsCustomThemeReset),
-                trailing: const Icon(Icons.chevron_right),
+              SettingNavTile(
+                icon: Icons.refresh,
+                title: l10n.settingsCustomThemeReset,
                 onTap: () async {
                   final confirmed = await showTouchFishInfoDialog<bool>(
                     context,

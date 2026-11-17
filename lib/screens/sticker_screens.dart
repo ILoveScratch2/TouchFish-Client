@@ -10,6 +10,7 @@ import '../models/sticker_model.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/snackbar_service.dart';
+import '../theme/tokens.dart';
 import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/stickers/sticker_image.dart';
@@ -474,35 +475,47 @@ class _OwnedPackCardState extends State<_OwnedPackCard> {
               ],
             ),
           ),
-          if (_expanded && widget.pack.stickers.isNotEmpty)
-            SizedBox(
-              height: 64,
-              child: ListView.separated(
-                padding:
-                    const EdgeInsets.only(left: 16, right: 16, bottom: 12),
-                scrollDirection: Axis.horizontal,
-                itemCount: widget.pack.stickers.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 8),
-                itemBuilder: (_, index) {
-                  final sticker = widget.pack.stickers[index];
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: SizedBox(
-                      width: 52,
-                      child: ColoredBox(
-                        color: cs.surfaceContainerLow,
-                        child: StickerImage(
-                          hash: sticker.fileHash,
-                          fileType: sticker.fileType,
-                          error: Icon(Icons.broken_image,
-                              size: 20, color: cs.onSurfaceVariant),
-                        ),
+          AnimatedSize(
+            duration: TFMotion.base,
+            curve: TFMotion.standard,
+            alignment: Alignment.topCenter,
+            child: _expanded && widget.pack.stickers.isNotEmpty
+                ? SizedBox(
+                    height: 64,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        bottom: 12,
                       ),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: widget.pack.stickers.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 8),
+                      itemBuilder: (_, index) {
+                        final sticker = widget.pack.stickers[index];
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: SizedBox(
+                            width: 52,
+                            child: ColoredBox(
+                              color: cs.surfaceContainerLow,
+                              child: StickerImage(
+                                hash: sticker.fileHash,
+                                fileType: sticker.fileType,
+                                error: Icon(
+                                  Icons.broken_image,
+                                  size: 20,
+                                  color: cs.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-            ),
+                  )
+                : const SizedBox.shrink(),
+          ),
         ],
       ),
     );
@@ -593,6 +606,7 @@ class _MyStickerPacksScreenState extends State<MyStickerPacksScreen> {
       appBar: AppBar(title: Text(l10n.stickerMyPacks)),
       floatingActionButton: FloatingActionButton(
         onPressed: _create,
+        tooltip: l10n.stickerCreatePack,
         child: const Icon(Symbols.add),
       ),
       body: _loading
@@ -665,7 +679,7 @@ class _MyStickerPacksScreenState extends State<MyStickerPacksScreen> {
                               style:
                                   Theme.of(context).textTheme.titleSmall),
                           subtitle: Text(
-                            '$stickerCount stickers  :${pack.prefix}:',
+                            '${l10n.stickerCountLabel(stickerCount)}  :${pack.prefix}:',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
@@ -868,6 +882,7 @@ class _StickerPackEditorScreenState extends State<StickerPackEditorScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _busy ? null : _addSticker,
+        tooltip: l10n.stickerAddSticker,
         child: _busy
             ? const SizedBox(
                 width: 20,
@@ -944,7 +959,7 @@ class _StickerPackEditorScreenState extends State<StickerPackEditorScreen> {
             child: Row(
               children: [
                 Text(
-                  '${_pack.stickers.length} ${l10n.stickerMyPacks}',
+                  l10n.stickerCountLabel(_pack.stickers.length),
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         color: cs.onSurfaceVariant,
                       ),

@@ -123,7 +123,7 @@ class _ForumScreenState extends State<ForumScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = e.toString();
+          _error = 'loadFailed';
         });
       }
     }

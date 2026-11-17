@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:super_sliver_list/super_sliver_list.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -35,6 +36,7 @@ import '../services/draft_service.dart';
 import '../services/local_message_store.dart';
 import '../services/message_sync_service.dart';
 import '../services/notification_service.dart';
+import '../theme/tokens.dart';
 import '../utils/wide_screen_helper.dart';
 import '../utils/talker.dart';
 import '../utils/read_receipt_throttle.dart';
@@ -151,6 +153,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   ChatRoomUiState get _uiState => ref.read(chatRoomStateProvider(_contactUid));
 
   ScrollController get _scrollController => _uiState.scrollController;
+
+  /// 消息列表的索引跳转控制
+  final ListController _messageListController = ListController();
 
   ChatMessage? get _replyingTo => _uiState.replyingTo;
 
@@ -410,6 +415,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _groupMetaRefreshTimer?.cancel();
     unawaited(_saveDraft());
     _messageController.dispose();
+    // ListController 也是 ChangeNotifier
+    _messageListController.dispose();
     _entranceKeys.dispose();
     _activityRevision.dispose();
     _scrollListenerAttached?.removeListener(_onScroll);
@@ -2552,8 +2559,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       if (animated) {
         _scrollController.animateTo(
           _scrollController.position.minScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
+          duration: TFMotion.slow,
+          curve: TFMotion.decelerate,
         );
       } else {
         _scrollController.jumpTo(_scrollController.position.minScrollExtent);
@@ -2598,21 +2605,22 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     if (targetContext != null) {
       Scrollable.ensureVisible(
         targetContext,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
+        duration: TFMotion.medium,
+        curve: TFMotion.decelerate,
         alignment: 0.35,
       );
       return;
     }
-    if (!_scrollController.hasClients) return;
+    if (!_scrollController.hasClients || !_messageListController.isAttached) {
+      return;
+    }
     final reverseIndex = _messages.length - 1 - index;
-    final fraction = _messages.length <= 1
-        ? 0.0
-        : reverseIndex / (_messages.length - 1);
-    _scrollController.animateTo(
-      _scrollController.position.maxScrollExtent * fraction,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
+    _messageListController.animateToItem(
+      index: reverseIndex,
+      scrollController: _scrollController,
+      alignment: 0.35,
+      duration: (_) => TFMotion.medium,
+      curve: (_) => TFMotion.decelerate,
     );
   }
 
@@ -2944,7 +2952,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   // Content area with animated pin switch
                   Expanded(
                     child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 180),
+                      duration: TFMotion.respecting(context, TFMotion.base),
                       child: _buildCurrentPinContent(
                         key: ValueKey(currentPin.messageId),
                         pin: currentPin,
@@ -3413,6 +3421,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                     entranceKeys: entranceKeys,
                                     messageKeys: _messageKeys,
                                     scrollController: scrollController,
+                                    listController: _messageListController,
                                     galleryItems: gallery.items,
                                     imageIndexById: gallery.indexById,
                                     essenceMids: _essenceMids,
@@ -3463,10 +3472,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                     bottom: 8,
                     child: AnimatedScale(
                       scale: _showBackToBottom ? 1 : 0.8,
-                      duration: const Duration(milliseconds: 180),
+                      duration: TFMotion.respecting(context, TFMotion.base),
                       child: AnimatedOpacity(
                         opacity: _showBackToBottom ? 1 : 0,
-                        duration: const Duration(milliseconds: 180),
+                        duration: TFMotion.respecting(context, TFMotion.base),
                         child: IgnorePointer(
                           ignoring: !_showBackToBottom,
                           child: FloatingActionButton.small(
@@ -3483,9 +3492,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               ),
             ),
             AnimatedSwitcher(
-              duration: const Duration(milliseconds: 150),
-              switchInCurve: Curves.fastEaseInToSlowEaseOut,
-              switchOutCurve: Curves.fastEaseInToSlowEaseOut,
+              duration: TFMotion.respecting(context, TFMotion.fast),
+              switchInCurve: TFMotion.standard,
+              switchOutCurve: TFMotion.standard,
               transitionBuilder: (Widget child, Animation<double> animation) {
                 return SlideTransition(
                   position: Tween<Offset>(
@@ -3494,7 +3503,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   ).animate(
                     CurvedAnimation(
                       parent: animation,
-                      curve: Curves.easeOutCubic,
+                      curve: TFMotion.standard,
                     ),
                   ),
                   child: SizeTransition(
@@ -3533,8 +3542,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               onRedirectToCurrentChat: _redirectToCurrentChat,
             ),
             if (!isSelectionMode) ...[
-              // WS 断开时给一行明确提示：全局横幅走 HTTP 探针，
-              // WS 断而 HTTP 通的情况下它不会出现。
+              // WS 断开时明确提示
               const WsConnectionStrip(),
               // 有未发出的消息时给一条汇总 + 一键重发
               FailedMessagesBar(

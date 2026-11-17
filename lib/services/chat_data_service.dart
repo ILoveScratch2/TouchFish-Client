@@ -934,7 +934,14 @@ class ChatDataService extends ChangeNotifier {
       }
       final aTime = a.lastMessageTime?.millisecondsSinceEpoch ?? 0;
       final bTime = b.lastMessageTime?.millisecondsSinceEpoch ?? 0;
-      return bTime.compareTo(aTime);
+      final byTime = bTime.compareTo(aTime);
+      if (byTime != 0) return byTime;
+      // Dart 的 List.sort 对大列表不稳定，两条消息落在同一毫秒时
+      // 顺序会随排序实现变化
+      // 表现为会话列表莫名换位
+      final byMid = (b.lastMessageMid ?? 0).compareTo(a.lastMessageMid ?? 0);
+      if (byMid != 0) return byMid;
+      return a.id.compareTo(b.id);
     });
   }
 

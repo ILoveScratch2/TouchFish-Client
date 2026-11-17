@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import 'app_alert_dialog.dart';
+import 'ui/empty_state.dart';
 
 /// 管理后台通用页面
 class AdminPageScaffold extends StatelessWidget {
@@ -112,7 +113,12 @@ class AdminEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _AdminStatusView(icon: icon, message: message, action: action);
+    return EmptyState(
+      icon: icon,
+      title: message,
+      action: action,
+      scrollable: true,
+    );
   }
 }
 
@@ -132,68 +138,19 @@ class AdminErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return _AdminStatusView(
+    return EmptyState(
       icon: icon,
-      message: message,
+      title: message,
       action: FilledButton.tonalIcon(
         onPressed: onRetry,
         icon: const Icon(Icons.refresh_rounded),
         label: Text(l10n.retry),
       ),
+      scrollable: true,
     );
   }
 }
 
-class _AdminStatusView extends StatelessWidget {
-  const _AdminStatusView({
-    required this.icon,
-    required this.message,
-    this.action,
-  });
-
-  final IconData icon;
-  final String message;
-  final Widget? action;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final action = this.action;
-    return LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: constraints.maxHeight),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, size: 56, color: colorScheme.onSurfaceVariant),
-                  const SizedBox(height: 16),
-                  Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  if (action != null) ...[
-                    const SizedBox(height: 20),
-                    action,
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 管理后台搜索框：与服务器设置页同款的填充圆角样式。
 class AdminSearchField extends StatelessWidget {
   const AdminSearchField({
     super.key,

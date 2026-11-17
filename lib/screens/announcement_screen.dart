@@ -5,11 +5,13 @@ import '../models/notification_model.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/notification_service.dart';
+import '../models/settings_service.dart';
 import '../services/snackbar_service.dart';
 import '../utils/format.dart';
 import '../utils/talker.dart';
 import '../widgets/admin_ui.dart';
 import '../widgets/markdown_renderer.dart';
+import '../widgets/ui/skeleton.dart';
 import '../widgets/text_entry_dialog.dart';
 
 class AnnouncementScreen extends StatefulWidget {
@@ -62,7 +64,7 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
       talker.error('AnnouncementScreen: load failed', e);
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = 'loadFailed';
           _isLoading = false;
         });
       }
@@ -125,7 +127,9 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
     );
     if (mounted) {
       TouchFishSnackbarService.instance.show(
-        success ? l10n.announcementCreateSuccess : l10n.announcementCreateFailed,
+        success
+            ? l10n.announcementCreateSuccess
+            : l10n.announcementCreateFailed,
       );
       if (success) _load();
     }
@@ -198,20 +202,24 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
     );
     if (mounted) {
       final l10n = AppLocalizations.of(context)!;
-      TouchFishSnackbarService.instance
-          .show(success ? l10n.announcementDeleteSuccess : l10n.announcementDeleteFailed);
+      TouchFishSnackbarService.instance.show(
+        success
+            ? l10n.announcementDeleteSuccess
+            : l10n.announcementDeleteFailed,
+      );
       if (success) _load();
     }
   }
 
-  void _showNotificationList() {
-    _notificationService.markAnnouncementRead();
+  Future<void> _showNotificationList() async {
     final l10n = AppLocalizations.of(context)!;
-    showModalBottomSheet(
+    // 真正关闭后再标记
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (context) => _AnnouncementNotificationSheet(l10n: l10n),
     );
+    _notificationService.markAnnouncementRead();
   }
 
   @override
@@ -273,7 +281,8 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
 
   Widget _buildAnnouncementList(AppLocalizations l10n) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      // 与列表同构的骨架，而不是屏幕正中一个转圈：加载完成时布局不跳。
+      return const ListSkeleton(itemCount: 5);
     }
     final list = _announcements ?? const <Announcement>[];
     return RefreshIndicator(
@@ -289,10 +298,7 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
               icon: Icons.campaign_outlined,
             )
           : ListView.builder(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               itemCount: list.length,
               itemBuilder: (context, index) => _AnnouncementCard(
                 announcement: list[index],
@@ -460,7 +466,13 @@ class _AnnouncementCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            MarkdownRenderer(data: announcement.content, selectable: true),
+            if (SettingsService.instance.getValue<bool>(
+              'enableMarkdownRendering',
+              true,
+            ))
+              MarkdownRenderer(data: announcement.content, selectable: true)
+            else
+              SelectableText(announcement.content),
           ],
         ),
       ),

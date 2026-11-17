@@ -72,10 +72,10 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
       if (mounted) {
         TouchFishSnackbarService.instance.show(l10n.groupCreateFailedLimit);
       }
-    } catch (e) {
-      talker.error('GroupCreate failed', e);
+    } catch (e, stack) {
+      talker.error('GroupCreate failed', e, stack);
       if (mounted) {
-        TouchFishSnackbarService.instance.show('${l10n.commonFailedOperation}: $e');
+        TouchFishSnackbarService.instance.show(l10n.commonFailedOperation);
       }
     }
     if (mounted) setState(() => _isCreating = false);

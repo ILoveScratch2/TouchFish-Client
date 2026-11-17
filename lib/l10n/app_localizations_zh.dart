@@ -518,6 +518,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get browserNewTab => '新建标签页';
 
   @override
+  String get browserNoTabs => '标签页都关掉了';
+
+  @override
   String get browserCloseTab => '关闭标签页';
 
   @override
@@ -890,9 +893,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsBackgroundImageGenColorSuccess => '已从背景图片提取主题色';
 
   @override
-  String settingsBackgroundImageGenColorError(String error) {
-    return '提取颜色失败: $error';
-  }
+  String get settingsBackgroundImageGenColorError => '无法从这张图片中提取配色，换一张试试';
 
   @override
   String get settingsCustomThemeTitle => '自定义主题颜色';
@@ -2547,6 +2548,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get taskStatusFailed => '失败';
 
   @override
+  String get taskFailedHint => '传输失败，请检查网络后重试';
+
+  @override
   String taskMoreCount(int count) {
     return '另有 $count 项';
   }
@@ -3240,6 +3244,37 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get forumPublish => '发布';
+
+  @override
+  String get forumComposeDiscardTitle => '放弃这次编辑？';
+
+  @override
+  String get forumComposeDiscardBody => '内容已作为草稿保存，但不会发布。';
+
+  @override
+  String get forumComposeKeepEditing => '继续编辑';
+
+  @override
+  String get forumComposeDiscard => '放弃';
+
+  @override
+  String get forumDraftRestoreTitle => '发现未发布的草稿';
+
+  @override
+  String forumDraftRestoreBody(String preview) {
+    return '$preview';
+  }
+
+  @override
+  String get forumDraftRestoreAction => '恢复草稿';
+
+  @override
+  String get forumDraftDiscardAction => '丢弃草稿';
+
+  @override
+  String forumDraftAttachmentSuffix(int count) {
+    return '（+$count 个附件）';
+  }
 
   @override
   String get forumComposePost => '发帖';
@@ -4060,6 +4095,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatConnectionReconnecting => '连接已断开，正在重连…';
 
   @override
+  String chatConnectionReconnectingAttempt(int attempt, int max) {
+    return '正在重连（$attempt/$max）…';
+  }
+
+  @override
   String get videoTapToPlay => '点击播放';
 
   @override
@@ -4111,6 +4151,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get notificationMarkAllRead => '全部已读';
+
+  @override
+  String get notificationDelete => '删除通知';
 
   @override
   String get notificationDeleted => '通知已删除';
@@ -4469,6 +4512,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get commonLoadFailed => '加载失败';
+
+  @override
+  String get commonRetryLater => '请稍后重试';
 
   @override
   String get commonUserNotFound => '未找到该用户';
@@ -4869,6 +4915,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get stickerMyPacks => '我的贴图包';
 
   @override
+  String stickerCountLabel(int count) {
+    return '$count 个表情';
+  }
+
+  @override
   String get stickerCreatePack => '创建贴图包';
 
   @override
@@ -5246,6 +5297,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsTrustedDomainsReset => '恢复默认';
+
+  @override
+  String get settingsTrustedDomainsResetConfirm =>
+      '将清空自定义信任域名并恢复为内置默认名单，此前已放行的站点需要重新确认。';
 
   @override
   String get settingsRsaKeysTitle => 'RSA 密钥管理';
@@ -5822,6 +5877,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get searchHint => '搜索用户、群组或消息';
+
+  @override
+  String searchUsersTruncated(int count) {
+    return '仅显示前 $count 条匹配，输入更精确的关键词可缩小范围';
+  }
 
   @override
   String get searchStartHint => '输入关键词开始搜索';

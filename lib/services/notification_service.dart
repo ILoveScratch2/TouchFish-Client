@@ -257,7 +257,7 @@ class NotificationService extends ChangeNotifier {
       _error = null;
     } catch (e) {
       talker.error('NotificationService.fetchNotifications failed', e);
-      _error = e.toString();
+      _error = 'loadFailed';
     } finally {
       _isLoading = false;
       notifyListeners();

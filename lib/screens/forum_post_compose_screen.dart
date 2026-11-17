@@ -20,6 +20,7 @@ import '../utils/clipboard_utils.dart';
 import '../utils/wide_screen_helper.dart';
 import '../models/file_attachment.dart';
 import '../services/draft_service.dart';
+import '../widgets/app_alert_dialog.dart';
 import '../widgets/file_attachment_view.dart';
 import '../widgets/stickers/sticker_picker_enhanced.dart';
 
@@ -109,11 +110,58 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
   Future<void> _restoreDraft() async {
     final draft = await DraftService.instance.loadDraft(_draftType, _draftId);
     if (!mounted || draft == null) return;
+
+    final draftTitle = draft['title'] as String? ?? '';
+    final draftContent = draft['content'] as String? ?? '';
+    final draftAttachmentCount = (draft['attachments'] is List)
+        ? (draft['attachments'] as List).length
+        : 0;
+    final hasSomething =
+        draftTitle.trim().isNotEmpty ||
+        draftContent.trim().isNotEmpty ||
+        draftAttachmentCount > 0;
+    if (!hasSomething) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final previewSource = draftTitle.trim().isNotEmpty
+        ? draftTitle.trim()
+        : draftContent.trim();
+    final preview = previewSource.length > 80
+        ? '${previewSource.substring(0, 80)}…'
+        : previewSource;
+    final restore = await showTouchFishInfoDialog<bool>(
+      context,
+      title: l10n.forumDraftRestoreTitle,
+      message: l10n.forumDraftRestoreBody(
+        draftAttachmentCount > 0
+            ? '$preview${l10n.forumDraftAttachmentSuffix(draftAttachmentCount)}'
+            : preview,
+      ),
+      icon: Icons.restore_page_outlined,
+      actions: [
+        TouchFishDialogAction<bool>(
+          label: l10n.forumDraftDiscardAction,
+          result: false,
+          isDestructive: true,
+        ),
+        TouchFishDialogAction<bool>(
+          label: l10n.forumDraftRestoreAction,
+          result: true,
+          isPrimary: true,
+        ),
+      ],
+    );
+    if (!mounted) return;
+    if (restore != true) {
+      await DraftService.instance.clearDraft(_draftType, _draftId);
+      return;
+    }
+
     if (_titleController.text.isEmpty) {
-      _titleController.text = draft['title'] as String? ?? '';
+      _titleController.text = draftTitle;
     }
     if (_contentController.text.isEmpty) {
-      _contentController.text = draft['content'] as String? ?? '';
+      _contentController.text = draftContent;
     }
     final attachments = draft['attachments'];
     if (!widget.isReply && attachments is List) {
@@ -189,6 +237,39 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     _contentController.dispose();
     super.dispose();
   }
+  Future<bool> _confirmDiscard() async {
+    final hasContent =
+        _titleController.text.trim().isNotEmpty ||
+        _contentController.text.trim().isNotEmpty ||
+        _attachments.isNotEmpty;
+    if (!hasContent) return true;
+    final l10n = AppLocalizations.of(context)!;
+    final leave = await showTouchFishInfoDialog<bool>(
+      context,
+      title: l10n.forumComposeDiscardTitle,
+      message: l10n.forumComposeDiscardBody,
+      icon: Icons.edit_note_outlined,
+      actions: [
+        TouchFishDialogAction<bool>(
+          label: l10n.forumComposeKeepEditing,
+          result: false,
+          isPrimary: true,
+        ),
+        TouchFishDialogAction<bool>(
+          label: l10n.forumComposeDiscard,
+          result: true,
+          isDestructive: true,
+        ),
+      ],
+    );
+    return leave == true;
+  }
+
+  Future<void> _handleClose() async {
+    if (!await _confirmDiscard()) return;
+    if (!mounted) return;
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -199,152 +280,178 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     final isWide = !widget.asPage && WideScreenHelper.isWide(context);
     final viewInsets = MediaQuery.of(context).viewInsets;
 
-    Widget content = Material(
-      color: colorScheme.surface,
-      borderRadius: isWide ? BorderRadius.circular(16) : null,
-      clipBehavior: Clip.antiAlias,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: isWide ? 600 : double.infinity,
-          maxHeight: isWide ? screenSize.height * 0.8 : double.infinity,
-        ),
-        padding: EdgeInsets.only(bottom: viewInsets.bottom),
-        child: Column(
-          mainAxisSize: isWide ? MainAxisSize.min : MainAxisSize.max,
-          children: [
-            // Header bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      widget.isReply
-                          ? l10n.forumComposeReply
-                          : l10n.forumComposePost,
-                      style: Theme.of(context).textTheme.titleMedium,
+    Widget content = PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (!await _confirmDiscard()) return;
+        if (!context.mounted) return;
+        Navigator.pop(context);
+      },
+      child: Material(
+        color: colorScheme.surface,
+        borderRadius: isWide ? BorderRadius.circular(16) : null,
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: isWide ? 600 : double.infinity,
+            maxHeight: isWide ? screenSize.height * 0.8 : double.infinity,
+          ),
+          padding: EdgeInsets.only(bottom: viewInsets.bottom),
+          child: Column(
+            mainAxisSize: isWide ? MainAxisSize.min : MainAxisSize.max,
+            children: [
+              // Header bar
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: _handleClose,
+                      tooltip: MaterialLocalizations.of(
+                        context,
+                      ).closeButtonTooltip,
+                      icon: const Icon(Icons.close),
                     ),
-                  ),
-                  FilledButton.icon(
-                    onPressed: (_isSubmitting || _isUploadingAttachment)
-                        ? null
-                        : _submit,
-                    icon: const Icon(Icons.send, size: 18),
-                    label: Text(l10n.forumPublish),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            // Body
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(0, 8, 16, 16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 12, 0),
-                        child: ProfilePictureWidget(
-                          avatarUrl: _currentUser.avatar,
-                          radius: 20,
-                          fallbackText: _currentUser.username,
-                        ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.isReply
+                            ? l10n.forumComposeReply
+                            : l10n.forumComposePost,
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Title field (hidden for reply mode)
-                            if (!widget.isReply)
-                              TextFormField(
-                                controller: _titleController,
-                                style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    FilledButton.icon(
+                      onPressed: (_isSubmitting || _isUploadingAttachment)
+                          ? null
+                          : _submit,
+                      icon: _isSubmitting
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.send, size: 18),
+                      label: Text(l10n.forumPublish),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              // Body
+              Expanded(
+                child: Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(0, 8, 16, 16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 12, 0),
+                          child: ProfilePictureWidget(
+                            avatarUrl: _currentUser.avatar,
+                            radius: 20,
+                            fallbackText: _currentUser.username,
+                          ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Title field (hidden for reply mode)
+                              if (!widget.isReply)
+                                TextFormField(
+                                  controller: _titleController,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium,
+                                  decoration: InputDecoration(
+                                    hintText: l10n.forumPostTitle,
+                                    border: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 0,
+                                      vertical: 8,
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (_contentController.text
+                                            .trim()
+                                            .isEmpty &&
+                                        (value == null ||
+                                            value.trim().isEmpty)) {
+                                      return l10n.forumPostTitleRequired;
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              if (!widget.isReply) const Divider(height: 1),
+                              if (!widget.isReply) const SizedBox(height: 4),
+                              // Content field
+                              MentionTextField(
+                                focusNode: _clipboardFocusNode,
+                                controller: _contentController,
+                                mentionUsers: _mentionUsers,
+                                style: Theme.of(context).textTheme.bodyLarge,
+                                maxLines: null,
+                                minLines: 6,
                                 decoration: InputDecoration(
-                                  hintText: l10n.forumPostTitle,
+                                  hintText: l10n.forumPostContent,
                                   border: InputBorder.none,
                                   contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 0,
                                     vertical: 8,
                                   ),
                                 ),
-                                validator: (value) {
-                                  if (_contentController.text.trim().isEmpty &&
-                                      (value == null || value.trim().isEmpty)) {
-                                    return l10n.forumPostTitleRequired;
-                                  }
-                                  return null;
-                                },
                               ),
-                            if (!widget.isReply) const Divider(height: 1),
-                            if (!widget.isReply) const SizedBox(height: 4),
-                            // Content field
-                            MentionTextField(
-                              focusNode: _clipboardFocusNode,
-                              controller: _contentController,
-                              mentionUsers: _mentionUsers,
-                              style: Theme.of(context).textTheme.bodyLarge,
-                              maxLines: null,
-                              minLines: 6,
-                              decoration: InputDecoration(
-                                hintText: l10n.forumPostContent,
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 0,
-                                  vertical: 8,
-                                ),
-                              ),
-                            ),
-                            if (!widget.isReply && _attachments.isNotEmpty) ...[
-                              const SizedBox(height: 12),
-                              ..._attachments.map(
-                                (attachment) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: FileAttachmentView(
-                                          attachment: attachment,
-                                          allowAutomaticPreview: false,
-                                          compact: true,
+                              if (!widget.isReply &&
+                                  _attachments.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                ..._attachments.map(
+                                  (attachment) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: FileAttachmentView(
+                                            attachment: attachment,
+                                            allowAutomaticPreview: false,
+                                            compact: true,
+                                          ),
                                         ),
-                                      ),
-                                      IconButton(
-                                        onPressed: _isSubmitting
-                                            ? null
-                                            : () {
-                                                setState(
-                                                  () => _attachments.remove(
-                                                    attachment,
-                                                  ),
-                                                );
-                                                _scheduleDraftSave();
-                                              },
-                                        icon: const Icon(Icons.close),
-                                        tooltip: l10n.forumAttachmentRemove,
-                                      ),
-                                    ],
+                                        IconButton(
+                                          onPressed: _isSubmitting
+                                              ? null
+                                              : () {
+                                                  setState(
+                                                    () => _attachments.remove(
+                                                      attachment,
+                                                    ),
+                                                  );
+                                                  _scheduleDraftSave();
+                                                },
+                                          icon: const Icon(Icons.close),
+                                          tooltip: l10n.forumAttachmentRemove,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            _buildMarkdownToolbar(context, l10n),
-          ],
+              _buildMarkdownToolbar(context, l10n),
+            ],
+          ),
         ),
       ),
     );
@@ -434,7 +541,10 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
                       ),
                       IconButton(
                         onPressed: _openStickerPanel,
-                        icon: const Icon(Icons.sticky_note_2_outlined, size: 20),
+                        icon: const Icon(
+                          Icons.sticky_note_2_outlined,
+                          size: 20,
+                        ),
                         tooltip: l10n.stickerMarketTitle,
                       ),
                       IconButton(
@@ -461,9 +571,10 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
   }
 
   void _openDraftBox() {
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute<void>(builder: (_) => const DraftBoxScreen()),
-    );
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push(MaterialPageRoute<void>(builder: (_) => const DraftBoxScreen()));
   }
 
   void _openStickerPanel() {
@@ -532,9 +643,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     }
     final keyboard = HardwareKeyboard.instance;
     final controlOrMeta = keyboard.isControlPressed || keyboard.isMetaPressed;
-    if (!controlOrMeta ||
-        keyboard.isShiftPressed ||
-        keyboard.isAltPressed) {
+    if (!controlOrMeta || keyboard.isShiftPressed || keyboard.isAltPressed) {
       return KeyEventResult.ignored;
     }
     // Ctrl+V detected with no modifiers besides Ctrl/Meta.
@@ -551,10 +660,8 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
       if (text != null && text.isNotEmpty && mounted) {
         final value = _contentController.value;
         final selection = value.selection;
-        final start =
-            selection.isValid ? selection.start : value.text.length;
-        final end =
-            selection.isValid ? selection.end : value.text.length;
+        final start = selection.isValid ? selection.start : value.text.length;
+        final end = selection.isValid ? selection.end : value.text.length;
         _contentController.value = value.copyWith(
           text: value.text.replaceRange(start, end, text),
           selection: TextSelection.collapsed(offset: start + text.length),
@@ -566,8 +673,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     await _uploadClipboardFiles(files);
   }
 
-  Future<void> _uploadClipboardFiles(
-      List<ClipboardFileData> files) async {
+  Future<void> _uploadClipboardFiles(List<ClipboardFileData> files) async {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
@@ -578,8 +684,9 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
         if (maxSize != null && file.bytes.length > maxSize) {
           if (mounted) {
             TouchFishSnackbarService.instance.show(
-              AppLocalizations.of(context)!
-                  .storageFileTooLarge((maxSize / (1024 * 1024)).round()),
+              AppLocalizations.of(
+                context,
+              )!.storageFileTooLarge((maxSize / (1024 * 1024)).round()),
             );
           }
           continue;

@@ -66,7 +66,7 @@ class _PendingForumsScreenState extends State<PendingForumsScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = 'loadFailed';
       });
     }
   }

@@ -12,6 +12,7 @@ import '../models/message_model.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
+import '../theme/tokens.dart';
 import '../utils/failure_reason.dart';
 import '../widgets/media/image_lightbox.dart';
 import '../widgets/media/video_viewer.dart';
@@ -34,6 +35,7 @@ import 'sheet_scaffold.dart';
 import 'sticker_text_renderer.dart';
 import 'message_swipeable_wrapper.dart';
 import 'redirect_message_view.dart';
+import 'chat/message_bubble_shape.dart';
 
 final _stickerTestPattern = RegExp(r':[A-Za-z0-9_]+\+[A-Za-z0-9_-]+:');
 
@@ -700,15 +702,21 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
         for (final action in actions)
           PopupMenuItem<MessageAction>(
             value: action,
-            child: ListTile(
-              dense: true,
-              leading: Icon(action.icon, color: action.color),
-              title: Text(
-                action.label,
-                style: action.color == null
-                    ? null
-                    : TextStyle(color: action.color),
-              ),
+            // 不用 ListTile
+            child: Row(
+              children: [
+                Icon(action.icon, size: 20, color: action.color),
+                const SizedBox(width: TFSpace.md),
+                // 不用 Expanded
+                Text(
+                  action.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: action.color == null
+                      ? null
+                      : TextStyle(color: action.color),
+                ),
+              ],
             ),
           ),
       ],
@@ -795,7 +803,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: TFSpace.md, vertical: 5),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Column(
@@ -819,8 +827,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
                   const SizedBox(width: 6),
                   Text(
                     _formatTime(widget.message.timestamp, context),
-                    style: TextStyle(
-                      fontSize: 10,
+                    style: textTheme.labelSmall?.copyWith(
                       color: colorScheme.onSurfaceVariant.withValues(
                         alpha: 0.7,
                       ),
@@ -887,7 +894,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
       child: Material(
         color: Colors.transparent,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: TFSpace.md, vertical: 5),
           child: Stack(
             children: [
               MouseRegion(
@@ -980,8 +987,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
                                     widget.message.timestamp,
                                     context,
                                   ),
-                                  style: TextStyle(
-                                    fontSize: 10,
+                                  style: textTheme.labelSmall?.copyWith(
                                     color: textColor.withValues(alpha: 0.7),
                                   ),
                                 ),
@@ -1012,9 +1018,12 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
                                         key: _bubbleKey,
                                         decoration: BoxDecoration(
                                           color: containerColor,
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
+                                          // 半径语义统一由 MessageBubbleShape 提供，
+                                          // 不再散落 16 / 20 / 12 字面量。
+                                          borderRadius:
+                                              MessageBubbleShape.standard(
+                                                isOutgoing: widget.message.isMe,
+                                              ).borderRadius,
                                           border: widget.message.mentionsMe
                                               ? Border.all(
                                                   color: colorScheme.tertiary,
@@ -1055,8 +1064,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
                                       widget.message.timestamp,
                                       context,
                                     ),
-                                    style: TextStyle(
-                                      fontSize: 10,
+                                    style: textTheme.labelSmall?.copyWith(
                                       color: textColor.withValues(alpha: 0.7),
                                     ),
                                   ),
@@ -1064,8 +1072,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
                                     const SizedBox(width: 4),
                                     Text(
                                       widget.readReceiptLabel!,
-                                      style: TextStyle(
-                                        fontSize: 10,
+                                      style: textTheme.labelSmall?.copyWith(
                                         color: textColor.withValues(alpha: 0.7),
                                       ),
                                     ),
@@ -1252,8 +1259,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
                                           widget.message.timestamp,
                                           context,
                                         ),
-                                        style: TextStyle(
-                                          fontSize: 11,
+                                        style: textTheme.labelSmall?.copyWith(
                                           color: timeColor,
                                         ),
                                       ),
@@ -1275,8 +1281,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
                                   padding: const EdgeInsets.only(top: 2),
                                   child: Text(
                                     widget.readReceiptLabel!,
-                                    style: TextStyle(
-                                      fontSize: 10,
+                                    style: textTheme.labelSmall?.copyWith(
                                       color: timeColor.withValues(alpha: 0.7),
                                     ),
                                   ),
@@ -1747,7 +1752,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
       child: Hero(
         tag: 'image_${widget.message.id}',
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: const MessageBubbleShape.embedded().borderRadius,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 300, maxHeight: 400),
             child: OptimizedImage(
@@ -1779,7 +1784,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
       return _buildRemoteAttachment(media);
     }
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: const MessageBubbleShape.embedded().borderRadius,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 300, maxHeight: 400),
         child: AspectRatio(
@@ -2033,7 +2038,7 @@ class _MessageHoverActionMenu extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: const MessageBubbleShape.hoverBar().borderRadius,
         boxShadow: [
           BoxShadow(
             color: colorScheme.shadow.withValues(alpha: 0.1),

@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import '../models/settings_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -26,6 +29,8 @@ Widget ensureProviderScope(BuildContext context, Widget child) {
     return ProviderScope(child: child);
   }
 }
+
+const String _kPinnedExpandedKey = 'chatPinnedSectionExpanded';
 
 class ChatListWidget extends StatelessWidget {
   /// 不传则自行订阅
@@ -138,7 +143,16 @@ class _ChatListContent extends ConsumerWidget {
         ),
         title: Text(l10n.chatPinned),
         leading: const Icon(Icons.push_pin),
-        initiallyExpanded: true,
+        // 折叠状态持久化
+        initiallyExpanded: SettingsService.instance.getValue<bool>(
+          _kPinnedExpandedKey,
+          true,
+        ),
+        onExpansionChanged: (expanded) {
+          unawaited(
+            SettingsService.instance.setValue(_kPinnedExpandedKey, expanded),
+          );
+        },
         shape: const RoundedRectangleBorder(
           borderRadius: TFRadius.mdRadius,
         ),
@@ -182,7 +196,11 @@ class _ChatRoomTileState extends ConsumerState<_ChatRoomTile> {
         : null;
 
     final listTile = ListTile(
-      leading: _buildAvatar(context, room),
+      leading: Badge.count(
+        count: unread,
+        isLabelVisible: unread > 0,
+        child: _buildAvatar(context, room),
+      ),
       // 选中态
       selected: widget.isSelected,
       selectedTileColor: colorScheme.secondaryContainer.withValues(
@@ -221,30 +239,6 @@ class _ChatRoomTileState extends ConsumerState<_ChatRoomTile> {
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
-          if (unread > 0) ...[
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: TFSpace.xs + 2,
-                vertical: TFSpace.xxs,
-              ),
-              decoration: BoxDecoration(
-                color: colorScheme.primary,
-                borderRadius: TFRadius.pillRadius,
-              ),
-              constraints: const BoxConstraints(minWidth: TFSpace.xl),
-              child: Text(
-                unread > 99 ? '99+' : unread.toString(),
-                style: TextStyle(
-                  color: colorScheme.onPrimary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  height: 1.2,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
         ],
       ),
       onTap: () {

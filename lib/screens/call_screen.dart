@@ -68,20 +68,11 @@ class _CallScreenState extends State<CallScreen> {
               onAccept: () => service.acceptCall(),
               onDecline: service.declineCall,
             ),
-            RtcCallState.outgoing => _ActiveCallView(
-              peerUid: widget.peerUid,
-              service: service,
-              remoteLabel: 'outgoing',
-            ),
-            RtcCallState.connecting => _ActiveCallView(
-              peerUid: widget.peerUid,
-              service: service,
-              remoteLabel: 'connecting',
-            ),
+            RtcCallState.outgoing || RtcCallState.connecting ||
             RtcCallState.connected => _ActiveCallView(
               peerUid: widget.peerUid,
               service: service,
-              remoteLabel: 'connected',
+              state: state,
             ),
             RtcCallState.ended => _EndedCallView(
               peerUid: widget.peerUid,
@@ -191,12 +182,14 @@ class _IncomingCallView extends StatelessWidget {
 class _ActiveCallView extends StatelessWidget {
   final int peerUid;
   final CallService service;
-  final String remoteLabel;
+
+  /// 通话状态
+  final RtcCallState state;
 
   const _ActiveCallView({
     required this.peerUid,
     required this.service,
-    required this.remoteLabel,
+    required this.state,
   });
 
   @override
@@ -204,12 +197,12 @@ class _ActiveCallView extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final remote = service.remoteVideo;
     final local = service.localVideo;
-    final Widget statusWidget = switch (remoteLabel) {
-      'outgoing' => Text(
+    final Widget statusWidget = switch (state) {
+      RtcCallState.outgoing => Text(
         l10n.callCalling,
         style: const TextStyle(color: Colors.white70),
       ),
-      'connecting' => Text(
+      RtcCallState.connecting => Text(
         l10n.callConnecting,
         style: const TextStyle(color: Colors.white70),
       ),
@@ -256,7 +249,7 @@ class _ActiveCallView extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              if (remoteLabel != 'connected' && remote == null)
+              if (state != RtcCallState.connected && remote == null)
                 Text(
                   l10n.callWaitingForPeer,
                   style: const TextStyle(color: Colors.white70),
@@ -280,17 +273,20 @@ class _ActiveCallView extends StatelessWidget {
           Positioned(
             top: 92,
             right: 16,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                width: 112,
-                height: 158,
+            // 9:16
+            child: SizedBox(
+              width: 112,
+              height: 112 * 16 / 9,
+              child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: const Color(0xFF171A20),
                   border: Border.all(color: Colors.white24),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: local,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child: local,
+                ),
               ),
             ),
           ),
@@ -398,6 +394,7 @@ class _CallControls extends StatelessWidget {
           icon: service.micEnabled ? Icons.mic_rounded : Icons.mic_off_rounded,
           label: service.micEnabled ? l10n.callMute : l10n.callUnmute,
           color: service.micEnabled ? Colors.white : Colors.white70,
+          toggled: !service.micEnabled,
           onPressed: () => service.toggleMute(),
         ),
         _RoundActionButton(
@@ -406,6 +403,7 @@ class _CallControls extends StatelessWidget {
               : Icons.videocam_off_rounded,
           label: service.cameraEnabled ? l10n.callCameraOff : l10n.callCameraOn,
           color: service.cameraEnabled ? Colors.white : Colors.white70,
+          toggled: !service.cameraEnabled,
           onPressed: () => service.toggleCamera(),
         ),
         _RoundActionButton(
@@ -630,33 +628,45 @@ class _RoundActionButton extends StatelessWidget {
   final Color color;
   final VoidCallback? onPressed;
 
+  final bool? toggled;
+
   const _RoundActionButton({
     required this.icon,
     required this.label,
     required this.color,
     required this.onPressed,
+    this.toggled,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Material(
-          color: color.withValues(alpha: 0.35),
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onPressed,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Icon(icon, color: color, size: 28),
+    return Semantics(
+      button: true,
+      toggled: toggled,
+      label: label,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: label,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Material(
+              color: color.withValues(alpha: 0.35),
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: onPressed,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Icon(icon, color: color, size: 28),
+                ),
+              ),
             ),
-          ),
+            const SizedBox(height: 8),
+            Text(label, style: const TextStyle(color: Colors.white70)),
+          ],
         ),
-        const SizedBox(height: 8),
-        Text(label, style: const TextStyle(color: Colors.white70)),
-      ],
+      ),
     );
   }
 }

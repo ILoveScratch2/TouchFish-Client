@@ -170,6 +170,9 @@ abstract final class TFMotion {
   static const Curve enter = Curves.easeOutCubic;
   static const Curve exit = Curves.easeInCubic;
 
+  /// 弹性强调：小元素入场（选中标记、角标）带轻微回弹
+  static const Curve pop = Curves.easeOutBack;
+
   /// 尊重系统「减少动效」设置：返回零时长
   static Duration respecting(BuildContext context, Duration duration) =>
       MediaQuery.disableAnimationsOf(context) ? Duration.zero : duration;

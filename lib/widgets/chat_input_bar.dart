@@ -18,6 +18,7 @@ import 'server_file_picker_sheet.dart';
 import 'stickers/sticker_autocomplete.dart';
 import 'stickers/sticker_picker_enhanced.dart';
 import '../l10n/app_localizations.dart';
+import '../theme/tokens.dart';
 import '../models/message_model.dart';
 import '../models/settings_service.dart';
 import '../utils/file_type_detector.dart';
@@ -254,6 +255,13 @@ class _ChatInputBarState extends State<ChatInputBar> {
     );
   }
 
+  /// 输入框行数上限
+  int _maxInputLines(BuildContext context) {
+    final lineHeight = MediaQuery.textScalerOf(context).scale(16) * 1.4;
+    final budget = MediaQuery.sizeOf(context).height * 0.30;
+    return (budget / lineHeight).floor().clamp(2, 5);
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -332,7 +340,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
                         focusNode: _inputFocusNode,
                         mentionUsers: widget.mentionUsers,
                         layerLink: _inputLayerLink,
-                        maxLines: 5,
+                        maxLines: _maxInputLines(context),
                         minLines: 1,
                         keyboardType: TextInputType.multiline,
                         textInputAction: TextInputAction.newline,
@@ -472,10 +480,15 @@ class _ChatInputBarState extends State<ChatInputBar> {
     final message = widget.actionMessage;
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
+    // 回复侧重「引用上下文」，转发侧重「另投他处」，用不同的强调色区分，
+    // 否则两条预览条除了图标与文案完全一致。
+    final accent = widget.actionIsForward
+        ? colorScheme.tertiary
+        : colorScheme.primary;
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 200),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
+      duration: TFMotion.respecting(context, TFMotion.base),
+      switchInCurve: TFMotion.standard,
+      switchOutCurve: TFMotion.exit,
       transitionBuilder: (child, animation) => SlideTransition(
         position: Tween<Offset>(
           begin: const Offset(0, -0.2),
@@ -496,13 +509,16 @@ class _ChatInputBarState extends State<ChatInputBar> {
               key: ValueKey(
                 '${widget.actionIsForward ? 'forward' : 'reply'}-${message.id}',
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              margin: const EdgeInsets.all(8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: TFSpace.lg,
+                vertical: TFSpace.sm,
+              ),
+              margin: const EdgeInsets.all(TFSpace.sm),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(TFRadius.xl),
                 border: Border.all(
-                  color: colorScheme.outline.withValues(alpha: 0.2),
+                  color: accent.withValues(alpha: 0.28),
                 ),
               ),
               child: Column(
@@ -516,7 +532,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
                             ? Symbols.forward
                             : Symbols.reply,
                         size: 18,
-                        color: colorScheme.primary,
+                        color: accent,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -530,7 +546,10 @@ class _ChatInputBarState extends State<ChatInputBar> {
                                             l10n.commonUnknown,
                                 ),
                           style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(fontWeight: FontWeight.w500),
+                              ?.copyWith(
+                                fontWeight: FontWeight.w500,
+                                color: accent,
+                              ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),

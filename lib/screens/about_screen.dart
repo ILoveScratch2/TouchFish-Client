@@ -12,6 +12,7 @@ import 'debug/debug_options_screen.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../utils/clipboard_utils.dart';
+import '../widgets/ui/error_state.dart';
 import '../widgets/ui/loading_indicator.dart';
 import '../widgets/app_alert_dialog.dart';
 
@@ -346,11 +347,12 @@ class _AboutScreenState extends State<AboutScreen>
           _isLoading = false;
         });
       }
-    } catch (e) {
-      talker.error('Failed to load package info', e);
+    } catch (e, stack) {
+      talker.error('Failed to load package info', e, stack);
       if (mounted) {
         setState(() {
-          _errorMessage = 'Failed to load package info: $e';
+          // 只置错误标记，文案在渲染处本地化。
+          _errorMessage = 'loadFailed';
           _isLoading = false;
         });
       }
@@ -378,9 +380,10 @@ class _AboutScreenState extends State<AboutScreen>
 
     try {
       licenseText = await rootBundle.loadString('LICENSE');
-    } catch (e) {
-      talker.error('Failed to load LICENSE file', e);
-      licenseText = 'Failed to load license file: $e';
+    } catch (e, stack) {
+      // 许可证正文位置不对用户暴露异常串，只提示加载失败。
+      talker.error('Failed to load LICENSE file', e, stack);
+      licenseText = l10n.commonLoadFailed;
     }
 
     if (!context.mounted) return;
@@ -613,9 +616,9 @@ class _AboutScreenState extends State<AboutScreen>
 
     try {
       licenseText = await rootBundle.loadString(licensePath);
-    } catch (e) {
-      talker.error('Failed to load font license: $licensePath', e);
-      licenseText = 'Load license font fail: $e';
+    } catch (e, stack) {
+      talker.error('Failed to load font license: $licensePath', e, stack);
+      licenseText = l10n.commonLoadFailed;
     }
 
     if (!context.mounted) return;
@@ -771,7 +774,13 @@ class _AboutScreenState extends State<AboutScreen>
       body: _isLoading
           ? const LoadingIndicator()
           : _errorMessage != null
-          ? Center(child: Text(_errorMessage!))
+          // 原始异常串只进日志，界面给本地化文案（此处原是 Text(e.toString())）。
+          ? ErrorState(
+              title: l10n.commonLoadFailed,
+              description: l10n.commonRetryLater,
+              onRetry: _initPackageInfo,
+              retryLabel: l10n.retry,
+            )
           : Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 540),

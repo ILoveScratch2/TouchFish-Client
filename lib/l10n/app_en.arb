@@ -190,6 +190,7 @@
   "settingsBrowserSearchEngineBaidu": "Baidu",
 
   "browserNewTab": "New Tab",
+  "browserNoTabs": "All tabs are closed",
   "browserCloseTab": "Close Tab",
   "browserAddressHint": "Type a URL or search the web",
   "browserGo": "Go",
@@ -317,12 +318,7 @@
   "settingsBackgroundImageSelectSuccess": "Background image selected",
   "settingsBackgroundImageClearSuccess": "Background image cleared",
   "settingsBackgroundImageGenColorSuccess": "Theme colors extracted from background",
-  "settingsBackgroundImageGenColorError": "Failed to extract colors: {error}",
-  "@settingsBackgroundImageGenColorError": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+  "settingsBackgroundImageGenColorError": "Failed to extract colors from this image. Try another picture.",
   
   "settingsCustomThemeTitle": "Custom Theme Colors",
   "settingsCustomThemeDesc": "Customize various theme colors of the application",
@@ -970,6 +966,7 @@
   "taskStatusDownloading": "Downloading",
   "taskStatusCompleted": "Completed",
   "taskStatusFailed": "Failed",
+  "taskFailedHint": "Transfer failed. Check your connection and try again.",
   "taskMoreCount": "+{count} more",
   "@taskMoreCount": {"placeholders": {"count": {"type": "int"}}},
   "chatUploadingProgress": "Uploading {percent}",
@@ -1242,6 +1239,26 @@
   "forumCommentSuccess": "Comment posted successfully",
   "forumShare": "Share",
   "forumPublish": "Publish",
+  "forumComposeDiscardTitle": "Discard this post?",
+  "forumComposeDiscardBody": "Your text is kept as a draft, but nothing will be published.",
+  "forumComposeKeepEditing": "Keep editing",
+  "forumComposeDiscard": "Discard",
+  "forumDraftRestoreTitle": "An unpublished draft was found",
+  "forumDraftRestoreBody": "{preview}",
+  "@forumDraftRestoreBody": {
+    "placeholders": {
+      "preview": {"type": "String"}
+    }
+  },
+  "forumDraftRestoreAction": "Restore",
+  "forumDraftDiscardAction": "Discard draft",
+  "forumDraftAttachmentSuffix": " (+{count} attachments)",
+  "@forumDraftAttachmentSuffix": {
+    "description": "Suffix appended to the draft preview when the draft carries attachments",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "forumComposePost": "New Post",
   "forumComposeReply": "Reply to Post",
   "forumPostTitle": "Title",
@@ -1652,6 +1669,14 @@
   "forumFilterMine": "Posted by me",
   "forumFilterNoMatch": "No posts match these filters",
   "chatConnectionReconnecting": "Connection lost, reconnecting…",
+  "chatConnectionReconnectingAttempt": "Reconnecting ({attempt}/{max})…",
+  "@chatConnectionReconnectingAttempt": {
+    "description": "WebSocket reconnecting banner, shows the attempt count within the current rate-limit window",
+    "placeholders": {
+      "attempt": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
   "videoTapToPlay": "Tap to play",
   "messageSendTimeout": "Send timed out, check your network",
   "messageSendNetworkFailed": "Connection lost, this message was not sent",
@@ -1670,6 +1695,7 @@
   "reviewReasonPresetDuplicate": "Duplicate",
   "reviewReasonPresetInappropriate": "Not suitable for public display",
   "notificationMarkAllRead": "Mark all read",
+  "notificationDelete": "Delete notification",
   "notificationDeleted": "Notification deleted",
   "notificationDeleteFailed": "Delete failed, please retry",
   "notificationSwipeToDelete": "Delete",
@@ -1805,6 +1831,7 @@
   "@draftsAttachmentCount": {"placeholders": {"count": {"type": "int"}}},
   "commonFailedOperation": "Operation failed, please retry",
   "commonLoadFailed": "Failed to load",
+  "commonRetryLater": "Please try again later",
   "commonUserNotFound": "User not found",
   "commonFileReadError": "Cannot read file",
   "chatLoading": "Loading...",
@@ -1949,6 +1976,12 @@
   "stickerRemovePack": "Remove pack",
   "stickerAddPack": "Add pack",
   "stickerMyPacks": "My sticker packs",
+  "stickerCountLabel": "{count} stickers",
+  "@stickerCountLabel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "stickerCreatePack": "Create sticker pack",
   "stickerPackName": "Name",
   "stickerPackPrefix": "Prefix",
@@ -2114,6 +2147,7 @@
   "settingsTrustedDomainsTitle": "Trusted Domains",
   "settingsTrustedDomainsDesc": "One domain per line, e.g. example.com or *.example.com. The current server is always trusted.",
   "settingsTrustedDomainsReset": "Reset to Default",
+  "settingsTrustedDomainsResetConfirm": "This clears your custom trusted domains and restores the built-in default list. Sites you already trusted will ask for confirmation again.",
 
   "settingsRsaKeysTitle": "RSA Key Management",
   "settingsRsaKeysDesc": "Manage saved server RSA public keys and view the current server key SHA",
@@ -2373,6 +2407,12 @@
   "searchTabGroups": "Groups",
   "searchTabMessages": "Messages",
   "searchHint": "Search users, groups or messages",
+  "searchUsersTruncated": "Showing the first {count} matches. Refine your keyword to narrow it down.",
+  "@searchUsersTruncated": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "searchStartHint": "Enter keywords to start searching",
   "searchNoResults": "No results found",
   "searchMinLengthHint": "Enter at least {count} characters",

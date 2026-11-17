@@ -216,7 +216,7 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = e.toString();
+          _error = 'loadFailed';
         });
       }
     }
@@ -414,6 +414,7 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
             pinned: true,
             expandedHeight: 160,
             leading: IconButton(
+              tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
               icon: const Icon(Icons.close),
               onPressed: () {
                 if (context.canPop()) {
@@ -491,7 +492,9 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
         Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: colorScheme.surface, width: 4),
+            // 原来是 surface：深色主题下与页面底色相同，描边直接隐形。
+            // 用 outlineVariant 保证两种主题都能看出分离。
+            border: Border.all(color: colorScheme.outlineVariant, width: 4),
           ),
           child: CircleAvatar(
             radius: 72,

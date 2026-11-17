@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../../../theme/tokens.dart';
 
 class ChatDetailBanners extends StatelessWidget {
   const ChatDetailBanners({
@@ -46,9 +46,9 @@ class _BannerSlot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 180),
-      switchInCurve: Curves.easeOut,
-      switchOutCurve: Curves.easeIn,
+      duration: TFMotion.respecting(context, TFMotion.base),
+      switchInCurve: TFMotion.decelerate,
+      switchOutCurve: TFMotion.accelerate,
       transitionBuilder: (child, animation) => SizeTransition(
         sizeFactor: animation,
         axisAlignment: -1,

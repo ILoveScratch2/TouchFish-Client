@@ -287,7 +287,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = e.toString();
+          _error = 'loadFailed';
         });
       }
     }

@@ -548,6 +548,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get browserNewTab => 'New Tab';
 
   @override
+  String get browserNoTabs => 'All tabs are closed';
+
+  @override
   String get browserCloseTab => 'Close Tab';
 
   @override
@@ -935,9 +938,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Theme colors extracted from background';
 
   @override
-  String settingsBackgroundImageGenColorError(String error) {
-    return 'Failed to extract colors: $error';
-  }
+  String get settingsBackgroundImageGenColorError =>
+      'Failed to extract colors from this image. Try another picture.';
 
   @override
   String get settingsCustomThemeTitle => 'Custom Theme Colors';
@@ -2670,6 +2672,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskStatusFailed => 'Failed';
 
   @override
+  String get taskFailedHint =>
+      'Transfer failed. Check your connection and try again.';
+
+  @override
   String taskMoreCount(int count) {
     return '+$count more';
   }
@@ -3400,6 +3406,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forumPublish => 'Publish';
+
+  @override
+  String get forumComposeDiscardTitle => 'Discard this post?';
+
+  @override
+  String get forumComposeDiscardBody =>
+      'Your text is kept as a draft, but nothing will be published.';
+
+  @override
+  String get forumComposeKeepEditing => 'Keep editing';
+
+  @override
+  String get forumComposeDiscard => 'Discard';
+
+  @override
+  String get forumDraftRestoreTitle => 'An unpublished draft was found';
+
+  @override
+  String forumDraftRestoreBody(String preview) {
+    return '$preview';
+  }
+
+  @override
+  String get forumDraftRestoreAction => 'Restore';
+
+  @override
+  String get forumDraftDiscardAction => 'Discard draft';
+
+  @override
+  String forumDraftAttachmentSuffix(int count) {
+    return ' (+$count attachments)';
+  }
 
   @override
   String get forumComposePost => 'New Post';
@@ -4238,6 +4276,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatConnectionReconnecting => 'Connection lost, reconnecting…';
 
   @override
+  String chatConnectionReconnectingAttempt(int attempt, int max) {
+    return 'Reconnecting ($attempt/$max)…';
+  }
+
+  @override
   String get videoTapToPlay => 'Tap to play';
 
   @override
@@ -4297,6 +4340,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationMarkAllRead => 'Mark all read';
+
+  @override
+  String get notificationDelete => 'Delete notification';
 
   @override
   String get notificationDeleted => 'Notification deleted';
@@ -4680,6 +4726,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonLoadFailed => 'Failed to load';
+
+  @override
+  String get commonRetryLater => 'Please try again later';
 
   @override
   String get commonUserNotFound => 'User not found';
@@ -5103,6 +5152,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stickerMyPacks => 'My sticker packs';
 
   @override
+  String stickerCountLabel(int count) {
+    return '$count stickers';
+  }
+
+  @override
   String get stickerCreatePack => 'Create sticker pack';
 
   @override
@@ -5498,6 +5552,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsTrustedDomainsReset => 'Reset to Default';
+
+  @override
+  String get settingsTrustedDomainsResetConfirm =>
+      'This clears your custom trusted domains and restores the built-in default list. Sites you already trusted will ask for confirmation again.';
 
   @override
   String get settingsRsaKeysTitle => 'RSA Key Management';
@@ -6111,6 +6169,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchHint => 'Search users, groups or messages';
+
+  @override
+  String searchUsersTruncated(int count) {
+    return 'Showing the first $count matches. Refine your keyword to narrow it down.';
+  }
 
   @override
   String get searchStartHint => 'Enter keywords to start searching';

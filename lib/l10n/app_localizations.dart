@@ -1096,6 +1096,12 @@ abstract class AppLocalizations {
   /// **'New Tab'**
   String get browserNewTab;
 
+  /// No description provided for @browserNoTabs.
+  ///
+  /// In en, this message translates to:
+  /// **'All tabs are closed'**
+  String get browserNoTabs;
+
   /// No description provided for @browserCloseTab.
   ///
   /// In en, this message translates to:
@@ -1825,8 +1831,8 @@ abstract class AppLocalizations {
   /// No description provided for @settingsBackgroundImageGenColorError.
   ///
   /// In en, this message translates to:
-  /// **'Failed to extract colors: {error}'**
-  String settingsBackgroundImageGenColorError(String error);
+  /// **'Failed to extract colors from this image. Try another picture.'**
+  String get settingsBackgroundImageGenColorError;
 
   /// No description provided for @settingsCustomThemeTitle.
   ///
@@ -4954,6 +4960,12 @@ abstract class AppLocalizations {
   /// **'Failed'**
   String get taskStatusFailed;
 
+  /// No description provided for @taskFailedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer failed. Check your connection and try again.'**
+  String get taskFailedHint;
+
   /// No description provided for @taskMoreCount.
   ///
   /// In en, this message translates to:
@@ -6279,6 +6291,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Publish'**
   String get forumPublish;
+
+  /// No description provided for @forumComposeDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this post?'**
+  String get forumComposeDiscardTitle;
+
+  /// No description provided for @forumComposeDiscardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your text is kept as a draft, but nothing will be published.'**
+  String get forumComposeDiscardBody;
+
+  /// No description provided for @forumComposeKeepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get forumComposeKeepEditing;
+
+  /// No description provided for @forumComposeDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get forumComposeDiscard;
+
+  /// No description provided for @forumDraftRestoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'An unpublished draft was found'**
+  String get forumDraftRestoreTitle;
+
+  /// No description provided for @forumDraftRestoreBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{preview}'**
+  String forumDraftRestoreBody(String preview);
+
+  /// No description provided for @forumDraftRestoreAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get forumDraftRestoreAction;
+
+  /// No description provided for @forumDraftDiscardAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard draft'**
+  String get forumDraftDiscardAction;
+
+  /// Suffix appended to the draft preview when the draft carries attachments
+  ///
+  /// In en, this message translates to:
+  /// **' (+{count} attachments)'**
+  String forumDraftAttachmentSuffix(int count);
 
   /// No description provided for @forumComposePost.
   ///
@@ -7798,6 +7864,12 @@ abstract class AppLocalizations {
   /// **'Connection lost, reconnecting…'**
   String get chatConnectionReconnecting;
 
+  /// WebSocket reconnecting banner, shows the attempt count within the current rate-limit window
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting ({attempt}/{max})…'**
+  String chatConnectionReconnectingAttempt(int attempt, int max);
+
   /// No description provided for @videoTapToPlay.
   ///
   /// In en, this message translates to:
@@ -7899,6 +7971,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mark all read'**
   String get notificationMarkAllRead;
+
+  /// No description provided for @notificationDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete notification'**
+  String get notificationDelete;
 
   /// No description provided for @notificationDeleted.
   ///
@@ -8583,6 +8661,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load'**
   String get commonLoadFailed;
+
+  /// No description provided for @commonRetryLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Please try again later'**
+  String get commonRetryLater;
 
   /// No description provided for @commonUserNotFound.
   ///
@@ -9346,6 +9430,12 @@ abstract class AppLocalizations {
   /// **'My sticker packs'**
   String get stickerMyPacks;
 
+  /// No description provided for @stickerCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} stickers'**
+  String stickerCountLabel(int count);
+
   /// No description provided for @stickerCreatePack.
   ///
   /// In en, this message translates to:
@@ -10071,6 +10161,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reset to Default'**
   String get settingsTrustedDomainsReset;
+
+  /// No description provided for @settingsTrustedDomainsResetConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This clears your custom trusted domains and restores the built-in default list. Sites you already trusted will ask for confirmation again.'**
+  String get settingsTrustedDomainsResetConfirm;
 
   /// No description provided for @settingsRsaKeysTitle.
   ///
@@ -11175,6 +11271,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search users, groups or messages'**
   String get searchHint;
+
+  /// No description provided for @searchUsersTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the first {count} matches. Refine your keyword to narrow it down.'**
+  String searchUsersTruncated(int count);
 
   /// No description provided for @searchStartHint.
   ///

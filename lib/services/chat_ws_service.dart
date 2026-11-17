@@ -45,6 +45,13 @@ class ChatWsService extends ChangeNotifier {
 
   ChatWsState _state = ChatWsState.disconnected;
   ChatWsState get state => _state;
+
+  /// 当前限流窗口内已经尝试过的重连次数
+  int get reconnectAttempt =>
+      _reconnectCount < 0 ? 0 : (_reconnectCount > _maxReconnectsPerMinute
+          ? _maxReconnectsPerMinute
+          : _reconnectCount);
+  int get maxReconnectsPerMinute => _maxReconnectsPerMinute;
   int? _authenticatedUid;
   bool get isAuthenticated =>
       _state == ChatWsState.authenticated &&

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:super_sliver_list/super_sliver_list.dart';
 import '../../../models/message_model.dart';
 import '../../../models/chat_model.dart';
 import '../../../models/settings_service.dart';
@@ -49,6 +50,12 @@ Set<String> newlyAppendedMessageKeys(
 class MessageListView extends StatelessWidget {
   final List<ChatMessage> messages;
   final ScrollController scrollController;
+
+  /// 按索引跳转的控制器（SuperSliverList 专用）。
+  ///
+  /// 由父级 State 持有：跳转通常发生在消息列表之外（引用条、搜索结果、
+  /// 置顶消息），控制器需要跨越它们的生命周期。
+  final ListController? listController;
   final List<LightboxImageItem> galleryItems;
   final Map<String, int> imageIndexById;
   final List<int> essenceMids;
@@ -101,6 +108,7 @@ class MessageListView extends StatelessWidget {
     super.key,
     required this.messages,
     required this.scrollController,
+    this.listController,
     required this.galleryItems,
     required this.imageIndexById,
     required this.essenceMids,
@@ -215,14 +223,19 @@ class MessageListView extends StatelessWidget {
       }
     }
 
-    return ListView.builder(
+    // 用 SuperSliverList 替换 ListView.builder
+    return CustomScrollView(
       controller: scrollController,
       reverse: true,
       cacheExtent: 400,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: messages.length,
-      findChildIndexCallback: findChildIndex,
-      itemBuilder: (context, index) {
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          sliver: SuperSliverList.builder(
+            listController: listController,
+            itemCount: messages.length,
+            findChildIndexCallback: findChildIndex,
+            itemBuilder: (context, index) {
         final messageIndex = messages.length - 1 - index;
         final message = messages[messageIndex];
         final previous = messageIndex > 0 ? messages[messageIndex - 1] : null;
@@ -332,7 +345,7 @@ class MessageListView extends StatelessWidget {
               : DismissDirection.endToStart,
           dismissThresholds: const {DismissDirection.endToStart: 0.22},
           resizeDuration: null,
-          movementDuration: const Duration(milliseconds: 120),
+          movementDuration: TFMotion.fast,
           confirmDismiss: (_) async {
             onReply(message);
             return false;
@@ -346,7 +359,10 @@ class MessageListView extends StatelessWidget {
           ),
           child: keyed,
         );
-      },
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -398,14 +414,11 @@ class _SelectionWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final animDuration = reduceMotion
-        ? Duration.zero
-        : const Duration(milliseconds: 200);
+    final animDuration = TFMotion.respecting(context, TFMotion.base);
 
     return AnimatedContainer(
       duration: animDuration,
-      curve: Curves.easeOutCubic,
+      curve: TFMotion.standard,
       decoration: BoxDecoration(
         color: isSelected
             ? colorScheme.primary.withValues(alpha: 0.10)
@@ -428,7 +441,7 @@ class _SelectionWrapper extends StatelessWidget {
             children: [
               AnimatedSize(
                 duration: animDuration,
-                curve: Curves.easeOutCubic,
+                curve: TFMotion.standard,
                 alignment: Alignment.centerLeft,
                 child: isSelectionMode
                     ? Padding(
@@ -459,13 +472,10 @@ class _SelectionIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
     return AnimatedContainer(
-      duration: reduceMotion
-          ? Duration.zero
-          : const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
+      duration: TFMotion.respecting(context, TFMotion.base),
+      curve: TFMotion.standard,
       width: _SelectionWrapper._indicatorSize,
       height: _SelectionWrapper._indicatorSize,
       decoration: BoxDecoration(
@@ -489,15 +499,11 @@ class _SelectionIndicator extends StatelessWidget {
       ),
       child: AnimatedScale(
         scale: isSelected ? 1 : 0.6,
-        duration: reduceMotion
-            ? Duration.zero
-            : const Duration(milliseconds: 160),
-        curve: Curves.easeOutBack,
+        duration: TFMotion.respecting(context, TFMotion.fast),
+        curve: TFMotion.pop,
         child: AnimatedOpacity(
           opacity: isSelected ? 1 : 0,
-          duration: reduceMotion
-              ? Duration.zero
-              : const Duration(milliseconds: 120),
+          duration: TFMotion.respecting(context, TFMotion.fast),
           child: Icon(
             Icons.check_rounded,
             size: 14,

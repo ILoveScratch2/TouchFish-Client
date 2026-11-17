@@ -13,6 +13,9 @@ class EmptyState extends StatelessWidget {
   /// 紧凑变体
   final bool compact;
 
+  /// 是否可滚动容器
+  final bool scrollable;
+
   const EmptyState({
     super.key,
     required this.icon,
@@ -21,10 +24,26 @@ class EmptyState extends StatelessWidget {
     this.action,
     this.iconSize,
     this.compact = false,
+    this.scrollable = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final content = _buildContent(context);
+    if (!scrollable) return content;
+    // 用 LayoutBuilder 撑满父级
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: content,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final resolvedIconSize = iconSize ?? (compact ? 28 : 44);

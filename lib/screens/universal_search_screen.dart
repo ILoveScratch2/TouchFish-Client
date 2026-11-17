@@ -17,8 +17,12 @@ import '../utils/talker.dart';
 import '../widgets/optimized_image.dart';
 import '../widgets/ui/empty_state.dart';
 import '../widgets/ui/error_state.dart';
+import '../widgets/ui/tf_search_field.dart';
 import '../widgets/ui/load_more_footer.dart';
 import '../widgets/ui/refreshable.dart';
+
+/// 用户搜索的结果上限
+const int _kUserSearchLimit = 20;
 
 /// 统一搜索页：用户 / 群组 / 本地消息三个 tab，共用一个关键词输入框。
 ///
@@ -133,7 +137,12 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
     final localFuture = ChatDataService.instance.searchAllRoomsMessages(query);
     final usersFuture = (uid == null || password == null)
         ? Future<List<UserSearchEntry>>.value(const [])
-        : TfApiClient.instance.searchUsers(uid, password, query);
+        : TfApiClient.instance.searchUsers(
+          uid,
+          password,
+          query,
+          limit: _kUserSearchLimit,
+        );
     final groupsFuture = (!FeatureFlags.instance.groupChat ||
             uid == null ||
             password == null)
@@ -260,19 +269,14 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-              child: TextField(
+              child: TFSearchField(
                 controller: _controller,
+                hintText: l10n.searchHint,
                 autofocus: true,
-                textInputAction: TextInputAction.search,
+                debounce: Duration.zero,
                 onChanged: _onQueryChanged,
-                decoration: InputDecoration(
-                  hintText: l10n.searchHint,
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+                onSubmitted: (value) => unawaited(_search(value)),
+                onClear: () => unawaited(_search('')),
               ),
             ),
             if (_searching) const LinearProgressIndicator(),
@@ -298,14 +302,28 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
         child: _emptyIfSettled(l10n),
       );
     }
+    final truncated = _users.length >= _kUserSearchLimit;
     return PullToRefresh.list(
       onRefresh: _refresh,
       child: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: _users.length,
+        itemCount: _users.length + (truncated ? 1 : 0),
         separatorBuilder: (_, _) => const Divider(height: 1, indent: 76),
         itemBuilder: (context, index) {
+          if (index >= _users.length) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Text(
+                l10n.searchUsersTruncated(_users.length),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            );
+          }
           final user = _users[index];
           return ListTile(
             contentPadding: const EdgeInsets.symmetric(

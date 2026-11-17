@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import '../widgets/ui/empty_state.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -21,6 +22,7 @@ import '../services/media_proxy_service.dart';
 import '../services/search_engines.dart';
 import '../utils/talker.dart';
 import '../utils/clipboard_utils.dart';
+import '../theme/tokens.dart';
 
 /// Make WebView Great Again
 const String _kThemeColorScript = r'''
@@ -77,7 +79,10 @@ class _BrowserScreenState extends State<BrowserScreen> {
   bool _allowPop = false;
 
   /// 新标签页「最近访问」数据源。
-  final Future<List<Map<String, dynamic>>> _recentVisitsFuture =
+  ///
+  /// 不能声明成 final 一次性求值：那样列表停留在首次打开浏览器时的历史，
+  /// 之后访问的站点永远不会出现。每次新建标签时重新取一次。
+  Future<List<Map<String, dynamic>>> _recentVisitsFuture =
       BrowserStorage.instance.getHistory();
 
   BrowserSession get _session => BrowserSession.instance;
@@ -192,7 +197,12 @@ class _BrowserScreenState extends State<BrowserScreen> {
       ).showSnackBar(SnackBar(content: Text(l10n.browserTabLimitReached)));
       return;
     }
-    setState(() => _createTab(BrowserService.normalizeUrl(url)));
+    setState(() {
+      _createTab(BrowserService.normalizeUrl(url));
+      // 回到新标签页时
+      // 应当是刚访问过的站点
+      _recentVisitsFuture = BrowserStorage.instance.getHistory();
+    });
   }
 
   void _openOrReuse(String url) {
@@ -1026,6 +1036,24 @@ class _BrowserScreenState extends State<BrowserScreen> {
     );
   }
 
+  /// 菜单行只做图标 + 文案的 Row，不用 ListTile
+  PopupMenuItem<String> _menuItem(
+    String value,
+    IconData icon,
+    String label,
+  ) {
+    return PopupMenuItem<String>(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, size: 20),
+          const SizedBox(width: TFSpace.md),
+          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMenu(Color foreground) {
     return PopupMenuButton<String>(
       icon: Icon(Icons.more_vert_rounded, color: foreground),
@@ -1057,71 +1085,16 @@ class _BrowserScreenState extends State<BrowserScreen> {
         }
       },
       itemBuilder: (context) => [
-        PopupMenuItem(
-          value: 'copy',
-          child: ListTile(
-            leading: const Icon(Icons.copy_rounded),
-            title: Text(l10n.browserCopyLink),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-        PopupMenuItem(
-          value: 'bookmarks',
-          child: ListTile(
-            leading: const Icon(Icons.bookmarks_rounded),
-            title: Text(l10n.browserBookmarks),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-        PopupMenuItem(
-          value: 'history',
-          child: ListTile(
-            leading: const Icon(Icons.history_rounded),
-            title: Text(l10n.browserHistory),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-        PopupMenuItem(
-          value: 'find',
-          child: ListTile(
-            leading: const Icon(Icons.search_rounded),
-            title: Text(l10n.browserFindOnPage),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-        PopupMenuItem(
-          value: 'share',
-          child: ListTile(
-            leading: const Icon(Icons.share_rounded),
-            title: Text(l10n.browserShare),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-        PopupMenuItem(
-          value: 'external',
-          child: ListTile(
-            leading: const Icon(Icons.open_in_new),
-            title: Text(l10n.browserOpenInExternal),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-        PopupMenuItem(
-          value: 'cleardata',
-          child: ListTile(
-            leading: const Icon(Icons.delete_sweep_rounded),
-            title: Text(l10n.browserClearDataTitle),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
+        _menuItem('copy', Icons.copy_rounded, l10n.browserCopyLink),
+        _menuItem('bookmarks', Icons.bookmarks_rounded, l10n.browserBookmarks),
+        _menuItem('history', Icons.history_rounded, l10n.browserHistory),
+        _menuItem('find', Icons.search_rounded, l10n.browserFindOnPage),
+        _menuItem('share', Icons.share_rounded, l10n.browserShare),
+        _menuItem('external', Icons.open_in_new, l10n.browserOpenInExternal),
+        _menuItem('cleardata', Icons.delete_sweep_rounded,
+            l10n.browserClearDataTitle),
         const PopupMenuDivider(),
-        PopupMenuItem(
-          value: 'exit',
-          child: ListTile(
-            leading: const Icon(Icons.exit_to_app_rounded),
-            title: Text(l10n.browserExitBrowser),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
+        _menuItem('exit', Icons.exit_to_app_rounded, l10n.browserExitBrowser),
       ],
     );
   }
@@ -1129,7 +1102,15 @@ class _BrowserScreenState extends State<BrowserScreen> {
   Widget _buildContent() {
     final s = _session;
     if (s.isEmpty) {
-      return const SizedBox.shrink();
+      return EmptyState(
+        icon: Icons.tab_unselected_rounded,
+        title: l10n.browserNoTabs,
+        action: FilledButton.tonalIcon(
+          onPressed: () => _openNewTab('about:blank'),
+          icon: const Icon(Icons.add),
+          label: Text(l10n.browserNewTab),
+        ),
+      );
     }
     final active = _activeTab;
     final showNewTab = active.url == 'about:blank' &&

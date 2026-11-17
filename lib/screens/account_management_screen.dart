@@ -13,6 +13,7 @@ import '../widgets/admin_ui.dart';
 import '../widgets/support/punishment_sheet.dart';
 import '../widgets/optimized_image.dart';
 import '../widgets/ui/loading_indicator.dart';
+import '../theme/tokens.dart';
 
 class AccountManagementScreen extends StatefulWidget {
   const AccountManagementScreen({super.key});
@@ -82,7 +83,7 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = 'loadFailed';
       });
     }
   }
@@ -889,15 +890,20 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
     String label, {
     Color? color,
   }) {
-    return PopupMenuItem(
+    // 不用 ListTile
+    return PopupMenuItem<String>(
       value: value,
-      child: ListTile(
-        leading: Icon(icon, color: color),
-        title: Text(
-          label,
-          style: color == null ? null : TextStyle(color: color),
-        ),
-        contentPadding: EdgeInsets.zero,
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: TFSpace.md),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: color == null ? null : TextStyle(color: color),
+          ),
+        ],
       ),
     );
   }

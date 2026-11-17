@@ -628,7 +628,7 @@ class _TaskDetailsCard extends StatelessWidget {
           ),
           if (isFailed && task.errorMessage != null) ...[
             const SizedBox(height: 12),
-            _ErrorText(message: task.errorMessage!),
+            _ErrorText(message: l10n.taskFailedHint),
           ],
         ],
       ),

@@ -470,6 +470,26 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     );
   }
 
+  Widget _buildPostContent(
+    BuildContext context,
+    ForumPost post,
+    bool enableMarkdown,
+  ) {
+    if (_stickerTestPattern.hasMatch(post.content)) {
+      return StickerTextRenderer(
+        text: post.content,
+        style: Theme.of(context).textTheme.bodyLarge,
+      );
+    }
+    if (enableMarkdown) {
+      return MarkdownRenderer(data: post.content, selectable: true);
+    }
+    return SelectableText(
+      post.content,
+      style: Theme.of(context).textTheme.bodyLarge,
+    );
+  }
+
   void _leavePost() {
     if (context.canPop()) {
       context.pop();
@@ -536,18 +556,10 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
           ),
         ],
         const SizedBox(height: 12),
-        if (_stickerTestPattern.hasMatch(post.content))
-          StickerTextRenderer(
-            text: post.content,
-            style: Theme.of(context).textTheme.bodyLarge,
-          )
-        else if (enableMarkdown)
-          MarkdownRenderer(data: post.content, selectable: true)
-        else
-          SelectableText(
-            post.content,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
+        // 正文比列表大一号
+        _ReadingScope(
+          child: _buildPostContent(context, post, enableMarkdown),
+        ),
         if (post.attachments.isNotEmpty)
           ForumAttachmentsRow(attachments: post.attachments),
         const SizedBox(height: 8),
@@ -1036,6 +1048,30 @@ class _PaneEnterAnimationState extends State<_PaneEnterAnimation>
         ).animate(_animation),
         child: widget.child,
       ),
+    );
+  }
+}
+
+/// 正文阅读缩放：在系统字号基础上再放大 1.2
+///
+///
+/// Android 14 起的 非线性字号曲线会 基准 * 系数
+/// 大字号段不会按系统曲线收敛
+/// 要严格保留曲线，需要一个委托给原 scaler 的 `TextScaler` 实现，当前未做
+class _ReadingScope extends StatelessWidget {
+  const _ReadingScope({required this.child});
+
+  final Widget child;
+
+  static const double _factor = 1.2;
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final base = media.textScaler.scale(1.0);
+    return MediaQuery(
+      data: media.copyWith(textScaler: TextScaler.linear(base * _factor)),
+      child: child,
     );
   }
 }

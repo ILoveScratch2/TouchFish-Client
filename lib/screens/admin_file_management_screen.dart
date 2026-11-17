@@ -3,6 +3,7 @@ import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/snackbar_service.dart';
 import '../utils/format.dart';
+import '../utils/talker.dart';
 import '../widgets/admin_ui.dart';
 import '../l10n/app_localizations.dart';
 import '../models/file_attachment.dart';
@@ -60,11 +61,12 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
         _filteredFiles = files;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, stack) {
+      talker.error('AdminFileManagementScreen: load failed', e, stack);
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = 'loadFailed';
       });
     }
   }

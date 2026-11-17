@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../l10n/app_localizations.dart';
+import '../utils/talker.dart';
 import '../services/draft_service.dart';
 import '../theme/tokens.dart';
 import '../utils/haptics.dart';
@@ -45,11 +46,12 @@ class _DraftBoxScreenState extends State<DraftBoxScreen> {
         _drafts = drafts;
         _loading = false;
       });
-    } catch (e) {
+    } catch (e, stack) {
+      talker.error('Failed to load drafts', e, stack);
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = e.toString();
+        _error = 'loadFailed';
       });
     }
   }
@@ -104,8 +106,8 @@ class _DraftBoxScreenState extends State<DraftBoxScreen> {
 
     if (_error != null) {
       return ErrorState(
-        title: l10n.commonFailedOperation,
-        description: _error,
+        title: l10n.commonLoadFailed,
+        description: l10n.commonRetryLater,
         onRetry: _load,
         retryLabel: l10n.retry,
       );

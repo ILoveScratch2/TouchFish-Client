@@ -515,6 +515,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get browserNewTab => '新開頁籤';
 
   @override
+  String get browserNoTabs => '所有分頁都閂咗';
+
+  @override
   String get browserCloseTab => '闔頁籤';
 
   @override
@@ -887,9 +890,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get settingsBackgroundImageGenColorSuccess => '已自背景圖提取主題色';
 
   @override
-  String settingsBackgroundImageGenColorError(String error) {
-    return '取色未成：$error';
-  }
+  String get settingsBackgroundImageGenColorError => '呢張圖取唔到色，試下換一張';
 
   @override
   String get settingsCustomThemeTitle => '自定主題之色';
@@ -2544,6 +2545,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get taskStatusFailed => '敗矣';
 
   @override
+  String get taskFailedHint => '傳輸失敗，檢查下網絡再試';
+
+  @override
   String taskMoreCount(int count) {
     return '另有 $count 項';
   }
@@ -3236,6 +3240,37 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get forumPublish => '發';
+
+  @override
+  String get forumComposeDiscardTitle => '唔要呢次編輯？';
+
+  @override
+  String get forumComposeDiscardBody => '內容已經存落草稿，但唔會發佈。';
+
+  @override
+  String get forumComposeKeepEditing => '繼續編輯';
+
+  @override
+  String get forumComposeDiscard => '唔要';
+
+  @override
+  String get forumDraftRestoreTitle => '有未發佈嘅草稿';
+
+  @override
+  String forumDraftRestoreBody(String preview) {
+    return '$preview';
+  }
+
+  @override
+  String get forumDraftRestoreAction => '恢復草稿';
+
+  @override
+  String get forumDraftDiscardAction => '唔要草稿';
+
+  @override
+  String forumDraftAttachmentSuffix(int count) {
+    return '（+$count 個附件）';
+  }
 
   @override
   String get forumComposePost => '發帖';
@@ -4056,6 +4091,11 @@ class AppLocalizationsOch extends AppLocalizations {
   String get chatConnectionReconnecting => '連線已中斷，正在重連…';
 
   @override
+  String chatConnectionReconnectingAttempt(int attempt, int max) {
+    return '正在重連（$attempt/$max）…';
+  }
+
+  @override
   String get videoTapToPlay => '點擊播放';
 
   @override
@@ -4107,6 +4147,9 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get notificationMarkAllRead => '悉已讀之';
+
+  @override
+  String get notificationDelete => '刪通知';
 
   @override
   String get notificationDeleted => '通知已刪';
@@ -4465,6 +4508,9 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get commonLoadFailed => '載入失敗';
+
+  @override
+  String get commonRetryLater => '晏啲再試過';
 
   @override
   String get commonUserNotFound => '未找到該用戶';
@@ -4861,6 +4907,11 @@ class AppLocalizationsOch extends AppLocalizations {
   String get stickerMyPacks => '我之貼圖包';
 
   @override
+  String stickerCountLabel(int count) {
+    return '$count 個表情';
+  }
+
+  @override
   String get stickerCreatePack => '創建貼圖包';
 
   @override
@@ -5237,6 +5288,10 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get settingsTrustedDomainsReset => '恢復預設';
+
+  @override
+  String get settingsTrustedDomainsResetConfirm =>
+      '將清空自訂信任網域並恢復為內建預設名單，先前已放行的網站需要重新確認。';
 
   @override
   String get settingsRsaKeysTitle => 'RSA 密鑰管理';
@@ -5813,6 +5868,11 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get searchHint => '尋用戶、群聊或消息';
+
+  @override
+  String searchUsersTruncated(int count) {
+    return '只顯示頭 $count 個，打準啲關鍵詞先收窄範圍';
+  }
 
   @override
   String get searchStartHint => '輸入關鍵詞始尋';

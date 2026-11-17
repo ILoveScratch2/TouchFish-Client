@@ -21,6 +21,8 @@ class WsConnectionStrip extends StatelessWidget {
         final l10n = AppLocalizations.of(context)!;
         final theme = Theme.of(context);
         final colorScheme = theme.colorScheme;
+        final attempt = ChatWsService.instance.reconnectAttempt;
+        final maxAttempts = ChatWsService.instance.maxReconnectsPerMinute;
 
         return Container(
           width: double.infinity,
@@ -42,7 +44,13 @@ class WsConnectionStrip extends StatelessWidget {
               const SizedBox(width: TFSpace.sm),
               Expanded(
                 child: Text(
-                  l10n.chatConnectionReconnecting,
+                  // 有尝试计数时
+                  attempt > 0
+                      ? l10n.chatConnectionReconnectingAttempt(
+                          attempt,
+                          maxAttempts,
+                        )
+                      : l10n.chatConnectionReconnecting,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelSmall?.copyWith(
