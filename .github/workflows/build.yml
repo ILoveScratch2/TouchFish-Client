@@ -104,10 +104,12 @@ jobs:
         run: dart run dart_pubspec_licenses:generate
       
       - name: Install dmg package
-        run: flutter pub add --dev dmg
+        # 固定版本
+        run: flutter pub add --dev dmg:0.1.10
       
       - name: Install dmgbuild
-        run: pip3 install dmgbuild --break-system-packages
+        # dmgbuild 2.0.0改用 diskutil 移除 UDBZ
+        run: pip3 install "dmgbuild==1.6.7" --break-system-packages
       
       - name: Build macOS
         run: flutter build macos --release
