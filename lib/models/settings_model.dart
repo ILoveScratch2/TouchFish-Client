@@ -776,6 +776,22 @@ class SettingsData {
       icon: Icons.info_outline,
       items: [
         SettingItem(
+          key: 'checkUpdateNow',
+          titleKey: 'checkUpdateNowTitle',
+          descriptionKey: 'checkUpdateNowDesc',
+          type: SettingType.customWidget,
+          defaultValue: null,
+          icon: Icons.system_update_alt,
+        ),
+        SettingItem(
+          key: 'appUpdateAutoCheckEnabled',
+          titleKey: 'appUpdateAutoCheckTitle',
+          descriptionKey: 'appUpdateAutoCheckDesc',
+          type: SettingType.switchSetting,
+          defaultValue: true,
+          icon: Icons.autorenew,
+        ),
+        SettingItem(
           key: 'aboutApp',
           titleKey: 'settingsAboutAppTitle',
           descriptionKey: null,

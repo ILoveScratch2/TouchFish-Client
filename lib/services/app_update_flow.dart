@@ -15,6 +15,60 @@ class AppUpdateFlow {
 
   bool _running = false;
 
+  /// 只做一次静默检查
+  Future<VersionCheckResult?> checkQuietly() async {
+    try {
+      return await AppUpdateService.instance.checkForUpdate();
+    } catch (error, stackTrace) {
+      talker.error('Manual update check failed', error, stackTrace);
+      return null;
+    }
+  }
+
+  /// 把检查结果反馈给用户
+  Future<void> presentResult(
+    BuildContext context,
+    VersionCheckResult result,
+  ) async {
+    if (!context.mounted) return;
+
+    if (result.hasUpdate) {
+      await promptIfNeeded(
+        context,
+        remoteVersion: result.remoteVersion,
+        currentVersion: result.currentVersion,
+        changes: result.changes,
+      );
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result.error != null
+              ? (l10n?.aboutUpdateCheckFailed ?? 'Cannot reach update server')
+              : (l10n?.aboutUpdateUpToDate ?? 'Already up to date'),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom + 16,
+          left: 16,
+          right: 16,
+        ),
+      ),
+    );
+  }
+
+  /// 检查一次结果反馈
+  Future<VersionCheckResult?> checkManually(BuildContext context) async {
+    if (!context.mounted) return null;
+    final result = await checkQuietly();
+    if (result == null || !context.mounted) return result;
+    await presentResult(context, result);
+    return result;
+  }
+
   /// 展示更新提示
   Future<void> promptIfNeeded(
     BuildContext context, {

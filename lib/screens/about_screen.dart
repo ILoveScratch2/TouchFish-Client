@@ -4,12 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:async';
 import 'dart:math';
-import '../services/app_update_flow.dart';
-import '../services/app_update_service.dart';
 import '../services/browser_service.dart';
-import '../services/update_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../constants/app_constants.dart';
 import 'debug/debug_options_screen.dart';
@@ -44,19 +40,11 @@ class _AboutScreenState extends State<AboutScreen>
   int _currentLevel = 0;
   final Random _random = Random();
 
-  // 更新区块状态
-  bool _autoCheckUpdates = UpdatePreferences.autoCheckEnabled;
-  bool _checkingUpdates = false;
-  String? _latestVersion;
-  String? _latestError;
-  List<String> _latestChanges = const [];
-
   @override
   void initState() {
     super.initState();
     _initPackageInfo();
     _loadEasterEggProgress();
-    unawaited(_refreshLatestVersion());
     _rotationController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -71,65 +59,6 @@ class _AboutScreenState extends State<AboutScreen>
     _shakeAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _shakeController, curve: Curves.elasticOut),
     );
-  }
-
-  /// 拉取最新版本，供页面展示。不弹任何提示。
-  Future<VersionCheckResult?> _refreshLatestVersion({bool force = false}) async {
-    if (_checkingUpdates) return null;
-    setState(() => _checkingUpdates = true);
-    VersionCheckResult? result;
-    try {
-      result = await AppUpdateService.instance.checkForUpdate(force: force);
-    } finally {
-      if (mounted) {
-        setState(() {
-          _checkingUpdates = false;
-          _latestVersion = result?.remoteVersion;
-          _latestError = result?.error;
-          _latestChanges = result?.changes ?? const [];
-        });
-      }
-    }
-    return result;
-  }
-
-  /// 手动检查更新：有新版本就弹更新框，没有则给出明确反馈。
-  Future<void> _checkForUpdatesManually() async {
-    if (_checkingUpdates) return;
-    final l10n = AppLocalizations.of(context)!;
-    final result = await _refreshLatestVersion();
-    if (!mounted || result == null) return;
-
-    if (result.hasUpdate) {
-      await AppUpdateFlow.instance.promptIfNeeded(
-        context,
-        remoteVersion: result.remoteVersion,
-        currentVersion: result.currentVersion,
-        changes: result.changes,
-      );
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          result.error != null
-              ? l10n.aboutUpdateCheckFailed
-              : l10n.aboutUpdateUpToDate,
-        ),
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.only(
-          bottom: MediaQuery.of(context).padding.bottom + 16,
-          left: 16,
-          right: 16,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _setAutoCheckUpdates(bool value) async {
-    setState(() => _autoCheckUpdates = value);
-    await UpdatePreferences.setAutoCheckEnabled(value);
   }
 
   @override
@@ -945,48 +874,6 @@ class _AboutScreenState extends State<AboutScreen>
                       ),
 
                       const SizedBox(height: 16),
-                      _buildSection(
-                        context,
-                        title: l10n.aboutUpdateSection,
-                        children: [
-                          _buildInfoItem(
-                            context,
-                            icon: Icons.system_update_alt_rounded,
-                            label: l10n.aboutLatestVersion,
-                            value: _latestVersionValue(l10n),
-                          ),
-                          if (_latestChanges.isNotEmpty)
-                            _buildChangesPreview(context, l10n),
-                          const Divider(height: 1),
-                          ListTile(
-                            minLeadingWidth: 20,
-                            leading: const Icon(Icons.refresh_rounded),
-                            title: Text(l10n.aboutUpdateCheckNow),
-                            subtitle: Text(l10n.aboutUpdateCheckNowDescription),
-                            trailing: _checkingUpdates
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(Icons.chevron_right_rounded),
-                            onTap: _checkingUpdates
-                                ? null
-                                : _checkForUpdatesManually,
-                          ),
-                          SwitchListTile(
-                            secondary: const Icon(Icons.autorenew_rounded),
-                            title: Text(l10n.updateAutoCheckTitle),
-                            subtitle: Text(l10n.updateAutoCheckDescription),
-                            value: _autoCheckUpdates,
-                            onChanged: _setAutoCheckUpdates,
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 16),
 
                       // Links Card
                       _buildSection(
@@ -1176,56 +1063,6 @@ class _AboutScreenState extends State<AboutScreen>
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
               tooltip: l10n.aboutCopyToClipboard,
-            ),
-        ],
-      ),
-    );
-  }
-
-  String _latestVersionValue(AppLocalizations l10n) {
-    final latest = _latestVersion;
-    if (latest == null) {
-      if (_latestError != null && !_checkingUpdates) {
-        return l10n.aboutUpdateUnavailable;
-      }
-      return l10n.aboutUpdateChecking;
-    }
-    final status = compareVersions(latest, _packageInfo.version) > 0
-        ? l10n.aboutUpdateAvailable
-        : l10n.aboutUpdateUpToDate;
-    return l10n.aboutUpdateLatestValue(latest, status);
-  }
-  Widget _buildChangesPreview(BuildContext context, AppLocalizations l10n) {
-    final theme = Theme.of(context);
-    final visible = _latestChanges.take(4).toList();
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.aboutUpdateChangesTitle,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          for (final change in visible)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('•  ', style: theme.textTheme.bodyMedium),
-                  Expanded(
-                    child: Text(
-                      change,
-                      style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
-                    ),
-                  ),
-                ],
-              ),
             ),
         ],
       ),

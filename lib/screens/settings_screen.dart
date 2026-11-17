@@ -19,6 +19,7 @@ import '../utils/talker.dart';
 import '../utils/wide_screen_helper.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/local_storage_settings.dart';
+import '../widgets/update_info_card.dart';
 import '../widgets/permission_status_panel.dart';
 import '../services/media_proxy_service.dart';
 import '../services/ip_override_service.dart';
@@ -426,6 +427,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         }
         if (item.key == 'permissionStatus') {
           return const PermissionStatusPanel();
+        }
+        if (item.key == 'checkUpdateNow') {
+          // 版本号展示 + 检查入口打包在一张卡片里。
+          return const UpdateInfoCard();
         }
         return const SizedBox.shrink();
     }
@@ -2516,6 +2521,14 @@ class _SettingsScreenState extends State<SettingsScreen>
       // About
       case 'settingsAboutAppTitle':
         return l10n.settingsAboutAppTitle;
+      case 'checkUpdateNowTitle':
+        return l10n.aboutUpdateCheckNow;
+      case 'checkUpdateNowDesc':
+        return l10n.aboutUpdateCheckNowDescription;
+      case 'appUpdateAutoCheckTitle':
+        return l10n.updateAutoCheckTitle;
+      case 'appUpdateAutoCheckDesc':
+        return l10n.updateAutoCheckDescription;
       case 'permissionStatusTitle':
         return l10n.permissionStatusTitle;
       case 'permissionStatusDesc':

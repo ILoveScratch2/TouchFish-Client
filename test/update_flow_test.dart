@@ -9,18 +9,19 @@ import 'package:http/testing.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:touchfish_client/l10n/app_localizations.dart';
+import 'package:touchfish_client/models/settings_model.dart';
 import 'package:touchfish_client/models/settings_service.dart';
 import 'package:touchfish_client/routes/app_routes.dart';
-import 'package:touchfish_client/screens/about_screen.dart';
 import 'package:touchfish_client/screens/update_setup_screen.dart';
 import 'package:touchfish_client/services/app_update_flow.dart';
 import 'package:touchfish_client/services/app_update_service.dart';
 import 'package:touchfish_client/services/update_preferences.dart';
+import 'package:touchfish_client/widgets/update_info_card.dart';
 
-/// 模拟 `updates/tfc/latest` 的纯文本响应。
+
 MockClient mockedLatestBody(String body, {int status = 200}) {
   return MockClient((request) async {
-    // 用 bytes 构造，避免 http.Response 按 latin1 编码中文时抛错。
+    // 避免 http.Response 按 latin1 编码中文
     return http.Response.bytes(
       utf8.encode(body),
       status,
@@ -52,6 +53,21 @@ Widget _app(Widget home) {
     supportedLocales: AppLocalizations.supportedLocales,
     home: home,
   );
+}
+
+/// 只负责触发一次手动检查
+class _ManualCheckHost extends StatelessWidget {
+  const _ManualCheckHost();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: TextButton(
+        onPressed: () => AppUpdateFlow.instance.checkManually(context),
+        child: const Text('检查'),
+      ),
+    );
+  }
 }
 
 void main() {
@@ -98,7 +114,6 @@ void main() {
     });
 
     testWidgets('offers a skip action that keeps the default', (tester) async {
-      // 跳过只标记引导已读，不改动开关值。
       final router = GoRouter(
         initialLocation: '/updates/setup',
         routes: [
@@ -137,18 +152,74 @@ void main() {
     });
   });
 
-  group('AboutScreen update section', () {
-    testWidgets('shows latest version and its changes', (tester) async {
+  group('Settings update section', () {
+    test('Check update and auto-check switch exist in About section', () {
+      final about = SettingsData.categories.firstWhere(
+        (c) => c.category == SettingCategory.about,
+      );
+      final keys = about.items.map((i) => i.key).toList();
+
+      expect(keys, contains('checkUpdateNow'));
+      expect(keys, contains('appUpdateAutoCheckEnabled'));
+
+      final autoItem = about.items.firstWhere(
+        (i) => i.key == 'appUpdateAutoCheckEnabled',
+      );
+      expect(autoItem.type, SettingType.switchSetting);
+      expect(autoItem.defaultValue, isTrue);
+
+      expect(UpdatePreferences.autoCheckKey, 'appUpdateAutoCheckEnabled');
+    });
+
+    testWidgets('Manual check: shows update dialog when a new version is available', (tester) async {
       mockPackageVersion('1.0.0');
+      AppUpdateService.instance.currentVersionOverride = '1.0.0';
+      AppUpdateService.instance.httpClientOverride = mockedLatestBody(
+        '1.1.0\n- 新增更新设置页',
+      );
+
+      await tester.pumpWidget(_app(const Scaffold(body: _ManualCheckHost())));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('检查'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('发现新版本'), findsOneWidget);
+      expect(find.text('新增更新设置页'), findsWidgets);
+
+      // 关掉弹窗
+      await tester.tap(find.text('稍后'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('Manual check: shows up-to-date message when no new version is available', (tester) async {
+      mockPackageVersion('1.1.0');
+      AppUpdateService.instance.currentVersionOverride = '1.1.0';
+      AppUpdateService.instance.httpClientOverride = mockedLatestBody('1.1.0');
+
+      await tester.pumpWidget(_app(const Scaffold(body: _ManualCheckHost())));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('检查'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('已是最新版本'), findsOneWidget);
+      expect(find.text('发现新版本'), findsNothing);
+    });
+  });
+
+  group('UpdateInfoCard（当前/最新版本展示）', () {
+    testWidgets('展示当前版本、最新版本与变动要点', (tester) async {
       AppUpdateService.instance.currentVersionOverride = '1.0.0';
       AppUpdateService.instance.httpClientOverride = mockedLatestBody(
         '1.1.0\n- 新增更新设置页\n- 修复下载弹窗',
       );
 
-      await tester.pumpWidget(_app(const AboutScreen()));
+      await tester.pumpWidget(_app(const Scaffold(body: UpdateInfoCard())));
       await tester.pumpAndSettle();
 
-      expect(find.text('更新'), findsOneWidget);
+      expect(find.text('当前版本'), findsOneWidget);
+      expect(find.text('1.0.0'), findsOneWidget);
       expect(find.text('最新版本'), findsOneWidget);
       expect(find.text('1.1.0（有新版本可用）'), findsOneWidget);
       expect(find.text('本版本变动'), findsOneWidget);
@@ -156,46 +227,52 @@ void main() {
       expect(find.text('修复下载弹窗'), findsOneWidget);
     });
 
-    testWidgets('reports up to date when versions match', (tester) async {
-      mockPackageVersion('1.1.0');
+    testWidgets('已是最新时状态显示为已是最新版本', (tester) async {
       AppUpdateService.instance.currentVersionOverride = '1.1.0';
       AppUpdateService.instance.httpClientOverride = mockedLatestBody('1.1.0');
 
-      await tester.pumpWidget(_app(const AboutScreen()));
+      await tester.pumpWidget(_app(const Scaffold(body: UpdateInfoCard())));
       await tester.pumpAndSettle();
 
       expect(find.text('1.1.0（已是最新版本）'), findsOneWidget);
-      // 没有变动说明时不显示该区块。
+      // 没有变动说明时不渲染该区块。
       expect(find.text('本版本变动'), findsNothing);
     });
 
-    testWidgets('manual check surfaces the update dialog', (tester) async {
+    testWidgets('源不可用时提示暂时无法获取', (tester) async {
+      AppUpdateService.instance.currentVersionOverride = '1.0.0';
+      AppUpdateService.instance.httpClientOverride = mockedLatestBody(
+        '<html>404</html>',
+      );
+
+      await tester.pumpWidget(_app(const Scaffold(body: UpdateInfoCard())));
+      await tester.pumpAndSettle();
+
+      expect(find.text('暂时无法获取'), findsOneWidget);
+    });
+
+    testWidgets('卡片内的检查入口会弹出更新框', (tester) async {
       mockPackageVersion('1.0.0');
       AppUpdateService.instance.currentVersionOverride = '1.0.0';
       AppUpdateService.instance.httpClientOverride = mockedLatestBody(
         '1.1.0\n- 新增更新设置页',
       );
 
-      await tester.pumpWidget(_app(const AboutScreen()));
+      await tester.pumpWidget(_app(const Scaffold(body: UpdateInfoCard())));
       await tester.pumpAndSettle();
 
-      // 关于页可滚动，更新区块可能不在首屏，先滚到可见再点。
-      await tester.ensureVisible(find.text('检查更新'));
-      await tester.pumpAndSettle();
       await tester.tap(find.text('检查更新'));
       await tester.pumpAndSettle();
 
       expect(find.text('发现新版本'), findsOneWidget);
-      expect(find.text('新增更新设置页'), findsWidgets);
 
-      // 关掉弹窗，避免单例里的「流程进行中」标记泄漏到后续用例。
       await tester.tap(find.text('稍后'));
       await tester.pumpAndSettle();
     });
   });
 
-  group('forced update flow', () {
-    testWidgets('prompts even when already on the latest version', (
+  group('Forced update flow', () {
+    testWidgets('Prompts even when already on the latest version', (
       tester,
     ) async {
       AppUpdateService.instance.currentVersionOverride = '1.1.0';
@@ -212,8 +289,6 @@ void main() {
           ),
         ),
       );
-
-      // 弹窗会一直等用户选择，这里先不等待 future，否则测试会卡住。
       final pending = AppUpdateFlow.instance.forceUpdateFlow(captured);
       await tester.pumpAndSettle();
 

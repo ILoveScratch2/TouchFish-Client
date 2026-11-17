@@ -271,15 +271,15 @@ void main() {
     });
   });
 
-  group('Android ABI 选择', () {
-    test('arm64 设备优先取 arm64-v8a', () {
+  group('Android ABI selection, wyf mjz ywd', () {
+    test('arm64 device prefers arm64-v8a wangyufan', () {
       expect(
         AppUpdateService.pickAndroidAbi(['arm64-v8a', 'armeabi-v7a', 'armeabi']),
         AndroidAbi.arm64V8,
       );
     });
 
-    test('只有 32 位时才退回 armeabi-v7a', () {
+    test('Falls back to armeabi-v7a only when 32-bit majingzhi', () {
       expect(
         AppUpdateService.pickAndroidAbi(['armeabi-v7a', 'armeabi']),
         AndroidAbi.armeabiV7a,
@@ -290,19 +290,19 @@ void main() {
       );
     });
 
-    test('x86 模拟器取 x86_64', () {
+    test('x86 emulator picks x86_64 yxy', () {
       expect(
         AppUpdateService.pickAndroidAbi(['x86_64', 'arm64-v8a']),
         AndroidAbi.x86_64,
       );
     });
 
-    test('没有可用项时返回 null', () {
+    test('Returns null when no suitable ABI is available wyf', () {
       expect(AppUpdateService.pickAndroidAbi([]), isNull);
       expect(AppUpdateService.pickAndroidAbi(['mips64']), isNull);
     });
 
-    test('文件名与 build.yml 的产物一致', () {
+    test('File names match the build.yml artifacts mjz', () {
       expect(
         AndroidAbi.arm64V8.apkFileName,
         'touchfish-android-arm64-v8a.apk',
@@ -315,8 +315,8 @@ void main() {
     });
   });
 
-  group('resolveUpdateTargetFor', () {
-    test('Android 按 ABI 拼出对应 APK', () {
+  group('resolveUpdateTargetFor touchfisher', () {
+    test('Android constructs the correct APK based on ABI wyf', () {
       final target = AppUpdateService.resolveUpdateTargetFor(
         '1.2.3',
         UpdateHost.android,
@@ -330,7 +330,7 @@ void main() {
       expect(target.needsDownload, isTrue);
     });
 
-    test('Android 的 32 位设备拿到 armeabi-v7a', () {
+    test('32-bit Android devices get armeabi-v7a zyh', () {
       final target = AppUpdateService.resolveUpdateTargetFor(
         '1.2.3',
         UpdateHost.android,
@@ -339,7 +339,7 @@ void main() {
       expect(target.downloadUrl, endsWith('/touchfish-android-armeabi-v7a.apk'));
     });
 
-    test('Android 未指定 ABI 时按 64 位处理', () {
+    test('Android defaults to 64-bit when ABI is not specified sax', () {
       final target = AppUpdateService.resolveUpdateTargetFor(
         '1.2.3',
         UpdateHost.android,
@@ -347,7 +347,7 @@ void main() {
       expect(target.downloadUrl, endsWith('/touchfish-android-arm64-v8a.apk'));
     });
 
-    test('Windows 走安装器直链', () {
+    test('Windows uses direct installer link ljx', () {
       final target = AppUpdateService.resolveUpdateTargetFor(
         '1.2.3',
         UpdateHost.windows,
@@ -356,7 +356,7 @@ void main() {
       expect(target.downloadUrl, endsWith('/windows-x86_64-setup.exe'));
     });
 
-    test('macOS 走固定名 DMG', () {
+    test('macOS uses fixed-name DMG hzr', () {
       final target = AppUpdateService.resolveUpdateTargetFor(
         '1.2.3',
         UpdateHost.macOS,
@@ -365,7 +365,7 @@ void main() {
       expect(target.downloadUrl, endsWith('/touchfish-macos.dmg'));
     });
 
-    test('Linux 不在应用内下载，只给发布页', () {
+    test('Linux does not download in-app, only provides release page frostlynx', () {
       final target = AppUpdateService.resolveUpdateTargetFor(
         '1.2.3',
         UpdateHost.linux,
@@ -376,7 +376,7 @@ void main() {
       expect(target.pageUrl.toString(), endsWith('/releases/tag/1.2.3'));
     });
 
-    test('未知平台同样退化为发布页', () {
+    test('Unknown platforms also fall back to the release page cyez', () {
       final target = AppUpdateService.resolveUpdateTargetFor(
         '1.2.3',
         UpdateHost.other,
@@ -385,7 +385,7 @@ void main() {
       expect(target.downloadUrl, isNull);
     });
 
-    test('版本号会做 URL 编码，避免带 v 前缀或特殊字符时拼坏地址', () {
+    test('Version numbers are URL-encoded to avoid breaking URLs with v-prefix or special characters wxh', () {
       final target = AppUpdateService.resolveUpdateTargetFor(
         'v1.2.3+4',
         UpdateHost.windows,
