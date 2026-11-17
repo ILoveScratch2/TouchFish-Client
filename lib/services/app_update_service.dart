@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:ffi' show Abi;
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -12,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../utils/talker.dart';
+import 'android_abi_probe.dart';
 
 /// 更新包的投递方式
 enum UpdateDelivery {
@@ -125,7 +125,7 @@ class AppUpdateService {
       'https://touchfish.xin/updates/tfc/latest';
 
   static const String changelogUrl =
-      'http://touchfish.xin/tfv5/tfc_changelog.html';
+      'https://touchfish.xin/updates/tfc/log';
   static const String downloadBaseUrl =
       'https://v4.gh-proxy.com/https://github.com/ILoveScratch2/TouchFish-Client/releases/download';
 
@@ -158,10 +158,10 @@ class AppUpdateService {
 
   bool get hasChecked => _checked;
 
-  /// 最近一次检查结果，未检查过时为 null。用于界面展示，不触发网络。
+  /// 最近一次检查结果
   VersionCheckResult? get lastResult => _lastResult;
 
-  /// 读取本机版本号；平台信息不可用时返回 null。
+  /// 读取本机版本号
   Future<String?> currentVersion() async {
     final override = currentVersionOverride;
     if (override != null) return override;
@@ -174,7 +174,7 @@ class AppUpdateService {
     }
   }
 
-  /// 拉取并解析 [latestVersionUrl]。失败或内容不可解析时返回 null。
+  /// 拉取并解析
   Future<LatestReleaseFeed?> fetchLatestFeed() async {
     if (kIsWeb) return null;
     try {
@@ -182,7 +182,7 @@ class AppUpdateService {
           .get(
             Uri.parse(latestVersionUrl),
             headers: const {
-              // 版本号是强时效数据，要求各层缓存都回源。
+              // 版本号是强时效数据
               'Cache-Control': 'no-cache',
               'Pragma': 'no-cache',
             },
@@ -207,7 +207,7 @@ class AppUpdateService {
     }
   }
 
-  /// 检查是否有新版本。
+  /// 检查是否有新版本
   Future<VersionCheckResult> checkForUpdate({bool force = false}) async {
     if (kIsWeb) {
       return const VersionCheckResult(hasUpdate: false);
@@ -232,7 +232,7 @@ class AppUpdateService {
     final remote = feed.version;
     final isDevBuild = remote.toLowerCase().contains('dev-build');
     final isNewer = current != null && compareVersions(remote, current) > 0;
-    // dev-build 是构建流水线的内部标记，不参与比较。
+    // dev-build
     final hasUpdate = force || (!isDevBuild && current != null && isNewer);
 
     final result = VersionCheckResult(
@@ -247,14 +247,10 @@ class AppUpdateService {
     return result;
   }
 
-  /// 强制走一遍更新流程（测试 / 调试用）。远端不可达时以本机版本作为
-  /// 目标版本，保证弹窗与下载环节仍可被验证。
+  /// 强制走一遍更新
   Future<VersionCheckResult> forceUpdateCheck() => checkForUpdate(force: true);
 
-  /// 解析 `latest` 纯文本。
-  ///
-  /// 第一行是版本号，其余非空行是变动说明。识别并拒绝 HTML 错误页
-  /// （nginx 404 会返回 `<html>…`，不能被当成版本号）。
+  /// 解析 `latest` 纯文本
   @visibleForTesting
   static LatestReleaseFeed? parseLatestFeed(String body) {
     final normalized = body
@@ -276,7 +272,6 @@ class AppUpdateService {
         final match = _versionToken.firstMatch(line);
         if (match == null) return null;
         version = match.group(1)!.trim();
-        // 同一行 `1.2.3 —— 修了点东西` 这种写法，破折号之后也算一条说明。
         final rest = line.substring(match.end).replaceFirst(
           RegExp(r'^[\s\-–—:：|]+'),
           '',
@@ -299,12 +294,10 @@ class AppUpdateService {
     return LatestReleaseFeed(version: version, changes: List.unmodifiable(changes));
   }
 
-  /// 仅取版本号，便于测试与轻量调用。
+  /// 仅取版本号
   @visibleForTesting
   static String? parseLatestVersion(String body) => parseLatestFeed(body)?.version;
 
-  /// Fetches the changelog markdown from the server. Returns null when the
-  /// network request fails.
   Future<String?> fetchChangelog() async {
     try {
       final response = await _client
@@ -321,9 +314,7 @@ class AppUpdateService {
     }
   }
 
-  /// 从 changelog markdown 中截取前若干条要点，用于「最新版本变动」。
-  ///
-  /// 只取顶层列表项：标题与正文段落不参与，避免在关于页塞进大段文字。
+  /// 从 changelog markdown 中截取前若干条要点
   @visibleForTesting
   static List<String> extractChangelogHighlights(
     String markdown, {
@@ -346,7 +337,7 @@ class AppUpdateService {
     return highlights;
   }
 
-  /// 发布页地址：Linux 等不接管安装的平台，以及「手动下载」入口都用它。
+  /// 发布页
   static String releasePageUrlFor(String version) =>
       'https://github.com/ILoveScratch2/TouchFish-Client/releases/tag/'
       '${Uri.encodeComponent(version)}';
@@ -360,14 +351,13 @@ class AppUpdateService {
     return UpdateHost.other;
   }
 
-  /// 测试注入点：强制指定 Android ABI，绕开 `device_info_plus` 平台通道。
+  /// 测试注入点
   @visibleForTesting
   AndroidAbi? androidAbiOverride;
 
-  /// 解析本机 Android ABI。
+  /// 解析本机 Android ABI
   ///
-  /// 优先读系统的 `SUPPORTED_ABIS`（按设备偏好排序，arm64 设备会排在
-  /// armeabi-v7a 之前），通道不可用时回退到当前进程的 ABI。
+  /// 优先读系统的 `SUPPORTED_ABIS`
   Future<AndroidAbi> resolveAndroidAbi() async {
     final override = androidAbiOverride;
     if (override != null) return override;
@@ -381,7 +371,7 @@ class AppUpdateService {
     return androidAbiFromProcess();
   }
 
-  /// 按系统给的优先顺序挑第一个有产物的 ABI（arm64-v8a 优先于 armeabi-v7a）。
+  /// 按系统给的优先顺序挑第一个有产物的 ABI（arm64-v8a 优先于 armeabi-v7a
   @visibleForTesting
   static AndroidAbi? pickAndroidAbi(List<String> supportedAbis) {
     for (final raw in supportedAbis) {
@@ -398,25 +388,14 @@ class AppUpdateService {
     return null;
   }
 
-  /// 当前进程的 ABI。分架构包与进程架构一致，因此这一步的结果直接可用。
+  /// 当前进程的 ABI
   @visibleForTesting
   static AndroidAbi androidAbiFromProcess() {
-    final abi = Abi.current();
-    if (abi == Abi.androidArm64) return AndroidAbi.arm64V8;
-    if (abi == Abi.androidArm || abi == Abi.androidIA32) {
-      // androidIA32（x86 32 位）没有对应产物，只能给最接近的 32 位包。
-      return AndroidAbi.armeabiV7a;
-    }
-    if (abi == Abi.androidX64) return AndroidAbi.x86_64;
-    // 非 Android 宿主（测试环境）一律按现代 64 位设备处理。
-    return AndroidAbi.arm64V8;
+    return pickAndroidAbi(<String>[currentProcessAndroidAbi()]) ??
+        AndroidAbi.arm64V8;
   }
 
-  /// 解析某版本在当前平台的更新产物。
-  ///
-  /// Linux 走 [UpdateDelivery.external]：发行版包由包管理器维护（仓库内
-  /// 附带 PKGBUILD），应用内直接覆盖安装目录会与包管理冲突，因此只引导
-  /// 用户去发布页取包。
+  /// 解析某版本在当前平台的更新产物
   static Future<UpdateTarget> resolveUpdateTarget(String version) async {
     final host = currentHost;
     final abi = host == UpdateHost.android
@@ -425,7 +404,7 @@ class AppUpdateService {
     return resolveUpdateTargetFor(version, host, androidAbi: abi);
   }
 
-  /// 可注入平台的解析实现，便于覆盖各平台分支。
+  /// 可注入平台的解析实现
   @visibleForTesting
   static UpdateTarget resolveUpdateTargetFor(
     String version,
@@ -452,7 +431,7 @@ class AppUpdateService {
           pageUrl: pageUrl,
         );
       case UpdateHost.macOS:
-        // CI 会把 DMG 重命名为固定名，避免依赖 dmg 工具按版本号生成的默认名。
+        // CI 会把 DMG 重命名为固定名
         return UpdateTarget(
           delivery: UpdateDelivery.diskImage,
           downloadUrl: direct('touchfish-macos.dmg'),
@@ -460,16 +439,12 @@ class AppUpdateService {
         );
       case UpdateHost.linux:
       case UpdateHost.other:
-        // Linux 的 zip 只是构建产物，装完通常由包管理器接管；
-        // Web / iOS 也没有可在应用内安装的包。
+        // Linux 的 zip 只是构建产物
         return UpdateTarget(delivery: UpdateDelivery.external, pageUrl: pageUrl);
     }
   }
 
-  /// 计算下载文件最终的完整保存路径（用于下载前的界面展示）。
-  ///
-  /// Android 上返回公共 Downloads 目录下的路径（应用文件之外）。实际写入
-  /// 由 [downloadUpdate] 通过 MediaStore 通道完成。
+  /// 计算下载文件最终的完整保存路径
   static Future<String> downloadPathFor(String downloadUrl) async {
     final fileName = downloadUrl.split('/').last;
     if (!kIsWeb && Platform.isAndroid) {
@@ -483,9 +458,9 @@ class AppUpdateService {
   /// 下载更新文件，返回最终保存路径；失败返回 null。
   ///
   /// Android：
-  /// 1. 先下载到应用缓存目录（一定可写，避免分区存储限制）。
+  /// 1. 先下载到应用缓存目录（一定可写，避免分区存储限制）
   /// 2. 通过 MethodChannel 调用系统 MediaStore 写入公共 Downloads 目录
-  ///    （API 29+ 免存储权限；API <= 28 直接写公共路径）。
+  ///    （API 29+ 免存储权限；API <= 28 直接写公共路径）
   /// 3. 成功返回公共路径；通道不可用时回退到缓存路径，保证功能不中断。
   Future<String?> downloadUpdate(String downloadUrl) async {
     final fileName = downloadUrl.split('/').last;
@@ -508,12 +483,12 @@ class AppUpdateService {
       return null;
     }
 
-    // 非 Android：缓存目录即最终目标。
+    // 非 Android：缓存目录即最终目标
     if (kIsWeb || !Platform.isAndroid) {
       return tempFile.path;
     }
 
-    // Android：通过 MediaStore 写入公共 Downloads。
+    // Android：通过 MediaStore 写入公共 Downloads
     try {
       final saved = await _channel.invokeMethod<String>(
         'saveFileToDownloads',
@@ -533,16 +508,12 @@ class AppUpdateService {
         stackTrace,
       );
     }
-
-    // 通道失败时兜底返回缓存路径（功能不中断）。
     return tempFile.path;
   }
 
   Future<void> revealFile(String filePath) async {
     try {
       if (!kIsWeb && Platform.isAndroid) {
-        // On Android there is no generic "reveal in file manager" intent;
-        // opening the APK hands it to the system (package installer / picker).
         final result = await OpenFile.open(filePath);
         if (result.type != ResultType.done) {
           talker.warning('Failed to open update file: ${result.message}');
@@ -560,14 +531,8 @@ class AppUpdateService {
 
   Future<void> launchFile(String filePath) async {
     try {
-      // Use Process.start (not Process.run) so we don't block waiting for the
-      // installer to finish. Process.run blocks until the child process exits,
-      // and since installers are interactive GUI apps, the app process would
-      // never reach the exit(0) call afterward.
       final process = await Process.start(filePath, const <String>[]);
       talker.info('Launched installer PID: ${process.pid}');
-      // The installer runs independently; this app process is killed right
-      // after by the caller (exit(0)).
     } catch (error, stackTrace) {
       talker.error('Failed to launch installer', error, stackTrace);
     }
