@@ -208,8 +208,8 @@ void main() {
     });
   });
 
-  group('UpdateInfoCard（当前/最新版本展示）', () {
-    testWidgets('展示当前版本、最新版本与变动要点', (tester) async {
+  group('UpdateInfoCard (current/latest version display)', () {
+    testWidgets('displays current version, latest version, and change highlights', (tester) async {
       AppUpdateService.instance.currentVersionOverride = '1.0.0';
       AppUpdateService.instance.httpClientOverride = mockedLatestBody(
         '1.1.0\n- 新增更新设置页\n- 修复下载弹窗',
@@ -227,7 +227,7 @@ void main() {
       expect(find.text('修复下载弹窗'), findsOneWidget);
     });
 
-    testWidgets('已是最新时状态显示为已是最新版本', (tester) async {
+    testWidgets('shows up-to-date status when already on the latest version', (tester) async {
       AppUpdateService.instance.currentVersionOverride = '1.1.0';
       AppUpdateService.instance.httpClientOverride = mockedLatestBody('1.1.0');
 
@@ -239,7 +239,7 @@ void main() {
       expect(find.text('本版本变动'), findsNothing);
     });
 
-    testWidgets('源不可用时提示暂时无法获取', (tester) async {
+    testWidgets('shows temporarily unavailable message when source is unreachable', (tester) async {
       AppUpdateService.instance.currentVersionOverride = '1.0.0';
       AppUpdateService.instance.httpClientOverride = mockedLatestBody(
         '<html>404</html>',
@@ -251,7 +251,7 @@ void main() {
       expect(find.text('暂时无法获取'), findsOneWidget);
     });
 
-    testWidgets('卡片内的检查入口会弹出更新框', (tester) async {
+    testWidgets('show update prompt', (tester) async {
       mockPackageVersion('1.0.0');
       AppUpdateService.instance.currentVersionOverride = '1.0.0';
       AppUpdateService.instance.httpClientOverride = mockedLatestBody(
