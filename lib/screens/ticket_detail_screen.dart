@@ -15,6 +15,7 @@ import '../services/image_compression_service.dart';
 import '../services/snackbar_service.dart';
 import '../services/ticket_inbox_service.dart';
 import '../utils/talker.dart';
+import '../utils/format.dart';
 import '../utils/time_ago.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/forum_attachments.dart';
@@ -884,10 +885,5 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     );
   }
 
-  static String _formatDateTime(DateTime dt) {
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-'
-        '${dt.day.toString().padLeft(2, '0')} '
-        '${dt.hour.toString().padLeft(2, '0')}:'
-        '${dt.minute.toString().padLeft(2, '0')}';
-  }
+  static String _formatDateTime(DateTime dt) => formatDateTime(dt);
 }

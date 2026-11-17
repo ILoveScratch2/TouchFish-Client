@@ -1274,6 +1274,8 @@
   "forumTabJoined": "Joined",
   "forumTabExplore": "Explore",
   "forumNoJoined": "You haven't joined any forums yet",
+  "forumLoginRequiredTitle": "Sign in to see your forums",
+  "forumLoginRequiredDescription": "Joining forums needs an account, so the joined list is empty for guests.",
   "forumPostDescription": "Description (optional)",
   "forumComposeAttachImage": "Attach image",
   "forumComposeAttachFile": "Attach file",
@@ -1572,6 +1574,7 @@
   "serverFilePickerNoMatch": "No matching files",
   "serverFilePickerError": "Failed to load files",
   "chatSendFailed": "Send failed",
+  "chatSendAction": "Send",
   "chatCreateGroup": "Create Group",
   "chatAddFriend": "Add Friend",
   "chatAddFriendHint": "Enter username or UID",
@@ -1955,6 +1958,9 @@
   "stickerSlugLabel": "Code",
   "stickerAdd": "Add",
   "stickerDeletePack": "Delete pack",
+  "stickerDeletePackConfirm": "Delete this pack? All stickers in it will be removed.",
+  "stickerDeletePackFailed": "Failed to delete pack",
+  "stickerDeleteStickerFailed": "Failed to delete sticker",
 
   "forumSearchTitle": "Search forums",
   "forumSearchPostsTitle": "Search posts",
@@ -2236,6 +2242,17 @@
   "callCancelled": "Call cancelled",
   "callEndError": "Call failed",
   "callSwitchCamera": "Switch camera",
+  "callCameraListFailed": "Unable to read the camera list",
+  "callCameraSwitchFailed": "Could not switch camera",
+  "callNoAvailableCameras": "No camera available",
+  "callCameraLabel": "Camera {index}",
+  "@callCameraLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
   "settingsAllowMultiInstanceTitle": "Allow multiple instances",
   "settingsAllowMultiInstanceDesc": "Allow running several app instances at once. The same account on the same server can still only be signed in by one instance. Takes effect after restart.",
   "loginErrorDuplicateInstance": "This account is already signed in on this server by another instance.",

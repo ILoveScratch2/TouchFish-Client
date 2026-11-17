@@ -6,6 +6,7 @@ import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/notification_service.dart';
 import '../services/snackbar_service.dart';
+import '../utils/format.dart';
 import '../utils/talker.dart';
 import '../widgets/admin_ui.dart';
 import '../widgets/markdown_renderer.dart';
@@ -527,7 +528,4 @@ class _AnnouncementNotificationCard extends StatelessWidget {
   }
 }
 
-String _formatAnnouncementTime(DateTime dt) {
-  return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
-      '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-}
+String _formatAnnouncementTime(DateTime dt) => formatDateTime(dt);

@@ -3308,6 +3308,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get forumNoJoined => '君尚未入任何論壇';
 
   @override
+  String get forumLoginRequiredTitle => '登入先睇到你加入咗嘅論壇';
+
+  @override
+  String get forumLoginRequiredDescription => '要帳號先入到論壇，未登入呢度係空嘅。';
+
+  @override
   String get forumPostDescription => '述（可闕）';
 
   @override
@@ -3843,6 +3849,9 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get chatSendFailed => '發送未成';
+
+  @override
+  String get chatSendAction => '傳送';
 
   @override
   String get chatCreateGroup => '創建羣組';
@@ -4879,6 +4888,15 @@ class AppLocalizationsOch extends AppLocalizations {
   String get stickerDeletePack => '刪除貼圖包';
 
   @override
+  String get stickerDeletePackConfirm => '刪咗呢個表情包？入面啲表情會一齊冇。';
+
+  @override
+  String get stickerDeletePackFailed => '刪表情包失敗';
+
+  @override
+  String get stickerDeleteStickerFailed => '刪表情失敗';
+
+  @override
   String get forumSearchTitle => '搜索論壇';
 
   @override
@@ -5540,6 +5558,20 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get callSwitchCamera => '更鏡頭';
+
+  @override
+  String get callCameraListFailed => '取不到鏡頭列表';
+
+  @override
+  String get callCameraSwitchFailed => '換鏡頭失敗';
+
+  @override
+  String get callNoAvailableCameras => '冇鏡頭可用';
+
+  @override
+  String callCameraLabel(int index) {
+    return '鏡頭 $index';
+  }
 
   @override
   String get settingsAllowMultiInstanceTitle => '許其多開';

@@ -9,6 +9,7 @@ import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
+import '../utils/format.dart';
 import '../widgets/ui/empty_state.dart';
 import '../widgets/ui/error_state.dart';
 import '../widgets/ui/loading_indicator.dart';
@@ -215,9 +216,5 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
     );
   }
 
-  static String _formatTime(double timestamp) {
-    final dt = DateTime.fromMillisecondsSinceEpoch((timestamp * 1000).round());
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
-        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-  }
+  static String _formatTime(double timestamp) => formatTimestamp(timestamp);
 }

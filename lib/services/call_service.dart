@@ -60,6 +60,10 @@ class CallService extends ChangeNotifier {
   RtcCallEndReason? _endReason;
   RtcCallEndReason? get endReason => _endReason;
 
+  /// 通话真正建立
+  DateTime? _connectedAt;
+  DateTime? get connectedAt => _connectedAt;
+
   /// 本端摄像头预览。
   Widget? get localVideo => _peer?.localVideo;
 
@@ -119,6 +123,7 @@ class CallService extends ChangeNotifier {
     service._iceServersFetcher = _fetchDefaultIceServers;
     service._state = RtcCallState.idle;
     service._peerUid = null;
+    service._connectedAt = null;
     service._lastPeerUid = null;
     service._callId = null;
     service._incomingOffer = null;
@@ -274,6 +279,7 @@ class CallService extends ChangeNotifier {
     _remoteDescriptionApplied = false;
     _remoteStreamPresent = false;
     _endReason = null;
+    _connectedAt = null;
     notifyListeners();
   }
 
@@ -514,6 +520,7 @@ class CallService extends ChangeNotifier {
         _cancelConnectTimer();
         if (_state == RtcCallState.connecting) {
           _state = RtcCallState.connected;
+          _connectedAt ??= DateTime.now();
           notifyListeners();
         }
         break;
@@ -585,6 +592,7 @@ class CallService extends ChangeNotifier {
 
   void _resetSession() {
     _cancelTimers();
+    _connectedAt = null;
     final peer = _peer;
     _peer = null;
     _incomingOffer = null;

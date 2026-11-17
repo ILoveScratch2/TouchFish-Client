@@ -373,15 +373,27 @@ class _ChatInputBarState extends State<ChatInputBar> {
                     onPressed: _enterVoiceMode,
                   ),
                 if (!_isVoiceMode)
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    color: colorScheme.primary,
-                    onPressed: () {
-                      if (widget.controller.text.trim().isNotEmpty ||
-                          widget.actionIsForward) {
-                        Haptics.light();
-                        widget.onSend();
-                      }
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: widget.controller,
+                    builder: (context, value, _) {
+                      final canSend =
+                          value.text.trim().isNotEmpty ||
+                          widget.actionIsForward;
+                      return IconButton(
+                        icon: const Icon(Icons.send),
+                        color: canSend
+                            ? colorScheme.primary
+                            : colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.38,
+                              ),
+                        tooltip: canSend ? l10n.chatSendAction : null,
+                        onPressed: canSend
+                            ? () {
+                                Haptics.light();
+                                widget.onSend();
+                              }
+                            : null,
+                      );
                     },
                   ),
               ],

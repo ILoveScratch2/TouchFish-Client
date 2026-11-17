@@ -9,7 +9,9 @@ import '../l10n/app_localizations.dart';
 import '../models/sticker_model.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
+import '../widgets/app_alert_dialog.dart';
 import '../widgets/stickers/sticker_image.dart';
 import '../widgets/ui/empty_state.dart';
 import '../widgets/ui/error_state.dart';
@@ -769,12 +771,19 @@ class _StickerPackEditorScreenState extends State<StickerPackEditorScreen> {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
-    await TfApiClient.instance.deleteStickerItem(
+    final ok = await TfApiClient.instance.deleteStickerItem(
       uid,
       password,
       _pack.id,
       sticker.id,
     );
+    if (!mounted) return;
+    if (!ok) {
+      TouchFishSnackbarService.instance.show(
+        AppLocalizations.of(context)!.stickerDeleteStickerFailed,
+      );
+      return;
+    }
     await _refresh();
   }
 
@@ -820,15 +829,38 @@ class _StickerPackEditorScreenState extends State<StickerPackEditorScreen> {
             onPressed: () async {
               final uid = AuthState.instance.uid;
               final password = AuthState.instance.password;
-              if (uid != null &&
-                  password != null &&
-                  await TfApiClient.instance.deleteStickerPack(
-                    uid,
-                    password,
-                    _pack.id,
-                  ) &&
-                  mounted) {
-                if (context.mounted) Navigator.pop(context);
+              if (uid == null || password == null) return;
+              final confirmed = await showTouchFishErrorDialog<bool>(
+                context,
+                title: l10n.stickerDeletePack,
+                message: l10n.stickerDeletePackConfirm,
+                icon: Symbols.delete_outline,
+                actions: [
+                  TouchFishDialogAction<bool>(
+                    label: l10n.commonCancel,
+                    result: false,
+                  ),
+                  TouchFishDialogAction<bool>(
+                    label: l10n.stickerDeletePack,
+                    result: true,
+                    isPrimary: true,
+                    isDestructive: true,
+                  ),
+                ],
+              );
+              if (confirmed != true || !mounted) return;
+              final ok = await TfApiClient.instance.deleteStickerPack(
+                uid,
+                password,
+                _pack.id,
+              );
+              if (!mounted || !context.mounted) return;
+              if (ok) {
+                Navigator.pop(context);
+              } else {
+                TouchFishSnackbarService.instance.show(
+                  l10n.stickerDeletePackFailed,
+                );
               }
             },
           ),

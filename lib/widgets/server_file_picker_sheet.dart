@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../models/file_attachment.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../utils/format.dart';
 import '../utils/talker.dart';
 import 'file_attachment_view.dart';
 import 'file_thumbnail.dart';
@@ -165,16 +166,7 @@ class _ServerFilePickerSheetState extends State<_ServerFilePickerSheet> {
     final fileName = file['file_name'] as String? ?? 'Unknown';
     final size = (file['size'] as num?)?.toInt() ?? 0;
     final uploadTimeRaw = file['upload_time'];
-
-    String uploadTime = '';
-    if (uploadTimeRaw is num) {
-      final dt = DateTime.fromMillisecondsSinceEpoch(
-        (uploadTimeRaw.toDouble() * 1000).toInt(),
-      );
-      uploadTime =
-          '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
-          '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    }
+    final uploadTime = formatTimestamp(uploadTimeRaw as num?);
 
     final leadingFallback = Container(
       width: 44,

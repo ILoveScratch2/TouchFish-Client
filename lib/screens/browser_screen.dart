@@ -823,7 +823,7 @@ class _BrowserScreenState extends State<BrowserScreen> {
   Widget _buildTabBar() {
     final s = _session;
     return Container(
-      height: 44,
+      height: 48,
       color: _toolbarBackground(),
       child: ListView(
         scrollDirection: Axis.horizontal,
@@ -1673,15 +1673,19 @@ class _TabChip extends StatelessWidget {
                   ),
                 ),
               ),
-              InkWell(
-                onTap: onClose,
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Icon(
-                    Icons.close_rounded,
-                    size: 14,
-                    color: selected ? Colors.white : foreground,
+              Tooltip(
+                message: AppLocalizations.of(context)!.browserCloseTab,
+                child: InkWell(
+                  onTap: onClose,
+                  customBorder: const CircleBorder(),
+                  child: SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: selected ? Colors.white : foreground,
+                    ),
                   ),
                 ),
               ),

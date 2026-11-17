@@ -9,6 +9,7 @@ import '../routes/app_routes.dart';
 import '../services/notification_service.dart';
 import '../services/snackbar_service.dart';
 import '../theme/tokens.dart';
+import '../utils/format.dart';
 import '../widgets/ui/empty_state.dart';
 import '../widgets/ui/error_state.dart';
 import '../widgets/ui/loading_indicator.dart';
@@ -548,8 +549,7 @@ class _NotificationCard extends StatelessWidget {
     if (diff.inHours < 24) return l10n.timeHoursAgo(diff.inHours);
     if (diff.inDays == 1) return l10n.timeYesterday;
     if (diff.inDays < 7) return l10n.timeDaysAgo(diff.inDays);
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-'
-        '${dt.day.toString().padLeft(2, '0')}';
+    return formatDateTime(dt, pattern: 'yyyy-MM-dd');
   }
 }
 

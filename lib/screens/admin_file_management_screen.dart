@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/snackbar_service.dart';
+import '../utils/format.dart';
 import '../widgets/admin_ui.dart';
 import '../l10n/app_localizations.dart';
 import '../models/file_attachment.dart';
@@ -129,14 +130,7 @@ class _AdminFileManagementScreenState extends State<AdminFileManagementScreen> {
     }
   }
 
-  String _formatSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
-  }
+  String _formatSize(int bytes) => formatBytes(bytes);
 
   @override
   Widget build(BuildContext context) {

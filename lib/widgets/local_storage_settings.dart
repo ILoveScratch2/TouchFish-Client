@@ -14,6 +14,7 @@ import 'sheet_scaffold.dart';
 import 'database_reset_sheet.dart';
 import '../services/database_backup_service.dart';
 import '../services/snackbar_service.dart';
+import '../utils/format.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/file_cache_service.dart';
@@ -73,14 +74,7 @@ class _LocalStorageSettingsState extends State<LocalStorageSettings> {
     if (mounted) setState(() => _loading = false);
   }
 
-  String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KiB';
-    if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MiB';
-    }
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GiB';
-  }
+  String _formatBytes(int bytes) => formatBytes(bytes, binary: true);
 
   Future<void> _clearStickerCache() async {
     setState(() => _working = true);

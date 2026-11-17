@@ -3312,6 +3312,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get forumNoJoined => '你还没有加入任何论坛';
 
   @override
+  String get forumLoginRequiredTitle => '登录后查看已加入的论坛';
+
+  @override
+  String get forumLoginRequiredDescription => '加入论坛需要账号，未登录时这里是空的——不是没有论坛。';
+
+  @override
   String get forumPostDescription => '描述（可选）';
 
   @override
@@ -3847,6 +3853,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get chatSendFailed => '发送失败';
+
+  @override
+  String get chatSendAction => '发送';
 
   @override
   String get chatCreateGroup => '创建群组';
@@ -4887,6 +4896,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get stickerDeletePack => '删除贴图包';
 
   @override
+  String get stickerDeletePackConfirm => '删除这个表情包？其中的表情会一并移除。';
+
+  @override
+  String get stickerDeletePackFailed => '删除表情包失败';
+
+  @override
+  String get stickerDeleteStickerFailed => '删除表情失败';
+
+  @override
   String get forumSearchTitle => '搜索论坛';
 
   @override
@@ -5549,6 +5567,20 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get callSwitchCamera => '切换摄像头';
+
+  @override
+  String get callCameraListFailed => '无法获取摄像头列表';
+
+  @override
+  String get callCameraSwitchFailed => '切换摄像头失败';
+
+  @override
+  String get callNoAvailableCameras => '没有可用的摄像头';
+
+  @override
+  String callCameraLabel(int index) {
+    return '摄像头 $index';
+  }
 
   @override
   String get settingsAllowMultiInstanceTitle => '允许多开实例';

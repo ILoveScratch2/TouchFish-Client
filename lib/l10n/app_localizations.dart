@@ -6412,6 +6412,18 @@ abstract class AppLocalizations {
   /// **'You haven\'t joined any forums yet'**
   String get forumNoJoined;
 
+  /// No description provided for @forumLoginRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to see your forums'**
+  String get forumLoginRequiredTitle;
+
+  /// No description provided for @forumLoginRequiredDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Joining forums needs an account, so the joined list is empty for guests.'**
+  String get forumLoginRequiredDescription;
+
   /// No description provided for @forumPostDescription.
   ///
   /// In en, this message translates to:
@@ -7383,6 +7395,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send failed'**
   String get chatSendFailed;
+
+  /// No description provided for @chatSendAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get chatSendAction;
 
   /// No description provided for @chatCreateGroup.
   ///
@@ -9382,6 +9400,24 @@ abstract class AppLocalizations {
   /// **'Delete pack'**
   String get stickerDeletePack;
 
+  /// No description provided for @stickerDeletePackConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this pack? All stickers in it will be removed.'**
+  String get stickerDeletePackConfirm;
+
+  /// No description provided for @stickerDeletePackFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete pack'**
+  String get stickerDeletePackFailed;
+
+  /// No description provided for @stickerDeleteStickerFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete sticker'**
+  String get stickerDeleteStickerFailed;
+
   /// No description provided for @forumSearchTitle.
   ///
   /// In en, this message translates to:
@@ -10659,6 +10695,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Switch camera'**
   String get callSwitchCamera;
+
+  /// No description provided for @callCameraListFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to read the camera list'**
+  String get callCameraListFailed;
+
+  /// No description provided for @callCameraSwitchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not switch camera'**
+  String get callCameraSwitchFailed;
+
+  /// No description provided for @callNoAvailableCameras.
+  ///
+  /// In en, this message translates to:
+  /// **'No camera available'**
+  String get callNoAvailableCameras;
+
+  /// No description provided for @callCameraLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera {index}'**
+  String callCameraLabel(int index);
 
   /// No description provided for @settingsAllowMultiInstanceTitle.
   ///

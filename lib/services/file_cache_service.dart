@@ -7,6 +7,7 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
 import '../models/settings_service.dart';
+import '../utils/format.dart';
 import '../utils/talker.dart';
 
 /// get-file 似乎暂时莫得缓存诶
@@ -14,7 +15,7 @@ final RegExp _immutableUrlPattern = RegExp(
   r'/(file/get_file|sticker/get)/',
 );
 
-/// 内容 hash 寻址的 URL：磁盘缓存命中即可直接使用
+/// 内容 hash 寻址的 URL
 bool _isImmutableUrl(String url) => _immutableUrlPattern.hasMatch(url);
 
 class _HashImmutableFileService extends HttpFileService {
@@ -80,7 +81,7 @@ class FileCacheService {
   /// 默认缓存对象保留时长：30 天
   static const Duration defaultMaxAge = Duration(days: 30);
 
-  /// 获取缓存大小限制（字节），0 表示无限制
+  /// 获取缓存大小限制（字节）0 表示无限制
   int get maxCacheSizeBytes =>
       SettingsService.instance.getValue<int>(
         'fileCacheMaxSizeBytes',
@@ -97,8 +98,7 @@ class FileCacheService {
     await _enforceSizeLimit();
   }
 
-  /// 懒初始化缓存管理器（单例）。web / 无 path_provider 环境下返回 null，
-  /// 调用方应回退到默认图片加载路径（浏览器 HTTP 缓存）。
+  /// 懒初始化缓存管理器
   Future<CacheManager?> _ensureCacheManager() async {
     if (_cacheManager != null) return _cacheManager;
     if (_initFuture != null) return _initFuture;
@@ -107,9 +107,7 @@ class FileCacheService {
     _initFuture = () async {
       try {
         final maxObjects = 100000;
-        // 必须用 ImageCacheManager：普通 CacheManager 会无视
-        // memCacheWidth/memCacheHeight，外链大图按原尺寸解码，
-        // 一张几十 MB 直接把 ImageCache 挤爆，滚动回看疯狂重解
+        // 必须用 ImageCacheManager
         final manager = _TouchFishImageCacheManager(
           Config(
             _cacheKey,
@@ -135,11 +133,10 @@ class FileCacheService {
 
   Future<CacheManager?> getCacheManager() => _ensureCacheManager();
 
-  /// 缓存管理器是否已就绪（同步可查）。图片重挂载时用它跳过异步门控，
-  /// 否则每次滚回视口都要先闪一帧 loading 才出图。
+  /// 缓存管理器是否已就绪
   bool get isManagerReady => _cacheManager != null;
 
-  /// 已就绪时的缓存管理器（配 [isManagerReady] 同步使用）。
+  /// 已就绪时的缓存管理器
   CacheManager? get cacheManager => _cacheManager;
 
   /// 启动预热：初始化缓存管理器并执行容量检查
@@ -157,7 +154,6 @@ class FileCacheService {
 
   /// 从 URL 获取文件；未命中缓存时自动下载并写入磁盘缓存。
   ///
-  /// 内容 hash 寻址的不可变 URL（/file/get_file、/sticker/get）
   /// 磁盘缓存命中即返回，不校验 validTill 和 Cache-Control 避免服务器坑人
   /// 其它 URL（外链图片等可变内容）随便了
   Future<File?> getFile(String url, {Map<String, String>? headers}) async {
@@ -176,7 +172,7 @@ class FileCacheService {
     }
   }
 
-  /// 仅从缓存读取文件（不触发网络请求），离线时用于检测可用性。
+  /// 仅从缓存读取文件
   Future<File?> getFileFromCache(String url) async {
     final manager = await _ensureCacheManager();
     if (manager == null) return null;
@@ -189,7 +185,7 @@ class FileCacheService {
     }
   }
 
-  /// 预下载文件到磁盘缓存（如图片缩略图、自动预览）。
+  /// 预下载文件到磁盘缓存
   Future<void> preloadFile(String url, {Map<String, String>? headers}) async {
     final manager = await _ensureCacheManager();
     if (manager == null) return;
@@ -261,8 +257,7 @@ class FileCacheService {
     return CacheStats(fileCount: fileCount, totalSize: totalSize);
   }
 
-  /// 字节级容量管理（LRU）：总大小超过限制时，
-  /// 按最近访问时间从旧到新删除文件，直到低于限制。
+  /// 字节级容量管理（LRU）
   Future<void> _enforceSizeLimit() async {
     final limit = maxCacheSizeBytes;
     if (limit <= 0) return;
@@ -304,8 +299,6 @@ class FileCacheService {
     }
   }
 
-  /// 纯函数：给定缓存条目与字节上限，返回应淘汰（LRU，最久未用优先）
-  /// 的 URL 列表，使剩余总量不超过 [limitBytes]。返回顺序即淘汰顺序。
   @visibleForTesting
   static List<String> computeEvictions({
     required List<({String url, int bytes, DateTime touched})> entries,
@@ -325,7 +318,7 @@ class FileCacheService {
     return evictions;
   }
 
-  /// 保存到下载目录（"保存到本地"，不受缓存清理影响）
+  /// 保存到下载目录
   Future<File?> saveFilePermanently(
     String url,
     String fileName, {
@@ -365,17 +358,10 @@ class FileCacheService {
     }
   }
 
-  static String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
-    }
-    return '${(bytes / 1024 / 1024 / 1024).toStringAsFixed(2)} GB';
-  }
+  static String _formatBytes(int bytes) => formatBytes(bytes);
 }
 
-/// 带缩略图变体缓存的缓存管理器（ImageCacheManager 是 mixin）
+/// 带缩略图变体缓存的缓存管理器
 class _TouchFishImageCacheManager extends CacheManager with ImageCacheManager {
   _TouchFishImageCacheManager(super.config);
 }
@@ -387,7 +373,6 @@ class CacheStats {
 
   const CacheStats({required this.fileCount, required this.totalSize});
 
-  /// 人类可读的大小
   String get formattedSize {
     if (totalSize < 1024) return '$totalSize B';
     if (totalSize < 1024 * 1024) {

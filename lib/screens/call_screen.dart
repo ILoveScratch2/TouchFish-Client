@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -5,11 +7,14 @@ import '../l10n/app_localizations.dart';
 import '../services/call_service.dart';
 import '../services/chat_data_service.dart';
 import '../services/rtc_peer.dart';
+import '../services/snackbar_service.dart';
 import '../services/api/tf_api_client.dart';
 import '../models/user_profile.dart';
+import '../utils/format.dart';
+import '../utils/talker.dart';
 import '../widgets/account/profile_picture.dart';
 
-/// 视频通话页面：展示本地预览 / 远端画面，以及静音、摄像头、挂断控制。
+/// 视频通话页面
 class CallScreen extends StatefulWidget {
   final int peerUid;
 
@@ -199,10 +204,16 @@ class _ActiveCallView extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final remote = service.remoteVideo;
     final local = service.localVideo;
-    final String statusText = switch (remoteLabel) {
-      'outgoing' => l10n.callCalling,
-      'connecting' => l10n.callConnecting,
-      _ => '',
+    final Widget statusWidget = switch (remoteLabel) {
+      'outgoing' => Text(
+        l10n.callCalling,
+        style: const TextStyle(color: Colors.white70),
+      ),
+      'connecting' => Text(
+        l10n.callConnecting,
+        style: const TextStyle(color: Colors.white70),
+      ),
+      _ => _CallDurationText(startedAt: service.connectedAt),
     };
 
     return Stack(
@@ -237,11 +248,7 @@ class _ActiveCallView extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _CallPeerIdentity(peerUid: peerUid, compact: true),
-                          if (statusText.isNotEmpty)
-                            Text(
-                              statusText,
-                              style: const TextStyle(color: Colors.white70),
-                            ),
+                          statusWidget,
                         ],
                       ),
                     ),
@@ -288,6 +295,65 @@ class _ActiveCallView extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// 通话时长
+class _CallDurationText extends StatefulWidget {
+  final DateTime? startedAt;
+
+  const _CallDurationText({required this.startedAt});
+
+  @override
+  State<_CallDurationText> createState() => _CallDurationTextState();
+}
+
+class _CallDurationTextState extends State<_CallDurationText> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.startedAt != null) {
+      _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _CallDurationText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final running = _ticker != null;
+    if (widget.startedAt != null && !running) {
+      _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    } else if (widget.startedAt == null && running) {
+      _ticker?.cancel();
+      _ticker = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final startedAt = widget.startedAt;
+    // 起点缺失
+    if (startedAt == null) return const SizedBox.shrink();
+    final elapsed = DateTime.now().difference(startedAt);
+    return Text(
+      formatDuration(elapsed),
+      style: const TextStyle(
+        color: Colors.white70,
+        fontFeatures: [FontFeature.tabularFigures()],
+      ),
     );
   }
 }
@@ -363,21 +429,19 @@ class _CallControls extends StatelessWidget {
     CallService service,
   ) async {
     List<RtcCameraDevice> cameras;
+    final l10n = AppLocalizations.of(context)!;
     try {
       cameras = await service.listCameras();
-    } catch (error) {
+    } catch (error, stack) {
+      talker.error('Failed to list cameras', error, stack);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unable to list cameras: $error')),
-        );
+        TouchFishSnackbarService.instance.show(l10n.callCameraListFailed);
       }
       return;
     }
     if (!context.mounted) return;
     if (cameras.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No available cameras')));
+      TouchFishSnackbarService.instance.show(l10n.callNoAvailableCameras);
       return;
     }
     final selected = await showModalBottomSheet<RtcCameraDevice>(
@@ -392,7 +456,9 @@ class _CallControls extends StatelessWidget {
             return ListTile(
               leading: const Icon(Icons.videocam_outlined),
               title: Text(
-                camera.label.isEmpty ? 'Camera ${index + 1}' : camera.label,
+                camera.label.isEmpty
+                    ? l10n.callCameraLabel(index + 1)
+                    : camera.label,
               ),
               onTap: () => Navigator.of(context).pop(camera),
             );
@@ -403,11 +469,10 @@ class _CallControls extends StatelessWidget {
     if (selected != null) {
       try {
         await service.switchCamera(selected.id);
-      } catch (error) {
+      } catch (error, stack) {
+        talker.error('Failed to switch camera', error, stack);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Unable to switch camera: $error')),
-          );
+          TouchFishSnackbarService.instance.show(l10n.callCameraSwitchFailed);
         }
       }
     }

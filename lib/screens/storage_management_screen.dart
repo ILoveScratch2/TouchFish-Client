@@ -4,6 +4,7 @@ import '../services/auth_state.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/file_service.dart';
 import '../services/snackbar_service.dart';
+import '../utils/format.dart';
 import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../l10n/app_localizations.dart';
@@ -75,14 +76,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     }
   }
 
-  String _formatSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
-  }
+  String _formatSize(int bytes) => formatBytes(bytes);
 
   Future<void> _uploadFile() async {
     final uid = AuthState.instance.uid;
@@ -446,15 +440,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     final size = (file['size'] as num?)?.toInt() ?? 0;
     final refCount = (file['ref_count'] as num?)?.toInt() ?? 0;
 
-    String uploadTime = '';
-    if (uploadTimeRaw is num) {
-      final dt = DateTime.fromMillisecondsSinceEpoch(
-        (uploadTimeRaw.toDouble() * 1000).toInt(),
-      );
-      uploadTime =
-          '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
-          '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    }
+    final uploadTime = formatTimestamp(uploadTimeRaw as num?);
 
     final leadingFallback = Container(
       width: 44,

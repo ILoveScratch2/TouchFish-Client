@@ -5,6 +5,9 @@ import 'package:flutter/painting.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+// 本类有同名静态方法 formatBytes
+import '../utils/format.dart' as fmt;
+
 class CacheService {
   static final CacheService instance = CacheService._();
   CacheService._();
@@ -83,12 +86,5 @@ class CacheService {
     }
   }
 
-  static String formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KiB';
-    if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MiB';
-    }
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GiB';
-  }
+  static String formatBytes(int bytes) => fmt.formatBytes(bytes, binary: true);
 }

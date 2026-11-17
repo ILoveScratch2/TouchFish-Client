@@ -13,6 +13,7 @@ import '../models/file_attachment.dart';
 import '../models/settings_service.dart';
 import '../providers/task/task_manager_provider.dart';
 import '../services/api/tf_api_client.dart';
+import '../utils/format.dart';
 import '../services/file_download_service.dart';
 import '../services/snackbar_service.dart';
 import '../services/file_cache_service.dart';
@@ -946,11 +947,4 @@ class _TextAttachmentPreviewState extends State<_TextAttachmentPreview> {
   }
 }
 
-String formatFileSize(int bytes) {
-  if (bytes < 1024) return '$bytes B';
-  if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-  if (bytes < 1024 * 1024 * 1024) {
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-  }
-  return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
-}
+String formatFileSize(int bytes) => formatBytes(bytes);

@@ -385,11 +385,22 @@ class _ForumScreenState extends State<ForumScreen> {
       onRefresh: () => _loadForums(showLoading: false),
       child: TabBarView(
         children: [
-          _ForumListView(
-            forums: _joinedForums,
-            emptyMessage: l10n.forumNoJoined,
-            onOpen: _openForum,
-          ),
+          if (AuthState.instance.isLoggedIn)
+            _ForumListView(
+              forums: _joinedForums,
+              emptyMessage: l10n.forumNoJoined,
+              onOpen: _openForum,
+            )
+          else
+            EmptyState(
+              icon: Icons.lock_outline,
+              title: l10n.forumLoginRequiredTitle,
+              description: l10n.forumLoginRequiredDescription,
+              action: FilledButton(
+                onPressed: () => context.go(AppRoutes.login),
+                child: Text(l10n.accountLogin),
+              ),
+            ),
           _ForumListView(forums: _exploreForums, onOpen: _openForum),
         ],
       ),

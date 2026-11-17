@@ -14,6 +14,7 @@ import '../utils/talker.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/optimized_image.dart';
+import '../widgets/sheet_scaffold.dart';
 import '../widgets/text_entry_dialog.dart';
 import '../widgets/ui/error_state.dart';
 import '../widgets/ui/loading_indicator.dart';
@@ -168,16 +169,17 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
         .where((member) => member['uid'] != _uid)
         .toList();
     if (candidates.isEmpty) return;
-    final newOwner = await showDialog<int>(
+    final newOwner = await showAppSheet<int>(
       context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(l10n.groupSelectNewOwner),
-        children: candidates.map((member) {
-          final uid = (member['uid'] as num).toInt();
-          final username = member['username'] as String? ?? 'User $uid';
-          return SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, uid),
-            child: ListTile(
+      builder: (context) => SheetScaffold(
+        titleText: l10n.groupSelectNewOwner,
+        child: ListView.builder(
+          itemCount: candidates.length,
+          itemBuilder: (context, index) {
+            final member = candidates[index];
+            final uid = (member['uid'] as num).toInt();
+            final username = member['username'] as String? ?? 'User $uid';
+            return ListTile(
               leading: ProfilePictureWidget(
                 avatarUrl: _baseUrl == null
                     ? null
@@ -187,9 +189,10 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
               ),
               title: Text(username),
               subtitle: Text('UID $uid'),
-            ),
-          );
-        }).toList(),
+              onTap: () => Navigator.pop(context, uid),
+            );
+          },
+        ),
       ),
     );
     if (newOwner != null && mounted) await _transferOwner(l10n, newOwner);

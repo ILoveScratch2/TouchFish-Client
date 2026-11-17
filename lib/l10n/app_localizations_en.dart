@@ -3472,6 +3472,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forumNoJoined => 'You haven\'t joined any forums yet';
 
   @override
+  String get forumLoginRequiredTitle => 'Sign in to see your forums';
+
+  @override
+  String get forumLoginRequiredDescription =>
+      'Joining forums needs an account, so the joined list is empty for guests.';
+
+  @override
   String get forumPostDescription => 'Description (optional)';
 
   @override
@@ -4014,6 +4021,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatSendFailed => 'Send failed';
+
+  @override
+  String get chatSendAction => 'Send';
 
   @override
   String get chatCreateGroup => 'Create Group';
@@ -5120,6 +5130,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stickerDeletePack => 'Delete pack';
 
   @override
+  String get stickerDeletePackConfirm =>
+      'Delete this pack? All stickers in it will be removed.';
+
+  @override
+  String get stickerDeletePackFailed => 'Failed to delete pack';
+
+  @override
+  String get stickerDeleteStickerFailed => 'Failed to delete sticker';
+
+  @override
   String get forumSearchTitle => 'Search forums';
 
   @override
@@ -5813,6 +5833,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get callSwitchCamera => 'Switch camera';
+
+  @override
+  String get callCameraListFailed => 'Unable to read the camera list';
+
+  @override
+  String get callCameraSwitchFailed => 'Could not switch camera';
+
+  @override
+  String get callNoAvailableCameras => 'No camera available';
+
+  @override
+  String callCameraLabel(int index) {
+    return 'Camera $index';
+  }
 
   @override
   String get settingsAllowMultiInstanceTitle => 'Allow multiple instances';

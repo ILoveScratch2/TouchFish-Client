@@ -12,6 +12,7 @@ import '../services/auth_state.dart';
 import '../services/feature_flags.dart';
 import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
+import '../utils/format.dart';
 import '../utils/clipboard_utils.dart';
 import '../widgets/text_entry_dialog.dart';
 import '../widgets/ui/loading_indicator.dart';
@@ -64,7 +65,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           myUid != null &&
           password != null &&
           uid != myUid) {
-        // 关系一次性查全（含拉黑方向），这样菜单能直接显示「解除拉黑」。
         final rel = await TfApiClient.instance.queryRelationship(
           myUid,
           password,
@@ -75,7 +75,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           isBlocked = rel.blockedByMe;
           blockedByPeer = rel.blockedByPeer;
         } else {
-          // 旧服务器没有 /friend/relationship：退回好友列表判断
+          // 旧服务器没有 /friend/relationship
           final friendUids = await TfApiClient.instance.getFriendList(
             myUid,
             password,
@@ -127,7 +127,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final targetUid = int.tryParse(target.uid);
     if (targetUid == null) return;
 
-    // 可选申请留言（留空直接申请；重复申请会覆盖为最新留言）
+    // 可选申请留言
     final message = await showDialog<String>(
       context: context,
       builder: (ctx) => TextEntryDialog(
@@ -156,7 +156,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         result.ok
             ? l10n.userProfileFriendRequestSent(target.username)
             : blocked
-            // 拉黑是双向共用一个关系行：是自己拉黑的话，得先解除拉黑。
             ? (_isBlocked == true
                   ? l10n.friendRequestBlockedByMe
                   : l10n.friendRequestBlocked)
@@ -225,9 +224,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       ok ? l10n.friendUnblockDone : l10n.commonFailedOperation,
     );
     if (ok) {
-      // 只清自己的拉黑标记：解除拉黑是单向的，对方那一侧仍然拉黑时
-      // 申请必然被拒，所以 _blockedByPeer 不能跟着一起清（否则按钮会
-      // 从「已被拉黑」变回可点，用户点一次吃一次 friend_blocked）。
       setState(() => _isBlocked = false);
     }
   }
@@ -456,7 +452,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 _copyText(context, profile.uid, l10n.userProfileUidCopied);
               },
             ),
-            // 邮箱未公开（服务端裁剪为空）或未设置时不占位展示
+            // 邮箱未公开
             if (profile.email.isNotEmpty) ...[
               const SizedBox(height: 12),
               _buildDetailRow(
@@ -586,7 +582,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     if (isSelf || _isFriend == null) return const SizedBox.shrink();
 
     final flags = FeatureFlags.instance;
-    // 对方拉黑了我：申请必然被拒，直接把按钮置灰并写明原因。
+    // 对方拉黑了我
     final blockedByPeer = _blockedByPeer == true;
     return Row(
       children: [
@@ -642,11 +638,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   String _formatTimestamp(String timestamp) {
     try {
       final seconds = double.parse(timestamp);
-      final date = DateTime.fromMillisecondsSinceEpoch(
-        (seconds * 1000).round(),
-      );
-      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
-          '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+      return formatTimestamp(seconds, pattern: 'yyyy-MM-dd HH:mm:ss');
     } catch (e) {
       talker.error('Failed to parse timestamp: $timestamp', e);
       return timestamp;
