@@ -12,6 +12,7 @@ import '../services/chat_data_service.dart';
 import '../services/forum_pending_service.dart';
 import '../services/feature_flags.dart';
 import '../services/notification_service.dart';
+import '../services/ticket_inbox_service.dart';
 import '../models/settings_service.dart';
 import '../utils/haptics.dart';
 import '../utils/wide_screen_helper.dart';
@@ -31,6 +32,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   final _notificationService = NotificationService.instance;
   final _forumPendingService = ForumPendingService.instance;
+  final _ticketInboxService = TicketInboxService.instance;
   final _chatDataService = ChatDataService.instance;
 
   /// 宽/窄布局分支切换时 widget.child 会 reload，显然这是 sb 设计，我们需要用 GlobalKey 保住状态。
@@ -41,6 +43,7 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _notificationService.addListener(_onNotificationsChanged);
     _forumPendingService.addListener(_onNotificationsChanged);
+    _ticketInboxService.addListener(_onNotificationsChanged);
     _chatDataService.addListener(_onNotificationsChanged);
   }
 
@@ -48,6 +51,7 @@ class _MainScreenState extends State<MainScreen> {
   void dispose() {
     _notificationService.removeListener(_onNotificationsChanged);
     _forumPendingService.removeListener(_onNotificationsChanged);
+    _ticketInboxService.removeListener(_onNotificationsChanged);
     _chatDataService.removeListener(_onNotificationsChanged);
     super.dispose();
   }
@@ -64,7 +68,8 @@ class _MainScreenState extends State<MainScreen> {
 
   int get _chatBadgeCount => _chatDataService.totalUnreadCount;
 
-  int get _adminBadgeCount => _forumPendingService.pendingCount;
+  int get _adminBadgeCount =>
+      _forumPendingService.pendingCount + _ticketInboxService.pendingCount;
 
   int get _forumBadgeCount => _notificationService.forumUnreadCount;
 

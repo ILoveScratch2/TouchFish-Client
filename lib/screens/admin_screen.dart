@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
-import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/forum_pending_service.dart';
 import '../services/ticket_inbox_service.dart';
@@ -21,8 +20,6 @@ class AdminScreen extends StatefulWidget {
 
 class _AdminScreenState extends State<AdminScreen> {
   final _forumPendingService = ForumPendingService.instance;
-
-  int _pendingTicketCount = 0;
 
   @override
   void initState() {
@@ -45,13 +42,7 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   void _onTicketInboxChanged() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final count = TicketInboxService.instance.pendingCount;
-      if (count != _pendingTicketCount) {
-        setState(() => _pendingTicketCount = count);
-      }
-    });
+    if (mounted) setState(() {});
   }
 
   void _onPendingChanged() {
@@ -60,16 +51,10 @@ class _AdminScreenState extends State<AdminScreen> {
 
   int get _pendingForumCount => _forumPendingService.pendingCount;
 
+  int get _pendingTicketCount => TicketInboxService.instance.pendingCount;
+
   Future<void> _refreshPendingTicketCount() async {
-    final uid = AuthState.instance.uid;
-    final password = AuthState.instance.password;
-    if (uid == null || password == null) return;
-    final count = await TfApiClient.instance.getTicketPendingCount(
-      uid,
-      password,
-    );
-    if (!mounted) return;
-    setState(() => _pendingTicketCount = count);
+    await TicketInboxService.instance.refresh();
   }
 
   Future<void> _refreshPendingForumCount({bool showError = false}) async {

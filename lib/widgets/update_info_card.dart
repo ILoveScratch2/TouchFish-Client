@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../services/app_update_flow.dart';
 import '../services/app_update_service.dart';
+import '../services/update_preferences.dart';
 
 
 class UpdateInfoCard extends StatefulWidget {
@@ -22,6 +23,8 @@ class _UpdateInfoCardState extends State<UpdateInfoCard> {
   @override
   void initState() {
     super.initState();
+    // Web 端强制不检查更新
+    if (!UpdatePreferences.isSupported) return;
     unawaited(_load());
   }
 
@@ -69,6 +72,8 @@ class _UpdateInfoCardState extends State<UpdateInfoCard> {
 
   @override
   Widget build(BuildContext context) {
+    if (!UpdatePreferences.isSupported) return const SizedBox.shrink();
+
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final changes = _result?.changes ?? const <String>[];

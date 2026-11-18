@@ -33,6 +33,7 @@ class TicketInboxService extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
   bool get isRealtime => NotificationService.instance.isRealtime;
+  bool get _canUseAdminQueue => AuthState.instance.isAdmin;
 
   Future<void> refresh() async {
     final uid = AuthState.instance.uid;
@@ -44,11 +45,15 @@ class TicketInboxService extends ChangeNotifier {
       return;
     }
 
+    final includeAdminQueue = _canUseAdminQueue;
     _isLoading = true;
     notifyListeners();
     try {
       final results = await Future.wait([
-        TfApiClient.instance.getTicketPendingCount(uid, password),
+        if (includeAdminQueue)
+          TfApiClient.instance.getTicketPendingCount(uid, password)
+        else
+          Future<int>.value(0),
         TfApiClient.instance.getTicketUnreadCount(uid, password),
       ]);
       _pendingCount = results[0];
@@ -82,6 +87,11 @@ class TicketInboxService extends ChangeNotifier {
   }
 
   void _syncFallbackPolling() {
+    if (!_canUseAdminQueue) {
+      _fallbackTimer?.cancel();
+      _fallbackTimer = null;
+      return;
+    }
     if (NotificationService.instance.isRealtime) {
       _fallbackTimer?.cancel();
       _fallbackTimer = null;

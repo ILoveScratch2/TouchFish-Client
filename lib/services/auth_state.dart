@@ -86,6 +86,9 @@ class AuthState extends ChangeNotifier {
   bool get sessionExpiredNotice => _sessionExpiredNotice;
   bool get isLoggedIn => _currentUser != null && _uid != null;
   bool get isBanned => _currentUser?.stat == 'banned';
+
+  /// 是否具备管理员视图权限
+  bool get isAdmin => _currentUser?.hasAdminAccess ?? false;
   Listenable get sessionListenable => _sessionNotifier;
 
   void _notifySessionChanged() {

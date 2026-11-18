@@ -315,6 +315,11 @@ class _SettingsScreenState extends State<SettingsScreen>
       if (item.key == 'browserMixedContent') return isAndroid;
       if (item.key == 'launchInAppBrowser') return isAndroid;
       if (item.key == 'permissionStatus') return isAndroid;
+      // Web 端强制不检查更新
+      if (item.key == 'checkUpdateNow' ||
+          item.key == 'appUpdateAutoCheckEnabled') {
+        return !kIsWeb;
+      }
       return true;
     }).toList();
     return ListView.builder(

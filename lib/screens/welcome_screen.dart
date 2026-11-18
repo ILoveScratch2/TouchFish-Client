@@ -39,7 +39,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     }
 
     // 更新偏好
-    if (!UpdatePreferences.setupHandled) {
+    if (UpdatePreferences.shouldOfferSetup) {
       context.go(AppRoutes.updateSetup);
       return;
     }

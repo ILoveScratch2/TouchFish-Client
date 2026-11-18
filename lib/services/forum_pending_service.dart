@@ -28,10 +28,12 @@ class ForumPendingService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  bool get _canUseAdminQueue => AuthState.instance.isAdmin;
+
   Future<void> refresh() async {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
-    if (uid == null || password == null) {
+    if (uid == null || password == null || !_canUseAdminQueue) {
       _pendingCount = 0;
       _error = null;
       notifyListeners();
@@ -79,6 +81,12 @@ class ForumPendingService extends ChangeNotifier {
   }
 
   void _syncFallbackPolling() {
+    // 非管理员没有待审队列
+    if (!_canUseAdminQueue) {
+      _fallbackTimer?.cancel();
+      _fallbackTimer = null;
+      return;
+    }
     final realtime = NotificationService.instance.isRealtime;
     if (realtime) {
       _fallbackTimer?.cancel();

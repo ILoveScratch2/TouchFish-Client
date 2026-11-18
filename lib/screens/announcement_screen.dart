@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../models/announcement_model.dart';
 import '../models/notification_model.dart';
+import '../routes/app_routes.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/notification_service.dart';
@@ -22,10 +26,20 @@ class AnnouncementScreen extends StatefulWidget {
 }
 
 class _AnnouncementScreenState extends State<AnnouncementScreen> {
+  static const _refreshCoalesceWindow = Duration(seconds: 2);
+
   List<Announcement>? _announcements;
   bool _isLoading = true;
   String? _error;
   final _notificationService = NotificationService.instance;
+
+  /// 公告类通知去重
+  final Set<String> _seenNotificationKeys = {};
+  Timer? _coalesceTimer;
+
+  GoRouter? _router;
+  String? _lastLocation;
+  bool _routerAttached = false;
 
   @override
   void initState() {
@@ -35,39 +49,84 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_routerAttached) return;
+    _routerAttached = true;
+    try {
+      _router = GoRouter.of(context);
+      _router!.routerDelegate.addListener(_onRouteChanged);
+    } catch (e) {
+      talker.debug('AnnouncementScreen: attach router listener failed', e);
+    }
+  }
+
+  @override
   void dispose() {
+    _coalesceTimer?.cancel();
+    _coalesceTimer = null;
+    _router?.routerDelegate.removeListener(_onRouteChanged);
     _notificationService.removeListener(_onNotificationsChanged);
     super.dispose();
   }
 
+  /// 底部导航切回公告页
+  void _onRouteChanged() {
+    final router = _router;
+    if (router == null) return;
+    final loc = router.routerDelegate.currentConfiguration.uri.path;
+    final enteredAnnouncement =
+        loc == AppRoutes.announcement && _lastLocation != AppRoutes.announcement;
+    _lastLocation = loc;
+    if (enteredAnnouncement && mounted) _load(showLoading: false);
+  }
+
   void _onNotificationsChanged() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    final notifs = _notificationService.announcementNotifications;
+    var hasFresh = false;
+    for (final n in notifs) {
+      if (!_seenNotificationKeys.contains(n.identityKey)) hasFresh = true;
+      _seenNotificationKeys.add(n.identityKey);
+    }
+    if (hasFresh && _announcements != null) {
+      _coalesceTimer?.cancel();
+      _coalesceTimer = Timer(_refreshCoalesceWindow, () {
+        if (mounted) _load(showLoading: false);
+      });
+    }
+    setState(() {});
   }
 
   int get _badgeCount => _notificationService.announcementUnreadCount;
 
-  Future<void> _load() async {
+  /// 拉取公告列表
+  Future<void> _load({bool showLoading = true}) async {
     setState(() {
-      _isLoading = true;
+      if (showLoading) _isLoading = true;
       _error = null;
     });
     try {
       final list = await TfApiClient.instance.getAnnouncements();
       await _resolveSenderNames(list);
-      if (mounted) {
-        setState(() {
-          _announcements = list;
-          _isLoading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _announcements = list;
+        _isLoading = false;
+        _seenNotificationKeys.addAll(
+          _notificationService.announcementNotifications.map(
+            (n) => n.identityKey,
+          ),
+        );
+      });
     } catch (e) {
       talker.error('AnnouncementScreen: load failed', e);
-      if (mounted) {
-        setState(() {
-          _error = 'loadFailed';
-          _isLoading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        // 静默刷新失败时保留旧内容
+        if (_announcements == null) _error = 'loadFailed';
+      });
     }
   }
 

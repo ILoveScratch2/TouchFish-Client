@@ -73,7 +73,7 @@ class _PermissionOnboardingScreenState
     }
 
     if (!mounted) return;
-    if (!UpdatePreferences.setupHandled) {
+    if (UpdatePreferences.shouldOfferSetup) {
       context.go(AppRoutes.updateSetup);
       return;
     }

@@ -497,7 +497,8 @@ class _TouchFishAppState extends State<TouchFishApp>
   }
 
   Future<void> _maybePromptUpdatePreferences() async {
-    if (kIsWeb || UpdatePreferences.setupHandled) return;
+    // Web 端没有更新
+    if (!UpdatePreferences.shouldOfferSetup) return;
     if (!AuthState.instance.isLoggedIn && !widget.hasRememberedUid) return;
 
     final navigatorContext = _router.routerDelegate.navigatorKey.currentContext;

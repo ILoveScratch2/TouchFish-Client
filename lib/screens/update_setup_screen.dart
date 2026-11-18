@@ -23,9 +23,20 @@ class _UpdateSetupScreenState extends State<UpdateSetupScreen> {
   bool _submitting = false;
   String _currentVersion = AppConstants.defaultVersion;
 
+  /// Web 端没有更新
+  bool get _unsupported => !UpdatePreferences.isSupported;
+
   @override
   void initState() {
     super.initState();
+    if (_unsupported) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(UpdatePreferences.markSetupHandled());
+        _leave();
+      });
+      return;
+    }
     unawaited(_loadVersion());
   }
 
@@ -60,6 +71,8 @@ class _UpdateSetupScreenState extends State<UpdateSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_unsupported) return const Scaffold(body: SizedBox.shrink());
+
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
