@@ -19,6 +19,8 @@ import '../../models/message_model.dart';
 import '../../models/settings_service.dart';
 import '../../services/api/tf_api_client.dart';
 import '../../services/file_cache_service.dart';
+import '../../services/file_download_service.dart';
+import '../../services/save_text_file.dart';
 import '../../utils/blurhash_utils.dart';
 import '../../utils/talker.dart';
 import 'exif_info_overlay.dart';
@@ -93,6 +95,9 @@ class _ImageLightboxState extends State<ImageLightbox> {
   late final PageController _pageController;
   late final Map<int, Future<String>> _urlFutures = {};
   final Map<String, Future<File?>> _fileCacheFutures = {};
+
+  /// 按 hash 复用的远程地址解析结果（Web 保存/分享需要它，见 [_prewarmRemoteUrls]）。
+  final Map<String, Future<String>> _remoteUrlFutures = {};
   late final FocusNode _focusNode;
 
   late int _currentIndex;
@@ -125,6 +130,26 @@ class _ImageLightboxState extends State<ImageLightbox> {
     _showExif = widget.exifData != null && widget.exifData!.isNotEmpty;
     _restartHideTimer();
     _ensureBlurhash(_items[_currentIndex]);
+    _prewarmRemoteUrls();
+  }
+  void _prewarmRemoteUrls() {
+    if (!kIsWeb) return;
+    for (final item in _items) {
+      final path = item.media.path;
+      if (path.startsWith('http')) continue;
+      final hash = item.media.fileHash;
+      if (hash == null || hash.isEmpty) continue;
+      final future = _remoteUrlFutures.putIfAbsent(
+        hash,
+        () => _resolveUrl(hash),
+      );
+      unawaited(
+        future.then<void>((_) {}, onError: (Object _) {
+          // 失败不缓存
+          _remoteUrlFutures.remove(hash);
+        }),
+      );
+    }
   }
 
   /// 老消息本地可能没 blurhash
@@ -272,8 +297,12 @@ class _ImageLightboxState extends State<ImageLightbox> {
     final hash = item.media.fileHash;
     if (hash == null || hash.isEmpty) return null;
     try {
-      return await _resolveUrl(hash);
+      return await _remoteUrlFutures.putIfAbsent(
+        hash,
+        () => _resolveUrl(hash),
+      );
     } catch (e) {
+      _remoteUrlFutures.remove(hash);
       talker.warning('resolve lightbox url failed', e);
       return null;
     }
@@ -293,12 +322,37 @@ class _ImageLightboxState extends State<ImageLightbox> {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.maybeOf(context);
     final bytes = item.bytes ?? item.media.bytes;
+    final fileName = _fileNameFor(item);
     File? saved;
+    String? webMessage;
+    var webFailed = false;
     try {
-      if (bytes != null && bytes.isNotEmpty) {
+      if (kIsWeb) {
+        // 已是 http 地址时
+        final path = item.media.path;
+        final direct =
+            (path.startsWith('http://') || path.startsWith('https://'))
+            ? path
+            : null;
+        final url = direct ?? await _currentRemoteUrl();
+        if (url != null) {
+          final result = await downloadFile(url, fileName);
+          webFailed = !result.succeeded;
+          if (!webFailed) webMessage = l10n?.imageOpenedInNewTab;
+        } else if (bytes != null && bytes.isNotEmpty) {
+          final name = await saveTextFile(
+            fileName,
+            bytes is Uint8List ? bytes : Uint8List.fromList(bytes),
+          );
+          webFailed = name == null;
+          if (!webFailed) webMessage = l10n?.fileDownloadStarted;
+        } else {
+          webFailed = true;
+        }
+      } else if (bytes != null && bytes.isNotEmpty) {
         saved = await FileCacheService.instance.saveBytesPermanently(
           bytes,
-          _fileNameFor(item),
+          fileName,
         );
       } else {
         final url = await _currentRemoteUrl();
@@ -312,20 +366,24 @@ class _ImageLightboxState extends State<ImageLightbox> {
         }
         saved = await FileCacheService.instance.saveFilePermanently(
           url,
-          _fileNameFor(item),
+          fileName,
         );
       }
     } catch (e) {
       talker.warning('save lightbox image failed', e);
+      if (kIsWeb) webFailed = true;
     }
     if (!mounted || messenger == null || l10n == null) return;
+    final String message;
+    if (kIsWeb) {
+      message = webFailed
+          ? l10n.imageSaveFailed
+          : (webMessage ?? l10n.imageOpenedInNewTab);
+    } else {
+      message = saved == null ? l10n.imageSaveFailed : l10n.imageSaved(saved.path);
+    }
     messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          saved == null ? l10n.imageSaveFailed : l10n.imageSaved(saved.path),
-        ),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 
@@ -337,6 +395,24 @@ class _ImageLightboxState extends State<ImageLightbox> {
     try {
       final url = await _currentRemoteUrl();
       final fileName = _fileNameFor(item);
+      if (kIsWeb) {
+        if (url == null) {
+          if (messenger != null && l10n != null) {
+            messenger.showSnackBar(
+              SnackBar(content: Text(l10n.imageShareFailed)),
+            );
+          }
+          return;
+        }
+        final result = await SharePlus.instance.share(
+          ShareParams(uri: Uri.parse(url), text: fileName),
+        );
+        if (result.status == ShareResultStatus.unavailable) {
+          if (!context.mounted) return;
+          await _copyCurrentLink(context);
+        }
+        return;
+      }
       File? file;
       final bytes = item.bytes ?? item.media.bytes;
       if (bytes != null && bytes.isNotEmpty) {
@@ -898,9 +974,22 @@ class _ImageLightboxState extends State<ImageLightbox> {
                                 value: 'save',
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.download, size: 18),
+                                    Icon(
+                                      kIsWeb
+                                          ? Icons.open_in_new
+                                          : Icons.download,
+                                      size: 18,
+                                    ),
                                     const SizedBox(width: 8),
-                                    Text(AppLocalizations.of(context)!.imageSave),
+                                    Text(
+                                      kIsWeb
+                                          ? AppLocalizations.of(
+                                              context,
+                                            )!.imageOpenInNewTab
+                                          : AppLocalizations.of(
+                                              context,
+                                            )!.imageSave,
+                                    ),
                                   ],
                                 ),
                               ),

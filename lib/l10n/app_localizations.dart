@@ -7984,6 +7984,18 @@ abstract class AppLocalizations {
   /// **'Save to device'**
   String get imageSave;
 
+  /// No description provided for @imageOpenInNewTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in new tab'**
+  String get imageOpenInNewTab;
+
+  /// No description provided for @imageOpenedInNewTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened in a new tab'**
+  String get imageOpenedInNewTab;
+
   /// No description provided for @imageSaved.
   ///
   /// In en, this message translates to:

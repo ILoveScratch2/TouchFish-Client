@@ -4165,6 +4165,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get imageSave => '保存到本地';
 
   @override
+  String get imageOpenInNewTab => '在新标签页打开';
+
+  @override
+  String get imageOpenedInNewTab => '已在新标签页打开';
+
+  @override
   String imageSaved(String path) {
     return '已保存到 $path';
   }

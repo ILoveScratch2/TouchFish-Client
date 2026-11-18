@@ -1660,6 +1660,8 @@
   "imageCopyLink": "複製圖片連結",
   "imageLinkCopied": "連結已複製",
   "imageSave": "存至本機",
+  "imageOpenInNewTab": "於新分頁開啟",
+  "imageOpenedInNewTab": "已於新分頁開啟",
   "imageSaved": "已存至 {path}",
   "@imageSaved": {"placeholders": {"path": {"type": "String"}}},
   "imageSaveFailed": "儲存失敗",

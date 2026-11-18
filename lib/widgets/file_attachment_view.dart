@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -236,6 +237,15 @@ class _FileAttachmentViewState extends ConsumerState<FileAttachmentView> {
     setState(() => _downloading = true);
     try {
       final url = await _url();
+      // 浏览器没有可写目录
+      if (kIsWeb) {
+        final result = await downloadFile(url, _attachment.fileName);
+        if (!mounted) return;
+        TouchFishSnackbarService.instance.show(
+          result.succeeded ? l10n.fileDownloadStarted : l10n.fileDownloadFailed,
+        );
+        return;
+      }
       final file = await FileCacheService.instance.saveFilePermanently(
         url,
         _attachment.fileName,
@@ -273,15 +283,16 @@ class _FileAttachmentViewState extends ConsumerState<FileAttachmentView> {
                 _download();
               },
             ),
-            ListTile(
-              leading: const Icon(Symbols.save),
-              title: Text(l10n.fileSaveToLocal),
-              subtitle: Text(l10n.fileSaveToLocalDescription),
-              onTap: () {
-                Navigator.pop(context);
-                _saveToLocal();
-              },
-            ),
+            if (!kIsWeb)
+              ListTile(
+                leading: const Icon(Symbols.save),
+                title: Text(l10n.fileSaveToLocal),
+                subtitle: Text(l10n.fileSaveToLocalDescription),
+                onTap: () {
+                  Navigator.pop(context);
+                  _saveToLocal();
+                },
+              ),
           ],
         ),
       ),

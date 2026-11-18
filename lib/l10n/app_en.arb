@@ -1712,6 +1712,8 @@
   "imageCopyLink": "Copy image link",
   "imageLinkCopied": "Link copied",
   "imageSave": "Save to device",
+  "imageOpenInNewTab": "Open in new tab",
+  "imageOpenedInNewTab": "Opened in a new tab",
   "imageSaved": "Saved to {path}",
   "@imageSaved": {"placeholders": {"path": {"type": "String"}}},
   "imageSaveFailed": "Could not save the image",

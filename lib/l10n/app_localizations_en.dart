@@ -4353,6 +4353,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get imageSave => 'Save to device';
 
   @override
+  String get imageOpenInNewTab => 'Open in new tab';
+
+  @override
+  String get imageOpenedInNewTab => 'Opened in a new tab';
+
+  @override
   String imageSaved(String path) {
     return 'Saved to $path';
   }

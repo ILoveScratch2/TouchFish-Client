@@ -1648,6 +1648,8 @@
   "imageCopyLink": "复制图片链接",
   "imageLinkCopied": "链接已复制",
   "imageSave": "保存到本地",
+  "imageOpenInNewTab": "在新标签页打开",
+  "imageOpenedInNewTab": "已在新标签页打开",
   "imageSaved": "已保存到 {path}",
   "@imageSaved": {"placeholders": {"path": {"type": "String"}}},
   "imageSaveFailed": "保存失败",

@@ -4161,6 +4161,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get imageSave => '存至本機';
 
   @override
+  String get imageOpenInNewTab => '於新分頁開啟';
+
+  @override
+  String get imageOpenedInNewTab => '已於新分頁開啟';
+
+  @override
   String imageSaved(String path) {
     return '已存至 $path';
   }
