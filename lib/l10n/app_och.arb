@@ -1686,6 +1686,7 @@
   "ticketConsult": "建言",
   "ticketAppeal": "申辯",
   "ticketMyTickets": "吾之工單",
+  "ticketOwnerNotice": "請注意，該頁工單用於向服主建議。如需向 TouchFish 項目組提出 Bug 或功能請求，請使用 GitHub Issues 或 feedback.touchfish.us.ci",
   "ticketFeedback": "求助與建言",
   "ticketComposeTitle": "題",
   "ticketComposeContent": "詳述",

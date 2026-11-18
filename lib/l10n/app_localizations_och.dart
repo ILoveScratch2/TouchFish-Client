@@ -4238,6 +4238,10 @@ class AppLocalizationsOch extends AppLocalizations {
   String get ticketMyTickets => '吾之工單';
 
   @override
+  String get ticketOwnerNotice =>
+      '請注意，該頁工單用於向服主建議。如需向 TouchFish 項目組提出 Bug 或功能請求，請使用 GitHub Issues 或 feedback.touchfish.us.ci';
+
+  @override
   String get ticketFeedback => '求助與建言';
 
   @override

@@ -4432,6 +4432,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ticketMyTickets => 'My tickets';
 
   @override
+  String get ticketOwnerNotice =>
+      'Note: tickets on this page are suggestions to the server owner. For bugs or feature requests for the TouchFish project, please use GitHub Issues or feedback.touchfish.us.ci';
+
+  @override
   String get ticketFeedback => 'Help & feedback';
 
   @override

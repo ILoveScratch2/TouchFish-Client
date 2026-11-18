@@ -4242,6 +4242,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ticketMyTickets => '我的工单';
 
   @override
+  String get ticketOwnerNotice =>
+      '请注意，该页工单用于向服主建议。如需向 TouchFish 项目组提出 Bug 或功能请求，请使用 GitHub Issues 或 feedback.touchfish.us.ci';
+
+  @override
   String get ticketFeedback => '帮助与反馈';
 
   @override

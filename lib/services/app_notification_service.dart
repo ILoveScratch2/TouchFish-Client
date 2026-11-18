@@ -77,6 +77,10 @@ class NotificationLevelState {
   /// senderKey -> 最近一次写入
   final Map<String, DateTime> _enteredAt = {};
 
+  /// senderKey -> 到达序号（单调递增）
+  final Map<String, int> _arrivalSeq = {};
+  int _nextSeq = 0;
+
   /// 有未读消息的联系人数
   int get senderCount => latestBySender.length;
 
@@ -84,25 +88,38 @@ class NotificationLevelState {
   int get messageCount =>
       countBySender.values.fold(0, (sum, count) => sum + count);
 
-  /// 最近一条通知
+  /// 真正最近到达的一条通知
   ///
-  /// 不能用entries.last
-  AppNotification? get newest =>
-      latestBySender.isEmpty ? null : latestBySender.values.last;
+  /// 不能用 entries.last
+  AppNotification? get newest {
+    if (latestBySender.isEmpty) return null;
+    String? newestKey;
+    var newestSeq = -1;
+    for (final key in latestBySender.keys) {
+      final seq = _arrivalSeq[key] ?? 0;
+      if (seq > newestSeq) {
+        newestSeq = seq;
+        newestKey = key;
+      }
+    }
+    return newestKey == null ? null : latestBySender[newestKey];
+  }
 
   void add(AppNotification notification, {DateTime? now}) {
     final senderKey = notification.senderKey;
     if (senderKey == null || senderKey.isEmpty) return;
     countBySender[senderKey] = (countBySender[senderKey] ?? 0) + 1;
-    latestBySender.remove(senderKey);
     latestBySender[senderKey] = notification;
     _enteredAt[senderKey] = now ?? DateTime.now();
+    _arrivalSeq[senderKey] = ++_nextSeq;
   }
 
+  /// 摘除某个会话
   void removeSender(String senderKey) {
     latestBySender.remove(senderKey);
     countBySender.remove(senderKey);
     _enteredAt.remove(senderKey);
+    _arrivalSeq.remove(senderKey);
   }
 
   /// 淘汰超时条目
@@ -122,6 +139,7 @@ class NotificationLevelState {
     latestBySender.clear();
     countBySender.clear();
     _enteredAt.clear();
+    _arrivalSeq.clear();
   }
 }
 

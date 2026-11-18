@@ -8134,6 +8134,12 @@ abstract class AppLocalizations {
   /// **'My tickets'**
   String get ticketMyTickets;
 
+  /// No description provided for @ticketOwnerNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: tickets on this page are suggestions to the server owner. For bugs or feature requests for the TouchFish project, please use GitHub Issues or feedback.touchfish.us.ci'**
+  String get ticketOwnerNotice;
+
   /// No description provided for @ticketFeedback.
   ///
   /// In en, this message translates to:

@@ -7,6 +7,7 @@ import '../models/support_ticket.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/ticket_inbox_service.dart';
+import '../theme/tokens.dart';
 import '../utils/time_ago.dart';
 import '../widgets/support/ticket_compose_sheet.dart';
 import '../widgets/support/ticket_labels.dart';
@@ -189,6 +190,34 @@ class _TicketsScreenState extends State<TicketsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
+    final Widget content = _loading
+        ? const Center(child: CircularProgressIndicator())
+        : RefreshIndicator(
+            onRefresh: _load,
+            child: _tickets.isEmpty
+                ? EmptyState(icon: Icons.inbox_outlined, title: l10n.ticketEmpty)
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: _tickets.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 4),
+                    itemBuilder: (context, index) => Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 540),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: _TicketListTile(
+                            ticket: _tickets[index],
+                            adminMode: widget.adminMode,
+                            l10n: l10n,
+                            nameResolver: _displayName,
+                            onOpen: _openDetail,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+          );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.adminMode ? l10n.ticketQueue : l10n.ticketMyTickets),
@@ -279,35 +308,13 @@ class _TicketsScreenState extends State<TicketsScreen> {
               onPressed: _openCompose,
               child: const Icon(Icons.add_comment_outlined),
             ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _load,
-              child: _tickets.isEmpty
-                  ? EmptyState(
-                      icon: Icons.inbox_outlined,
-                      title: l10n.ticketEmpty,
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      itemCount: _tickets.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 4),
-                      itemBuilder: (context, index) => Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 540),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: _TicketListTile(
-                              ticket: _tickets[index],
-                              adminMode: widget.adminMode,
-                              l10n: l10n,
-                              nameResolver: _displayName,
-                              onOpen: _openDetail,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+      body: widget.adminMode
+          ? content
+          : Column(
+              children: [
+                const _TicketOwnerNotice(),
+                Expanded(child: content),
+              ],
             ),
     );
   }
@@ -316,6 +323,61 @@ class _TicketsScreenState extends State<TicketsScreen> {
     return _nameOf(provided) ??
         _names[uid] ??
         AppLocalizations.of(context)!.ticketUnknownUser;
+  }
+}
+
+class _TicketOwnerNotice extends StatelessWidget {
+  const _TicketOwnerNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(TFSpace.md, TFSpace.sm, TFSpace.md, 0),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 540),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: scheme.secondaryContainer,
+              borderRadius: TFRadius.smRadius,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: TFSpace.md,
+                vertical: TFSpace.md,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: TFSpace.xxs),
+                    child: Icon(
+                      Icons.info_outline_rounded,
+                      size: TFSize.iconSm,
+                      color: scheme.onSecondaryContainer,
+                    ),
+                  ),
+                  const SizedBox(width: TFSpace.sm),
+                  Expanded(
+                    child: Text(
+                      l10n.ticketOwnerNotice,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSecondaryContainer,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

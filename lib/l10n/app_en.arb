@@ -1738,6 +1738,7 @@
   "ticketConsult": "Feedback",
   "ticketAppeal": "Appeal",
   "ticketMyTickets": "My tickets",
+  "ticketOwnerNotice": "Note: tickets on this page are suggestions to the server owner. For bugs or feature requests for the TouchFish project, please use GitHub Issues or feedback.touchfish.us.ci",
   "ticketFeedback": "Help & feedback",
   "ticketComposeTitle": "Title",
   "ticketComposeContent": "Details",

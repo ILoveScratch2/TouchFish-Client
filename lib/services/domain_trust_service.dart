@@ -19,6 +19,7 @@ class DomainTrustService extends ChangeNotifier {
     'touchfish.xin/*',
     '*.touchfish.xin/*',
     'touchfish.us.ci/*',
+    '*.touchfish.us.ci/*',
     'bopid.cn/*',
     'ilovescratch.us.ci/*',
     '*.ilovescratch.us.ci/*',
