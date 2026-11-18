@@ -297,14 +297,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.0.0+7.7.0"
-  dart_pubspec_licenses:
-    dependency: "direct main"
-    description:
-      name: dart_pubspec_licenses
-      sha256: fafb90d50c182dd3d4f441c6aea75baff1e5311aab2f6430d3f40f6e3a1f5885
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "3.0.12"
   dart_style:
     dependency: transitive
     description:

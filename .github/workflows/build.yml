@@ -47,7 +47,10 @@ jobs:
         run: flutter pub get
 
       - name: Generate licenses file
-        run: dart run dart_pubspec_licenses:generate
+        working-directory: tool/licenses_gen
+        run: |
+          dart pub get
+          dart run dart_pubspec_licenses:generate --project-root ../..
       
       - name: Build Windows
         run: flutter build windows --release
@@ -101,7 +104,10 @@ jobs:
         run: flutter pub get
 
       - name: Generate licenses file
-        run: dart run dart_pubspec_licenses:generate
+        working-directory: tool/licenses_gen
+        run: |
+          dart pub get
+          dart run dart_pubspec_licenses:generate --project-root ../..
       
       - name: Install dmg package
         # 固定版本
@@ -209,7 +215,10 @@ jobs:
         run: flutter pub get
       
       - name: Generate licenses file
-        run: dart run dart_pubspec_licenses:generate
+        working-directory: tool/licenses_gen
+        run: |
+          dart pub get
+          dart run dart_pubspec_licenses:generate --project-root ../..
       
 
       - name: Build Android APK
@@ -255,7 +264,10 @@ jobs:
         run: flutter pub get
       
       - name: Generate licenses file
-        run: dart run dart_pubspec_licenses:generate
+        working-directory: tool/licenses_gen
+        run: |
+          dart pub get
+          dart run dart_pubspec_licenses:generate --project-root ../..
       
       - name: Build iOS (debug, no codesign)
         run: flutter build ios --debug --no-codesign
@@ -290,7 +302,10 @@ jobs:
       
       
       - name: Generate licenses file
-        run: dart run dart_pubspec_licenses:generate
+        working-directory: tool/licenses_gen
+        run: |
+          dart pub get
+          dart run dart_pubspec_licenses:generate --project-root ../..
       
 
       - name: Build Web

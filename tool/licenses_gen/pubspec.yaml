@@ -1,0 +1,9 @@
+name: licenses_gen
+description: 生成 TouchFish_Client 的 lib/oss_licenses.dart
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  dart_pubspec_licenses: ^3.2.0
