@@ -74,6 +74,9 @@ class NotificationLevelState {
   /// senderKey -> 消息条数（重复消息不计）
   final Map<String, int> countBySender = {};
 
+  /// senderKey -> 最近一次写入
+  final Map<String, DateTime> _enteredAt = {};
+
   /// 有未读消息的联系人数
   int get senderCount => latestBySender.length;
 
@@ -81,20 +84,44 @@ class NotificationLevelState {
   int get messageCount =>
       countBySender.values.fold(0, (sum, count) => sum + count);
 
-  void add(AppNotification notification) {
+  /// 最近一条通知
+  ///
+  /// 不能用entries.last
+  AppNotification? get newest =>
+      latestBySender.isEmpty ? null : latestBySender.values.last;
+
+  void add(AppNotification notification, {DateTime? now}) {
     final senderKey = notification.senderKey;
     if (senderKey == null || senderKey.isEmpty) return;
-    if (countBySender.containsKey(senderKey)) {
-      countBySender[senderKey] = countBySender[senderKey]! + 1;
-    } else {
-      countBySender[senderKey] = 1;
-    }
+    countBySender[senderKey] = (countBySender[senderKey] ?? 0) + 1;
+    latestBySender.remove(senderKey);
     latestBySender[senderKey] = notification;
+    _enteredAt[senderKey] = now ?? DateTime.now();
+  }
+
+  void removeSender(String senderKey) {
+    latestBySender.remove(senderKey);
+    countBySender.remove(senderKey);
+    _enteredAt.remove(senderKey);
+  }
+
+  /// 淘汰超时条目
+  void prune(Duration ttl, {DateTime? now}) {
+    if (_enteredAt.isEmpty) return;
+    final cutoff = (now ?? DateTime.now()).subtract(ttl);
+    final expired = _enteredAt.entries
+        .where((entry) => entry.value.isBefore(cutoff))
+        .map((entry) => entry.key)
+        .toList(growable: false);
+    for (final senderKey in expired) {
+      removeSender(senderKey);
+    }
   }
 
   void clear() {
     latestBySender.clear();
     countBySender.clear();
+    _enteredAt.clear();
   }
 }
 
@@ -117,6 +144,12 @@ class AppNotificationService extends ChangeNotifier
   bool _suppressInAppBanners = false;
   Timer? _bannerSuppressionTimer;
 
+  static const Duration _levelStateTtl = Duration(seconds: 30);
+
+  /// 仅测试用
+  @visibleForTesting
+  NotificationLevel? debugNotificationLevel;
+
   List<AppNotificationItem> get items => List.unmodifiable(_items);
 
   @visibleForTesting
@@ -136,6 +169,8 @@ class AppNotificationService extends ChangeNotifier
   /// 仅 Android 支持分级；其他平台始终为 [NotificationLevel.full]（原行为）。
   /// Only A(ndroid) can do!
   NotificationLevel get notificationLevel {
+    final override = debugNotificationLevel;
+    if (override != null) return override;
     if (!kIsWeb &&
         defaultTargetPlatform == TargetPlatform.android &&
         Platform.isAndroid) {
@@ -163,6 +198,9 @@ class AppNotificationService extends ChangeNotifier
 
   Future<void> initialize(GoRouter router) async {
     _router = router;
+    // 冷启动时可本来处于后台
+    _lifecycleState =
+        WidgetsBinding.instance.lifecycleState ?? _lifecycleState;
     if (_initialized) return;
     _initialized = true;
     if (!_observersRegistered) {
@@ -226,8 +264,32 @@ class AppNotificationService extends ChangeNotifier
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    final previous = _lifecycleState;
     _lifecycleState = state;
+    // 切入后台
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      _resetBanners();
+    } else if (state == AppLifecycleState.resumed &&
+        (previous == AppLifecycleState.paused ||
+            previous == AppLifecycleState.hidden)) {
+      _resetBanners();
+    }
   }
+
+  /// 清空应用内横幅与聚合状态
+  void _resetBanners() {
+    for (final timer in _timers.values) {
+      timer.cancel();
+    }
+    _timers.clear();
+    _items.clear();
+    _levelState.clear();
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void debugSetLifecycle(AppLifecycleState state) =>
+      didChangeAppLifecycleState(state);
 
   Future<void> present(AppNotification notification) async {
     final settings = SettingsService.instance;
@@ -235,8 +297,7 @@ class AppNotificationService extends ChangeNotifier
 
     final level = notificationLevel;
     final isChat = _isChatNotification(notification);
-    final isAggregating = isChat &&
-        level != NotificationLevel.full;
+    final isAggregating = isChat && level != NotificationLevel.full;
 
     // 非三级/非聊天通知：始终以完整方式走原逻辑
     if (!isAggregating) {
@@ -245,18 +306,18 @@ class AppNotificationService extends ChangeNotifier
     }
 
     // 三级以外的前台/后台：聊天通知按分级聚合展示
-    if (isAggregating) {
+    if (await _shouldShowInApp()) {
+      if (_suppressInAppBanners) return;
+      if (!settings.getValue<bool>('inAppNotifications', true)) return;
       _levelState.add(notification);
-      if (await _shouldShowInApp()) {
-        if (_suppressInAppBanners) return;
-        if (!settings.getValue<bool>('inAppNotifications', true)) return;
-        _playNotificationFeedback();
-        _rebuildAggregatedBanners();
-      } else {
-        if (!settings.getValue<bool>('systemNotifications', true)) return;
-        await _showAggregatedSystemNotification();
-      }
+      _playNotificationFeedback();
+      _rebuildAggregatedBanners();
+      return;
     }
+
+    if (!settings.getValue<bool>('systemNotifications', true)) return;
+    _levelState.add(notification);
+    await _showAggregatedSystemNotification();
   }
 
   /// 强提醒
@@ -299,16 +360,16 @@ class AppNotificationService extends ChangeNotifier
     }
   }
 
-  /// 根据当前通知分级重建聚合后的应用内横幅列表。
+  /// 根据当前通知分级重建聚合后的应用内横幅列表
   ///
-  /// 一级：只保留一条汇总横幅（始终最多一条）。
-  /// 二级：每个联系人保留一条，显示该联系人的最后一条消息。
+  /// 一级：只保留一条汇总横幅（始终最多一条）
+  /// 二级：每个联系人保留一条，显示该联系人的最后一条消息
   void _rebuildAggregatedBanners() {
     final level = notificationLevel;
-    final newItems = <AppNotificationItem>[];
-    final newTimers = <String, Timer>{};
+    _levelState.prune(_levelStateTtl);
 
-    // 一级：只显示一条汇总横幅。
+    final newItems = <AppNotificationItem>[];
+
     if (level == NotificationLevel.minimal) {
       if (_levelState.senderCount > 0) {
         final summary = _buildSummaryNotification(
@@ -321,40 +382,40 @@ class AppNotificationService extends ChangeNotifier
             duration: appNotificationBaseDuration,
           ),
         );
-        newTimers[summary.id] = Timer(
-          appNotificationBaseDuration,
-          () => dismiss(summary.id),
-        );
       }
     } else {
-      // 二级：每个联系人一条横幅。
       final entries = _levelState.latestBySender.entries.toList();
       for (var i = 0; i < entries.length; i++) {
         final notification = entries[i].value;
-        final item = AppNotificationItem(
-          notification: notification,
-          index: i,
-          duration:
-              appNotificationBaseDuration + Duration(seconds: i),
-        );
-        newItems.add(item);
-        newTimers[notification.id] = Timer(
-          item.duration,
-          () => dismiss(notification.id),
+        newItems.add(
+          AppNotificationItem(
+            notification: notification,
+            index: i,
+            duration: appNotificationBaseDuration + Duration(seconds: i),
+          ),
         );
       }
     }
 
-    // 清除旧 items 的 timer
-    for (final timer in _timers.values) {
+    final liveIds = newItems
+        .map((item) => item.notification.id)
+        .toSet();
+
+    // 只清理已不在列表定时器
+    _timers.removeWhere((id, timer) {
+      if (liveIds.contains(id)) return false;
       timer.cancel();
+      return true;
+    });
+    for (final item in newItems) {
+      final id = item.notification.id;
+      if (_timers.containsKey(id)) continue;
+      _timers[id] = Timer(item.duration, () => dismiss(id));
     }
+
     _items
       ..clear()
       ..addAll(newItems);
-    _timers
-      ..clear()
-      ..addAll(newTimers);
     notifyListeners();
   }
 
@@ -377,8 +438,9 @@ class AppNotificationService extends ChangeNotifier
     final l10n = currentAppLocalizations();
     final level = notificationLevel;
     final summary = _buildSummaryNotification(l10n);
-    final lastEntry = _levelState.latestBySender.entries.last;
-    final notification = lastEntry.value;
+    // 取真正最新
+    final notification = _levelState.newest;
+    if (notification == null) return;
 
     final body = level == NotificationLevel.minimal
         ? '${summary.body}\n${notification.body}'
@@ -471,9 +533,7 @@ class AppNotificationService extends ChangeNotifier
   }
 
   void add(AppNotification notification, {Duration? duration}) {
-    if (_items.any(
-      (item) => item.notification.id == notification.id && !item.dismissed,
-    )) {
+    if (_items.any((item) => item.notification.id == notification.id)) {
       return;
     }
     final item = AppNotificationItem(
@@ -495,11 +555,26 @@ class AppNotificationService extends ChangeNotifier
     _timers.remove(id)?.cancel();
     final index = _items.indexWhere((item) => item.notification.id == id);
     if (index < 0 || _items[index].dismissed) return;
-    _items[index] = _items[index].copyWith(dismissed: true);
+    final item = _items[index];
+    _items[index] = item.copyWith(dismissed: true);
+
+    final senderKey = item.notification.senderKey;
+    if (item.notification.topic == 'message.summary') {
+      // 一级汇总横幅消失后重新计数
+      _levelState.clear();
+    } else if (senderKey != null && senderKey.isNotEmpty) {
+      _levelState.removeSender(senderKey);
+    }
+    Timer(const Duration(milliseconds: 600), () {
+      if (_items.any((item) => item.notification.id == id && item.dismissed)) {
+        remove(id);
+      }
+    });
     notifyListeners();
   }
 
   void remove(String id) {
+    _timers.remove(id)?.cancel();
     _items.removeWhere((item) => item.notification.id == id);
     notifyListeners();
   }

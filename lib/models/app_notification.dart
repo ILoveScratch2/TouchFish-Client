@@ -36,7 +36,7 @@ class AppNotification {
           notification.meta['avatar'] as String?,
       route: routeFor(notification),
       topic: notification.event,
-      senderKey: notification.senderRaw,
+      senderKey: roomIdFor(notification) ?? notification.senderRaw,
       roomId: roomIdFor(notification),
     );
   }

@@ -23,10 +23,20 @@ data class NativeNotificationConfig(
         }
 
         fun save(context: Context, uid: Long, password: String, baseUrl: String) {
+            val normalizedBaseUrl = baseUrl.trimEnd('/')
+            val previous = load(context)
+            if (previous != null &&
+                (previous.uid != uid || previous.baseUrl != normalizedBaseUrl)
+            ) {
+                context.getSharedPreferences("touchfish_background_state", Context.MODE_PRIVATE)
+                    .edit()
+                    .clear()
+                    .apply()
+            }
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
                 .putLong(UID, uid)
                 .putString(PASSWORD, password)
-                .putString(BASE_URL, baseUrl.trimEnd('/'))
+                .putString(BASE_URL, normalizedBaseUrl)
                 .apply()
         }
 

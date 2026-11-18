@@ -113,17 +113,27 @@ class _AnimatedNotificationItemState extends State<_AnimatedNotificationItem>
       parent: _entryController,
       curve: Curves.easeOutCubic,
     );
-    _entryController.forward();
-    _progressController.forward();
+    if (widget.item.dismissed) {
+      _entryController.value = 0;
+    } else {
+      _entryController.forward();
+      _progressController.forward();
+    }
   }
 
   @override
   void didUpdateWidget(covariant _AnimatedNotificationItem oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.duration != widget.item.duration) {
+      _progressController.duration = widget.item.duration;
+      if (!widget.item.dismissed) _progressController.forward(from: 0);
+    }
     if (!oldWidget.item.dismissed && widget.item.dismissed) {
       _entryController.reverse().then((_) {
         AppNotificationService.instance.remove(widget.item.notification.id);
-      });
+      }, onError: (_) {});
+    } else if (oldWidget.item.dismissed && !widget.item.dismissed) {
+      _entryController.forward();
     }
   }
 

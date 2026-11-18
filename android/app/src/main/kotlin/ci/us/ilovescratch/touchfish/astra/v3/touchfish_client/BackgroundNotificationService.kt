@@ -32,7 +32,14 @@ class BackgroundNotificationService : Service() {
         private const val KEY_LEVEL = "flutter.notificationLevel"
         private const val KEY_SYSTEM = "flutter.systemNotifications"
         private const val KEY_LAST_FETCH_MS = "last_fetch_ms"
+        private const val KEY_SHOWN_IDS = "shown_ids"
         private const val POLL_MS = 30_000L
+
+        /// 一次性回放的上限
+        private const val MAX_LOOKBACK_MS = 10 * 60 * 1000L
+
+        /// 已展示过的通知标识保留条数
+        private const val MAX_SHOWN_IDS = 200
 
         const val ACTION_START = "ci.us.ilovescratch.touchfish.astra.v3.touchfish_client.START_BACKGROUND"
         const val ACTION_STOP = "ci.us.ilovescratch.touchfish.astra.v3.touchfish_client.STOP_BACKGROUND"
@@ -223,31 +230,65 @@ class BackgroundNotificationService : Service() {
     }
 
     private fun poll() {
-        if (isAppForeground() ||
-            !flutterPrefs.getBoolean(KEY_SYSTEM, true) ||
+        if (!flutterPrefs.getBoolean(KEY_SYSTEM, true) ||
             !polling.compareAndSet(false, true)
         ) return
-        val storedMs = statePrefs.getLong(KEY_LAST_FETCH_MS, 0L)
         val nowMs = System.currentTimeMillis()
-        val sinceSeconds = (if (storedMs > 0) storedMs else nowMs - POLL_MS) / 1000.0
+        val storedMs = statePrefs.getLong(KEY_LAST_FETCH_MS, 0L)
+
+        // 前台由 WS 实时推送负责展示
+        // 这里只推进游标
+        if (isAppForeground()) {
+            statePrefs.edit().putLong(KEY_LAST_FETCH_MS, nowMs).apply()
+            polling.set(false)
+            return
+        }
+
+        // 游标过旧
+        val windowStartMs = when {
+            storedMs <= 0L -> nowMs - POLL_MS
+            nowMs - storedMs > MAX_LOOKBACK_MS -> nowMs - MAX_LOOKBACK_MS
+            else -> storedMs
+        }
+        val sinceSeconds = windowStartMs / 1000.0
 
         Thread {
             try {
                 val notifications = TouchFishApiClient(applicationContext)
                     .queryNotificationsAfter(sinceSeconds) ?: return@Thread
+                val shown = shownIds()
                 val parsed = parseMessages(notifications)
+                    .filter { it.identity !in shown }
                 if (parsed.isNotEmpty()) {
                     showForLevel(parsed, flutterPrefs.getString(KEY_LEVEL, "2") ?: "2")
+                    markShown(parsed.map { it.identity })
                 }
                 val newestSeconds = newestTimestamp(notifications)
                 val checkpointMs = newestSeconds?.times(1000)?.toLong() ?: nowMs
-                statePrefs.edit().putLong(KEY_LAST_FETCH_MS, maxOf(storedMs, checkpointMs)).apply()
+                statePrefs.edit()
+                    .putLong(KEY_LAST_FETCH_MS, maxOf(windowStartMs, checkpointMs))
+                    .apply()
             } catch (error: Exception) {
                 Log.w(TAG, "poll error", error)
             } finally {
                 polling.set(false)
             }
         }.start()
+    }
+
+    private fun shownIds(): Set<String> =
+        statePrefs.getStringSet(KEY_SHOWN_IDS, emptySet()) ?: emptySet()
+
+    private fun markShown(identities: List<String>) {
+        if (identities.isEmpty()) return
+        val merged = shownIds().toMutableSet()
+        merged.addAll(identities)
+        val trimmed = if (merged.size > MAX_SHOWN_IDS) {
+            merged.toList().takeLast(MAX_SHOWN_IDS).toSet()
+        } else {
+            merged
+        }
+        statePrefs.edit().putStringSet(KEY_SHOWN_IDS, trimmed).apply()
     }
 
     private fun parseMessages(items: JSONArray): List<MessageNotification> {
