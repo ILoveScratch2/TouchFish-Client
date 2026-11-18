@@ -4350,6 +4350,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get imageLinkCopied => 'Link copied';
 
   @override
+  String get imageSave => 'Save to device';
+
+  @override
+  String imageSaved(String path) {
+    return 'Saved to $path';
+  }
+
+  @override
+  String get imageSaveFailed => 'Could not save the image';
+
+  @override
+  String get imageShare => 'Share';
+
+  @override
+  String get imageShareFailed => 'Could not share the image';
+
+  @override
   String get settingsSearchHint => 'Search settings';
 
   @override

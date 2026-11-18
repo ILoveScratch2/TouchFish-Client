@@ -8,6 +8,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:touchfish_client/l10n/app_localizations.dart';
 import '../../services/media_proxy_service.dart';
+import '../../services/playback_coordinator.dart';
 
 class AudioPlayer extends HookWidget {
   final String audioPath;
@@ -62,6 +63,10 @@ class AudioPlayer extends HookWidget {
         player.stream.playing.listen((value) {
           if (disposed) return;
           isPlaying.value = value;
+          // 与视频/语音消息互斥
+          if (value) {
+            PlaybackCoordinator.instance.claim(player, player.pause);
+          }
         }),
       ];
 
@@ -80,6 +85,7 @@ class AudioPlayer extends HookWidget {
 
       return () {
         disposed = true;
+        PlaybackCoordinator.instance.release(player);
         for (final sub in subs) {
           unawaited(sub.cancel());
         }

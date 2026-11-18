@@ -11,6 +11,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../services/file_cache_service.dart';
 import '../../services/media_proxy_service.dart';
+import '../../services/playback_coordinator.dart';
 import '../../services/api/tf_api_client.dart';
 import '../../utils/talker.dart';
 
@@ -85,7 +86,12 @@ class VoiceMessageBubble extends HookWidget {
         created.stream.duration.listen((value) {
           if (value > Duration.zero) duration.value = value;
         }),
-        created.stream.playing.listen((value) => isPlaying.value = value),
+        created.stream.playing.listen((value) {
+          isPlaying.value = value;
+          if (value) {
+            PlaybackCoordinator.instance.claim(created, created.pause);
+          }
+        }),
       ];
       subscriptions.value.addAll(createdSubs);
       opening.value = true;
@@ -120,7 +126,10 @@ class VoiceMessageBubble extends HookWidget {
           sub.cancel();
         }
         final active = player.value;
-        if (active != null) active.dispose();
+        if (active != null) {
+          PlaybackCoordinator.instance.release(active);
+          active.dispose();
+        }
       };
     }, const []);
 

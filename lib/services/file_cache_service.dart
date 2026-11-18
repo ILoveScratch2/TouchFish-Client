@@ -358,9 +358,36 @@ class FileCacheService {
     }
   }
 
+  /// 把内存字节保存到下载
+  Future<File?> saveBytesPermanently(List<int> bytes, String fileName) async {
+    if (kIsWeb) return null;
+    try {
+      final downloadsDir = await getDownloadsDirectory();
+      if (downloadsDir == null) {
+        talker.error('Downloads directory not available');
+        return null;
+      }
+      var target = path.join(downloadsDir.path, fileName);
+      if (await File(target).exists()) {
+        final ext = path.extension(fileName);
+        final stem = path.basenameWithoutExtension(fileName);
+        var counter = 1;
+        do {
+          target = path.join(downloadsDir.path, '$stem ($counter)$ext');
+          counter++;
+        } while (await File(target).exists());
+      }
+      await File(target).writeAsBytes(bytes, flush: true);
+      talker.info('FileCacheService: saved bytes to $target');
+      return File(target);
+    } catch (e, stack) {
+      talker.error('Failed to save bytes permanently', e, stack);
+      return null;
+    }
+  }
+
   static String _formatBytes(int bytes) => formatBytes(bytes);
 }
-
 /// 带缩略图变体缓存的缓存管理器
 class _TouchFishImageCacheManager extends CacheManager with ImageCacheManager {
   _TouchFishImageCacheManager(super.config);

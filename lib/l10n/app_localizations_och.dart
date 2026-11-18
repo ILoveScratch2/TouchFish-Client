@@ -4158,6 +4158,23 @@ class AppLocalizationsOch extends AppLocalizations {
   String get imageLinkCopied => '連結已複製';
 
   @override
+  String get imageSave => '存至本機';
+
+  @override
+  String imageSaved(String path) {
+    return '已存至 $path';
+  }
+
+  @override
+  String get imageSaveFailed => '儲存失敗';
+
+  @override
+  String get imageShare => '分享';
+
+  @override
+  String get imageShareFailed => '分享失敗';
+
+  @override
   String get settingsSearchHint => '搜尋設定';
 
   @override

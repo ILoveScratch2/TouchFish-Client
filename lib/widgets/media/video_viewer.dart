@@ -8,6 +8,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../services/media_proxy_service.dart';
+import '../../services/playback_coordinator.dart';
 import '../../services/snackbar_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/clipboard_utils.dart';
@@ -18,19 +19,27 @@ class VideoViewer extends StatefulWidget {
   final double aspectRatio;
   final bool autoplay;
 
+  /// 首次真正开始播放
+  final VoidCallback? onPlaybackStarted;
+
+  /// 未播放时展示的封面
+  final String? posterUrl;
+
   const VideoViewer({
     super.key,
     required this.videoPath,
     this.videoBytes,
     this.aspectRatio = 16 / 9,
     this.autoplay = false,
+    this.onPlaybackStarted,
+    this.posterUrl,
   });
 
   @override
   State<VideoViewer> createState() => VideoViewerState();
 }
 
-class VideoViewerState extends State<VideoViewer> {
+class VideoViewerState extends State<VideoViewer> with RouteAware {
   Player? _player;
   VideoController? _videoController;
   String? _errorMessage;
@@ -44,6 +53,11 @@ class VideoViewerState extends State<VideoViewer> {
   /// 播放器是否已真正创建
   bool _initializing = false;
 
+  Route<dynamic>? _subscribedRoute;
+
+  /// 已通知过调用方
+  bool _notifiedPlaybackStart = false;
+
   @override
   void initState() {
     super.initState();
@@ -52,6 +66,26 @@ class VideoViewerState extends State<VideoViewer> {
       unawaited(_ensurePlayer(playAfterInit: true));
     }
   }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route == _subscribedRoute) return;
+    if (_subscribedRoute != null) appRouteObserver.unsubscribe(this);
+    _subscribedRoute = route;
+    if (route != null) appRouteObserver.subscribe(this, route);
+  }
+
+  /// 页面被新路由覆盖
+  @override
+  void didPushNext() {
+    final player = _player;
+    if (_isPlaying && player != null) unawaited(player.pause());
+  }
+
+  @override
+  void didPopNext() {}
 
   /// 创建播放
   Future<void> _ensurePlayer({bool playAfterInit = false}) async {
@@ -72,6 +106,11 @@ class VideoViewerState extends State<VideoViewer> {
 
   @override
   void dispose() {
+    PlaybackCoordinator.instance.release(this);
+    if (_subscribedRoute != null) {
+      appRouteObserver.unsubscribe(this);
+      _subscribedRoute = null;
+    }
     _disposePlayer();
     super.dispose();
   }
@@ -97,6 +136,17 @@ class VideoViewerState extends State<VideoViewer> {
     _videoController = VideoController(_player!);
 
     _playingSubscription = _player!.stream.playing.listen((playing) {
+      if (playing) {
+        final player = _player;
+        if (player != null) {
+          // 同一时刻只允许一个播放器
+          PlaybackCoordinator.instance.claim(this, player.pause);
+        }
+        if (!_notifiedPlaybackStart) {
+          _notifiedPlaybackStart = true;
+          widget.onPlaybackStarted?.call();
+        }
+      }
       if (mounted) {
         setState(() {
           _isPlaying = playing;
@@ -186,18 +236,33 @@ class VideoViewerState extends State<VideoViewer> {
         aspectRatio: widget.aspectRatio,
         child: Container(
           color: Colors.black,
-          child: Center(
-            child: _initializing
-                ? const SizedBox.square(
-                    dimension: 28,
-                    child: CircularProgressIndicator(strokeWidth: 2.5),
-                  )
-                : IconButton.filled(
-                    iconSize: 40,
-                    onPressed: () => _ensurePlayer(playAfterInit: true),
-                    icon: const Icon(Icons.play_arrow),
-                    tooltip: AppLocalizations.of(context)!.videoTapToPlay,
-                  ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (widget.posterUrl != null)
+                Image.network(
+                  widget.posterUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                ),
+              if (widget.posterUrl != null)
+                const DecoratedBox(
+                  decoration: BoxDecoration(color: Colors.black38),
+                ),
+              Center(
+                child: _initializing
+                    ? const SizedBox.square(
+                        dimension: 28,
+                        child: CircularProgressIndicator(strokeWidth: 2.5),
+                      )
+                    : IconButton.filled(
+                        iconSize: 40,
+                        onPressed: () => _ensurePlayer(playAfterInit: true),
+                        icon: const Icon(Icons.play_arrow),
+                        tooltip: AppLocalizations.of(context)!.videoTapToPlay,
+                      ),
+              ),
+            ],
           ),
         ),
       );
@@ -220,7 +285,12 @@ class VideoViewerState extends State<VideoViewer> {
       video = MaterialVideoControlsTheme(
         normal: MaterialVideoControlsThemeData(
           visibleOnMount: true,
-          controlsHoverDuration: const Duration(hours: 1),
+          // 控制条 3 秒后自动隐藏
+          controlsHoverDuration: const Duration(seconds: 3),
+          volumeGesture: true,
+          brightnessGesture: true,
+          seekGesture: true,
+          seekOnDoubleTap: true,
           seekBarPositionColor: primaryColor,
           seekBarColor: primaryColor.withValues(alpha: 0.3),
           seekBarBufferColor: primaryColor.withValues(alpha: 0.5),
@@ -233,7 +303,12 @@ class VideoViewerState extends State<VideoViewer> {
         ),
         fullscreen: MaterialVideoControlsThemeData(
           visibleOnMount: true,
-          controlsHoverDuration: const Duration(hours: 1),
+          // 控制条 3 秒后自动隐
+          controlsHoverDuration: const Duration(seconds: 3),
+          volumeGesture: true,
+          brightnessGesture: true,
+          seekGesture: true,
+          seekOnDoubleTap: true,
           seekBarPositionColor: primaryColor,
           seekBarColor: primaryColor.withValues(alpha: 0.3),
           seekBarBufferColor: primaryColor.withValues(alpha: 0.5),
@@ -250,7 +325,7 @@ class VideoViewerState extends State<VideoViewer> {
       video = MaterialDesktopVideoControlsTheme(
         normal: MaterialDesktopVideoControlsThemeData(
           visibleOnMount: true,
-          controlsHoverDuration: const Duration(hours: 1),
+          controlsHoverDuration: const Duration(seconds: 3),
           seekBarPositionColor: primaryColor,
           seekBarColor: primaryColor.withValues(alpha: 0.3),
           seekBarBufferColor: primaryColor.withValues(alpha: 0.5),
@@ -265,7 +340,7 @@ class VideoViewerState extends State<VideoViewer> {
         ),
         fullscreen: MaterialDesktopVideoControlsThemeData(
           visibleOnMount: true,
-          controlsHoverDuration: const Duration(hours: 1),
+          controlsHoverDuration: const Duration(seconds: 3),
           seekBarPositionColor: primaryColor,
           seekBarColor: primaryColor.withValues(alpha: 0.3),
           seekBarBufferColor: primaryColor.withValues(alpha: 0.5),

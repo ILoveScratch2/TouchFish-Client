@@ -4162,6 +4162,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get imageLinkCopied => '链接已复制';
 
   @override
+  String get imageSave => '保存到本地';
+
+  @override
+  String imageSaved(String path) {
+    return '已保存到 $path';
+  }
+
+  @override
+  String get imageSaveFailed => '保存失败';
+
+  @override
+  String get imageShare => '分享';
+
+  @override
+  String get imageShareFailed => '分享失败';
+
+  @override
   String get settingsSearchHint => '搜索设置';
 
   @override

@@ -12,6 +12,7 @@ import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:dismissible_page/dismissible_page.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/message_model.dart';
@@ -263,6 +264,108 @@ class _ImageLightboxState extends State<ImageLightbox> {
     );
   }
 
+  /// 当前图片的远程地址
+  Future<String?> _currentRemoteUrl() async {
+    final item = _items[_currentIndex];
+    final path = item.media.path;
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    final hash = item.media.fileHash;
+    if (hash == null || hash.isEmpty) return null;
+    try {
+      return await _resolveUrl(hash);
+    } catch (e) {
+      talker.warning('resolve lightbox url failed', e);
+      return null;
+    }
+  }
+
+  String _fileNameFor(LightboxImageItem item) {
+    final name = item.media.fileName;
+    if (name != null && name.isNotEmpty && name != item.media.path) return name;
+    final url = item.media.path;
+    final segment = url.split('/').last;
+    return segment.isEmpty ? 'image.jpg' : segment;
+  }
+
+  /// 保存当前图片
+  Future<void> _saveCurrent(BuildContext context) async {
+    final item = _items[_currentIndex];
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final bytes = item.bytes ?? item.media.bytes;
+    File? saved;
+    try {
+      if (bytes != null && bytes.isNotEmpty) {
+        saved = await FileCacheService.instance.saveBytesPermanently(
+          bytes,
+          _fileNameFor(item),
+        );
+      } else {
+        final url = await _currentRemoteUrl();
+        if (url == null) {
+          if (messenger != null && l10n != null) {
+            messenger.showSnackBar(
+              SnackBar(content: Text(l10n.imageSaveFailed)),
+            );
+          }
+          return;
+        }
+        saved = await FileCacheService.instance.saveFilePermanently(
+          url,
+          _fileNameFor(item),
+        );
+      }
+    } catch (e) {
+      talker.warning('save lightbox image failed', e);
+    }
+    if (!mounted || messenger == null || l10n == null) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          saved == null ? l10n.imageSaveFailed : l10n.imageSaved(saved.path),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// 分享当前图片
+  Future<void> _shareCurrent(BuildContext context) async {
+    final item = _items[_currentIndex];
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      final url = await _currentRemoteUrl();
+      final fileName = _fileNameFor(item);
+      File? file;
+      final bytes = item.bytes ?? item.media.bytes;
+      if (bytes != null && bytes.isNotEmpty) {
+        file = await FileCacheService.instance.saveBytesPermanently(
+          bytes,
+          fileName,
+        );
+      } else if (url != null) {
+        file = await FileCacheService.instance.getFile(url);
+      }
+      if (file == null) {
+        if (messenger != null && l10n != null) {
+          messenger.showSnackBar(
+            SnackBar(content: Text(l10n.imageShareFailed)),
+          );
+        }
+        return;
+      }
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(file.path)], text: fileName),
+      );
+    } catch (e) {
+      talker.warning('share lightbox image failed', e);
+      if (messenger != null && l10n != null) {
+        messenger.showSnackBar(SnackBar(content: Text(l10n.imageShareFailed)));
+      }
+    }
+  }
+
   PhotoViewGalleryPageOptions _pageOptions(int index) {
     final item = _items[index];
     final isHero = index == widget.initialIndex && widget.heroTag.isNotEmpty;
@@ -301,6 +404,7 @@ class _ImageLightboxState extends State<ImageLightbox> {
                 initialScale: PhotoViewComputedScale.contained,
                 scaleStateChangedCallback: _onScaleStateChanged,
                 onTapUp: (context, details, value) => _toggleControls(),
+                enableRotation: true,
                 errorBuilder: _photoErrorBuilder(item),
               ),
             ],
@@ -320,6 +424,7 @@ class _ImageLightboxState extends State<ImageLightbox> {
           initialScale: PhotoViewComputedScale.contained,
           scaleStateChangedCallback: _onScaleStateChanged,
           onTapUp: (context, details, value) => _toggleControls(),
+          enableRotation: true,
           errorBuilder: _photoErrorBuilder(item),
         ),
         controller: controller,
@@ -519,10 +624,12 @@ class _ImageLightboxState extends State<ImageLightbox> {
     );
   }
 
-  void _zoomBy(double delta) {
+  void _zoomBy(double factor) {
     final controller = _currentController;
-    final currentScale = controller.scale ?? 1.0;
-    controller.scale = (currentScale + delta).clamp(_minScale, _maxScale);
+    final current = controller.scale;
+    // 改为相对倍数
+    if (current == null || current <= 0) return;
+    controller.scale = (current * factor).clamp(_minScale, _maxScale);
     _revealControls();
   }
 
@@ -663,7 +770,6 @@ class _ImageLightboxState extends State<ImageLightbox> {
                   color: Colors.black,
                 ),
                 gaplessPlayback: true,
-                enableRotation: true,
               ),
               ),
             ),
@@ -778,9 +884,36 @@ class _ImageLightboxState extends State<ImageLightbox> {
                             ).moreButtonTooltip,
                             icon: const Icon(Icons.more_horiz, color: Colors.white),
                             onSelected: (value) {
-                              if (value == 'copy') _copyCurrentLink(context);
+                              switch (value) {
+                                case 'save':
+                                  _saveCurrent(context);
+                                case 'share':
+                                  _shareCurrent(context);
+                                case 'copy':
+                                  _copyCurrentLink(context);
+                              }
                             },
                             itemBuilder: (context) => [
+                              PopupMenuItem(
+                                value: 'save',
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.download, size: 18),
+                                    const SizedBox(width: 8),
+                                    Text(AppLocalizations.of(context)!.imageSave),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 'share',
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.ios_share, size: 18),
+                                    const SizedBox(width: 8),
+                                    Text(AppLocalizations.of(context)!.imageShare),
+                                  ],
+                                ),
+                              ),
                               PopupMenuItem(
                                 value: 'copy',
                                 child: Row(
@@ -812,12 +945,12 @@ class _ImageLightboxState extends State<ImageLightbox> {
                             tooltip: AppLocalizations.of(
                               context,
                             )!.imageZoomOut,
-                            onPressed: () => _zoomBy(-0.15),
+                            onPressed: () => _zoomBy(1 / 1.25),
                           ),
                           _iconButton(
                             icon: Icons.add,
                             tooltip: AppLocalizations.of(context)!.imageZoomIn,
-                            onPressed: () => _zoomBy(0.15),
+                            onPressed: () => _zoomBy(1.25),
                           ),
                           const SizedBox(width: 8),
                           _iconButton(

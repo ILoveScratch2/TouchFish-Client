@@ -46,6 +46,8 @@ class _ForumMediaCarouselState extends State<ForumMediaCarousel> {
           messageId: attachment.hash,
           media: MessageMedia(
             path: attachment.hash,
+            // 与 path 同值
+            fileHash: attachment.hash,
             fileName: attachment.fileName,
             fileSize: attachment.fileSize,
             mimeType: attachment.mimeType,

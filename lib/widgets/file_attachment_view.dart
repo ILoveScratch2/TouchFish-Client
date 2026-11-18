@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -566,9 +567,16 @@ class _AttachmentPreviewState extends State<_AttachmentPreview> {
   late final String _heroTag =
       'attachment_${widget.attachment.hash}_${identityHashCode(this)}';
 
-  /// ParsedURL is loading
+  /// 已解析的 URL
   String? _fileUrl;
-  Future<File?>? _fileFuture;
+
+  /// 磁盘缓存命中的文件
+  /// 只读缓存，不触发下载。
+  ///
+  File? _cachedFile;
+
+  /// 视频已开始播放
+  bool _playbackStarted = false;
 
   /// 缩略图预览加载失败（如缩略图被清理），本次展示回退原图
   bool _thumbUnavailable = false;
@@ -583,7 +591,8 @@ class _AttachmentPreviewState extends State<_AttachmentPreview> {
     if (oldWidget.urlFuture != widget.urlFuture ||
         oldWidget.bytes != widget.bytes) {
       _fileUrl = null;
-      _fileFuture = null;
+      _cachedFile = null;
+      _playbackStarted = false;
       _thumbUnavailable = false;
       _renderedOriginal = false;
     } else if (oldWidget.attachment.hasThumb != widget.attachment.hasThumb) {
@@ -614,25 +623,30 @@ class _AttachmentPreviewState extends State<_AttachmentPreview> {
           return const Center(child: CircularProgressIndicator());
         }
         final url = snapshot.data!;
-        // 已有字节内容时直接展示，否则优先用磁盘缓存文件，实现离线查看
+        // 已有字节内容时直接展示，否则先看磁盘缓存是否命中
         if (widget.bytes != null) {
           return _buildPreview(context, url, file: null);
         }
-        if (url != _fileUrl) {
-          _fileUrl = url;
-          _fileFuture = FileCacheService.instance.getFile(url);
-        }
-        return FutureBuilder<File?>(
-          future: _fileFuture,
-          builder: (context, fileSnapshot) {
-            if (fileSnapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            return _buildPreview(context, url, file: fileSnapshot.data);
-          },
-        );
+        unawaited(_resolveCachedFile(url));
+        return _buildPreview(context, url, file: _cachedFile);
       },
     );
+  }
+
+  /// 探测磁盘缓存
+  /// 只读
+  Future<void> _resolveCachedFile(String url) async {
+    if (url.isEmpty || url == _fileUrl) return;
+    _fileUrl = url;
+    try {
+      final file = await FileCacheService.instance.getFileFromCache(url);
+      if (!mounted || file == null) return;
+      // 视频已开始播放：换源会重建播放器
+      if (_playbackStarted && widget.attachment.isVideo) return;
+      setState(() => _cachedFile = file);
+    } catch (e) {
+      talker.warning('resolve cached file failed', e);
+    }
   }
 
   Widget _buildPreview(BuildContext context, String url, {File? file}) {
@@ -706,11 +720,19 @@ class _AttachmentPreviewState extends State<_AttachmentPreview> {
       }
       preview = image;
     } else if (attachment.isVideo) {
+      final isNetworkDisplay = file == null && bytes == null;
+      // 服务端缩略图
+      final posterUrl = isNetworkDisplay && attachment.hasThumb
+          ? TfApiClient.thumbnailUrlFromFileUrl(url)
+          : null;
       preview = AspectRatio(
         aspectRatio: attachment.aspectRatio ?? 16 / 9,
         child: VideoViewer(
           videoPath: file?.path ?? url,
           videoBytes: file != null ? null : bytes,
+          posterUrl: posterUrl,
+          // 一旦开始播放就锁定当前源
+          onPlaybackStarted: () => _playbackStarted = true,
         ),
       );
     } else if (attachment.isAudio) {

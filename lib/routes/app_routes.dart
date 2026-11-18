@@ -13,6 +13,7 @@ import '../screens/register_step2_screen.dart';
 import '../screens/register_step3_screen.dart';
 import '../screens/register_success_screen.dart';
 import '../screens/forgot_password_screen.dart';
+import '../services/playback_coordinator.dart';
 import '../screens/change_password_screen.dart';
 import '../screens/chat_screen.dart';
 import '../screens/chat_detail_screen.dart';
@@ -360,6 +361,8 @@ class AppRoutes {
           ? welcome
           : (hasSavedSession ? main : login),
       refreshListenable: AuthState.instance.sessionListenable,
+      // 播放器在被新页面覆盖时暂停
+      observers: [appRouteObserver],
       redirect: (context, state) {
         final path = state.uri.path;
         final flags = FeatureFlags.instance;

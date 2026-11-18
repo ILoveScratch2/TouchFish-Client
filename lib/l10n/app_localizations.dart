@@ -7978,6 +7978,36 @@ abstract class AppLocalizations {
   /// **'Link copied'**
   String get imageLinkCopied;
 
+  /// No description provided for @imageSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to device'**
+  String get imageSave;
+
+  /// No description provided for @imageSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {path}'**
+  String imageSaved(String path);
+
+  /// No description provided for @imageSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the image'**
+  String get imageSaveFailed;
+
+  /// No description provided for @imageShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get imageShare;
+
+  /// No description provided for @imageShareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not share the image'**
+  String get imageShareFailed;
+
   /// No description provided for @settingsSearchHint.
   ///
   /// In en, this message translates to:
