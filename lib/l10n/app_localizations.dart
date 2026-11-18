@@ -2164,6 +2164,12 @@ abstract class AppLocalizations {
   /// **'Restore split view'**
   String get forumPostRestoreSplitView;
 
+  /// No description provided for @forumSplitDragHandle.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to resize panels'**
+  String get forumSplitDragHandle;
+
   /// No description provided for @settingsSystemNotificationsTitle.
   ///
   /// In en, this message translates to:
@@ -6267,6 +6273,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No comments yet'**
   String get forumNoComments;
+
+  /// No description provided for @forumTimeJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get forumTimeJustNow;
+
+  /// No description provided for @forumTimeMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min ago'**
+  String forumTimeMinutesAgo(int count);
+
+  /// No description provided for @forumTimeHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} hr ago'**
+  String forumTimeHoursAgo(int count);
+
+  /// No description provided for @forumTimeDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} d ago'**
+  String forumTimeDaysAgo(int count);
+
+  /// No description provided for @forumPostTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'Content truncated'**
+  String get forumPostTruncated;
+
+  /// No description provided for @forumMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get forumMore;
+
+  /// No description provided for @forumCopyContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy text'**
+  String get forumCopyContent;
+
+  /// No description provided for @forumCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get forumCopied;
 
   /// No description provided for @forumCommentPlaceholder.
   ///

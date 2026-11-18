@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../models/file_attachment.dart';
+import '../models/message_model.dart';
 import '../theme/tokens.dart';
 import 'file_attachment_view.dart';
+import 'media/image_lightbox.dart';
 
 /// 横向媒体轮播
 class ForumMediaCarousel extends StatefulWidget {
@@ -38,13 +40,33 @@ class _ForumMediaCarouselState extends State<ForumMediaCarousel> {
     final images = widget.images;
     if (images.isEmpty) return const SizedBox.shrink();
 
+    final galleryItems = [
+      for (final attachment in images)
+        LightboxImageItem(
+          messageId: attachment.hash,
+          media: MessageMedia(
+            path: attachment.hash,
+            fileName: attachment.fileName,
+            fileSize: attachment.fileSize,
+            mimeType: attachment.mimeType,
+            width: attachment.width,
+            height: attachment.height,
+            blurhash: attachment.blurhash,
+            hasThumb: attachment.hasThumb,
+          ),
+        ),
+    ];
+
     if (images.length == 1) {
       return ClipRRect(
         borderRadius: TFRadius.cardRadius,
         child: SizedBox(
           height: widget.height,
           width: double.infinity,
-          child: FileAttachmentView(attachment: images.first),
+          child: FileAttachmentView(
+            attachment: images.first,
+            galleryItems: galleryItems,
+          ),
         ),
       );
     }
@@ -65,7 +87,11 @@ class _ForumMediaCarouselState extends State<ForumMediaCarousel> {
                 ),
                 child: ClipRRect(
                   borderRadius: TFRadius.cardRadius,
-                  child: FileAttachmentView(attachment: images[index]),
+                  child: FileAttachmentView(
+                    attachment: images[index],
+                    galleryItems: galleryItems,
+                    galleryIndex: index,
+                  ),
                 ),
               );
             },

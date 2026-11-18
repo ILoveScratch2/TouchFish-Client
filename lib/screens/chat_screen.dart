@@ -20,6 +20,7 @@ import '../widgets/ui/refreshable.dart';
 import '../services/notification_service.dart';
 import '../services/presence_service.dart';
 import '../services/snackbar_service.dart';
+import '../theme/tokens.dart';
 import '../models/settings_service.dart';
 import '../routes/app_routes.dart';
 import '../utils/wide_screen_helper.dart';
@@ -39,16 +40,18 @@ class _ChatShellScreenState extends State<ChatShellScreen>
     with SingleTickerProviderStateMixin {
   static const String _dividerPositionKey = 'chat_divider_position';
   static const String _collapsedStateKey = 'chat_list_collapsed';
-  static const double _collapsedWidth = 80.0;
-  static const double _minSidebarWidth = 260.0;
-  static const double _maxSidebarWidth = 520.0;
-  static const double _collapseThreshold = 210.0;
+
+  /// 聊天图标栏比论坛宽 8px
+  static const double _collapsedWidth = TFPane.collapsedWidth + 8;
+  static const double _minSidebarWidth = TFPane.minWidth;
+  static const double _maxSidebarWidth = TFPane.maxWidth;
+  static const double _collapseThreshold = TFPane.collapseThreshold;
 
   double _leftFlex = 2.0;
   double _rightFlex = 4.0;
   bool _isHovering = false;
   bool _isCollapsed = false;
-  double _sidebarWidth = 320.0;
+  double _sidebarWidth = TFPane.defaultWidth;
 
   /// 整壳入场动画
   late final AnimationController _enterController;

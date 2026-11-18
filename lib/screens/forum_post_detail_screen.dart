@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -9,13 +8,15 @@ import '../models/support_ticket.dart';
 import '../widgets/support/ticket_compose_sheet.dart';
 import '../models/forum_model.dart';
 import '../models/user_profile.dart';
+import '../theme/tokens.dart';
 import '../widgets/account/profile_picture.dart';
 import '../widgets/markdown_renderer.dart';
 import '../widgets/sticker_text_renderer.dart';
-import '../widgets/ui/loading_indicator.dart';
+import '../widgets/ui/skeleton.dart';
 import '../models/settings_service.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/forum_data_bus.dart';
 import '../services/snackbar_service.dart';
 import 'forum_post_compose_screen.dart';
 import '../utils/talker.dart';
@@ -207,33 +208,20 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
             .fold(-1, (current, role) => role > current ? role : current);
       }
 
-      if (_post != null) {
-        final authorUid = int.tryParse(_post!.authorUid);
-        if (authorUid != null) {
-          _postAuthor = await TfApiClient.instance.getUserByUid(authorUid);
-        }
-      }
-
       final comments = await TfApiClient.instance.getAllComments(fid, pid);
       _commentDataList = comments.map((c) => _CommentData(c)).toList();
 
       // 终于修复了万能的评论超大量请求问题
+      final postAuthorUid = _post == null
+          ? null
+          : int.tryParse(_post!.authorUid);
       final authorUids = <int>{
+        ?postAuthorUid,
         for (final cd in _commentDataList)
           if (int.tryParse(cd.comment.authorUid) case final int uid) uid,
       };
-      final authors = <int, UserProfile?>{};
-      final pending = Queue<int>.from(authorUids);
-      Future<void> worker() async {
-        while (pending.isNotEmpty) {
-          final uid = pending.removeFirst();
-          authors[uid] = await TfApiClient.instance.getUserByUid(uid);
-        }
-      }
-
-      await Future.wait(
-        List.generate(authorUids.length < 4 ? authorUids.length : 4, (_) => worker()),
-      );
+      final authors = await TfApiClient.instance.getUsersByUids(authorUids);
+      _postAuthor = postAuthorUid == null ? null : authors[postAuthorUid];
       for (final cd in _commentDataList) {
         final uid = int.tryParse(cd.comment.authorUid);
         if (uid != null) cd.author = authors[uid];
@@ -284,7 +272,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
           leading: BackButton(onPressed: _leavePost),
           actions: _buildFullScreenActions(context, l10n),
         ),
-        body: const LoadingIndicator(),
+        body: const _PostDetailSkeleton(),
       );
     }
 
@@ -836,6 +824,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     if (result == true) {
       _commentController.clear();
       await _loadData();
+      ForumDataBus.instance.notifyPostsChanged(postId: widget.postId);
     }
   }
 
@@ -871,6 +860,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
         if (!mounted) return;
         TouchFishSnackbarService.instance.show(l10n.forumCommentSuccess);
         await _loadData();
+        ForumDataBus.instance.notifyPostsChanged(postId: widget.postId);
       } else {
         TouchFishSnackbarService.instance.show(l10n.forumCommentFailed);
       }
@@ -933,6 +923,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     if (!mounted) return;
     if (success) {
       TouchFishSnackbarService.instance.show(l10n.forumPostDeleteSuccess);
+      ForumDataBus.instance.notifyPostsChanged();
       _leavePost();
     } else {
       setState(() => _isDeletingPost = false);
@@ -980,6 +971,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     TouchFishSnackbarService.instance.show(
       success ? l10n.forumCommentDeleteSuccess : l10n.forumCommentDeleteFailed,
     );
+    if (success) ForumDataBus.instance.notifyPostsChanged(postId: widget.postId);
   }
 
   String _formatDateTime(DateTime date) {
@@ -988,18 +980,60 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   }
 
   String _formatRelativeTime(DateTime date) {
+    final l10n = AppLocalizations.of(context)!;
     final diff = DateTime.now().difference(date);
-    if (diff.inDays > 365) return '${diff.inDays ~/ 365}y';
-    if (diff.inDays > 30) return '${diff.inDays ~/ 30}mo';
-    if (diff.inDays > 0) return '${diff.inDays}d';
-    if (diff.inHours > 0) return '${diff.inHours}h';
-    if (diff.inMinutes > 0) return '${diff.inMinutes}m';
-    return 'now';
+    if (diff.inDays >= 7) return _formatDateTime(date);
+    if (diff.inDays > 0) return l10n.forumTimeDaysAgo(diff.inDays);
+    if (diff.inHours > 0) return l10n.forumTimeHoursAgo(diff.inHours);
+    if (diff.inMinutes > 0) return l10n.forumTimeMinutesAgo(diff.inMinutes);
+    return l10n.forumTimeJustNow;
   }
 }
 
-class _PaneEnterAnimation extends StatefulWidget {
-  final Widget child;
+/// 帖子详情
+class _PostDetailSkeleton extends StatelessWidget {
+  const _PostDetailSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    return ListView(
+      padding: const EdgeInsets.all(TFSpace.lg),
+      children: [
+        Row(
+          children: [
+            const SkeletonBox(
+              width: TFSize.avatarMd,
+              height: TFSize.avatarMd,
+              borderRadius: TFRadius.pillRadius,
+            ),
+            const SizedBox(width: TFSpace.md),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                SkeletonBox(width: 120, height: 12),
+                SizedBox(height: TFSpace.sm),
+                SkeletonBox(width: 80, height: 10),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: TFSpace.xxl),
+        const SkeletonBox(width: double.infinity, height: 22),
+        const SizedBox(height: TFSpace.md),
+        const SkeletonBox(width: double.infinity, height: 14),
+        const SizedBox(height: TFSpace.sm),
+        const SkeletonBox(width: double.infinity, height: 14),
+        const SizedBox(height: TFSpace.sm),
+        SkeletonBox(width: (width * 0.6).clamp(120.0, width), height: 14),
+        const SizedBox(height: TFSpace.xxl),
+        const SkeletonBox(width: double.infinity, height: 56),
+      ],
+    );
+  }
+}
+
+class _PaneEnterAnimation extends StatefulWidget {  final Widget child;
 
   const _PaneEnterAnimation({required this.child});
 

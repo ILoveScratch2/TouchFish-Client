@@ -384,6 +384,7 @@
   "forumSelectPostPlaceholder": "Select a post to read it",
   "forumPostFullScreen": "View full screen",
   "forumPostRestoreSplitView": "Restore split view",
+  "forumSplitDragHandle": "Drag to resize panels",
   
   "settingsSystemNotificationsTitle": "System Notifications",
   "settingsSystemNotificationsDesc": "Use system notifications for messages",
@@ -1235,6 +1236,29 @@
     }
   },
   "forumNoComments": "No comments yet",
+  "forumTimeJustNow": "Just now",
+  "forumTimeMinutesAgo": "{count} min ago",
+  "@forumTimeMinutesAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "forumTimeHoursAgo": "{count} hr ago",
+  "@forumTimeHoursAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "forumTimeDaysAgo": "{count} d ago",
+  "@forumTimeDaysAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "forumPostTruncated": "Content truncated",
+  "forumMore": "More",
+  "forumCopyContent": "Copy text",
+  "forumCopied": "Copied",
   "forumCommentPlaceholder": "Write a comment...",
   "forumCommentSuccess": "Comment posted successfully",
   "forumShare": "Share",

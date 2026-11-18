@@ -277,6 +277,38 @@ void main() {
     expect(find.byIcon(Icons.fullscreen), findsOneWidget);
   });
 
+  testWidgets('leaving a post clears the full screen toggle for next entry wangyufan and wangxiehang', (
+    tester,
+  ) async {
+    await useSize(tester, const Size(1200, 800));
+    Widget post(String id) => ForumPostDetailScreen(
+      key: ValueKey('post-42-$id'),
+      forumId: '42',
+      postId: id,
+    );
+    bool split() => tester
+        .widget<SectionTwoPaneShell>(find.byType(SectionTwoPaneShell))
+        .twoPane;
+
+    await pumpShell(tester, location: '/forum/42/post/1', child: post('1'));
+    await tester.tap(find.byIcon(Icons.fullscreen));
+    await tester.pump();
+    expect(split(), isFalse);
+
+    await pumpShell(
+      tester,
+      location: '/forum/42',
+      child: const Text('detail-page'),
+    );
+    await tester.pump();
+    expect(split(), isFalse);
+
+    await pumpShell(tester, location: '/forum/42/post/1', child: post('1'));
+    await tester.pump();
+    expect(split(), isTrue);
+    expect(find.byIcon(Icons.fullscreen), findsOneWidget);
+  });
+
   testWidgets('narrow passes the route content through', (tester) async {
     await useSize(tester, const Size(480, 900));
     await pumpShell(

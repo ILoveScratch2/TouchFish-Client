@@ -1061,6 +1061,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get forumPostRestoreSplitView => '恢复分栏';
 
   @override
+  String get forumSplitDragHandle => '拖动调整分栏宽度';
+
+  @override
   String get settingsSystemNotificationsTitle => '系统通知';
 
   @override
@@ -3232,6 +3235,36 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get forumNoComments => '暂无评论';
+
+  @override
+  String get forumTimeJustNow => '刚刚';
+
+  @override
+  String forumTimeMinutesAgo(int count) {
+    return '$count 分钟前';
+  }
+
+  @override
+  String forumTimeHoursAgo(int count) {
+    return '$count 小时前';
+  }
+
+  @override
+  String forumTimeDaysAgo(int count) {
+    return '$count 天前';
+  }
+
+  @override
+  String get forumPostTruncated => '内容已截断';
+
+  @override
+  String get forumMore => '更多';
+
+  @override
+  String get forumCopyContent => '复制内容';
+
+  @override
+  String get forumCopied => '已复制';
 
   @override
   String get forumCommentPlaceholder => '写下你的评论…';

@@ -1058,6 +1058,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get forumPostRestoreSplitView => '復分欄';
 
   @override
+  String get forumSplitDragHandle => '拖動以調分欄';
+
+  @override
   String get settingsSystemNotificationsTitle => '系統通知';
 
   @override
@@ -3228,6 +3231,36 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get forumNoComments => '暫無評論';
+
+  @override
+  String get forumTimeJustNow => '啱先';
+
+  @override
+  String forumTimeMinutesAgo(int count) {
+    return '$count 分鐘前';
+  }
+
+  @override
+  String forumTimeHoursAgo(int count) {
+    return '$count 個鐘前';
+  }
+
+  @override
+  String forumTimeDaysAgo(int count) {
+    return '$count 日前';
+  }
+
+  @override
+  String get forumPostTruncated => '內容已截斷';
+
+  @override
+  String get forumMore => '更多';
+
+  @override
+  String get forumCopyContent => '複製內容';
+
+  @override
+  String get forumCopied => '已複製';
 
   @override
   String get forumCommentPlaceholder => '書君之評論…';

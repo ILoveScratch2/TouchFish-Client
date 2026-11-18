@@ -30,13 +30,14 @@ class ProfilePictureWidget extends StatelessWidget {
       );
     }
 
+    final colorScheme = Theme.of(context).colorScheme;
     return CircleAvatar(
       radius: radius,
-      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+      backgroundColor: colorScheme.primaryContainer,
       child: Icon(
         fallbackIcon ?? Icons.person,
         size: radius,
-        color: Theme.of(context).colorScheme.onPrimaryContainer,
+        color: colorScheme.onPrimaryContainer,
       ),
     );
   }

@@ -1832,6 +1832,55 @@ class TfApiClient {
     }
   }
 
+  /// 批量取用户公开信息
+  Future<Map<int, UserProfile?>> getUsersByUids(
+    Iterable<int> uids, {
+    int avatarVersion = 0,
+  }) async {
+    final wanted = uids.where((uid) => uid > 0).toSet().toList();
+    if (wanted.isEmpty) return const {};
+    final baseUrl = await getBaseUrl();
+    final result = <int, UserProfile?>{};
+
+    try {
+      final query = Uri(
+        queryParameters: {'uids': wanted.take(100).join(',')},
+      ).query;
+      final response = await _getRequest('$baseUrl/auth/uids?$query');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map) {
+          for (final entry in data.entries) {
+            final uid = int.tryParse(entry.key.toString());
+            final row = entry.value;
+            if (uid == null || row is! Map) continue;
+            result[uid] = UserProfile.fromServerJson(
+              Map<String, dynamic>.from(row),
+              '$baseUrl/avatar/get_avatar/user/$uid',
+              avatarVersion: avatarVersion,
+            );
+          }
+        }
+      }
+    } catch (e) {
+      talker.warning('getUsersByUids failed, falling back to per-uid: $e');
+    }
+
+    final missing = wanted.where((uid) => !result.containsKey(uid)).toList();
+    if (missing.isEmpty) return result;
+    var cursor = 0;
+    Future<void> worker() async {
+      while (cursor < missing.length) {
+        final uid = missing[cursor++];
+        result[uid] = await getUserByUid(uid, avatarVersion: avatarVersion);
+      }
+    }
+
+    final workers = missing.length < 6 ? missing.length : 6;
+    await Future.wait(List.generate(workers, (_) => worker()));
+    return result;
+  }
+
   Future<UserProfile?> getUserByUsername(
     String username, {
     int avatarVersion = 0,
@@ -2515,13 +2564,23 @@ class TfApiClient {
 
   // forum
 
-  Future<List<Forum>> getForumList() async {
+  Future<List<Forum>> getForumList({bool throwOnError = false}) async {
     try {
       final baseUrl = await getBaseUrl();
       final response = await _getRequest('$baseUrl/forum/get_forum_list');
-      if (response.statusCode != 200) return [];
+      if (response.statusCode != 200) {
+        if (throwOnError) {
+          throw Exception('get_forum_list HTTP ${response.statusCode}');
+        }
+        return [];
+      }
       final data = jsonDecode(response.body);
-      if (data is! List) return [];
+      if (data is! List) {
+        if (throwOnError) {
+          throw Exception('get_forum_list unexpected payload');
+        }
+        return [];
+      }
       return data
           .map(
             (row) =>
@@ -2530,6 +2589,7 @@ class TfApiClient {
           .toList();
     } catch (e) {
       talker.error('getForumList failed', e);
+      if (throwOnError) rethrow;
       return [];
     }
   }

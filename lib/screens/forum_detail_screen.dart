@@ -6,26 +6,24 @@ import '../l10n/app_localizations.dart';
 import '../models/forum_model.dart';
 import '../models/user_profile.dart';
 import '../widgets/account/profile_picture.dart';
-import '../widgets/markdown_renderer.dart';
 import '../widgets/optimized_image.dart';
-import '../widgets/sticker_text_renderer.dart';
 import '../models/settings_service.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/forum_data_bus.dart';
 import '../services/snackbar_service.dart';
 import 'forum_members_screen.dart';
 import 'forum_post_compose_screen.dart';
 import '../utils/talker.dart';
 import '../utils/wide_screen_helper.dart';
 import '../widgets/app_alert_dialog.dart';
-import '../widgets/forum_attachments.dart';
 import '../theme/tokens.dart';
 import '../widgets/ui/empty_state.dart';
 import '../widgets/ui/loading_indicator.dart';
 import '../widgets/ui/tri_state_filter_chip.dart';
+import '../widgets/forum_action_menu.dart';
+import '../widgets/forum_post_card.dart';
 import '../routes/app_routes.dart';
-
-final _stickerTestPatternFd = RegExp(r':[A-Za-z0-9_]+\+[A-Za-z0-9_-]+:');
 
 class ForumDetailScreen extends StatefulWidget {
   final String forumId;
@@ -63,7 +61,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   List<ForumMember> _members = const [];
   final Map<String, UserProfile?> _profileCache = {};
   final ScrollController _scrollController = ScrollController();
+  final PageController _pinnedPageController = PageController();
+  int _pinnedPage = 0;
   bool _showBackToBottom = false;
+  Timer? _refreshDebounce;
   static const int _postPageSize = 30;
 
   /// 页面级读一次
@@ -82,7 +83,18 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       true,
     );
     SettingsService.instance.addListener(_onSettingsChanged);
+    ForumDataBus.instance.change.addListener(_onForumDataChanged);
     _loadData();
+  }
+
+  /// 右栏操作后同步
+  void _onForumDataChanged() => _scheduleRefresh();
+
+  void _scheduleRefresh() {
+    _refreshDebounce?.cancel();
+    _refreshDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) _refreshPostsOnly();
+    });
   }
 
   void _onSettingsChanged() {
@@ -97,7 +109,6 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   /// 换论坛时 Flutter 会复用同一个 State
   ///
-  /// 不能用 `PageStorageKey`：滚动视图里没有自己的 key 的 ExpansionTile（论坛简介、置顶卡片）会和它落到同一个 PageStorage
   @override
   void didUpdateWidget(covariant ForumDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -105,9 +116,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       _loadData();
       return;
     }
-    // 分栏下帖子关闭
-    if (oldWidget.openPostId != null && widget.openPostId == null) {
-      _refresh();
+    // 分栏下关或换
+    if (oldWidget.openPostId != widget.openPostId &&
+        oldWidget.openPostId != null) {
+      _scheduleRefresh();
     }
     if (oldWidget.isAside == widget.isAside) return;
 
@@ -203,7 +215,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   @override
   void dispose() {
     SettingsService.instance.removeListener(_onSettingsChanged);
+    ForumDataBus.instance.change.removeListener(_onForumDataChanged);
+    _refreshDebounce?.cancel();
     _scrollController.dispose();
+    _pinnedPageController.dispose();
     super.dispose();
   }
 
@@ -221,7 +236,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       final password = AuthState.instance.password;
 
       final results = await Future.wait([
-        TfApiClient.instance.getForumList(),
+        TfApiClient.instance.getForumList(throwOnError: true),
         TfApiClient.instance.getPostList(fid, limit: _postPageSize),
         if (uid != null && password != null)
           TfApiClient.instance.getMyMemberships(uid, password),
@@ -281,6 +296,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _identity = null;
       }
 
+      await _prefetchProfiles(
+        allPosts,
+      ).timeout(const Duration(milliseconds: 900), onTimeout: () {});
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       talker.error('ForumDetailScreen: _loadData failed', e);
@@ -308,6 +326,55 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   /// 后台刷新：保留当前内容，不整块换成 loading（见 [_loadData]）。
   void _refresh() => _loadData(showLoading: false);
+
+  /// 整页一次性拉回
+  Future<void> _prefetchProfiles(List<ForumPost> posts) async {
+    final uids = <int>{};
+    for (final post in posts) {
+      final authorUid = int.tryParse(post.authorUid);
+      if (authorUid != null) uids.add(authorUid);
+      final commentUid = int.tryParse(post.lastCommentUid ?? '');
+      if (commentUid != null) uids.add(commentUid);
+    }
+    if (uids.isEmpty) return;
+    try {
+      final profiles = await TfApiClient.instance.getUsersByUids(uids);
+      profiles.forEach((uid, profile) {
+        if (profile != null) _profileCache['$uid'] = profile;
+      });
+    } catch (e) {
+      talker.error('ForumDetailScreen: prefetch profiles failed', e);
+    }
+  }
+
+  /// 只刷新帖子列表
+  Future<void> _refreshPostsOnly() async {
+    final fid = int.tryParse(widget.forumId);
+    if (fid == null) return;
+    // 已经翻过页时保持深度
+    final loaded = _posts.length + _pinnedPosts.length;
+    final limit = loaded > _postPageSize
+        ? (loaded > 100 ? 100 : loaded)
+        : _postPageSize;
+    try {
+      final page = await TfApiClient.instance.getPostList(fid, limit: limit);
+      if (!mounted || widget.forumId != fid.toString()) return;
+      final allPosts = page.posts;
+      await _prefetchProfiles(allPosts);
+      if (!mounted) return;
+      setState(() {
+        _pinnedPosts = allPosts.where((p) => p.isPinned).toList();
+        _posts = allPosts.where((p) => !p.isPinned).toList()
+          ..sort(ForumPost.compareNewestFirst);
+        _hasMorePosts = page.hasMore;
+        _nextBeforePid = page.nextBeforePid;
+        _isLoadingMore = false;
+        _loadMoreFailed = false;
+      });
+    } catch (e) {
+      talker.error('ForumDetailScreen: refresh posts failed', e);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -388,18 +455,22 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
               children: [
                 Flexible(
                   flex: 3,
-                  child: CustomScrollView(
-                    controller: _scrollController,
-                    slivers: [
-                      if (_pinnedPosts.isNotEmpty)
+                  child: RefreshIndicator(
+                    onRefresh: () async => _refresh(),
+                    child: CustomScrollView(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        if (_pinnedPosts.isNotEmpty)
+                          SliverToBoxAdapter(
+                            child: _buildPinnedPostsCard(context, l10n),
+                          ),
                         SliverToBoxAdapter(
-                          child: _buildPinnedPostsCard(context, l10n),
+                          child: _buildPostFilterBar(context, l10n),
                         ),
-                      SliverToBoxAdapter(
-                        child: _buildPostFilterBar(context, l10n),
-                      ),
-                      _buildPostListSliver(context, l10n),
-                    ],
+                        _buildPostListSliver(context, l10n),
+                      ],
+                    ),
                   ),
                 ),
                 Flexible(
@@ -460,7 +531,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 icon: const Icon(Icons.edit),
               ),
             if (forum != null)
-              _ForumActionMenu(
+              ForumActionMenu(
                 forum: forum,
                 identity: _identity,
                 isMember: _isMember,
@@ -494,19 +565,23 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         ),
       );
     }
-    return CustomScrollView(
-      controller: _scrollController,
-      slivers: [
-        SliverToBoxAdapter(
-          child: _buildDescriptionCard(context, forum, l10n, expanded: false),
-        ),
-        if (!_isMember)
-          SliverToBoxAdapter(child: _buildJoinCard(context, l10n)),
-        if (_pinnedPosts.isNotEmpty)
-          SliverToBoxAdapter(child: _buildPinnedPostsCard(context, l10n)),
-        SliverToBoxAdapter(child: _buildPostFilterBar(context, l10n)),
-        _buildPostListSliver(context, l10n),
-      ],
+    return RefreshIndicator(
+      onRefresh: () async => _refresh(),
+      child: CustomScrollView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: _buildDescriptionCard(context, forum, l10n, expanded: false),
+          ),
+          if (!_isMember)
+            SliverToBoxAdapter(child: _buildJoinCard(context, l10n)),
+          if (_pinnedPosts.isNotEmpty)
+            SliverToBoxAdapter(child: _buildPinnedPostsCard(context, l10n)),
+          SliverToBoxAdapter(child: _buildPostFilterBar(context, l10n)),
+          _buildPostListSliver(context, l10n),
+        ],
+      ),
     );
   }
 
@@ -530,7 +605,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           Flexible(
             child: Text(
               forum.name,
-              style: TextStyle(color: colorScheme.onPrimaryContainer),
+              style: TextStyle(color: colorScheme.onSurface),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -554,7 +629,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             icon: const Icon(Icons.people),
             onPressed: () => _showMemberList(context),
           ),
-        _ForumActionMenu(
+        ForumActionMenu(
           forum: forum,
           identity: _identity,
           isMember: _isMember,
@@ -579,12 +654,14 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         SliverAppBar(
           expandedHeight: 180,
           pinned: true,
+          backgroundColor: colorScheme.primary,
+          foregroundColor: Colors.white,
           leading: BackButton(onPressed: () => _leaveForum(context)),
           flexibleSpace: FlexibleSpaceBar(
             expandedTitleScale: 1,
             title: Text(
               forum.name,
-              style: TextStyle(color: colorScheme.onPrimaryContainer),
+              style: const TextStyle(color: Colors.white),
               overflow: TextOverflow.ellipsis,
             ),
             background: Stack(
@@ -595,21 +672,20 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                     provider: NetworkImage(forum.avatarUrl!),
                     fit: BoxFit.cover,
                   )
-                else ...[
+                else
                   ColoredBox(color: colorScheme.surfaceContainerHighest),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.36),
-                          Colors.black.withValues(alpha: 0.7),
-                        ],
-                      ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.36),
+                        Colors.black.withValues(alpha: 0.7),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ],
             ),
           ),
@@ -619,7 +695,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 icon: const Icon(Icons.people),
                 onPressed: () => _showMemberList(context),
               ),
-            _ForumActionMenu(
+            ForumActionMenu(
               forum: forum,
               identity: _identity,
               isMember: _isMember,
@@ -716,6 +792,14 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   }
 
   Widget _buildPinnedPostsCard(BuildContext context, AppLocalizations l10n) {
+    if (_pinnedPosts.isEmpty) return const SizedBox.shrink();
+    final colorScheme = Theme.of(context).colorScheme;
+    final activePage = _pinnedPage.clamp(0, _pinnedPosts.length - 1);
+    final carouselHeight = (MediaQuery.sizeOf(context).height * 0.42).clamp(
+      300.0,
+      420.0,
+    );
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Theme(
@@ -730,19 +814,56 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           collapsedShape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(8)),
           ),
-          children: _pinnedPosts
-              .map(
-                (post) => Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: _PostCard(
-                    post: post,
-                    onTap: () => _openPostDetail(context, post),
-                    profileCache: _profileCache,
-                    enableMarkdown: _enableMarkdown,
-                  ),
+          children: [
+            SizedBox(
+              height: carouselHeight,
+              child: PageView.builder(
+                controller: _pinnedPageController,
+                itemCount: _pinnedPosts.length,
+                onPageChanged: (value) => setState(() => _pinnedPage = value),
+                itemBuilder: (context, index) {
+                  final post = _pinnedPosts[index];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: SingleChildScrollView(
+                      child: ForumPostCard(
+                        post: post,
+                        onTap: () => _openPostDetail(context, post),
+                        profileCache: _profileCache,
+                        enableMarkdown: _enableMarkdown,
+                        selected: post.id == widget.openPostId,
+                        canDelete: _canManagePost(post),
+                        onDelete: () => _confirmDeletePost(post),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            if (_pinnedPosts.length > 1)
+              Padding(
+                padding: const EdgeInsets.only(bottom: TFSpace.sm),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (var i = 0; i < _pinnedPosts.length; i++)
+                      AnimatedContainer(
+                        duration: TFMotion.fast,
+                        curve: TFMotion.standard,
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: i == activePage ? 16 : 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: i == activePage
+                              ? colorScheme.primary
+                              : colorScheme.outlineVariant,
+                          borderRadius: TFRadius.pillRadius,
+                        ),
+                      ),
+                  ],
                 ),
-              )
-              .toList(),
+              ),
+          ],
         ),
       ),
     );
@@ -761,8 +882,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   }
 
   Widget _buildPostFilterBar(BuildContext context, AppLocalizations l10n) {
-    // 帖子太少时筛选没有意义
-    if (_posts.length < 5) return const SizedBox.shrink();
+    // 一条帖子都没有时不占位置
+    if (_posts.isEmpty) return const SizedBox.shrink();
+    final enabled = _posts.length >= 5;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(TFSpace.lg, TFSpace.sm, TFSpace.lg, 0),
@@ -773,11 +895,13 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           TriStateFilterChip(
             label: l10n.forumFilterWithAttachment,
             value: _filterAttachment,
+            enabled: enabled,
             onChanged: (value) => setState(() => _filterAttachment = value),
           ),
           TriStateFilterChip(
             label: l10n.forumFilterMine,
             value: _filterMine,
+            enabled: enabled,
             onChanged: (value) => setState(() => _filterMine = value),
           ),
         ],
@@ -845,11 +969,14 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         }
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: _PostCard(
+          child: ForumPostCard(
             post: posts[index],
             onTap: () => _openPostDetail(context, posts[index]),
             profileCache: _profileCache,
             enableMarkdown: _enableMarkdown,
+            selected: posts[index].id == widget.openPostId,
+            canDelete: _canManagePost(posts[index]),
+            onDelete: () => _confirmDeletePost(posts[index]),
           ),
         );
       }, childCount: itemCount),
@@ -869,10 +996,53 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     if (mounted) _refresh();
   }
 
+  bool _canManagePost(ForumPost post) {
+    final uid = AuthState.instance.uid?.toString();
+    if (uid == null) return false;
+    return uid == post.authorUid ||
+        uid == _forum?.createdByUid ||
+        (_identity?.role ?? 0) >= 50 ||
+        AuthState.instance.currentUser?.hasAdminAccess == true;
+  }
+
+  Future<void> _confirmDeletePost(ForumPost post) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showTouchFishInfoDialog<bool>(
+      context,
+      title: l10n.forumPostDelete,
+      message: l10n.forumPostDeleteHint,
+      actions: [
+        TouchFishDialogAction(label: l10n.cancel, result: false),
+        TouchFishDialogAction(
+          label: l10n.forumPostDelete,
+          result: true,
+          isPrimary: true,
+          isDestructive: true,
+        ),
+      ],
+    );
+    if (confirmed != true || !mounted) return;
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    final fid = int.tryParse(post.forumId);
+    final pid = int.tryParse(post.id);
+    if (uid == null || password == null || fid == null || pid == null) return;
+    final success = await TfApiClient.instance.removePost(
+      uid,
+      password,
+      fid,
+      pid,
+    );
+    if (!mounted) return;
+    TouchFishSnackbarService.instance.show(
+      success ? l10n.forumPostDeleteSuccess : l10n.forumPostDeleteFailed,
+    );
+    if (success) _refresh();
+  }
+
   void _openPostDetail(BuildContext context, ForumPost post) async {
     final path = '/forum/${widget.forumId}/post/${post.id}';
-    // 分屏：帖子在右栏打开。这里必须 go（替换）而不是 push，
-    // 否则连点两个帖子会叠成两层
+    // 分屏
     if (WideScreenHelper.forumTwoPane(context)) {
       context.go(path);
       return;
@@ -1047,502 +1217,3 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   }
 }
 
-class _ForumActionMenu extends StatelessWidget {
-  final Forum forum;
-  final ForumMember? identity;
-  final bool isMember;
-  final VoidCallback onRefresh;
-  final VoidCallback onEditForum;
-  final VoidCallback onPinPost;
-
-  const _ForumActionMenu({
-    required this.forum,
-    required this.identity,
-    required this.isMember,
-    required this.onRefresh,
-    required this.onEditForum,
-    required this.onPinPost,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final isAdmin = (identity?.role ?? 0) >= 100;
-
-    return PopupMenuButton(
-      icon: const Icon(Icons.more_vert),
-      itemBuilder: (context) => [
-        if ((identity?.role ?? 0) >= 50) ...[
-          PopupMenuItem(
-            onTap: onEditForum,
-            child: Row(
-              children: [
-                Icon(
-                  Icons.edit,
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
-                ),
-                const SizedBox(width: 12),
-                Text(l10n.forumEdit),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            onTap: onPinPost,
-            child: Row(
-              children: [
-                Icon(
-                  Icons.push_pin,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Text(l10n.forumPinPost),
-              ],
-            ),
-          ),
-        ],
-        if (isAdmin)
-          PopupMenuItem(
-            child: Row(
-              children: [
-                const Icon(Icons.delete, color: Colors.red),
-                const SizedBox(width: 12),
-                Text(
-                  l10n.forumDelete,
-                  style: const TextStyle(color: Colors.red),
-                ),
-              ],
-            ),
-            onTap: () => _handleDelete(context, l10n),
-          )
-        else if (isMember)
-          PopupMenuItem(
-            child: Row(
-              children: [
-                Icon(
-                  Icons.bookmark_remove,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  l10n.forumLeave,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ],
-            ),
-            onTap: () => _handleLeave(context, l10n),
-          ),
-      ],
-    );
-  }
-
-  void _handleDelete(BuildContext context, AppLocalizations l10n) {
-    showTouchFishErrorDialog<bool>(
-      context,
-      title: l10n.forumDelete,
-      message: l10n.forumDeleteHint,
-      icon: Icons.delete_outline_rounded,
-      selectableMessage: false,
-      actions: [
-        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
-        TouchFishDialogAction<bool>(
-          label: l10n.forumDelete,
-          result: true,
-          isPrimary: true,
-          isDestructive: true,
-        ),
-      ],
-    ).then((confirmed) async {
-      if (confirmed == true && context.mounted) {
-        final uid = AuthState.instance.uid;
-        final password = AuthState.instance.password;
-        final fid = int.tryParse(forum.id);
-        if (uid == null || password == null || fid == null) return;
-        final success = await TfApiClient.instance.removeForum(
-          uid,
-          password,
-          fid,
-        );
-        if (!context.mounted) return;
-        if (success) {
-          context.pop();
-          TouchFishSnackbarService.instance.show(l10n.forumDeleteSuccess);
-          onRefresh();
-        } else {
-          TouchFishSnackbarService.instance.show(l10n.forumDeleteFailed);
-        }
-      }
-    });
-  }
-
-  void _handleLeave(BuildContext context, AppLocalizations l10n) {
-    showTouchFishErrorDialog<bool>(
-      context,
-      title: l10n.forumLeave,
-      message: l10n.forumLeaveHint,
-      icon: Icons.exit_to_app_rounded,
-      selectableMessage: false,
-      actions: [
-        TouchFishDialogAction<bool>(label: l10n.cancel, result: false),
-        TouchFishDialogAction<bool>(
-          label: l10n.forumLeave,
-          result: true,
-          isPrimary: true,
-          isDestructive: true,
-        ),
-      ],
-    ).then((confirmed) async {
-      if (confirmed == true && context.mounted) {
-        final uid = AuthState.instance.uid;
-        final password = AuthState.instance.password;
-        final fid = int.tryParse(forum.id);
-        if (uid == null || password == null || fid == null) return;
-        await TfApiClient.instance.leaveForumApi(uid, password, fid);
-        onRefresh();
-      }
-    });
-  }
-}
-
-class _PostCard extends StatefulWidget {
-  final ForumPost post;
-  final VoidCallback? onTap;
-  final Map<String, UserProfile?>? profileCache;
-  final bool enableMarkdown;
-
-  const _PostCard({
-    required this.post,
-    this.onTap,
-    this.profileCache,
-    this.enableMarkdown = true,
-  });
-
-  @override
-  State<_PostCard> createState() => _PostCardState();
-}
-
-class _PostCardState extends State<_PostCard> {
-  UserProfile? _author;
-  int _commentCount = 0;
-  String? _lastCommentUid;
-  String? _lastCommentContent;
-  UserProfile? _featuredCommentAuthor;
-  bool _loaded = false;
-
-  /// 同一作者的并发请求合并成一次（列表里同一人多帖、多卡片同时 init 时很常见）
-  static final Map<int, Future<UserProfile?>> _authorRequests = {};
-
-  static Future<UserProfile?> _fetchAuthor(int uid) {
-    final existing = _authorRequests[uid];
-    if (existing != null) return existing;
-    final future = TfApiClient.instance.getUserByUid(uid).whenComplete(() {
-      _authorRequests.remove(uid);
-    });
-    _authorRequests[uid] = future;
-    return future;
-  }
-
-  /// 评论摘要请求的去重与缓存
-  static final Map<String, Future<List<ForumComment>>> _commentRequests = {};
-  static const int _commentCacheLimit = 200;
-
-  static Future<List<ForumComment>> _fetchComments(int fid, int pid) {
-    final key = '$fid/$pid';
-    final cached = _commentRequests[key];
-    if (cached != null) return cached;
-
-    if (_commentRequests.length >= _commentCacheLimit) {
-      _commentRequests.clear();
-    }
-    final future = TfApiClient.instance.getAllComments(fid, pid);
-    _commentRequests[key] = future;
-    future.catchError((Object _) {
-      _commentRequests.remove(key);
-      return const <ForumComment>[];
-    });
-    return future;
-  }
-
-  ForumPost get post => widget.post;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  @override
-  void didUpdateWidget(covariant _PostCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.post.id != widget.post.id ||
-        oldWidget.post.authorUid != widget.post.authorUid) {
-      _loadData();
-    }
-  }
-
-  Future<void> _loadData() async {
-    try {
-      await _loadDataInner();
-    } catch (e) {
-      // 共享的作者请求 / 评论请求失败时不能把卡片永远停在骨架屏上
-      talker.error('ForumDetailScreen: post card load failed', e);
-      if (mounted) setState(() => _loaded = true);
-    }
-  }
-
-  Future<void> _loadDataInner() async {
-    final fid = int.tryParse(post.forumId);
-    final pid = int.tryParse(post.id);
-    final authorUid = post.authorUid;
-    final cache = widget.profileCache;
-
-    UserProfile? author;
-    var commentCount = post.commentCount;
-    var lastCommentUid = post.lastCommentUid;
-    var lastCommentContent = post.lastCommentContent;
-    UserProfile? featuredAuthor;
-
-    if (cache != null && cache.containsKey(authorUid)) {
-      author = cache[authorUid];
-    } else {
-      final uid = int.tryParse(authorUid);
-      if (uid != null) {
-        author = await _fetchAuthor(uid);
-        cache?[authorUid] = author;
-      }
-    }
-    // 新服务端在列表里直接带评论摘要；没有摘要时才退回逐帖拉取（旧服务器）
-    if (lastCommentUid == null || lastCommentContent == null) {
-      if (fid != null && pid != null) {
-        final comments = await _fetchComments(fid, pid);
-        commentCount = comments.length;
-        if (comments.isNotEmpty) {
-          lastCommentUid = comments.last.authorUid;
-          lastCommentContent = comments.last.content;
-        }
-      }
-    }
-    if (lastCommentUid != null) {
-      if (cache != null && cache.containsKey(lastCommentUid)) {
-        featuredAuthor = cache[lastCommentUid];
-      } else {
-        final uid = int.tryParse(lastCommentUid);
-        if (uid != null) {
-          featuredAuthor = await _fetchAuthor(uid);
-          cache?[lastCommentUid] = featuredAuthor;
-        }
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        _author = author;
-        _commentCount = commentCount;
-        _lastCommentUid = lastCommentUid;
-        _lastCommentContent = lastCommentContent;
-        _featuredCommentAuthor = featuredAuthor;
-        _loaded = true;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // 由列表下发
-    final enableMarkdown = widget.enableMarkdown;
-    final author = _author;
-    final commentCount = _commentCount;
-    final lastCommentContent = _lastCommentContent;
-    final hasCommentPreview =
-        lastCommentContent != null && lastCommentContent.isNotEmpty;
-
-    return Card(
-      margin: EdgeInsets.zero,
-      child: InkWell(
-        borderRadius: const BorderRadius.all(Radius.circular(12)),
-        onTap: widget.onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  ProfilePictureWidget(
-                    avatarUrl: author?.avatar,
-                    radius: 16,
-                    fallbackText: author?.username ?? post.authorUid,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          author?.username ?? 'UID:${post.authorUid}',
-                          style: Theme.of(context).textTheme.labelLarge,
-                        ),
-                        Text(
-                          _formatDate(post.createdAt),
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (post.isPinned)
-                    Icon(
-                      Icons.push_pin,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                ],
-              ),
-              if (post.title.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  post.title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 8),
-              if (_stickerTestPatternFd.hasMatch(post.content))
-                StickerTextRenderer(
-                  text: previewMarkdown(post.content),
-                  style: Theme.of(context).textTheme.bodyMedium,
-                )
-              else if (enableMarkdown)
-                MarkdownRenderer(
-                  data: previewMarkdown(post.content),
-                )
-              else
-                Text(
-                  previewMarkdown(post.content),
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              const SizedBox(height: 8),
-              if (_loaded)
-                Row(
-                  children: [
-                    Icon(
-                      Icons.comment_outlined,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$commentCount',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                )
-              else
-                Row(
-                  children: [
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '...',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              if (hasCommentPreview)
-                _buildCommentPreview(
-                  context,
-                  _lastCommentUid ?? '',
-                  lastCommentContent,
-                  commentCount,
-                ),
-              if (post.attachments.isNotEmpty)
-                ForumAttachmentsRow(attachments: post.attachments),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCommentPreview(
-    BuildContext context,
-    String commentAuthorUid,
-    String commentContent,
-    int commentCount,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final l10n = AppLocalizations.of(context)!;
-    final commentAuthor = _featuredCommentAuthor;
-    final displayName =
-        commentAuthor?.username ?? 'UID:$commentAuthorUid';
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLow,
-          border: Border.all(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-          ),
-          borderRadius: const BorderRadius.all(Radius.circular(8)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.forumComments(commentCount),
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                ProfilePictureWidget(
-                  avatarUrl: commentAuthor?.avatar,
-                  radius: 12,
-                  fallbackText: displayName,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  displayName,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    commentContent,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-}

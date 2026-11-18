@@ -51,11 +51,24 @@ class ForumSectionShell extends StatefulWidget {
 class _ForumSectionShellState extends State<ForumSectionShell> {
   bool _postFullScreen = false;
   String? _postFullScreenId;
+  String? _lastPostId;
 
   @override
   void initState() {
     super.initState();
+    _lastPostId = ForumSectionShell.parseLocation(widget.location).postId;
     SettingsService.instance.addListener(_onSettingsChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant ForumSectionShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final nextPostId = ForumSectionShell.parseLocation(widget.location).postId;
+    if (nextPostId != _lastPostId) {
+      _lastPostId = nextPostId;
+      _postFullScreen = false;
+      _postFullScreenId = null;
+    }
   }
 
   @override
@@ -130,6 +143,7 @@ class _ForumSectionShellState extends State<ForumSectionShell> {
     return SectionTwoPaneShell(
       storageKeyPrefix: 'forum',
       twoPane: twoPane,
+      resizeHandleLabel: AppLocalizations.of(context)!.forumSplitDragHandle,
       list: left,
       child: right,
     );

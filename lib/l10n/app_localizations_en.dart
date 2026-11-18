@@ -1115,6 +1115,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forumPostRestoreSplitView => 'Restore split view';
 
   @override
+  String get forumSplitDragHandle => 'Drag to resize panels';
+
+  @override
   String get settingsSystemNotificationsTitle => 'System Notifications';
 
   @override
@@ -3394,6 +3397,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forumNoComments => 'No comments yet';
+
+  @override
+  String get forumTimeJustNow => 'Just now';
+
+  @override
+  String forumTimeMinutesAgo(int count) {
+    return '$count min ago';
+  }
+
+  @override
+  String forumTimeHoursAgo(int count) {
+    return '$count hr ago';
+  }
+
+  @override
+  String forumTimeDaysAgo(int count) {
+    return '$count d ago';
+  }
+
+  @override
+  String get forumPostTruncated => 'Content truncated';
+
+  @override
+  String get forumMore => 'More';
+
+  @override
+  String get forumCopyContent => 'Copy text';
+
+  @override
+  String get forumCopied => 'Copied';
 
   @override
   String get forumCommentPlaceholder => 'Write a comment...';

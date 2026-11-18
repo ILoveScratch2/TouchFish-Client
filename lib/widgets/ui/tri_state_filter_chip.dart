@@ -11,11 +11,15 @@ class TriStateFilterChip extends StatelessWidget {
   final TriStateFilter value;
   final ValueChanged<TriStateFilter> onChanged;
 
+  /// 为假时渲染禁用
+  final bool enabled;
+
   const TriStateFilterChip({
     super.key,
     required this.label,
     required this.value,
     required this.onChanged,
+    this.enabled = true,
   });
 
   /// 点击循环
@@ -49,7 +53,7 @@ class TriStateFilterChip extends StatelessWidget {
         color: activeColor ?? colorScheme.onSurfaceVariant,
       ),
       label: Text(label),
-      onSelected: (_) => _cycle(),
+      onSelected: enabled ? (_) => _cycle() : null,
     );
   }
 }

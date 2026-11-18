@@ -377,6 +377,7 @@
   "forumSelectPlaceholder": "选择一个论坛查看",
   "forumSelectPostPlaceholder": "选择一篇帖子查看",
   "forumPostFullScreen": "整屏查看",
+  "forumSplitDragHandle": "拖动调整分栏宽度",
   "forumPostRestoreSplitView": "恢复分栏",
   
   "settingsSystemNotificationsTitle": "系统通知",
@@ -1210,6 +1211,14 @@
     }
   },
   "forumNoComments": "暂无评论",
+  "forumTimeJustNow": "刚刚",
+  "forumTimeMinutesAgo": "{count} 分钟前",
+  "forumTimeHoursAgo": "{count} 小时前",
+  "forumTimeDaysAgo": "{count} 天前",
+  "forumPostTruncated": "内容已截断",
+  "forumMore": "更多",
+  "forumCopyContent": "复制内容",
+  "forumCopied": "已复制",
   "forumCommentPlaceholder": "写下你的评论…",
   "forumCommentSuccess": "评论发布成功",
   "forumShare": "分享",

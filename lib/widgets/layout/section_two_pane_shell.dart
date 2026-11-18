@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../theme/tokens.dart';
 import '../../utils/wide_screen_helper.dart';
 
 class SectionTwoPaneShell extends StatefulWidget {
@@ -26,17 +27,21 @@ class SectionTwoPaneShell extends StatefulWidget {
   /// 折叠态宽度。
   final double collapsedWidth;
 
+  /// 拖拽把手无障碍标签
+  final String? resizeHandleLabel;
+
   const SectionTwoPaneShell({
     super.key,
     required this.child,
     required this.list,
     required this.storageKeyPrefix,
     this.twoPane = true,
-    this.defaultWidth = 320,
-    this.minWidth = 260,
-    this.maxWidth = 520,
-    this.collapseThreshold = 200,
-    this.collapsedWidth = 72,
+    this.defaultWidth = TFPane.defaultWidth,
+    this.minWidth = TFPane.minWidth,
+    this.maxWidth = TFPane.maxWidth,
+    this.collapseThreshold = TFPane.collapseThreshold,
+    this.collapsedWidth = TFPane.collapsedWidth,
+    this.resizeHandleLabel,
   });
 
   @override
@@ -46,13 +51,18 @@ class SectionTwoPaneShell extends StatefulWidget {
 class _SectionTwoPaneShellState extends State<SectionTwoPaneShell>
     with SingleTickerProviderStateMixin {
   static const Duration _layoutAnimation = Duration(milliseconds: 220);
-  static const double _paneGap = 12;
-  static const double _paneTop = 12;
-  static const double _paneRadius = 12;
+  static const double _paneGap = TFPane.gap;
+  static const double _paneTop = TFPane.topInset;
+  static const double _paneRadius = TFPane.radius;
 
   bool _isCollapsed = false;
   bool _isHoveringHandle = false;
+  bool _isDragging = false;
   late double _sidebarWidth = widget.defaultWidth;
+
+  /// 拖拽期间用零时长
+  Duration get _positionDuration =>
+      _isDragging ? Duration.zero : _layoutAnimation;
 
   late final AnimationController _enterController;
   late final Animation<double> _enterAnimation;
@@ -130,6 +140,7 @@ class _SectionTwoPaneShellState extends State<SectionTwoPaneShell>
 
   void _onDragUpdate(double dx) {
     setState(() {
+      _isDragging = true;
       if (_isCollapsed) {
         _isCollapsed = false;
         _sidebarWidth = widget.minWidth;
@@ -145,6 +156,9 @@ class _SectionTwoPaneShellState extends State<SectionTwoPaneShell>
   }
 
   void _onDragEnd() {
+    if (_isDragging) {
+      setState(() => _isDragging = false);
+    }
     if (!_isCollapsed && _sidebarWidth <= widget.collapseThreshold) {
       setState(() {
         _isCollapsed = true;
@@ -162,26 +176,32 @@ class _SectionTwoPaneShellState extends State<SectionTwoPaneShell>
   }
 
   Widget _buildHandle(ColorScheme colorScheme) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.resizeLeftRight,
-      onEnter: (_) => setState(() => _isHoveringHandle = true),
-      onExit: (_) => setState(() => _isHoveringHandle = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onHorizontalDragUpdate: (d) => _onDragUpdate(d.delta.dx),
-        onHorizontalDragEnd: (_) => _onDragEnd(),
-        onTap: _isCollapsed ? _toggleCollapse : null,
-        child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            // 悬停才显形提示这里可以拖动。
-            width: _isHoveringHandle || _isCollapsed ? 3 : 0,
-            height: _isCollapsed ? 32 : 44,
-            decoration: BoxDecoration(
-              color: _isHoveringHandle
-                  ? colorScheme.primary
-                  : colorScheme.outlineVariant,
-              borderRadius: BorderRadius.circular(2),
+    return Semantics(
+      button: true,
+      label: widget.resizeHandleLabel,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.resizeLeftRight,
+        onEnter: (_) => setState(() => _isHoveringHandle = true),
+        onExit: (_) => setState(() => _isHoveringHandle = false),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onHorizontalDragUpdate: (d) => _onDragUpdate(d.delta.dx),
+          onHorizontalDragEnd: (_) => _onDragEnd(),
+          onTap: _isCollapsed ? _toggleCollapse : null,
+          child: Center(
+            child: AnimatedContainer(
+              duration: TFMotion.fast,
+              // 悬停时加粗提示可拖动
+              width: _isHoveringHandle || _isCollapsed ? 3 : 1,
+              height: _isCollapsed ? 32 : 44,
+              decoration: BoxDecoration(
+                color: _isHoveringHandle
+                    ? colorScheme.primary
+                    : colorScheme.outlineVariant.withValues(
+                        alpha: TFAlpha.divider,
+                      ),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
         ),
@@ -223,14 +243,14 @@ class _SectionTwoPaneShellState extends State<SectionTwoPaneShell>
                 fit: StackFit.expand,
                 children: [
                   AnimatedPositioned(
-                    duration: _layoutAnimation,
+                    duration: _positionDuration,
                     curve: Curves.easeOutCubic,
                     left: 0,
                     top: 0,
                     bottom: 0,
                     right: twoPane ? available - leftWidth : 0,
                     child: AnimatedPadding(
-                      duration: _layoutAnimation,
+                      duration: _positionDuration,
                       curve: Curves.easeOutCubic,
                       padding: twoPane
                           ? const EdgeInsets.fromLTRB(
@@ -245,7 +265,7 @@ class _SectionTwoPaneShellState extends State<SectionTwoPaneShell>
                   ),
                   if (twoPane) ...[
                     AnimatedPositioned(
-                      duration: _layoutAnimation,
+                      duration: _positionDuration,
                       curve: Curves.easeOutCubic,
                       left: leftWidth,
                       top: 0,
@@ -254,7 +274,7 @@ class _SectionTwoPaneShellState extends State<SectionTwoPaneShell>
                       child: _buildHandle(colorScheme),
                     ),
                     AnimatedPositioned(
-                      duration: _layoutAnimation,
+                      duration: _positionDuration,
                       curve: Curves.easeOutCubic,
                       left: leftWidth + _paneGap,
                       right: 0,

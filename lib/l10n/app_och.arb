@@ -375,6 +375,7 @@
   "forumSelectPlaceholder": "擇一論壇以觀之",
   "forumSelectPostPlaceholder": "擇一帖以閱之",
   "forumPostFullScreen": "全屏覽之",
+  "forumSplitDragHandle": "拖動以調分欄",
   "forumPostRestoreSplitView": "復分欄",
 
   "settingsSystemNotificationsTitle": "系統通知",
@@ -1221,6 +1222,14 @@
     }
   },
   "forumNoComments": "暫無評論",
+  "forumTimeJustNow": "啱先",
+  "forumTimeMinutesAgo": "{count} 分鐘前",
+  "forumTimeHoursAgo": "{count} 個鐘前",
+  "forumTimeDaysAgo": "{count} 日前",
+  "forumPostTruncated": "內容已截斷",
+  "forumMore": "更多",
+  "forumCopyContent": "複製內容",
+  "forumCopied": "已複製",
   "forumCommentPlaceholder": "書君之評論…",
   "forumCommentSuccess": "評論已發",
   "forumShare": "享",

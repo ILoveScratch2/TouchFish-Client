@@ -86,6 +86,29 @@ abstract final class TFRadius {
   );
 }
 
+/// 分栏（列表 + 详情）
+abstract final class TFPane {
+  const TFPane._();
+
+  /// 两栏之间的间隙
+  static const double gap = TFSpace.md;
+
+  /// 分栏顶部内缩
+  static const double topInset = TFSpace.md;
+
+  /// 分栏卡片的顶部圆角
+  static const double radius = TFRadius.sm;
+
+  static const double defaultWidth = 320;
+  static const double minWidth = 260;
+  static const double maxWidth = 520;
+
+  /// 拖到该宽度以下折叠为图标栏
+  static const double collapseThreshold = 200;
+
+  static const double collapsedWidth = 72;
+}
+
 /// 常用内边距。
 abstract final class TFInsets {
   const TFInsets._();
@@ -116,8 +139,7 @@ abstract final class TFInsets {
 }
 
 /// 尺寸常量。
-abstract final class TFSize {
-  const TFSize._();
+abstract final class TFSize {  const TFSize._();
 
   static const double iconXs = 14;
   static const double iconSm = 18;
