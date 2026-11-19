@@ -1,9 +1,39 @@
+import java.io.File
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// Release 签名配置
+//
+// Signed by Wang Xiehang
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) }
+}
+
+val keystoreStoreFile: File? = keystoreProperties.getProperty("storeFile")
+    ?.trim()
+    ?.takeIf { it.isNotEmpty() }
+    ?.let { raw ->
+        val direct = File(raw)
+        when {
+            direct.isAbsolute -> direct
+            project.file(raw).exists() -> project.file(raw)
+            else -> rootProject.file(raw)
+        }
+    }
+
+val hasReleaseSigning = keystoreStoreFile?.isFile == true &&
+    !keystoreProperties.getProperty("storePassword").isNullOrBlank() &&
+    !keystoreProperties.getProperty("keyAlias").isNullOrBlank() &&
+    !keystoreProperties.getProperty("keyPassword").isNullOrBlank()
 
 android {
     namespace = "ci.us.ilovescratch.touchfish.astra.v3.touchfish_client"
@@ -31,11 +61,24 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = keystoreStoreFile
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             // flutter_local_notifications 通过字符串 "ic_notification" 动态查找
             // smallIcon 资源（getIdentifier），R8/资源收缩器无法识别这种动态引用，
             // 会将其从 release APK 中移除，导致通知初始化抛出

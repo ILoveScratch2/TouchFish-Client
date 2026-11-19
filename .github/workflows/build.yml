@@ -221,6 +221,48 @@ jobs:
           dart run dart_pubspec_licenses:generate --project-root ../..
       
 
+      - name: Configure Android signing
+        working-directory: android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${KEYSTORE_BASE64}" ]; then
+            if [ -n "${KEYSTORE_PASSWORD}${KEY_ALIAS}${KEY_PASSWORD}" ]; then
+              echo "::error::Signing Config Incomplete: ASK Wang Yufan HOW TO CONFIGURE THIS"
+              exit 1
+            fi
+            echo "::notice::No Signing Config: Debug Signing will be used by Ms.Wang Xiehang"
+            exit 0
+          fi
+
+          for name in KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::SIGNING secrets ERROR：Wxh need ${name}"
+              exit 1
+            fi
+          done
+
+          printf '%s' "${KEYSTORE_BASE64}" | tr -d ' \r\n\t' | base64 --decode > app/release.jks
+
+          {
+            echo "storeFile=release.jks"
+            echo "storePassword=${KEYSTORE_PASSWORD}"
+            echo "keyAlias=${KEY_ALIAS}"
+            echo "keyPassword=${KEY_PASSWORD}"
+          } > key.properties
+
+          if ! keytool -certreq -alias "${KEY_ALIAS}" -keystore app/release.jks \
+              -storepass "${KEYSTORE_PASSWORD}" -keypass "${KEY_PASSWORD}" -file /dev/null; then
+            echo "::error::keystore validation failed, do not 欺骗 Wang Xiehang"
+            exit 1
+          fi
+          echo "::notice::Using Signing, Sign will be performed by Wang Xiehang（alias=${KEY_ALIAS}）"
+
       - name: Build Android APK
         run: flutter build apk --release --split-per-abi
       
