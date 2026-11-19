@@ -6,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/talker.dart';
 import '../widgets/app_alert_dialog.dart';
-import '../widgets/markdown_renderer.dart';
+import '../widgets/changelog_view.dart';
 import 'app_update_service.dart';
 
 class AppUpdateFlow {
@@ -37,7 +37,7 @@ class AppUpdateFlow {
         context,
         remoteVersion: result.remoteVersion,
         currentVersion: result.currentVersion,
-        changes: result.changes,
+        changelog: result.changelog,
       );
       return;
     }
@@ -74,7 +74,7 @@ class AppUpdateFlow {
     BuildContext context, {
     required String? remoteVersion,
     required String? currentVersion,
-    List<String> changes = const [],
+    String changelog = '',
     bool force = false,
   }) async {
     if (_running || !context.mounted) return;
@@ -85,12 +85,14 @@ class AppUpdateFlow {
       final l10n = AppLocalizations.of(context);
       final targetVersion = remoteVersion ?? currentVersion ?? '';
 
-      String? changelog;
-      if (changes.isEmpty) {
+      // latest 没有内嵌正文时
+      var markdown = changelog.trim();
+      if (markdown.isEmpty) {
         try {
-          changelog = await AppUpdateService.instance.fetchChangelog();
+          markdown =
+              (await AppUpdateService.instance.fetchChangelog())?.trim() ?? '';
         } catch (_) {
-          changelog = null;
+          markdown = '';
         }
         if (!context.mounted) return;
       }
@@ -114,64 +116,19 @@ class AppUpdateFlow {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(message),
-                if (changes.isNotEmpty) ...[
+                if (markdown.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   const Divider(height: 1),
                   const SizedBox(height: 8),
                   Text(
                     l10n?.updateChangelogTitle ?? 'Changelog',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(dialogContext).textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  for (final change in changes)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('•  ', style: Theme.of(context).textTheme.bodyMedium),
-                          Expanded(
-                            child: Text(
-                              change,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ] else if (changelog != null && changelog.trim().isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  const Divider(height: 1),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n?.updateChangelogTitle ?? 'Changelog',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 320),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          dialogContext,
-                        ).colorScheme.surfaceContainerHighest.withValues(
-                          alpha: 0.5,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Theme.of(
-                            dialogContext,
-                          ).colorScheme.outlineVariant,
-                        ),
-                      ),
-                      child: MarkdownRenderer(data: changelog),
-                    ),
+                  ChangelogView(
+                    markdown: markdown,
+                    maxHeight: changelogBoxHeight(dialogContext),
                   ),
                 ],
               ],
@@ -210,7 +167,7 @@ class AppUpdateFlow {
       context,
       remoteVersion: target,
       currentVersion: result.currentVersion,
-      changes: result.changes,
+      changelog: result.changelog,
       force: true,
     );
   }
@@ -301,9 +258,9 @@ class AppUpdateFlow {
   }
 
   /// Android 更新流程：
-  /// 1. 先弹确认框，展示 APK 将保存的位置；
-  /// 2. 用户确认后才开始下载；
-  /// 3. 下载完成后直接运行 APK（触发系统安装器），进程不自杀。
+  /// 1. 先弹确认框，展示 APK 将保存的位置
+  /// 2. 用户确认后才开始下载
+  /// 3. 下载完成后直接运行 APK（触发系统安装器）
   Future<void> _performAndroidUpdateFlow(
     BuildContext context,
     String downloadUrl,
@@ -330,7 +287,7 @@ class AppUpdateFlow {
     }
     if (!context.mounted) return;
 
-    // 第一步：确认下载提示框，展示 APK 将保存的位置。
+    // 第一步：确认下载提示框
     final confirmed = await showTouchFishInfoDialog<bool>(
       context,
       title: l10n?.updateDownloadStartTitle ?? 'Start download',
@@ -350,7 +307,7 @@ class AppUpdateFlow {
     );
     if (confirmed != true || !context.mounted) return;
 
-    // 第二步：用户确认后开始下载（显示下载中对话框）。
+    // 第二步：用户确认后开始下载
     String? path;
     final l10nDownload = AppLocalizations.of(context);
     showDialog<void>(
@@ -392,8 +349,8 @@ class AppUpdateFlow {
       return;
     }
 
-    // 第三步：下载完成，直接打开 APK 触发系统安装器。
-    // 注意：Android 端进程不自杀退出。
+    // 第三步：下载完成，直接打开 APK 触发系统安装器
+    // 注意：Android 端进程不自杀退出
     if (context.mounted) {
       await service.revealFile(path);
     }

@@ -5191,6 +5191,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get updateChangelogTitle => '更新銘文';
 
   @override
+  String get updateChangelogViewFull => '閱其全銘';
+
+  @override
   String get updateDownloadedTitle => '下載已成';
 
   @override

@@ -523,7 +523,7 @@ class _TouchFishAppState extends State<TouchFishApp>
       navigatorContext,
       remoteVersion: result.remoteVersion,
       currentVersion: result.currentVersion,
-      changes: result.changes,
+      changelog: result.changelog,
     );
   }
 

@@ -47,7 +47,7 @@ void main() {
       final feed = AppUpdateService.parseLatestFeed('1.2.3');
       expect(feed, isNotNull);
       expect(feed!.version, '1.2.3');
-      expect(feed.changes, isEmpty);
+      expect(feed.changelog, isEmpty);
     });
 
     test('tolerates whitespace, BOM and line endings', () {
@@ -67,23 +67,40 @@ void main() {
       expect(AppUpdateService.parseLatestVersion('1.2.3-rc.1'), '1.2.3-rc.1');
     });
 
-    test('collects the following lines as changes', () {
+    test('keeps the markdown after the version verbatim', () {
       final feed = AppUpdateService.parseLatestFeed(
-        '1.0.0\n- 新增更新区块\n* 修复关于页崩溃\n2. 其它改进\n',
+        '1.0.0\n\n> 提示段落\n\n### 标题\n\n- 新增更新区块\n- 修复关于页崩溃\n',
       );
       expect(feed!.version, '1.0.0');
-      expect(feed.changes, ['新增更新区块', '修复关于页崩溃', '其它改进']);
+      expect(
+        feed.changelog,
+        '> 提示段落\n\n### 标题\n\n- 新增更新区块\n- 修复关于页崩溃',
+      );
+    });
+
+    test('does not truncate long changelogs', () {
+      final bullets = List.generate(200, (i) => '- 变动 $i');
+      final body = ['1.0.0', ...bullets].join('\n');
+      final changelog = AppUpdateService.parseLatestFeed(body)!.changelog;
+      expect(changelog, bullets.join('\n'));
+      expect(changelog.split('\n').length, 200);
     });
 
     test('keeps an inline note after the version', () {
       final feed = AppUpdateService.parseLatestFeed('1.0.0 —— 首个正式版');
       expect(feed!.version, '1.0.0');
-      expect(feed.changes, ['首个正式版']);
+      expect(feed.changelog, '首个正式版');
     });
 
-    test('caps the number of collected changes', () {
-      final body = ['1.0.0', ...List.generate(12, (i) => '- 变动 $i')].join('\n');
-      expect(AppUpdateService.parseLatestFeed(body)!.changes.length, 6);
+    test('does not eat a list marker right below the version TouchFish wyf dl tql', () {
+      final feed = AppUpdateService.parseLatestFeed('1.0.0\n- 首个条目');
+      expect(feed!.changelog, '- 首个条目');
+    });
+
+    test('accepts a heading before the version', () {
+      final feed = AppUpdateService.parseLatestFeed('# 0.5.0\n\n- 条目');
+      expect(feed!.version, '0.5.0');
+      expect(feed.changelog, '- 条目');
     });
 
     test('rejects HTML error pages', () {
@@ -98,39 +115,6 @@ void main() {
     test('rejects empty bodies', () {
       expect(AppUpdateService.parseLatestFeed(''), isNull);
       expect(AppUpdateService.parseLatestFeed('   \n\n'), isNull);
-    });
-  });
-
-  group('extractChangelogHighlights', () {
-    test('keeps only top-level bullet items', () {
-      const markdown = '''
-# 0.0.3
-
-这是本版本的正文段落，不应出现在摘要里。
-
-- 新增：更新设置页
-- 修复：关于页版本号
-- 优化：列表滚动
-
-## 0.0.2
-
-- 旧版本的条目
-''';
-      expect(
-        AppUpdateService.extractChangelogHighlights(markdown, limit: 2),
-        ['新增：更新设置页', '修复：关于页版本号'],
-      );
-    });
-
-    test('strips markdown emphasis', () {
-      expect(
-        AppUpdateService.extractChangelogHighlights('- **新增** `About` 页'),
-        ['新增 About 页'],
-      );
-    });
-
-    test('returns empty when there is no list', () {
-      expect(AppUpdateService.extractChangelogHighlights('# 标题\n正文'), isEmpty);
     });
   });
 
@@ -163,7 +147,7 @@ void main() {
       expect(result.hasUpdate, isTrue);
       expect(result.remoteVersion, '1.1.0');
       expect(result.currentVersion, '1.0.0');
-      expect(result.changes, ['修好了些东西']);
+      expect(result.changelog, '- 修好了些东西');
       expect(result.error, isNull);
     });
 

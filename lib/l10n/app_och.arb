@@ -2050,6 +2050,7 @@
   "updateLater": "稍後",
   "updateDownloading": "正在下載更新...",
   "updateChangelogTitle": "更新銘文",
+  "updateChangelogViewFull": "閱其全銘",
   "updateDownloadedTitle": "下載已成",
   "updateExtractHint": "更新包已下載。請自行解壓並更替應用程式以完成更新。",
   "updateDmgHint": "更新包已下載並已掛載，請將應用程式拖到「應用程式」資料夾覆蓋舊版本，然後重新開啟。",

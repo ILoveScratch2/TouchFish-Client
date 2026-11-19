@@ -9964,6 +9964,12 @@ abstract class AppLocalizations {
   /// **'Changelog'**
   String get updateChangelogTitle;
 
+  /// No description provided for @updateChangelogViewFull.
+  ///
+  /// In en, this message translates to:
+  /// **'View full changelog'**
+  String get updateChangelogViewFull;
+
   /// No description provided for @updateDownloadedTitle.
   ///
   /// In en, this message translates to:

@@ -5199,6 +5199,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get updateChangelogTitle => '更新日志';
 
   @override
+  String get updateChangelogViewFull => '查看完整更新日志';
+
+  @override
   String get updateDownloadedTitle => '下载完成';
 
   @override

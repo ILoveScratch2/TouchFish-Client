@@ -5440,6 +5440,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get updateChangelogTitle => 'Changelog';
 
   @override
+  String get updateChangelogViewFull => 'View full changelog';
+
+  @override
   String get updateDownloadedTitle => 'Download complete';
 
   @override

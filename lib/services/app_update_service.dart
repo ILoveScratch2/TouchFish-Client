@@ -67,8 +67,8 @@ class VersionCheckResult {
   final String? currentVersion;
   final String? error;
 
-  /// 最新版本附带的变动说明
-  final List<String> changes;
+  /// 最新版本的变动说明
+  final String changelog;
 
   /// 本次强制触发
   final bool forced;
@@ -78,17 +78,17 @@ class VersionCheckResult {
     this.remoteVersion,
     this.currentVersion,
     this.error,
-    this.changes = const [],
+    this.changelog = '',
     this.forced = false,
   });
 }
 
 @immutable
 class LatestReleaseFeed {
-  const LatestReleaseFeed({required this.version, this.changes = const []});
+  const LatestReleaseFeed({required this.version, this.changelog = ''});
 
   final String version;
-  final List<String> changes;
+  final String changelog;
 }
 
 int compareVersions(String a, String b) {
@@ -119,8 +119,8 @@ class AppUpdateService {
   AppUpdateService._();
   static final AppUpdateService instance = AppUpdateService._();
 
-  /// 最新版本清单：纯文本
-  /// 第一行是版本号，其余行是本版本变动说明。
+  /// 最新版本清单：Markdown
+  /// 首行是版本号，其后是该版本的更新日志
   static const String latestVersionUrl =
       'https://touchfish.xin/updates/tfc/latest';
 
@@ -239,7 +239,7 @@ class AppUpdateService {
       hasUpdate: hasUpdate,
       remoteVersion: remote,
       currentVersion: current,
-      changes: feed.changes,
+      changelog: feed.changelog,
       forced: force,
     );
     _checked = true;
@@ -250,7 +250,7 @@ class AppUpdateService {
   /// 强制走一遍更新
   Future<VersionCheckResult> forceUpdateCheck() => checkForUpdate(force: true);
 
-  /// 解析 `latest` 纯文本
+  /// 解析 latest
   @visibleForTesting
   static LatestReleaseFeed? parseLatestFeed(String body) {
     final normalized = body
@@ -260,44 +260,33 @@ class AppUpdateService {
     final trimmedBody = normalized.trim();
     if (trimmedBody.isEmpty || trimmedBody.startsWith('<')) return null;
 
-    final lines = normalized.split('\n');
-    String? version;
-    final changes = <String>[];
+    final match = _versionToken.firstMatch(trimmedBody);
+    if (match == null) return null;
 
-    for (final rawLine in lines) {
-      final line = rawLine.trim();
-      if (line.isEmpty) continue;
+    return LatestReleaseFeed(
+      version: match.group(1)!.trim(),
+      changelog: _changelogAfterVersion(trimmedBody.substring(match.end)),
+    );
+  }
 
-      if (version == null) {
-        final match = _versionToken.firstMatch(line);
-        if (match == null) return null;
-        version = match.group(1)!.trim();
-        final rest = line.substring(match.end).replaceFirst(
-          RegExp(r'^[\s\-–—:：|]+'),
-          '',
-        );
-        if (rest.isNotEmpty) changes.add(rest);
-        continue;
-      }
-
-      final bullet = line
-          .replaceFirst(RegExp(r'^[-*•·]\s*'), '')
-          .replaceFirst(RegExp(r'^\d+[.)]\s*'), '')
-          .replaceFirst(RegExp(r'^#+\s*'), '')
-          .trim();
-      if (bullet.isEmpty) continue;
-      changes.add(bullet);
-      if (changes.length >= 6) break;
-    }
-
-    if (version == null) return null;
-    return LatestReleaseFeed(version: version, changes: List.unmodifiable(changes));
+  /// 截取版本号之后的正文
+  static String _changelogAfterVersion(String rest) {
+    final newlineIndex = rest.indexOf('\n');
+    final firstLine = newlineIndex < 0 ? rest : rest.substring(0, newlineIndex);
+    final tail = newlineIndex < 0 ? '' : rest.substring(newlineIndex);
+    final head = firstLine
+        .trim()
+        .replaceFirst(RegExp(r'^[-–—:：|]+'), '')
+        .trim();
+    if (head.isEmpty) return tail.trim();
+    return '$head$tail'.trim();
   }
 
   /// 仅取版本号
   @visibleForTesting
   static String? parseLatestVersion(String body) => parseLatestFeed(body)?.version;
 
+  /// 拉取完整更新日志
   Future<String?> fetchChangelog() async {
     try {
       final response = await _client
@@ -307,34 +296,11 @@ class AppUpdateService {
         talker.warning('Changelog fetch failed: HTTP ${response.statusCode}');
         return null;
       }
-      return utf8.decode(response.bodyBytes);
+      return utf8.decode(response.bodyBytes, allowMalformed: true);
     } catch (error, stackTrace) {
       talker.error('Changelog fetch failed', error, stackTrace);
       return null;
     }
-  }
-
-  /// 从 changelog markdown 中截取前若干条要点
-  @visibleForTesting
-  static List<String> extractChangelogHighlights(
-    String markdown, {
-    int limit = 4,
-  }) {
-    final lines = markdown.replaceAll('\r\n', '\n').split('\n');
-    final highlights = <String>[];
-    for (final rawLine in lines) {
-      final line = rawLine.trim();
-      final match = RegExp(r'^[-*+]\s+(.*)$').firstMatch(line);
-      if (match == null) continue;
-      final text = match
-          .group(1)!
-          .replaceAll(RegExp(r'\*\*|__|`'), '')
-          .trim();
-      if (text.isEmpty) continue;
-      highlights.add(text);
-      if (highlights.length >= limit) break;
-    }
-    return highlights;
   }
 
   /// 发布页
@@ -455,13 +421,13 @@ class AppUpdateService {
     return '${directory.path}${Platform.pathSeparator}$fileName';
   }
 
-  /// 下载更新文件，返回最终保存路径；失败返回 null。
+  /// 下载更新文件，返回最终保存路径
   ///
   /// Android：
   /// 1. 先下载到应用缓存目录（一定可写，避免分区存储限制）
   /// 2. 通过 MethodChannel 调用系统 MediaStore 写入公共 Downloads 目录
   ///    （API 29+ 免存储权限；API <= 28 直接写公共路径）
-  /// 3. 成功返回公共路径；通道不可用时回退到缓存路径，保证功能不中断。
+  /// 3. 成功返回公共路径；通道不可用时回退到缓存路径
   Future<String?> downloadUpdate(String downloadUrl) async {
     final fileName = downloadUrl.split('/').last;
     final tempDir = await getTemporaryDirectory();

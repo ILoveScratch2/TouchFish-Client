@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../services/app_update_flow.dart';
 import '../services/app_update_service.dart';
 import '../services/update_preferences.dart';
+import 'changelog_view.dart';
 
 
 class UpdateInfoCard extends StatefulWidget {
@@ -76,7 +77,7 @@ class _UpdateInfoCardState extends State<UpdateInfoCard> {
 
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final changes = _result?.changes ?? const <String>[];
+    final changelog = _result?.changelog.trim() ?? '';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
@@ -100,7 +101,7 @@ class _UpdateInfoCardState extends State<UpdateInfoCard> {
                     label: l10n.aboutLatestVersion,
                     value: _latestValue(l10n),
                   ),
-                  if (changes.isNotEmpty) ...[
+                  if (changelog.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Text(
                       l10n.aboutUpdateChangesTitle,
@@ -110,24 +111,25 @@ class _UpdateInfoCardState extends State<UpdateInfoCard> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    for (final change in changes.take(4))
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('•  ', style: theme.textTheme.bodyMedium),
-                            Expanded(
-                              child: Text(
-                                change,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  height: 1.4,
-                                ),
-                              ),
-                            ),
-                          ],
+                    ChangelogView(
+                      markdown: changelog,
+                      maxHeight: 140,
+                      scrollable: false,
+                      padding: const EdgeInsets.all(10),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () => showChangelogDialog(
+                          context,
+                          markdown: changelog,
+                          title: l10n.updateChangelogTitle,
+                          subtitle: _latestValue(l10n),
                         ),
+                        icon: const Icon(Icons.open_in_full_rounded, size: 16),
+                        label: Text(l10n.updateChangelogViewFull),
                       ),
+                    ),
                   ],
                 ],
               ),
