@@ -6184,13 +6184,20 @@ class AppLocalizationsOch extends AppLocalizations {
   String get externalAuthManualHint => '喺授權頁面複製一次性票據，貼到呢度完成登入。';
 
   @override
-  String get externalAuthManualFieldLabel => '一次性票據';
+  String get externalAuthManualHintWithOpen =>
+      '先撳下面「開啟授權頁」完成登入，頁面會顯示一次性票據（授權 Token）；複製後貼到下面嘅輸入框就搞掂。';
+
+  @override
+  String get externalAuthManualFieldLabel => '一次性票據（授權 Token）';
 
   @override
   String get externalAuthManualPaste => '從剪貼簿貼上';
 
   @override
   String get externalAuthManualOpenPage => '開啟授權頁';
+
+  @override
+  String get externalAuthManualOpenFailed => '開唔到授權頁，請准許本站開彈窗後再試';
 
   @override
   String get externalAuthManualClipboardEmpty => '剪貼簿冇可用嘅票據';

@@ -6512,13 +6512,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Copy the one-time ticket from the authorization page and paste it here to finish signing in.';
 
   @override
-  String get externalAuthManualFieldLabel => 'One-time ticket';
+  String get externalAuthManualHintWithOpen =>
+      'Tap “Open authorization page” below to sign in; the page then shows a one-time ticket (authorization token). Copy it and paste it into the field below.';
+
+  @override
+  String get externalAuthManualFieldLabel =>
+      'One-time ticket (authorization token)';
 
   @override
   String get externalAuthManualPaste => 'Paste from clipboard';
 
   @override
   String get externalAuthManualOpenPage => 'Open authorization page';
+
+  @override
+  String get externalAuthManualOpenFailed =>
+      'Could not open the authorization page. Allow pop-ups for this site and try again.';
 
   @override
   String get externalAuthManualClipboardEmpty =>

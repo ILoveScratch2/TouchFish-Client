@@ -189,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     // Web
     final channel = kIsWeb
-        ? _ExternalAuthChannel.inApp
+        ? _ExternalAuthChannel.manual
         : await _pickExternalAuthChannel(l10n, providerId: providerId);
     if (channel == null || !mounted) return;
 
@@ -481,8 +481,12 @@ class _LoginScreenState extends State<LoginScreen> {
             target: baseUrl,
           );
     if (uri == null) return false;
+    if (kIsWeb) {
+      return launchUrl(uri, webOnlyWindowName: '_blank');
+    }
     return launchUrl(uri, mode: LaunchMode.externalApplication);
   }
+
   Future<void> _finishExternalLogin(String externalToken) async {
     final l10n = AppLocalizations.of(context)!;
     final error = await AuthState.instance.loginWithExternalSession(

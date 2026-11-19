@@ -6198,13 +6198,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get externalAuthManualHint => '在授权页面复制一次性票据，粘贴到这里完成登录。';
 
   @override
-  String get externalAuthManualFieldLabel => '一次性票据';
+  String get externalAuthManualHintWithOpen =>
+      '先点下面的「打开授权页」完成登录，页面会显示一次性票据（授权 Token）；复制后粘贴到下方输入框即可完成登录。';
+
+  @override
+  String get externalAuthManualFieldLabel => '一次性票据（授权 Token）';
 
   @override
   String get externalAuthManualPaste => '从剪贴板粘贴';
 
   @override
   String get externalAuthManualOpenPage => '打开授权页';
+
+  @override
+  String get externalAuthManualOpenFailed => '没能打开授权页，请允许本站显示弹窗后重试';
 
   @override
   String get externalAuthManualClipboardEmpty => '剪贴板里没有可用的票据';

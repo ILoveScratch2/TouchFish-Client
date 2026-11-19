@@ -11860,10 +11860,16 @@ abstract class AppLocalizations {
   /// **'Copy the one-time ticket from the authorization page and paste it here to finish signing in.'**
   String get externalAuthManualHint;
 
+  /// No description provided for @externalAuthManualHintWithOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap “Open authorization page” below to sign in; the page then shows a one-time ticket (authorization token). Copy it and paste it into the field below.'**
+  String get externalAuthManualHintWithOpen;
+
   /// No description provided for @externalAuthManualFieldLabel.
   ///
   /// In en, this message translates to:
-  /// **'One-time ticket'**
+  /// **'One-time ticket (authorization token)'**
   String get externalAuthManualFieldLabel;
 
   /// No description provided for @externalAuthManualPaste.
@@ -11877,6 +11883,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open authorization page'**
   String get externalAuthManualOpenPage;
+
+  /// No description provided for @externalAuthManualOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the authorization page. Allow pop-ups for this site and try again.'**
+  String get externalAuthManualOpenFailed;
 
   /// No description provided for @externalAuthManualClipboardEmpty.
   ///

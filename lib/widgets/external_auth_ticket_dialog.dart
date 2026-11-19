@@ -7,12 +7,12 @@ import '../l10n/app_localizations.dart';
 class ExternalAuthTicketDialog extends StatefulWidget {
   const ExternalAuthTicketDialog({super.key, this.onOpenAuthorizePage});
 
-  /// 重新打开授权页
-  final Future<void> Function()? onOpenAuthorizePage;
+  /// 打开授权页
+  final Future<bool> Function()? onOpenAuthorizePage;
 
   static Future<String?> show(
     BuildContext context, {
-    Future<void> Function()? onOpenAuthorizePage,
+    Future<bool> Function()? onOpenAuthorizePage,
   }) {
     return showDialog<String>(
       context: context,
@@ -30,6 +30,9 @@ class ExternalAuthTicketDialog extends StatefulWidget {
 class _ExternalAuthTicketDialogState extends State<ExternalAuthTicketDialog> {
   final TextEditingController _controller = TextEditingController();
 
+  bool _openingAuthorizePage = false;
+  bool _openAuthorizePageFailed = false;
+
   @override
   void dispose() {
     _controller.dispose();
@@ -38,8 +41,13 @@ class _ExternalAuthTicketDialogState extends State<ExternalAuthTicketDialog> {
 
   Future<void> _pasteFromClipboard() async {
     final l10n = AppLocalizations.of(context)!;
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    final text = data?.text?.trim();
+    String? text;
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      text = data?.text?.trim();
+    } catch (_) {
+      text = null;
+    }
     if (!mounted) return;
     if (text == null || text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -47,13 +55,25 @@ class _ExternalAuthTicketDialogState extends State<ExternalAuthTicketDialog> {
       );
       return;
     }
-    setState(() => _controller.text = text);
+    final value = text;
+    setState(() => _controller.text = value);
   }
 
   Future<void> _openAuthorizePage() async {
     final opener = widget.onOpenAuthorizePage;
     if (opener == null) return;
-    await opener();
+    setState(() => _openingAuthorizePage = true);
+    var opened = false;
+    try {
+      opened = await opener();
+    } catch (_) {
+      opened = false;
+    }
+    if (!mounted) return;
+    setState(() {
+      _openingAuthorizePage = false;
+      _openAuthorizePageFailed = !opened;
+    });
   }
 
   void _submit() {
@@ -74,13 +94,35 @@ class _ExternalAuthTicketDialogState extends State<ExternalAuthTicketDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              l10n.externalAuthManualHint,
+              widget.onOpenAuthorizePage != null
+                  ? l10n.externalAuthManualHintWithOpen
+                  : l10n.externalAuthManualHint,
               style: theme.textTheme.bodySmall,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            // 票据只在授权页生成
+            if (widget.onOpenAuthorizePage != null) ...[
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  onPressed: _openingAuthorizePage ? null : _openAuthorizePage,
+                  icon: const Icon(Icons.open_in_new, size: 18),
+                  label: Text(l10n.externalAuthManualOpenPage),
+                ),
+              ),
+              if (_openAuthorizePageFailed) ...[
+                const SizedBox(height: 6),
+                Text(
+                  l10n.externalAuthManualOpenFailed,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+            ],
             TextField(
               controller: _controller,
-              autofocus: true,
               minLines: 1,
               maxLines: 3,
               decoration: InputDecoration(
@@ -91,22 +133,13 @@ class _ExternalAuthTicketDialogState extends State<ExternalAuthTicketDialog> {
               onSubmitted: (_) => _submit(),
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: _pasteFromClipboard,
-                  icon: const Icon(Icons.content_paste, size: 18),
-                  label: Text(l10n.externalAuthManualPaste),
-                ),
-                if (widget.onOpenAuthorizePage != null)
-                  OutlinedButton.icon(
-                    onPressed: _openAuthorizePage,
-                    icon: const Icon(Icons.open_in_new, size: 18),
-                    label: Text(l10n.externalAuthManualOpenPage),
-                  ),
-              ],
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _pasteFromClipboard,
+                icon: const Icon(Icons.content_paste, size: 18),
+                label: Text(l10n.externalAuthManualPaste),
+              ),
             ),
           ],
         ),
