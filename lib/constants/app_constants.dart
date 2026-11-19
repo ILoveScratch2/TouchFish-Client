@@ -4,8 +4,8 @@ class AppConstants {
   static const String packageName = 'touchfish_client';
 
   // Default info
-  static const String defaultVersion = '0.5.0';
-  static const String defaultBuildNumber = '50';
+  static const String defaultVersion = '0.5.1';
+  static const String defaultBuildNumber = '51';
 
   // URLs
   static const String documentationUrl = 'https://touchfish.ilovescratch.us.ci';
