@@ -424,6 +424,24 @@ abstract class AppLocalizations {
   /// **'Dismiss'**
   String get insecureStorageBannerDismiss;
 
+  /// No description provided for @httpsFallbackBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection Fell Back to Unencrypted HTTP'**
+  String get httpsFallbackBannerTitle;
+
+  /// No description provided for @httpsFallbackBannerMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTPS was enabled, but this server could not open an encrypted connection. Your traffic is now sent over plain HTTP.'**
+  String get httpsFallbackBannerMessage;
+
+  /// No description provided for @httpsFallbackBannerDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get httpsFallbackBannerDismiss;
+
   /// No description provided for @sessionDevicesTitle.
   ///
   /// In en, this message translates to:

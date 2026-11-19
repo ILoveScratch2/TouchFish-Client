@@ -174,6 +174,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get insecureStorageBannerDismiss => '知道了';
 
   @override
+  String get httpsFallbackBannerTitle => '连接已自动降级为明文 HTTP';
+
+  @override
+  String get httpsFallbackBannerMessage => '已启用 HTTPS，但该服务器未能建立加密连接，当前流量以明文传输';
+
+  @override
+  String get httpsFallbackBannerDismiss => '知道了';
+
+  @override
   String get sessionDevicesTitle => '设备管理';
 
   @override

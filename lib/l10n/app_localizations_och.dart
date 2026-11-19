@@ -173,6 +173,15 @@ class AppLocalizationsOch extends AppLocalizations {
   String get insecureStorageBannerDismiss => '知之';
 
   @override
+  String get httpsFallbackBannerTitle => '連已自動降為明文 HTTP';
+
+  @override
+  String get httpsFallbackBannerMessage => '已啟 HTTPS，然此服器未能立加密之連，今流量以明文傳';
+
+  @override
+  String get httpsFallbackBannerDismiss => '知之';
+
+  @override
   String get sessionDevicesTitle => '設備管理';
 
   @override

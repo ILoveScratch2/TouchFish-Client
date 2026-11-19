@@ -38,6 +38,7 @@ import 'services/notification_service.dart';
 import 'services/presence_service.dart';
 import 'services/battery_prompt_flow.dart';
 import 'services/update_preferences.dart';
+import 'services/security_notice_service.dart';
 import 'services/server_connection_status_service.dart';
 import 'services/ip_override_service.dart';
 import 'services/lock_service.dart';
@@ -49,7 +50,7 @@ import 'widgets/app_alert_dialog.dart';
 import 'widgets/rsa_key_prompts.dart';
 import 'widgets/app_virtual_keyboard.dart';
 import 'widgets/notification_overlay.dart';
-import 'widgets/insecure_storage_banner.dart';
+import 'widgets/security_notice_banners.dart';
 import 'widgets/custom_title_bar.dart';
 import 'widgets/server_connection_banner.dart';
 import 'widgets/snackbar_overlay.dart';
@@ -124,6 +125,7 @@ Future<void> main() async {
 
     final startupRecovery = await _performStartupRecovery(isDesktop: isDesktop);
     await SettingsService.instance.init();
+    await SecurityNoticeService.instance.init();
     // 重新加载已配置的字体，避免重启后回退到系统默认字体。
     final configuredFont = AppState.instance.fontFamily;
     // 并行初始化，
@@ -924,9 +926,9 @@ class _TouchFishAppState extends State<TouchFishApp>
                               )
                             : const SizedBox.shrink(key: ValueKey('hidden')),
                       ),
-                      // Web 端非 HTTPS 访问：加密存储不可用，凭据已退回明文，
-                      // 这里常驻一条可见的警告（可在本次会话内关闭）。
+                      // Web 端非 HTTPS 访问：加密存储不可用，凭据已退回明文
                       const InsecureStorageBanner(),
+                      const HttpsFallbackBanner(),
                     ],
                   ),
                 ),

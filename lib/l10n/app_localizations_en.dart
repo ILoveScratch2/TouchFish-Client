@@ -184,6 +184,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insecureStorageBannerDismiss => 'Dismiss';
 
   @override
+  String get httpsFallbackBannerTitle =>
+      'Connection Fell Back to Unencrypted HTTP';
+
+  @override
+  String get httpsFallbackBannerMessage =>
+      'HTTPS was enabled, but this server could not open an encrypted connection. Your traffic is now sent over plain HTTP.';
+
+  @override
+  String get httpsFallbackBannerDismiss => 'Dismiss';
+
+  @override
   String get sessionDevicesTitle => 'Session Devices';
 
   @override

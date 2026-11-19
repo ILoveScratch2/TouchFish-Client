@@ -24,6 +24,7 @@ import '../../models/file_attachment.dart';
 import '../server_connection_status_service.dart';
 import '../feature_flags.dart';
 import '../rsa_key_trust_service.dart';
+import '../security_notice_service.dart';
 import '../device_identity_service.dart';
 import '../../widgets/server_selector.dart';
 import '../../utils/talker.dart';
@@ -1182,8 +1183,19 @@ class TfApiClient {
   Future<String> getBaseUrl() async {
     if (_cachedBaseUrl != null) return _cachedBaseUrl!;
     final serverInfo = await _loadSelectedServer();
-    _cachedBaseUrl = await _resolveBaseUrlFor(serverInfo);
-    return _cachedBaseUrl!;
+    final baseUrl = await _resolveBaseUrlFor(serverInfo);
+    _cachedBaseUrl = baseUrl;
+    _reportTransportSecurity(serverInfo, baseUrl);
+    return baseUrl;
+  }
+
+  void _reportTransportSecurity(ServerInfo? server, String baseUrl) {
+    final useHttps = server?.useHttps ?? AppConstants.defaultUseHttps;
+    if (!useHttps || baseUrl.startsWith('https://')) {
+      SecurityNoticeService.instance.clearHttpsFallback();
+      return;
+    }
+    SecurityNoticeService.instance.reportHttpsFallback();
   }
 
   Future<int> resolveTcpPort() async {
@@ -1216,6 +1228,9 @@ class TfApiClient {
     _cachedBaseUrl = null;
     _cachedPem = null;
     _cachedServerConfig = null;
+    // 服务器配置可能已变（换服务器 / 改 HTTPS 开关），
+    // 降级状态待下一次 getBaseUrl 重新判定；先撤销避免展示过期提示。
+    SecurityNoticeService.instance.clearHttpsFallback();
   }
 
   Future<int?> getMaxFileSize() async {
