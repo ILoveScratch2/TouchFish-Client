@@ -17,6 +17,7 @@ List<String> splitMarkdownIntoChunks(
   String source, {
   int targetChars = 900,
   int maxListItemRun = 10,
+  int maxLines = 24,
 }) {
   final lines = source.split('\n');
   final chunks = <String>[];
@@ -52,7 +53,8 @@ List<String> splitMarkdownIntoChunks(
 
     final atBlockBoundary = line.trim().isEmpty;
     final atListBoundary = isListItem && listRun >= maxListItemRun;
-    if (bufferChars >= targetChars && (atBlockBoundary || atListBoundary)) {
+    final bigEnough = bufferChars >= targetChars || buffer.length >= maxLines;
+    if (bigEnough && (atBlockBoundary || atListBoundary)) {
       flush();
     }
   }
