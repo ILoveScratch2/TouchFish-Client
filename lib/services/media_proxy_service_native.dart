@@ -124,6 +124,8 @@ class MediaProxyService {
       talker.error('Media proxy request failed', error, stackTrace);
       try {
         request.response.statusCode = HttpStatus.badGateway;
+      } catch (_) {}
+      try {
         await request.response.close();
       } catch (_) {}
     }
@@ -283,24 +285,16 @@ class MediaProxyService {
       }
     } catch (e) {
       talker.error('Media proxy range cache write failed', e);
-      shouldCacheThis = false;
     }
 
-    if (shouldCacheThis) {
-      response.statusCode = HttpStatus.partialContent;
-      if (contentRange != null) {
-        response.headers.set(HttpHeaders.contentRangeHeader, contentRange);
-      }
-      response.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
-      await response.close();
-      return;
-    }
-
-    // 未写入缓存时，数据尚未转发（流被上面消耗）需重新拉取，或已转发部分数据
     if (!sentAny) {
       await response.addStream(remote.timeout(_streamIdleTimeout));
     }
-    await response.close();
+    try {
+      await response.close();
+    } catch (error) {
+      talker.debug('Media proxy close failed: $error');
+    }
   }
 
   Future<void> _serveSlice(

@@ -12,6 +12,7 @@ import '../../services/playback_coordinator.dart';
 import '../../services/snackbar_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/clipboard_utils.dart';
+import '../../utils/talker.dart';
 
 class VideoViewer extends StatefulWidget {
   final String videoPath;
@@ -47,6 +48,7 @@ class VideoViewerState extends State<VideoViewer> with RouteAware {
   bool _isPlaying = false;
   StreamSubscription<bool>? _playingSubscription;
   StreamSubscription<String>? _errorSubscription;
+  Timer? _errorGraceTimer;
 
   bool get isPlaying => _isPlaying;
 
@@ -104,9 +106,38 @@ class VideoViewerState extends State<VideoViewer> with RouteAware {
     setState(() {});
   }
 
+  void _onPlayerError(String error) {
+    talker.error('Video player error: $error');
+    final player = _player;
+    if (player == null) return;
+    if (player.state.duration == Duration.zero && !player.state.playing) {
+      _showError(error);
+      return;
+    }
+    _errorGraceTimer?.cancel();
+    _errorGraceTimer = Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
+      final current = _player;
+      if (current == null) return;
+      if (current.state.duration == Duration.zero || current.state.width == 0) {
+        _showError(error);
+      }
+    });
+  }
+
+  void _showError(String error) {
+    if (!mounted) return;
+    setState(() {
+      _hasError = true;
+      _errorMessage = error;
+    });
+  }
+
   @override
   void dispose() {
     PlaybackCoordinator.instance.release(this);
+    _errorGraceTimer?.cancel();
+    _errorGraceTimer = null;
     if (_subscribedRoute != null) {
       appRouteObserver.unsubscribe(this);
       _subscribedRoute = null;
@@ -131,7 +162,6 @@ class VideoViewerState extends State<VideoViewer> with RouteAware {
 
   Future<void> _initPlayer() async {
     MediaKit.ensureInitialized();
-
     _player = Player();
     _videoController = VideoController(_player!);
 
@@ -156,15 +186,7 @@ class VideoViewerState extends State<VideoViewer> with RouteAware {
       }
     });
 
-    _errorSubscription = _player!.stream.error.listen((error) {
-      debugPrint('Video player error: $error');
-      if (mounted) {
-        setState(() {
-          _hasError = true;
-          _errorMessage = error;
-        });
-      }
-    });
+    _errorSubscription = _player!.stream.error.listen(_onPlayerError);
 
     String mediaSource;
     if (kIsWeb && widget.videoBytes != null) {
@@ -181,6 +203,8 @@ class VideoViewerState extends State<VideoViewer> with RouteAware {
   }
 
   void _disposePlayer() {
+    _errorGraceTimer?.cancel();
+    _errorGraceTimer = null;
     _playingSubscription?.cancel();
     _playingSubscription = null;
     _errorSubscription?.cancel();
@@ -222,48 +246,56 @@ class VideoViewerState extends State<VideoViewer> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final boundedHeight =
+            constraints.hasBoundedHeight && constraints.maxHeight.isFinite;
+        final content = _buildContent(context);
+        if (boundedHeight) return content;
+        return AspectRatio(aspectRatio: widget.aspectRatio, child: content);
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     if (_hasError) {
       return _VideoErrorWidget(
         errorMessage:
             _errorMessage ?? AppLocalizations.of(context)!.commonUnknown,
         onRetry: _handleRetry,
-        aspectRatio: widget.aspectRatio,
       );
     }
 
     if (_videoController == null) {
-      return AspectRatio(
-        aspectRatio: widget.aspectRatio,
-        child: Container(
-          color: Colors.black,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (widget.posterUrl != null)
-                Image.network(
-                  widget.posterUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                ),
-              if (widget.posterUrl != null)
-                const DecoratedBox(
-                  decoration: BoxDecoration(color: Colors.black38),
-                ),
-              Center(
-                child: _initializing
-                    ? const SizedBox.square(
-                        dimension: 28,
-                        child: CircularProgressIndicator(strokeWidth: 2.5),
-                      )
-                    : IconButton.filled(
-                        iconSize: 40,
-                        onPressed: () => _ensurePlayer(playAfterInit: true),
-                        icon: const Icon(Icons.play_arrow),
-                        tooltip: AppLocalizations.of(context)!.videoTapToPlay,
-                      ),
+      return Container(
+        color: Colors.black,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (widget.posterUrl != null)
+              Image.network(
+                widget.posterUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
               ),
-            ],
-          ),
+            if (widget.posterUrl != null)
+              const DecoratedBox(
+                decoration: BoxDecoration(color: Colors.black38),
+              ),
+            Center(
+              child: _initializing
+                  ? const SizedBox.square(
+                      dimension: 28,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    )
+                  : IconButton.filled(
+                      iconSize: 40,
+                      onPressed: () => _ensurePlayer(playAfterInit: true),
+                      icon: const Icon(Icons.play_arrow),
+                      tooltip: AppLocalizations.of(context)!.videoTapToPlay,
+                    ),
+            ),
+          ],
         ),
       );
     }
@@ -364,118 +396,163 @@ class VideoViewerState extends State<VideoViewer> with RouteAware {
 class _VideoErrorWidget extends StatelessWidget {
   final String errorMessage;
   final VoidCallback onRetry;
-  final double aspectRatio;
 
   const _VideoErrorWidget({
     required this.errorMessage,
     required this.onRetry,
-    required this.aspectRatio,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
-    return Container(
+    return ColoredBox(
       color: Colors.black,
-      child: Center(
-        child: AspectRatio(
-          aspectRatio: aspectRatio,
-          child: Container(
-            margin: const EdgeInsets.all(24),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.grey[900],
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: colorScheme.error, width: 1),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Symbols.error, size: 48, color: colorScheme.error),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.videoPlaybackErrorTitle,
-                  style: TextStyle(
-                    color: colorScheme.error,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final tight = constraints.maxHeight.isFinite &&
+              (constraints.maxHeight < 220 || constraints.maxWidth < 300);
+          return Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(tight ? 8 : 16),
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tight ? 10 : 20,
+                  vertical: tight ? 10 : 18,
                 ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  constraints: const BoxConstraints(maxWidth: 400),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.videoPlaybackErrorDetails,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        errorMessage,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 11,
-                          fontFamily: 'monospace',
-                        ),
-                        maxLines: 5,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  borderRadius: BorderRadius.circular(tight ? 10 : 16),
+                  border: Border.all(color: colorScheme.error, width: 1),
                 ),
-                const SizedBox(height: 20),
-                Row(
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    ElevatedButton.icon(
-                      onPressed: onRetry,
-                      icon: const Icon(Symbols.refresh, size: 18),
-                      label: Text(l10n.retry),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colorScheme.error,
-                        foregroundColor: colorScheme.onError,
+                    Icon(
+                      Symbols.error,
+                      size: tight ? 24 : 44,
+                      color: colorScheme.error,
+                    ),
+                    SizedBox(height: tight ? 4 : 12),
+                    Text(
+                      l10n.videoPlaybackErrorTitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: colorScheme.error,
+                        fontSize: tight ? 13 : 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    OutlinedButton.icon(
-                      onPressed: () async {
-                        final copied = await copyTextToClipboard(errorMessage);
-                        TouchFishSnackbarService.instance.show(
-                          copied
-                              ? l10n.aboutCopiedToClipboard
-                              : l10n.copyFailedText,
-                          type: copied
-                              ? SnackbarType.info
-                              : SnackbarType.error,
-                        );
-                      },
-                      icon: const Icon(Symbols.content_copy, size: 18),
-                      label: Text(AppLocalizations.of(context)!.messageActionCopy),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white70,
-                        side: const BorderSide(color: Colors.white30),
+                    SizedBox(height: tight ? 4 : 10),
+                    if (tight)
+                      Text(
+                        errorMessage,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 10,
+                          fontFamily: 'monospace',
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        constraints: const BoxConstraints(maxWidth: 400),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.videoPlaybackErrorDetails,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              errorMessage,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                                fontFamily: 'monospace',
+                              ),
+                              maxLines: 5,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
+                    SizedBox(height: tight ? 6 : 16),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: tight
+                          ? [
+                              IconButton(
+                                onPressed: onRetry,
+                                iconSize: 20,
+                                visualDensity: VisualDensity.compact,
+                                tooltip: l10n.retry,
+                                icon: Icon(
+                                  Symbols.refresh,
+                                  color: colorScheme.error,
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () => _copyError(context),
+                                iconSize: 18,
+                                visualDensity: VisualDensity.compact,
+                                tooltip: l10n.messageActionCopy,
+                                icon: const Icon(
+                                  Symbols.content_copy,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ]
+                          : [
+                              ElevatedButton.icon(
+                                onPressed: onRetry,
+                                icon: const Icon(Symbols.refresh, size: 18),
+                                label: Text(l10n.retry),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: colorScheme.error,
+                                  foregroundColor: colorScheme.onError,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              OutlinedButton.icon(
+                                onPressed: () => _copyError(context),
+                                icon: const Icon(Symbols.content_copy, size: 18),
+                                label: Text(l10n.messageActionCopy),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.white70,
+                                  side: const BorderSide(color: Colors.white30),
+                                ),
+                              ),
+                            ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
+    );
+  }
+
+  Future<void> _copyError(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    final copied = await copyTextToClipboard(errorMessage);
+    TouchFishSnackbarService.instance.show(
+      copied ? l10n.aboutCopiedToClipboard : l10n.copyFailedText,
+      type: copied ? SnackbarType.info : SnackbarType.error,
     );
   }
 }

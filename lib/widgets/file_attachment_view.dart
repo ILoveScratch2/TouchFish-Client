@@ -741,6 +741,7 @@ class _AttachmentPreviewState extends State<_AttachmentPreview> {
         child: VideoViewer(
           videoPath: file?.path ?? url,
           videoBytes: file != null ? null : bytes,
+          aspectRatio: attachment.aspectRatio ?? 16 / 9,
           posterUrl: posterUrl,
           // 一旦开始播放就锁定当前源
           onPlaybackStarted: () => _playbackStarted = true,

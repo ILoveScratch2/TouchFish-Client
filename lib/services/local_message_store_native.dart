@@ -817,8 +817,8 @@ class LocalMessageStore {
   /// 服务端消息的 message_key 固定为 "id:$mid"
   Future<ChatMessage?> findMessageByMid(String roomId, int mid) async {
     final scope = _requireScope();
-    final db = await _db(scope.server, scope.uid);
     try {
+      final db = await _db(scope.server, scope.uid);
       final rows = db.select(
         'SELECT payload FROM messages '
         'WHERE server_key = ? AND uid = ? AND room_id = ? AND message_key = ?',

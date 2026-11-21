@@ -121,6 +121,9 @@ dev_dependencies:
   riverpod_generator: ^2.6.2
   build_runner: ^2.4.13
 
+dependency_overrides:
+  jni: 1.2.1
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
