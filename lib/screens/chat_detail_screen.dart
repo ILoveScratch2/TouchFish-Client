@@ -5,7 +5,6 @@ import 'package:super_sliver_list/super_sliver_list.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as path;
 import 'package:file_picker/file_picker.dart';
@@ -20,6 +19,7 @@ import '../widgets/chat_input_bar.dart';
 import '../routes/app_routes.dart';
 import 'chat_detail/widgets/chat_detail_banners.dart';
 import 'chat_detail/widgets/message_list_view.dart';
+import 'chat_detail/chat_scroll_follower.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/mention_text_field.dart';
 import '../services/auth_state.dart';
@@ -69,10 +69,7 @@ class ChatDetailScreen extends ConsumerStatefulWidget {
 
 class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
-  /// 跟踪当前挂在哪个控制器上的滚动监听，切房间时重新挂载。
   ScrollController? _scrollListenerAttached;
-  /// 元素是否在树内？
-  ///  ref.read（deactivated 元素做祖先查找会 BOOMshakalaka
   bool _treeActive = true;
 
   final Map<int, GlobalKey> _messageKeys = {};
@@ -90,20 +87,22 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
   String? _messagesError;
 
-  /// 需要闪烁提示落点的消息
   int? _flashMid;
   Timer? _flashTimer;
   bool _realtimeListenersAttached = false;
   StreamSubscription? _ackErrorSub;
   String _groupEnterHint = '';
   bool _showGroupEnterHint = true;
-  bool _followBottom = true;
+
+  /// 跟随底部
+  late final ChatScrollFollower _follower = ChatScrollFollower(
+    isActive: () => mounted && _treeActive,
+  );
   bool _showBackToBottom = false;
   bool _canModerateGroup = false;
   Timer? _draftTimer;
   bool _suppressDraftSave = false;
   int _roomGeneration = 0;
-  /// 本次新增消息的 stable key（入场动画用）
   final ValueNotifier<Set<String>> _entranceKeys = ValueNotifier<Set<String>>(
     const {},
   );
@@ -120,34 +119,27 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   StreamSubscription<int>? _essenceSub;
   String? _fetchingPinsRoomId;
   Timer? _weakNetworkTimer;
-  /// 复合
   final Map<String, TypingStatus> _activityStatuses = {};
   final ValueNotifier<int> _activityRevision = ValueNotifier<int>(0);
   StreamSubscription<ChatWsEvent>? _typingSub;
   Timer? _typingCleanupTimer;
-  // 上传进度桥接状态
   ProviderSubscription<List<FileTask>>? _uploadProgressSub;
   DateTime? _lastUploadProgressSentAt;
   final Map<String, double> _lastUploadProgressByRoom = {};
 
-  /// 回执补查
   final ReadReceiptThrottle _readReceiptThrottle = ReadReceiptThrottle();
-
-  /// 已上报过的最高已读 mid
-  ///
-  /// 滚动会高频触发上报判定
   int? _lastReportedReadMid;
 
   String get _contactUid {
     final id = widget.roomId;
     if (id.startsWith('U') || id.startsWith('G')) return id;
-    // 修复 dev ID，应该用不着了
+    // 修复 dev ID
     final parsed = int.tryParse(id);
     if (parsed != null) return 'U$parsed';
     return id;
   }
 
-  // Riverpod 状态访问器
+  // Riverpod
   List<ChatMessage> get _messages => ref.read(roomMessagesProvider(_contactUid));
 
   ChatRoomUiState get _uiState => ref.read(chatRoomStateProvider(_contactUid));
@@ -170,7 +162,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   ChatRoomState get _chatRoomStateNotifier =>
       ref.read(chatRoomStateProvider(_contactUid).notifier);
 
-  /// 消息的稳定选择键（与 message_list_view 的 chatMessageStableKey 一致）。
   String _stableKey(ChatMessage m) =>
       m.clientMid ?? m.mid?.toString() ?? m.id;
 
@@ -213,13 +204,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       ref.read(chatRoomStateProvider(_contactUid).notifier)
           .setJumpingToMessage(jumping);
 
-  /// 把 [_onScroll] 挂到当前房间的滚动控制器上（切房间后控制器会换新）。
   void _attachScrollListener() {
     final controller = _scrollController;
     if (_scrollListenerAttached == controller) return;
     _scrollListenerAttached?.removeListener(_onScroll);
     controller.addListener(_onScroll);
     _scrollListenerAttached = controller;
+    _follower.attach(controller);
   }
 
   @override
@@ -263,7 +254,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
   @override
   void deactivate() {
-    // 元素移出树时立即摘掉所有监听
     _treeActive = false;
     _detachRealtimeListeners();
     _ackErrorSub?.cancel();
@@ -276,7 +266,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     super.activate();
     _treeActive = true;
     if (!_isInitialized) return;
-    // GlobalKey 重挂载等场景会 deactivate→activate：恢复监听与 ack 错误流
     _attachRealtimeListeners();
     if (AuthState.instance.isLoggedIn && _ackErrorSub == null) {
       _ackErrorSub = ChatDataService.instance.ackErrorStream.listen(_onAckError);
@@ -300,7 +289,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _hasMoreMessages = true;
     _groupEnterHint = '';
     _showGroupEnterHint = true;
-    _followBottom = true;
+    _follower.reset();
     _showBackToBottom = false;
     _canModerateGroup = false;
     _essenceMids = [];
@@ -310,7 +299,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       _activityStatuses.clear();
       _activityRevision.value++;
     }
-    // 换房间后旧房间的回执节流状态不能让新房间的首次查询被跳过。
     _readReceiptThrottle.reset();
     _lastReportedReadMid = null;
     _entranceKeysTimer?.cancel();
@@ -321,18 +309,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _messageController.clear();
     _suppressDraftSave = false;
     unawaited(_restoreDraft(_contactUid));
-    // 进入/切换聊天时立即清除该房间的未读计数：
-    //   - 聊天列表中该会话右侧的角标消失
-    //   - 导航栏/侧边栏右上角的总计数（totalUnreadCount 动态求和）相应减去
-    // _markVisibleMessagesRead 仍负责后续新消息到达且可见时再清零并发送已读回执。
     ChatDataService.instance.clearUnread(_contactUid);
     _loadChatRoom();
     _startRealMessaging();
     _initMessageSync();
     _weakNetworkTimer?.cancel();
-    // 注意：这里不能取消 _typingSub/_typingCleanupTimer，否则会把
-    // _startRealMessaging 刚通过 _attachRealtimeListeners 挂载的打字监听
-    // 立即取消，导致打字/上传状态永远收不到（原版 bug）。
+    // 注意
+    // 这里不能取消 _typingSub/_typingCleanupTimer
     _activityStatuses.clear();
     if (SettingsService.instance.getValue<bool>('weakNetworkMode', false)) {
       _weakNetworkTimer = Timer.periodic(const Duration(seconds: 30), (_) {
@@ -343,11 +326,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     }
   }
 
-  /// 进入/切换聊天时：注册为同步活跃房间，触发增量补
   void _initMessageSync() {
     final roomId = _contactUid;
     MessageSyncService.instance.activeRoomId = roomId;
-    // 打开过的会话持久升级为完整同步（浏览模式下再次进入也照常补拉）
     unawaited(MessageSyncService.instance.markRoomFullySynced(roomId));
     unawaited(_syncRoomIfNeeded(roomId));
   }
@@ -373,7 +354,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       }
       return;
     }
-    // 本地迁移的 last_mid 或房间列表 last_mid 建立同步点后再补拉
     final syncMid =
         await LocalMessageStore.instance.getRoomSyncMid(roomId) ??
         ChatDataService.instance.rooms
@@ -519,7 +499,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final uid = (data['uid'] as num?)?.toInt();
     if (uid == null || uid == AuthState.instance.uid) return;
 
-    // 解析新增字段：scope（缺省 typing）、ts（服务器统一）、progress（仅 uploading）。
     final scope = (data['scope'] as String?) ?? 'typing';
     final tsMs = (data['ts'] as num?)?.toInt();
     final progress = (data['progress'] as num?)?.toDouble();
@@ -550,17 +529,14 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _activityRevision.value++;
   }
 
-  /// 正在输入（typing）的活跃状态
   List<TypingStatus> get _typingStatuses => _activityStatuses.values
       .where((s) => s.scope == 'typing')
       .toList();
 
-  /// 正在上传（uploading）的活跃状态
   List<TypingStatus> get _uploadingStatuses => _activityStatuses.values
       .where((s) => s.scope == 'uploading')
       .toList();
 
-  /// 将 uploading 弄成假消息
   List<ChatMessage> _buildUploadPlaceholderMessages() {
     final chatData = ChatDataService.instance;
     return [
@@ -597,7 +573,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _lastUploadProgressByRoom.clear();
   }
 
-  /// 将本房间的上传任务进度桥接为 uploading 活动广播。
   void _forwardUploadProgress() {
     if (!mounted) return;
     final now = DateTime.now();
@@ -615,7 +590,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       }
       final progress = task.progress;
       if (progress == null) continue;
-      // 进度变化 < 1% 跳过，避免频繁发包。
       final lastProgress = _lastUploadProgressByRoom[task.roomId!];
       if (lastProgress != null && (lastProgress - progress).abs() < 0.01) {
         continue;
@@ -671,23 +645,12 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     });
   }
 
-  /// 消息是否**真的被看到**——三个条件缺一不可，否则不该替用户上报已读：
-  ///
-  /// - 页面在前台（切到后台不该继续读）
-  /// - 当前就是本会话（可能已 push 到别的整屏页面，本页还在树上）
-  /// - 视图停在最新一条（正滚上去翻历史时到达的新消息不算已读）
-  ///
-  /// 少了最后一条就会出现「你翻历史，对方看到『已读』，而你根本没看到那条」。
+  /// 消息是否真的被看到
   bool get _readReportAllowed =>
       AppForegroundService.instance.isForeground &&
       (ModalRoute.of(context)?.isCurrent ?? true) &&
       _isNearBottom;
 
-  /// 把「已看到最新一条」上报给服务端并清掉本地未读（幂等：同一条 mid 只发一次）。
-  ///
-  /// 调用点覆盖所有「此刻真的看到了最新一条」的时机：首屏加载完成、尾部有新消息、
-  /// 用户滚回最新处、回到前台、WS 重连。任一时刻只要条件满足就会补上——尤其是
-  /// 滚上去期间到达的消息，之前那条路径会让它永远不被上报。
   void _reportVisibleRead() {
     if (!_readReportAllowed) return;
     final last = _messages.isNotEmpty ? _messages.last : null;
@@ -698,7 +661,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _clearRoomUnread(mid);
   }
 
-  /// 尾部消息变化时的判定（其余时机由 [_reportVisibleRead] 覆盖）。
+  /// 尾部消息变化时
   void _markVisibleMessagesRead({String? previousLastId}) {
     if (_messages.isEmpty) return;
     if (previousLastId != null && _messages.last.id == previousLastId) return;
@@ -709,9 +672,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     if (!mounted || !_treeActive) return;
     if (!AppForegroundService.instance.isForeground) return;
     if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
-    // 回前台补一次回执：群聊期间别人读了不会推送。
     _refreshReadReceipt();
-    // 未读则只在真的看到最新一条时才清（滚上去翻历史时不该被吞掉）。
     _reportVisibleRead();
   }
 
@@ -746,7 +707,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         _isLoadingMessages = false;
         _hasMoreMessages = page.hasMore;
       });
-      _followBottom = true;
+      _follower.reset();
       _markVisibleMessagesRead();
       _refreshReadReceipt();
       _refreshPresence();
@@ -775,7 +736,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     });
   }
 
-  /// 打开私聊时批量拉取对方在线状态（群聊无单一 uid）。
   void _refreshPresence() {
     if (_currentRoom?.type != ChatType.direct) return;
     final peerUid = int.tryParse(_contactUid.replaceFirst('U', ''));
@@ -783,10 +743,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     unawaited(PresenceService.instance.refreshFriends(uids: [peerUid]));
   }
 
-  /// 按需查询自己最后一条消息的已读情况（群聊无实时推送，兼作离线补拉）。
-  ///
-  /// 消息列表每变一次都会调到这里（群聊刷屏时一秒好几条），节流交给
-  /// [ReadReceiptThrottle]：换了自己最后一条消息立刻查，同一条消息按冷却查。
+  /// 按需查询自己最后一条消息的已读情况
+  /// 群聊无实时推送，兼离线补拉
   void _refreshReadReceipt() {
     if (!FeatureFlags.instance.readReceipt) return;
     final mid = _lastOwnMessageMid;
@@ -799,7 +757,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     );
   }
 
-  /// 自己最后一条可查回执的消息 id（撤回的不算）。
   int? get _lastOwnMessageMid {
     for (final message in _messages.reversed) {
       if (message.isMe && !message.isDeleted && message.mid != null) {
@@ -819,7 +776,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     if (_showBackToBottom != showBackToBottom && mounted) {
       setState(() => _showBackToBottom = showBackToBottom);
     }
-    if (_isAtBottom) _followBottom = true;
+    _follower.notePosition();
 
     // 滚回最新处时把「到达时因为不可见而没上报」的已读补上（幂等，按 mid 去重）。
     _reportVisibleRead();
@@ -900,22 +857,17 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   }
 
   bool _onUserScroll(ScrollNotification notification) {
-    if (notification is UserScrollNotification &&
-        notification.direction != ScrollDirection.idle) {
-      _followBottom = false;
-    } else if (notification is ScrollUpdateNotification &&
-        notification.dragDetails != null) {
-      _followBottom = false;
-    } else if (notification is ScrollEndNotification && _isAtBottom) {
-      _followBottom = true;
-    }
+    // 用户一旦朝历史方向滚动，就解除跟随并作废已排程的自动回底。
+    _follower.handleScrollNotification(notification);
     return false;
   }
 
   bool _onScrollMetricsChanged(ScrollMetricsNotification notification) {
     // 跳转过程中忽略“跟随底部”自动回底，防止把跳转顶回底部
-    if (_followBottom && !_isJumpingToMessage) {
-      _scrollToBottom(animated: false);
+    if (_isJumpingToMessage) return false;
+    // 只有仍贴着底部时才跟随（用户已经翻上去时，内容变化不得把他拽回来）。
+    if (_follower.shouldFollowContentChange) {
+      _follower.scrollToBottom(animated: false);
     }
     return false;
   }
@@ -1018,39 +970,22 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _refreshReadReceipt();
   }
 
-  bool get _isNearBottom {
-    if (!_scrollController.hasClients) return true;
-    final pos = _scrollController.position;
-    return pos.pixels <= pos.minScrollExtent + 100;
-  }
-
-  bool get _isAtBottom {
-    if (!_scrollController.hasClients) return true;
-    final pos = _scrollController.position;
-    return pos.pixels <= pos.minScrollExtent + 1;
-  }
+  bool get _isNearBottom => _follower.isNearBottom;
 
   void _onChatDataChanged() {
     if (!mounted || !_treeActive) return;
-    // 跳转过程中完全忽略实时数据变动，避免新消息触发 _scrollToBottom 把跳转顶回底部
+    // 跳转过程中
     if (_isJumpingToMessage) return;
     _refreshRoom();
   }
 
-  /// 尾部新追加的消息键（入场动画用）。
-  ///
-  /// 计算已移到 [_onProviderMessagesChanged]：build 里修改自身字段并创建 Timer
-  /// 违反“build 无副作用”，同一帧重复/被丢弃的构建会推进出不一致的状态。
-
-  /// 消息列表 Provider 状态变化 原 _onChatDataChanged 里的消息列表逻辑迁移至此
   void _onProviderMessagesChanged(
     List<ChatMessage>? prev,
     List<ChatMessage> next,
   ) {
     if (!mounted || !_treeActive) return;
 
-    // 入场动画的 key 在这里算（build 必须无副作用）：
-    // 插入的新 item 比 provider 通知晚一帧，key 要留到气泡真正构建出来。
+    // 入场动画
     final entranceKeys = newlyAppendedMessageKeys(prev ?? const [], next);
     if (entranceKeys.isNotEmpty) {
       _entranceKeys.value = entranceKeys;
@@ -1080,8 +1015,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     }
   }
 
-  /// 群聊的置顶/精华/已读回执查询做 2s 防抖：
-  /// 旧实现挂在“消息列表任意变化”上，活跃群每来一条消息都会打三个接口。
   void _scheduleGroupMetaRefresh() {
     _groupMetaRefreshTimer?.cancel();
     _groupMetaRefreshTimer = Timer(const Duration(seconds: 2), () {
@@ -1241,11 +1174,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
   void _startForward(ChatMessage message) {
     if (message.mid == null || message.isDeleted) return;
-    // 打开转发选择屏幕（右键转发 / 悬浮转发按钮都会触发）
     context.push(AppRoutes.forward, extra: message);
   }
 
-  /// 复制选中的消息（按时间序，用换行拼接文本与媒体占位）。
   Future<void> _copySelectedMessages() async {
     final l10n = AppLocalizations.of(context)!;
     final selected = _selectedMessages;
@@ -1280,7 +1211,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     );
   }
 
-  /// 合并转发选中的消息：选目标房间 → 调 /message/redirect。
   Future<void> _mergeForwardSelected() async {
     final target = await _pickMergeForwardTarget();
     if (target == null || !mounted) return;
@@ -1419,7 +1349,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     return _currentRoom?.type == ChatType.group && _canModerateGroup;
   }
 
-  /// 仅本机未发送/发送失败的消息（mid 为 null 的本地消息）可删除。
+  /// 仅本机未发送/发送失败的消息
   bool _canDeleteLocally(ChatMessage message) {
     return message.isMe &&
         message.mid == null &&
@@ -1452,7 +1382,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         _forwardingTo?.id == message.id) {
       _setForwardingTo(null);
     }
-    // deleteLocalMessage 会通知房间监听器，消息列表与画廊 Provider 自动刷新
+    // deleteLocalMessage 通知房间
     ChatDataService.instance.deleteLocalMessage(_contactUid, message);
   }
 
@@ -1505,7 +1435,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       );
       if (_replyingTo?.mid == mid) _setReplyingTo(null);
       if (_currentRoom?.type == ChatType.group) {
-        // 撤回的若为置顶消息，服务端已取消置顶，这里刷新置顶栏
         unawaited(_fetchPinnedMessages());
       }
     } else {
@@ -1832,8 +1761,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _messageController.selection = TextSelection.collapsed(offset: text.length);
   }
 
-  /// 重发失败的消息：沿用原 clientMid，避免服务端产生重复。
-  /// 未发出的消息（按时间序）
+  /// 重发失败的消息
   List<ChatMessage> get _failedMessages => _messages
       .where(
         (m) => m.status == MessageStatus.failed && m.clientMid != null,
@@ -1869,7 +1797,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       if (media != null) {
         final existingHash = media.fileHash;
         if (existingHash != null && existingHash.isNotEmpty) {
-          // 文件已在服务器，直接重发消息即可。
+          // 文件已在服务器
           await _dispatchFileSend(
             clientMid: clientMid,
             hash: existingHash,
@@ -1890,7 +1818,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
       final text = message.text;
       bool wsSent = false;
-      // 转发消息必须走 REST：WS 载荷带不了 forwarded，否则会退化成普通消息。
+      // 转发消息 REST
+      // why no ws
       if (_wsConnected && forwardedMid < 0) {
         if (_contactUid.startsWith('G')) {
           final gid = int.tryParse(_contactUid.substring(1));
@@ -1952,7 +1881,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     }
   }
 
-  /// 媒体消息上传失败（无 hash）时重传：从本地字节/路径重新上传后再发送。
+  /// 媒体消息上传失败
   Future<void> _reuploadFailedMedia(
     ChatMessage message, {
     required String clientMid,
@@ -2007,7 +1936,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     );
   }
 
-  /// REST 回退使用相同的 client mid 避免 dup
   Future<void> _wsAckFallback({
     required String clientMid,
     required String content,
@@ -2082,12 +2010,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
             clearAckError ||
             (status == MessageStatus.sent && ackError == null),
       );
-      // setMessages 会通知房间监听器
       ChatDataService.instance.setMessages(_contactUid, updated);
     }
   }
 
-  /// 把消息标记为发送失败
+  /// 消息标记为发送失败
   void _failMessage(String clientMid, {required String reason}) {
     _updateMessageStatus(
       clientMid,
@@ -2238,7 +2165,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       fileSize = platformFile.bytes?.length ?? 0;
       bytes = platformFile.bytes;
     } else if (platformFile.bytes != null) {
-      // 从剪贴板粘贴：文件内容已在内存中（bytes），没有磁盘路径。
+      // 从剪贴板粘贴
       fileName = platformFile.name;
       filePath = 'clipboard_${DateTime.now().millisecondsSinceEpoch}_$fileName';
       fileSize = platformFile.bytes!.length;
@@ -2326,8 +2253,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
     try {
       final taskManager = ref.read(taskManagerProvider.notifier);
-      // 图片先本地压缩再上传（省流量与存储，原图不出本机）。消息已经在上面
-      // 入列，压缩期间气泡的 pending 转圈就是反馈。
+      // 图片先本地压缩
       var uploadBytes = bytes;
       var uploadName = fileName;
       if (type == MessageType.image) {
@@ -2361,8 +2287,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           fileName: uploadName,
           fileSize: uploadBytes.length,
           mimeType: lookupMimeType(uploadName),
-          // 本地预览继续用原图字节：换成压缩后的字节会让 pending→uploaded
-          // 时重建 MemoryImage，图片要重新解一遍（闪一下）。
+          // 本地预览继续用原图
           bytes: bytes,
           fileHash: hash,
         ),
@@ -2380,9 +2305,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     }
   }
 
-  /// 按 hash 发送文件消息（WS 优先，失败走 REST，WS 发送后 15s 未收到 ack 再补 REST）。
-  ///
-  /// 上传直发（[_sendMediaMessage]）与服务器已有文件直发（[_sendServerFile]）共用。
+  /// 按 hash 发送文件消息
   Future<void> _dispatchFileSend({
     required String clientMid,
     required String hash,
@@ -2395,8 +2318,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     if (uid == null || password == null) return;
 
     bool wsSent = false;
-    // WS 的 message.file 载荷不支持转发标记：转发来的媒体只能走 REST，
-    // 否则对方收到的是普通消息（与 _sendMessageAsync 对转发消息跳过 WS 同理）。
     if (_wsConnected && forwardedMid < 0) {
       if (_contactUid.startsWith('G')) {
         final gid = int.tryParse(_contactUid.substring(1));
@@ -2468,7 +2389,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     TouchFishSnackbarService.instance.show(l10n.chatSendFailed);
   }
 
-  /// 发送服务端已存在的文件（来自 /file/get_user_files），免二次上传。
+  /// 发送服务端已存在的文件
   Future<void> _sendServerFile(
     Map<String, dynamic> file,
     MessageType type,
@@ -2489,8 +2410,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final quoteMid = replyTarget?.mid ?? -1;
     final clientMid = 'c${DateTime.now().microsecondsSinceEpoch}';
     final baseUrl = await TfApiClient.instance.getBaseUrl();
-    // 服务端返回的 download_url 是相对路径，补全为绝对地址，
-    // 与上传直发（_sendMediaMessage）保持一致。
+    // 服务端返回的 download_url 是相对路径
     final mediaPath = (downloadUrl != null && downloadUrl.startsWith('http'))
         ? downloadUrl
         : '$baseUrl/file/get_file/$hash';
@@ -2553,22 +2473,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   }
 
   void _scrollToBottom({bool animated = true}) {
-    _followBottom = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scrollController.hasClients) return;
-      if (animated) {
-        _scrollController.animateTo(
-          _scrollController.position.minScrollExtent,
-          duration: TFMotion.slow,
-          curve: TFMotion.decelerate,
-        );
-      } else {
-        _scrollController.jumpTo(_scrollController.position.minScrollExtent);
-      }
-    });
+    _follower.scrollToBottom(animated: animated);
   }
 
-  /// 跳转后给目标消息一个三下闪烁的落点提示。
+  /// 跳转后目标消息三下闪烁落点提示
   void _flashMessage(int? mid) {
     if (mid == null) return;
     _flashTimer?.cancel();
@@ -2578,12 +2486,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     });
   }
 
-  /// 为「即将跳转到的消息」按需挂一个 GlobalKey。
-  ///
-  /// 返回 true 表示本次新建了 key：调用方需要等一帧让列表用新 key 构建出
-  /// 该 item 后再定位，否则拿不到 context。返回 false 表示 key 已存在。
-  ///
-  /// 这样 key 的数量只与「用户跳转过多少条消息」相关，而不是房间消息总数。
+  /// 即将跳转到的消息
   bool _ensureMessageKey(int mid) {
     if (_messageKeys.containsKey(mid)) return false;
     setState(() => _messageKeys[mid] = GlobalKey(debugLabel: 'msg-$mid'));
@@ -2591,7 +2494,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   }
 
   void _scrollToQuotedMessage(int mid) {
-    _followBottom = false;
+    _follower.stopFollowing();
     _flashMessage(mid);
     final index = _messages.indexWhere((message) => message.mid == mid);
     if (index < 0) return;
@@ -2642,7 +2545,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
   void _scrollToMessageIndex(int index) {
     if (index < 0 || index >= _messages.length) return;
-    _followBottom = false;
+    _follower.stopFollowing();
     final message = _messages[index];
     final mid = message.mid;
     _flashMessage(mid);
@@ -2657,7 +2560,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       return;
     }
 
-    // 目标上下文已就绪：瞬时精确对齐（无动画）
+    // 目标上下文已就绪
     final targetContext = mid != null
         ? _messageKeys[mid]?.currentContext
         : null;
@@ -2670,9 +2573,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       return;
     }
 
-    // 目标不在视口内：分段瞬时逼近。
-    // 一次性 jumpTo 很远会让 ListView.builder 在单帧内布局海量 item 而冻结，
-    // 因此每次只跳约 5 个视口高度，等一帧布局完成后再继续，直到接近目标。
+    // 目标不在视口内
     _setJumpingToMessage(true);
     _jumpStepToMessage(index: index, mid: mid);
   }
@@ -2682,8 +2583,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || index >= _messages.length) return;
       if (!_scrollController.hasClients) {
-        // 列表尚未挂载（如跳转期间房间被切换）：最多等待 60 帧，
-        // 避免列表永远没有客户端时无限空转。
+        // 列表尚未挂载
         if (retry < 60) {
           _jumpStepToMessage(index: index, mid: mid, retry: retry + 1);
         } else {
@@ -2692,7 +2592,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         return;
       }
 
-      // 目标已被构建出来：瞬时精确对齐，跳转完成
+      // 目标已被构建出来
+      // 瞬时精确对齐
       final context = mid != null ? _messageKeys[mid]?.currentContext : null;
       if (context != null) {
         Scrollable.ensureVisible(
@@ -2705,7 +2606,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       }
 
       final position = _scrollController.position;
-      // reverse:true 列表：index=0 为最新（底部），index 越大越旧（越靠上）
+      // reverse:true 列表
+      // index=0 为最新（底部）
+      // index 越大越旧（越靠上）
       final reverseIndex = _messages.length - 1 - index;
       final fraction = _messages.length <= 1
           ? 0.0
@@ -2716,7 +2619,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       final maxStep = position.viewportDimension * 5.0;
 
       if (distance <= maxStep || targetOffset <= 0) {
-        // 已接近目标（或目标就在顶部）：跳最后一段，再精确对齐一次
+        // 已接近目标
         position.jumpTo(
           targetOffset.clamp(
             position.minScrollExtent,
@@ -2727,7 +2630,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         return;
       }
 
-      // 向前推进一段（不超过 maxStep），等待布局后继续
+      // 向前推进一段
       final nextOffset = targetOffset > currentOffset
           ? currentOffset + maxStep
           : currentOffset - maxStep;
@@ -2760,11 +2663,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   }
 
   Future<void> _jumpToMessage(ChatMessage target) async {
-    _followBottom = false;
+    _follower.stopFollowing();
     final roomId = _contactUid;
     final roomGeneration = _roomGeneration;
 
-    // 1. 目标消息已经在当前加载的列表里，直接定位
+    // 目标消息已经在当前加载的列表里，直接定位
     var index = _indexOfMessage(target);
     if (index >= 0) {
       _scrollToMessageIndex(index);
@@ -2777,10 +2680,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       return;
     }
 
-    // 翻页加载期间也进入“跳转中”状态，防止实时消息插入/替换列表打断跳转
+    // 翻页加载期间也进入跳转中
     _setJumpingToMessage(true);
 
-    // 2. 目标不在当前列表，往前翻页加载直到找到或没有更多
+    // 目标不在当前列表
     var exhausted = false;
     var aborted = false;
     var locatedInList = false;
@@ -2788,8 +2691,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     try {
       for (var pageCount = 0; pageCount < maxPages; pageCount++) {
         if (!mounted || roomGeneration != _roomGeneration) return;
-        // 已有加载在进行中（如上滑自动翻页）：等待其完成而不是直接放弃，
-        // 否则目标明明存在也会被误报为"未找到"。
+        // 已有加载在进行中
         if (_isLoadingMessages || _isLoadingOlder) {
           final settled = await _waitForOngoingMessageLoad();
           if (!mounted || roomGeneration != _roomGeneration) return;
@@ -2800,7 +2702,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
             return;
           }
           if (!settled) {
-            // 加载迟迟不结束（如网络卡住）：放弃本次跳转，也不报"未找到"
+            // 加载迟迟不结束
             aborted = true;
             break;
           }
@@ -2845,17 +2747,16 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         }
       }
     } finally {
-      // 如果目标已在列表中被定位并交给分段滚动处理，
-      // 则保持 _isJumpingToMessage = true，由 _jumpFinalAlign 在完成后复位；
-      // 否则（未找到/被中断）在此复位。
+      // 如果目标已在列表中被定位并交给分段滚动处理
+      // 则保持 _isJumpingToMessage = true
+      //由 _jumpFinalAlign 
       if (mounted && !locatedInList) _setJumpingToMessage(false);
     }
 
     if (mounted && exhausted && !aborted) _showJumpMessageNotFound();
   }
 
-  /// 等待并发中的消息加载（自动翻页等）结束，最多等 [timeout]。
-  /// 正常结束返回 true；超时返回 false（调用方应放弃跳转）。
+  /// 等待并发中的消息加载
   Future<bool> _waitForOngoingMessageLoad({
     Duration timeout = const Duration(seconds: 8),
   }) async {
@@ -2898,7 +2799,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         },
       );
     }
-    // 仅私聊展示对方在线点；群聊无单一 uid。
+    // 仅私聊展示对方在线点
     if (_currentRoom!.type == ChatType.group) return avatar;
     final peerUid = int.tryParse(_currentRoom!.id.replaceFirst('U', ''));
     return OnlineAvatarBadge(uid: peerUid, radius: 18, child: avatar);
@@ -3200,9 +3101,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    // 消息列表的订阅不放在页面级 watch：否则房间里每来一条消息都会重建
-    // 整个页面（AppBar / 输入栏 / 侧栏 / 置顶条全部跟着重跑）。
-    // 它由下方列表区域的 Consumer 自己订阅，这里只 watch 页面骨架。
+    // 消息列表的订阅不在页 watch
+    // 否则房间里每来一条消息都会重建
     final chatRoomState = chatRoomStateProvider(_contactUid);
     final scrollController = ref.watch(
       chatRoomState.select((s) => s.scrollController),
@@ -3225,11 +3125,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       );
     }
 
-    // 捕获成局部量，捕获是安全的。
+    // 捕获成局部量
+    // 安全
     final room = _currentRoom!;
 
     final colorScheme = Theme.of(context).colorScheme;
-    // 与 ChatShellScreen 的分栏判断保持一致：分栏时「关闭」，单栏时「返回」。
     final isWide = WideScreenHelper.isExpanded(context);
     final essenceButton = IconButton(
       icon: const Icon(Icons.auto_awesome),
@@ -3544,7 +3444,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
             if (!isSelectionMode) ...[
               // WS 断开时明确提示
               const WsConnectionStrip(),
-              // 有未发出的消息时给一条汇总 + 一键重发
               FailedMessagesBar(
                 count: _failedMessages.length,
                 onRetryAll: _retryAllFailed,
