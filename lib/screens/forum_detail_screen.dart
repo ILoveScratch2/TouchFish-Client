@@ -74,6 +74,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   bool _isLoadingMore = false;
   bool _loadMoreFailed = false;
 
+  int _listSeq = 0;
+
   @override
   void initState() {
     super.initState();
@@ -180,6 +182,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       if (!mounted || widget.forumId != fid.toString()) return;
       final known = _posts.map((post) => post.id).toSet();
       setState(() {
+        if (_pinnedPosts.isEmpty) {
+          final pinnedFromPage = page.posts.where((post) => post.isPinned);
+          if (pinnedFromPage.isNotEmpty) {
+            _pinnedPosts = pinnedFromPage.toList();
+          }
+        }
         _posts = [
           ..._posts,
           ...page.posts.where(
@@ -224,6 +232,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   /// 拉取论坛帖子列表。
   Future<void> _loadData({bool showLoading = true}) async {
+    _listSeq++;
     setState(() {
       if (showLoading) _isLoading = true;
       _error = null;
@@ -253,29 +262,24 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       }
 
       final postPage =
-          results[1] as ({
-            List<ForumPost> posts,
-            bool hasMore,
-            int? nextBeforePid,
-            int? pinnedPid,
-          });
-      final allPosts = postPage.posts;
-      _pinnedPosts = allPosts.where((p) => p.isPinned).toList();
-      _posts = allPosts.where((p) => !p.isPinned).toList()
-        ..sort(ForumPost.compareNewestFirst);
+          results[1]
+              as ({
+                List<ForumPost> posts,
+                bool hasMore,
+                int? nextBeforePid,
+                int? pinnedPid,
+              });
+      final split = await _resolvePinned(
+        fid,
+        postPage.posts,
+        postPage.pinnedPid,
+      );
+      _pinnedPosts = split.pinned;
+      _posts = split.normal;
       _hasMorePosts = postPage.hasMore;
       _nextBeforePid = postPage.nextBeforePid;
       _isLoadingMore = false;
       _loadMoreFailed = false;
-      final pinnedPid = postPage.pinnedPid;
-      if (pinnedPid != null &&
-          !allPosts.any((p) => p.id == pinnedPid.toString())) {
-        // 置顶帖不在当前页：单独补一条，避免“置顶”在分页后消失
-        final pinned = await TfApiClient.instance.getPost(fid, pinnedPid);
-        if (pinned != null) {
-          _pinnedPosts = [pinned.copyWith(isPinned: true)];
-        }
-      }
       if (results.length > 2 && results[2] is List<Map<String, int>>) {
         final memberships = results[2] as List<Map<String, int>>;
         _isMember = memberships.any(
@@ -296,9 +300,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _identity = null;
       }
 
-      await _prefetchProfiles(
-        allPosts,
-      ).timeout(const Duration(milliseconds: 900), onTimeout: () {});
+      await _prefetchProfiles([
+        ...split.pinned,
+        ...split.normal,
+      ]).timeout(const Duration(milliseconds: 900), onTimeout: () {});
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       talker.error('ForumDetailScreen: _loadData failed', e);
@@ -347,6 +352,26 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
   }
 
+  Future<({List<ForumPost> pinned, List<ForumPost> normal})> _resolvePinned(
+    int fid,
+    List<ForumPost> posts,
+    int? pinnedPid,
+  ) async {
+    final split = ForumPost.splitPinned(posts, pinnedPid);
+    final missingPinnedPid = split.missingPinnedPid;
+    if (missingPinnedPid == null) {
+      return (pinned: split.pinned, normal: split.normal);
+    }
+    final fetched = await TfApiClient.instance.getPost(fid, missingPinnedPid);
+    if (fetched == null) {
+      return (pinned: split.pinned, normal: split.normal);
+    }
+    return (
+      pinned: [fetched.copyWith(isPinned: true)],
+      normal: split.normal.where((post) => post.id != fetched.id).toList(),
+    );
+  }
+
   /// 只刷新帖子列表
   Future<void> _refreshPostsOnly() async {
     final fid = int.tryParse(widget.forumId);
@@ -356,16 +381,20 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     final limit = loaded > _postPageSize
         ? (loaded > 100 ? 100 : loaded)
         : _postPageSize;
+    final seq = ++_listSeq;
     try {
       final page = await TfApiClient.instance.getPostList(fid, limit: limit);
       if (!mounted || widget.forumId != fid.toString()) return;
-      final allPosts = page.posts;
-      await _prefetchProfiles(allPosts);
-      if (!mounted) return;
+      final split = await _resolvePinned(fid, page.posts, page.pinnedPid);
+      // 期间又发起了更新的刷新（或整页加载），丢弃本次结果
+      if (seq != _listSeq || !mounted || widget.forumId != fid.toString()) {
+        return;
+      }
+      await _prefetchProfiles([...split.pinned, ...split.normal]);
+      if (seq != _listSeq || !mounted) return;
       setState(() {
-        _pinnedPosts = allPosts.where((p) => p.isPinned).toList();
-        _posts = allPosts.where((p) => !p.isPinned).toList()
-          ..sort(ForumPost.compareNewestFirst);
+        _pinnedPosts = split.pinned;
+        _posts = split.normal;
         _hasMorePosts = page.hasMore;
         _nextBeforePid = page.nextBeforePid;
         _isLoadingMore = false;
@@ -396,9 +425,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                _errorText(l10n),
-              ),
+              Text(_errorText(l10n)),
               const SizedBox(height: 8),
               TextButton(onPressed: () => _loadData(), child: Text(l10n.retry)),
             ],
@@ -555,9 +582,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              _errorText(l10n),
-            ),
+            Text(_errorText(l10n)),
             const SizedBox(height: 8),
             // 错误页重试仍走带loading的整块刷新
             TextButton(onPressed: () => _loadData(), child: Text(l10n.retry)),
@@ -872,13 +897,18 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   /// 应用筛选后的帖
   List<ForumPost> get _visiblePosts {
     final myUid = AuthState.instance.uid?.toString();
-    return _posts.where((post) {
-      return passesTriState(
-            _filterAttachment,
-            post.attachments.isNotEmpty,
-          ) &&
-          passesTriState(_filterMine, myUid != null && post.authorUid == myUid);
-    }).toList(growable: false);
+    return _posts
+        .where((post) {
+          return passesTriState(
+                _filterAttachment,
+                post.attachments.isNotEmpty,
+              ) &&
+              passesTriState(
+                _filterMine,
+                myUid != null && post.authorUid == myUid,
+              );
+        })
+        .toList(growable: false);
   }
 
   Widget _buildPostFilterBar(BuildContext context, AppLocalizations l10n) {
@@ -1216,4 +1246,3 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     if (ok) _refresh();
   }
 }
-

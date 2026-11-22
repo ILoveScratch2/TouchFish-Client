@@ -6,7 +6,9 @@ DateTime parseForumTime(dynamic value) {
   if (value == null) return DateTime.fromMillisecondsSinceEpoch(0);
   if (value is DateTime) return value;
   if (value is num) {
-    return DateTime.fromMillisecondsSinceEpoch(_toEpochMillis(value.toDouble()));
+    return DateTime.fromMillisecondsSinceEpoch(
+      _toEpochMillis(value.toDouble()),
+    );
   }
   final text = value.toString().trim();
   if (text.isEmpty) return DateTime.fromMillisecondsSinceEpoch(0);
@@ -215,6 +217,27 @@ class ForumPost {
 
   static int compareNewestFirst(ForumPost left, ForumPost right) {
     return right.createdAt.compareTo(left.createdAt);
+  }
+
+  static ({
+    List<ForumPost> pinned,
+    List<ForumPost> normal,
+    int? missingPinnedPid,
+  })
+  splitPinned(List<ForumPost> posts, int? pinnedPid) {
+    final pinned = <ForumPost>[];
+    final normal = <ForumPost>[];
+    for (final post in posts) {
+      (post.isPinned ? pinned : normal).add(post);
+    }
+    normal.sort(compareNewestFirst);
+    final missingPinnedPid =
+        pinned.isEmpty &&
+            pinnedPid != null &&
+            !posts.any((post) => post.id == pinnedPid.toString())
+        ? pinnedPid
+        : null;
+    return (pinned: pinned, normal: normal, missingPinnedPid: missingPinnedPid);
   }
 
   factory ForumPost.fromJson(Map<String, dynamic> json) {
