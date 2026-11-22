@@ -48,6 +48,9 @@ class MarkdownRenderer extends StatefulWidget {
   final bool selectable;
   final bool fitContent;
 
+  /// 正文字号倍率
+  final double contentScale;
+
   final SelectableRegionContextMenuBuilder? selectionContextMenuBuilder;
 
   const MarkdownRenderer({
@@ -55,6 +58,7 @@ class MarkdownRenderer extends StatefulWidget {
     required this.data,
     this.selectable = false,
     this.fitContent = true,
+    this.contentScale = 1.0,
     this.selectionContextMenuBuilder,
   });
 
@@ -75,12 +79,14 @@ class _RenderCacheKey {
   final String data;
   final bool selectable;
   final bool spoilerRevealed;
+  final double contentScale;
   final ThemeData theme;
 
   const _RenderCacheKey({
     required this.data,
     required this.selectable,
     required this.spoilerRevealed,
+    required this.contentScale,
     required this.theme,
   });
 
@@ -90,13 +96,19 @@ class _RenderCacheKey {
       other.data == data &&
       other.selectable == selectable &&
       other.spoilerRevealed == spoilerRevealed &&
+      other.contentScale == contentScale &&
       // identical 走快速路径
       // 退到值比较是为了祖先每帧 new 一个等价 ThemeData的情形
       (identical(other.theme, theme) || other.theme == theme);
 
   @override
-  int get hashCode =>
-      Object.hash(data, selectable, spoilerRevealed, theme.hashCode);
+  int get hashCode => Object.hash(
+    data,
+    selectable,
+    spoilerRevealed,
+    contentScale,
+    theme.hashCode,
+  );
 }
 
 class _MarkdownRendererState extends State<MarkdownRenderer> {
@@ -109,6 +121,13 @@ class _MarkdownRendererState extends State<MarkdownRenderer> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final isDark = theme.brightness == Brightness.dark;
+    final contentScale = widget.contentScale > 0 ? widget.contentScale : 1.0;
+    TextStyle scaleStyle(TextStyle? base, double fallbackSize) {
+      final resolved = base ?? TextStyle(fontSize: fallbackSize);
+      return resolved.copyWith(
+        fontSize: (resolved.fontSize ?? fallbackSize) * contentScale,
+      );
+    }
     final config = isDark
         ? MarkdownConfig.darkConfig
         : MarkdownConfig.defaultConfig;
@@ -151,6 +170,7 @@ class _MarkdownRendererState extends State<MarkdownRenderer> {
       data: widget.data,
       selectable: widget.selectable,
       spoilerRevealed: _spoilerRevealed,
+      contentScale: contentScale,
       theme: theme,
     );
     if (_cachedWidgets == null || _cacheKey != cacheKey) {
@@ -170,7 +190,7 @@ class _MarkdownRendererState extends State<MarkdownRenderer> {
                 CodeConfig(
                   style:
                       _codeTextStyle(
-                        fontSize: 13,
+                        fontSize: 13 * contentScale,
                         color: isDark
                             ? const Color(0xffe0e0e0)
                             : const Color(0xff283237),
@@ -182,21 +202,23 @@ class _MarkdownRendererState extends State<MarkdownRenderer> {
                 ),
                 isDark
                     ? PreConfig.darkConfig.copy(
-                        textStyle: _codeTextStyle(),
-                        styleNotMatched: _codeTextStyle(),
+                        textStyle: _codeTextStyle(
+                          fontSize: 14 * contentScale,
+                        ),
+                        styleNotMatched: _codeTextStyle(
+                          fontSize: 14 * contentScale,
+                        ),
                         decoration: codeBlockDecoration,
                       )
                     : PreConfig(
                         theme: a11yLightTheme,
-                        textStyle: _codeTextStyle(),
-                        styleNotMatched: _codeTextStyle(),
+                        textStyle: _codeTextStyle(fontSize: 14 * contentScale),
+                        styleNotMatched: _codeTextStyle(
+                          fontSize: 14 * contentScale,
+                        ),
                         decoration: codeBlockDecoration,
                       ),
-                PConfig(
-                  textStyle:
-                      theme.textTheme.bodyMedium ??
-                      const TextStyle(fontSize: 14),
-                ),
+                PConfig(textStyle: scaleStyle(theme.textTheme.bodyMedium, 14)),
                 CheckBoxConfig(
                   builder: (checked) => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -207,42 +229,50 @@ class _MarkdownRendererState extends State<MarkdownRenderer> {
                   ),
                 ),
                 Heading1Config(
-                  style:
-                      theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ) ??
-                      const TextStyle(
-                        fontSize: 32,
-                        height: 40 / 32,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: scaleStyle(
+                    theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ) ??
+                        const TextStyle(
+                          fontSize: 32,
+                          height: 40 / 32,
+                          fontWeight: FontWeight.bold,
+                        ),
+                    32,
+                  ),
                 ),
                 Heading2Config(
-                  style:
-                      theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ) ??
-                      const TextStyle(
-                        fontSize: 24,
-                        height: 30 / 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: scaleStyle(
+                    theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ) ??
+                        const TextStyle(
+                          fontSize: 24,
+                          height: 30 / 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                    24,
+                  ),
                 ),
                 Heading3Config(
-                  style:
-                      theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ) ??
-                      const TextStyle(
-                        fontSize: 20,
-                        height: 25 / 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: scaleStyle(
+                    theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ) ??
+                        const TextStyle(
+                          fontSize: 20,
+                          height: 25 / 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                    20,
+                  ),
                 ),
                 PreConfig(
                   theme: isDark ? a11yDarkTheme : a11yLightTheme,
-                  textStyle: _codeTextStyle(),
-                  styleNotMatched: _codeTextStyle(),
+                  textStyle: _codeTextStyle(fontSize: 14 * contentScale),
+                  styleNotMatched: _codeTextStyle(
+                    fontSize: 14 * contentScale,
+                  ),
                   decoration: codeBlockDecoration,
                   builder: (code, language) => Stack(
                     children: [
@@ -258,6 +288,7 @@ class _MarkdownRendererState extends State<MarkdownRenderer> {
                             child: Text.rich(
                               TextSpan(
                                 style: _codeTextStyle(
+                                  fontSize: 14 * contentScale,
                                   color: isDark
                                       ? const Color(0xffd6d6d6)
                                       : const Color(0xff24292f),
@@ -280,8 +311,12 @@ class _MarkdownRendererState extends State<MarkdownRenderer> {
                                   // highLightSpans 内部做 nodeStyle.merge(textStyle)，
                                   // textStyle 里的 color 会覆盖每个语法 token 的高亮颜色，
                                   // 导致所有代码变成单色、看起来没有语法高亮。
-                                  textStyle: _codeTextStyle(),
-                                  styleNotMatched: _codeTextStyle(),
+                                  textStyle: _codeTextStyle(
+                                    fontSize: 14 * contentScale,
+                                  ),
+                                  styleNotMatched: _codeTextStyle(
+                                    fontSize: 14 * contentScale,
+                                  ),
                                 ),
                               ),
                             ),

@@ -458,6 +458,22 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     );
   }
 
+  /// nodel
+  /// a very important note
+  /// 正文阅读字号倍率
+  ///
+  /// 使用 MediaQuery.textScaler 放大正文不可行
+  /// Markdown 的列表项文字渲染在嵌套的 Text.rich 整树放大会导致列表项比段落多一次
+  static const double _kPostContentScale = 1.2;
+
+  TextStyle? _postBodyTextStyle(BuildContext context) {
+    final base = Theme.of(context).textTheme.bodyLarge;
+    if (base == null) return null;
+    return base.copyWith(
+      fontSize: (base.fontSize ?? 16) * _kPostContentScale,
+    );
+  }
+
   Widget _buildPostContent(
     BuildContext context,
     ForumPost post,
@@ -466,15 +482,19 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     if (_stickerTestPattern.hasMatch(post.content)) {
       return StickerTextRenderer(
         text: post.content,
-        style: Theme.of(context).textTheme.bodyLarge,
+        style: _postBodyTextStyle(context),
       );
     }
     if (enableMarkdown) {
-      return MarkdownRenderer(data: post.content, selectable: true);
+      return MarkdownRenderer(
+        data: post.content,
+        selectable: true,
+        contentScale: _kPostContentScale,
+      );
     }
     return SelectableText(
       post.content,
-      style: Theme.of(context).textTheme.bodyLarge,
+      style: _postBodyTextStyle(context),
     );
   }
 
@@ -544,10 +564,8 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
           ),
         ],
         const SizedBox(height: 12),
-        // 正文比列表大一号
-        _ReadingScope(
-          child: _buildPostContent(context, post, enableMarkdown),
-        ),
+        // 正文比评论大一号
+        _buildPostContent(context, post, enableMarkdown),
         if (post.attachments.isNotEmpty)
           ForumAttachmentsRow(attachments: post.attachments),
         const SizedBox(height: 8),
@@ -1086,26 +1104,4 @@ class _PaneEnterAnimationState extends State<_PaneEnterAnimation>
   }
 }
 
-/// 正文阅读缩放：在系统字号基础上再放大 1.2
-///
-///
-/// Android 14 起的 非线性字号曲线会 基准 * 系数
-/// 大字号段不会按系统曲线收敛
-/// 要严格保留曲线，需要一个委托给原 scaler 的 `TextScaler` 实现，当前未做
-class _ReadingScope extends StatelessWidget {
-  const _ReadingScope({required this.child});
 
-  final Widget child;
-
-  static const double _factor = 1.2;
-
-  @override
-  Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    final base = media.textScaler.scale(1.0);
-    return MediaQuery(
-      data: media.copyWith(textScaler: TextScaler.linear(base * _factor)),
-      child: child,
-    );
-  }
-}
