@@ -45,7 +45,7 @@ void main() {
         cachedRooms: const {},
         fetchingRooms: const {},
       );
-      expect(missing, ['U9']);
+      expect(missing, ['U0', 'U9']);
     });
 
     test('cached or fetching senders are not requested again', () {

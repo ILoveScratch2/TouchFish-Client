@@ -148,12 +148,12 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
             final owner = _previewMembers.firstWhere(
               (m) => m.role == 'owner',
               orElse: () => const TfGroupPreviewMember(
-                uid: 0,
+                uid: -1,
                 username: '',
                 role: '',
               ),
             );
-            if (owner.uid != 0) _creatorUid = owner.uid;
+            if (owner.uid >= 0) _creatorUid = owner.uid;
             if (owner.username.isNotEmpty) _creator = owner.username;
           }
         } catch (e) {

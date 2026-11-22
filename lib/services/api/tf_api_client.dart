@@ -1847,12 +1847,16 @@ class TfApiClient {
     }
   }
 
+  @visibleForTesting
+  static List<int> normalizeUidsForLookup(Iterable<int> uids) =>
+      uids.where((uid) => uid >= 0).toSet().toList();
+
   /// 批量取用户公开信息
   Future<Map<int, UserProfile?>> getUsersByUids(
     Iterable<int> uids, {
     int avatarVersion = 0,
   }) async {
-    final wanted = uids.where((uid) => uid > 0).toSet().toList();
+    final wanted = normalizeUidsForLookup(uids);
     if (wanted.isEmpty) return const {};
     final baseUrl = await getBaseUrl();
     final result = <int, UserProfile?>{};

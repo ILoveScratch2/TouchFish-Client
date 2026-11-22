@@ -1929,9 +1929,11 @@ class ChatDataService extends ChangeNotifier {
     final seen = <int>{};
     for (final message in messages) {
       final senderUid = message.senderUid;
+      // 0 是合法 UID
+      // TouchFish UID 为自然数
+      // hywyf
       if (senderUid == null ||
           senderUid == myUid ||
-          senderUid == 0 ||
           message.isMe ||
           !seen.add(senderUid)) {
         continue;

@@ -632,7 +632,9 @@ class ChatMessage {
         mid?.toString() ??
         '${dt.millisecondsSinceEpoch}-${senderUid ?? 0}-${clientMid ?? roomSeq?.toString() ?? ''}';
     final suid = senderUid;
-    final resolvedName = isMe ? null : (senderName ?? 'User $suid');
+    final resolvedName = isMe
+        ? null
+        : (senderName ?? (suid == null ? 'User' : 'User $suid'));
     final quoteMid = _asInt(json['quote']);
     final quoteRaw =
         json['quote_preview'] ??
@@ -763,14 +765,16 @@ class ChatMessage {
     final content = notification.content;
     final clientMid = notification.clientMid;
     final rawSenderUid = notification.senderUid;
-    final senderUid = rawSenderUid ?? 0;
+    final senderUid = rawSenderUid;
     final serverMid = notification.mid;
 
-    final isMe = senderUid == myUid;
+    final isMe = senderUid != null && senderUid == myUid;
     final dt = notification.dateTime;
     final id = serverMid?.toString() ?? notification.timeStamp.toString();
     final suid = rawSenderUid;
-    final resolvedName = isMe ? null : (senderName ?? 'User $senderUid');
+    final resolvedName = isMe
+        ? null
+        : (senderName ?? (senderUid == null ? 'User' : 'User $senderUid'));
 
     if (event == 'message.redirect') {
       final mergedForward = MergedForwardPreview.parse(content);
@@ -902,7 +906,13 @@ class ChatMessage {
   factory ChatMessage.fromMessageRecord(Map<String, dynamic> json, int myUid) {
     final mid = (json['mid'] as num?)?.toInt();
     final clientMid = json['client_mid'] as String?;
-    final senderUid = (json['sender_uid'] as num?)?.toInt() ?? 0;
+    // User 0 是 汪昱帆 啊
+    // 这个 神秘 DPSK 写代码不测试的吗
+    // 亏 你 给 我 写 六百多个 测试
+    // 还 专门 检测 必须 排除 细数繁星
+    // 真是 让 区（我是区） 无语
+    // 果然是 吃 白饭 的 fat fish
+    final senderUid = (json['sender_uid'] as num?)?.toInt();
     final content = json['content'] as String? ?? '';
     final contentType = json['content_type'] as String? ?? 'plain';
     final sendTime = (json['send_time'] as num?)?.toDouble() ?? 0.0;
@@ -924,7 +934,7 @@ class ChatMessage {
         .toList();
     final roomSeq = _asInt(json['room_seq']);
 
-    final isMe = senderUid == myUid;
+    final isMe = senderUid != null && senderUid == myUid;
     final dt = DateTime.fromMillisecondsSinceEpoch((sendTime * 1000).toInt());
     final deletedAt = _dateTimeFromServer(json['deleted_at']);
 
@@ -932,7 +942,7 @@ class ChatMessage {
       return ChatMessage(
         id:
             mid?.toString() ??
-            '${dt.millisecondsSinceEpoch}-$senderUid-${clientMid ?? roomSeq?.toString() ?? ''}',
+            '${dt.millisecondsSinceEpoch}-${senderUid ?? 0}-${clientMid ?? roomSeq?.toString() ?? ''}',
         mid: mid,
         clientMid: clientMid,
         senderUid: senderUid,
@@ -955,7 +965,7 @@ class ChatMessage {
       return ChatMessage(
         id:
             mid?.toString() ??
-            '${dt.millisecondsSinceEpoch}-$senderUid-${clientMid ?? roomSeq?.toString() ?? ''}',
+            '${dt.millisecondsSinceEpoch}-${senderUid ?? 0}-${clientMid ?? roomSeq?.toString() ?? ''}',
         mid: mid,
         clientMid: clientMid,
         senderUid: senderUid,
@@ -1001,7 +1011,7 @@ class ChatMessage {
       return ChatMessage(
         id:
             mid?.toString() ??
-            '${dt.millisecondsSinceEpoch}-$senderUid-${clientMid ?? roomSeq?.toString() ?? ''}',
+            '${dt.millisecondsSinceEpoch}-${senderUid ?? 0}-${clientMid ?? roomSeq?.toString() ?? ''}',
         mid: mid,
         clientMid: clientMid,
         senderUid: senderUid,
@@ -1037,7 +1047,7 @@ class ChatMessage {
       return ChatMessage(
         id:
             mid?.toString() ??
-            '${dt.millisecondsSinceEpoch}-$senderUid-${clientMid ?? roomSeq?.toString() ?? ''}',
+            '${dt.millisecondsSinceEpoch}-${senderUid ?? 0}-${clientMid ?? roomSeq?.toString() ?? ''}',
         mid: mid,
         clientMid: clientMid,
         senderUid: senderUid,
@@ -1054,7 +1064,7 @@ class ChatMessage {
     return ChatMessage(
       id:
           mid?.toString() ??
-          '${dt.millisecondsSinceEpoch}-$senderUid-${clientMid ?? roomSeq?.toString() ?? ''}',
+          '${dt.millisecondsSinceEpoch}-${senderUid ?? 0}-${clientMid ?? roomSeq?.toString() ?? ''}',
       mid: mid,
       clientMid: clientMid,
       senderUid: senderUid,

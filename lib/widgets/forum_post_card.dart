@@ -155,7 +155,7 @@ class _ForumPostCardState extends State<ForumPostCard> {
       final uid = int.tryParse(authorUid);
       if (uid != null) {
         author = await _fetchAuthor(uid);
-        cache?[authorUid] = author;
+        if (author != null) cache?[authorUid] = author;
       }
     }
     // 新服务端在列表里直接带评论摘要；没有摘要时才退回逐帖拉取（旧服务器）
@@ -176,7 +176,7 @@ class _ForumPostCardState extends State<ForumPostCard> {
         final uid = int.tryParse(lastCommentUid);
         if (uid != null) {
           featuredAuthor = await _fetchAuthor(uid);
-          cache?[lastCommentUid] = featuredAuthor;
+          if (featuredAuthor != null) cache?[lastCommentUid] = featuredAuthor;
         }
       }
     }
