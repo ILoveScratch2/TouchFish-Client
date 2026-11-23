@@ -1513,12 +1513,19 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
   }) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
+    final quoteAttachment = quote.contentType == 'file' && quote.fileHash != null
+        ? FileAttachment(
+            hash: quote.fileHash!,
+            fileName: quote.fileName ?? quote.fileHash!,
+          )
+        : null;
+    final quoteIsAudio = quoteAttachment?.isAudio ?? false;
     final text = quote.isDeleted
         ? l10n.messageQuoteRecalled
         : quote.isMissing
         ? l10n.messageQuoteMissing
         : quote.contentType == 'file'
-        ? l10n.mediaFileMessage
+        ? (quoteIsAudio ? l10n.mediaAudioMessage : l10n.mediaFileMessage)
         : quote.content;
     final senderLabel = quote.senderName?.trim().isNotEmpty == true
         ? quote.senderName!
@@ -1575,7 +1582,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
                     context,
                   ).textTheme.bodySmall?.copyWith(color: textColor),
                 ),
-                if (quote.contentType == 'file' && quote.fileHash != null)
+                if (quoteAttachment != null && !quoteIsAudio)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: ConstrainedBox(
@@ -1585,10 +1592,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
                         maxHeight: 96,
                       ),
                       child: FileAttachmentView(
-                        attachment: FileAttachment(
-                          hash: quote.fileHash!,
-                          fileName: quote.fileName ?? quote.fileHash!,
-                        ),
+                        attachment: quoteAttachment,
                         compact: true,
                       ),
                     ),

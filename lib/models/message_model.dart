@@ -1151,9 +1151,29 @@ class ChatMessage {
     final status = rawStatus >= 0 && rawStatus < MessageStatus.values.length
         ? MessageStatus.values[rawStatus]
         : MessageStatus.sent;
-    final type = rawType >= 0 && rawType < MessageType.values.length
+    var type = rawType >= 0 && rawType < MessageType.values.length
         ? MessageType.values[rawType]
         : MessageType.text;
+    if (type == MessageType.file && media != null) {
+      final name = media.fileName;
+      if (name != null && name.isNotEmpty) {
+        final probe = FileAttachment(
+          hash: media.fileHash ?? media.path,
+          fileName: name,
+        );
+        final derived = probe.isImage
+            ? MessageType.image
+            : probe.isVideo
+            ? MessageType.video
+            : probe.isAudio
+            ? MessageType.audio
+            : null;
+        if (derived != null) {
+          type = derived;
+          media = media.copyWith(mimeType: probe.resolvedMimeType);
+        }
+      }
+    }
     var senderUid = _asInt(json['senderUid']);
     final legacyIsMe = json['isMe'] as bool? ?? false;
     if (senderUid == null && activeUid != null && legacyIsMe) {

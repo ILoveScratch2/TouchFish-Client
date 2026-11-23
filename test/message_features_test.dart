@@ -76,6 +76,45 @@ void main() {
     );
   });
 
+  test('content_type coding is not treated as mime, m4a voice stays audio', () {
+    final attachment = FileAttachment.fromMap({
+      'file_hash': 'voice-hash',
+      'file_name': 'voice_1795349646494.m4a',
+      'content_type': 'file',
+    });
+    expect(attachment.mimeType, 'audio/mp4');
+    expect(attachment.isAudio, isTrue);
+    expect(attachment.isPreviewable, isTrue);
+
+    final byFileType = FileAttachment.fromMap({
+      'file_hash': 'voice-hash-2',
+      'file_name': 'voice_2',
+      'file_type': 'm4a',
+    });
+    expect(byFileType.mimeType, 'audio/mp4');
+  });
+
+  test('cached file message with audio filename is reclassified on load', () {
+    final cached = ChatMessage.fromJson({
+      'id': 'c1',
+      'mid': 99,
+      'senderUid': 2,
+      'text': '[AUDIO]',
+      'timestamp': 1700000000000,
+      'type': MessageType.file.index,
+      'media': {
+        'path': 'h1',
+        'fileName': 'voice_1795349646494.m4a',
+        'mimeType': 'file',
+        'fileHash': 'h1',
+        'durationMs': 3200,
+      },
+    }, activeUid: 1);
+
+    expect(cached.type, MessageType.audio);
+    expect(cached.media?.mimeType, 'audio/mp4');
+  });
+
   test(
     'automatic preview honors file type, known size and configured limit',
     () {

@@ -29,11 +29,17 @@ class FileAttachment {
     final fileName = rawFileName == null || rawFileName.toString().isEmpty
         ? hash
         : rawFileName.toString();
-    final rawMime = (json['mime_type'] ?? json['content_type'])?.toString();
+    final rawMime = _asMimeType(json['mime_type']) ??
+        _asMimeType(json['content_type']);
     final fileType = json['file_type']?.toString();
-    // Prefer file_type over generic/octet-stream, fall back to extension.
-    final mimeType = (fileType != null ? _mimeFromFileType(fileType) : null)
-        ?? (rawMime != null && rawMime != 'application/octet-stream' ? rawMime : null)
+    final extension = json['extension']?.toString();
+    // 优先级：file_type（服务端一般存扩展名）→ 显式 MIME → extension 字段 → 文件扩展名。
+    // 注意：消息记录里的 content_type 是内容编码（plain / file / redirect），
+    // 不是 MIME。若把它当 MIME 用，缺 file_type 映射的类型（如 m4a 语音）
+    // 会得到 mimeType='file'，进而被渲染成文件卡片而不是语音气泡。
+    final mimeType = _mimeFromFileType(fileType)
+        ?? rawMime
+        ?? _mimeFromFileType(extension)
         ?? lookupMimeType(fileName);
     final hasThumb =
         json['has_thumb'] == true ||
@@ -78,23 +84,56 @@ class FileAttachment {
     return w / h;
   }
 
-  static String? _mimeFromFileType(String? fileType) {
-    if (fileType == null) return null;
-    return switch (fileType.toLowerCase()) {
-      'png' => 'image/png',
-      'jpg' || 'jpeg' => 'image/jpeg',
-      'gif' => 'image/gif',
-      'bmp' => 'image/bmp',
-      'svg' => 'image/svg+xml',
-      'tgs' || 'webp' => 'image/webp',
-      'mp4' => 'video/mp4',
-      'webm' => 'video/webm',
-      'mp3' || 'mpeg' => 'audio/mpeg',
-      'wav' => 'audio/wav',
-      'ogg' => 'audio/ogg',
-      _ => null,
-    };
+  static String? _asMimeType(Object? value) {
+    final text = value?.toString().trim().toLowerCase();
+    if (text == null || text.isEmpty || !text.contains('/')) return null;
+    if (text == 'application/octet-stream' ||
+        text == 'binary/octet-stream' ||
+        text == 'unknown/unknown') {
+      return null;
+    }
+    return text;
   }
+  static String? _mimeFromFileType(String? fileType) {
+    final raw = fileType?.trim().toLowerCase();
+    if (raw == null || raw.isEmpty) return null;
+    if (raw.contains('/')) return _asMimeType(raw);
+    final ext = raw.startsWith('.') ? raw.substring(1) : raw;
+    return _extensionMimeTypes[ext];
+  }
+
+  static const Map<String, String> _extensionMimeTypes = {
+    // 图片
+    'png': 'image/png',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'gif': 'image/gif',
+    'bmp': 'image/bmp',
+    'svg': 'image/svg+xml',
+    'tgs': 'image/webp',
+    'webp': 'image/webp',
+    // 视频
+    'mp4': 'video/mp4',
+    'm4v': 'video/x-m4v',
+    'webm': 'video/webm',
+    'mov': 'video/quicktime',
+    'mkv': 'video/x-matroska',
+    'avi': 'video/x-msvideo',
+    '3gp': 'video/3gpp',
+    // 音频
+    'm4a': 'audio/mp4',
+    'mp4a': 'audio/mp4',
+    'aac': 'audio/aac',
+    'mp3': 'audio/mpeg',
+    'mpeg': 'audio/mpeg',
+    'wav': 'audio/wav',
+    'ogg': 'audio/ogg',
+    'oga': 'audio/ogg',
+    'opus': 'audio/opus',
+    'weba': 'audio/webm',
+    'amr': 'audio/amr',
+    'flac': 'audio/x-flac',
+  };
 
   String get resolvedMimeType => mimeType ?? lookupMimeType(fileName) ?? '';
 

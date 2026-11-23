@@ -614,6 +614,43 @@ void main() {
       }, 1);
       expect(unknown.type, MessageType.file);
     });
+
+    test('voice records without mime_type stay audio (m4a regression)', () {
+      final voice = ChatMessage.fromMessageRecord({
+        'mid': 16,
+        'sender_uid': 2,
+        'content': 'h1',
+        'content_type': 'file',
+        'file_hash': 'h1',
+        'send_time': 1700000000.0,
+        'room_seq': 26,
+        'deleted': 0,
+        'duration': 3200,
+        'file': {
+          'file_name': 'voice_1795349646494.m4a',
+          'filename': 'voice_1795349646494.m4a',
+          'file_type': 'm4a',
+          'extension': '.m4a',
+          'size': 19968,
+        },
+      }, 1);
+
+      expect(voice.type, MessageType.audio);
+      expect(voice.media?.mimeType, 'audio/mp4');
+      expect(voice.media?.durationMs, 3200);
+      final voiceByExtension = ChatMessage.fromMessageRecord({
+        'mid': 17,
+        'sender_uid': 2,
+        'content': 'h2',
+        'content_type': 'file',
+        'file_hash': 'h2',
+        'send_time': 1700000000.0,
+        'room_seq': 27,
+        'deleted': 0,
+        'file': {'file_name': 'voice_2', 'extension': '.m4a'},
+      }, 1);
+      expect(voiceByExtension.type, MessageType.audio);
+    });
   });
 
   group('adoptServerBaseline', () {
