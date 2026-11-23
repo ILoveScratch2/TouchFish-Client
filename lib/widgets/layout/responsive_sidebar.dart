@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../utils/wide_screen_helper.dart';
+import '../app_alert_dialog.dart' show isDesktopWindowed;
+import '../custom_title_bar.dart';
 
 /// 详情/辅助面板的统一入口（Phase 5 #11）。
 ///
@@ -33,6 +35,7 @@ class ResponsiveSidebar {
     final isWide = WideScreenHelper.isWide(context);
     final resolvedBarrier =
         barrierColor ?? Colors.black.withValues(alpha: 0.32);
+    final topInset = isDesktopWindowed ? CustomTitleBar.height : 0.0;
 
     if (!isWide) {
       return showModalBottomSheet<T>(
@@ -55,11 +58,12 @@ class ResponsiveSidebar {
         return Align(
           alignment: Alignment.centerRight,
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.fromLTRB(12, 12 + topInset, 12, 12),
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxWidth: width,
-                maxHeight: MediaQuery.sizeOf(ctx).height - 24,
+                maxHeight:
+                    MediaQuery.sizeOf(ctx).height - 24 - topInset,
               ),
               child: _PanelHost<T>(builder: builder),
             ),

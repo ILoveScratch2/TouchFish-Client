@@ -136,9 +136,9 @@ class _RsaKeyManagementScreenState extends State<RsaKeyManagementScreen> {
     required String pem,
   }) async {
     final l10n = AppLocalizations.of(context)!;
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
+    await showAppDialog<void>(
+      context,
+      builder: (dialogContext, pop) => AlertDialog(
         title: Text(title),
         content: SingleChildScrollView(
           child: Column(
@@ -175,7 +175,7 @@ class _RsaKeyManagementScreenState extends State<RsaKeyManagementScreen> {
             child: Text(l10n.rsaCopyPublicKey),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () => pop(),
             child: Text(MaterialLocalizations.of(dialogContext).okButtonLabel),
           ),
         ],

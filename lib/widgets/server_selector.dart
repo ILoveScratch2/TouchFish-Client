@@ -11,6 +11,7 @@ import '../services/chat_ws_service.dart';
 import '../services/domain_trust_service.dart';
 import '../services/rsa_key_trust_service.dart';
 import '../services/server_branding_service.dart';
+import 'app_alert_dialog.dart';
 import 'code_block.dart';
 
 class ServerInfo {
@@ -388,9 +389,9 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
     String? apiPortError;
     String? tcpPortError;
 
-    final dialog = showDialog<void>(
-      context: context,
-      builder: (context) => StatefulBuilder(
+    final dialog = showAppDialog<void>(
+      context,
+      builder: (context, pop) => StatefulBuilder(
         builder: (context, setDialogState) {
           bool validatePort(String port) {
             if (port.isEmpty) return true;
@@ -530,7 +531,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => pop(),
                 child: Text(l10n.serverCancel),
               ),
               FilledButton(
@@ -567,7 +568,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                   }
 
                   if (displayName.isNotEmpty || address.isNotEmpty) {
-                    Navigator.pop(context);
+                    pop();
                     final server = ServerInfo(
                       displayName: displayName.isEmpty ? address : displayName,
                       address: address,
@@ -633,9 +634,9 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
       }
     }());
 
-    final dialog = showDialog<void>(
-      context: context,
-      builder: (context) => StatefulBuilder(
+    final dialog = showAppDialog<void>(
+      context,
+      builder: (context, pop) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
             title: Text(l10n.serverEdit),
@@ -729,7 +730,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => pop(),
                 child: Text(l10n.serverCancel),
               ),
               FilledButton(
@@ -739,7 +740,7 @@ class _ServerBottomSheetState extends State<_ServerBottomSheet> {
                   if (rsaPem.isNotEmpty && !rsaPemValid) {
                     return;
                   }
-                  Navigator.pop(context);
+                  pop();
                   final updated = server.copyWith(
                     displayName: displayName.isEmpty
                         ? server.address

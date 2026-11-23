@@ -133,4 +133,72 @@ void main() {
     await tester.pump();
     expect(find.text('blocking dialog'), findsOneWidget);
   });
+
+  testWidgets('showAppDialog keeps arbitrary content below the title bar', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildHarness(
+        open: (context) async {
+          await showAppDialog<void>(
+            context,
+            builder: (dialogContext, pop) => AlertDialog(
+              content: const Text('custom body'),
+              actions: [
+                TextButton(onPressed: pop, child: const Text('close')),
+              ],
+            ),
+          );
+          return null;
+        },
+      ),
+    );
+    await tester.tap(find.text('open dialog'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('custom body'), findsOneWidget);
+    final dialogBarrier = find.byWidgetPredicate(
+      (w) => w is ModalBarrier && w.color != null,
+    );
+    expect(tester.getRect(dialogBarrier).top, CustomTitleBar.height);
+
+    await tester.tap(find.text('close'));
+    await tester.pumpAndSettle();
+    expect(find.text('custom body'), findsNothing);
+    expect(titleBarTaps, 0);
+  });
+
+  testWidgets('showAppDialog does not steal focus from autofocused field', (
+    tester,
+  ) async {
+    final controller = TextEditingController();
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      buildHarness(
+        open: (context) async {
+          await showAppDialog<void>(
+            context,
+            builder: (dialogContext, pop) => AlertDialog(
+              content: TextField(controller: controller, autofocus: true),
+              actions: [
+                TextButton(onPressed: pop, child: const Text('close')),
+              ],
+            ),
+          );
+          return null;
+        },
+      ),
+    );
+    await tester.tap(find.text('open dialog'));
+    await tester.pumpAndSettle();
+
+    final editable = find.byType(EditableText);
+    expect(
+      tester.widget<EditableText>(editable).focusNode.hasPrimaryFocus,
+      isTrue,
+    );
+    await tester.enterText(editable, 'hello');
+    expect(controller.text, 'hello');
+  });
 }

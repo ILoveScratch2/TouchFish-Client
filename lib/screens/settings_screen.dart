@@ -3042,9 +3042,9 @@ class _SettingsScreenState extends State<SettingsScreen>
               Color selectedColor =
                   color ?? Theme.of(context).colorScheme.primary;
 
-              final result = await showDialog<Color>(
-                context: context,
-                builder: (context) {
+              final result = await showAppDialog<Color>(
+                context,
+                builder: (dialogContext, pop) {
                   Color tempColor = selectedColor;
                   return AlertDialog(
                     title: Text(title),
@@ -3058,18 +3058,18 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                     actions: [
                       TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: () => pop(),
                         child: Text(l10n.cancel),
                       ),
                       if (color != null)
                         TextButton(
                           onPressed: () {
-                            Navigator.of(context).pop(null);
+                            pop(null);
                           },
                           child: Text(l10n.clear),
                         ),
                       TextButton(
-                        onPressed: () => Navigator.of(context).pop(tempColor),
+                        onPressed: () => pop(tempColor),
                         child: Text(l10n.confirm),
                       ),
                     ],

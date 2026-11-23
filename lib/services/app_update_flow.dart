@@ -103,48 +103,44 @@ class AppUpdateFlow {
           ) ??
           'Current: $currentVersion\nLatest: $targetVersion';
 
-      final shouldUpdate = await showDialog<bool>(
-        context: context,
-        barrierDismissible: true,
-        builder: (dialogContext) {
-          return buildTouchFishInfoDialog(
-            dialogContext,
-            title: l10n?.updateAvailableTitle,
-            icon: Icons.system_update_alt_rounded,
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(message),
-                if (markdown.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  const Divider(height: 1),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n?.updateChangelogTitle ?? 'Changelog',
-                    style: Theme.of(dialogContext).textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  ChangelogView(
-                    markdown: markdown,
-                    maxHeight: changelogBoxHeight(dialogContext),
-                  ),
-                ],
-              ],
-            ),
-            actionWidgets: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: Text(l10n?.updateLater ?? 'Later'),
+      final shouldUpdate = await showTouchFishInfoDialog<bool>(
+        context,
+        title: l10n?.updateAvailableTitle,
+        icon: Icons.system_update_alt_rounded,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message),
+            if (markdown.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              Text(
+                l10n?.updateChangelogTitle ?? 'Changelog',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              FilledButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: Text(l10n?.updateNow ?? 'Update now'),
+              const SizedBox(height: 8),
+              ChangelogView(
+                markdown: markdown,
+                maxHeight: changelogBoxHeight(context),
               ),
             ],
-          );
-        },
+          ],
+        ),
+        actions: [
+          TouchFishDialogAction<bool>(
+            label: l10n?.updateLater ?? 'Later',
+            result: false,
+          ),
+          TouchFishDialogAction<bool>(
+            label: l10n?.updateNow ?? 'Update now',
+            result: true,
+            isPrimary: true,
+          ),
+        ],
       );
 
       if (shouldUpdate == true && context.mounted) {

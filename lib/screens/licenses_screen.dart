@@ -210,7 +210,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.7,
         minChildSize: 0.5,
-        maxChildSize: 0.95,
+        maxChildSize: 0.9,
         builder: (context, scrollController) => Container(
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,

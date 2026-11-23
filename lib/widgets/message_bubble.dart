@@ -14,6 +14,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/tokens.dart';
 import '../utils/failure_reason.dart';
+import 'app_alert_dialog.dart';
 import '../widgets/media/image_lightbox.dart';
 import '../widgets/media/video_viewer.dart';
 import '../widgets/media/audio_player.dart';
@@ -76,9 +77,9 @@ Future<void> _showRecalledOriginalDialog(
     body = content;
   }
 
-  await showDialog<void>(
-    context: context,
-    builder: (context) => AlertDialog(
+  await showAppDialog<void>(
+    context,
+    builder: (dialogContext, pop) => AlertDialog(
       title: Text(l10n.messageRecalledOriginalTitle),
       content: SingleChildScrollView(
         child: Column(
@@ -95,8 +96,10 @@ Future<void> _showRecalledOriginalDialog(
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(MaterialLocalizations.of(context).closeButtonLabel),
+          onPressed: () => pop(),
+          child: Text(
+            MaterialLocalizations.of(dialogContext).closeButtonLabel,
+          ),
         ),
       ],
     ),

@@ -10,6 +10,7 @@ import '../services/snackbar_service.dart';
 import '../utils/talker.dart';
 import '../utils/wide_screen_helper.dart';
 import '../widgets/admin_ui.dart';
+import '../widgets/app_alert_dialog.dart';
 import '../widgets/support/punishment_sheet.dart';
 import '../widgets/optimized_image.dart';
 import '../widgets/ui/loading_indicator.dart';
@@ -338,9 +339,9 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
         ? const ['user', 'admin', 'root', 'banned']
         : const ['user', 'banned'];
 
-    final data = await showDialog<_CreateAccountData>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
+    final data = await showAppDialog<_CreateAccountData>(
+      context,
+      builder: (dialogContext, pop) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           icon: const Icon(Icons.person_add_alt_1_outlined),
           title: Text(l10n.adminAccountCreate),
@@ -466,14 +467,13 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
+              onPressed: () => pop(),
               child: Text(l10n.cancel),
             ),
             FilledButton.icon(
               onPressed: () {
                 if (formKey.currentState?.validate() != true) return;
-                Navigator.pop(
-                  dialogContext,
+                pop(
                   _CreateAccountData(
                     username: usernameController.text.trim(),
                     password: passwordController.text,
@@ -546,9 +546,9 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
     );
     var obscurePassword = true;
 
-    final data = await showDialog<_EditAccountData>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
+    final data = await showAppDialog<_EditAccountData>(
+      context,
+      builder: (dialogContext, pop) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           icon: const Icon(Icons.edit_outlined),
           title: Text(l10n.adminAccountEdit),
@@ -637,14 +637,13 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
+              onPressed: () => pop(),
               child: Text(l10n.cancel),
             ),
             FilledButton.icon(
               onPressed: () {
                 if (formKey.currentState?.validate() != true) return;
-                Navigator.pop(
-                  dialogContext,
+                pop(
                   _EditAccountData(
                     username: usernameController.text.trim(),
                     password: passwordController.text,

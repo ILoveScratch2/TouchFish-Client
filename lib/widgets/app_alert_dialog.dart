@@ -10,6 +10,8 @@ import 'custom_title_bar.dart';
 
 const double _kDialogMaxWidth = 480.0;
 
+typedef TouchFishDialogPop<T> = void Function([T? result]);
+
 class TouchFishDialogAction<T> {
   const TouchFishDialogAction({
     required this.label,
@@ -29,7 +31,7 @@ enum _TouchFishAlertTone { info, error }
 Future<T?> showTouchFishInfoDialog<T>(
   BuildContext context, {
   String? title,
-  required String message,
+  String? message,
   Widget? content,
   List<TouchFishDialogAction<T>>? actions,
   IconData? icon,
@@ -120,15 +122,17 @@ Future<T?> _showTouchFishAlertDialog<T>(
   BuildContext context, {
   required _TouchFishAlertTone tone,
   String? title,
-  required String message,
+  String? message,
   Widget? content,
   List<TouchFishDialogAction<T>>? actions,
   IconData? icon,
   required bool barrierDismissible,
   bool selectableMessage = false,
 }) {
-  Widget buildDialog(BuildContext dialogContext) {
-    return _buildTouchFishAlertDialog<T>(
+  return showAppDialog<T>(
+    context,
+    barrierDismissible: barrierDismissible,
+    builder: (dialogContext, onPop) => _buildTouchFishAlertDialog<T>(
       dialogContext,
       tone: tone,
       title: title,
@@ -137,54 +141,56 @@ Future<T?> _showTouchFishAlertDialog<T>(
       actions: actions,
       icon: icon,
       selectableMessage: selectableMessage,
-    );
-  }
-
-  // CustomTitleBar WTF
-  if (isDesktopWindowed) {
-    final overlay = Overlay.maybeOf(context, rootOverlay: true);
-    if (overlay != null) {
-      final completer = Completer<T?>();
-      late final OverlayEntry entry;
-      void remove([T? result]) {
-        if (entry.mounted) entry.remove();
-        if (!completer.isCompleted) completer.complete(result);
-      }
-
-      final theme = Theme.of(context);
-      entry = OverlayEntry(
-        builder: (overlayContext) => _TouchFishDialogOverlay<T>(
-          topInset: CustomTitleBar.height,
-          barrierDismissible: barrierDismissible,
-          barrierColor: theme.dialogTheme.barrierColor ?? Colors.black54,
-          onDismiss: remove,
-          childBuilder: (dialogContext, onPop) => _buildTouchFishAlertDialog<T>(
-            dialogContext,
-            tone: tone,
-            title: title,
-            message: message,
-            content: content,
-            actions: actions,
-            icon: icon,
-            selectableMessage: selectableMessage,
-            onPop: onPop,
-          ),
-        ),
-      );
-      overlay.insert(entry);
-      return completer.future;
-    }
-  }
-
-  return showDialog<T>(
-    context: context,
-    barrierDismissible: barrierDismissible,
-    builder: (dialogContext) => buildDialog(dialogContext),
+      onPop: onPop,
+    ),
   );
 }
 
 bool get isDesktopWindowed =>
     !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+
+/// 打开任意内容的对话框
+Future<T?> showAppDialog<T>(
+  BuildContext context, {
+  required Widget Function(BuildContext context, TouchFishDialogPop<T> pop)
+  builder,
+  bool barrierDismissible = true,
+}) {
+  final overlay = isDesktopWindowed
+      ? Overlay.maybeOf(context, rootOverlay: true)
+      : null;
+
+  if (overlay == null) {
+    return showDialog<T>(
+      context: context,
+      barrierDismissible: barrierDismissible,
+      builder: (dialogContext) => builder(
+        dialogContext,
+        ([T? result]) => Navigator.of(dialogContext).pop(result),
+      ),
+    );
+  }
+
+  final completer = Completer<T?>();
+  late final OverlayEntry entry;
+  void remove([T? result]) {
+    if (entry.mounted) entry.remove();
+    if (!completer.isCompleted) completer.complete(result);
+  }
+
+  final theme = Theme.of(context);
+  entry = OverlayEntry(
+    builder: (overlayContext) => _TouchFishDialogOverlay<T>(
+      topInset: CustomTitleBar.height,
+      barrierDismissible: barrierDismissible,
+      barrierColor: theme.dialogTheme.barrierColor ?? Colors.black54,
+      onDismiss: remove,
+      childBuilder: builder,
+    ),
+  );
+  overlay.insert(entry);
+  return completer.future;
+}
 
 class _TouchFishDialogOverlay<T> extends StatefulWidget {
   final double topInset;
@@ -193,7 +199,7 @@ class _TouchFishDialogOverlay<T> extends StatefulWidget {
 
   final void Function(T? result) onDismiss;
 
-  final Widget Function(BuildContext context, void Function(T? result) onPop)
+  final Widget Function(BuildContext context, TouchFishDialogPop<T> onPop)
   childBuilder;
 
   const _TouchFishDialogOverlay({
@@ -225,7 +231,11 @@ class _TouchFishDialogOverlayState<T> extends State<_TouchFishDialogOverlay<T>>
     // autofocus 在底层路由的 FocusScope 已持有时会被丢弃，
     // 显式请求焦点才能让弹窗接管键盘事件（如 Esc 关闭）。
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _focusNode.requestFocus();
+      if (!mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _focusNode.hasFocus) return;
+        _focusNode.requestFocus();
+      });
     });
   }
 
@@ -248,44 +258,46 @@ class _TouchFishDialogOverlayState<T> extends State<_TouchFishDialogOverlay<T>>
   Widget build(BuildContext context) {
     final inset = widget.topInset;
     final opacity = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    return Focus(
-      focusNode: _focusNode,
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.escape &&
-            widget.barrierDismissible) {
-          _requestClose();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: Stack(
-        children: [
-          Positioned(
-            top: inset,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: FadeTransition(
-              opacity: opacity,
-              child: ModalBarrier(
-                dismissible: widget.barrierDismissible,
-                color: widget.barrierColor,
-                onDismiss: () => _requestClose(),
+    return FocusScope(
+      child: Focus(
+        focusNode: _focusNode,
+        onKeyEvent: (node, event) {
+          if (event is KeyDownEvent &&
+              event.logicalKey == LogicalKeyboardKey.escape &&
+              widget.barrierDismissible) {
+            _requestClose();
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: Stack(
+          children: [
+            Positioned(
+              top: inset,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: FadeTransition(
+                opacity: opacity,
+                child: ModalBarrier(
+                  dismissible: widget.barrierDismissible,
+                  color: widget.barrierColor,
+                  onDismiss: () => _requestClose(),
+                ),
               ),
             ),
-          ),
-          Positioned(
-            top: inset,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: FadeTransition(
-              opacity: opacity,
-              child: Center(child: widget.childBuilder(context, _requestClose)),
+            Positioned(
+              top: inset,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: FadeTransition(
+                opacity: opacity,
+                child: Center(child: widget.childBuilder(context, _requestClose)),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
