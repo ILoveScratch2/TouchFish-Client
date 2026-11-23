@@ -13,6 +13,7 @@ import '../providers/chat/message_provider.dart';
 import '../services/chat_data_service.dart';
 import '../services/snackbar_service.dart';
 import '../theme/tokens.dart';
+import '../utils/message_text.dart';
 import 'optimized_image.dart';
 import 'account/online_avatar_badge.dart';
 import 'ui/empty_state.dart';
@@ -190,10 +191,14 @@ class _ChatRoomTileState extends ConsumerState<_ChatRoomTile> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final unread = ref.watch(unreadCountProvider(room.id));
     final timeText = room.lastMessageTime != null
         ? _formatRoomTime(room.lastMessageTime!, context)
         : null;
+    final preview = room.lastMessage == null
+        ? ''
+        : roomPreviewText(room, l10n).trim();
 
     final listTile = ListTile(
       leading: Badge.count(
@@ -216,9 +221,10 @@ class _ChatRoomTileState extends ConsumerState<_ChatRoomTile> {
           fontWeight: unread > 0 ? FontWeight.bold : FontWeight.normal,
         ),
       ),
-      subtitle: room.lastMessage != null
-          ? Text(
-              room.lastMessage!,
+      subtitle: preview.isEmpty
+          ? null
+          : Text(
+              preview,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -226,8 +232,7 @@ class _ChatRoomTileState extends ConsumerState<_ChatRoomTile> {
                     ? colorScheme.onSurface
                     : colorScheme.onSurfaceVariant,
               ),
-            )
-          : null,
+            ),
       trailing: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,

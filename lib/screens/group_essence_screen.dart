@@ -7,6 +7,7 @@ import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
 import '../services/snackbar_service.dart';
+import '../utils/message_text.dart';
 import '../utils/talker.dart';
 import '../widgets/optimized_image.dart';
 import '../widgets/ui/empty_state.dart';
@@ -14,14 +15,7 @@ import '../widgets/ui/error_state.dart';
 import '../widgets/ui/loading_indicator.dart';
 import '../widgets/ui/refreshable.dart';
 
-/// 群精华消息列表页。
-///
-/// 通过 [TfApiClient.queryEssence] 获取精华消息编号（mid），
-/// 再结合本地缓存/服务器历史解析出真正的 [ChatMessage] 内容进行展示，
-/// 并依照 mid 降序排列。
-///
-/// 若当前用户拥有管理员/群主权限，则每条消息右侧显示红色 auto_awesome
-/// 按钮，点击后调用 [TfApiClient.removeEssence] 移除精华并刷新列表。
+/// 群精华消息列表页
 class GroupEssenceScreen extends StatefulWidget {
   final int gid;
   final String groupName;
@@ -72,7 +66,6 @@ class _GroupEssenceScreenState extends State<GroupEssenceScreen> {
       var page = await chatData.refreshMessagesForContact(roomId);
       var cached = chatData.getMessages(roomId);
       final wanted = mids.toSet();
-      // 回溯历史以填充本地缺失的精华消息
       var present = cached.map((m) => m.mid).whereType<int>().toSet();
       var attempts = 0;
       while (wanted.difference(present).isNotEmpty &&
@@ -83,7 +76,6 @@ class _GroupEssenceScreenState extends State<GroupEssenceScreen> {
         cached = chatData.getMessages(roomId);
         present = cached.map((m) => m.mid).whereType<int>().toSet();
         attempts++;
-        // 没有新消息说明已经到底
         if (cached.length == before) break;
       }
       final byMid = <int, ChatMessage>{};
@@ -130,7 +122,6 @@ class _GroupEssenceScreenState extends State<GroupEssenceScreen> {
         }
       }
     } catch (_) {
-      // 网络异常时按无权限处理
     }
     return false;
   }
@@ -264,7 +255,7 @@ class _EssenceMessageTile extends StatelessWidget {
     }
 
     final timestamp = msg != null ? _formatTime(msg.timestamp) : '';
-    final content = msg?.text ?? '';
+    final content = msg == null ? '' : messagePlainText(msg, l10n);
     final hasAttachment = msg?.media != null;
 
     return Padding(

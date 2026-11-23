@@ -9,6 +9,7 @@ import '../routes/app_routes.dart';
 import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
 import '../services/feature_flags.dart';
+import '../utils/message_text.dart';
 import 'app_alert_dialog.dart' show isDesktopWindowed;
 
 
@@ -146,7 +147,9 @@ List<CommandPaletteItem> buildDefaultCommands(BuildContext context) {
             ? Icons.group_outlined
             : Icons.person_outline,
         title: room.name,
-        subtitle: room.lastMessage,
+        subtitle: room.lastMessage == null
+            ? null
+            : roomPreviewText(room, l10n),
         onSelect: () => context.go('${AppRoutes.chat}/${room.id}'),
       ),
     );

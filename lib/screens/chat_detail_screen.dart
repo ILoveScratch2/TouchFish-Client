@@ -37,6 +37,7 @@ import '../services/local_message_store.dart';
 import '../services/message_sync_service.dart';
 import '../services/notification_service.dart';
 import '../theme/tokens.dart';
+import '../utils/message_text.dart';
 import '../utils/wide_screen_helper.dart';
 import '../utils/talker.dart';
 import '../utils/read_receipt_throttle.dart';
@@ -1187,16 +1188,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final lines = <String>[];
     for (final m in selected) {
       if (m.isDeleted) continue;
-      final label = switch (m.type) {
-        MessageType.image => '[${l10n.mediaImageMessage}]',
-        MessageType.video => '[${l10n.mediaVideoMessage}]',
-        MessageType.audio => '[${l10n.mediaAudioMessage}]',
-        MessageType.file => '[${l10n.mediaFileMessage}] ${m.media?.fileName ?? ''}',
-        MessageType.mergedForward => l10n.mergedForwardTitle(
-            m.mergedForward?.sourceRoomName ?? l10n.mergedForwardGroup,
-          ),
-        MessageType.text => m.text,
-      };
+      final label = messagePlainText(m, l10n);
       if (label.trim().isNotEmpty) lines.add(label.trim());
     }
     if (lines.isEmpty) {
@@ -2915,7 +2907,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               .getUser('U${cachedMsg?.senderUid ?? ''}')
               ?.username;
 
-    final content = cachedMsg?.text ?? '';
+    final content = cachedMsg == null
+        ? ''
+        : messagePlainText(cachedMsg, l10n);
     final hasAttachment = cachedMsg?.media != null;
 
     return Column(

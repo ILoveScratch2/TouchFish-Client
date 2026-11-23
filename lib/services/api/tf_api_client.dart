@@ -99,6 +99,7 @@ class TfChatListItem {
   final String? alias;
   final String? description;
   final int unreadCount;
+  final FileAttachment? lastFile;
 
   const TfChatListItem({
     required this.roomId,
@@ -119,18 +120,54 @@ class TfChatListItem {
     this.alias,
     this.description,
     this.unreadCount = 0,
+    this.lastFile,
   });
 
   String? get visibleLastContent => lastDeleted ? null : lastContent;
 
+  /// 最后一条消息的类型；普通文本返回 [MessageType.text]。
+  MessageType? get lastMessageType {
+    if (lastDeleted) return null;
+    if (lastContentType == 'redirect') return MessageType.mergedForward;
+    if (lastContentType != 'file') return MessageType.text;
+    final file = lastFile;
+    if (file == null) return MessageType.file;
+    if (file.isImage) return MessageType.image;
+    if (file.isVideo) return MessageType.video;
+    if (file.isAudio) return MessageType.audio;
+    return MessageType.file;
+  }
+
+  String? get lastFileName {
+    final file = lastFile;
+    if (file == null) return null;
+    final name = file.fileName.trim();
+    if (name.isEmpty || name == file.hash || name == lastContent) return null;
+    return name;
+  }
+
   factory TfChatListItem.fromJson(Map<String, dynamic> json) {
+    final rawLastContent = json['last_content'] as String?;
+    final rawLastFile = json['last_file'];
+    final fileMap = rawLastFile is Map
+        ? Map<String, dynamic>.from(rawLastFile)
+        : const <String, dynamic>{};
+    final rawFileName = fileMap['file_name'] ?? json['last_file_name'];
+    FileAttachment? lastFile;
+    if (fileMap.isNotEmpty || rawFileName != null) {
+      lastFile = FileAttachment.fromMap({
+        ...fileMap,
+        if (rawFileName != null) 'file_name': rawFileName,
+        'file_hash': rawLastContent ?? '',
+      });
+    }
     return TfChatListItem(
       roomId: json['room_id'] as String? ?? '',
       roomType: json['room_type'] as String? ?? 'direct',
       partnerUid: (json['partner_uid'] as num?)?.toInt() ?? 0,
       username: json['username'] as String? ?? '',
       avatar: json['avatar'] as String?,
-      lastContent: json['last_content'] as String?,
+      lastContent: rawLastContent,
       lastContentType: json['last_content_type'] as String?,
       lastTime: (json['last_time'] as num?)?.toDouble(),
       lastSenderUid: (json['last_sender_uid'] as num?)?.toInt(),
@@ -143,6 +180,7 @@ class TfChatListItem {
       alias: json['alias'] as String?,
       description: json['description'] as String?,
       unreadCount: (json['unread_count'] as num?)?.toInt() ?? 0,
+      lastFile: lastFile,
     );
   }
 }
@@ -211,7 +249,6 @@ class TfFeatureFlags {
     presence: presence ?? this.presence,
   );
 
-  /// 提交给 `/auth/server_settings/update` 的完整快照
   Map<String, dynamic> toJson() => {
     'chat': {
       'private_chat': privateChat,
@@ -228,13 +265,13 @@ class TfFeatureFlags {
 }
 
 class TfReadReceipt {
-  /// 对方（私聊）关闭了已读展示，回执不可见。
+  /// 对方（私聊）关闭了已读展示
   final bool hidden;
 
-  /// 私聊：对方是否已读到该消息。
+  /// 私聊：对方是否已读到该消息
   final bool read;
 
-  /// 群聊：已读人数。
+  /// 群聊：已读人数
   final int readCount;
 
   /// 私聊：对方当前已读
@@ -255,9 +292,8 @@ class TfReadReceipt {
   );
 }
 
-/// 自己与某个用户的关系查询
 class TfRelationship {
-  /// `none` / `pending` / `friend` / `blocked`。
+  /// `none` / `pending` / `friend` / `blocked`
   final String relationship;
 
   final bool isFriend;
@@ -282,7 +318,6 @@ class TfRelationship {
   );
 }
 
-/// 判定 `/friend/blocked` 的响应。
 @visibleForTesting
 List<int>? decodeBlockedUsersResponse(int status, String? plain) {
   if (status == 404 || status == 405) return null;
@@ -368,7 +403,7 @@ class TfGroupPreviewMember {
   }
 }
 
-/// 群组预览（`/group/preview`）
+/// 群组预览
 class TfGroupPreview {
   final int gid;
   final String groupname;
@@ -420,7 +455,7 @@ class TfGroupPreview {
   }
 }
 
-/// 服务器转发的第三方登录方式。
+/// 服务器转发的第三方登录方式
 class TfExternalAuthProvider {
   const TfExternalAuthProvider({required this.id, required this.name});
 
@@ -483,23 +518,22 @@ class TfServerConfig {
   final int? jwtRefreshExpiresSeconds;
   final int? jwtMaxPerUser;
 
-  /// 外部登录平台地址（TouchFish Auth）。空/未设置表示服务器未启用外部登录。
+  /// 外部登录平台地址（TouchFish Auth）
   final String? externalAuthUrl;
 
-  /// 服务器是否允许自助注册。老服务器没有该字段时按 true 处理。
+  /// 服务器是否允许自助注册
   final bool allowRegister;
 
-  /// 服务器是否已启用外部认证平台专用端点。
+  /// 服务器是否已启用外部认证平台
   final bool platformAuthEnabled;
 
-  /// 认证平台支持的第三方登录方式（GitHub 等），由服务器代拉取后下发。
+  /// 认证平台支持的第三方登录方式
   final List<TfExternalAuthProvider> externalAuthProviders;
 
-  /// 平台专用端点的 issuer / 白名单 / 共享令牌（后两者仅管理员可见）。
+  /// 平台专用端点
   final String platformAuthIssuer;
   final String platformAuthAllowIps;
 
-  /// 共享令牌**不回显**，只给出是否已配置；空字段提交表示"不修改"。
   final bool platformAuthSharedTokenSet;
   final int? maxAvatarSize;
   final int? userStorageQuota;
@@ -840,7 +874,6 @@ class TfDeviceInfo {
   }
 }
 
-/// /auth/devices/list 的解析结果。
 class TfDeviceListResult {
   final List<TfDeviceInfo> devices;
 
@@ -1749,8 +1782,7 @@ class TfApiClient {
     return TfServerConfig.fromJson(data);
   }
 
-  /// 配置注册验证码供应商与密钥（仅 root）
-  /// secret，内置图片验证码则无需。
+  /// 配置注册验证码供应商与密钥
   Future<bool> changeCaptcha(
     int uid,
     String? password, {
@@ -1773,7 +1805,6 @@ class TfApiClient {
     return _parseBool(result);
   }
 
-  /// 更新各端点的速率限制配置（仅 root）。
   Future<bool> changeRateLimits(
     int uid,
     String? password,
@@ -1946,7 +1977,7 @@ class TfApiClient {
     }
   }
 
-  /// 登录。默认优先 JWT（请求带 jwt:true）：
+  /// 登录。默认优先 JWT
   Future<TfLoginResult> login(
     int uid,
     String password, {
@@ -1956,7 +1987,7 @@ class TfApiClient {
       final body = <String, dynamic>{};
       if (!legacyMode) {
         body['jwt'] = true;
-        // 仅供新服务器识别设备，旧服务器会忽略多余字段。
+        // 仅供新服务器识别设备
         final device = await DeviceIdentityService.instance.get();
         body['device_id'] = device.deviceId;
         body['device_name'] = device.deviceName;
@@ -1980,7 +2011,6 @@ class TfApiClient {
             'AUTH_TOKEN_LIMIT_REACHED' => 'tokenLimitReached',
             'AUTH_INVALID_PASSWORD' => 'authFailed',
             'pending_activation' => 'pendingActivation',
-            // 封禁以前掉进 serverError，用户看到的是"网络错误"
             'account_banned' => 'accountBanned',
             _ => 'serverError',
           };
@@ -2014,7 +2044,6 @@ class TfApiClient {
     }
   }
 
-  /// 用外部登录平台签发的一次性凭据换取本服务器的会话。
   Future<TfLoginResult> loginWithExternalToken(String externalToken) async {
     try {
       final device = await DeviceIdentityService.instance.get();
@@ -2103,7 +2132,6 @@ class TfApiClient {
     }
   }
 
-  /// 会话探活
   Future<bool?> validateToken() async {
     try {
       final result = await _secretPostInternal('/auth/validate', const {});
@@ -2117,7 +2145,6 @@ class TfApiClient {
     }
   }
 
-  /// 列出活跃 token（设备）
   Future<TfTokenListResult?> listAuthTokens({int? targetUid}) async {
     try {
       final result = await secretPost('/auth/tokens/list', {
@@ -2149,7 +2176,6 @@ class TfApiClient {
     }
   }
 
-  /// 列出当前用户的活跃会话
   Future<TfTokenListResult?> listSessions({int? targetUid}) async {
     try {
       final result = await secretPost('/auth/sessions/list', {
@@ -2164,7 +2190,6 @@ class TfApiClient {
     }
   }
 
-  /// 按 session_id 吊销指定会话
   Future<bool?> revokeSession(String sessionId, {int? targetUid}) async {
     try {
       final result = await secretPost('/auth/sessions/revoke', {
@@ -2181,7 +2206,6 @@ class TfApiClient {
     }
   }
 
-  /// 吊销除当前会话外的全部会话（普通用户）或目标用户全部会话（管理员）。
   Future<bool?> revokeAllOtherSessions({int? targetUid}) async {
     try {
       final result = await secretPost('/auth/sessions/revoke_all', {
@@ -2377,7 +2401,7 @@ class TfApiClient {
     return _parseBool(result);
   }
 
-  /// 设置邮箱是否对外公开（默认公开）。公开查询接口会按此裁剪 email。
+  /// 设置邮箱是否对外公开（默认公开）
   Future<bool> changePublicEmail(
     int uid,
     String password,
@@ -2392,7 +2416,7 @@ class TfApiClient {
     return _parseBool(result);
   }
 
-  /// 修改隐私开关（已读状态、在线状态等）。缺省字段表示不改动。旧服务器无此端点返回 false。
+  /// 修改隐私开关（已读状态、在线状态等）
   Future<bool> changePrivacy(
     int uid,
     String password, {

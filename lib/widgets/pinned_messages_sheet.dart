@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../models/message_model.dart';
 import '../services/chat_data_service.dart';
+import '../utils/message_text.dart';
 import 'sheet_scaffold.dart';
 
 class PinnedMessagesSheet extends StatefulWidget {
@@ -155,7 +156,8 @@ class _PinnedMessageTile extends StatelessWidget {
     final timestamp = _formatTime(pin.createdAt);
     final senderName = cachedMessage?.senderName ??
         (cachedMessage?.isMe == true ? 'You' : null);
-    final content = cachedMessage?.text ?? '';
+    final cached = cachedMessage;
+    final content = cached == null ? '' : messagePlainText(cached, l10n);
     final hasAttachments = cachedMessage?.media != null;
 
     return InkWell(

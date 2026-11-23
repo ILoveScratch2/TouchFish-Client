@@ -1,3 +1,5 @@
+import 'message_model.dart';
+
 class ChatRoom {
   final String id;
   final String name;
@@ -6,6 +8,9 @@ class ChatRoom {
   final String? lastMessage;
   final DateTime? lastMessageTime;
   final int? lastMessageMid;
+
+  final MessageType? lastMessageType;
+  final String? lastMessageFileName;
 
   /// 服务端 /chat/list 返回的房间当前序号；本地无同步游标时直接用它建立基线。
   final int? serverLastSeq;
@@ -20,6 +25,8 @@ class ChatRoom {
     this.lastMessage,
     this.lastMessageTime,
     this.lastMessageMid,
+    this.lastMessageType,
+    this.lastMessageFileName,
     this.serverLastSeq,
     this.unreadCount = 0,
     this.isPinned = false,
@@ -33,6 +40,8 @@ class ChatRoom {
     String? lastMessage,
     DateTime? lastMessageTime,
     int? lastMessageMid,
+    MessageType? lastMessageType,
+    String? lastMessageFileName,
     int? serverLastSeq,
     int? unreadCount,
     bool? isPinned,
@@ -45,6 +54,8 @@ class ChatRoom {
       lastMessage: lastMessage ?? this.lastMessage,
       lastMessageTime: lastMessageTime ?? this.lastMessageTime,
       lastMessageMid: lastMessageMid ?? this.lastMessageMid,
+      lastMessageType: lastMessageType ?? this.lastMessageType,
+      lastMessageFileName: lastMessageFileName ?? this.lastMessageFileName,
       serverLastSeq: serverLastSeq ?? this.serverLastSeq,
       unreadCount: unreadCount ?? this.unreadCount,
       isPinned: isPinned ?? this.isPinned,

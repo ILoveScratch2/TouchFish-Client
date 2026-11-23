@@ -77,7 +77,6 @@ class ChatDataService extends ChangeNotifier {
   static ChatDataService get instance => _instance ??= ChatDataService._();
   ChatDataService._();
 
-  // 帧末通知是否已排队
   bool _deferredNotifyScheduled = false;
   @override
   void notifyListeners() {
@@ -95,7 +94,6 @@ class ChatDataService extends ChangeNotifier {
     super.notifyListeners();
   }
 
-  // 纯 Dart 单测
   static SchedulerPhase? get _safeSchedulerPhase {
     try {
       return SchedulerBinding.instance.schedulerPhase;
@@ -128,21 +126,18 @@ class ChatDataService extends ChangeNotifier {
   // clientMid 房间
   final Map<String, String> _pendingClientMidRooms = {};
   final Set<String> _fetchingGroups = {};
-  final Set<String> _fetchingUsers = {}; // 正在加载的用户资料
+  final Set<String> _fetchingUsers = {};
 
   // 分房间通知回调(河流pod)
   final Map<String, List<VoidCallback>> _roomListeners = {};
-  // 每房只补发一
   bool _batchRoomNotify = false;
   final Set<String> _batchedRoomNotifyQueue = {};
 
-  // 增量批量
   bool _batchIngest = false;
   final Map<String, Map<String, ChatMessage>> _pendingIngest = {};
 
-  // 追加式索引（仅作候选集提示，命中后仍会校验
-  // mid roomId 用于撤回时定位房间
-  // fileHash roomIds 用于媒体元数据定向更新
+  // 追加式索引
+  // 仅作候选集提示
   final Map<int, String> _midToRoom = {};
   final Map<String, Set<String>> _hashToRooms = {};
 
@@ -150,28 +145,24 @@ class ChatDataService extends ChangeNotifier {
   final Map<String, int> _unreadRebaseSeq = {};
 
   // 已读回执
-  // 私聊对方已读水位roomId peer last_read_seq 
+  // 私聊对方已读roomId peer last_read_seq 
   // 群聊按消息 mid 记录已读人数
   final Map<String, int> _peerReadSeq = {};
   final Map<int, int> _groupReadCounts = {};
 
-  /// 群聊已读人数缓存的上限
   static const int _groupReadCountCap = 500;
 
   final ValueNotifier<int> readReceiptRevision = ValueNotifier<int>(0);
 
   void _bumpReadReceiptRevision() => readReceiptRevision.value++;
 
-  /// 从设置读取消息缓存的最大会话房间数（默认 50）
   int get _maxCachedRooms =>
       SettingsService.instance.getValue<int>('maxCachedRooms', 50);
 
-  /// 添加房间监听器
   void addRoomListener(String roomId, VoidCallback listener) {
     _roomListeners.putIfAbsent(roomId, () => []).add(listener);
   }
 
-  /// 移除房间监听器
   void removeRoomListener(String roomId, VoidCallback listener) {
     _roomListeners[roomId]?.remove(listener);
     if (_roomListeners[roomId]?.isEmpty ?? false) {
@@ -179,7 +170,6 @@ class ChatDataService extends ChangeNotifier {
     }
   }
 
-  /// 在批量摄入的循环外执行 [action] 期间对各房间的通知会被挂起
   void _withBatchedRoomNotify(VoidCallback action) {
     if (_batchRoomNotify) {
       action();
@@ -226,14 +216,11 @@ class ChatDataService extends ChangeNotifier {
     while (_messageCache.length > limit && _cacheAccessOrder.isNotEmpty) {
       final oldest = _cacheAccessOrder.removeAt(0);
       _messageCache.remove(oldest);
-      // 同步清理索引
       _midToRoom.removeWhere((_, room) => room == oldest);
       _hashToRooms.removeWhere((_, rooms) {
         rooms.remove(oldest);
         return rooms.isEmpty;
       });
-      // 该房间里的待确认消息已经不在缓存里，clientMid 索引也一起清掉，
-      // 否则 ACK 永远收不到的消息会让这张表一直涨。
       _pendingClientMidRooms.removeWhere((_, roomId) => roomId == oldest);
       talker.info(
         'ChatDataService: evicted message cache for room $oldest (limit=$limit)',
@@ -242,8 +229,7 @@ class ChatDataService extends ChangeNotifier {
     _evictUsersIfNeeded();
   }
 
-  /// 单房间内存副本上限。
-  /// 只裁剪内存
+  /// 单房间内存副本上限
   static const int _maxMessagesPerRoom = 2000;
 
   /// 超出上限多少条
@@ -285,7 +271,6 @@ class ChatDataService extends ChangeNotifier {
   List<Contact> get contacts => _contacts;
   bool get isLoading => _isLoading;
 
-  /// 追加式索引
   void _indexMessages(String roomId, Iterable<ChatMessage> messages) {
     for (final message in messages) {
       final mid = message.mid;
@@ -303,10 +288,7 @@ class ChatDataService extends ChangeNotifier {
     _unreadRebaseSeq.clear();
   }
 
-  /// 开始一次批量（配合 [_endIngest] 使用）
   void _beginIngest() => _batchIngest = true;
-
-  /// 结束批量
   
   void _endIngest() {
     _batchIngest = false;
@@ -329,7 +311,6 @@ class ChatDataService extends ChangeNotifier {
     }
   }
 
-  /// 该消息序号是否高于房间的服务端未读重定
   bool _aboveUnreadRebase(String roomId, int? seq) {
     final rebase = _unreadRebaseSeq[roomId];
     if (rebase == null || seq == null) return true;
@@ -351,7 +332,6 @@ class ChatDataService extends ChangeNotifier {
     return (await refreshMessagesForContact(roomId)).messages;
   }
 
-  /// 按服务端消息 id（mid）定位消息
   Future<ChatMessage?> findMessageByMid(
     String roomId,
     int mid, {
@@ -414,10 +394,10 @@ class ChatDataService extends ChangeNotifier {
     _evictCacheIfNeeded();
     unawaited(_localStore.saveMessages(roomId, msgs));
 
-    // 分房间通知（新增）
     _notifyRoom(roomId);
 
-    // 全局通知（保留兼容性）
+    // 全局通知
+    // 保留兼容性
     notifyListeners();
   }
 
@@ -473,7 +453,6 @@ class ChatDataService extends ChangeNotifier {
     if (puid != null) _userCache[roomIdFromUid(puid)] = profile;
   }
 
-  /// 把当前登录用户自己的资料进用户缓存
   void _cacheSelfProfile() {
     final me = AuthState.instance.currentUser;
     if (me != null) cacheUserProfile(me);
@@ -481,13 +460,10 @@ class ChatDataService extends ChangeNotifier {
 
   final Set<String> _profileFetchesInFlight = {};
 
-  /// 确保某个用户的资料已缓存
   Future<void> ensureUserProfile(int uid) async {
     if (uid < 0) return;
     final key = roomIdFromUid(uid);
     if (_userCache.containsKey(key)) return;
-
-    // 如果是当前用户自己，直接从 AuthState 缓存
     if (AuthState.instance.uid == uid) {
       final me = AuthState.instance.currentUser;
       if (me != null) {
@@ -642,7 +618,7 @@ class ChatDataService extends ChangeNotifier {
     );
     final text = jsonEncode(encoded);
     if (text == _roomPreferencesEncoded) {
-      // WS 每次重连都会走 loadContactsAndRooms
+      // WS 每次重连都会 loadContactsAndRooms
       return;
     }
     final prefs = await SharedPreferences.getInstance();
@@ -732,7 +708,7 @@ class ChatDataService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 处理偏好推送（PREFERENCES.UPDATED / scope=room）
+  /// 偏好
   Future<void> applyRemoteRoomPreference(Map<String, dynamic> data) async {
     final roomId = data['room_id']?.toString();
     if (roomId == null || roomId.isEmpty) return;
@@ -755,24 +731,22 @@ class ChatDataService extends ChangeNotifier {
     );
   }
 
-  /// 更新聊天室置顶状态的便捷方法
   Future<bool> updateRoomPinState(String roomId, bool isPinned) async {
     return updateRoomPreference(roomId, isPinned: isPinned);
   }
 
-  /// 清除聊天室本地缓存数据
   Future<void> clearRoomLocalData(String roomId) async {
     final generation = _generation;
-    // 清除消息缓存
+    // 消息缓存
     _messageCache.remove(roomId);
     _cacheAccessOrder.remove(roomId);
 
-    // 清除本地消息存储
+    // 本地消息存储
     await _localStore.deleteRoom(roomId);
 
     if (_generation != generation) return;
 
-    // 保留聊天室列表中的最后消息摘要
+    // 保留最后消息摘要
     _notifyRoom(roomId);
     notifyListeners();
   }
@@ -814,7 +788,6 @@ class ChatDataService extends ChangeNotifier {
     await _restoreSyncBaselines();
   }
 
-  /// 恢复/建立
   Future<void> _restoreSyncBaselines() async {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
@@ -827,8 +800,6 @@ class ChatDataService extends ChangeNotifier {
       if (_generation != generation || AuthState.instance.uid != uid) return;
       if (!syncService.isFullSyncRoom(room.id)) {
         // 仅浏览模式且未升级的房间
-        // 只以 /chat/list 携带的当前序号建立基线，
-        // 不补拉历史
         final browseSeq = room.serverLastSeq;
         if (browseSeq != null && browseSeq > 0) {
           await syncService.adoptServerBaseline(room.id, browseSeq);
@@ -888,7 +859,7 @@ class ChatDataService extends ChangeNotifier {
     _bumpReadReceiptRevision();
     _rooms.clear();
     _contacts.clear();
-    _roomListeners.clear(); // 清理所有监听器，防止内存泄漏
+    _roomListeners.clear();
     _isLoading = false;
     notifyListeners();
   }
@@ -938,7 +909,6 @@ class ChatDataService extends ChangeNotifier {
       if (byTime != 0) return byTime;
       // Dart 的 List.sort 对大列表不稳定，两条消息落在同一毫秒时
       // 顺序会随排序实现变化
-      // 表现为会话列表莫名换位
       final byMid = (b.lastMessageMid ?? 0).compareTo(a.lastMessageMid ?? 0);
       if (byMid != 0) return byMid;
       return a.id.compareTo(b.id);
@@ -1000,7 +970,6 @@ class ChatDataService extends ChangeNotifier {
     mutable.insert(lo, message);
   }
 
-  /// 替换列表中已存在的一条消息并保持有序
   List<ChatMessage> _replaceSorted(
     List<ChatMessage> cached,
     int index,
@@ -1036,11 +1005,8 @@ class ChatDataService extends ChangeNotifier {
     return existing;
   }
 
-  // --- Room/Contact list ---
-
   Future<void>? _loadContactsFuture;
 
-  /// 在途合并
   Future<void> loadContactsAndRooms() {
     final pending = _loadContactsFuture;
     if (pending != null) return pending;
@@ -1088,7 +1054,6 @@ class ChatDataService extends ChangeNotifier {
         return;
       }
       if (chatItems == null) {
-        // 请求失败 !==没有会话：保留现有列表与未读数，等下一次刷新
         talker.warning(
           'ChatDataService.loadContactsAndRooms: /chat/list failed, '
           'keeping ${_rooms.length} cached rooms',
@@ -1105,7 +1070,6 @@ class ChatDataService extends ChangeNotifier {
         return;
       }
 
-      // 在 await 后构建映射
       final existingRooms = {for (final room in _rooms) room.id: room};
       final nextRooms = <ChatRoom>[];
       final nextContacts = <Contact>[];
@@ -1150,7 +1114,6 @@ class ChatDataService extends ChangeNotifier {
           );
         }
 
-        // 服务端未读为基准加上拉取窗口内到达的本地增量
         final localUnread = existingRoom?.unreadCount ?? 0;
         final snapshot = unreadSnapshot[item.roomId] ?? 0;
         final windowDelta = localUnread - snapshot;
@@ -1167,6 +1130,10 @@ class ChatDataService extends ChangeNotifier {
             lastMessage: item.lastDeleted
                 ? ''
                 : item.visibleLastContent ?? existingRoom?.lastMessage,
+            lastMessageType: item.lastDeleted
+                ? MessageType.text
+                : item.lastMessageType,
+            lastMessageFileName: item.lastFileName,
             lastMessageTime: lastTime ?? existingRoom?.lastMessageTime,
             lastMessageMid: item.lastMid,
             serverLastSeq: item.lastSeq,
@@ -1220,7 +1187,6 @@ class ChatDataService extends ChangeNotifier {
           ackError: error,
           clearAckError: error == null,
         );
-        // ACK 带来 roomSeq 后排序位置变
         final updated = roomSeq != null && roomSeq != existing.roomSeq
             ? _replaceSorted(msgs, idx, changed)
             : (List<ChatMessage>.from(msgs, growable: true)..[idx] = changed);
@@ -1293,7 +1259,6 @@ class ChatDataService extends ChangeNotifier {
     return applyRecallsToMessages(result, recalledMids);
   }
 
-  /// 把更早的一页消息并入已排序缓存
   List<ChatMessage> _attachOlderMessages(
     List<ChatMessage> cached,
     List<ChatMessage> older,
@@ -1427,7 +1392,7 @@ class ChatDataService extends ChangeNotifier {
     }
 
     if (event.type == 'message.read') {
-      // 同账号其它设备的已读回执
+      // 同账号其它设备
       final data = event.notification;
       final uid = AuthState.instance.uid;
       if (data == null || uid == null) return;
@@ -1441,7 +1406,7 @@ class ChatDataService extends ChangeNotifier {
 
     if (event.type == 'message.read_receipt') {
       // 私聊
-      // 对方（好友）已读到某个水位
+      // 对方（好友）已读到
       final data = event.notification;
       if (data == null) return;
       final roomId = data['room_id'] as String?;
@@ -1452,7 +1417,6 @@ class ChatDataService extends ChangeNotifier {
     }
 
     if (event.type == 'PRIVACY.UPDATED') {
-      // 刷新本地缓存的本人资料
       unawaited(AuthState.instance.refreshProfile());
       return;
     }
@@ -1557,8 +1521,6 @@ class ChatDataService extends ChangeNotifier {
   void debugSetUnreadRebase(String roomId, int seq) =>
       _unreadRebaseSeq[roomId] = seq;
 
-  /// 处理 /message/sync 补拉到的消息
-  /// 静默合并
   void processSyncedMessages(
     String roomId,
     List<ChatMessage> messages, {
@@ -1607,7 +1569,8 @@ class ChatDataService extends ChangeNotifier {
         deletedBy: event.senderUid,
       );
     }
-    // 未来的事件 kind（编辑/置顶/成员变动）在此扩展；未知 kind 忽略。
+    // 未来的事件 kind 在此扩展
+    // 未知 kind 忽略。
   }
 
   void _addToCacheSilent(
@@ -1667,6 +1630,8 @@ class ChatDataService extends ChangeNotifier {
           lastMessage: msg.text,
           lastMessageTime: msg.timestamp,
           lastMessageMid: msg.mid,
+          lastMessageType: msg.type,
+          lastMessageFileName: msg.media?.fileName,
         );
       }
       if (shouldCountUnread) {
@@ -1744,6 +1709,8 @@ class ChatDataService extends ChangeNotifier {
         lastMessage: msg.text,
         lastMessageTime: msg.timestamp,
         lastMessageMid: msg.mid,
+        lastMessageType: msg.type,
+        lastMessageFileName: msg.media?.fileName,
         unreadCount: shouldNotify
             ? _rooms[idx].unreadCount + 1
             : _rooms[idx].unreadCount,
@@ -1806,6 +1773,8 @@ class ChatDataService extends ChangeNotifier {
         lastMessage: msg.text,
         lastMessageTime: msg.timestamp,
         lastMessageMid: msg.mid,
+        lastMessageType: msg.type,
+        lastMessageFileName: msg.media?.fileName,
         unreadCount: unreadCount,
         isPinned: getRoomPreference(roomId).isPinned,
       ),
@@ -1853,7 +1822,8 @@ class ChatDataService extends ChangeNotifier {
             return;
           }
           _userCache[profile.uid] = profile;
-          // profile.uid 是 "U{uid}" 格式，但是之前有问题
+          // profile.uid 是 "U{uid}"
+          // 但是之前有问题
           _userCache[roomIdFromUid(puid)] = profile;
           _updateRoomAndContacts(roomId, profile.username, profile.avatar);
           _fillMsgAvatars(
@@ -1862,7 +1832,7 @@ class ChatDataService extends ChangeNotifier {
             profile.username,
             profile.avatar,
           );
-          // 强制通知UI刷新，确保"User X"被更新
+          // 强制通知UI刷新
           notifyListeners();
         })
         .catchError((error, stack) {
@@ -1871,7 +1841,6 @@ class ChatDataService extends ChangeNotifier {
         });
   }
 
-  /// 为群聊房间补拉群资料（名称/头像）。
   Future<void> ensureGroupInfo(int gid) => _ensureGroupInfo('G$gid');
 
   Future<void> _ensureGroupInfo(String roomId) async {
@@ -2041,6 +2010,8 @@ class ChatDataService extends ChangeNotifier {
             : lastMessages.last;
         _rooms[roomIndex] = _rooms[roomIndex].copyWith(
           lastMessage: last?.text ?? '',
+          lastMessageType: last?.type,
+          lastMessageFileName: last?.media?.fileName,
         );
       }
     }
@@ -2075,6 +2046,8 @@ class ChatDataService extends ChangeNotifier {
       _rooms[idx] = _rooms[idx].copyWith(
         lastMessage: msg.text,
         lastMessageTime: msg.timestamp,
+        lastMessageType: msg.type,
+        lastMessageFileName: msg.media?.fileName,
       );
     } else {
       _addNewRoom(roomId, msg, unreadCount: 0);
@@ -2214,7 +2187,6 @@ class ChatDataService extends ChangeNotifier {
 
   /// 被撤回消息的原位 seq 被吃了，就不要 retry 了
   void _forgetRecalledSeqFromSync(int mid) {
-    // 索引命中优先
     final indexedRoom = _midToRoom[mid];
     if (indexedRoom != null) {
       final messages = _messageCache[indexedRoom];
@@ -2347,7 +2319,7 @@ class ChatDataService extends ChangeNotifier {
   /// mid 已读人数
   Map<int, int> get groupReadCounts => UnmodifiableMapView(_groupReadCounts);
 
-  /// 收到私聊已读回执（roomId 为对方视角，服务端已重写）。
+  /// 收到私聊已读
   void applyPeerReadReceipt(String roomId, int lastSeq) {
     if (roomId.isEmpty || lastSeq <= 0) return;
     final prev = _peerReadSeq[roomId];
@@ -2364,7 +2336,6 @@ class ChatDataService extends ChangeNotifier {
     _bumpReadReceiptRevision();
   }
 
-  /// 按需查询某条消息的已读情况
   Future<void> refreshReadReceipt(String roomId, int mid) async {
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
@@ -2416,8 +2387,6 @@ class ChatDataService extends ChangeNotifier {
     await _localStore.deleteRoom(roomId);
     notifyListeners();
   }
-
-  // --- Message history ---
 
   Future<MessageHistoryPage> refreshMessagesForContact(String roomId) async {
     final uid = AuthState.instance.uid;
@@ -2520,7 +2489,6 @@ class ChatDataService extends ChangeNotifier {
     }
 
     final olderFilled = _fillSenderInfo(olderMsgs);
-    // 用 await 完成后的最新缓存合并
     final currentCache = _messageCache[roomId] ?? const <ChatMessage>[];
     final merged = _attachOlderMessages(
       currentCache,
@@ -2576,7 +2544,6 @@ class ChatDataService extends ChangeNotifier {
     final uid = AuthState.instance.uid;
     final generation = _generation;
     if (uid == null) return;
-    // 不把自己加入联系人列表
     if (friendUid == uid) return;
     final roomId = roomIdFromUid(friendUid);
     if (_contacts.any((c) => c.id == roomId) &&

@@ -14,6 +14,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/tokens.dart';
 import '../utils/failure_reason.dart';
+import '../utils/message_text.dart';
 import '../widgets/media/image_lightbox.dart';
 import '../widgets/media/video_viewer.dart';
 import '../widgets/media/audio_player.dart';
@@ -140,7 +141,9 @@ class MessageAction {
 
 Future<void> _copyMessage(BuildContext context, ChatMessage message) async {
   final l10n = AppLocalizations.of(context)!;
-  final copied = await copyTextToClipboard(message.text);
+  final text = messagePlainText(message, l10n);
+  if (text.trim().isEmpty) return;
+  final copied = await copyTextToClipboard(text);
   TouchFishSnackbarService.instance.show(
     copied ? l10n.aboutCopiedToClipboard : l10n.copyFailedText,
     type: copied ? SnackbarType.info : SnackbarType.error,

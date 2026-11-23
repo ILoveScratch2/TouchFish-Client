@@ -22,6 +22,7 @@ import '../theme/tokens.dart';
 import '../models/message_model.dart';
 import '../models/settings_service.dart';
 import '../utils/file_type_detector.dart';
+import '../utils/message_text.dart';
 import '../utils/clipboard_utils.dart';
 import 'mention_text_field.dart';
 import 'voice_record_bar.dart';
@@ -568,9 +569,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
                   Padding(
                     padding: const EdgeInsets.only(top: 6, left: 26),
                     child: Text(
-                      message.type == MessageType.file
-                          ? l10n.mediaFileMessage
-                          : message.text,
+                      messagePlainText(message, l10n),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),

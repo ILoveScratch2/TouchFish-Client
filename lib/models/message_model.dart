@@ -6,6 +6,23 @@ enum MessageType { text, image, video, audio, file, mergedForward }
 
 enum MessageStatus { pending, sent, delivered, failed }
 
+Map<String, dynamic> _mergeFilePayload(
+  Map<String, dynamic>? nested,
+  Map<String, dynamic> row,
+  String fileHash,
+) {
+  final merged = <String, dynamic>{};
+  if (nested != null) merged.addAll(nested);
+  row.forEach((key, value) {
+    if (key == 'content_type') return;
+    if (value == null) return;
+    if (value is String && value.trim().isEmpty) return;
+    merged[key] = value;
+  });
+  merged['file_hash'] = fileHash;
+  return merged;
+}
+
 class MessageMedia {
   final String path; // file path, URL, or file hash
   final String? fileName;
@@ -676,13 +693,18 @@ class ChatMessage {
       );
     }
 
-    if (event == 'message.file') {
-      final fileHash = json['file_hash']?.toString() ?? content;
-      final attachment = FileAttachment.fromMap({
-        if (json['file'] is Map)
-          ...Map<String, dynamic>.from(json['file'] as Map),
-        'file_hash': fileHash,
-      });
+    final rawFileHash = json['file_hash']?.toString();
+    if (event == 'message.file' || rawFileHash != null) {
+      final fileHash = rawFileHash ?? content;
+      final attachment = FileAttachment.fromMap(
+        _mergeFilePayload(
+          json['file'] is Map
+              ? Map<String, dynamic>.from(json['file'] as Map)
+              : null,
+          json,
+          fileHash,
+        ),
+      );
       MessageType msgType;
       final mime = attachment.mimeType ?? '';
       if (mime.startsWith('image/')) {
@@ -798,12 +820,15 @@ class ChatMessage {
       );
     }
 
-    if (event == 'message.file') {
+    if (event == 'message.file' || notification.fileHash != null) {
       final fileHash = notification.fileHash ?? content;
-      final attachment = FileAttachment.fromMap({
-        ...?notification.fileMetadata,
-        'file_hash': fileHash,
-      });
+      final attachment = FileAttachment.fromMap(
+        _mergeFilePayload(
+          notification.fileMetadata,
+          const <String, dynamic>{},
+          fileHash,
+        ),
+      );
       MessageType msgType;
       final mime = attachment.mimeType ?? '';
       if (mime.startsWith('image/')) {
@@ -985,18 +1010,17 @@ class ChatMessage {
       );
     }
 
-    if (contentType == 'file') {
-      final fileHash = json['file_hash'] as String? ?? content;
+    final recordFileHash = json['file_hash'] as String?;
+    if (contentType == 'file' || recordFileHash != null) {
+      final fileHash = recordFileHash ?? content;
       final nestedMetadata = json['file_metadata'] is Map
           ? Map<String, dynamic>.from(json['file_metadata'] as Map)
           : json['file'] is Map
           ? Map<String, dynamic>.from(json['file'] as Map)
-          : const <String, dynamic>{};
-      final attachment = FileAttachment.fromMap({
-        ...nestedMetadata,
-        ...json,
-        'file_hash': fileHash,
-      });
+          : null;
+      final attachment = FileAttachment.fromMap(
+        _mergeFilePayload(nestedMetadata, json, fileHash),
+      );
       MessageType msgType;
       final mime = attachment.mimeType ?? '';
       if (mime.startsWith('image/')) {
