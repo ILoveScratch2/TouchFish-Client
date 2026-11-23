@@ -2089,6 +2089,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get messageActionCopy => '复制';
 
   @override
+  String get messageCopiedAsFile => '文件已复制到剪贴板';
+
+  @override
+  String get messageCopyFileFallback => '无法取得文件内容，已复制文字';
+
+  @override
   String get messageActionSaveAsFile => '保存为文件';
 
   @override

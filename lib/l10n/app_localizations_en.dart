@@ -2199,6 +2199,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageActionCopy => 'Copy';
 
   @override
+  String get messageCopiedAsFile => 'File copied to clipboard';
+
+  @override
+  String get messageCopyFileFallback =>
+      'Could not fetch the file; copied its text instead';
+
+  @override
   String get messageActionSaveAsFile => 'Save as file';
 
   @override

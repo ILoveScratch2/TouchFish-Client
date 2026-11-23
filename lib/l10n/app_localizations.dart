@@ -4144,6 +4144,18 @@ abstract class AppLocalizations {
   /// **'Copy'**
   String get messageActionCopy;
 
+  /// No description provided for @messageCopiedAsFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File copied to clipboard'**
+  String get messageCopiedAsFile;
+
+  /// No description provided for @messageCopyFileFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not fetch the file; copied its text instead'**
+  String get messageCopyFileFallback;
+
   /// No description provided for @messageActionSaveAsFile.
   ///
   /// In en, this message translates to:

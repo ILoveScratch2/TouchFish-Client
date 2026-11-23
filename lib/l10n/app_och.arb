@@ -792,6 +792,8 @@
   "messageActionDelete": "刪除",
   "messageActionRecall": "撤回",
   "messageActionCopy": "複製",
+  "messageCopiedAsFile": "案已複至剪貼板",
+  "messageCopyFileFallback": "案未可取，已複其文",
   "messageActionSaveAsFile": "存為檔案",
   "messageActionMergeForward": "合併轉發",
   "messageActionSelectMultiple": "多選",

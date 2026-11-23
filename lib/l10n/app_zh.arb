@@ -807,6 +807,8 @@
   "messageActionDelete": "删除",
   "messageActionRecall": "撤回",
   "messageActionCopy": "复制",
+  "messageCopiedAsFile": "文件已复制到剪贴板",
+  "messageCopyFileFallback": "无法取得文件内容，已复制文字",
   "messageActionSaveAsFile": "保存为文件",
   "messageActionMergeForward": "合并转发",
   "messageActionSelectMultiple": "多选",

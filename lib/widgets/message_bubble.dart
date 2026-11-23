@@ -14,7 +14,6 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/tokens.dart';
 import '../utils/failure_reason.dart';
-import '../utils/message_text.dart';
 import '../widgets/media/image_lightbox.dart';
 import '../widgets/media/video_viewer.dart';
 import '../widgets/media/audio_player.dart';
@@ -24,12 +23,12 @@ import '../models/settings_service.dart';
 import '../utils/haptics.dart';
 import 'package:exif/exif.dart';
 import '../utils/talker.dart';
-import '../utils/clipboard_utils.dart';
 import '../models/file_attachment.dart';
 import 'file_attachment_view.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/file_download_service.dart';
+import '../services/message_clipboard_service.dart';
 import '../services/save_text_file.dart';
 import '../services/snackbar_service.dart';
 import '../providers/task/task_manager_provider.dart';
@@ -141,13 +140,27 @@ class MessageAction {
 
 Future<void> _copyMessage(BuildContext context, ChatMessage message) async {
   final l10n = AppLocalizations.of(context)!;
-  final text = messagePlainText(message, l10n);
-  if (text.trim().isEmpty) return;
-  final copied = await copyTextToClipboard(text);
-  TouchFishSnackbarService.instance.show(
-    copied ? l10n.aboutCopiedToClipboard : l10n.copyFailedText,
-    type: copied ? SnackbarType.info : SnackbarType.error,
+  final hasMedia = message.media != null;
+  final result = await MessageClipboardService.instance.copyMessage(
+    message,
+    l10n: l10n,
   );
+  switch (result) {
+    case MessageCopyResult.empty:
+      return;
+    case MessageCopyResult.files:
+      TouchFishSnackbarService.instance.show(l10n.messageCopiedAsFile);
+    case MessageCopyResult.text:
+      TouchFishSnackbarService.instance.show(
+        hasMedia ? l10n.messageCopyFileFallback : l10n.aboutCopiedToClipboard,
+        type: hasMedia ? SnackbarType.warning : SnackbarType.info,
+      );
+    case MessageCopyResult.failed:
+      TouchFishSnackbarService.instance.show(
+        l10n.copyFailedText,
+        type: SnackbarType.error,
+      );
+  }
 }
 
 bool _isRemoteMediaPath(String path) =>

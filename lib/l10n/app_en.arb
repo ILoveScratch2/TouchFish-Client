@@ -814,6 +814,8 @@
   "messageActionDelete": "Delete",
   "messageActionRecall": "Recall",
   "messageActionCopy": "Copy",
+  "messageCopiedAsFile": "File copied to clipboard",
+  "messageCopyFileFallback": "Could not fetch the file; copied its text instead",
   "messageActionSaveAsFile": "Save as file",
   "messageActionMergeForward": "Merge forward",
   "messageActionSelectMultiple": "Select multiple",

@@ -2086,6 +2086,12 @@ class AppLocalizationsOch extends AppLocalizations {
   String get messageActionCopy => '複製';
 
   @override
+  String get messageCopiedAsFile => '案已複至剪貼板';
+
+  @override
+  String get messageCopyFileFallback => '案未可取，已複其文';
+
+  @override
   String get messageActionSaveAsFile => '存為檔案';
 
   @override

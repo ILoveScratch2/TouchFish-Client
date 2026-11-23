@@ -41,7 +41,7 @@ import '../utils/message_text.dart';
 import '../utils/wide_screen_helper.dart';
 import '../utils/talker.dart';
 import '../utils/read_receipt_throttle.dart';
-import '../utils/clipboard_utils.dart';
+import '../services/message_clipboard_service.dart';
 import 'chat_room_settings_screen.dart';
 import 'group_essence_screen.dart';
 import '../widgets/pinned_messages_sheet.dart';
@@ -1185,22 +1185,28 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       TouchFishSnackbarService.instance.show(l10n.copySelectedEmpty);
       return;
     }
-    final lines = <String>[];
-    for (final m in selected) {
-      if (m.isDeleted) continue;
-      final label = messagePlainText(m, l10n);
-      if (label.trim().isNotEmpty) lines.add(label.trim());
-    }
-    if (lines.isEmpty) {
-      TouchFishSnackbarService.instance.show(l10n.copySelectedEmpty);
-      return;
-    }
-    final copied = await copyTextToClipboard(lines.join('\n'));
-    if (!mounted) return;
-    TouchFishSnackbarService.instance.show(
-      copied ? l10n.aboutCopiedToClipboard : l10n.copyFailedText,
-      type: copied ? SnackbarType.info : SnackbarType.error,
+    final hasMedia = selected.any((m) => !m.isDeleted && m.media != null);
+    final result = await MessageClipboardService.instance.copyMessages(
+      selected,
+      l10n: l10n,
     );
+    if (!mounted) return;
+    switch (result) {
+      case MessageCopyResult.empty:
+        TouchFishSnackbarService.instance.show(l10n.copySelectedEmpty);
+      case MessageCopyResult.files:
+        TouchFishSnackbarService.instance.show(l10n.messageCopiedAsFile);
+      case MessageCopyResult.text:
+        TouchFishSnackbarService.instance.show(
+          hasMedia ? l10n.messageCopyFileFallback : l10n.aboutCopiedToClipboard,
+          type: hasMedia ? SnackbarType.warning : SnackbarType.info,
+        );
+      case MessageCopyResult.failed:
+        TouchFishSnackbarService.instance.show(
+          l10n.copyFailedText,
+          type: SnackbarType.error,
+        );
+    }
   }
 
   Future<void> _mergeForwardSelected() async {
