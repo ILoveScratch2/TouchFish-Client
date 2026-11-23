@@ -461,8 +461,15 @@ class _TouchFishAppState extends State<TouchFishApp>
     AuthState.instance.addListener(_onAuthNotice);
     CallService.instance.onOpenCallScreen =
         (peerUid, {required bool isIncoming}) async {
-      await _router.push(AppRoutes.callPath(peerUid));
-    };
+          final path = AppRoutes.callPath(peerUid);
+          final current = _router.routerDelegate.currentConfiguration.uri
+              .toString();
+          if (current == path || current.startsWith('${AppRoutes.call}/')) {
+            _router.replace(path);
+            return;
+          }
+          await _router.push(path);
+        };
     CallService.instance.init();
     unawaited(AppNotificationService.instance.initialize(_router));
     BackgroundPermissionService.instance.installNotificationRouteHandler();
@@ -596,8 +603,7 @@ class _TouchFishAppState extends State<TouchFishApp>
     }
     if (_didShowDeprecationNotice) return;
     _didShowDeprecationNotice = true;
-    final navigatorContext =
-        _router.routerDelegate.navigatorKey.currentContext;
+    final navigatorContext = _router.routerDelegate.navigatorKey.currentContext;
     if (navigatorContext == null || !navigatorContext.mounted) return;
     TouchFishSnackbarService.instance.show(notice);
   }
@@ -814,9 +820,9 @@ class _TouchFishAppState extends State<TouchFishApp>
     final reason = AuthState.instance.restoreFailureReason;
     final (message, canRetry) = switch (reason) {
       RestoreFailureReason.duplicateSession => (
-          l10n.sessionRestoreDuplicateMessage,
-          false,
-        ),
+        l10n.sessionRestoreDuplicateMessage,
+        false,
+      ),
       RestoreFailureReason.network => (l10n.sessionRestoreNetworkError, true),
       _ => (l10n.savedSessionRestoreFailedMessage, true),
     };
@@ -1051,7 +1057,10 @@ class _TouchFishAppState extends State<TouchFishApp>
                     !animationsEnabled,
               ),
               child: TouchFishSnackbarOverlay(
-                child: _buildSavedSessionRestoreOverlay(context, contentWithTasks),
+                child: _buildSavedSessionRestoreOverlay(
+                  context,
+                  contentWithTasks,
+                ),
               ),
             );
           },
@@ -1084,16 +1093,10 @@ class _TouchFishAppState extends State<TouchFishApp>
     final onError = _onColorFor(error);
 
     // 表面层级必须和默认主题同向
-    Color step(double t) => Color.lerp(
-      surface,
-      isDark ? Colors.white : Colors.black,
-      t,
-    )!;
-    Color backStep(double t) => Color.lerp(
-      surface,
-      isDark ? Colors.black : Colors.white,
-      t,
-    )!;
+    Color step(double t) =>
+        Color.lerp(surface, isDark ? Colors.white : Colors.black, t)!;
+    Color backStep(double t) =>
+        Color.lerp(surface, isDark ? Colors.black : Colors.white, t)!;
 
     final surfaceContainerLowest = backStep(isDark ? 0.20 : 0.55);
     final surfaceContainerLow = step(0.028);

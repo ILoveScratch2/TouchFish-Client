@@ -191,6 +191,71 @@ void main() {
     },
   );
 
+  test('peer retry after a finished call is not rejected as busy', () async {
+    wireOpenScreen();
+    events.add(
+      callEvent('call.invite', {
+        'call_id': 'c1',
+        'from_uid': 42,
+        'payload': {'sdp': 'offer-1', 'sdp_type': 'offer'},
+      }),
+    );
+    await Future<void>.delayed(Duration.zero);
+    events.add(
+      callEvent('call.hangup', {
+        'call_id': 'c1',
+        'from_uid': 42,
+        'reason': 'cancel',
+      }),
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(service.state, RtcCallState.ended);
+
+    events.add(
+      callEvent('call.invite', {
+        'call_id': 'c2',
+        'from_uid': 42,
+        'payload': {'sdp': 'offer-2', 'sdp_type': 'offer'},
+      }),
+    );
+    await Future<void>.delayed(Duration.zero);
+
+    expect(sent.where((p) => p['type'] == 'call.hangup'), isEmpty);
+    expect(service.state, RtcCallState.incoming);
+    expect(service.callId, 'c2');
+    expect(openedUid, 42);
+    expect(openedIncoming, isTrue);
+  });
+
+  test('invite while a call is connected is still rejected as busy', () async {
+    await service.startCall(42);
+    final callId = sent.single['call_id'];
+    events.add(
+      callEvent('call.answer', {
+        'call_id': callId,
+        'from_uid': 42,
+        'payload': {'sdp': 'remote-answer', 'sdp_type': 'answer'},
+      }),
+    );
+    await Future<void>.delayed(Duration.zero);
+    (service.debugPeer as FakeRtcPeer).emitIceState('connected');
+    await Future<void>.delayed(Duration.zero);
+    expect(service.state, RtcCallState.connected);
+
+    events.add(
+      callEvent('call.invite', {
+        'call_id': 'other',
+        'from_uid': 7,
+        'payload': {'sdp': 'x', 'sdp_type': 'offer'},
+      }),
+    );
+    await Future<void>.delayed(Duration.zero);
+
+    final hangup = sent.lastWhere((p) => p['type'] == 'call.hangup');
+    expect(hangup['reason'], 'busy');
+    expect(service.state, RtcCallState.connected);
+  });
+
   test('incoming invite while busy is auto-declined', () async {
     await service.startCall(1);
     events.add(
@@ -205,6 +270,126 @@ void main() {
     expect(hangup['reason'], 'busy');
     expect(hangup['target_uid'], 42);
     expect(service.state, RtcCallState.outgoing);
+  });
+
+  test(
+    'peer retry while still ringing replaces the stale incoming call',
+    () async {
+      events.add(
+        callEvent('call.invite', {
+          'call_id': 'c1',
+          'from_uid': 42,
+          'payload': {'sdp': 'offer-1', 'sdp_type': 'offer'},
+        }),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(service.callId, 'c1');
+
+      events.add(
+        callEvent('call.invite', {
+          'call_id': 'c2',
+          'from_uid': 42,
+          'payload': {'sdp': 'offer-2', 'sdp_type': 'offer'},
+        }),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(sent.where((p) => p['type'] == 'call.hangup'), isEmpty);
+      expect(service.state, RtcCallState.incoming);
+      expect(service.callId, 'c2');
+      expect(service.peerUid, 42);
+
+      expect(await service.acceptCall(), isTrue);
+      final answer = sent.last;
+      expect(answer['type'], 'call.answer');
+      expect(answer['call_id'], 'c2');
+      expect((answer['payload'] as Map)['sdp'], 'fake-answer-sdp');
+    },
+  );
+
+  test(
+    'incoming invite from another peer while ringing is declined as busy',
+    () async {
+      events.add(
+        callEvent('call.invite', {
+          'call_id': 'c1',
+          'from_uid': 42,
+          'payload': {'sdp': 'offer-1', 'sdp_type': 'offer'},
+        }),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      events.add(
+        callEvent('call.invite', {
+          'call_id': 'c9',
+          'from_uid': 7,
+          'payload': {'sdp': 'offer-9', 'sdp_type': 'offer'},
+        }),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      final hangup = sent.lastWhere((p) => p['type'] == 'call.hangup');
+      expect(hangup['reason'], 'busy');
+      expect(hangup['target_uid'], 7);
+      expect(service.callId, 'c1');
+      expect(service.state, RtcCallState.incoming);
+    },
+  );
+
+  test(
+    'unanswered incoming call ends itself and stops blocking new calls',
+    () async {
+      service.configureForTesting(
+        incomingRingTimeout: const Duration(milliseconds: 20),
+      );
+      events.add(
+        callEvent('call.invite', {
+          'call_id': 'c1',
+          'from_uid': 42,
+          'payload': {'sdp': 'offer-1', 'sdp_type': 'offer'},
+        }),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(service.state, RtcCallState.incoming);
+
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+
+      expect(service.state, RtcCallState.ended);
+      expect(service.endReason, RtcCallEndReason.cancelled);
+      final hangup = sent.lastWhere((p) => p['type'] == 'call.hangup');
+      expect(hangup['call_id'], 'c1');
+      expect(hangup['reason'], 'cancel');
+
+      events.add(
+        callEvent('call.invite', {
+          'call_id': 'c2',
+          'from_uid': 7,
+          'payload': {'sdp': 'offer-2', 'sdp_type': 'offer'},
+        }),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(service.state, RtcCallState.incoming);
+      expect(service.peerUid, 7);
+    },
+  );
+
+  test('accepting an incoming call cancels the ring timeout', () async {
+    service.configureForTesting(
+      incomingRingTimeout: const Duration(milliseconds: 20),
+    );
+    events.add(
+      callEvent('call.invite', {
+        'call_id': 'c1',
+        'from_uid': 42,
+        'payload': {'sdp': 'offer-1', 'sdp_type': 'offer'},
+      }),
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(await service.acceptCall(), isTrue);
+
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+
+    expect(service.state, RtcCallState.connecting);
   });
 
   test('call.ice buffered before answer then flushed to peer', () async {
@@ -307,6 +492,28 @@ void main() {
     expect(service.state, RtcCallState.ended);
     expect(service.endReason, RtcCallEndReason.cancelled);
   });
+
+  test(
+    'retry after ring timeout starts a fresh call with a new call id',
+    () async {
+      service.configureForTesting(
+        ringTimeout: const Duration(milliseconds: 20),
+      );
+      expect(await service.startCall(42), isTrue);
+      final firstId = sent.single['call_id'];
+
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      expect(service.state, RtcCallState.failed);
+      expect(service.endReason, RtcCallEndReason.noAnswer);
+
+      expect(await service.retryCall(), isTrue);
+      expect(service.state, RtcCallState.outgoing);
+      final retried = sent.last;
+      expect(retried['type'], 'call.invite');
+      expect(retried['target_uid'], 42);
+      expect(retried['call_id'], isNot(firstId));
+    },
+  );
 
   test('hangup sends cancel while outgoing', () async {
     await service.startCall(42);

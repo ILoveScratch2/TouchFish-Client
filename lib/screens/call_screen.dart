@@ -58,6 +58,8 @@ class _CallScreenState extends State<CallScreen> {
           final isCurrentCall =
               service.peerUid == null || service.peerUid == widget.peerUid;
 
+          if (isCurrentCall) _routeCallId = service.callId;
+
           if (!isCurrentCall || state == RtcCallState.idle) {
             return const _NoCallPlaceholder();
           }
@@ -68,7 +70,8 @@ class _CallScreenState extends State<CallScreen> {
               onAccept: () => service.acceptCall(),
               onDecline: service.declineCall,
             ),
-            RtcCallState.outgoing || RtcCallState.connecting ||
+            RtcCallState.outgoing ||
+            RtcCallState.connecting ||
             RtcCallState.connected => _ActiveCallView(
               peerUid: widget.peerUid,
               service: service,

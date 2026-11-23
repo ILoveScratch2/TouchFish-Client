@@ -12,16 +12,23 @@ import 'api/tf_api_client.dart';
 
 /// 视频通话信令 + 状态机。
 ///
-/// 服务端只做信令中继，媒体�?（RTC）走 P2P。本服务监听
-/// [ChatWsService] 的加密信令流，处理呼叫 / 应答 / ICE / 挂断状态迁移。
+/// 服务端信令中继
 class CallService extends ChangeNotifier {
   CallService._();
 
   static CallService? _instance;
   static CallService get instance => _instance ??= CallService._();
 
-  static const Duration _ringTimeout = Duration(seconds: 30);
+  /// 呼出方等待接听的时长
+  static const Duration defaultRingTimeout = Duration(seconds: 30);
+
+  /// 来电方振铃的时长
+  static const Duration defaultIncomingRingTimeout = Duration(seconds: 45);
+
   static const Duration _connectTimeout = Duration(seconds: 20);
+
+  Duration _ringTimeout = defaultRingTimeout;
+  Duration _incomingRingTimeout = defaultIncomingRingTimeout;
 
   bool Function(Map<String, dynamic> packet) _send = (packet) =>
       ChatWsService.instance.sendEncryptedPacket(packet);
@@ -64,10 +71,10 @@ class CallService extends ChangeNotifier {
   DateTime? _connectedAt;
   DateTime? get connectedAt => _connectedAt;
 
-  /// 本端摄像头预览。
+  /// 本端摄像头预览
   Widget? get localVideo => _peer?.localVideo;
 
-  /// 远端画面。
+  /// 远端画面
   Widget? get remoteVideo => _peer?.remoteVideo;
 
   @visibleForTesting
@@ -76,8 +83,12 @@ class CallService extends ChangeNotifier {
   final Random _random = Random();
 
   Timer? _ringTimer;
+  Timer? _incomingTimer;
   Timer? _connectTimer;
   Future<void>? _teardownFuture;
+
+  /// 本次来电开始振铃的时间
+  DateTime? _incomingSince;
 
   /// 打开通话页面（来电时由本服务自动触发）。
   Future<void> Function(int peerUid, {required bool isIncoming})?
@@ -98,11 +109,15 @@ class CallService extends ChangeNotifier {
     RtcPeerFactory? peerFactory,
     Stream<ChatWsEvent>? eventStream,
     Future<List<Map<String, dynamic>>?> Function()? iceServersFetcher,
+    Duration? ringTimeout,
+    Duration? incomingRingTimeout,
   }) {
     if (sender != null) _send = sender;
     if (peerFactory != null) _peerFactory = peerFactory;
     if (eventStream != null) _eventStream = eventStream;
     if (iceServersFetcher != null) _iceServersFetcher = iceServersFetcher;
+    if (ringTimeout != null) _ringTimeout = ringTimeout;
+    if (incomingRingTimeout != null) _incomingRingTimeout = incomingRingTimeout;
     init();
   }
 
@@ -127,6 +142,9 @@ class CallService extends ChangeNotifier {
     service._lastPeerUid = null;
     service._callId = null;
     service._incomingOffer = null;
+    service._incomingSince = null;
+    service._ringTimeout = defaultRingTimeout;
+    service._incomingRingTimeout = defaultIncomingRingTimeout;
     service._pendingCandidates.clear();
     service._remoteDescriptionApplied = false;
     service._remoteStreamPresent = false;
@@ -275,6 +293,7 @@ class CallService extends ChangeNotifier {
     _peerUid = null;
     _callId = null;
     _incomingOffer = null;
+    _incomingSince = null;
     _pendingCandidates.clear();
     _remoteDescriptionApplied = false;
     _remoteStreamPresent = false;
@@ -378,7 +397,9 @@ class CallService extends ChangeNotifier {
       });
       return;
     }
-    if (_state != RtcCallState.idle) {
+    if (_state == RtcCallState.idle) {
+      _beginIncomingSession(fromUid, callId, payload);
+    } else if (!_takeOverStaleSession(fromUid, callId, payload)) {
       _send({
         'type': 'call.hangup',
         'call_id': callId,
@@ -387,12 +408,50 @@ class CallService extends ChangeNotifier {
       });
       return;
     }
+    onOpenCallScreen?.call(fromUid, isIncoming: true);
+  }
+
+  bool _takeOverStaleSession(
+    int fromUid,
+    String callId,
+    Map<String, dynamic> payload,
+  ) {
+    if (_peer != null) return false;
+    switch (_state) {
+      case RtcCallState.ended:
+      case RtcCallState.failed:
+        resetFinishedCall();
+        _beginIncomingSession(fromUid, callId, payload);
+        return true;
+      case RtcCallState.incoming:
+        final samePeer = fromUid == _peerUid;
+        final since = _incomingSince;
+        final stale =
+            since == null ||
+            DateTime.now().difference(since) >= _incomingRingTimeout;
+        if (!samePeer && !stale) return false;
+        _pendingCandidates.clear();
+        _remoteDescriptionApplied = false;
+        _incomingOffer = null;
+        _beginIncomingSession(fromUid, callId, payload);
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  void _beginIncomingSession(
+    int fromUid,
+    String callId,
+    Map<String, dynamic> payload,
+  ) {
     _state = RtcCallState.incoming;
     _peerUid = fromUid;
     _callId = callId;
     _incomingOffer = payload;
+    _incomingSince = DateTime.now();
+    _startIncomingTimer();
     notifyListeners();
-    onOpenCallScreen?.call(fromUid, isIncoming: true);
   }
 
   void _onAnswer(Map<String, dynamic> data) {
@@ -542,6 +601,16 @@ class CallService extends ChangeNotifier {
     });
   }
 
+  void _startIncomingTimer() {
+    _cancelIncomingTimer();
+    _incomingTimer = Timer(_incomingRingTimeout, () {
+      _incomingTimer = null;
+      if (_state != RtcCallState.incoming) return;
+      _sendHangup('cancel');
+      _finishCall(failed: false, reason: RtcCallEndReason.cancelled);
+    });
+  }
+
   void _startConnectTimer() {
     _connectTimer = Timer(_connectTimeout, () {
       if (_state != RtcCallState.connecting) return;
@@ -552,12 +621,18 @@ class CallService extends ChangeNotifier {
 
   void _cancelTimers() {
     _cancelRingTimer();
+    _cancelIncomingTimer();
     _cancelConnectTimer();
   }
 
   void _cancelRingTimer() {
     _ringTimer?.cancel();
     _ringTimer = null;
+  }
+
+  void _cancelIncomingTimer() {
+    _incomingTimer?.cancel();
+    _incomingTimer = null;
   }
 
   void _cancelConnectTimer() {
@@ -581,6 +656,7 @@ class CallService extends ChangeNotifier {
     _peerUid = null;
     _callId = null;
     _incomingOffer = null;
+    _incomingSince = null;
     _pendingCandidates.clear();
     _remoteDescriptionApplied = false;
     _remoteStreamPresent = false;
@@ -596,6 +672,7 @@ class CallService extends ChangeNotifier {
     final peer = _peer;
     _peer = null;
     _incomingOffer = null;
+    _incomingSince = null;
     _pendingCandidates.clear();
     _remoteDescriptionApplied = false;
     _remoteStreamPresent = false;
