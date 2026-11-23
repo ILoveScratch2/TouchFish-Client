@@ -4144,6 +4144,12 @@ abstract class AppLocalizations {
   /// **'Copy'**
   String get messageActionCopy;
 
+  /// No description provided for @messageActionSaveAsFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as file'**
+  String get messageActionSaveAsFile;
+
   /// No description provided for @messageActionMergeForward.
   ///
   /// In en, this message translates to:

@@ -807,6 +807,7 @@
   "messageActionDelete": "删除",
   "messageActionRecall": "撤回",
   "messageActionCopy": "复制",
+  "messageActionSaveAsFile": "保存为文件",
   "messageActionMergeForward": "合并转发",
   "messageActionSelectMultiple": "多选",
   "messageActionViewOriginal": "查看原文",

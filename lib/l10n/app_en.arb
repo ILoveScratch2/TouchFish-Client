@@ -814,6 +814,7 @@
   "messageActionDelete": "Delete",
   "messageActionRecall": "Recall",
   "messageActionCopy": "Copy",
+  "messageActionSaveAsFile": "Save as file",
   "messageActionMergeForward": "Merge forward",
   "messageActionSelectMultiple": "Select multiple",
   "messageActionViewOriginal": "View Original",

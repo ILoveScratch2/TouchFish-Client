@@ -2086,6 +2086,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get messageActionCopy => '複製';
 
   @override
+  String get messageActionSaveAsFile => '存為檔案';
+
+  @override
   String get messageActionMergeForward => '合併轉發';
 
   @override

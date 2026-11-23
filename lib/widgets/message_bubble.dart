@@ -28,6 +28,8 @@ import '../models/file_attachment.dart';
 import 'file_attachment_view.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
+import '../services/file_download_service.dart';
+import '../services/save_text_file.dart';
 import '../services/snackbar_service.dart';
 import '../providers/task/task_manager_provider.dart';
 import '../models/file_task.dart';
@@ -104,6 +106,7 @@ Future<void> _showRecalledOriginalDialog(
 /// 消息动作类别。作为 [MessageAction] 与各呈现层筛选的规范标识。
 enum MessageActionKind {
   copy,
+  saveAs,
   reply,
   forward,
   selectMultiple,
@@ -144,6 +147,108 @@ Future<void> _copyMessage(BuildContext context, ChatMessage message) async {
   );
 }
 
+bool _isRemoteMediaPath(String path) =>
+    path.startsWith('http://') || path.startsWith('https://');
+
+bool _canSaveMessageAsFile(ChatMessage message) {
+  if (message.isDeleted) return false;
+  if (message.type != MessageType.audio) return false;
+  final media = message.media;
+  if (media == null) return false;
+  return media.bytes != null ||
+      media.fileHash != null ||
+      _isRemoteMediaPath(media.path);
+}
+
+String _safeSaveFileName(String raw) {
+  final sanitized = raw
+      .replaceAll(RegExp(r'[\x00-\x1f<>:"/\\|?*]'), '_')
+      .trim();
+  if (sanitized.isEmpty || RegExp(r'^\.+$').hasMatch(sanitized)) {
+    return 'voice.m4a';
+  }
+  return sanitized;
+}
+
+String _mediaSaveFileName(ChatMessage message, MessageMedia media) {
+  final existing = media.fileName?.trim();
+  if (existing != null && existing.isNotEmpty) {
+    return _safeSaveFileName(existing);
+  }
+  final mime = (media.mimeType ?? '').toLowerCase();
+  final extension = switch (mime) {
+    'audio/mpeg' => 'mp3',
+    'audio/wav' || 'audio/x-wav' => 'wav',
+    'audio/ogg' || 'audio/opus' => 'ogg',
+    'audio/aac' => 'aac',
+    _ => 'm4a',
+  };
+  final stamp = message.mid ?? message.timestamp.millisecondsSinceEpoch;
+  return 'voice_$stamp.$extension';
+}
+
+Future<void> _saveMessageAsFile(
+  BuildContext context,
+  ChatMessage message,
+) async {
+  final l10n = AppLocalizations.of(context)!;
+  final media = message.media;
+  if (media == null) return;
+  final fileName = _mediaSaveFileName(message, media);
+
+  void reportFailure() {
+    if (!context.mounted) return;
+    TouchFishSnackbarService.instance.show(
+      l10n.fileDownloadFailed,
+      type: SnackbarType.error,
+    );
+  }
+
+  try {
+    // 本地已有字节
+    final cached = media.bytes;
+    if (cached != null) {
+      final saved = await saveTextFile(
+        fileName,
+        Uint8List.fromList(cached),
+      );
+      if (!context.mounted) return;
+      if (saved == null) return; // 用户取消
+      TouchFishSnackbarService.instance.show(
+        kIsWeb ? l10n.fileDownloadStarted : l10n.fileDownloadSaved(saved),
+      );
+      return;
+    }
+
+    // 远端文件
+    String? sourceUrl;
+    if (_isRemoteMediaPath(media.path)) {
+      sourceUrl = media.path;
+    } else if (media.fileHash != null) {
+      sourceUrl = await TfApiClient.instance.getFileUrl(media.fileHash!);
+    }
+    if (sourceUrl == null || sourceUrl.isEmpty) {
+      reportFailure();
+      return;
+    }
+    final result = await downloadFile(sourceUrl, fileName);
+    if (!context.mounted) return;
+    if (result.cancelled) return;
+    if (!result.succeeded) {
+      reportFailure();
+      return;
+    }
+    TouchFishSnackbarService.instance.show(
+      result.savedPath == null
+          ? l10n.fileDownloadStarted
+          : l10n.fileDownloadSaved(result.savedPath!),
+    );
+  } catch (e) {
+    talker.error('save audio message failed', e);
+    reportFailure();
+  }
+}
+
 /// 构建消息动作的单一事实源列表（规范顺序）。
 List<MessageAction> buildMessageActions(
   BuildContext context, {
@@ -174,6 +279,13 @@ List<MessageAction> buildMessageActions(
         icon: Symbols.content_copy,
         label: l10n.messageActionCopy,
         onInvoke: () => _copyMessage(context, message),
+      ),
+    if (_canSaveMessageAsFile(message))
+      MessageAction(
+        kind: MessageActionKind.saveAs,
+        icon: Symbols.save,
+        label: l10n.messageActionSaveAsFile,
+        onInvoke: () => _saveMessageAsFile(context, message),
       ),
     if (actionable && onReply != null)
       MessageAction(
@@ -251,6 +363,7 @@ const Set<MessageActionKind> _hoverActionKinds = {
 /// 命中右键菜单可呈现的动作子集。
 const Set<MessageActionKind> _desktopMenuKinds = {
   MessageActionKind.copy,
+  MessageActionKind.saveAs,
   MessageActionKind.reply,
   MessageActionKind.forward,
   MessageActionKind.recall,

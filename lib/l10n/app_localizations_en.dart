@@ -2199,6 +2199,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageActionCopy => 'Copy';
 
   @override
+  String get messageActionSaveAsFile => 'Save as file';
+
+  @override
   String get messageActionMergeForward => 'Merge forward';
 
   @override

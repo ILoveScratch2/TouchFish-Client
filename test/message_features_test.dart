@@ -864,6 +864,75 @@ void main() {
     await gesture.removePointer();
   });
 
+  testWidgets('voice messages expose a save-as-file action', (tester) async {
+    late BuildContext builderContext;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (ctx) {
+            builderContext = ctx;
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    List<MessageActionKind> actionKinds(ChatMessage message) =>
+        buildMessageActions(
+          builderContext,
+          message: message,
+          canRecall: false,
+          canPin: false,
+          essenceEnabled: true,
+          isPinned: false,
+          isEssence: false,
+        ).map((action) => action.kind).toList();
+
+    final voice = ChatMessage(
+      id: 'v1',
+      mid: 11,
+      text: '[AUDIO]',
+      timestamp: DateTime(2026),
+      isMe: true,
+      type: MessageType.audio,
+      media: const MessageMedia(
+        path: 'hash-voice',
+        fileName: 'voice_1.m4a',
+        fileHash: 'hash-voice',
+        mimeType: 'audio/mp4',
+        durationMs: 2400,
+      ),
+    );
+    expect(actionKinds(voice), contains(MessageActionKind.saveAs));
+
+    final document = ChatMessage(
+      id: 'f1',
+      mid: 12,
+      text: '[FILE]',
+      timestamp: DateTime(2026),
+      isMe: true,
+      type: MessageType.file,
+      media: const MessageMedia(
+        path: 'hash-doc',
+        fileName: 'doc.zip',
+        fileHash: 'hash-doc',
+        mimeType: 'application/zip',
+      ),
+    );
+    expect(
+      actionKinds(document),
+      isNot(contains(MessageActionKind.saveAs)),
+    );
+  });
+
   testWidgets('long press menu exposes working reply, forward and recall', (
     tester,
   ) async {

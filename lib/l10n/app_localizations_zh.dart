@@ -2089,6 +2089,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get messageActionCopy => '复制';
 
   @override
+  String get messageActionSaveAsFile => '保存为文件';
+
+  @override
   String get messageActionMergeForward => '合并转发';
 
   @override
