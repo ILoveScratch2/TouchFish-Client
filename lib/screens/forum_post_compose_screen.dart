@@ -20,6 +20,7 @@ import '../utils/clipboard_utils.dart';
 import '../utils/wide_screen_helper.dart';
 import '../models/file_attachment.dart';
 import '../services/draft_service.dart';
+import '../services/forum_data_bus.dart';
 import '../widgets/app_alert_dialog.dart';
 import '../widgets/file_attachment_view.dart';
 import '../widgets/stickers/sticker_picker_enhanced.dart';
@@ -67,6 +68,14 @@ class ForumPostComposeSheet extends StatefulWidget {
       ),
     );
   }
+
+  /// 提交成功后广播「哪些帖子变了」：
+  /// 回复只影响被回复的那一篇，新帖影响整张列表（`null`）。
+  @visibleForTesting
+  static String? busPostIdAfterSubmit({
+    required bool isReply,
+    required int? postId,
+  }) => isReply ? postId?.toString() : null;
 
   @override
   State<ForumPostComposeSheet> createState() => _ForumPostComposeSheetState();
@@ -830,6 +839,12 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
         )
         .toList();
     final isReply = widget.isReply;
+    final draftType = _draftType;
+    final draftId = _draftId;
+    final changedPostId = ForumPostComposeSheet.busPostIdAfterSubmit(
+      isReply: isReply,
+      postId: pid,
+    );
 
     setState(() {
       _isSubmitting = true;
@@ -839,6 +854,9 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
     unawaited(
       _submitInBackground(
         l10n: l10n,
+        draftType: draftType,
+        draftId: draftId,
+        changedPostId: changedPostId,
         uid: uid,
         password: password,
         fid: fid,
@@ -858,6 +876,9 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
 
   Future<void> _submitInBackground({
     required AppLocalizations l10n,
+    required String draftType,
+    required String draftId,
+    required String? changedPostId,
     required int uid,
     required String password,
     required int fid,
@@ -888,21 +909,21 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
             );
 
       if (success) {
-        await DraftService.instance.clearDraft(_draftType, _draftId);
+        await DraftService.instance.clearDraft(draftType, draftId);
+        ForumDataBus.instance.notifyPostsChanged(
+          postId: changedPostId,
+          listChanged: changedPostId == null,
+        );
         TouchFishSnackbarService.instance.show(
           isReply ? l10n.forumCommentSuccess : l10n.forumPostSuccess,
         );
       } else {
-        await DraftService.instance.saveDraft(
-          _draftType,
-          _draftId,
-          draftPayload,
-        );
+        await DraftService.instance.saveDraft(draftType, draftId, draftPayload);
         TouchFishSnackbarService.instance.show(l10n.forumPostFailed);
       }
     } catch (e) {
       talker.error('_submit post failed', e);
-      await DraftService.instance.saveDraft(_draftType, _draftId, draftPayload);
+      await DraftService.instance.saveDraft(draftType, draftId, draftPayload);
       TouchFishSnackbarService.instance.show(l10n.forumPostFailed);
     }
   }

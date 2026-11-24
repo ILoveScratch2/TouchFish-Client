@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/talker.dart';
 import '../services/draft_service.dart';
+import '../services/forum_data_bus.dart';
 import '../theme/tokens.dart';
 import '../utils/haptics.dart';
 import '../widgets/ui/empty_state.dart';
@@ -31,12 +32,23 @@ class _DraftBoxScreenState extends State<DraftBoxScreen> {
   @override
   void initState() {
     super.initState();
+    ForumDataBus.instance.change.addListener(_onForumDataChanged);
     _load();
   }
 
-  Future<void> _load() async {
+  @override
+  void dispose() {
+    ForumDataBus.instance.change.removeListener(_onForumDataChanged);
+    super.dispose();
+  }
+
+  void _onForumDataChanged() {
+    if (mounted) _load(showLoading: false);
+  }
+
+  Future<void> _load({bool showLoading = true}) async {
     setState(() {
-      _loading = true;
+      if (showLoading) _loading = true;
       _error = null;
     });
     try {
@@ -57,11 +69,7 @@ class _DraftBoxScreenState extends State<DraftBoxScreen> {
   }
 
   Future<void> _openDraft(DraftRecord draft) async {
-    final changed = await ForumPostComposeSheet.show(
-      context,
-      forumId: draft.id,
-    );
-    if (changed == true) await _load();
+    await ForumPostComposeSheet.show(context, forumId: draft.id);
   }
 
   Future<void> _deleteDraft(DraftRecord draft) async {

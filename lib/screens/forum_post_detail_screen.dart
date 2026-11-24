@@ -78,6 +78,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       true,
     );
     SettingsService.instance.addListener(_onSettingsChanged);
+    ForumDataBus.instance.change.addListener(_onForumDataChanged);
     _loadData();
     _loadMentionUsers();
     _commentController.addListener(_scheduleCommentDraftSave);
@@ -92,6 +93,13 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     if (next != _enableMarkdown && mounted) {
       setState(() => _enableMarkdown = next);
     }
+  }
+
+  /// 本篇帖子的评论发生变化后重载
+  void _onForumDataChanged() {
+    if (!mounted || _isDeletingPost) return;
+    if (ForumDataBus.instance.change.value.postId != widget.postId) return;
+    unawaited(_loadData(showLoading: false));
   }
 
   /// 只换路径参数（换帖子 / 换论坛）时 Flutter 会复用同一个 State，
@@ -181,10 +189,10 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     });
   }
 
-  Future<void> _loadData() async {
-    // 可能在提交评论的 await 之后才被调用：页面已 pop 时不能再 setState
+  Future<void> _loadData({bool showLoading = true}) async {
+    // 可能在提交评论的 await 之后才被调用
     if (!mounted) return;
-    setState(() => _isLoading = true);
+    if (showLoading) setState(() => _isLoading = true);
     try {
       final fid = int.tryParse(widget.forumId);
       final pid = int.tryParse(widget.postId);
@@ -237,6 +245,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   @override
   void dispose() {
     SettingsService.instance.removeListener(_onSettingsChanged);
+    ForumDataBus.instance.change.removeListener(_onForumDataChanged);
     _draftTimer?.cancel();
     unawaited(_saveCommentDraft());
     _commentController.dispose();
@@ -287,7 +296,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     }
     final post = _post!;
     final author = _postAuthor;
-    // 值来自页面级缓存（见 _enableMarkdown / _onSettingsChanged）
+    // 来自页面级缓存
     final enableMarkdown = _enableMarkdown;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
@@ -460,8 +469,6 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
 
   /// nodel
   /// a very important note
-  /// 正文阅读字号倍率
-  ///
   /// 使用 MediaQuery.textScaler 放大正文不可行
   /// Markdown 的列表项文字渲染在嵌套的 Text.rich 整树放大会导致列表项比段落多一次
   static const double _kPostContentScale = 1.2;
@@ -578,7 +585,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
 
     final buffer = StringBuffer();
 
-    // 添加标题（如果存在）
+    // 添加标题
     if (_post!.title.isNotEmpty) {
       buffer.writeln(_post!.title);
       buffer.writeln();
@@ -587,7 +594,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
     // 添加内容
     buffer.writeln(_post!.content);
 
-    // 添加来源标记（原先硬编码中文，英文/繁中界面下会串语言）
+    // 添加来源标记
     buffer.writeln();
     buffer.writeln('---');
     buffer.writeln(AppLocalizations.of(context)!.forumPostCopySource);
@@ -838,12 +845,8 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
         );
       },
     );
-    if (!mounted) return;
-    if (result == true) {
-      _commentController.clear();
-      await _loadData();
-      ForumDataBus.instance.notifyPostsChanged(postId: widget.postId);
-    }
+    if (!mounted || result != true) return;
+    _commentController.clear();
   }
 
   Future<void> _submitComment() async {

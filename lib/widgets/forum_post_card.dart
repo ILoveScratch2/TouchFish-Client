@@ -106,8 +106,10 @@ class _ForumPostCardState extends State<ForumPostCard> {
   }
 
   void _onForumChanged() {
+    final change = ForumDataBus.instance.change.value;
+    if (change.listChanged) return;
     final pid = post.id;
-    if (!ForumDataBus.instance.change.value.affects(pid)) return;
+    if (!change.affects(pid)) return;
     final fid = int.tryParse(post.forumId);
     if (fid != null) _commentRequests.remove('$fid/$pid');
     _loadData();

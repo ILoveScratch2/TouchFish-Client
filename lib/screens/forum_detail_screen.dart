@@ -1082,13 +1082,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   }
 
   void _openComposePost(BuildContext context) async {
-    final result = await ForumPostComposeSheet.show(
-      context,
-      forumId: widget.forumId,
-    );
-    if (result == true && mounted) {
-      _refresh();
-    }
+    await ForumPostComposeSheet.show(context, forumId: widget.forumId);
   }
 
   void _handleEditForum(BuildContext context) async {

@@ -30,4 +30,15 @@ void main() {
     expect(change.affects('9'), isTrue);
     expect(change.affects('10'), isTrue);
   });
+
+  test('list-only changes are flagged so cards skip the reload', () {
+    ForumDataBus.instance.notifyPostsChanged(listChanged: true);
+    final change = ForumDataBus.instance.change.value;
+    expect(change.listChanged, isTrue);
+    expect(change.postId, isNull);
+    expect(change.affects('9'), isTrue);
+
+    ForumDataBus.instance.notifyPostsChanged(postId: '9');
+    expect(ForumDataBus.instance.change.value.listChanged, isFalse);
+  });
 }
