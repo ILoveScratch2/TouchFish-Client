@@ -249,8 +249,6 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         TfApiClient.instance.getPostList(fid, limit: _postPageSize),
         if (uid != null && password != null)
           TfApiClient.instance.getMyMemberships(uid, password),
-        if (uid != null && password != null)
-          _fetchMembersSafe(uid, password, fid),
       ]);
 
       try {
@@ -280,24 +278,35 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       _nextBeforePid = postPage.nextBeforePid;
       _isLoadingMore = false;
       _loadMoreFailed = false;
+
+      // 自己在版块里的角色
+      //不在成员表里 = 未加入
+      //0 成员 / 50 管理员 / 100 版主
+      var myRole = -1;
       if (results.length > 2 && results[2] is List<Map<String, int>>) {
-        final memberships = results[2] as List<Map<String, int>>;
-        _isMember = memberships.any(
-          (m) => m['fid'].toString() == widget.forumId,
-        );
+        for (final membership in results[2] as List<Map<String, int>>) {
+          if (membership['fid'].toString() != widget.forumId) continue;
+          final role = membership['role'] ?? -1;
+          if (role > myRole) myRole = role;
+        }
+        _isMember = myRole >= 0;
       }
 
-      if (results.length > 3 && results[3] is List<ForumMember>) {
-        _members = results[3] as List<ForumMember>;
-        _identity = uid != null
-            ? _members.cast<ForumMember?>().firstWhere(
+      _members = const [];
+      _identity = null;
+      if (myRole >= 50 && uid != null && password != null) {
+        unawaited(
+          _fetchMembersSafe(uid, password, fid).then((members) {
+            if (!mounted || widget.forumId != fid.toString()) return;
+            setState(() {
+              _members = members;
+              _identity = members.cast<ForumMember?>().firstWhere(
                 (m) => m?.accountUid == uid.toString(),
                 orElse: () => null,
-              )
-            : null;
-      } else {
-        _members = const [];
-        _identity = null;
+              );
+            });
+          }),
+        );
       }
 
       await _prefetchProfiles([

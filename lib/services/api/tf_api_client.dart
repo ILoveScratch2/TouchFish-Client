@@ -341,6 +341,19 @@ List<int>? decodeBlockedUsersResponse(int status, String? plain) {
   ];
 }
 
+
+@visibleForTesting
+List<ForumMember> decodeForumMembers(String? plain) {
+  if (plain == null) return const [];
+  final decoded = jsonDecode(plain);
+  if (decoded is! List) return const [];
+  return [
+    for (final row in decoded)
+      // row = [fid, uid, role, join_time]
+      if (row is List && row.length >= 4) ForumMember.fromServerRow(row),
+  ];
+}
+
 /// 服务器可配置项规格
 class TfSettingSpec {
   final String key;
@@ -2966,10 +2979,7 @@ class TfApiClient {
     if (result == null) return [];
     if (_isBoolResponse(result)) return [];
     try {
-      final list = jsonDecode(result) as List;
-      return list
-          .map((row) => ForumMember.fromServerRow(row as List<dynamic>))
-          .toList();
+      return decodeForumMembers(result);
     } catch (e) {
       talker.error('getMembers parse failed', e);
       return [];
@@ -3077,11 +3087,16 @@ class TfApiClient {
     if (result == null) return [];
     if (_isBoolResponse(result)) return [];
     try {
-      final list = jsonDecode(result) as List;
-      return list.map((row) {
-        final r = row as List<dynamic>;
-        return {'fid': (r[0] as num).toInt(), 'role': (r[1] as num).toInt()};
-      }).toList();
+      final decoded = jsonDecode(result);
+      if (decoded is! List) return [];
+      return [
+        for (final row in decoded)
+          if (row is List && row.length >= 2)
+            {
+              'fid': (row[0] as num).toInt(),
+              'role': (row[1] as num).toInt(),
+            },
+      ];
     } catch (e) {
       talker.error('getMyMemberships parse failed', e);
       return [];
