@@ -109,6 +109,9 @@ class ChatDataService extends ChangeNotifier {
       _ackErrorController.stream;
   List<ChatRoom> _rooms = [];
   List<Contact> _contacts = [];
+
+  /// 新增写入路径必须同时满足：有序 可增长
+  /// we need DS(data structure)(not dpsk)
   final Map<String, List<ChatMessage>> _messageCache = {};
   final List<String> _cacheAccessOrder = [];
   final Map<String, UserProfile> _userCache = {};
@@ -389,10 +392,11 @@ class ChatDataService extends ChangeNotifier {
   }
 
   void setMessages(String roomId, List<ChatMessage> msgs) {
-    _messageCache[roomId] = msgs;
+    final cache = List<ChatMessage>.of(msgs, growable: true);
+    _messageCache[roomId] = cache;
     _touchCacheRoom(roomId);
     _evictCacheIfNeeded();
-    unawaited(_localStore.saveMessages(roomId, msgs));
+    unawaited(_localStore.saveMessages(roomId, cache));
 
     _notifyRoom(roomId);
 
@@ -1331,6 +1335,7 @@ class ChatDataService extends ChangeNotifier {
     final merged = List<ChatMessage>.filled(
       first.length + second.length,
       first.first,
+      growable: true,
     );
     var i = 0;
     var j = 0;

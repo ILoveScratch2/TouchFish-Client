@@ -738,6 +738,7 @@ void main() {
             child: MessageBubble(
               message: message,
               canPin: true,
+              canEssence: true,
               essenceEnabled: true,
               onReply: (_) {},
               onForward: (_) {},
@@ -891,6 +892,7 @@ void main() {
           message: message,
           canRecall: false,
           canPin: false,
+          canEssence: false,
           essenceEnabled: true,
           isPinned: false,
           isEssence: false,
@@ -1015,6 +1017,7 @@ void main() {
           body: MessageBubble(
             message: message,
             canPin: true,
+            canEssence: true,
             isEssence: false,
             onEssenceToggle: () => essenceToggled = true,
           ),
@@ -1054,6 +1057,7 @@ void main() {
           body: MessageBubble(
             message: message,
             canPin: true,
+            canEssence: true,
             isEssence: true,
             onEssenceToggle: () {},
           ),
@@ -1063,6 +1067,49 @@ void main() {
     await tester.longPress(find.text('Already essence'));
     await tester.pumpAndSettle();
     expect(find.text('Remove from essence'), findsOneWidget);
+  });
+
+  testWidgets('a recalled essence message can be un-essenced from the sheet', (
+    tester,
+  ) async {
+    var removed = false;
+    final message = ChatMessage(
+      id: '12',
+      mid: 12,
+      text: 'recalled but still essence',
+      timestamp: DateTime(2026),
+      isMe: false,
+      senderUid: 2,
+      isDeleted: true,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: MessageBubble(
+            message: message,
+            canPin: false,
+            canEssence: true,
+            isEssence: true,
+            onEssenceToggle: () => removed = true,
+          ),
+        ),
+      ),
+    );
+    await tester.longPress(find.text('Message recalled'));
+    await tester.pumpAndSettle();
+    expect(find.text('Remove from essence'), findsOneWidget);
+    expect(find.text('Pin'), findsNothing);
+    await tester.tap(find.text('Remove from essence'));
+    await tester.pumpAndSettle();
+    expect(removed, isTrue);
   });
 
   group('merged forward sender resolution', () {

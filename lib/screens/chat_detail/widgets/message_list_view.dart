@@ -154,12 +154,10 @@ class MessageListView extends StatelessWidget {
   }
 
   Widget _buildList(BuildContext context) {
-    // 外 ListenableBuilder 已在设置变化时重建本方法
     final displayStyle = SettingsService.instance.getValue<String>(
       'messageDisplayStyle',
       'bubble',
     );
-    // 置顶/精华判断
     final pinnedMidSet = <int>{for (final p in pinnedMessages) p.messageId};
     final essenceMidSet = essenceMids.toSet();
 
@@ -185,8 +183,7 @@ class MessageListView extends StatelessWidget {
       );
     }
 
-    // 移动端气泡自带滑动回复手势处理
-    // 其他平台才需要
+    // 移动端自带滑动回复手势处理
     final themePlatform = Theme.of(context).platform;
     final bubbleHandlesSwipe =
         !kIsWeb &&
@@ -262,10 +259,20 @@ class MessageListView extends StatelessWidget {
             showAvatar: true,
             canRecall: false,
             canPin: false,
+            canEssence: false,
             essenceEnabled: essenceEnabled,
             displayStyle: displayStyle,
           );
         }
+
+        final canModerateMessage =
+            currentRoom?.type == ChatType.group &&
+            canModerateGroup &&
+            message.mid != null;
+        final isEssenceMessage =
+            message.mid != null &&
+            essenceEnabled &&
+            essenceMidSet.contains(message.mid);
 
         final bubble = MessageBubble(
           key: ValueKey('bubble-$stableKey'),
@@ -283,16 +290,14 @@ class MessageListView extends StatelessWidget {
           galleryItems: galleryItems.isEmpty ? null : galleryItems,
           galleryIndex: imageIndexById[imageGalleryKey(message)] ?? 0,
           canRecall: canRecall(message),
-          isEssence:
-              message.mid != null &&
-              essenceEnabled &&
-              essenceMidSet.contains(message.mid),
+          isEssence: isEssenceMessage,
           isPinned: message.mid != null && pinnedMidSet.contains(message.mid),
-          canPin:
-              currentRoom?.type == ChatType.group &&
-              canModerateGroup &&
-              message.mid != null &&
-              !message.isDeleted,
+          canPin: canModerateMessage && !message.isDeleted,
+          // 已撤回/已删除的消息不能再设为精华，但已设为精华的必须还能取消。
+          canEssence:
+              canModerateMessage &&
+              essenceEnabled &&
+              (isEssenceMessage || !message.isDeleted),
           essenceEnabled: essenceEnabled,
           onPinToggle: message.mid != null ? () => onPinToggle(message) : null,
           onEssenceToggle: message.mid != null && essenceEnabled
@@ -375,7 +380,6 @@ class MessageListView extends StatelessWidget {
     return seq != null && peerReadSeq != null && peerReadSeq! >= seq;
   }
 
-  /// 计算某条消息下的已读回执文案
   String? _readReceiptLabelFor(
     BuildContext context,
     int index,

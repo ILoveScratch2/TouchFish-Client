@@ -11,6 +11,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:mime/mime.dart' show lookupMimeType;
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
+import '../models/notification_model.dart';
 import '../models/settings_service.dart';
 import '../models/user_profile.dart';
 import '../widgets/chat/failed_messages_bar.dart';
@@ -471,7 +472,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _essenceSub = NotificationService.instance.essenceChanges.listen(
       _onEssenceChanged,
     );
-    _typingSub = ChatWsService.instance.eventStream.listen(_onTypingEvent);
+    _typingSub = ChatWsService.instance.eventStream.listen(_onRealtimeWsEvent);
     _attachUploadProgressListener();
     _realtimeListenersAttached = true;
   }
@@ -488,6 +489,26 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _activityStatuses.clear();
     _detachUploadProgressListener();
     _realtimeListenersAttached = false;
+  }
+
+  void _onRealtimeWsEvent(ChatWsEvent event) {
+    _pruneRecalledEssence(event);
+    _onTypingEvent(event);
+  }
+
+  void _pruneRecalledEssence(ChatWsEvent event) {
+    if (_essenceMids.isEmpty) return;
+    if (event.type != 'MESSAGE.NEW' && event.type != 'NOTIFICATION.NEW') return;
+    final data = event.notification;
+    if (data == null) return;
+    final info = NotificationInfo.fromServerMessageInfo(data);
+    if (info.event != 'message.recalled' && info.event != 'message.recall') {
+      return;
+    }
+    final mid = info.recalledMid;
+    if (mid == null || !_essenceMids.contains(mid)) return;
+    if (!mounted) return;
+    setState(() => _essenceMids.remove(mid));
   }
 
   void _onTypingEvent(ChatWsEvent event) {
@@ -1434,6 +1455,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       if (_replyingTo?.mid == mid) _setReplyingTo(null);
       if (_currentRoom?.type == ChatType.group) {
         unawaited(_fetchPinnedMessages());
+        unawaited(_fetchEssenceMessages());
       }
     } else {
       TouchFishSnackbarService.instance.show(l10n.messageRecallFailed);

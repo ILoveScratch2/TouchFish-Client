@@ -42,7 +42,8 @@ import 'chat/message_bubble_shape.dart';
 
 final _stickerTestPattern = RegExp(r':[A-Za-z0-9_]+\+[A-Za-z0-9_-]+:');
 
-/// 仅 root 可用：查看已撤回消息的服务端原始记录。
+/// 仅 root
+/// 查看已撤回消息的服务端原始记录。
 Future<void> _showRecalledOriginalDialog(
   BuildContext context,
   ChatMessage message,
@@ -268,12 +269,12 @@ Future<void> _saveMessageAsFile(
   }
 }
 
-/// 构建消息动作的单一事实源列表（规范顺序）。
 List<MessageAction> buildMessageActions(
   BuildContext context, {
   required ChatMessage message,
   required bool canRecall,
   required bool canPin,
+  required bool canEssence,
   required bool essenceEnabled,
   required bool isPinned,
   required bool isEssence,
@@ -335,7 +336,7 @@ List<MessageAction> buildMessageActions(
         color: isPinned ? colorScheme.error : null,
         onInvoke: onPinToggle ?? () {},
       ),
-    if (canPin && essenceEnabled)
+    if (canEssence && essenceEnabled)
       MessageAction(
         kind: MessageActionKind.essence,
         icon: Symbols.auto_awesome,
@@ -369,7 +370,7 @@ List<MessageAction> buildMessageActions(
   ];
 }
 
-/// 命中桌面 hover 菜单可呈现的动作子集（紧凑横向图标）。
+/// 命中桌面 hover 菜单可呈现
 const Set<MessageActionKind> _hoverActionKinds = {
   MessageActionKind.reply,
   MessageActionKind.forward,
@@ -379,7 +380,7 @@ const Set<MessageActionKind> _hoverActionKinds = {
   MessageActionKind.delete,
 };
 
-/// 命中右键菜单可呈现的动作子集。
+/// 命中右键菜单可呈现
 const Set<MessageActionKind> _desktopMenuKinds = {
   MessageActionKind.copy,
   MessageActionKind.saveAs,
@@ -392,11 +393,7 @@ const Set<MessageActionKind> _desktopMenuKinds = {
   MessageActionKind.viewOriginal,
 };
 
-/// 桌面 hover 菜单的按钮尺寸与分隔线占位。
-///
-/// 菜单装在 `Positioned(width: menuWidth, height: 32)` 里，槽位必须和
-/// 渲染出来的宽度完全一致：槽位算窄了就是 "RenderFlex overflowed on the right"，
-/// 算宽了菜单会离气泡右边缘一截。两边共用这两个常量，不再各自维护一份数字。
+/// 桌面 hover 菜单的按钮尺寸与分隔线占位
 const double _hoverMenuButtonSize = 32;
 const double _hoverMenuSeparatorWidth = 9; // 1px 竖线 + 左右各 4px 外边距
 
@@ -423,6 +420,10 @@ class MessageBubble extends HookWidget {
   final bool isPinned;
   final bool isEssence;
   final bool canPin;
+
+  /// 是否允许精华操作（群类型 + 管理权限由调用方判断）。
+  /// 与 [canPin] 分开：撤回的消息不能再设为精华，但已设为精华的仍要能取消。
+  final bool canEssence;
   final bool essenceEnabled;
   final VoidCallback? onPinToggle;
   final VoidCallback? onEssenceToggle;
@@ -459,6 +460,7 @@ class MessageBubble extends HookWidget {
     this.isPinned = false,
     this.isEssence = false,
     this.canPin = false,
+    this.canEssence = false,
     this.essenceEnabled = true,
     this.onPinToggle,
     this.onEssenceToggle,
@@ -494,6 +496,7 @@ class MessageBubble extends HookWidget {
       isPinned: isPinned,
       isEssence: isEssence,
       canPin: canPin,
+      canEssence: canEssence,
       essenceEnabled: essenceEnabled,
       onPinToggle: onPinToggle,
       onEssenceToggle: onEssenceToggle,
@@ -508,9 +511,7 @@ class MessageBubble extends HookWidget {
   }
 }
 
-/// 新消息入场：淡入 + 从下方滑入 + 撑开高度
-///
-/// 只在 [animate] 首次为 true 时播放一次，元素复用/重建不会重播。
+/// 新消息入场
 class _MessageEntrance extends StatefulWidget {
   final bool animate;
   final Widget child;
@@ -540,7 +541,7 @@ class _MessageEntranceState extends State<_MessageEntrance>
     end: Offset.zero,
   ).animate(_progress);
 
-  /// 播过动画后一直保持包装层，避免动画结束换结构把子树元素重建掉。
+  /// 播过动画后一直保持包装层
   bool _entered = false;
 
   @override
@@ -587,6 +588,7 @@ class _MessageBubbleContent extends StatefulWidget {
   final bool isPinned;
   final bool isEssence;
   final bool canPin;
+  final bool canEssence;
   final bool essenceEnabled;
   final VoidCallback? onPinToggle;
   final VoidCallback? onEssenceToggle;
@@ -615,6 +617,7 @@ class _MessageBubbleContent extends StatefulWidget {
     this.isPinned = false,
     this.isEssence = false,
     this.canPin = false,
+    this.canEssence = false,
     this.essenceEnabled = true,
     this.onPinToggle,
     this.onEssenceToggle,
@@ -643,8 +646,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
   Offset? _longPressOrigin;
   Timer? _longPressTimer;
 
-  // 只有音视频需要保留状态（播放器/进度）；图片的字节仍在 message.media 里，
-  // 让 ListView 正常回收可以显著降低长会话的内存占用。
+  // 只有音视频需要保留状态
   @override
   bool get wantKeepAlive {
     final mime = widget.message.media?.mimeType ?? '';
@@ -719,6 +721,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
       message: widget.message,
       canRecall: widget.canRecall,
       canPin: widget.canPin,
+      canEssence: widget.canEssence,
       essenceEnabled: widget.essenceEnabled,
       isPinned: widget.isPinned,
       isEssence: widget.isEssence,
@@ -782,6 +785,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
       message: widget.message,
       canRecall: widget.canRecall,
       canPin: widget.canPin,
+      canEssence: widget.canEssence,
       essenceEnabled: widget.essenceEnabled,
       isPinned: widget.isPinned,
       isEssence: widget.isEssence,
@@ -811,6 +815,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
       message: widget.message,
       canRecall: widget.canRecall,
       canPin: widget.canPin,
+      canEssence: widget.canEssence,
       essenceEnabled: widget.essenceEnabled,
       isPinned: widget.isPinned,
       isEssence: widget.isEssence,
@@ -1593,10 +1598,8 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
     );
   }
 
-  /// 若该消息是"自己正在上传"的 pending 消息，则叠加上传进度遮罩。
   Widget _wrapWithUploadProgress(Widget content) {
     final message = widget.message;
-    // 只有自己发送、处于 pending 且带附件的消息才可能正在上传。
     if (!message.isMe || message.status != MessageStatus.pending) {
       return content;
     }
@@ -1782,6 +1785,7 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
       message: message,
       canRecall: widget.canRecall,
       canPin: widget.canPin,
+      canEssence: widget.canEssence,
       essenceEnabled: widget.essenceEnabled,
       isPinned: widget.isPinned,
       isEssence: widget.isEssence,

@@ -198,5 +198,51 @@ void main() {
 
       expect(identical(merged, cache), isTrue);
     });
+
+    test('merge result is growable, so later cache writes still work wyf dl tql', () {
+      final chatData = ChatDataService.instance;
+      final merged = chatData.debugAttachOlderMessages(
+        [incoming(3)],
+        [incoming(1), incoming(2)],
+        const [],
+      );
+      expect(() => merged.insert(0, incoming(0)), returnsNormally);
+      expect(() => merged.removeRange(0, 1), returnsNormally);
+      expect(merged.map((m) => m.mid).toList(), [1, 2, 3]);
+    });
+  });
+
+  group('cache mutability', () {
+    test('setMessages with a fixed-length list keeps realtime inserts working wyf buzhun P', () {
+      final chatData = ChatDataService.instance;
+      chatData.setMessages(
+        'U1',
+        List<ChatMessage>.of([incoming(1), incoming(2)], growable: false),
+      );
+
+      expect(
+        () => chatData.deliverIncomingMessage('U1', incoming(3)),
+        returnsNormally,
+      );
+      expect(seqsOf('U1'), [1, 2, 3]);
+    });
+
+    test('older-page merge then realtime insert does not throw', () {
+      final chatData = ChatDataService.instance;
+      chatData.setMessages('U1', [incoming(4)]);
+
+      final merged = chatData.debugAttachOlderMessages(
+        chatData.getMessages('U1'),
+        [incoming(1), incoming(2), incoming(3)],
+        const [],
+      );
+      chatData.setMessages('U1', merged);
+
+      expect(
+        () => chatData.deliverIncomingMessage('U1', incoming(5)),
+        returnsNormally,
+      );
+      expect(seqsOf('U1'), [1, 2, 3, 4, 5]);
+    });
   });
 }
