@@ -46,6 +46,7 @@ void main() {
         message: m,
         canRecall: false,
         canPin: false,
+        canEssence: false,
         essenceEnabled: false,
         isPinned: false,
         isEssence: false,
