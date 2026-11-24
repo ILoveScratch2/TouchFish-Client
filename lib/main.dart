@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:virtual_keypad/virtual_keypad.dart';
+import 'constants/app_constants.dart';
 import 'l10n/app_localizations.dart';
 import 'models/app_state.dart';
 import 'models/settings_service.dart';
@@ -51,7 +52,7 @@ import 'widgets/rsa_key_prompts.dart';
 import 'widgets/app_virtual_keyboard.dart';
 import 'widgets/notification_overlay.dart';
 import 'widgets/security_notice_banners.dart';
-import 'widgets/custom_title_bar.dart';
+import 'widgets/window_frame.dart';
 import 'widgets/server_connection_banner.dart';
 import 'widgets/snackbar_overlay.dart';
 import 'widgets/task_overlay.dart';
@@ -853,9 +854,6 @@ class _TouchFishAppState extends State<TouchFishApp>
   }
 
   Widget _buildServerConnectionOverlay(BuildContext context, Widget child) {
-    final hasDesktopWindowFrame =
-        !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
-
     return ListenableBuilder(
       listenable: Listenable.merge([
         ServerConnectionStatusService.instance,
@@ -884,12 +882,7 @@ class _TouchFishAppState extends State<TouchFishApp>
               child: Align(
                 alignment: Alignment.topCenter,
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    (hasDesktopWindowFrame ? CustomTitleBar.height : 0) + 12,
-                    16,
-                    12,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -1016,10 +1009,10 @@ class _TouchFishAppState extends State<TouchFishApp>
                 ),
               ],
             );
+            final Widget app;
             if (hasBackgroundImage && !kIsWeb) {
-              return MediaQuery(
-                // copyWith 是覆盖不是合并：只写应用开关会把系统的
-                // "减弱动态效果" 冲掉。两者任一要求关闭都应关闭。
+              app = MediaQuery(
+                // copyWith 覆盖
                 data: MediaQuery.of(context).copyWith(
                   disableAnimations:
                       MediaQuery.disableAnimationsOf(context) ||
@@ -1048,21 +1041,24 @@ class _TouchFishAppState extends State<TouchFishApp>
                   ),
                 ),
               );
-            }
-            final animationsEnabled = _appState.animationsEnabled;
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                disableAnimations:
-                    MediaQuery.disableAnimationsOf(context) ||
-                    !animationsEnabled,
-              ),
-              child: TouchFishSnackbarOverlay(
-                child: _buildSavedSessionRestoreOverlay(
-                  context,
-                  contentWithTasks,
+            } else {
+              final animationsEnabled = _appState.animationsEnabled;
+              app = MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  disableAnimations:
+                      MediaQuery.disableAnimationsOf(context) ||
+                      !animationsEnabled,
                 ),
-              ),
-            );
+                child: TouchFishSnackbarOverlay(
+                  child: _buildSavedSessionRestoreOverlay(
+                    context,
+                    contentWithTasks,
+                  ),
+                ),
+              );
+            }
+            // 标题栏在导航之外
+            return WindowFrame(title: AppConstants.appName, child: app);
           },
         );
       },

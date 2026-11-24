@@ -48,7 +48,6 @@ import '../screens/forward_screen.dart';
 import '../models/message_model.dart';
 import '../services/auth_state.dart';
 import '../services/feature_flags.dart';
-import '../widgets/window_frame.dart';
 import '../widgets/lock_gate.dart';
 import '../utils/talker.dart';
 import '../utils/wide_screen_helper.dart';
@@ -111,11 +110,10 @@ class AppRoutes {
     forgotPassword,
     about,
     licenses,
-    // 权限引导 / 电池优化提示在登录前就可能出现（Welcome 之后、启动检查时），
-    // 不放进公开路径会被 authRedirect 打回登录页。
+    // 权限引导 / 电池优化
     permissionOnboarding,
     batteryPermission,
-    // 更新偏好引导同样位于登录之前（Welcome → 权限引导 → 更新偏好 → 登录）。
+    // 更新偏好引导
     updateSetup,
   };
 
@@ -142,13 +140,9 @@ class AppRoutes {
     return -1;
   }
 
-  /// 判断是否为子页面导航（同一 Section 内的页面切换）。
-  ///
-  /// 他妈的不要叠加主 Section 切换动画
+  /// 还是文明一点吧
+  /// 不要叠加主 Section 切换动画
   /// 神秘 dsv4f 给我 debug 半天，梁文锋你死定了过拟合这么严重的 fw ds
-  ///
-  /// 同时也决定底部导航的显隐：子页面（聊天详情、论坛详情 / 帖子 / 搜索）
-  /// 是整屏页面，不显示底部导航。
   static bool isSubPageNavigation(String path) {
     // 聊天页面内的导航
     if (path.startsWith('/chat/') && path != '/chat') {
@@ -168,7 +162,6 @@ class AppRoutes {
   ) {
     final path = state.uri.path;
 
-    // 如果是子页面导航，不使用动画
     if (isSubPageNavigation(path)) {
       return NoTransitionPage<void>(key: state.pageKey, child: child);
     }
@@ -191,7 +184,9 @@ class AppRoutes {
       child: child,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         if (reduceMotion) return child;
-        // 分栏时详情是右侧栏位的纵向淡入，单栏时才是整页横向推入。
+        // 分栏
+        // 详情右侧栏位的纵向淡入
+        // 单栏整页横向推入
         final isWide = WideScreenHelper.isExpanded(context);
         final curved = CurvedAnimation(
           parent: animation,
@@ -218,7 +213,7 @@ class AppRoutes {
     );
   }
 
-  /// 聊天区占位页（宽屏右侧未选会话时显示）。
+  /// 聊天占位
   static Widget _chatPlaceholder(BuildContext context) {
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
@@ -233,14 +228,6 @@ class AppRoutes {
     );
   }
 
-  /// 聊天区索引页（URL 为 `/chat`）。
-  ///
-  /// 宽屏：列表常驻在 ChatShellScreen 左侧，这里只提供"选择会话"占位；
-  /// 窄屏：显示全屏聊天列表。
-  ///
-  /// 索引页自身不做转场动画：进入聊天 Section 的整体过渡由 ChatShellScreen
-  /// 整壳入场动画承担；从详情返回列表时索引页常驻栈底（或被静默补入），
-  /// 不会重放"列表滑入"动画。
   static Page<void> _chatIndexPage(BuildContext context, GoRouterState state) {
     // 与 ChatShellScreen 的分栏判断一致。
     final isWide = WideScreenHelper.isExpanded(context);
@@ -382,7 +369,7 @@ class AppRoutes {
       routes: [
         ShellRoute(
           builder: (context, state, child) {
-            return WindowFrame(child: LockGate(child: child));
+            return LockGate(child: child);
           },
           routes: [
             GoRoute(
@@ -594,8 +581,8 @@ class AppRoutes {
               },
               // 分支顺序固定 chat / announcement / forum / account / admin
               branches: [
-                // 聊天常驻 ChatShellScreen（左侧列表、拖动栏等状态）
-                // 跨 /chat、/chat/:roomId 切换保持不重建
+                // 聊天常驻
+                // 跨切换保持不重建
                 StatefulShellBranch(
                   routes: [
                     ShellRoute(
@@ -627,11 +614,8 @@ class AppRoutes {
                                 child: detail,
                               );
                             }
-                            // 统一使用 opaque:false 的自定义转场：
-                            // 聊天列表页全程保持在 overlay 上（不做 offstage），
-                            // 不然他妈的 opaque 路由 pop 时恢复下层就会他妈的报错
-
-                            // 气死我了，不要管文不文明了
+                            // 统一使用 opaque:false 的自定义转场
+                            // 不会被 opaque 路由覆盖
                             if (!WideScreenHelper.isExpanded(context)) {
                               // 单栏（窄屏或 medium）：整屏从右滑入
                               return CustomTransitionPage<void>(
@@ -666,7 +650,7 @@ class AppRoutes {
                                     },
                               );
                             }
-                            // 宽屏：仅在右侧面板区域内轻量过渡
+                            // 宽屏
                             return CustomTransitionPage<void>(
                               key: state.pageKey,
                               opaque: false,
@@ -709,7 +693,7 @@ class AppRoutes {
                 ),
                   ],
                 ),
-                // 公告区：整屏单页
+                // 公告
                 StatefulShellBranch(
                   routes: [
                     GoRoute(
@@ -722,9 +706,9 @@ class AppRoutes {
                     ),
                   ],
                 ),
-                // 论坛区使用常驻 Shell
+                // 论坛
                 StatefulShellBranch(routes: forumSectionRoutes()),
-                // 账户区（含从账户页进入的贴纸市场等页面）
+                // 账户
                 StatefulShellBranch(
                   routes: [
                     GoRoute(
@@ -750,7 +734,7 @@ class AppRoutes {
                     ),
                   ],
                 ),
-                // 管理后台
+                // 管理
                 StatefulShellBranch(
                   routes: [
                     GoRoute(

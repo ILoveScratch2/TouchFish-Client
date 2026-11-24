@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -9,12 +7,9 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../models/file_task.dart';
 import '../providers/task/task_manager_provider.dart';
-import 'custom_title_bar.dart';
 import 'sheet_scaffold.dart';
 
 /// 全局文件传输
-///
-/// 当存在进行中的上传/下载任务时，在标题栏下方显示一条精简进度
 class TaskOverlay extends ConsumerStatefulWidget {
   final BuildContext? Function()? navigatorContextProvider;
 
@@ -32,7 +27,7 @@ bool _isFinished(FileTask t) =>
     t.status == FileTaskStatus.completed ||
     t.status == FileTaskStatus.failed;
 
-/// 进度值：准备中或大小未知（下载）时返回 null，表示不确定进度。
+/// 进度值
 double? _taskProgress(FileTask t) {
   if (t.status == FileTaskStatus.preparing) return null;
   if (t.status == FileTaskStatus.failed) return t.progress;
@@ -110,14 +105,7 @@ class _TaskOverlayState extends ConsumerState<TaskOverlay> {
       return a.createdAt.compareTo(b.createdAt);
     });
 
-    final isDesktop =
-        !kIsWeb &&
-        (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
-    // 桌面端内容从自定义标题栏下方开始，浮层也要让开那 40px；
-    // 移动端则从 SafeArea 下方开始。
-    final topInset =
-        MediaQuery.paddingOf(context).top +
-        (isDesktop ? CustomTitleBar.height + 8 : 8);
+    final topInset = MediaQuery.paddingOf(context).top + 8;
 
     return Positioned(
       top: topInset,
@@ -295,7 +283,7 @@ class _TaskOverlayPill extends ConsumerWidget {
   }
 }
 
-/// 平滑到目标值的进度条：不确定进度时显示脉冲条。
+/// 平滑到目标值的进度条
 class _AnimatedProgressBar extends StatelessWidget {
   final double? progress;
   final Color color;
@@ -508,7 +496,7 @@ class _TaskTile extends StatelessWidget {
   }
 }
 
-/// 环形进度：确定进度时环心显示整数百分比；不确定时显示旋转环。
+/// 环形进度
 class _TaskProgressIndicator extends StatelessWidget {
   final double? progress;
   final Color color;

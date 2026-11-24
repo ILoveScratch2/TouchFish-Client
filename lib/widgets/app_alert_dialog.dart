@@ -6,8 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show KeyDownEvent, LogicalKeyboardKey;
 import 'package:material_symbols_icons/symbols.dart';
 
-import 'custom_title_bar.dart';
-
 const double _kDialogMaxWidth = 480.0;
 
 typedef TouchFishDialogPop<T> = void Function([T? result]);
@@ -181,7 +179,6 @@ Future<T?> showAppDialog<T>(
   final theme = Theme.of(context);
   entry = OverlayEntry(
     builder: (overlayContext) => _TouchFishDialogOverlay<T>(
-      topInset: CustomTitleBar.height,
       barrierDismissible: barrierDismissible,
       barrierColor: theme.dialogTheme.barrierColor ?? Colors.black54,
       onDismiss: remove,
@@ -193,7 +190,6 @@ Future<T?> showAppDialog<T>(
 }
 
 class _TouchFishDialogOverlay<T> extends StatefulWidget {
-  final double topInset;
   final bool barrierDismissible;
   final Color barrierColor;
 
@@ -203,7 +199,6 @@ class _TouchFishDialogOverlay<T> extends StatefulWidget {
   childBuilder;
 
   const _TouchFishDialogOverlay({
-    required this.topInset,
     required this.barrierDismissible,
     required this.barrierColor,
     required this.onDismiss,
@@ -256,7 +251,6 @@ class _TouchFishDialogOverlayState<T> extends State<_TouchFishDialogOverlay<T>>
 
   @override
   Widget build(BuildContext context) {
-    final inset = widget.topInset;
     final opacity = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
     return FocusScope(
       child: Focus(
@@ -272,11 +266,7 @@ class _TouchFishDialogOverlayState<T> extends State<_TouchFishDialogOverlay<T>>
         },
         child: Stack(
           children: [
-            Positioned(
-              top: inset,
-              left: 0,
-              right: 0,
-              bottom: 0,
+            Positioned.fill(
               child: FadeTransition(
                 opacity: opacity,
                 child: ModalBarrier(
@@ -286,11 +276,7 @@ class _TouchFishDialogOverlayState<T> extends State<_TouchFishDialogOverlay<T>>
                 ),
               ),
             ),
-            Positioned(
-              top: inset,
-              left: 0,
-              right: 0,
-              bottom: 0,
+            Positioned.fill(
               child: FadeTransition(
                 opacity: opacity,
                 child: Center(child: widget.childBuilder(context, _requestClose)),

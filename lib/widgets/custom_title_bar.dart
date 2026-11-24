@@ -40,8 +40,12 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
   }
 
   Future<void> _checkMaximized() async {
-    final maximized = await windowManager.isMaximized();
-    _isMaximized.value = maximized;
+    try {
+      final maximized = await windowManager.isMaximized();
+      if (!mounted) return;
+      _isMaximized.value = maximized;
+    } catch (_) {
+    }
   }
 
   @override
@@ -187,9 +191,8 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
     required String tooltip,
     bool isClose = false,
   }) {
-    return Tooltip(
-      message: tooltip,
-      waitDuration: const Duration(milliseconds: 500),
+    return _WindowButtonHint(
+      label: tooltip,
       child: InkWell(
         onTap: onPressed,
         hoverColor: isClose
@@ -204,6 +207,67 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
             color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 标题栏按钮的悬浮提示
+class _WindowButtonHint extends StatefulWidget {
+  final String label;
+  final Widget child;
+
+  const _WindowButtonHint({required this.label, required this.child});
+
+  @override
+  State<_WindowButtonHint> createState() => _WindowButtonHintState();
+}
+
+class _WindowButtonHintState extends State<_WindowButtonHint> {
+  bool _hovered = false;
+
+  void _setHovered(bool value) {
+    if (_hovered == value) return;
+    setState(() => _hovered = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return MouseRegion(
+      onEnter: (_) => _setHovered(true),
+      onExit: (_) => _setHovered(false),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Semantics(button: true, label: widget.label, child: widget.child),
+          if (_hovered)
+            Positioned(
+              top: CustomTitleBar.height - 2,
+              right: 2,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: scheme.inverseSurface,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    child: Text(
+                      widget.label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: scheme.onInverseSurface,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

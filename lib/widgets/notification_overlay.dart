@@ -23,7 +23,7 @@ class AppNotificationOverlay extends StatelessWidget {
             !kIsWeb &&
             (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
         final top =
-            MediaQuery.paddingOf(context).top + (desktopFrame ? 52 : 16);
+            MediaQuery.paddingOf(context).top + (desktopFrame ? 12 : 16);
         if (desktop) {
           return Positioned(
             top: top,

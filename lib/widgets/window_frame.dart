@@ -5,7 +5,7 @@ import 'custom_title_bar.dart';
 import '../constants/app_constants.dart';
 
 /// Custom Window Frame by ILoveScratch2
-class WindowFrame extends StatefulWidget {
+class WindowFrame extends StatelessWidget {
   final Widget child;
   final String title;
 
@@ -15,23 +15,30 @@ class WindowFrame extends StatefulWidget {
     this.title = AppConstants.appName,
   });
 
-  @override
-  State<WindowFrame> createState() => _WindowFrameState();
-}
+  /// 桌面端（有自绘标题栏）
+  static bool get isDesktopWindowed =>
+      !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
-class _WindowFrameState extends State<WindowFrame> {
   @override
   Widget build(BuildContext context) {
-    final isDesktop =
-        !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
-    if (!isDesktop) {
-      return widget.child;
+    if (!isDesktopWindowed) {
+      return child;
     }
 
-    return Column(
+    return Stack(
+      fit: StackFit.expand,
       children: [
-        CustomTitleBar(title: widget.title),
-        Expanded(child: widget.child),
+        Padding(
+          padding: const EdgeInsets.only(top: CustomTitleBar.height),
+          child: child,
+        ),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: CustomTitleBar.height,
+          child: CustomTitleBar(title: title),
+        ),
       ],
     );
   }

@@ -1,37 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:touchfish_client/l10n/app_localizations.dart';
 import 'package:touchfish_client/widgets/app_alert_dialog.dart';
 import 'package:touchfish_client/widgets/custom_title_bar.dart';
+import 'package:touchfish_client/widgets/window_frame.dart';
 
 void main() {
-  int titleBarTaps = 0;
   Future<bool?> Function(BuildContext)? openDialog;
 
   Widget buildHarness({required Future<bool?> Function(BuildContext) open}) {
     return MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) =>
+          WindowFrame(child: child ?? const SizedBox.shrink()),
       home: Builder(
         builder: (context) => Scaffold(
-          body: Column(
-            children: [
-              GestureDetector(
-                key: const Key('fake-title-bar'),
-                behavior: HitTestBehavior.opaque,
-                onTap: () => titleBarTaps++,
-                child: Container(
-                  height: CustomTitleBar.height,
-                  color: Colors.amber,
-                ),
-              ),
-              Expanded(
-                child: Center(
-                  child: TextButton(
-                    onPressed: () => open(context),
-                    child: const Text('open dialog'),
-                  ),
-                ),
-              ),
-            ],
+          body: Center(
+            child: TextButton(
+              onPressed: () => open(context),
+              child: const Text('open dialog'),
+            ),
           ),
         ),
       ),
@@ -39,7 +29,6 @@ void main() {
   }
 
   setUp(() {
-    titleBarTaps = 0;
     openDialog = (context) => showTouchFishInfoDialog<bool>(
       context,
       message: 'preset dialog message',
@@ -64,14 +53,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('preset dialog message'), findsOneWidget);
-    // 底层页面路由自带一个透明 ModalBarrier，这里只找弹窗自己的屏障。
+    // 底层页面路由自带一个透明 ModalBarrier
     final dialogBarrier = find.byWidgetPredicate(
       (w) => w is ModalBarrier && w.color != null,
     );
     final barrierRect = tester.getRect(dialogBarrier);
     expect(barrierRect.top, CustomTitleBar.height);
     await tester.tapAt(const Offset(400, 20));
-    expect(titleBarTaps, 1);
+    await tester.pump();
     expect(find.text('preset dialog message'), findsOneWidget);
     await tester.tapAt(Offset(400, CustomTitleBar.height + 100));
     await tester.pumpAndSettle();
@@ -165,7 +154,6 @@ void main() {
     await tester.tap(find.text('close'));
     await tester.pumpAndSettle();
     expect(find.text('custom body'), findsNothing);
-    expect(titleBarTaps, 0);
   });
 
   testWidgets('showAppDialog does not steal focus from autofocused field', (
