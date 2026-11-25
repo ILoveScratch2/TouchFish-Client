@@ -80,6 +80,52 @@ void main() {
       expect(p.isKnown(2), isTrue);
       expect(p.isOnline(2), isFalse);
     });
+
+    test('a stale snapshot cannot resurrect a newer offline pushing wxh into zyh', () {
+      final p = PresenceService.instance;
+      p.clear();
+
+      // 离线推送
+      p.debugApplyPush(7, 'offline', ts: 2000);
+      expect(p.isOnline(7), isFalse);
+
+      // 在推送之前就算好
+      p.applyPresenceSnapshot({7: 'online'}, scope: [7], ts: 1000);
+      expect(p.isOnline(7), isFalse);
+    });
+
+    test('a newer snapshot overrides an older push', () {
+      final p = PresenceService.instance;
+      p.clear();
+
+      p.debugApplyPush(8, 'online', ts: 1000);
+      expect(p.isOnline(8), isTrue);
+
+      p.applyPresenceSnapshot({8: 'offline'}, scope: [8], ts: 2000);
+      expect(p.isOnline(8), isFalse);
+    });
+
+    test('a stale snapshot cannot revive a hidden friend', () {
+      final p = PresenceService.instance;
+      p.clear();
+
+      p.debugApplyPush(9, 'online', ts: 1000);
+      p.debugApplyPush(9, 'hidden', ts: 2000);
+      expect(p.isKnown(9), isFalse);
+
+      p.applyPresenceSnapshot({9: 'online'}, scope: [9], ts: 1500);
+      expect(p.isKnown(9), isFalse);
+      expect(p.isOnline(9), isFalse);
+    });
+
+    test('snapshots without ts keep the legacy overwrite behaviour', () {
+      final p = PresenceService.instance;
+      p.clear();
+
+      p.debugApplyPush(10, 'offline', ts: 2000);
+      p.applyPresenceSnapshot({10: 'online'}, scope: [10]);
+      expect(p.isOnline(10), isTrue);
+    });
   });
 
   testWidgets('dot shows when online and hides when offline', (tester) async {

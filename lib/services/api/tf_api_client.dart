@@ -292,6 +292,14 @@ class TfReadReceipt {
   );
 }
 
+/// 一次好友在线状态快照
+class TfPresenceSnapshot {
+  final Map<int, String> presence;
+  final int? ts;
+
+  const TfPresenceSnapshot(this.presence, {this.ts});
+}
+
 class TfRelationship {
   /// `none` / `pending` / `friend` / `blocked`
   final String relationship;
@@ -2474,8 +2482,8 @@ class TfApiClient {
   }
 
   /// 批量查询好友在线状态
-  /// 返回 {uid: "online"|"offline"}
-  Future<Map<int, String>?> queryFriendPresence(
+  /// 返回 [TfPresenceSnapshot]（presence: {uid: "online"|"offline"} + 服务端毫秒时间戳）
+  Future<TfPresenceSnapshot?> queryFriendPresence(
     int uid,
     String? password, {
     List<int>? uids,
@@ -2493,13 +2501,18 @@ class TfApiClient {
       final data = jsonDecode(result) as Map<String, dynamic>;
       if (data['success'] != true) return null;
       final raw = data['presence'];
-      if (raw is! Map) return const {};
+      if (raw is! Map) {
+        return TfPresenceSnapshot(
+          const {},
+          ts: (data['ts'] as num?)?.toInt(),
+        );
+      }
       final out = <int, String>{};
       raw.forEach((key, value) {
         final id = int.tryParse(key.toString());
         if (id != null && value is String) out[id] = value;
       });
-      return out;
+      return TfPresenceSnapshot(out, ts: (data['ts'] as num?)?.toInt());
     } catch (e) {
       talker.error('queryFriendPresence parse failed', e);
       return null;

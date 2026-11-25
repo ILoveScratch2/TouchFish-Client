@@ -488,8 +488,12 @@ class _TouchFishAppState extends State<TouchFishApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && !kIsWeb && Platform.isAndroid) {
+    if (state != AppLifecycleState.resumed) return;
+    if (!kIsWeb && Platform.isAndroid) {
       unawaited(LockScreenVisibilityService.instance.applyFromSettings());
+    }
+    if (AuthState.instance.isLoggedIn) {
+      unawaited(PresenceService.instance.refreshFriends());
     }
   }
 
