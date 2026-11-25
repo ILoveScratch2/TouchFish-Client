@@ -4005,6 +4005,39 @@ class AppLocalizationsOch extends AppLocalizations {
   String get groupJoinRequestsSection => '入羣申請';
 
   @override
+  String get groupJoinPolicy => '入羣方式';
+
+  @override
+  String get groupJoinPolicyOpen => '允許自由入羣';
+
+  @override
+  String get groupJoinPolicyOpenDesc => '邊個都可以直接入，唔使審核';
+
+  @override
+  String get groupJoinPolicyApproval => '允許審批入羣';
+
+  @override
+  String get groupJoinPolicyApprovalDesc => '邊個都可以申請，羣主或管理員審批後入羣';
+
+  @override
+  String get groupJoinPolicyInvite => '只准邀請';
+
+  @override
+  String get groupJoinPolicyInviteDesc => '每個成員都可以請朋友，請到就入得';
+
+  @override
+  String get groupJoinPolicyAdminInvite => '只准管理員邀請';
+
+  @override
+  String get groupJoinPolicyAdminInviteDesc => '只有羣主同管理員請得，請到就入得';
+
+  @override
+  String get groupSearchable => '准人搜到';
+
+  @override
+  String get groupSearchableDesc => '熄咗之後搜唔到，但已有邀請同羣號直達照用';
+
+  @override
   String get groupAllowDirectJoin => '允許直接加入';
 
   @override
@@ -5960,6 +5993,9 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get searchNoResults => '未尋得';
+
+  @override
+  String get searchInProgress => '搵緊…';
 
   @override
   String searchMinLengthHint(int count) {

@@ -4187,6 +4187,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupJoinRequestsSection => 'Join Requests';
 
   @override
+  String get groupJoinPolicy => 'Join policy';
+
+  @override
+  String get groupJoinPolicyOpen => 'Open to everyone';
+
+  @override
+  String get groupJoinPolicyOpenDesc =>
+      'Anyone can join immediately without approval';
+
+  @override
+  String get groupJoinPolicyApproval => 'Approval required';
+
+  @override
+  String get groupJoinPolicyApprovalDesc =>
+      'Anyone can request to join; owner or admins approve';
+
+  @override
+  String get groupJoinPolicyInvite => 'Invite only';
+
+  @override
+  String get groupJoinPolicyInviteDesc =>
+      'Any member can invite friends; invitees join immediately';
+
+  @override
+  String get groupJoinPolicyAdminInvite => 'Admin invite only';
+
+  @override
+  String get groupJoinPolicyAdminInviteDesc =>
+      'Only the owner and admins can invite; invitees join immediately';
+
+  @override
+  String get groupSearchable => 'Discoverable';
+
+  @override
+  String get groupSearchableDesc =>
+      'When off, the group is hidden from search. Existing invites and GID links still work';
+
+  @override
   String get groupAllowDirectJoin => 'Allow direct join';
 
   @override
@@ -6264,6 +6302,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchNoResults => 'No results found';
+
+  @override
+  String get searchInProgress => 'Searching…';
 
   @override
   String searchMinLengthHint(int count) {

@@ -7684,6 +7684,72 @@ abstract class AppLocalizations {
   /// **'Join Requests'**
   String get groupJoinRequestsSection;
 
+  /// No description provided for @groupJoinPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Join policy'**
+  String get groupJoinPolicy;
+
+  /// No description provided for @groupJoinPolicyOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open to everyone'**
+  String get groupJoinPolicyOpen;
+
+  /// No description provided for @groupJoinPolicyOpenDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone can join immediately without approval'**
+  String get groupJoinPolicyOpenDesc;
+
+  /// No description provided for @groupJoinPolicyApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval required'**
+  String get groupJoinPolicyApproval;
+
+  /// No description provided for @groupJoinPolicyApprovalDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone can request to join; owner or admins approve'**
+  String get groupJoinPolicyApprovalDesc;
+
+  /// No description provided for @groupJoinPolicyInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite only'**
+  String get groupJoinPolicyInvite;
+
+  /// No description provided for @groupJoinPolicyInviteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Any member can invite friends; invitees join immediately'**
+  String get groupJoinPolicyInviteDesc;
+
+  /// No description provided for @groupJoinPolicyAdminInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin invite only'**
+  String get groupJoinPolicyAdminInvite;
+
+  /// No description provided for @groupJoinPolicyAdminInviteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the owner and admins can invite; invitees join immediately'**
+  String get groupJoinPolicyAdminInviteDesc;
+
+  /// No description provided for @groupSearchable.
+  ///
+  /// In en, this message translates to:
+  /// **'Discoverable'**
+  String get groupSearchable;
+
+  /// No description provided for @groupSearchableDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, the group is hidden from search. Existing invites and GID links still work'**
+  String get groupSearchableDesc;
+
   /// No description provided for @groupAllowDirectJoin.
   ///
   /// In en, this message translates to:
@@ -11433,6 +11499,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No results found'**
   String get searchNoResults;
+
+  /// No description provided for @searchInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching…'**
+  String get searchInProgress;
 
   /// No description provided for @searchMinLengthHint.
   ///

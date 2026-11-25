@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/group_join_policy.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/snackbar_service.dart';
@@ -18,8 +19,8 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
   final _nameCtrl = TextEditingController();
   final _introCtrl = TextEditingController();
   final _hintCtrl = TextEditingController();
-  bool _allowDirectJoin = false;
-  bool _requireReview = true;
+  String _joinPolicy = TfJoinPolicy.approval;
+  bool _searchable = true;
   bool _isCreating = false;
 
   int get _uid => AuthState.instance.uid ?? 0;
@@ -31,6 +32,34 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
     _introCtrl.dispose();
     _hintCtrl.dispose();
     super.dispose();
+  }
+
+  String _joinPolicyLabel(AppLocalizations l10n, String policy) {
+    switch (policy) {
+      case TfJoinPolicy.open:
+        return l10n.groupJoinPolicyOpen;
+      case TfJoinPolicy.invite:
+        return l10n.groupJoinPolicyInvite;
+      case TfJoinPolicy.adminInvite:
+        return l10n.groupJoinPolicyAdminInvite;
+      case TfJoinPolicy.approval:
+      default:
+        return l10n.groupJoinPolicyApproval;
+    }
+  }
+
+  String _joinPolicyDescription(AppLocalizations l10n, String policy) {
+    switch (policy) {
+      case TfJoinPolicy.open:
+        return l10n.groupJoinPolicyOpenDesc;
+      case TfJoinPolicy.invite:
+        return l10n.groupJoinPolicyInviteDesc;
+      case TfJoinPolicy.adminInvite:
+        return l10n.groupJoinPolicyAdminInviteDesc;
+      case TfJoinPolicy.approval:
+      default:
+        return l10n.groupJoinPolicyApprovalDesc;
+    }
   }
 
   Future<void> _create() async {
@@ -62,8 +91,8 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
         groupname: name,
         introduction: _introCtrl.text.trim(),
         enterHint: _hintCtrl.text.trim(),
-        allowDirectJoin: _allowDirectJoin,
-        requireReview: _requireReview,
+        joinPolicy: _joinPolicy,
+        searchable: _searchable,
       );
       if (gid != null && gid > 0 && mounted) {
         context.pop(true);
@@ -121,17 +150,35 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          SwitchListTile.adaptive(
-            value: _allowDirectJoin,
-            title: Text(l10n.groupAllowDirectJoin),
-            subtitle: Text(l10n.groupAllowDirectJoinDesc),
-            onChanged: (v) => setState(() => _allowDirectJoin = v),
+          DropdownButtonFormField<String>(
+            initialValue: _joinPolicy,
+            decoration: InputDecoration(
+              labelText: l10n.groupJoinPolicy,
+              prefixIcon: const Icon(Icons.group_add_outlined),
+            ),
+            items: [
+              for (final policy in TfJoinPolicy.values)
+                DropdownMenuItem(
+                  value: policy,
+                  child: Text(_joinPolicyLabel(l10n, policy)),
+                ),
+            ],
+            onChanged: (v) => setState(
+              () => _joinPolicy = v ?? TfJoinPolicy.approval,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _joinPolicyDescription(l10n, _joinPolicy),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           SwitchListTile.adaptive(
-            value: _requireReview,
-            title: Text(l10n.groupRequireReview),
-            subtitle: Text(l10n.groupRequireReviewDesc),
-            onChanged: (v) => setState(() => _requireReview = v),
+            value: _searchable,
+            title: Text(l10n.groupSearchable),
+            subtitle: Text(l10n.groupSearchableDesc),
+            onChanged: (v) => setState(() => _searchable = v),
           ),
           const SizedBox(height: 24),
           FilledButton.icon(

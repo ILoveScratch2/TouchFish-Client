@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/api_error.dart';
+import '../models/group_join_policy.dart';
 import '../models/local_message_search_result.dart';
 import '../models/search_result.dart';
 import '../services/api/api_error_localization.dart';
@@ -24,10 +25,7 @@ import '../widgets/ui/refreshable.dart';
 /// 用户搜索的结果上限
 const int _kUserSearchLimit = 20;
 
-/// 统一搜索页：用户 / 群组 / 本地消息三个 tab，共用一个关键词输入框。
-///
-/// 用户与群组走服务端 secret 接口（/user/search、/group/search）；
-/// 本地消息走 [ChatDataService.searchAllRoomsMessages]。
+/// 统一搜索页
 class UniversalSearchScreen extends StatefulWidget {
   const UniversalSearchScreen({super.key});
 
@@ -42,6 +40,8 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
   int _minLength = 2;
   String _query = '';
   bool _searching = false;
+  /// 本地消息库扫描是否仍在进行
+  bool _localSearching = false;
   String? _baseUrl;
 
   /// 请求序号
@@ -92,9 +92,22 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
     });
   }
 
+  /// 纯数字视为 GID
+  static bool _looksLikeGid(String query) {
+    if (query.isEmpty || query.length > 18) return false;
+    for (final unit in query.codeUnits) {
+      if (unit < 0x30 || unit > 0x39) return false;
+    }
+    return true;
+  }
+
+  bool _isTooShort(String query) =>
+      !_looksLikeGid(query) && query.length < _minLength;
+
   Future<void> _search(String raw) async {
     final query = raw.trim();
     if (query.isEmpty) {
+      _requestToken++;
       if (mounted) {
         setState(() {
           _query = '';
@@ -103,12 +116,14 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
           _local = const [];
           _groupsHasMore = false;
           _searching = false;
+          _localSearching = false;
           _serverErrorText = null;
         });
       }
       return;
     }
-    if (query.length < _minLength) {
+    if (_isTooShort(query)) {
+      _requestToken++;
       if (mounted) {
         setState(() {
           _query = query;
@@ -117,6 +132,7 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
           _local = const [];
           _groupsHasMore = false;
           _searching = false;
+          _localSearching = false;
           _serverErrorText = null;
         });
       }
@@ -129,13 +145,16 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
     final token = ++_requestToken;
     if (mounted) {
       setState(() {
+        _query = query;
         _searching = true;
+        _localSearching = true;
         _serverErrorText = null;
       });
     }
 
     final localFuture = ChatDataService.instance.searchAllRoomsMessages(query);
-    final usersFuture = (uid == null || password == null)
+    final userSearchAllowed = query.length >= _minLength;
+    final usersFuture = (uid == null || password == null || !userSearchAllowed)
         ? Future<List<UserSearchEntry>>.value(const [])
         : TfApiClient.instance.searchUsers(
           uid,
@@ -151,7 +170,7 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
           )
         : TfApiClient.instance.searchGroups(uid, password, query);
 
-    // 服务端搜索失败（限流／关键词过短／网络）时仍保留本地消息结果，仅提示错误。
+    // 服务端搜索失败
     ApiError? serverError;
     var serverFailed = false;
     var users = const <UserSearchEntry>[];
@@ -170,12 +189,12 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
       serverFailed = true;
     }
 
-    final local = await localFuture;
-    if (!mounted) return;
-
-    if (token != _requestToken) return;
+    if (!mounted || token != _requestToken) return;
     if (_controller.text.trim() != query) {
-      setState(() => _searching = false);
+      setState(() {
+        _searching = false;
+        _localSearching = false;
+      });
       return;
     }
 
@@ -186,13 +205,22 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
         : null;
 
     setState(() {
-      _query = query;
       _users = users;
       _groups = groupPage.groups;
       _groupsHasMore = groupPage.hasMore;
-      _local = local;
       _serverErrorText = errorText;
       _searching = false;
+    });
+
+    final local = await localFuture;
+    if (!mounted || token != _requestToken) return;
+    if (_controller.text.trim() != query) {
+      setState(() => _localSearching = false);
+      return;
+    }
+    setState(() {
+      _local = local;
+      _localSearching = false;
     });
   }
 
@@ -443,9 +471,16 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
   }
 
   String _groupJoinLabel(AppLocalizations l10n, GroupSearchEntry group) {
-    if (group.allowDirectJoin) return l10n.searchGroupJoinDirect;
-    if (group.requireReview) return l10n.searchGroupNeedReview;
-    return l10n.searchGroupInviteOnly;
+    switch (group.joinPolicy) {
+      case TfJoinPolicy.open:
+        return l10n.searchGroupJoinDirect;
+      case TfJoinPolicy.approval:
+        return l10n.searchGroupNeedReview;
+      case TfJoinPolicy.invite:
+      case TfJoinPolicy.adminInvite:
+      default:
+        return l10n.searchGroupInviteOnly;
+    }
   }
 
   Widget _badge(ColorScheme colorScheme, String text) {
@@ -517,12 +552,19 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
         retryLabel: l10n.retry,
       );
     }
+    final settled = serverBacked ? !_searching : !(_searching || _localSearching);
+    if (!settled) {
+      return EmptyState(
+        icon: Icons.hourglass_empty,
+        title: l10n.searchInProgress,
+      );
+    }
     final IconData icon;
     final String message;
     if (_query.isEmpty) {
       message = l10n.searchStartHint;
       icon = Icons.search;
-    } else if (_query.length < _minLength) {
+    } else if (_isTooShort(_query)) {
       message = l10n.searchMinLengthHint(_minLength);
       icon = Icons.keyboard;
     } else {

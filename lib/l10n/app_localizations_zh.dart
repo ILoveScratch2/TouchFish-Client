@@ -4009,6 +4009,39 @@ class AppLocalizationsZh extends AppLocalizations {
   String get groupJoinRequestsSection => '入群申请';
 
   @override
+  String get groupJoinPolicy => '加入方式';
+
+  @override
+  String get groupJoinPolicyOpen => '允许自由加入';
+
+  @override
+  String get groupJoinPolicyOpenDesc => '任何人都能直接进群，无需审核';
+
+  @override
+  String get groupJoinPolicyApproval => '允许审批加入';
+
+  @override
+  String get groupJoinPolicyApprovalDesc => '任何人都能申请，群主或管理员审批后进群';
+
+  @override
+  String get groupJoinPolicyInvite => '仅允许邀请';
+
+  @override
+  String get groupJoinPolicyInviteDesc => '本群成员都可以邀请好友，邀请即入群';
+
+  @override
+  String get groupJoinPolicyAdminInvite => '仅允许管理员邀请';
+
+  @override
+  String get groupJoinPolicyAdminInviteDesc => '只有群主和管理员能邀请，邀请即入群';
+
+  @override
+  String get groupSearchable => '允许被搜索';
+
+  @override
+  String get groupSearchableDesc => '关闭后群不会出现在搜索结果里，已有邀请与群号直达仍然有效';
+
+  @override
   String get groupAllowDirectJoin => '允许直接加入';
 
   @override
@@ -5969,6 +6002,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get searchNoResults => '没有找到结果';
+
+  @override
+  String get searchInProgress => '正在搜索…';
 
   @override
   String searchMinLengthHint(int count) {

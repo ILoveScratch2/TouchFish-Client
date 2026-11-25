@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/chat_model.dart';
 import '../models/app_notification.dart';
 import '../models/message_model.dart';
+import '../models/search_result.dart';
 import '../models/local_message_search_result.dart';
 import '../models/notification_model.dart';
 import '../models/user_profile.dart';
@@ -123,6 +124,8 @@ class ChatDataService extends ChangeNotifier {
   int _generation = 0;
   int _roomListGeneration = 0;
   static const int _messagePageSize = 50;
+  /// 服务端搜索单页条数（服务端上限 20）
+  static const int _messageSearchPageSize = 20;
   int? _roomPreferencesUid;
   String? _roomPreferencesScope;
   String? _roomPreferencesEncoded;
@@ -327,12 +330,84 @@ class ChatDataService extends ChangeNotifier {
     return _messageCache[roomId] ?? [];
   }
 
+  /// 本会话内可搜索的消息（本地库 + 内存缓存)
   Future<List<ChatMessage>> getSearchableMessages(String roomId) async {
     final local = await _localStore.loadMessages(roomId);
     final merged = _mergeMessages(_messageCache[roomId] ?? [], local);
     merged.sort(_compareMessages);
-    if (merged.isNotEmpty) return merged;
-    return (await refreshMessagesForContact(roomId)).messages;
+    if (merged.isEmpty) {
+      return _fillSenderInfo((await refreshMessagesForContact(roomId)).messages);
+    }
+    return _fillSenderInfo(merged);
+  }
+  Future<MessageSearchPage> searchRoomMessagesFromServer(
+    String roomId,
+    String keyword, {
+    int beforeMid = 0,
+    int limit = _messageSearchPageSize,
+  }) async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return MessageSearchPage.empty;
+
+    final rk = roomKey(roomId);
+    final page = await TfApiClient.instance.searchMessages(
+      uid,
+      password,
+      keyword,
+      targetUid: rk > 0 ? rk : 0,
+      groupId: rk < 0 ? -rk : null,
+      beforeMid: beforeMid,
+      limit: limit,
+    );
+    if (page.messages.isEmpty) return page;
+
+    final filled = _fillSenderInfo(page.messages);
+    _ensureSenderProfiles(filled, roomId);
+    await _localStore.saveMessages(roomId, filled);
+    return MessageSearchPage(messages: filled, hasMore: page.hasMore);
+  }
+
+  String? senderDisplayName(String roomId, ChatMessage message) {
+    final senderUid = message.senderUid;
+    return resolveSenderLabel(
+      isMe: message.isMe,
+      messageSenderName: message.senderName,
+      selfName: message.isMe ? AuthState.instance.currentUser?.username : null,
+      profileName: message.isMe || senderUid == null
+          ? null
+          : _senderNameFor(senderUid),
+      directRoomName: isGroupRoom(roomId) ? null : _roomName(roomId),
+    );
+  }
+
+  @visibleForTesting
+  static String? resolveSenderLabel({
+    required bool isMe,
+    String? messageSenderName,
+    String? selfName,
+    String? profileName,
+    String? directRoomName,
+  }) {
+    final fromMessage = messageSenderName?.trim();
+    if (fromMessage != null && fromMessage.isNotEmpty) return fromMessage;
+    if (isMe) {
+      final self = selfName?.trim();
+      if (self != null && self.isNotEmpty) return self;
+      return null;
+    }
+    final profile = profileName?.trim();
+    if (profile != null && profile.isNotEmpty) return profile;
+    final roomName = directRoomName?.trim();
+    if (roomName != null && roomName.isNotEmpty) return roomName;
+    return null;
+  }
+
+  String? _roomName(String roomId) {
+    for (final room in _rooms) {
+      if (room.id == roomId) return room.name;
+    }
+    return null;
   }
 
   Future<ChatMessage?> findMessageByMid(

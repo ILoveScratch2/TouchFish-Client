@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:file_picker/file_picker.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/sticker_model.dart';
+import '../providers/sticker/sticker_provider.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/snackbar_service.dart';
@@ -17,6 +19,15 @@ import '../widgets/stickers/sticker_image.dart';
 import '../widgets/ui/empty_state.dart';
 import '../widgets/ui/error_state.dart';
 import '../widgets/ui/loading_indicator.dart';
+
+/// 聊天页输入栏的贴图面板刷新
+void _invalidateStickerPacks(BuildContext context) {
+  if (!context.mounted) return;
+  ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).invalidate(myStickerPacksProvider);
+}
 
 
 class StickerMarketplaceScreen extends StatefulWidget {
@@ -91,6 +102,8 @@ class _StickerMarketplaceScreenState extends State<StickerMarketplaceScreen>
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
     await TfApiClient.instance.setStickerOwnership(uid, password, pack.id, owned);
+    if (!mounted) return;
+    _invalidateStickerPacks(context);
     await _load();
   }
 
@@ -241,7 +254,11 @@ class _StickerMarketplaceScreenState extends State<StickerMarketplaceScreen>
               password,
               reordered.map((e) => e.packId).toList(),
             );
-            if (!ok) await _load();
+            if (!ok) {
+              await _load();
+            } else if (mounted) {
+              _invalidateStickerPacks(context);
+            }
           }
         },
         proxyDecorator: (child, _, _) => Material(
@@ -724,7 +741,10 @@ class _StickerPackEditorScreenState extends State<StickerPackEditorScreen> {
 
   Future<void> _refresh() async {
     final pack = await TfApiClient.instance.getStickerPack(_pack.id);
-    if (pack != null && mounted) setState(() => _pack = pack);
+    if (pack != null && mounted) {
+      setState(() => _pack = pack);
+      _invalidateStickerPacks(context);
+    }
   }
 
   Future<void> _addSticker() async {
@@ -825,6 +845,7 @@ class _StickerPackEditorScreenState extends State<StickerPackEditorScreen> {
         _pack.id,
         items.map((e) => e.id).toList(),
       );
+      if (mounted) _invalidateStickerPacks(context);
     }
   }
 
@@ -870,6 +891,7 @@ class _StickerPackEditorScreenState extends State<StickerPackEditorScreen> {
               );
               if (!mounted || !context.mounted) return;
               if (ok) {
+                _invalidateStickerPacks(context);
                 Navigator.pop(context);
               } else {
                 TouchFishSnackbarService.instance.show(

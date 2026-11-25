@@ -8,6 +8,7 @@ import '../models/message_model.dart';
 import '../models/settings_service.dart';
 import '../widgets/markdown_renderer.dart';
 import '../widgets/ui/loading_indicator.dart';
+import '../models/group_join_policy.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/chat_data_service.dart';
 import '../services/snackbar_service.dart';
@@ -20,11 +21,7 @@ import '../widgets/text_entry_dialog.dart';
 
 const double _kProfileMaxWidth = 680;
 
-/// 群聊资料界面，仿照 UserProfileScreen。
-///
-/// - [gid]：群聊 id（例如 "123"）
-/// - [initialData]：可选，来自 searchGroup 的结果，用于在非群成员时展示基础资料
-/// - [initialGroupName]：可选，群聊名称兜底（例如从聊天列表带入）
+/// 群聊资料界面，仿照 UserProfileScreen
 class GroupProfileScreen extends StatefulWidget {
   final String gid;
   final Map<String, dynamic>? initialData;
@@ -55,7 +52,7 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
   bool _isMember = false;
   bool _isJoining = false;
   bool _joinPending = false;
-  bool _allowDirectJoin = false;
+  String _joinPolicy = TfJoinPolicy.approval;
   bool _publicMessages = false;
   List<TfGroupPreviewMember> _previewMembers = const [];
   List<ChatMessage>? _previewMessages;
@@ -140,7 +137,7 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
             }
             _memberCount = preview.memberCount;
             _isMember = preview.isMember;
-            _allowDirectJoin = preview.allowDirectJoin;
+            _joinPolicy = preview.joinPolicy;
             _publicMessages = preview.publicMessages;
             _requireReview = preview.requireReview;
             if (preview.enterHint.isNotEmpty) _enterHint = preview.enterHint;
@@ -182,6 +179,11 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
                 if (hint != null && hint.isNotEmpty) _enterHint = hint;
                 if (intro != null && intro.isNotEmpty) _introduction = intro;
                 if (review != null) _requireReview = review;
+                _joinPolicy = TfJoinPolicy.resolve(
+                  settings['join_policy'] as String?,
+                  allowDirectJoin: settings['allow_direct_join'] == true,
+                  requireReview: review ?? true,
+                );
                 _publicMessages = _asBool(settings['public_messages']) ?? _publicMessages;
               }
               final owner = memberList.firstWhere(
@@ -319,9 +321,9 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
       _showSnack(l10n.storageNotLoggedIn);
       return;
     }
-    // 需要审核的群：可选填写申请留言（留空直接提交）
+    // 需要审核的群
     String? requestMessage;
-    if (_requireReview == true) {
+    if (TfJoinPolicy.needsApproval(_joinPolicy)) {
       final input = await showDialog<String>(
         context: context,
         builder: (ctx) => TextEntryDialog(
@@ -621,7 +623,7 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
               _buildDetailRow(
                 context,
                 Symbols.shield,
-                _requireReview!
+                TfJoinPolicy.needsApproval(_joinPolicy)
                     ? l10n.groupProfileRequireReview
                     : l10n.groupProfileRequireReviewNo,
                 '',
@@ -893,7 +895,7 @@ class _GroupProfileScreenState extends State<GroupProfileScreen> {
       label = l10n.groupProfileJoinPending;
       icon = const Icon(Symbols.hourglass);
       onPressed = null;
-    } else if (!_allowDirectJoin) {
+    } else if (!TfJoinPolicy.allowsSelfJoin(_joinPolicy)) {
       label = l10n.groupProfileInviteOnly;
       icon = const Icon(Symbols.lock);
       onPressed = null;

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/group_join_policy.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
@@ -387,7 +388,8 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
     if (invitedUid != null) {
       // 走审核流程的邀请：可选填写留言给审核人（管理员免审直入则跳过）
       String? inviteMessage;
-      final needsReview = _settings?['require_review'] == true && !_isAdmin;
+      final policy = _currentJoinPolicy;
+      final needsReview = TfJoinPolicy.needsApproval(policy) && !_isAdmin;
       if (needsReview) {
         final input = await showDialog<String>(
           context: context,
@@ -560,7 +562,14 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
                       ),
                     ),
                     FilledButton.tonalIcon(
-                      onPressed: () => _inviteMember(l10n),
+                      // 仅管理员邀请
+                      onPressed:
+                          !_isAdmin &&
+                              !TfJoinPolicy.allowsMemberInvite(
+                                _currentJoinPolicy,
+                              )
+                          ? null
+                          : () => _inviteMember(l10n),
                       icon: const Icon(Icons.person_add, size: 18),
                       label: Text(l10n.groupInviteMember),
                     ),
@@ -646,23 +655,131 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _editEnterHint(l10n),
       ),
-      SwitchListTile.adaptive(
-        value: settings['allow_direct_join'] == true,
-        title: Text(l10n.groupAllowDirectJoin),
-        subtitle: Text(l10n.groupAllowDirectJoinDesc),
-        onChanged: _updatingSettings.contains('allow_direct_join')
+      ListTile(
+        leading: const Icon(Icons.group_add_outlined),
+        title: Text(l10n.groupJoinPolicy),
+        subtitle: Text(_joinPolicyLabel(l10n, _currentJoinPolicy)),
+        trailing: _updatingSettings.contains('join_policy')
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.chevron_right),
+        onTap: _updatingSettings.contains('join_policy')
             ? null
-            : (v) => _toggleSetting('allow_direct_join', v),
+            : () => _showJoinPolicyPicker(l10n),
       ),
       SwitchListTile.adaptive(
-        value: settings['require_review'] == true,
-        title: Text(l10n.groupRequireReview),
-        subtitle: Text(l10n.groupRequireReviewDesc),
-        onChanged: _updatingSettings.contains('require_review')
+        value: settings['searchable'] != false,
+        title: Text(l10n.groupSearchable),
+        subtitle: Text(l10n.groupSearchableDesc),
+        onChanged: _updatingSettings.contains('searchable')
             ? null
-            : (v) => _toggleSetting('require_review', v),
+            : (v) => _updateSetting('searchable', v),
       ),
     ];
+  }
+
+  /// 当前加入策略
+  String get _currentJoinPolicy => TfJoinPolicy.resolve(
+    _settings?['join_policy'] as String?,
+    allowDirectJoin: _settings?['allow_direct_join'] == true,
+    requireReview: _settings?['require_review'] != false,
+  );
+
+  String _joinPolicyLabel(AppLocalizations l10n, String policy) {
+    switch (policy) {
+      case TfJoinPolicy.open:
+        return l10n.groupJoinPolicyOpen;
+      case TfJoinPolicy.invite:
+        return l10n.groupJoinPolicyInvite;
+      case TfJoinPolicy.adminInvite:
+        return l10n.groupJoinPolicyAdminInvite;
+      case TfJoinPolicy.approval:
+      default:
+        return l10n.groupJoinPolicyApproval;
+    }
+  }
+
+  String _joinPolicyDescription(AppLocalizations l10n, String policy) {
+    switch (policy) {
+      case TfJoinPolicy.open:
+        return l10n.groupJoinPolicyOpenDesc;
+      case TfJoinPolicy.invite:
+        return l10n.groupJoinPolicyInviteDesc;
+      case TfJoinPolicy.adminInvite:
+        return l10n.groupJoinPolicyAdminInviteDesc;
+      case TfJoinPolicy.approval:
+      default:
+        return l10n.groupJoinPolicyApprovalDesc;
+    }
+  }
+
+  Future<void> _showJoinPolicyPicker(AppLocalizations l10n) async {
+    final current = _currentJoinPolicy;
+    final selected = await showAppSheet<String>(
+      context: context,
+      builder: (sheetContext) => SheetScaffold(
+        titleText: l10n.groupJoinPolicy,
+        child: RadioGroup<String>(
+          groupValue: current,
+          onChanged: (value) => Navigator.pop(sheetContext, value),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final policy in TfJoinPolicy.values)
+                RadioListTile<String>(
+                  value: policy,
+                  title: Text(_joinPolicyLabel(l10n, policy)),
+                  subtitle: Text(_joinPolicyDescription(l10n, policy)),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (selected == null || selected == current) return;
+    await _updateSetting('join_policy', selected);
+  }
+
+  /// 更新单个设置项
+  Future<void> _updateSetting(String key, Object value) async {
+    if (_updatingSettings.contains(key)) return;
+    final previousValue = _settings?[key];
+    setState(() {
+      _updatingSettings.add(key);
+      _settings?[key] = value;
+    });
+
+    var ok = false;
+    try {
+      ok = await TfApiClient.instance.updateGroupSettings(
+        _uid,
+        _password,
+        widget.gid,
+        {key: value},
+      );
+    } catch (_) {
+      ok = false;
+    }
+    if (!mounted) return;
+    setState(() {
+      _updatingSettings.remove(key);
+      if (!ok) {
+        _settings?[key] = previousValue;
+      } else if (key == 'join_policy') {
+        // 服务端同步兼容
+        final allow = value == TfJoinPolicy.open || value == TfJoinPolicy.approval;
+        _settings?['allow_direct_join'] = allow;
+        _settings?['require_review'] =
+            value == TfJoinPolicy.approval ||
+            value == TfJoinPolicy.adminInvite;
+      }
+    });
+    if (!ok) {
+      _showSnack(AppLocalizations.of(context)!.commonFailedOperation);
+    }
   }
 
   List<Widget> _buildFeatureTiles(AppLocalizations l10n) {

@@ -13,6 +13,7 @@ import '../../models/message_model.dart';
 import '../../constants/app_constants.dart';
 import '../../models/user_profile.dart';
 import '../../models/friend_request.dart';
+import '../../models/group_join_policy.dart';
 import '../../models/search_result.dart';
 import '../../models/forum_model.dart';
 import '../../models/sticker_model.dart';
@@ -425,6 +426,7 @@ class TfGroupPreviewMember {
 }
 
 /// 群组预览
+/// 群加入策略见 [TfJoinPolicy]
 class TfGroupPreview {
   final int gid;
   final String groupname;
@@ -436,6 +438,12 @@ class TfGroupPreview {
   final bool requireReview;
   final bool publicMessages;
   final bool essenceEnabled;
+
+  /// 加入策略：open / approval / invite / admin_invite
+  final String joinPolicy;
+
+  /// 是否出现在搜索结果里（与"能否加入"无关）
+  final bool searchable;
   final List<TfGroupPreviewMember> members;
 
   const TfGroupPreview({
@@ -449,6 +457,8 @@ class TfGroupPreview {
     required this.requireReview,
     required this.publicMessages,
     required this.essenceEnabled,
+    this.joinPolicy = 'approval',
+    this.searchable = true,
     required this.members,
   });
 
@@ -471,6 +481,12 @@ class TfGroupPreview {
       requireReview: json['require_review'] == true,
       publicMessages: json['public_messages'] == true,
       essenceEnabled: json['essence_enabled'] != false,
+      joinPolicy: TfJoinPolicy.resolve(
+        json['join_policy'] as String?,
+        allowDirectJoin: json['allow_direct_join'] == true,
+        requireReview: json['require_review'] == true,
+      ),
+      searchable: json['searchable'] != false,
       members: members,
     );
   }
@@ -4532,8 +4548,67 @@ class TfApiClient {
     }
   }
 
-  // --- group management ---
+  /// 在单个会话内搜索历史消息
+  Future<MessageSearchPage> searchMessages(
+    int uid,
+    String password,
+    String keyword, {
+    int targetUid = 0,
+    int? groupId,
+    int beforeMid = 0,
+    int limit = 20,
+  }) async {
+    final body = <String, dynamic>{
+      'keyword': keyword,
+      'before_mid': beforeMid,
+      'limit': limit,
+    };
+    if (groupId != null) {
+      body['group_id'] = groupId;
+    } else {
+      body['target_uid'] = targetUid;
+    }
+    final result = await secretPost(
+      '/message/search',
+      body,
+      uid: uid,
+      password: password,
+    );
+    if (result == null) {
+      throw StateError('searchMessages request failed');
+    }
+    final decoded = jsonDecode(result);
+    if (decoded is! Map) return MessageSearchPage.empty;
+    final map = Map<String, dynamic>.from(decoded);
+    if (map['success'] == false || map['error'] != null) {
+      throw ApiErrorException(ApiError.fromResponse(map));
+    }
+    final rawMessages = map['messages'];
+    final messages = <ChatMessage>[];
+    if (rawMessages is List) {
+      for (final raw in rawMessages.whereType<Map>()) {
+        final record = Map<String, dynamic>.from(raw);
+        try {
+          var message = ChatMessage.fromMessageRecord(record, uid);
+          final senderName = record['sender_name'] as String?;
+          if (senderName != null &&
+              senderName.isNotEmpty &&
+              message.senderName == null) {
+            message = message.copyWith(senderName: senderName);
+          }
+          messages.add(message);
+        } catch (e) {
+          talker.warning('searchMessages: skip malformed record', e);
+        }
+      }
+    }
+    return MessageSearchPage(
+      messages: messages,
+      hasMore: map['has_more'] == true,
+    );
+  }
 
+  // --- group management ---
   Future<List<Map<String, dynamic>>> infoGroup(int groupid) async {
     final baseUrl = await getBaseUrl();
     final encoded = Uri.encodeComponent(groupid.toString());
@@ -4713,8 +4788,8 @@ class TfApiClient {
     required String groupname,
     String introduction = '',
     String enterHint = '',
-    bool allowDirectJoin = false,
-    bool requireReview = true,
+    String joinPolicy = TfJoinPolicy.approval,
+    bool searchable = true,
   }) async {
     final result = await secretPost(
       '/group/create_group',
@@ -4722,8 +4797,8 @@ class TfApiClient {
         'groupname': groupname,
         'introduction': introduction,
         'enter_hint': enterHint,
-        'allow_direct_join': allowDirectJoin,
-        'require_review': requireReview,
+        'join_policy': joinPolicy,
+        'searchable': searchable,
       },
       uid: uid,
       password: password,
