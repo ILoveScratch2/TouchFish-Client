@@ -272,6 +272,8 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
 
   Future<void> _showNotificationList() async {
     final l10n = AppLocalizations.of(context)!;
+    // 打开时补
+    unawaited(NotificationService.instance.fetchNotifications());
     // 真正关闭后再标记
     await showModalBottomSheet<void>(
       context: context,
@@ -377,69 +379,79 @@ class _AnnouncementNotificationSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final notifs = NotificationService.instance.announcementNotifications;
-    final isLoading = NotificationService.instance.isLoading;
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.8,
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(
-              top: 16,
-              left: 20,
-              right: 16,
-              bottom: 12,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.notificationTabNotifications,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.5,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.close, color: colorScheme.onSurface),
-                  onPressed: () => Navigator.pop(context),
-                  style: IconButton.styleFrom(minimumSize: const Size(36, 36)),
-                ),
-              ],
-            ),
+    // 通知可能在弹层打开后才补拉完成
+    return ListenableBuilder(
+      listenable: NotificationService.instance,
+      builder: (context, _) {
+        final notifs = NotificationService.instance.announcementNotifications;
+        final isLoading = NotificationService.instance.isLoading;
+
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
           ),
-          const Divider(height: 1),
-          Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : notifs.isEmpty
-                ? AdminEmptyState(
-                    message: l10n.notificationEmpty,
-                    icon: Icons.notifications_none,
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: 16,
+                  left: 20,
+                  right: 16,
+                  bottom: 12,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.notificationTabNotifications,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.5,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    itemCount: notifs.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 6),
-                    itemBuilder: (context, index) {
-                      return _AnnouncementNotificationCard(
-                        notification: notifs[index],
-                      );
-                    },
-                  ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: colorScheme.onSurface),
+                      onPressed: () => Navigator.pop(context),
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(36, 36),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : notifs.isEmpty
+                    ? AdminEmptyState(
+                        message: l10n.notificationEmpty,
+                        icon: Icons.notifications_none,
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        itemCount: notifs.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 6),
+                        itemBuilder: (context, index) {
+                          return _AnnouncementNotificationCard(
+                            notification: notifs[index],
+                          );
+                        },
+                      ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

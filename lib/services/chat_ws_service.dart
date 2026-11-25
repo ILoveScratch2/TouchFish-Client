@@ -671,15 +671,23 @@ class ChatWsService extends ChangeNotifier {
     }
   }
 
-  void sendReadReceipt(String roomId, int lastMid) {
-    if (!isAuthenticated) return;
-    _sendEncrypted(
-      jsonEncode({
-        'type': 'message.read',
-        'room_id': roomId,
-        'last_mid': lastMid,
-      }),
-    );
+  /// 发送已读回执
+  bool sendReadReceipt(String roomId, int lastMid) {
+    if (!isAuthenticated) return false;
+    if (_channel == null || _sessionAesKey == null) return false;
+    try {
+      _sendEncrypted(
+        jsonEncode({
+          'type': 'message.read',
+          'room_id': roomId,
+          'last_mid': lastMid,
+        }),
+      );
+      return true;
+    } catch (e) {
+      talker.error('sendReadReceipt error', e);
+      return false;
+    }
   }
 
   /// 发送任意加密信令包（用于 call.* 等自定义协议）。

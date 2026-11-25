@@ -35,6 +35,10 @@ class NotificationService extends ChangeNotifier {
   bool _loadingMore = false;
   bool _hasMore = true;
   static const int _pageSize = 50;
+  /// 拉取失败重试
+  /// 15s 起指数退避，封顶 5 分钟
+  static const Duration _retryBaseDelay = Duration(seconds: 15);
+  static const Duration _retryMaxDelay = Duration(minutes: 5);
   final Set<int> _handledFriendSenders = {};
   /// 本次会话已经强提醒过的处罚通知
   final Set<String> _presentedPunishments = {};
@@ -42,6 +46,11 @@ class NotificationService extends ChangeNotifier {
   final StreamController<int> _essenceChanges =
       StreamController<int>.broadcast();
   Timer? _pollTimer;
+  Timer? _retryTimer;
+  int _retryAttempts = 0;
+
+  int _sessionGeneration = 0;
+  bool _lastFetchFailed = false;
   StreamSubscription<ChatWsEvent>? _wsSubscription;
   bool _listeningWsState = false;
   bool _wsAuthenticated = false;
@@ -146,25 +155,29 @@ class NotificationService extends ChangeNotifier {
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
     if (_isLoading) return;
-    final baseUrl = await TfApiClient.instance.getBaseUrl();
-
-    if (_activeUid != uid || _activeBaseUrl != baseUrl) {
-      _activeUid = uid;
-      _activeBaseUrl = baseUrl;
-      _allNotifications.clear();
-      _handledFriendSenders.clear();
-      _handledInviteKeys.clear();
-      _lastFetchTime = 0;
-      _needsFullReload = true;
-      _isFirstFetchForSession = true;
-      await _loadFetchTime(baseUrl, uid);
-      await _loadLocalCache(baseUrl, uid);
-    }
-
     _isLoading = true;
-    _error = null;
+    final generation = _sessionGeneration;
 
     try {
+      final baseUrl = await TfApiClient.instance.getBaseUrl();
+      if (generation != _sessionGeneration) return;
+
+      if (_activeUid != uid || _activeBaseUrl != baseUrl) {
+        _activeUid = uid;
+        _activeBaseUrl = baseUrl;
+        _allNotifications.clear();
+        _handledFriendSenders.clear();
+        _handledInviteKeys.clear();
+        _lastFetchTime = 0;
+        _needsFullReload = true;
+        _isFirstFetchForSession = true;
+        await _loadFetchTime(baseUrl, uid);
+        if (generation != _sessionGeneration) return;
+        await _loadLocalCache(baseUrl, uid);
+        if (generation != _sessionGeneration) return;
+      }
+
+      _error = null;
       final fullReload = _needsFullReload || _isInitialLoad;
       _needsFullReload = false;
       final fetched = fullReload
@@ -177,15 +190,23 @@ class NotificationService extends ChangeNotifier {
             )
           : await TfApiClient.instance.queryAllNotifications(uid, password);
 
+      if (generation != _sessionGeneration) return;
       if (_activeUid != uid || _activeBaseUrl != baseUrl) return;
 
       if (fetched == null) {
         // 请求失败
         talker.warning('NotificationService: fetch failed, keep local cache');
-        _isLoading = false;
+        _lastFetchFailed = true;
+        if (fullReload) _needsFullReload = true;
+        _scheduleFetchRetry();
         notifyListeners();
         return;
       }
+
+      _lastFetchFailed = false;
+      _retryAttempts = 0;
+      _retryTimer?.cancel();
+      _retryTimer = null;
 
       talker.info(
         'NotificationService: fetched ${fetched.length} notifications',
@@ -200,6 +221,12 @@ class NotificationService extends ChangeNotifier {
             ..clear()
             ..addAll(fetched)
             ..sort((a, b) => b.timeStamp.compareTo(a.timeStamp));
+        }
+        if (_allNotifications.length > _maxInMemoryNotifications) {
+          _allNotifications.removeRange(
+            _maxInMemoryNotifications,
+            _allNotifications.length,
+          );
         }
       } else if (fetched.isNotEmpty) {
         _isInitialLoad = false;
@@ -258,9 +285,13 @@ class NotificationService extends ChangeNotifier {
     } catch (e) {
       talker.error('NotificationService.fetchNotifications failed', e);
       _error = 'loadFailed';
+      _lastFetchFailed = true;
+      _scheduleFetchRetry();
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (generation == _sessionGeneration) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -417,10 +448,34 @@ class NotificationService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 测试用
+  @visibleForTesting
+  void debugSeedSession({
+    int? uid = 7,
+    String? baseUrl = 'https://example.test',
+    double fetchTime = 1,
+  }) {
+    _activeUid = uid;
+    _activeBaseUrl = baseUrl;
+    _lastFetchTime = fetchTime;
+    _needsFullReload = false;
+    _isInitialLoad = false;
+  }
+
+  @visibleForTesting
+  int? get debugActiveUid => _activeUid;
+
+  @visibleForTesting
+  double get debugLastFetchTime => _lastFetchTime;
+
+  @visibleForTesting
+  bool get debugNeedsFullReload => _needsFullReload;
+
   Future<void> forceRefresh() async {
     _isInitialLoad = true;
     _needsFullReload = true;
-    // 强制刷新要能盖掉正在进行的拉取
+    // 强制刷新要能盖掉正在进行的拉取=
+    _sessionGeneration++;
     _isLoading = false;
     _allNotifications.clear();
     _handledFriendSenders.clear();
@@ -449,7 +504,27 @@ class NotificationService extends ChangeNotifier {
     _syncPollTimer();
   }
 
-  /// WS 已认证时停止轮询
+  /// 拉取失败后的自动重试
+  void _scheduleFetchRetry() {
+    if (_retryTimer?.isActive ?? false) return;
+    final attempt = _retryAttempts + 1;
+    _retryAttempts = attempt;
+    final factor = 1 << (attempt - 1).clamp(0, 5);
+    var delay = _retryBaseDelay * factor;
+    if (delay > _retryMaxDelay) delay = _retryMaxDelay;
+    talker.info(
+      'NotificationService: retry fetch in ${delay.inSeconds}s '
+      '(attempt $attempt)',
+    );
+    _retryTimer = Timer(delay, () {
+      _retryTimer = null;
+      // 已登出
+      if (_activeUid == null) return;
+      unawaited(fetchNotifications());
+    });
+  }
+
+  /// WS 已认证时停止轮询（有失败重试时除外）
   void _syncPollTimer() {
     if (ChatWsService.instance.isAuthenticated) {
       if (_pollTimer != null) {
@@ -457,6 +532,7 @@ class NotificationService extends ChangeNotifier {
       }
       _pollTimer?.cancel();
       _pollTimer = null;
+      if (_lastFetchFailed) _scheduleFetchRetry();
       return;
     }
     _pollTimer ??= Timer.periodic(_pollInterval, (_) => fetchNotifications());
@@ -480,6 +556,10 @@ class NotificationService extends ChangeNotifier {
   void stopPolling() {
     _pollTimer?.cancel();
     _pollTimer = null;
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    _retryAttempts = 0;
+    _lastFetchFailed = false;
     // 持久化 Timer 也必须取消
     _persistTimer?.cancel();
     _persistTimer = null;
@@ -490,6 +570,14 @@ class NotificationService extends ChangeNotifier {
       _listeningWsState = false;
     }
     _wsAuthenticated = false;
+    _sessionGeneration++;
+    _activeUid = null;
+    _activeBaseUrl = null;
+    _lastFetchTime = 0;
+    _needsFullReload = true;
+    _isInitialLoad = true;
+    _isFirstFetchForSession = true;
+    _isLoading = false;
     // 换账号或登出后要能对新会话重新提醒一次
     _presentedPunishments.clear();
   }

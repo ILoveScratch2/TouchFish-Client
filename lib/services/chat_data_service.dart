@@ -919,6 +919,28 @@ class ChatDataService extends ChangeNotifier {
     });
   }
 
+  /// 会话预览是否应该被 [msg] 覆盖
+  static bool _shouldAdvanceRoomPreview(ChatRoom room, ChatMessage msg) {
+    final mid = msg.mid;
+    final lastMid = room.lastMessageMid;
+    if (mid != null && lastMid != null) return mid > lastMid;
+    final lastTime = room.lastMessageTime;
+    if (lastTime == null) return true;
+    return !msg.timestamp.isBefore(lastTime);
+  }
+
+  static bool _serverPreviewWins({
+    required int? serverMid,
+    required DateTime? serverTime,
+    required int? localMid,
+    required DateTime? localTime,
+  }) {
+    if (serverMid != null && localMid != null) return serverMid >= localMid;
+    if (serverTime == null) return localTime == null;
+    if (localTime == null) return true;
+    return !serverTime.isBefore(localTime);
+  }
+
   String _messageDedupKey(ChatMessage message) {
     final clientMid = message.clientMid;
     if (clientMid != null && clientMid.isNotEmpty) {
@@ -1145,6 +1167,23 @@ class ChatDataService extends ChangeNotifier {
             isPinned: getRoomPreference(item.roomId).isPinned,
           ),
         );
+        if (existingRoom != null &&
+            !item.lastDeleted &&
+            !_serverPreviewWins(
+              serverMid: item.lastMid,
+              serverTime: lastTime,
+              localMid: existingRoom.lastMessageMid,
+              localTime: existingRoom.lastMessageTime,
+            )) {
+          final index = nextRooms.length - 1;
+          nextRooms[index] = nextRooms[index].copyWith(
+            lastMessage: existingRoom.lastMessage,
+            lastMessageTime: existingRoom.lastMessageTime,
+            lastMessageMid: existingRoom.lastMessageMid,
+            lastMessageType: existingRoom.lastMessageType,
+            lastMessageFileName: existingRoom.lastMessageFileName,
+          );
+        }
       }
 
       _rooms = nextRooms;
@@ -1628,9 +1667,9 @@ class ChatDataService extends ChangeNotifier {
     if (roomIndex < 0) {
       _addNewRoom(roomId, msg, unreadCount: shouldCountUnread ? 1 : 0);
     } else {
-      final lastTime = _rooms[roomIndex].lastMessageTime;
       var updated = _rooms[roomIndex];
-      if (lastTime == null || msg.timestamp.isAfter(lastTime)) {
+      // 乱序到达
+      if (_shouldAdvanceRoomPreview(updated, msg)) {
         updated = updated.copyWith(
           lastMessage: msg.text,
           lastMessageTime: msg.timestamp,
@@ -1710,16 +1749,20 @@ class ChatDataService extends ChangeNotifier {
 
     final idx = _rooms.indexWhere((r) => r.id == roomId);
     if (idx >= 0) {
-      _rooms[idx] = _rooms[idx].copyWith(
-        lastMessage: msg.text,
-        lastMessageTime: msg.timestamp,
-        lastMessageMid: msg.mid,
-        lastMessageType: msg.type,
-        lastMessageFileName: msg.media?.fileName,
-        unreadCount: shouldNotify
-            ? _rooms[idx].unreadCount + 1
-            : _rooms[idx].unreadCount,
-      );
+      var updated = _rooms[idx];
+      if (_shouldAdvanceRoomPreview(updated, msg)) {
+        updated = updated.copyWith(
+          lastMessage: msg.text,
+          lastMessageTime: msg.timestamp,
+          lastMessageMid: msg.mid,
+          lastMessageType: msg.type,
+          lastMessageFileName: msg.media?.fileName,
+        );
+      }
+      if (shouldNotify) {
+        updated = updated.copyWith(unreadCount: updated.unreadCount + 1);
+      }
+      _rooms[idx] = updated;
     } else {
       _addNewRoom(roomId, msg, unreadCount: shouldNotify ? 1 : 0);
     }
@@ -2358,7 +2401,7 @@ class ChatDataService extends ChangeNotifier {
   @visibleForTesting
   void applyReadReceiptResult(String roomId, int mid, TfReadReceipt result) {
     if (roomId.startsWith('U')) {
-      if (result.hidden) {
+      if (result.hidden || result.readerLastSeq <= 0) {
         clearPeerReadReceipt(roomId);
       } else {
         applyPeerReadReceipt(roomId, result.readerLastSeq);

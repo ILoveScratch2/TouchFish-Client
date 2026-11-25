@@ -39,6 +39,22 @@ void main() {
     expect(notifications[2].readAt, isNull);
     expect(notifications[3].readAt, isNull);
   });
+
+  test('logout resets the session so re-login performs a full reload', () {
+    final service = NotificationService.instance;
+    service.debugSeedSession(
+      uid: 7,
+      baseUrl: 'https://example.test',
+      fetchTime: 1234,
+    );
+    expect(service.debugNeedsFullReload, isFalse);
+
+    service.stopPolling();
+
+    expect(service.debugActiveUid, isNull);
+    expect(service.debugLastFetchTime, 0);
+    expect(service.debugNeedsFullReload, isTrue);
+  });
 }
 
 NotificationInfo _notification({

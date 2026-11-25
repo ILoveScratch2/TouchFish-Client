@@ -679,8 +679,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     if (last == null || last.isMe || last.mid == null) return;
     final mid = last.mid!;
     if (_lastReportedReadMid != null && mid <= _lastReportedReadMid!) return;
-    _lastReportedReadMid = mid;
-    _clearRoomUnread(mid);
+    if (_clearRoomUnread(mid)) _lastReportedReadMid = mid;
   }
 
   /// 尾部消息变化时
@@ -698,11 +697,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _reportVisibleRead();
   }
 
-  void _clearRoomUnread(int? lastMid) {
+  /// 本地清未读 + 上报回执。返回回执是否真的发出（断线时为 false）。
+  bool _clearRoomUnread(int? lastMid) {
     ChatDataService.instance.clearUnread(_contactUid);
-    if (_wsConnected && lastMid != null) {
-      ChatWsService.instance.sendReadReceipt(_contactUid, lastMid);
-    }
+    if (!_wsConnected || lastMid == null) return false;
+    return ChatWsService.instance.sendReadReceipt(_contactUid, lastMid);
   }
 
   Future<void> _loadAndShowMessages() async {
@@ -799,13 +798,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       setState(() => _showBackToBottom = showBackToBottom);
     }
     _follower.notePosition();
-
-    // 滚回最新处时把「到达时因为不可见而没上报」的已读补上（幂等，按 mid 去重）。
     _reportVisibleRead();
 
     _updatePinnedPageFromScroll();
 
-    // 跳转过程中禁用自动加载更早消息，避免打断跳转
+    // 跳转过程中禁用自动加载更早消息
     if (_isJumpingToMessage ||
         _isLoadingMessages ||
         _isLoadingOlder ||
@@ -813,8 +810,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       return;
     }
     final position = _scrollController.position;
-    // maxScrollExtent == 0 说明历史还没铺满一屏，此时同样应该继续往前翻，
-    // 否则短会话永远卡在最初一页、看不到更早的记录。
+    // maxScrollExtent == 0 说明历史没铺满一屏
     if (position.maxScrollExtent <= 0 ||
         position.pixels > position.maxScrollExtent - 50) {
       _loadOlder();
@@ -826,18 +822,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final position = _scrollController.position;
     if (position.maxScrollExtent <= 0 || _messages.length <= 1) return;
 
-    // reverse:true 列表中 index=0 为最新消息，pixels=0 为底部（最新），pixels=max 为顶部（最旧）。
-    // 因此消息在滚动坐标中的近似位置与其列表 index 同向，而不是反向。
-    //
-    // 策略：
-    //   前方 pin（itemPosition >= pixels，尚未滑过）→ 取最新（msgIndex 最小）显示
-    //   后方 pin（itemPosition < pixels，已滑过） → 取最旧（msgIndex 最大）显示
-    //   优先显示前方最新 pin；全部已滑过则停在最旧 pin
+    // reverse:true 列表中 index=0 为最新消息，pixels=0 为底部（最新）
+    // pixels=max 为顶部（最旧）。
+    // 因此消息在滚动坐标中的近似位置与其列表 index 同向
     final total = _messages.length;
     final extentPerItem = position.maxScrollExtent / (total - 1);
     final viewportTop = position.pixels;
 
-    // 滚动回调每帧都会跑：缓存 mid -> index，避免每条置顶都全列表 indexWhere
     if (!identical(_pinIndexSource, _messages)) {
       _pinIndexSource = _messages;
       _pinMidIndex = {
@@ -858,13 +849,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       final itemPosition = msgIndex * extentPerItem;
 
       if (itemPosition >= viewportTop) {
-        // 前方（尚未滑过）→ 取最新
+        // 前方（尚未滑过）
         if (msgIndex < aheadMsgIndex) {
           aheadMsgIndex = msgIndex;
           aheadPage = i;
         }
       } else {
-        // 后方（已滑过）→ 取最旧
+        // 后方（已滑过）
         if (msgIndex > behindMsgIndex) {
           behindMsgIndex = msgIndex;
           behindPage = i;
@@ -879,15 +870,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   }
 
   bool _onUserScroll(ScrollNotification notification) {
-    // 用户一旦朝历史方向滚动，就解除跟随并作废已排程的自动回底。
     _follower.handleScrollNotification(notification);
     return false;
   }
 
   bool _onScrollMetricsChanged(ScrollMetricsNotification notification) {
-    // 跳转过程中忽略“跟随底部”自动回底，防止把跳转顶回底部
+    // 跳转过程中
     if (_isJumpingToMessage) return false;
-    // 只有仍贴着底部时才跟随（用户已经翻上去时，内容变化不得把他拽回来）。
     if (_follower.shouldFollowContentChange) {
       _follower.scrollToBottom(animated: false);
     }
@@ -923,8 +912,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       _hasMoreMessages = hasMore;
     });
 
-    // 本轮确实翻到了新内容、且还有更早的，就继续检查视口是否仍未被填满。
-    // 用「条数是否增长」兜底，避免后端返回空页时无限递归。
+    // 本轮确实翻到了新内容、且还有更早
     if (_hasMoreMessages && _messages.length > lengthBefore) {
       _scheduleViewportFill();
     }
@@ -985,8 +973,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final wasConnected = _wsConnected;
     setState(() => _wsConnected = connected);
     if (!connected || wasConnected) return;
-    // 断线期间的上报和回执都丢了：message.read 没有 ACK，回执也不持久化。
-    // 重连后把自己的已读重报一次，并补查对方的，否则两边都会停在断线前的状态。
     _lastReportedReadMid = null;
     _reportVisibleRead();
     _refreshReadReceipt();
