@@ -2375,7 +2375,7 @@
   "searchTabUsers": "用戶",
   "searchTabGroups": "群聊",
   "searchTabMessages": "消息",
-  "searchHint": "尋用戶、群聊或消息",
+  "searchHint": "搵用戶、羣聊或消息（可入 U123 / G123 精確搵）",
   "searchUsersTruncated": "只顯示頭 {count} 個，打準啲關鍵詞先收窄範圍",
   "searchStartHint": "輸入關鍵詞始尋",
   "searchNoResults": "未尋得",

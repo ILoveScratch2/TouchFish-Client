@@ -2457,7 +2457,7 @@
   "searchTabUsers": "Users",
   "searchTabGroups": "Groups",
   "searchTabMessages": "Messages",
-  "searchHint": "Search users, groups or messages",
+  "searchHint": "Search users, groups or messages (U123 / G123 for exact lookup)",
   "searchUsersTruncated": "Showing the first {count} matches. Refine your keyword to narrow it down.",
   "@searchUsersTruncated": {
     "placeholders": {

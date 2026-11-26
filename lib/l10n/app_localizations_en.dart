@@ -6290,7 +6290,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchTabMessages => 'Messages';
 
   @override
-  String get searchHint => 'Search users, groups or messages';
+  String get searchHint =>
+      'Search users, groups or messages (U123 / G123 for exact lookup)';
 
   @override
   String searchUsersTruncated(int count) {

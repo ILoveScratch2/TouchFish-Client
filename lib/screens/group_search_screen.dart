@@ -5,16 +5,14 @@ import 'package:go_router/go_router.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/api/tf_api_client.dart';
+import '../utils/search_query.dart';
 import '../utils/talker.dart';
 import '../widgets/optimized_image.dart';
 import '../widgets/ui/empty_state.dart';
 import '../widgets/ui/loading_indicator.dart';
 import '../widgets/ui/refreshable.dart';
 
-/// 群聊搜索界面。
-///
-/// 点击聊天界面右上角放大镜后进入；支持 Enter 或点击搜索按钮触发
-/// `TfApiClient.instance.searchGroup`。`allow_direct_join = 0` 的群不展示。
+/// 群聊搜索界面
 class GroupSearchScreen extends StatefulWidget {
   const GroupSearchScreen({super.key});
 
@@ -63,13 +61,11 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
       _hasSearched = true;
     });
     try {
-      List<Map<String, dynamic>> results;
-      try {
-        int number = int.parse(keyword);
-        results = await TfApiClient.instance.infoGroup(number);
-      } on FormatException {
-        results = await TfApiClient.instance.searchGroup(keyword);
-      }
+      final parsed = TfSearchQuery.parse(keyword);
+      final gid = parsed.gid;
+      final results = gid != null
+          ? await TfApiClient.instance.infoGroup(gid)
+          : await TfApiClient.instance.searchGroup(parsed.keyword);
       if (!mounted) return;
       setState(() {
         _results = results;

@@ -5981,7 +5981,7 @@ class AppLocalizationsOch extends AppLocalizations {
   String get searchTabMessages => '消息';
 
   @override
-  String get searchHint => '尋用戶、群聊或消息';
+  String get searchHint => '搵用戶、羣聊或消息（可入 U123 / G123 精確搵）';
 
   @override
   String searchUsersTruncated(int count) {

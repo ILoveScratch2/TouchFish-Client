@@ -5990,7 +5990,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get searchTabMessages => '消息';
 
   @override
-  String get searchHint => '搜索用户、群组或消息';
+  String get searchHint => '搜索用户、群组或消息（可输入 U123 / G123 精确查找）';
 
   @override
   String searchUsersTruncated(int count) {

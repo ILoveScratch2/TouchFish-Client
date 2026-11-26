@@ -2372,7 +2372,7 @@
   "searchTabUsers": "用户",
   "searchTabGroups": "群组",
   "searchTabMessages": "消息",
-  "searchHint": "搜索用户、群组或消息",
+  "searchHint": "搜索用户、群组或消息（可输入 U123 / G123 精确查找）",
   "searchUsersTruncated": "仅显示前 {count} 条匹配，输入更精确的关键词可缩小范围",
   "searchStartHint": "输入关键词开始搜索",
   "searchNoResults": "没有找到结果",

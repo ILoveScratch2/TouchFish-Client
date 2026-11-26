@@ -14,6 +14,7 @@ import '../services/auth_state.dart';
 import '../services/chat_data_service.dart';
 import '../services/feature_flags.dart';
 import '../services/snackbar_service.dart';
+import '../utils/search_query.dart';
 import '../utils/talker.dart';
 import '../widgets/optimized_image.dart';
 import '../widgets/ui/empty_state.dart';
@@ -92,20 +93,12 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
     });
   }
 
-  /// 纯数字视为 GID
-  static bool _looksLikeGid(String query) {
-    if (query.isEmpty || query.length > 18) return false;
-    for (final unit in query.codeUnits) {
-      if (unit < 0x30 || unit > 0x39) return false;
-    }
-    return true;
-  }
-
-  bool _isTooShort(String query) =>
-      !_looksLikeGid(query) && query.length < _minLength;
+  bool _isTooShort(TfSearchQuery query) =>
+      !query.isIdentifier && query.raw.length < _minLength;
 
   Future<void> _search(String raw) async {
-    final query = raw.trim();
+    final parsed = TfSearchQuery.parse(raw);
+    final query = parsed.raw;
     if (query.isEmpty) {
       _requestToken++;
       if (mounted) {
@@ -122,7 +115,7 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
       }
       return;
     }
-    if (_isTooShort(query)) {
+    if (_isTooShort(parsed)) {
       _requestToken++;
       if (mounted) {
         setState(() {
@@ -153,7 +146,9 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
     }
 
     final localFuture = ChatDataService.instance.searchAllRoomsMessages(query);
-    final userSearchAllowed = query.length >= _minLength;
+    final userSearchAllowed =
+        parsed.allowsUserSearch &&
+        (parsed.uid != null || query.length >= _minLength);
     final usersFuture = (uid == null || password == null || !userSearchAllowed)
         ? Future<List<UserSearchEntry>>.value(const [])
         : TfApiClient.instance.searchUsers(
@@ -164,7 +159,8 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
         );
     final groupsFuture = (!FeatureFlags.instance.groupChat ||
             uid == null ||
-            password == null)
+            password == null ||
+            !parsed.allowsGroupSearch)
         ? Future<GroupSearchPage>.value(
             const GroupSearchPage(groups: [], hasMore: false),
           )
@@ -368,7 +364,9 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
                   : null,
             ),
             title: Text(
-              user.username,
+              user.uid == AuthState.instance.uid
+                  ? '${user.username} (${l10n.commonMe})'
+                  : user.username,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             subtitle: user.sign.isEmpty
@@ -564,7 +562,7 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
     if (_query.isEmpty) {
       message = l10n.searchStartHint;
       icon = Icons.search;
-    } else if (_isTooShort(_query)) {
+    } else if (_isTooShort(TfSearchQuery.parse(_query))) {
       message = l10n.searchMinLengthHint(_minLength);
       icon = Icons.keyboard;
     } else {
