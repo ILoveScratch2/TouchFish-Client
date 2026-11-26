@@ -69,7 +69,11 @@ void main() {
     chatData.deliverIncomingMessage('U1', incoming(3));
     chatData.deliverIncomingMessage('U1', incoming(5));
     chatData.deliverIncomingMessage('U1', incoming(-1, clientMid: 'c1'));
-    expect(chatData.getMessages('U1').last.clientMid, 'c1');
+    // 待确认消息
+    expect(
+      chatData.getMessages('U1').where((m) => m.clientMid == 'c1').length,
+      1,
+    );
 
     chatData.deliverIncomingMessage('U1', incoming(4, clientMid: 'c1'));
 
@@ -77,6 +81,31 @@ void main() {
     expect(messages.length, 3);
     expect(messages.map((m) => m.roomSeq).toList(), [3, 4, 5]);
     expect(messages[1].mid, 4);
+    expect(messages[1].clientMid, 'c1');
+  });
+
+  test('pending message keeps its timeline slot instead of sinking to bottom', () {
+    final chatData = ChatDataService.instance;
+    final base = DateTime.utc(2026, 1, 1, 12);
+
+    ChatMessage at(int seq, int seconds, {String? clientMid}) => ChatMessage(
+      id: clientMid ?? '$seq',
+      mid: clientMid == null ? seq : null,
+      clientMid: clientMid,
+      roomSeq: clientMid == null ? seq : null,
+      timestamp: base.add(Duration(seconds: seconds)),
+      isMe: clientMid != null,
+      senderUid: clientMid != null ? 100 : 1,
+      text: clientMid ?? 'seq$seq',
+      status: clientMid == null ? MessageStatus.sent : MessageStatus.failed,
+    );
+
+    chatData.deliverIncomingMessage('U1', at(1, 10));
+    chatData.deliverIncomingMessage('U1', at(2, 20));
+    chatData.deliverIncomingMessage('U1', at(-1, 15, clientMid: 'fail'));
+
+    final ordered = chatData.getMessages('U1').map((m) => m.text).toList();
+    expect(ordered, ['seq1', 'fail', 'seq2']);
   });
 
   test('a message without clientMid is not folded into one that has it', () {

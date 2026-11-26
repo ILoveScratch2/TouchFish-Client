@@ -187,6 +187,31 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _chatRoomStateNotifier.exitSelectionMode();
   }
 
+  QuotedMessagePreview _quotePreviewFor(ChatMessage target) {
+    final type = target.type;
+    final isMedia =
+        type == MessageType.file ||
+        type == MessageType.image ||
+        type == MessageType.video ||
+        type == MessageType.audio;
+    return QuotedMessagePreview(
+      mid: target.mid,
+      senderUid: target.senderUid,
+      senderName: target.isMe
+          ? AuthState.instance.currentUser?.username
+          : target.senderName,
+      content: type == MessageType.text ? target.text : '',
+      contentType: type == MessageType.mergedForward
+          ? 'redirect'
+          : isMedia
+          ? 'file'
+          : 'plain',
+      fileHash: isMedia ? target.media?.fileHash : null,
+      fileName: isMedia ? target.media?.fileName : null,
+      isDeleted: target.isDeleted,
+    );
+  }
+
   void _setReplyingTo(ChatMessage? message) =>
       ref.read(chatRoomStateProvider(_contactUid).notifier).setReplyingTo(message);
 
@@ -453,15 +478,23 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     }
 
     final l10n = AppLocalizations.of(context)!;
-    final msg = switch (info.error) {
-      'banned' => l10n.chatSendFailedBanned,
+    TouchFishSnackbarService.instance.show(
+      _sendFailureText(l10n, info.error),
+    );
+  }
+
+  /// 发送失败
+  String _sendFailureText(AppLocalizations l10n, String? reason) {
+    return switch (reason) {
+      'banned' || 'account_banned' => l10n.chatSendFailedBanned,
+      'account_readonly' => l10n.chatSendFailedReadonly,
+      'account_muted' => l10n.chatSendFailedMuted,
       'rate_limited' => l10n.chatSendFailedRateLimited,
       'not_friends' => l10n.chatSendFailedNotFriends,
       'not_group_member' => l10n.chatSendFailedNotGroupMember,
       'message_too_long' => l10n.chatSendFailedTooLong,
       _ => l10n.chatSendFailed,
     };
-    TouchFishSnackbarService.instance.show(msg);
   }
 
   void _attachRealtimeListeners() {
@@ -1649,32 +1682,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       quoteMid: quoteMid >= 0 ? quoteMid : null,
       quotePreview: replyTarget == null
           ? null
-          : QuotedMessagePreview(
-              mid: replyTarget.mid,
-              senderUid: replyTarget.senderUid,
-              senderName: replyTarget.isMe
-                  ? AuthState.instance.currentUser?.username
-                  : replyTarget.senderName,
-              content: replyTarget.text,
-              contentType: replyTarget.type == MessageType.file
-                  ? 'file'
-                  : 'plain',
-              isDeleted: replyTarget.isDeleted,
-            ),
+          : _quotePreviewFor(replyTarget),
       forwardedMid: forwardedMid >= 0 ? forwardedMid : null,
       forwardPreview: forwardTarget == null
           ? null
-          : QuotedMessagePreview(
-              mid: forwardTarget.mid,
-              senderUid: forwardTarget.senderUid,
-              senderName: forwardTarget.isMe
-                  ? AuthState.instance.currentUser?.username
-                  : forwardTarget.senderName,
-              content: forwardTarget.text,
-              contentType: forwardTarget.type == MessageType.file
-                  ? 'file'
-                  : 'plain',
-            ),
+          : _quotePreviewFor(forwardTarget),
     );
 
     _clearReplyAction();
@@ -1732,7 +1744,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           _restoreFailedDraft(text);
           if (mounted) {
             final l10n = AppLocalizations.of(context)!;
-            TouchFishSnackbarService.instance.show(l10n.chatSendFailed);
+            TouchFishSnackbarService.instance.show(
+              _sendFailureText(l10n, TfApiClient.instance.lastContentError),
+            );
           }
         }
       } else {
@@ -1988,10 +2002,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       );
     } else {
       _failMessage(clientMid, reason: 'send.rejected');
-      if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        TouchFishSnackbarService.instance.show(l10n.chatSendFailed);
-      }
+      _showSendFailedSnackBar();
     }
   }
 
@@ -2089,17 +2100,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       quoteMid: quoteMid >= 0 ? quoteMid : null,
       quotePreview: replyTarget == null
           ? null
-          : QuotedMessagePreview(
-              mid: replyTarget.mid,
-              senderUid: replyTarget.senderUid,
-              senderName: replyTarget.isMe
-                  ? AuthState.instance.currentUser?.username
-                  : replyTarget.senderName,
-              content: replyTarget.text,
-              contentType: replyTarget.type == MessageType.file
-                  ? 'file'
-                  : 'plain',
-            ),
+          : _quotePreviewFor(replyTarget),
     );
 
     if (!mounted) return;
@@ -2240,17 +2241,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       quoteMid: quoteMid >= 0 ? quoteMid : null,
       quotePreview: replyTarget == null
           ? null
-          : QuotedMessagePreview(
-              mid: replyTarget.mid,
-              senderUid: replyTarget.senderUid,
-              senderName: replyTarget.isMe
-                  ? AuthState.instance.currentUser?.username
-                  : replyTarget.senderName,
-              content: replyTarget.text,
-              contentType: replyTarget.type == MessageType.file
-                  ? 'file'
-                  : 'plain',
-            ),
+          : _quotePreviewFor(replyTarget),
     );
 
     _setReplyingTo(null);
@@ -2389,10 +2380,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     }
   }
 
-  void _showSendFailedSnackBar() {
+  /// 发送失败提示
+  void _showSendFailedSnackBar([String? reason]) {
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
-    TouchFishSnackbarService.instance.show(l10n.chatSendFailed);
+    TouchFishSnackbarService.instance.show(
+      _sendFailureText(l10n, reason ?? TfApiClient.instance.lastContentError),
+    );
   }
 
   /// 发送服务端已存在的文件
@@ -2447,17 +2441,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       quoteMid: quoteMid >= 0 ? quoteMid : null,
       quotePreview: replyTarget == null
           ? null
-          : QuotedMessagePreview(
-              mid: replyTarget.mid,
-              senderUid: replyTarget.senderUid,
-              senderName: replyTarget.isMe
-                  ? AuthState.instance.currentUser?.username
-                  : replyTarget.senderName,
-              content: replyTarget.text,
-              contentType: replyTarget.type == MessageType.file
-                  ? 'file'
-                  : 'plain',
-            ),
+          : _quotePreviewFor(replyTarget),
     );
 
     if (!mounted) return;

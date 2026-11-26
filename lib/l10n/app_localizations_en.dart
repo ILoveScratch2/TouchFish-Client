@@ -2443,6 +2443,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageQuoteMissing => 'Original message unavailable';
 
   @override
+  String get messageQuoteMergedForward => 'Merged forward';
+
+  @override
   String messageReplyingTo(String name) {
     return 'Replying to $name';
   }
@@ -3849,6 +3852,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminAccountRoleChangeFailed => 'Failed to change role';
 
   @override
+  String get adminAccountUnbanFirst =>
+      'This account is banned. Unban it before changing the role';
+
+  @override
   String adminAccountRoleChangeSuccess(String name, String role) {
     return '$name: role changed to $role';
   }
@@ -4129,6 +4136,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chatSendFailedBanned =>
       'You have been banned and cannot send messages';
+
+  @override
+  String get chatSendFailedMuted =>
+      'You have been muted and cannot send messages';
+
+  @override
+  String get chatSendFailedReadonly =>
+      'Your account is read-only banned and cannot send messages';
 
   @override
   String get chatSendFailedRateLimited => 'You are sending messages too fast';
@@ -4707,7 +4722,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get punishmentKindMute => 'Mute';
 
   @override
-  String get punishmentKindBan => 'Ban';
+  String get punishmentKindBan => 'Ban (read-only)';
+
+  @override
+  String get punishmentKindBanFull => 'Full ban';
 
   @override
   String get punishmentReasonLabel => 'Reason (required)';
@@ -5078,6 +5096,29 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsThumbnailPreviewDesc =>
       'Load server-generated thumbnails in chat bubbles; the original image loads only when opened (saves data)';
+
+  @override
+  String get settingsAutoOriginalImageTitle =>
+      'Load small images in full quality';
+
+  @override
+  String get settingsAutoOriginalImageDesc =>
+      'Images up to the selected size skip the thumbnail and load the original directly';
+
+  @override
+  String get settingsAutoOriginalOff => 'Off';
+
+  @override
+  String get settingsAutoOriginalMb1 => '1 MB';
+
+  @override
+  String get settingsAutoOriginalMb2 => '2 MB';
+
+  @override
+  String get settingsAutoOriginalMb5 => '5 MB';
+
+  @override
+  String get settingsAutoOriginalMb10 => '10 MB';
 
   @override
   String get settingsImageCompressionTitle => 'Compress images before sending';

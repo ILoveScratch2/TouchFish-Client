@@ -2320,6 +2320,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get messageQuoteMissing => '原消息不可得';
 
   @override
+  String get messageQuoteMergedForward => '合併轉發';
+
+  @override
   String messageReplyingTo(String name) {
     return '回覆 $name';
   }
@@ -3672,6 +3675,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get adminAccountRoleChangeFailed => '更改角色未成';
 
   @override
+  String get adminAccountUnbanFirst => '呢個帳號被封緊，解封咗先改角色';
+
+  @override
   String adminAccountRoleChangeSuccess(String name, String role) {
     return '$name 之角色已改爲 $role';
   }
@@ -3950,6 +3956,12 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get chatSendFailedBanned => '你已被封禁，無法發送訊息';
+
+  @override
+  String get chatSendFailedMuted => '你畀人禁言咗，暫時發唔到消息';
+
+  @override
+  String get chatSendFailedReadonly => '帳號係只讀封禁，發唔到消息';
 
   @override
   String get chatSendFailedRateLimited => '發送訊息過快，請稍後再試';
@@ -4501,7 +4513,10 @@ class AppLocalizationsOch extends AppLocalizations {
   String get punishmentKindMute => '禁言';
 
   @override
-  String get punishmentKindBan => '封禁';
+  String get punishmentKindBan => '封禁（只讀）';
+
+  @override
+  String get punishmentKindBanFull => '完全封禁';
 
   @override
   String get punishmentReasonLabel => '其由（必填）';
@@ -4835,6 +4850,27 @@ class AppLocalizationsOch extends AppLocalizations {
 
   @override
   String get settingsThumbnailPreviewDesc => '氣泡中加載服務端縮略圖，點開後加載原圖（省流量）';
+
+  @override
+  String get settingsAutoOriginalImageTitle => '細圖直接睇原圖';
+
+  @override
+  String get settingsAutoOriginalImageDesc => '唔超過所選上限嘅圖直接載原圖，唔使先睇縮圖';
+
+  @override
+  String get settingsAutoOriginalOff => '熄咗';
+
+  @override
+  String get settingsAutoOriginalMb1 => '1 MB';
+
+  @override
+  String get settingsAutoOriginalMb2 => '2 MB';
+
+  @override
+  String get settingsAutoOriginalMb5 => '5 MB';
+
+  @override
+  String get settingsAutoOriginalMb10 => '10 MB';
 
   @override
   String get settingsImageCompressionTitle => '送圖前壓縮';

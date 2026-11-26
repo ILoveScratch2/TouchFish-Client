@@ -121,7 +121,10 @@ class _PunishmentSheetState extends State<_PunishmentSheet> {
       case PunishmentKind.mute:
         return l10n.punishmentKindMute;
       case PunishmentKind.ban:
+        // 只读封禁
         return l10n.punishmentKindBan;
+      case PunishmentKind.banFull:
+        return l10n.punishmentKindBanFull;
     }
   }
 

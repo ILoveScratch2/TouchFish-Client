@@ -15,6 +15,9 @@ const Map<String, MessageType> _legacyPlaceholders = {
   '[AUDIO]': MessageType.audio,
 };
 
+MessageType? legacyPlaceholderType(String raw) =>
+    _legacyPlaceholders[raw.trim().toUpperCase()];
+
 String mediaTypeLabel(MessageType type, AppLocalizations l10n) {
   return switch (type) {
     MessageType.image => l10n.mediaImageMessage,

@@ -865,6 +865,7 @@
   "messageRecalled": "消息已撤回",
   "messageQuoteRecalled": "已撤之消息",
   "messageQuoteMissing": "原消息不可得",
+  "messageQuoteMergedForward": "合併轉發",
   "messageReplyingTo": "回覆 {name}",
   "@messageReplyingTo": {
     "placeholders": {
@@ -1393,6 +1394,7 @@
   "adminAccountRoleUser": "用戶",
   "adminAccountRoleBanned": "已封禁",
   "adminAccountRoleChangeFailed": "更改角色未成",
+  "adminAccountUnbanFirst": "呢個帳號被封緊，解封咗先改角色",
   "adminAccountRoleChangeSuccess": "{name} 之角色已改爲 {role}",
   "@adminAccountRoleChangeSuccess": {
     "placeholders": {
@@ -1581,6 +1583,8 @@
   "chatAddFriend": "結交好友",
   "chatAddFriendHint": "輸入用戶名或 UID",
   "chatSendFailedBanned": "你已被封禁，無法發送訊息",
+  "chatSendFailedMuted": "你畀人禁言咗，暫時發唔到消息",
+  "chatSendFailedReadonly": "帳號係只讀封禁，發唔到消息",
   "chatSendFailedRateLimited": "發送訊息過快，請稍後再試",
   "chatSendFailedNotFriends": "你與該用戶不是好友",
   "chatSendFailedNotGroupMember": "你不是該羣成員",
@@ -1782,7 +1786,8 @@
   "punishmentKindLabel": "類",
   "punishmentKindWarn": "警",
   "punishmentKindMute": "禁言",
-  "punishmentKindBan": "封禁",
+  "punishmentKindBan": "封禁（只讀）",
+  "punishmentKindBanFull": "完全封禁",
   "punishmentReasonLabel": "其由（必填）",
   "punishmentReasonRequired": "請書其由",
   "punishmentDurationLabel": "期",
@@ -1916,6 +1921,13 @@
   "settingsDataSavingDesc": "點擊後才加載媒體內容",
   "settingsThumbnailPreviewTitle": "聊天圖片使用縮略圖",
   "settingsThumbnailPreviewDesc": "氣泡中加載服務端縮略圖，點開後加載原圖（省流量）",
+  "settingsAutoOriginalImageTitle": "細圖直接睇原圖",
+  "settingsAutoOriginalImageDesc": "唔超過所選上限嘅圖直接載原圖，唔使先睇縮圖",
+  "settingsAutoOriginalOff": "熄咗",
+  "settingsAutoOriginalMb1": "1 MB",
+  "settingsAutoOriginalMb2": "2 MB",
+  "settingsAutoOriginalMb5": "5 MB",
+  "settingsAutoOriginalMb10": "10 MB",
   "settingsImageCompressionTitle": "送圖前壓縮",
   "settingsImageCompressionDesc": "上傳前於本機重編碼（長邊 1920，有損），以省流量與儲存",
   "settingsImageCompressionQualityTitle": "壓縮品質",

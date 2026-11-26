@@ -430,6 +430,22 @@ class SettingsData {
           defaultValue: true,
           icon: Icons.image_outlined,
         ),
+        // 小图看原图
+        SettingItem(
+          key: 'autoOriginalImageMaxMb',
+          titleKey: 'settingsAutoOriginalImageTitle',
+          descriptionKey: 'settingsAutoOriginalImageDesc',
+          type: SettingType.radio,
+          defaultValue: '1',
+          icon: Icons.hd_outlined,
+          options: [
+            SettingOption(value: '0', labelKey: 'settingsAutoOriginalOff'),
+            SettingOption(value: '1', labelKey: 'settingsAutoOriginalMb1'),
+            SettingOption(value: '2', labelKey: 'settingsAutoOriginalMb2'),
+            SettingOption(value: '5', labelKey: 'settingsAutoOriginalMb5'),
+            SettingOption(value: '10', labelKey: 'settingsAutoOriginalMb10'),
+          ],
+        ),
         SettingItem(
           key: 'imageCompressionEnabled',
           titleKey: 'settingsImageCompressionTitle',
