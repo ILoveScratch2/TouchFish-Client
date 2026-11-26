@@ -783,6 +783,7 @@
   "forumPostCopySource": "From TouchFish Forum",
   "forumPostShareFailed": "Failed to share",
   "chatBackToBottom": "Back to bottom",
+  "chatJumpMessageTooFar": "That message is too far back to locate",
   
   "chatInputCollapse": "Collapse",
   "chatInputExpand": "More",

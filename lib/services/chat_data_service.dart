@@ -1701,9 +1701,9 @@ class ChatDataService extends ChangeNotifier {
     final matchIdx = _indexOfMessage(cached, msg);
     var listChanged = false;
     if (matchIdx == null) {
-      _insertSorted(cached, msg);
-      _trimRoomMessages(roomId, cached);
-      _messageCache[roomId] = cached;
+      final updated = _insertIntoCache(roomId, cached, msg);
+      _messageCache[roomId] = updated;
+      _trimRoomMessages(roomId, updated);
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
       _indexMessages(roomId, [msg]);
@@ -1778,9 +1778,9 @@ class ChatDataService extends ChangeNotifier {
     final matchIdx = _indexOfMessage(cached, msg);
     var listChanged = false;
     if (matchIdx == null) {
-      _insertSorted(cached, msg);
-      _trimRoomMessages(roomId, cached);
-      _messageCache[roomId] = cached;
+      final updated = _insertIntoCache(roomId, cached, msg);
+      _messageCache[roomId] = updated;
+      _trimRoomMessages(roomId, updated);
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
       _indexMessages(roomId, [msg]);
@@ -2147,6 +2147,29 @@ class ChatDataService extends ChangeNotifier {
     }
     return a.id == b.id;
   }
+  List<ChatMessage> _insertIntoCache(
+    String roomId,
+    List<ChatMessage> current,
+    ChatMessage message,
+  ) {
+    try {
+      _insertSorted(current, message);
+      return current;
+    } on UnsupportedError {
+      final growable = List<ChatMessage>.of(current, growable: true);
+      _insertSorted(growable, message);
+      talker.warning(
+        'ChatDataService: cache list for $roomId was immutable, normalized',
+      );
+      return growable;
+    }
+  }
+
+  @visibleForTesting
+  void debugSetRawCache(String roomId, List<ChatMessage> messages) {
+    _messageCache[roomId] = messages;
+    _touchCacheRoom(roomId);
+  }
 
   void addSentMessage(String roomId, ChatMessage msg) {
     final clientMid = msg.clientMid;
@@ -2155,8 +2178,7 @@ class ChatDataService extends ChangeNotifier {
     }
     final cached = _messageCache[roomId] ?? [];
     if (!_containsMessage(cached, msg)) {
-      _insertSorted(cached, msg);
-      _messageCache[roomId] = cached;
+      _messageCache[roomId] = _insertIntoCache(roomId, cached, msg);
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
       _indexMessages(roomId, [msg]);
@@ -2612,14 +2634,22 @@ class ChatDataService extends ChangeNotifier {
     }
 
     final olderFilled = _fillSenderInfo(olderMsgs);
-    final currentCache = _messageCache[roomId] ?? const <ChatMessage>[];
+    final currentCache = _messageCache[roomId];
+    if (currentCache == null) {
+      talker.warning(
+        'ChatDataService: room $roomId cache evicted during loadOlder, skip',
+      );
+      return const MessageHistoryPage(messages: [], hasMore: false);
+    }
     final merged = _attachOlderMessages(
       currentCache,
       olderFilled,
       localMsgs,
     );
 
-    _messageCache[roomId] = merged;
+    _messageCache[roomId] = identical(merged, currentCache)
+        ? currentCache
+        : merged;
     _touchCacheRoom(roomId);
     await _localStore.saveMessages(roomId, olderFilled);
     _ensureSenderProfiles(olderFilled, roomId);

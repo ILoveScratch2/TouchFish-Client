@@ -101,9 +101,6 @@ class MessageListView extends StatelessWidget {
   /// 本轮新增消息
   final Set<String> entranceKeys;
 
-  /// mid GlobalKey
-  final Map<int, GlobalKey> messageKeys;
-
   const MessageListView({
     super.key,
     required this.messages,
@@ -139,7 +136,6 @@ class MessageListView extends StatelessWidget {
     this.peerReadSeq,
     this.groupReadCounts = const {},
     this.entranceKeys = const {},
-    this.messageKeys = const {},
     this.highlightedMid,
   });
 
@@ -316,23 +312,17 @@ class MessageListView extends StatelessWidget {
           displayStyle: displayStyle,
         );
 
-        // 跳转定位用的 GlobalKey 只能挂在 Dismissible 之内
-        final mid = message.mid;
-        final globalKey = mid == null ? null : messageKeys[mid];
         // 落点闪烁
         final highlighted = message.mid != null && message.mid == highlightedMid
             ? FlashHighlight(active: true, child: bubble)
             : bubble;
-        final bubbleBody = globalKey == null
-            ? highlighted
-            : KeyedSubtree(key: globalKey, child: highlighted);
 
         final selectionWrapped = _SelectionWrapper(
           isSelectionMode: isSelectionMode,
           isSelected:
               isSelectionMode && selectedMessageKeys.contains(stableKey),
           onTap: () => onToggleSelection(message),
-          child: bubbleBody,
+          child: highlighted,
         );
 
         // 外层键始终存在

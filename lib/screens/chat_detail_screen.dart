@@ -74,8 +74,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   ScrollController? _scrollListenerAttached;
   bool _treeActive = true;
 
-  final Map<int, GlobalKey> _messageKeys = {};
   final Map<String, Timer> _pendingWsTimers = {};
+  int _jumpToken = 0;
+  Timer? _jumpGuard;
+  static const int _jumpMaxPages = 400;
+  static const int _jumpWaitFrames = 60;
+  static const Duration _jumpLocateBudget = Duration(seconds: 20);
+  static const Duration _jumpGuardDuration = Duration(seconds: 30);
 
   final Set<String> _restFallbackAttempted = {};
   ChatRoom? _currentRoom;
@@ -308,7 +313,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     }
     _pendingWsTimers.clear();
     _restFallbackAttempted.clear();
-    _messageKeys.clear();
     _currentRoom = null;
     _avatarLoadFailed = false;
     _isLoadingOlder = false;
@@ -420,6 +424,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _typingCleanupTimer?.cancel();
     _entranceKeysTimer?.cancel();
     _groupMetaRefreshTimer?.cancel();
+    _jumpGuard?.cancel();
     unawaited(_saveDraft());
     _messageController.dispose();
     // ListController 也是 ChangeNotifier
@@ -1649,6 +1654,20 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     }
   }
 
+  /// 本地插入待发消息
+  void _appendLocalMessage(ChatMessage message) {
+    try {
+      ChatDataService.instance.addSentMessage(_contactUid, message);
+    } catch (error, stackTrace) {
+      talker.error(
+        'ChatDetail: append local message failed',
+        error,
+        stackTrace,
+      );
+      unawaited(_loadAndShowMessages());
+    }
+  }
+
   void _sendMessage() {
     unawaited(_sendMessageAsync());
   }
@@ -1694,7 +1713,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     unawaited(DraftService.instance.clearDraft('chat', _contactUid));
     _scrollToBottom();
 
-    ChatDataService.instance.addSentMessage(_contactUid, userMessage);
+    _appendLocalMessage(userMessage);
 
     try {
       // WS，启动！
@@ -2105,7 +2124,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
     if (!mounted) return;
     _setReplyingTo(null);
-    ChatDataService.instance.addSentMessage(_contactUid, userMessage);
+    _appendLocalMessage(userMessage);
     _scrollToBottom();
 
     try {
@@ -2245,7 +2264,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     );
 
     _setReplyingTo(null);
-    ChatDataService.instance.addSentMessage(_contactUid, userMessage);
+    _appendLocalMessage(userMessage);
     _scrollToBottom();
 
     try {
@@ -2446,7 +2465,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
     if (!mounted) return;
     _setReplyingTo(null);
-    ChatDataService.instance.addSentMessage(_contactUid, userMessage);
+    _appendLocalMessage(userMessage);
     _scrollToBottom();
 
     try {
@@ -2476,45 +2495,228 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     });
   }
 
-  /// 即将跳转到的消息
-  bool _ensureMessageKey(int mid) {
-    if (_messageKeys.containsKey(mid)) return false;
-    setState(() => _messageKeys[mid] = GlobalKey(debugLabel: 'msg-$mid'));
-    return true;
+  int _beginJump() {
+    final token = ++_jumpToken;
+    _jumpGuard?.cancel();
+    _jumpGuard = Timer(_jumpGuardDuration, () {
+      if (!mounted) return;
+      talker.warning('jump-to-message: watchdog cancelled the jump');
+      _cancelJump(token);
+    });
+    if (mounted) _setJumpingToMessage(true);
+    return token;
   }
 
-  void _scrollToQuotedMessage(int mid) {
-    _follower.stopFollowing();
-    _flashMessage(mid);
-    final index = _messages.indexWhere((message) => message.mid == mid);
-    if (index < 0) return;
-    if (_ensureMessageKey(mid)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _scrollToQuotedMessage(mid);
-      });
+  void _finishJump(int token) {
+    if (token != _jumpToken) return;
+    _jumpGuard?.cancel();
+    _jumpGuard = null;
+    _setJumpingToMessage(false);
+  }
+  void _cancelJump(int token) {
+    if (token != _jumpToken) return;
+    _jumpGuard?.cancel();
+    _jumpGuard = null;
+    _jumpToken++;
+    if (mounted) _setJumpingToMessage(false);
+  }
+
+  /// 定位到列表下标
+  void _jumpToIndex(int index, {required int token, int wait = 0, int refine = 0}) {
+    if (!mounted || token != _jumpToken) return;
+    if (index < 0 || index >= _messages.length) {
+      _finishJump(token);
       return;
     }
-    final targetContext = _messageKeys[mid]?.currentContext;
-    if (targetContext != null) {
-      Scrollable.ensureVisible(
-        targetContext,
-        duration: TFMotion.medium,
-        curve: TFMotion.decelerate,
-        alignment: 0.35,
-      );
-      return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || token != _jumpToken) return;
+      if (index >= _messages.length) {
+        _finishJump(token);
+        return;
+      }
+      if (!_scrollController.hasClients || !_messageListController.isAttached) {
+        // 还没挂载
+        if (wait < _jumpWaitFrames) {
+          _jumpToIndex(index, token: token, wait: wait + 1, refine: refine);
+        } else {
+          _finishJump(token);
+        }
+        return;
+      }
+      final placeholderCount = _uploadingStatuses.length;
+      final reverseIndex =
+          _messages.length + placeholderCount - 1 - index;
+
+      final range = _messageListController.visibleRange;
+      if (range != null) {
+        final visibleCount = range.$2 - range.$1 + 1;
+        final margin = (visibleCount * 1.5).ceil();
+        final isNear =
+            reverseIndex >= range.$1 - margin &&
+            reverseIndex <= range.$2 + margin;
+        if (isNear && refine == 0) {
+          final duration = Duration(
+            milliseconds: (140 + visibleCount * 4).clamp(140, 260),
+          );
+          try {
+            _messageListController.animateToItem(
+              index: reverseIndex,
+              scrollController: _scrollController,
+              alignment: 0.35,
+              duration: (_) => duration,
+              curve: (_) => TFMotion.decelerate,
+            );
+          } catch (error, stackTrace) {
+            talker.error('animate to message failed', error, stackTrace);
+            _finishJump(token);
+            return;
+          }
+          _settleJumpAfter(token, duration, index);
+          return;
+        }
+      }
+      try {
+        _messageListController.jumpToItem(
+          index: reverseIndex,
+          scrollController: _scrollController,
+          alignment: 0.35,
+        );
+      } catch (error, stackTrace) {
+        talker.error('jump to message failed', error, stackTrace);
+        _finishJump(token);
+        return;
+      }
+      if (refine < 2) {
+        _jumpToIndex(index, token: token, wait: wait, refine: refine + 1);
+      } else {
+        _finishJump(token);
+      }
+    });
+  }
+
+  void _settleJumpAfter(int token, Duration duration, int index) {
+    _jumpGuard?.cancel();
+    _jumpGuard = Timer(duration + const Duration(milliseconds: 120), () {
+      if (!mounted) return;
+      _finishJump(token);
+      _jumpToIndex(index, token: token, refine: 2);
+    });
+  }
+
+  void _landOnMessage(int index, {required int token}) {
+    if (index >= 0 && index < _messages.length) {
+      _flashMessage(_messages[index].mid);
     }
-    if (!_scrollController.hasClients || !_messageListController.isAttached) {
-      return;
-    }
-    final reverseIndex = _messages.length - 1 - index;
-    _messageListController.animateToItem(
-      index: reverseIndex,
-      scrollController: _scrollController,
-      alignment: 0.35,
-      duration: (_) => TFMotion.medium,
-      curve: (_) => TFMotion.decelerate,
+    _jumpToIndex(index, token: token);
+  }
+
+  Future<_LocateResult> _locateMessageInHistory(
+    int Function(List<ChatMessage> messages) locate, {
+    required int token,
+  }) async {
+    final roomId = _contactUid;
+    final roomGeneration = _roomGeneration;
+    final deadline = DateTime.now().add(_jumpLocateBudget);
+
+    _LocateResult miss({
+      bool exhausted = false,
+      bool timedOut = false,
+      bool failed = false,
+      bool aborted = false,
+    }) => (
+      index: null,
+      exhausted: exhausted,
+      timedOut: timedOut,
+      failed: failed,
+      aborted: aborted,
     );
+    _LocateResult hit(int index) => (
+      index: index,
+      exhausted: false,
+      timedOut: false,
+      failed: false,
+      aborted: false,
+    );
+
+    for (var page = 0; page < _jumpMaxPages; page++) {
+      if (!mounted || token != _jumpToken) return miss(aborted: true);
+      if (DateTime.now().isAfter(deadline)) return miss(timedOut: true);
+      if (_isLoadingMessages || _isLoadingOlder) {
+        final settled = await _waitForOngoingMessageLoad();
+        if (!mounted || token != _jumpToken) return miss(aborted: true);
+        final indexNow = locate(_messages);
+        if (indexNow >= 0) return hit(indexNow);
+        if (!settled) return miss(timedOut: true);
+        continue;
+      }
+      if (!_hasMoreMessages) return miss(exhausted: true);
+
+      setState(() => _isLoadingOlder = true);
+      bool hasMore;
+      try {
+        hasMore = await ref
+            .read(roomMessagesProvider(roomId).notifier)
+            .loadOlder();
+      } catch (error, stackTrace) {
+        talker.error('jump-to-message: load older failed', error, stackTrace);
+        if (mounted) setState(() => _isLoadingOlder = false);
+        return miss(failed: true);
+      }
+      if (!mounted ||
+          roomGeneration != _roomGeneration ||
+          roomId != _contactUid) {
+        if (mounted) setState(() => _isLoadingOlder = false);
+        return miss(aborted: true);
+      }
+      setState(() {
+        _isLoadingOlder = false;
+        _hasMoreMessages = hasMore;
+      });
+
+      final index = locate(_messages);
+      if (index >= 0) return hit(index);
+      if (!hasMore) return miss(exhausted: true);
+    }
+    return miss(timedOut: true);
+  }
+
+  void _handleLocateMiss(int token, _LocateResult result) {
+    if (!mounted) return;
+    _finishJump(token);
+    if (result.aborted) return;
+    if (result.failed) {
+      _showJumpLoadFailed();
+      return;
+    }
+    if (result.timedOut) {
+      _showJumpMessageTooFar();
+      return;
+    }
+    _showJumpMessageNotFound();
+  }
+  void _scrollToQuotedMessage(int mid) {
+    unawaited(_jumpToMessageMid(mid));
+  }
+
+  Future<void> _jumpToMessageMid(int mid) async {
+    if (!mounted) return;
+    _follower.stopFollowing();
+    final token = _beginJump();
+    final indexNow = _messages.indexWhere((message) => message.mid == mid);
+    if (indexNow >= 0) {
+      _landOnMessage(indexNow, token: token);
+      return;
+    }
+    final result = await _locateMessageInHistory(
+      (messages) => messages.indexWhere((message) => message.mid == mid),
+      token: token,
+    );
+    final index = result.index;
+    if (index == null) {
+      _handleLocateMiss(token, result);
+      return;
+    }
+    _landOnMessage(index, token: token);
   }
 
   int _indexOfMessage(ChatMessage target) {
@@ -2533,217 +2735,48 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     return -1;
   }
 
-  void _scrollToMessageIndex(int index) {
-    if (index < 0 || index >= _messages.length) return;
-    _follower.stopFollowing();
-    final message = _messages[index];
-    final mid = message.mid;
-    _flashMessage(mid);
-
-    // 首次跳转到这条消息
-    if (mid != null && _ensureMessageKey(mid)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        final latest = _indexOfMessage(message);
-        if (latest >= 0) _scrollToMessageIndex(latest);
-      });
-      return;
-    }
-
-    // 目标上下文已就绪
-    final targetContext = mid != null
-        ? _messageKeys[mid]?.currentContext
-        : null;
-    if (targetContext != null) {
-      Scrollable.ensureVisible(
-        targetContext,
-        duration: Duration.zero,
-        alignment: 0.35,
-      );
-      return;
-    }
-
-    // 目标不在视口内
-    _setJumpingToMessage(true);
-    _jumpStepToMessage(index: index, mid: mid);
-  }
-
-  void _jumpStepToMessage({required int index, int? mid, int retry = 0}) {
-    if (!mounted || index >= _messages.length) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || index >= _messages.length) return;
-      if (!_scrollController.hasClients) {
-        // 列表尚未挂载
-        if (retry < 60) {
-          _jumpStepToMessage(index: index, mid: mid, retry: retry + 1);
-        } else {
-          _setJumpingToMessage(false);
-        }
-        return;
-      }
-
-      // 目标已被构建出来
-      // 瞬时精确对齐
-      final context = mid != null ? _messageKeys[mid]?.currentContext : null;
-      if (context != null) {
-        Scrollable.ensureVisible(
-          context,
-          duration: Duration.zero,
-          alignment: 0.35,
-        );
-        _setJumpingToMessage(false);
-        return;
-      }
-
-      final position = _scrollController.position;
-      // reverse:true 列表
-      // index=0 为最新（底部）
-      // index 越大越旧（越靠上）
-      final reverseIndex = _messages.length - 1 - index;
-      final fraction = _messages.length <= 1
-          ? 0.0
-          : reverseIndex / (_messages.length - 1);
-      final targetOffset = position.maxScrollExtent * fraction;
-      final currentOffset = position.pixels;
-      final distance = (targetOffset - currentOffset).abs();
-      final maxStep = position.viewportDimension * 5.0;
-
-      if (distance <= maxStep || targetOffset <= 0) {
-        // 已接近目标
-        position.jumpTo(
-          targetOffset.clamp(
-            position.minScrollExtent,
-            position.maxScrollExtent,
-          ),
-        );
-        _jumpFinalAlign(index: index, mid: mid);
-        return;
-      }
-
-      // 向前推进一段
-      final nextOffset = targetOffset > currentOffset
-          ? currentOffset + maxStep
-          : currentOffset - maxStep;
-      position.jumpTo(
-        nextOffset.clamp(position.minScrollExtent, position.maxScrollExtent),
-      );
-      _jumpStepToMessage(index: index, mid: mid);
-    });
-  }
-
-  void _jumpFinalAlign({required int index, int? mid}) {
-    if (!mounted || index >= _messages.length) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || index >= _messages.length) return;
-      _setJumpingToMessage(false);
-      final context = mid != null ? _messageKeys[mid]?.currentContext : null;
-      if (context != null) {
-        Scrollable.ensureVisible(
-          context,
-          duration: Duration.zero,
-          alignment: 0.35,
-        );
-      }
-    });
-  }
-
   void _showJumpMessageNotFound() {
     final l10n = AppLocalizations.of(context)!;
     TouchFishSnackbarService.instance.show(l10n.chatSearchMessagesNoResults);
   }
 
-  Future<void> _jumpToMessage(ChatMessage target) async {
-    _follower.stopFollowing();
-    final roomId = _contactUid;
-    final roomGeneration = _roomGeneration;
+  void _showJumpMessageTooFar() {
+    final l10n = AppLocalizations.of(context)!;
+    TouchFishSnackbarService.instance.show(l10n.chatJumpMessageTooFar);
+  }
 
-    // 目标消息已经在当前加载的列表里，直接定位
-    var index = _indexOfMessage(target);
-    if (index >= 0) {
-      _scrollToMessageIndex(index);
+  void _showJumpLoadFailed() {
+    final l10n = AppLocalizations.of(context)!;
+    TouchFishSnackbarService.instance.show(l10n.chatMessagesLoadFailed);
+  }
+
+  Future<void> _jumpToMessage(ChatMessage target) async {
+    if (!mounted) return;
+    _follower.stopFollowing();
+    final token = _beginJump();
+    final indexNow = _indexOfMessage(target);
+    if (indexNow >= 0) {
+      _landOnMessage(indexNow, token: token);
       return;
     }
 
     final targetMid = target.mid;
     if (targetMid == null || target.isDeleted) {
+      _finishJump(token);
       _showJumpMessageNotFound();
       return;
     }
 
-    // 翻页加载期间也进入跳转中
-    _setJumpingToMessage(true);
-
-    // 目标不在当前列表
-    var exhausted = false;
-    var aborted = false;
-    var locatedInList = false;
-    const maxPages = 30;
-    try {
-      for (var pageCount = 0; pageCount < maxPages; pageCount++) {
-        if (!mounted || roomGeneration != _roomGeneration) return;
-        // 已有加载在进行中
-        if (_isLoadingMessages || _isLoadingOlder) {
-          final settled = await _waitForOngoingMessageLoad();
-          if (!mounted || roomGeneration != _roomGeneration) return;
-          final indexNow = _indexOfMessage(target);
-          if (indexNow >= 0) {
-            locatedInList = true;
-            _scrollToMessageIndex(indexNow);
-            return;
-          }
-          if (!settled) {
-            // 加载迟迟不结束
-            aborted = true;
-            break;
-          }
-          continue;
-        }
-        if (!_hasMoreMessages) {
-          exhausted = true;
-          break;
-        }
-
-        setState(() => _isLoadingOlder = true);
-        bool hasMore;
-        try {
-          hasMore =
-              await ref.read(roomMessagesProvider(roomId).notifier).loadOlder();
-        } catch (error, stackTrace) {
-          talker.error('Jump-to-message: load older failed', error, stackTrace);
-          if (mounted) setState(() => _isLoadingOlder = false);
-          exhausted = true;
-          break;
-        }
-        if (!mounted ||
-            roomGeneration != _roomGeneration ||
-            roomId != _contactUid) {
-          return;
-        }
-        final msgs = ref.read(roomMessagesProvider(roomId));
-        setState(() {
-          _isLoadingOlder = false;
-          _hasMoreMessages = hasMore;
-        });
-
-        index = _indexOfMessage(target);
-        if (index >= 0) {
-          locatedInList = true;
-          _scrollToMessageIndex(index);
-          return;
-        }
-        if (!hasMore || msgs.isEmpty) {
-          exhausted = true;
-          break;
-        }
-      }
-    } finally {
-      // 如果目标已在列表中被定位并交给分段滚动处理
-      // 则保持 _isJumpingToMessage = true
-      //由 _jumpFinalAlign 
-      if (mounted && !locatedInList) _setJumpingToMessage(false);
+    final result = await _locateMessageInHistory(
+      (messages) => messages.indexWhere((message) => message.mid == targetMid),
+      token: token,
+    );
+    final index = result.index;
+    if (index == null) {
+      _handleLocateMiss(token, result);
+      return;
     }
-
-    if (mounted && exhausted && !aborted) _showJumpMessageNotFound();
+    _landOnMessage(index, token: token);
   }
 
   /// 等待并发中的消息加载
@@ -3311,7 +3344,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                       return MessageListView(
                                     messages: displayMessages,
                                     entranceKeys: entranceKeys,
-                                    messageKeys: _messageKeys,
                                     scrollController: scrollController,
                                     listController: _messageListController,
                                     galleryItems: gallery.items,
@@ -3466,3 +3498,11 @@ class _MergeForwardTarget {
 
   const _MergeForwardTarget({required this.roomId, required this.name});
 }
+
+typedef _LocateResult = ({
+  int? index,
+  bool exhausted,
+  bool timedOut,
+  bool failed,
+  bool aborted,
+});

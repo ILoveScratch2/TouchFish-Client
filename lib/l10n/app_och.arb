@@ -761,6 +761,7 @@
   "forumPostCopySource": "來自 TouchFish 論壇",
   "forumPostShareFailed": "分享失敗",
   "chatBackToBottom": "返至底部",
+  "chatJumpMessageTooFar": "跨度過大，未能至此消息",
 
   "chatInputCollapse": "收",
   "chatInputExpand": "展",

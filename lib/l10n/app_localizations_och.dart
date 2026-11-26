@@ -2005,6 +2005,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get chatBackToBottom => '返至底部';
 
   @override
+  String get chatJumpMessageTooFar => '跨度過大，未能至此消息';
+
+  @override
   String get chatInputCollapse => '收';
 
   @override

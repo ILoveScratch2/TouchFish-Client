@@ -3982,6 +3982,12 @@ abstract class AppLocalizations {
   /// **'Back to bottom'**
   String get chatBackToBottom;
 
+  /// No description provided for @chatJumpMessageTooFar.
+  ///
+  /// In en, this message translates to:
+  /// **'That message is too far back to locate'**
+  String get chatJumpMessageTooFar;
+
   /// No description provided for @chatInputCollapse.
   ///
   /// In en, this message translates to:

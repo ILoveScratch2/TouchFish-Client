@@ -2008,6 +2008,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatBackToBottom => '回到底部';
 
   @override
+  String get chatJumpMessageTooFar => '跨度过大，未能定位到该消息';
+
+  @override
   String get chatInputCollapse => '收起';
 
   @override

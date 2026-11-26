@@ -242,19 +242,22 @@ void main() {
   });
 
   group('cache mutability', () {
-    test('setMessages with a fixed-length list keeps realtime inserts working wyf buzhun P', () {
-      final chatData = ChatDataService.instance;
-      chatData.setMessages(
-        'U1',
-        List<ChatMessage>.of([incoming(1), incoming(2)], growable: false),
-      );
+    test(
+      'setMessages with a fixed-length list keeps realtime inserts working wyf buzhun P',
+      () {
+        final chatData = ChatDataService.instance;
+        chatData.setMessages(
+          'U1',
+          List<ChatMessage>.of([incoming(1), incoming(2)], growable: false),
+        );
 
-      expect(
-        () => chatData.deliverIncomingMessage('U1', incoming(3)),
-        returnsNormally,
-      );
-      expect(seqsOf('U1'), [1, 2, 3]);
-    });
+        expect(
+          () => chatData.deliverIncomingMessage('U1', incoming(3)),
+          returnsNormally,
+        );
+        expect(seqsOf('U1'), [1, 2, 3]);
+      },
+    );
 
     test('older-page merge then realtime insert does not throw', () {
       final chatData = ChatDataService.instance;
@@ -272,6 +275,35 @@ void main() {
         returnsNormally,
       );
       expect(seqsOf('U1'), [1, 2, 3, 4, 5]);
+    });
+
+    test('addSentMessage survives an immutable (const) cache list', () {
+      final chatData = ChatDataService.instance;
+      chatData.debugSetRawCache('U1', const <ChatMessage>[]);
+
+      ChatMessage pending(String clientMid, int seq) => ChatMessage(
+        id: clientMid,
+        clientMid: clientMid,
+        senderUid: 100,
+        timestamp: DateTime.utc(2026, 1, 2).add(Duration(seconds: seq)),
+        isMe: true,
+        text: clientMid,
+        status: MessageStatus.pending,
+        shouldAlert: false,
+      );
+
+      expect(
+        () => chatData.addSentMessage('U1', pending('c1', 1)),
+        returnsNormally,
+      );
+      expect(
+        () => chatData.addSentMessage('U1', pending('c2', 2)),
+        returnsNormally,
+      );
+      expect(
+        chatData.getMessages('U1').map((m) => m.clientMid).toList(),
+        ['c1', 'c2'],
+      );
     });
   });
 }

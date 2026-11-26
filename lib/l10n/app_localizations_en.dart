@@ -2115,6 +2115,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatBackToBottom => 'Back to bottom';
 
   @override
+  String get chatJumpMessageTooFar => 'That message is too far back to locate';
+
+  @override
   String get chatInputCollapse => 'Collapse';
 
   @override
