@@ -1598,7 +1598,12 @@ class ChatDataService extends ChangeNotifier {
       return;
     }
 
-    if (event.type != 'NOTIFICATION.NEW' || event.notification == null) return;
+    // 瞬时通知（NOTIFICATION.EPHEMERAL）
+    if ((event.type != 'NOTIFICATION.NEW' &&
+            event.type != 'NOTIFICATION.EPHEMERAL') ||
+        event.notification == null) {
+      return;
+    }
 
     final info = NotificationInfo.fromServerJson(event.notification!);
     final eventType = info.event;

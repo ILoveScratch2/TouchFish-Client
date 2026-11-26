@@ -300,6 +300,22 @@ class NotificationInfo {
       event == 'group.invited' ||
       event == 'group.join.request' ||
       event == 'group.join.approved';
+
+  /// 精华变更
+  bool get isEssenceEvent =>
+      event == 'group.essence.add' || event == 'group.essence.remove';
+
+  /// NOTIFICATION.EPHEMERAL 是临时用，不作为通知
+  /// 其实之前服务器也有类似的不写通知的事件但是有八哥所以又开了新的类型
+  bool get isTransientEvent => _transientEvents.contains(event);
+
+  static const Set<String> _transientEvents = {
+    'group.essence.add',
+    'group.essence.remove',
+    'messages.pinned',
+    'messages.unpinned',
+  };
+
   int? get groupEventGid => (meta['gid'] as num?)?.toInt();
   int? get groupRequestRid => (meta['rid'] as num?)?.toInt();
 

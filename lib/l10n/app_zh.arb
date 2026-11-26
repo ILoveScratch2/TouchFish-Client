@@ -1685,6 +1685,7 @@
   "reviewReasonPresetDuplicate": "重复提交",
   "reviewReasonPresetInappropriate": "内容不适合公开展示",
   "notificationMarkAllRead": "全部已读",
+  "notificationMarkAllReadFailed": "标记已读失败，请稍后重试",
   "notificationDelete": "删除通知",
   "notificationDeleted": "通知已删除",
   "notificationDeleteFailed": "删除失败，请稍后重试",

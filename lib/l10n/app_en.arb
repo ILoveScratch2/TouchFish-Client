@@ -1749,6 +1749,7 @@
   "reviewReasonPresetDuplicate": "Duplicate",
   "reviewReasonPresetInappropriate": "Not suitable for public display",
   "notificationMarkAllRead": "Mark all read",
+  "notificationMarkAllReadFailed": "Failed to mark as read, please retry",
   "notificationDelete": "Delete notification",
   "notificationDeleted": "Notification deleted",
   "notificationDeleteFailed": "Delete failed, please retry",

@@ -75,7 +75,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case NotificationFilter.friend:
         return service.friendNotifications;
       case NotificationFilter.group:
-        return service.inviteNotifications;
+        return service.groupNotifications;
     }
   }
 
@@ -91,7 +91,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case NotificationFilter.friend:
         return service.friendNotifications.length;
       case NotificationFilter.group:
-        return service.inviteNotifications.length;
+        return service.groupNotifications.length;
     }
   }
 
@@ -131,25 +131,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _markAllRead() async {
+    final l10n = AppLocalizations.of(context)!;
     final service = NotificationService.instance;
+    final filter = _filter;
+    final pending = _source().where((n) => n.readAt == null).length;
     if (mounted) setState(() => _markingAll = true);
     try {
-      switch (_filter) {
+      final bool success;
+      switch (filter) {
         case NotificationFilter.all:
-          await Future.wait([
-            service.markSystemRead(),
-            service.markFriendRead(),
-            service.markInviteRead(),
-            service.markForumRead(),
-          ]);
+          // 服务端整表标记
+          success = await service.markAllRead();
         case NotificationFilter.system:
-          await service.markSystemRead();
+          success = await service.markSystemRead();
         case NotificationFilter.forum:
-          await service.markForumRead();
+          success = await service.markForumRead();
         case NotificationFilter.friend:
-          await service.markFriendRead();
+          success = await service.markFriendRead();
         case NotificationFilter.group:
-          await service.markInviteRead();
+          success = await service.markGroupRead();
+      }
+      if (!success && (filter == NotificationFilter.all || pending > 0)) {
+        TouchFishSnackbarService.instance.show(
+          l10n.notificationMarkAllReadFailed,
+        );
       }
     } finally {
       if (mounted) setState(() => _markingAll = false);
@@ -179,6 +184,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         final all = service.allNotifications;
         final total = all.length;
         final totalUnread = all.where((n) => n.readAt == null).length;
+        final canMarkAllRead = _filter == NotificationFilter.all
+            ? unread > 0 || service.unreadCount > 0
+            : unread > 0;
 
         return Scaffold(
           appBar: AppBar(
@@ -189,7 +197,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               onPressed: _goBack,
             ),
             actions: [
-              if (unread > 0)
+              if (canMarkAllRead)
                 TextButton(
                   onPressed: _markingAll ? null : _markAllRead,
                   child: _markingAll

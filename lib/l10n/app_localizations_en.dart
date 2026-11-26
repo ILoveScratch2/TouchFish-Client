@@ -4475,6 +4475,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationMarkAllRead => 'Mark all read';
 
   @override
+  String get notificationMarkAllReadFailed =>
+      'Failed to mark as read, please retry';
+
+  @override
   String get notificationDelete => 'Delete notification';
 
   @override

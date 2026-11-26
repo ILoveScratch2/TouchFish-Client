@@ -4271,6 +4271,9 @@ class AppLocalizationsOch extends AppLocalizations {
   String get notificationMarkAllRead => '悉已讀之';
 
   @override
+  String get notificationMarkAllReadFailed => '標讀未成，請復試';
+
+  @override
   String get notificationDelete => '刪通知';
 
   @override

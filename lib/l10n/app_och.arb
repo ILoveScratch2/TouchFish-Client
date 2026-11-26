@@ -1697,6 +1697,7 @@
   "reviewReasonPresetDuplicate": "重複呈遞",
   "reviewReasonPresetInappropriate": "不宜公示",
   "notificationMarkAllRead": "悉已讀之",
+  "notificationMarkAllReadFailed": "標讀未成，請復試",
   "notificationDelete": "刪通知",
   "notificationDeleted": "通知已刪",
   "notificationDeleteFailed": "刪除未成，請復試",

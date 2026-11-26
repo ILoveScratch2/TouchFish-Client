@@ -76,10 +76,15 @@ class _AccountScreenState extends State<AccountScreen> {
     if (mounted) setState(() {});
   }
 
-  int get _unreadCount =>
-      _notificationService.announcementUnreadCount +
-      _notificationService.inviteUnreadCount +
-      _notificationService.forumUnreadCount;
+  /// 通知角标
+  int get _unreadCount {
+    final local =
+        _notificationService.announcementUnreadCount +
+        _notificationService.inviteUnreadCount +
+        _notificationService.forumUnreadCount;
+    final remote = _notificationService.unreadCount;
+    return remote > local ? remote : local;
+  }
 
   void _loadUser() {
     setState(() {

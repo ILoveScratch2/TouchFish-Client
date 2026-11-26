@@ -354,13 +354,13 @@ class ChatWsService extends ChangeNotifier {
       return;
     }
 
-    if (type == 'NOTIFICATION.NEW') {
+    if (type == 'NOTIFICATION.NEW' || type == 'NOTIFICATION.EPHEMERAL') {
       final notif = data['notification'] as Map<String, dynamic>?;
       if (notif != null) {
         final ts = (notif['time_stamp'] as num?)?.toDouble();
         _eventController.add(
           ChatWsEvent(
-            type: 'NOTIFICATION.NEW',
+            type: type,
             notification: notif,
             timeStamp: ts ?? DateTime.now().millisecondsSinceEpoch / 1000.0,
           ),
