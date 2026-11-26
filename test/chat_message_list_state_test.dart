@@ -120,6 +120,37 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('an append does not rebuild unchanged bubble contents', (tester) async {
+    final harness = GlobalKey<_MessageListHarnessState>();
+    await tester.pumpWidget(
+      _wrap(_MessageListHarness(key: harness, messages: _messages(8))),
+    );
+    await tester.pumpAndSettle();
+    final previous = <Element>{};
+    for (var mid = 0; mid < 8; mid++) {
+      final bubble = find.byKey(ValueKey('bubble-$mid'));
+      if (bubble.evaluate().isEmpty) continue;
+      tester.element(bubble).visitChildElements(previous.add);
+    }
+    expect(previous, hasLength(8));
+    final rebuilt = <Element>{};
+    final old = debugOnRebuildDirtyWidget;
+    try {
+      debugOnRebuildDirtyWidget = (element, builtOnce) {
+        if (previous.contains(element)) rebuilt.add(element);
+        old?.call(element, builtOnce);
+      };
+      harness.currentState!.appendWithEntrance([_message(8, mid: 8)]);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+    } finally {
+      debugOnRebuildDirtyWidget = old;
+    }
+    expect(find.byKey(const ValueKey('bubble-8')), findsOneWidget);
+    expect(rebuilt, isEmpty);
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('appending a message does not re-init media attachments', (
     tester,
   ) async {
@@ -164,7 +195,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final bubble = find.byKey(const ValueKey('bubble-c1'));
+    final bubble = find.byKey(const ValueKey('bubble-sender:1:c1'));
     final before = tester.element(bubble);
 
     // pending -> sent：clientMid 不变，只是回填了 mid

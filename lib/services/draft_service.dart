@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api/tf_api_client.dart';
@@ -39,6 +40,11 @@ class DraftService {
   DraftService._();
 
   static final instance = DraftService._();
+
+  static const _draftPrefix = 'touchfish_draft_';
+
+  static String _metadataKey(String draftKey) =>
+      'touchfish_draftmeta_${draftKey.substring(_draftPrefix.length)}';
 
   bool _isEnabled(String type) {
     final settingKey = type == 'chat' ? 'saveChatDrafts' : 'saveForumDrafts';
@@ -86,14 +92,12 @@ class DraftService {
     if (hasContent) {
       await prefs.setString(key, jsonEncode(value));
       await prefs.setInt(
-        'touchfish_draftmeta_${key.substring('touchfish_draft_'.length)}',
+        _metadataKey(key),
         DateTime.now().millisecondsSinceEpoch,
       );
     } else {
       await prefs.remove(key);
-      await prefs.remove(
-        'touchfish_draftmeta_${key.substring('touchfish_draft_'.length)}',
-      );
+      await prefs.remove(_metadataKey(key));
     }
   }
 
@@ -102,7 +106,7 @@ class DraftService {
     if (key == null) return;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(key);
-    await prefs.remove('touchfish_draftmeta_${key.substring('touchfish_draft_'.length)}');
+    await prefs.remove(_metadataKey(key));
   }
 
   /// 列出本地草稿
@@ -111,16 +115,22 @@ class DraftService {
     if (uid == null) return const [];
     final baseUrl = await TfApiClient.instance.getBaseUrl();
     final scope = base64Url.encode(utf8.encode('$baseUrl:$uid'));
-    final prefix = 'touchfish_draft_${scope}_';
     final prefs = await SharedPreferences.getInstance();
+    return readDraftRecords(prefs, scope: scope, type: type);
+  }
 
+  @visibleForTesting
+  static List<DraftRecord> readDraftRecords(
+    SharedPreferences prefs, {
+    required String scope,
+    String? type,
+  }) {
+    final prefix = '$_draftPrefix${scope}_';
     final records = <DraftRecord>[];
     for (final key in prefs.getKeys().where((k) => k.startsWith(prefix))) {
       final rest = key.substring(prefix.length);
-      final sep = rest.indexOf('_');
-      if (sep <= 0) continue;
-      final draftType = rest.substring(0, sep);
-      if (type != null && draftType != type) continue;
+      final draftType = _readDraftType(rest);
+      if (draftType == null || (type != null && draftType != type)) continue;
       final raw = prefs.getString(key);
       if (raw == null || raw.isEmpty) continue;
 
@@ -131,12 +141,14 @@ class DraftService {
         continue;
       }
 
-      final encodedId = rest.substring(sep + 1);
-      final savedAt = prefs.getInt('touchfish_draftmeta_$rest');
+      final encodedId = rest.substring(draftType.length + 1);
+      final id = _decodeId(encodedId);
+      if (id == null) continue;
+      final savedAt = prefs.getInt(_metadataKey(key));
       records.add(
         DraftRecord(
           type: draftType,
-          id: _decodeId(encodedId),
+          id: id,
           data: data,
           updatedAt: savedAt == null
               ? null
@@ -156,11 +168,20 @@ class DraftService {
     return records;
   }
 
-  String _decodeId(String encoded) {
+  static String? _readDraftType(String suffix) {
+    // The type and the base64url ID can both contain underscores.
+    for (final type in const ['forum_post', 'forum_comment', 'forum_create']) {
+      if (suffix.startsWith('${type}_')) return type;
+    }
+    final separator = suffix.indexOf('_');
+    return separator > 0 ? suffix.substring(0, separator) : null;
+  }
+
+  static String? _decodeId(String encoded) {
     try {
       return utf8.decode(base64Url.decode(encoded));
     } catch (_) {
-      return encoded;
+      return null;
     }
   }
 
@@ -169,14 +190,19 @@ class DraftService {
     if (uid == null) return;
     final baseUrl = await TfApiClient.instance.getBaseUrl();
     final scope = base64Url.encode(utf8.encode('$baseUrl:$uid'));
-    final prefix = 'touchfish_draft_${scope}_';
+    final prefix = '$_draftPrefix${scope}_';
     final prefs = await SharedPreferences.getInstance();
     final keys = prefs.getKeys().where((key) {
       if (!key.startsWith(prefix)) return false;
-      final type = key.substring(prefix.length).split('_').first;
-      return _draftGroup(type) == group;
+      final type = _readDraftType(key.substring(prefix.length));
+      return type != null && _draftGroup(type) == group;
     }).toList();
-    await Future.wait(keys.map(prefs.remove));
+    await Future.wait([
+      for (final key in keys) ...[
+        prefs.remove(key),
+        prefs.remove(_metadataKey(key)),
+      ],
+    ]);
   }
 
   Future<bool> isAcknowledged(String type, String id, String value) async {

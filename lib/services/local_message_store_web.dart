@@ -47,10 +47,29 @@ class LocalMessageStore {
       'touchfish_messages/$scope/$roomId';
   int _scopeUid(String scope) => int.parse(scope.split('/').last);
 
-  String _messageKey(ChatMessage message) =>
-      message.clientMid?.isNotEmpty == true
-      ? 'client:${message.clientMid}'
-      : 'id:${message.id}';
+  String _messageKey(ChatMessage message) => message.localIdentityKey;
+
+  final _roomWrites = <String, Future<void>>{};
+
+  // localStorage holds one JSON array per room. Serialize read/modify/write
+  // even when multiple WS callbacks persist independently in the same turn.
+  Future<void> _modifyRoom(
+    String roomId,
+    Future<void> Function(SharedPreferences prefs, String scope) operation,
+  ) async {
+    final scope = _requireScope();
+    final key = _key(scope, roomId);
+    final previous = _roomWrites[key];
+    final done = Completer<void>();
+    _roomWrites[key] = done.future;
+    try {
+      if (previous != null) await previous;
+      await operation(await SharedPreferences.getInstance(), scope);
+    } finally {
+      done.complete();
+      if (identical(_roomWrites[key], done.future)) _roomWrites.remove(key);
+    }
+  }
 
   int _compareMessages(ChatMessage a, ChatMessage b) =>
       ChatMessage.compareByOrder(a, b, _messageKey);
@@ -191,81 +210,54 @@ class LocalMessageStore {
     return result.sublist(result.length - limit);
   }
 
-  Future<void> saveMessages(String roomId, List<ChatMessage> messages) async {
-    final scope = _requireScope();
-    final prefs = await SharedPreferences.getInstance();
-    final existing = await _loadMessages(prefs, scope, roomId);
-    final merged = <String, ChatMessage>{
-      for (final message in existing) _messageKey(message): message,
-      for (final message in messages) _messageKey(message): message,
-    }.values.toList()..sort(_compareMessages);
-    await _write(
-      prefs,
-      _key(scope, roomId),
-      jsonEncode(_trimNewest(merged).map((e) => e.toJson()).toList()),
-    );
+  Future<void> saveMessages(String roomId, List<ChatMessage> messages) =>
+      _modifyRoom(roomId, (prefs, scope) async {
+        final existing = await _loadMessages(prefs, scope, roomId);
+        final byKey = <String, ChatMessage>{};
+        final keyByMid = <int, String>{};
+        for (final raw in existing.followedBy(messages)) {
+          final message = raw.withLocalSender(_scopeUid(scope));
+          final key = _messageKey(message);
+          final mid = message.mid;
+          if (mid != null) {
+            final old = keyByMid[mid];
+            if (old != null && old != key) byKey.remove(old);
+            keyByMid[mid] = key;
+          }
+          byKey[key] = message;
+        }
+        final merged = byKey.values.toList()..sort(_compareMessages);
+        await _write(prefs, _key(scope, roomId),
+            jsonEncode(_trimNewest(merged).map((e) => e.toJson()).toList()));
+      });
+
+  Future<void> appendMessage(String roomId, ChatMessage message) =>
+      _modifyRoom(roomId, (prefs, scope) async {
+        final messages = await _loadMessages(prefs, scope, roomId);
+        if (messages.any((e) => e.matchesMessage(message))) return;
+        await _write(prefs, _key(scope, roomId),
+            jsonEncode(_trimNewest([...messages, message.withLocalSender(_scopeUid(scope))]).map((e) => e.toJson()).toList()));
+      });
+
+  Future<void> saveMessage(String roomId, ChatMessage message) =>
+      saveMessages(roomId, [message]);
+
+  Future<void> appendMessages(String roomId, List<ChatMessage> messages) async {
+    if (messages.isNotEmpty) await saveMessages(roomId, messages);
   }
 
-  Future<void> appendMessage(String roomId, ChatMessage message) async {
-    final scope = _requireScope();
-    final prefs = await SharedPreferences.getInstance();
-    final messages = await _loadMessages(prefs, scope, roomId);
-    if (!messages.any(
-      (e) =>
-          e.id == message.id ||
-          (e.clientMid != null && e.clientMid == message.clientMid),
-    )) {
-      await _write(
-        prefs,
-        _key(scope, roomId),
-        jsonEncode(
-          _trimNewest([...messages, message]).map((e) => e.toJson()).toList(),
-        ),
-      );
-    }
-  }
+  Future<void> deleteMessage(String roomId, ChatMessage message) =>
+      _modifyRoom(roomId, (prefs, scope) async {
+        final messages = await _loadMessages(prefs, scope, roomId);
+        final remaining = messages.where((e) => !e.matchesMessage(message)).map((e) => e.toJson()).toList();
+        if (remaining.length != messages.length) {
+          await _write(prefs, _key(scope, roomId), jsonEncode(remaining));
+        }
+      });
 
-  Future<void> saveMessage(String roomId, ChatMessage message) async {
-    await appendMessages(roomId, [message]);
-  }
-
-  /// 批量 upsert（按消息键覆盖已存在消息，用于 ack 回填/撤回/媒体元数据）。
-  Future<void> appendMessages(
-    String roomId,
-    List<ChatMessage> messages,
-  ) async {
-    if (messages.isEmpty) return;
-    final scope = _requireScope();
-    final prefs = await SharedPreferences.getInstance();
-    final existing = await _loadMessages(prefs, scope, roomId);
-    final merged = <String, ChatMessage>{
-      for (final message in existing) _messageKey(message): message,
-      for (final message in messages) _messageKey(message): message,
-    }.values.toList()..sort(_compareMessages);
-    await _write(
-      prefs,
-      _key(scope, roomId),
-      jsonEncode(_trimNewest(merged).map((e) => e.toJson()).toList()),
-    );
-  }
-
-  Future<void> deleteMessage(String roomId, ChatMessage message) async {
-    final scope = _requireScope();
-    final prefs = await SharedPreferences.getInstance();
-    final key = _messageKey(message);
-    final messages = await _loadMessages(prefs, scope, roomId);
-    final remaining = messages
-        .where((e) => _messageKey(e) != key)
-        .map((e) => e.toJson())
-        .toList();
-    if (remaining.length == messages.length) return;
-    await _write(prefs, _key(scope, roomId), jsonEncode(remaining));
-  }
-
-  Future<void> deleteRoom(String roomId) async {
-    final scope = _requireScope();
-    await (await SharedPreferences.getInstance()).remove(_key(scope, roomId));
-  }
+  Future<void> deleteRoom(String roomId) => _modifyRoom(roomId, (prefs, scope) async {
+    await prefs.remove(_key(scope, roomId));
+  });
 
   Future<Map<String, ({int messages, int bytes})>> roomStats() async {
     final scope = _requireScope();

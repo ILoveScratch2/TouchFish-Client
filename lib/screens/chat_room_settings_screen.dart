@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../l10n/app_localizations.dart';
 import '../models/chat_model.dart';
+import '../models/local_message_search_result.dart';
 import '../models/message_model.dart';
 import '../services/chat_data_service.dart';
 import '../widgets/sheet_scaffold.dart';
@@ -185,7 +186,13 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                   );
                   if (selected != null && context.mounted) {
                     // 选中搜索结果后逐层返回，把消息带回 ChatDetailScreen
-                    Navigator.pop(context, selected);
+                    Navigator.pop(
+                      context,
+                      LocalMessageSearchResult(
+                        roomId: widget.chatRoom.id,
+                        message: selected,
+                      ),
+                    );
                   }
                 },
               ),
@@ -194,10 +201,17 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
                 leading: const Icon(Symbols.search_check),
                 trailing: const Icon(Symbols.chevron_right),
                 title: Text(l10n.chatSearchAllMessages),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const GlobalChatSearchScreen()),
-                ),
+                onTap: () async {
+                  final result = await Navigator.push<LocalMessageSearchResult>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const GlobalChatSearchScreen(),
+                    ),
+                  );
+                  if (result != null && context.mounted) {
+                    Navigator.pop(context, result);
+                  }
+                },
               ),
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 24),
@@ -227,10 +241,21 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
       final format = await showModalBottomSheet<String>(
         context: context,
         builder: (context) => SafeArea(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            ListTile(leading: const Icon(Symbols.data_object), title: Text(l10n.chatExportJson), onTap: () => Navigator.pop(context, 'json')),
-            ListTile(leading: const Icon(Symbols.table_rows), title: Text(l10n.chatExportCsv), onTap: () => Navigator.pop(context, 'csv')),
-          ]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Symbols.data_object),
+                title: Text(l10n.chatExportJson),
+                onTap: () => Navigator.pop(context, 'json'),
+              ),
+              ListTile(
+                leading: const Icon(Symbols.table_rows),
+                title: Text(l10n.chatExportCsv),
+                onTap: () => Navigator.pop(context, 'csv'),
+              ),
+            ],
+          ),
         ),
       );
       if (format == null) return;
@@ -327,82 +352,111 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
     context.push('/user/$targetUid');
   }
 
-  void _showEditChatSheet() {
+  Future<void> _showEditChatSheet() async {
     final l10n = AppLocalizations.of(context)!;
+    final room = widget.chatRoom;
     final nameController = TextEditingController(text: _chatName);
     final descController = TextEditingController(text: _chatDescription);
+    ModalRoute<void>? sheetRoute;
+    var saving = false;
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => SheetScaffold(
-        titleText: l10n.chatRoomEdit,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: l10n.chatRoomAlias,
-                  border: const OutlineInputBorder(),
-                  helperText: l10n.chatRoomAliasHelp,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descController,
-                decoration: InputDecoration(
-                  labelText: l10n.chatRoomDescription,
-                  border: const OutlineInputBorder(),
-                  helperText: l10n.chatRoomDescriptionHelp,
-                  alignLabelWithHint: true,
-                ),
-                minLines: 3,
-                maxLines: 5,
-              ),
-              const SizedBox(height: 24),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () async {
-                    final navigator = Navigator.of(context);
-                    final alias = nameController.text.trim();
-                    final description = descController.text.trim();
-                    final saved = await _chatData.updateRoomPreference(
-                      widget.chatRoom.id,
-                      alias: alias,
-                      description: description,
-                    );
-                    if (!mounted) return;
-                    if (!saved) {
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) {
+          sheetRoute = ModalRoute.of<void>(context);
+          return StatefulBuilder(
+            builder: (context, setSheetState) {
+              Future<void> save() async {
+                if (saving) return;
+                final alias = nameController.text.trim();
+                final description = descController.text.trim();
+                setSheetState(() => saving = true);
+                try {
+                  final saved = await _chatData.updateRoomPreference(
+                    room.id,
+                    alias: alias,
+                    description: description,
+                  );
+                  if (!mounted || widget.chatRoom.id != room.id) return;
+                  if (!saved) {
+                    if (context.mounted && sheetRoute?.isCurrent == true) {
                       TouchFishSnackbarService.instance.show(
                         l10n.commonFailedOperation,
                       );
-                      return;
                     }
-                    setState(() {
-                      _chatName = _chatData.displayNameForRoom(
-                        widget.chatRoom.id,
-                        widget.chatRoom.name,
-                      );
-                      _chatDescription = description;
-                    });
-                    navigator.pop();
-                    TouchFishSnackbarService.instance.show(l10n.chatRoomUpdated);
-                  },
-                  icon: const Icon(Symbols.save),
-                  label: Text(l10n.save),
+                    return;
+                  }
+                  setState(() {
+                    _chatName = _chatData.displayNameForRoom(
+                      room.id,
+                      room.name,
+                    );
+                    _chatDescription = description;
+                  });
+                  if (context.mounted && sheetRoute?.isCurrent == true) {
+                    Navigator.pop(context);
+                  }
+                  TouchFishSnackbarService.instance.show(l10n.chatRoomUpdated);
+                } finally {
+                  if (context.mounted && sheetRoute?.isCurrent == true) {
+                    setSheetState(() => saving = false);
+                  }
+                }
+              }
+
+              return SheetScaffold(
+                titleText: l10n.chatRoomEdit,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: nameController,
+                        enabled: !saving,
+                        decoration: InputDecoration(
+                          labelText: l10n.chatRoomAlias,
+                          border: const OutlineInputBorder(),
+                          helperText: l10n.chatRoomAliasHelp,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: descController,
+                        enabled: !saving,
+                        decoration: InputDecoration(
+                          labelText: l10n.chatRoomDescription,
+                          border: const OutlineInputBorder(),
+                          helperText: l10n.chatRoomDescriptionHelp,
+                          alignLabelWithHint: true,
+                        ),
+                        minLines: 3,
+                        maxLines: 5,
+                      ),
+                      const SizedBox(height: 24),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: saving ? null : save,
+                          icon: const Icon(Symbols.save),
+                          label: Text(l10n.save),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ).whenComplete(() {
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      // The fields remain mounted during the dismissal animation.
+      await sheetRoute?.completed;
       nameController.dispose();
       descController.dispose();
-    });
+    }
   }
 }

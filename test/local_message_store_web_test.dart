@@ -9,6 +9,25 @@ void main() {
     LocalMessageStore.instance.configureScope('https://example.test', 1);
   });
 
+  test('simultaneous group writes preserve distinct senders and coalesce only the self echo', () async {
+    final store = LocalMessageStore.instance;
+    ChatMessage msg(int? mid, int? sender, bool self) => ChatMessage(
+      id: mid?.toString() ?? 'shared', mid: mid, clientMid: 'shared', senderUid: sender,
+      timestamp: DateTime.utc(2026), text: 'body-$mid', isMe: self,
+      status: mid == null ? MessageStatus.pending : MessageStatus.sent);
+    await Future.wait([
+      store.saveMessage('G17', msg(null, 0, true)),
+      store.appendMessage('G17', msg(11, 0, false)),
+      store.saveMessages('G17', [msg(12, 8, false)]),
+    ]);
+    await store.saveMessage('G17', msg(13, 1, true));
+    final saved = await store.loadMessages('G17');
+    expect(saved.map((m) => m.mid).toSet(), {11, 12, 13});
+    expect(saved.singleWhere((m) => m.mid == 13).isMe, isTrue);
+    await store.deleteMessage('G17', msg(11, 0, false));
+    expect((await store.loadMessages('G17')).map((m) => m.mid).toSet(), {12, 13});
+  });
+
   test('loads recent and older message pages with a stable cursor', () async {
     final messages = [
       for (var index = 0; index < 5; index++)

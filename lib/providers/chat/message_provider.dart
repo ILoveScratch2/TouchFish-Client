@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart' show Ref;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../models/message_model.dart';
+import '../../models/room_message_history.dart';
 import '../../services/chat_data_service.dart';
 
 part 'message_provider.g.dart';
@@ -10,23 +11,29 @@ part 'message_provider.g.dart';
 /// 我们只听 CDS 的，这个叫缓存先生！
 @riverpod
 class RoomMessages extends _$RoomMessages {
+  List<ChatMessage>? _lastRead;
+
   @override
   List<ChatMessage> build(String roomId) {
     void listener() => _refreshMessages();
-    ChatDataService.instance.addRoomListener(roomId, listener);
+    final data = ChatDataService.instance;
+    data.addRoomListener(roomId, listener);
+    final reset = ref.invalidateSelf;
+    data.messageCacheResetRevision.addListener(reset);
 
     ref.onDispose(() {
-      ChatDataService.instance.removeRoomListener(roomId, listener);
+      data.removeRoomListener(roomId, listener);
+      data.messageCacheResetRevision.removeListener(reset);
     });
 
-    // 拷贝列表：CDS 缓存会被原地变异（如 addSentMessage）！
-    return List.of(ChatDataService.instance.getMessages(roomId));
+    return _lastRead = ChatDataService.instance.getMessageSnapshot(roomId);
   }
 
   void _refreshMessages() {
-    final fresh = ChatDataService.instance.getMessages(roomId);
-    if (_sameContent(fresh)) return;
-    state = List.of(fresh);
+    final fresh = ChatDataService.instance.getMessageSnapshot(roomId);
+    if (identical(fresh, _lastRead)) return;
+    _lastRead = fresh;
+    if (!_sameContent(fresh)) state = fresh;
   }
 
   /// 与当前 state 逐条比较渲染
@@ -75,5 +82,7 @@ int unreadCount(Ref ref, String roomId) {
 @riverpod
 List<ChatMessage> imageMessages(Ref ref, String roomId) {
   final messages = ref.watch(roomMessagesProvider(roomId));
-  return messages.where((m) => m.media != null).toList();
+  return messages is RoomMessageSnapshot
+      ? messages.mediaMessages
+      : messages.where((m) => m.media != null).toList();
 }

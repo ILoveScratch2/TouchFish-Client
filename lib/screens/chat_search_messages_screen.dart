@@ -73,8 +73,12 @@ class _ChatSearchMessagesScreenState extends State<ChatSearchMessagesScreen> {
       final config = await TfApiClient.instance.fetchServerInfo();
       final minLength = config?.minSearchLength ?? 0;
       if (!mounted || minLength <= 0 || minLength == _minLength) return;
+      final length = _query.runes.length;
+      final wasEligible = length >= _minLength;
       setState(() => _minLength = minLength);
-      if (_query.isNotEmpty && _query.runes.length >= minLength) {
+      if (_query.isNotEmpty &&
+          _searchDebounce?.isActive != true &&
+          wasEligible != (length >= minLength)) {
         unawaited(_runSearch(_query));
       }
     } catch (e) {
@@ -85,39 +89,30 @@ class _ChatSearchMessagesScreenState extends State<ChatSearchMessagesScreen> {
   void _onChanged(String raw) {
     _searchDebounce?.cancel();
     final query = raw.trim();
-    if (query.isEmpty) {
-      _searchSeq++;
-      setState(() {
-        _query = '';
-        _isSearching = false;
-        _isLoadingMore = false;
-        _hasMore = false;
-        _serverErrorText = null;
-        _results = const <ChatMessage>[];
-        _resultKeys.clear();
-        _serverCursorMid = null;
-      });
-      return;
-    }
-    setState(() {});
+    _searchSeq++;
+    setState(() => _resetSearch(query));
+    if (query.isEmpty) return;
     _searchDebounce = Timer(
       const Duration(milliseconds: 250),
       () => unawaited(_runSearch(query)),
     );
   }
 
+  void _resetSearch(String query) {
+    _query = query;
+    _isSearching = query.isNotEmpty;
+    _isLoadingMore = false;
+    _hasMore = false;
+    _serverErrorText = null;
+    _results = const <ChatMessage>[];
+    _resultKeys.clear();
+    _serverCursorMid = null;
+  }
+
   Future<void> _runSearch(String query) async {
+    _searchDebounce?.cancel();
     final seq = ++_searchSeq;
-    setState(() {
-      _query = query;
-      _isSearching = true;
-      _isLoadingMore = false;
-      _hasMore = false;
-      _serverErrorText = null;
-      _results = const <ChatMessage>[];
-      _resultKeys.clear();
-      _serverCursorMid = null;
-    });
+    setState(() => _resetSearch(query));
 
     // 本地
     try {
@@ -139,15 +134,14 @@ class _ChatSearchMessagesScreenState extends State<ChatSearchMessagesScreen> {
     }
 
     // 服务端
+    if (!mounted || seq != _searchSeq) return;
     if (query.runes.length < _minLength) {
-      if (!mounted || seq != _searchSeq) return;
       setState(() => _isSearching = false);
       return;
     }
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) {
-      if (!mounted || seq != _searchSeq) return;
       setState(() => _isSearching = false);
       return;
     }
@@ -160,8 +154,8 @@ class _ChatSearchMessagesScreenState extends State<ChatSearchMessagesScreen> {
       if (!mounted || seq != _searchSeq) return;
       setState(() {
         _appendResults(page.messages);
-        _hasMore = page.hasMore;
-        _serverCursorMid = _oldestMid(page.messages) ?? _serverCursorMid;
+        _serverCursorMid = _oldestMid(page.messages);
+        _hasMore = page.hasMore && _serverCursorMid != null;
         _isSearching = false;
       });
       _scheduleAutoLoadMore();
@@ -195,10 +189,11 @@ class _ChatSearchMessagesScreenState extends State<ChatSearchMessagesScreen> {
         beforeMid: cursor,
       );
       if (!mounted || seq != _searchSeq) return;
+      final nextCursor = _oldestMid(page.messages);
       setState(() {
         _appendResults(page.messages);
-        _hasMore = page.hasMore;
-        _serverCursorMid = _oldestMid(page.messages) ?? _serverCursorMid;
+        _hasMore = page.hasMore && nextCursor != null && nextCursor < cursor;
+        _serverCursorMid = nextCursor;
         _isLoadingMore = false;
       });
       _scheduleAutoLoadMore();

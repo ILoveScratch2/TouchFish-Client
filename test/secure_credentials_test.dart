@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:touchfish_client/services/secure_credentials.dart';
@@ -40,6 +42,28 @@ void main() {
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(_channel, null);
+  });
+
+  test('concurrent credential operations share one platform probe', () async {
+    final secure = SecureCredentials.instance;
+    secure.resetProbeState();
+    final entered = Completer<void>();
+    final resume = Completer<void>();
+    var writes = 0;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(_channel, (call) async {
+      if (call.method == 'write') {
+        writes++;
+        if (!entered.isCompleted) entered.complete();
+        await resume.future;
+      }
+      return call.method == 'read' ? '1' : null;
+    });
+    final checks = List.generate(16, (_) => secure.probe());
+    await entered.future;
+    resume.complete();
+    expect(await Future.wait(checks), everyElement(isTrue));
+    expect(writes, 1);
   });
 
   test('SecureCredentials writes and reads through the platform store',

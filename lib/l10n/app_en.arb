@@ -122,6 +122,13 @@
   "registerErrorFailed": "Registration failed, please try again",
   "registerConfirmInfo": "Confirm your registration details",
   "registerActivateFailed": "Activation failed, please check the code",
+  "registerResendCode": "Resend activation code",
+  "registerResendWait": "Resend in {seconds}s",
+  "@registerResendWait": {
+    "placeholders": { "seconds": { "type": "int" } }
+  },
+  "registerResendRequested": "New code requested. Check your email.",
+  "registerResendFailed": "Could not request a new code. Please try again.",
   "forumLoadFailed": "Failed to load forums",
   "forumPostLoadFailed": "Failed to load posts",
   "forumCommentFailed": "Failed to post comment",

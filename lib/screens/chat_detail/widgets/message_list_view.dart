@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 import '../../../models/message_model.dart';
+import '../../../models/room_message_history.dart';
 import '../../../models/chat_model.dart';
 import '../../../models/settings_service.dart';
 import '../../../l10n/app_localizations.dart';
@@ -15,14 +16,23 @@ import '../../../theme/tokens.dart';
 import '../../../providers/chat/image_gallery_provider.dart';
 import '../../../widgets/ui/flash_highlight.dart';
 
-const String _swipeKeyPrefix = 'swipe-';
+// Equality uses only the stable message ID. The hints travel with the mounted
+// child and remain valid on append (chronological) or prepend (reverse).
+class _MessageRowKey extends ValueKey<String> {
+  final int chronologicalIndex;
+  final int reverseIndex;
+
+  const _MessageRowKey(super.value, this.chronologicalIndex, this.reverseIndex);
+}
 
 const int entranceAnimationBatchLimit = 10;
 
 void _noopMessage(ChatMessage message) {}
 
 String chatMessageStableKey(ChatMessage message) =>
-    message.clientMid ?? message.mid?.toString() ?? message.id;
+    message.clientMid?.isNotEmpty == true
+        ? message.localIdentityKey
+        : message.mid?.toString() ?? message.localIdentityKey;
 
 /// 尾部新追加消息的稳定键
 Set<String> newlyAppendedMessageKeys(
@@ -31,15 +41,18 @@ Set<String> newlyAppendedMessageKeys(
   int batchLimit = entranceAnimationBatchLimit,
 }) {
   final added = next.length - previous.length;
-  if (added <= 0 || previous.isEmpty) return const {};
-  // 旧列表必须逐条仍在新列表的前缀里
-  for (var i = 0; i < previous.length; i++) {
-    if (identical(previous[i], next[i])) continue;
-    if (chatMessageStableKey(previous[i]) != chatMessageStableKey(next[i])) {
-      return const {};
+  if (added <= 0 || added > batchLimit || previous.isEmpty) return const {};
+  final sharedPrefix = previous is RoomMessageSnapshot &&
+      next is RoomMessageSnapshot && next.extendsSnapshot(previous);
+  // Arbitrary replacement lists still require checking the complete prefix.
+  if (!sharedPrefix) {
+    for (var i = 0; i < previous.length; i++) {
+      if (identical(previous[i], next[i])) continue;
+      if (chatMessageStableKey(previous[i]) != chatMessageStableKey(next[i])) {
+        return const {};
+      }
     }
   }
-  if (added > batchLimit) return const {};
   return {
     for (var i = previous.length; i < next.length; i++)
       chatMessageStableKey(next[i]),
@@ -195,22 +208,40 @@ class MessageListView extends StatelessWidget {
     // 神秘 bug 调试半天
     Map<String, int>? indexByStableKey;
     int? findChildIndex(Key key) {
-      if (key is! ValueKey<String>) return null;
-      final raw = key.value;
-      if (!raw.startsWith(_swipeKeyPrefix)) return null;
+      if (key is! _MessageRowKey) return null;
+      bool matches(int index) =>
+          index >= 0 &&
+          index < messages.length &&
+          chatMessageStableKey(messages[index]) == key.value;
+
+      final index = key.chronologicalIndex;
+      if (matches(index)) return messages.length - 1 - index;
+      final shifted = messages.length - 1 - key.reverseIndex;
+      if (shifted != index && matches(shifted)) return key.reverseIndex;
+
+      // Arbitrary replacements and deletions need the general index. Build
+      // it at most once per delegate, only when both hints miss.
       indexByStableKey ??= {
         for (var i = 0; i < messages.length; i++)
           chatMessageStableKey(messages[i]): i,
       };
-      final messageIndex =
-          indexByStableKey![raw.substring(_swipeKeyPrefix.length)];
+      final messageIndex = indexByStableKey![key.value];
       if (messageIndex == null) return null;
       return messages.length - 1 - messageIndex;
     }
 
     // 已读回执只显示一处
     var readMarkerIndex = -1;
-    if (readReceiptEnabled) {
+    final hasReadReceipts = currentRoom?.type == ChatType.group
+        ? groupReadCounts.isNotEmpty
+        : peerReadSeq != null;
+    final history = messages;
+    if (readReceiptEnabled && hasReadReceipts &&
+        history is RoomMessageSnapshot && !history.hasDuplicateMids) {
+      readMarkerIndex = currentRoom?.type == ChatType.group
+          ? history.groupReadMarker(groupReadCounts)
+          : history.peerReadMarker(peerReadSeq!);
+    } else if (readReceiptEnabled && hasReadReceipts) {
       for (var i = messages.length - 1; i >= 0; i--) {
         final m = messages[i];
         if (m.isMe && !m.isDeleted && m.mid != null && _isReadByPeer(m)) {
@@ -245,23 +276,27 @@ class MessageListView extends StatelessWidget {
         // ack id from clientMid -> mid
         // 不然会 sb reload
         final stableKey = chatMessageStableKey(message);
+        final rowKey = _MessageRowKey(stableKey, messageIndex, index);
 
         // 占位消息（对方上传中）
         if (message.isPlaceholder) {
-          return MessageBubble(
-            key: ValueKey('bubble-$stableKey'),
-            message: message,
-            animateEntrance: false,
-            onReply: onReply,
-            onForward: onForward,
-            onRecall: onRecall,
-            onQuoteTap: onQuoteTap,
-            showAvatar: true,
-            canRecall: false,
-            canPin: false,
-            canEssence: false,
-            essenceEnabled: essenceEnabled,
-            displayStyle: displayStyle,
+          return KeyedSubtree(
+            key: rowKey,
+            child: MessageBubble(
+              key: ValueKey('bubble-$stableKey'),
+              message: message,
+              animateEntrance: false,
+              onReply: onReply,
+              onForward: onForward,
+              onRecall: onRecall,
+              onQuoteTap: onQuoteTap,
+              showAvatar: true,
+              canRecall: false,
+              canPin: false,
+              canEssence: false,
+              essenceEnabled: essenceEnabled,
+              displayStyle: displayStyle,
+            ),
           );
         }
 
@@ -287,8 +322,12 @@ class MessageListView extends StatelessWidget {
           onRetry: () => onRetry(message),
           onQuoteTap: onQuoteTap,
           showAvatar: showAvatar,
-          galleryItems: galleryItems.isEmpty ? null : galleryItems,
-          galleryIndex: imageIndexById[imageGalleryKey(message)] ?? 0,
+          galleryItems: message.media == null || galleryItems.isEmpty
+              ? null
+              : galleryItems,
+          galleryIndex: message.media == null
+              ? 0
+              : imageIndexById[imageGalleryKey(message)] ?? 0,
           canRecall: canRecall(message),
           isEssence: isEssenceMessage,
           isPinned: message.mid != null && pinnedMidSet.contains(message.mid),
@@ -337,14 +376,14 @@ class MessageListView extends StatelessWidget {
 
         // 外层键始终存在
         final keyed = KeyedSubtree(
-          key: ValueKey('$_swipeKeyPrefix$stableKey'),
+          key: rowKey,
           child: selectionWrapped,
         );
 
         if (bubbleHandlesSwipe) return keyed;
 
         return Dismissible(
-          key: ValueKey('$_swipeKeyPrefix$stableKey'),
+          key: rowKey,
           direction: message.isDeleted || isSelectionMode
               ? DismissDirection.none
               : DismissDirection.endToStart,

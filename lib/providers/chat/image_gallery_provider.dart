@@ -14,33 +14,30 @@ part 'image_gallery_provider.g.dart';
 class ImageGallery extends _$ImageGallery {
   static const int _galleryCap = 3000;
 
-  int? _lastSignature;
   ImageGalleryState? _lastState;
-  String? _lastRoomId;
 
   @override
   ImageGalleryState build(String roomId) {
     // 为了避免内存 BOOM
-    if (ref.watch(roomMessagesProvider(roomId)).length > _galleryCap) {
+    if (ref.watch(roomMessagesProvider(roomId).select((m) => m.length > _galleryCap))) {
       final cached = _lastState;
-      if (cached != null && _lastRoomId == roomId && cached.isOverLimit) {
+      if (cached != null && cached.roomId == roomId && cached.isOverLimit) {
         return cached;
       }
       final next = ImageGalleryState.overLimit(roomId);
-      _lastRoomId = roomId;
-      _lastSignature = null;
       _lastState = next;
       return next;
     }
 
     final messages = ref.watch(imageMessagesProvider(roomId));
 
-    final signature = _signatureOf(messages);
     final cached = _lastState;
-    if (cached != null &&
-        _lastRoomId == roomId &&
-        _lastSignature == signature) {
-      return cached;
+    final previous =
+        cached != null && cached.roomId == roomId && !cached.isOverLimit
+        ? cached
+        : null;
+    if (previous != null && _matchesGallery(previous, messages)) {
+      return previous;
     }
 
     final entries = <LightboxImageItem>[];
@@ -51,19 +48,26 @@ class ImageGallery extends _$ImageGallery {
       if (!_isImageMessage(message)) continue;
       final media = message.media!;
       final index = entries.length;
-      final raw = media.bytes;
-      entries.add(
-        LightboxImageItem(
-          messageId: message.id,
-          media: media,
-          // 直接共享 media.bytes（只有类型不是 Uint8List 时才复制）：
-          // 每来一条新消息都会重建画廊，逐张复制会放大成倍内存
-          bytes: raw is Uint8List
-              ? raw
-              : (raw != null ? Uint8List.fromList(raw) : null),
-        ),
-      );
-      indexById[imageGalleryKey(message)] = index;
+      final key = imageGalleryKey(message);
+      final oldIndex = previous?.indexById[key];
+      final oldItem = oldIndex == null ? null : previous!.items[oldIndex];
+      if (oldItem != null &&
+          oldItem.messageId == message.id &&
+          identical(oldItem.media, media)) {
+        entries.add(oldItem);
+      } else {
+        final raw = media.bytes;
+        entries.add(
+          LightboxImageItem(
+            messageId: message.id,
+            media: media,
+            bytes: raw is Uint8List
+                ? raw
+                : (raw == null ? null : Uint8List.fromList(raw)),
+          ),
+        );
+      }
+      indexById[key] = index;
     }
 
     final next = ImageGalleryState(
@@ -71,26 +75,27 @@ class ImageGallery extends _$ImageGallery {
       items: entries,
       indexById: indexById,
     );
-    _lastRoomId = roomId;
-    _lastSignature = signature;
     _lastState = next;
     return next;
   }
 
-  /// 图片集合整数指纹
-  int _signatureOf(List<ChatMessage> messages) {
-    var hash = 0x1fffffff;
-    var count = 0;
+  // Index, message ID and media are everything the lightbox consumes. Message
+  // media is replaced when a download, thumbnail or attachment changes.
+  bool _matchesGallery(ImageGalleryState cached, List<ChatMessage> messages) {
+    var index = 0;
     for (final message in messages) {
       if (!_isImageMessage(message)) continue;
-      count++;
-      hash = (hash * 31 + message.id.hashCode) & 0x3fffffff;
-      final mid = message.mid;
-      if (mid != null) hash = (hash * 31 + mid) & 0x3fffffff;
-      final bytes = message.media?.bytes;
-      hash = (hash * 31 + (bytes?.length ?? -1)) & 0x3fffffff;
+      if (index >= cached.items.length ||
+          cached.indexById[imageGalleryKey(message)] != index) {
+        return false;
+      }
+      final item = cached.items[index++];
+      if (item.messageId != message.id ||
+          !identical(item.media, message.media)) {
+        return false;
+      }
     }
-    return Object.hash(count, hash);
+    return index == cached.items.length;
   }
 
   static bool _isImageMessage(ChatMessage message) {

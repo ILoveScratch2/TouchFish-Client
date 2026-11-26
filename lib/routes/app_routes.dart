@@ -98,6 +98,19 @@ class AppRoutes {
 
   static String callPath(int peerUid) => '$call/$peerUid';
 
+  static String chatMessagePath(String roomId, ChatMessage message) {
+    final mid = message.mid;
+    return Uri(
+      pathSegments: ['', 'chat', roomId],
+      queryParameters: {
+        if (mid != null) 'mid': mid.toString(),
+        if (mid == null) 'messageId': message.id,
+        if (mid == null && message.clientMid != null)
+          'clientMid': message.clientMid!,
+      },
+    ).toString();
+  }
+
   static const _publicPaths = {
     welcome,
     login,
@@ -607,6 +620,13 @@ class AppRoutes {
                             final detail = ChatDetailScreen(
                               key: ValueKey(roomId),
                               roomId: roomId,
+                              initialMessageMid: int.tryParse(
+                                state.uri.queryParameters['mid'] ?? '',
+                              ),
+                              initialMessageId:
+                                  state.uri.queryParameters['messageId'],
+                              initialMessageClientMid:
+                                  state.uri.queryParameters['clientMid'],
                             );
                             if (reduceMotion) {
                               return NoTransitionPage<void>(

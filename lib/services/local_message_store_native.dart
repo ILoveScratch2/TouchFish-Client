@@ -88,6 +88,11 @@ class LocalMessageStore {
     if (version < 2) {
       _createSearchSchema(db);
     }
+    if (version < 5) {
+      db.execute("CREATE INDEX IF NOT EXISTS messages_room_mid ON messages "
+          "(server_key, uid, room_id, CAST(json_extract(payload, '\$.mid') AS INTEGER)) "
+          "WHERE json_valid(payload)");
+    }
     final uri = Uri.parse(server);
     final legacyServer = '${uri.host}_${uri.port}';
     await _importSharedDatabase(db, dir, server, legacyServer);
@@ -115,6 +120,10 @@ class LocalMessageStore {
       version = 4;
     } else if (version == 3) {
       version = 4;
+    }
+    if (version < 5) {
+      _migrateSenderKeys(db);
+      version = 5;
     }
     if (version != initialVersion) {
       db.execute('PRAGMA user_version = $version');
@@ -455,9 +464,62 @@ class LocalMessageStore {
     }
   }
 
-  String _key(ChatMessage message) => message.clientMid?.isNotEmpty == true
-      ? 'client:${message.clientMid}'
-      : 'id:${message.id}';
+  String _key(ChatMessage message) => message.localIdentityKey;
+
+  void _migrateSenderKeys(Database db) {
+    db.execute('BEGIN IMMEDIATE');
+    try {
+      // Scan bounded pages. Preserve the original payload and the FTS rowid.
+      var afterRow = 0;
+      while (true) {
+        final page = db.select(
+          "SELECT rowid AS rid, server_key, uid, room_id, message_key, payload "
+          "FROM messages WHERE rowid > ? AND message_key GLOB 'client:*' "
+          "ORDER BY rowid LIMIT 128", [afterRow]);
+        if (page.isEmpty) break;
+        for (final row in page) {
+          afterRow = row['rid'] as int;
+          late String key;
+          try {
+            final payload = jsonDecode(row['payload'] as String) as Map<String, dynamic>;
+            key = _key(ChatMessage.fromJson(payload, activeUid: row['uid'] as int));
+          } on Object {
+            // Keep old unreadable records in place for backup/recovery.
+            continue;
+          }
+          final where = [row['server_key'], row['uid'], row['room_id'], row['message_key']];
+          db.execute(
+            'UPDATE OR IGNORE messages SET message_key = ? WHERE rowid = ?',
+            [key, afterRow]);
+          if (db.updatedRows == 0) continue;
+          db.execute(
+            'UPDATE OR IGNORE message_search SET message_key = ? '
+            'WHERE server_key = ? AND uid = ? AND room_id = ? AND message_key = ?',
+            [key, ...where]);
+        }
+      }
+      db.execute('PRAGMA user_version = 5');
+      db.execute('COMMIT');
+    } catch (_) {
+      db.execute('ROLLBACK');
+      rethrow;
+    }
+  }
+
+  void _removePreviousMidAlias(Database db, String server, int uid, String room, int? mid, String key) {
+    if (mid != null) {
+      final aliases = db.select(
+        'SELECT message_key FROM messages WHERE server_key = ? AND uid = ? AND room_id = ? '
+        "AND json_valid(payload) AND CAST(json_extract(payload, '\$.mid') AS INTEGER) = ? "
+        'AND message_key != ?', [server, uid, room, mid, key]);
+      for (final row in aliases) {
+        final params = [server, uid, room, row['message_key']];
+        const where = 'server_key = ? AND uid = ? AND room_id = ? AND message_key = ?';
+        db.execute('DELETE FROM messages WHERE $where', params);
+        _deleteSearchRows(db, where, params);
+      }
+    }
+  }
 
   void _upsert(
     Database db,
@@ -467,6 +529,7 @@ class LocalMessageStore {
     ChatMessage message,
   ) {
     final key = _key(message);
+    _removePreviousMidAlias(db, server, uid, room, message.mid, key);
     db.execute(
       '''
       INSERT INTO messages(server_key, uid, room_id, message_key, timestamp, payload)
@@ -482,7 +545,7 @@ class LocalMessageStore {
         room,
         key,
         message.timestamp.millisecondsSinceEpoch,
-        jsonEncode(message.toJson()),
+        jsonEncode(message.withLocalSender(uid).toJson()),
       ],
     );
     // 全文索引文本（表在 v2 迁移时创建；触发器会同步到 FTS）
@@ -575,30 +638,11 @@ class LocalMessageStore {
     }
   }
 
-  Future<void> appendMessage(String roomId, ChatMessage message) async {
-    final scope = _requireScope();
-    final server = scope.server;
-    final uid = scope.uid;
-    try {
-      final db = await _db(server, uid);
-      _upsert(db, server, uid, roomId, message);
-    } catch (e) {
-      talker.error('LocalMessageStore appendMessage error', e);
-    }
-  }
+  Future<void> appendMessage(String roomId, ChatMessage message) =>
+      appendMessages(roomId, [message]);
 
-  /// 单条 upsert（含已存在消息的字段升级，如 ack 回填/撤回）。
-  Future<void> saveMessage(String roomId, ChatMessage message) async {
-    final scope = _requireScope();
-    final server = scope.server;
-    final uid = scope.uid;
-    try {
-      final db = await _db(server, uid);
-      _upsert(db, server, uid, roomId, message);
-    } catch (e) {
-      talker.error('LocalMessageStore saveMessage error', e);
-    }
-  }
+  Future<void> saveMessage(String roomId, ChatMessage message) =>
+      appendMessages(roomId, [message]);
 
   /// 事务批量 upsert，用于同步补拉等成批写入。
   Future<void> appendMessages(
@@ -738,9 +782,15 @@ class LocalMessageStore {
     try {
       for (final raw in messages.whereType<Map>()) {
         final roomId = raw['roomId']?.toString();
-        final messageKey = raw['messageKey']?.toString();
+        final storedKey = raw['messageKey']?.toString();
         final payload = raw['payload'];
-        if (roomId == null || messageKey == null || payload is! Map) continue;
+        if (roomId == null || storedKey == null || payload is! Map) continue;
+        final messageKey = payload['clientMid'] is String && (payload['clientMid'] as String).isNotEmpty
+            ? _key(ChatMessage.fromJson(Map<String, dynamic>.from(payload), activeUid: scope.uid))
+            : storedKey;
+        final storedMid = payload['mid'];
+        _removePreviousMidAlias(db, scope.server, scope.uid, roomId,
+            storedMid is num ? storedMid.toInt() : int.tryParse('$storedMid'), messageKey);
         final timestamp = raw['timestamp'] is num
             ? (raw['timestamp'] as num).toInt()
             : int.tryParse(raw['timestamp']?.toString() ?? '') ?? 0;
@@ -814,15 +864,15 @@ class LocalMessageStore {
 
   /// 按服务端消息 id（mid）定位单条消息
   ///
-  /// 服务端消息的 message_key 固定为 "id:$mid"
   Future<ChatMessage?> findMessageByMid(String roomId, int mid) async {
     final scope = _requireScope();
     try {
       final db = await _db(scope.server, scope.uid);
       final rows = db.select(
         'SELECT payload FROM messages '
-        'WHERE server_key = ? AND uid = ? AND room_id = ? AND message_key = ?',
-        [scope.server, scope.uid, roomId, 'id:$mid'],
+        'WHERE server_key = ? AND uid = ? AND room_id = ? AND json_valid(payload) '
+        "AND CAST(json_extract(payload, '\$.mid') AS INTEGER) = ? LIMIT 1",
+        [scope.server, scope.uid, roomId, mid],
       );
       if (rows.isEmpty) return null;
       return ChatMessage.fromJson(

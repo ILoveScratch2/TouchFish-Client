@@ -64,6 +64,9 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   final _scrollController = ScrollController();
   final List<MentionUser> _mentionUsers = [];
   Timer? _draftTimer;
+  String _lastCommentText = '';
+  int _draftRevision = 0;
+  int _loadSequence = 0;
   bool _showBackToBottom = false;
   bool _enableMarkdown = true;
 
@@ -111,6 +114,18 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
         oldWidget.forumId == widget.forumId) {
       return;
     }
+    _flushCommentDraft('${oldWidget.forumId}/${oldWidget.postId}');
+    _draftRevision++;
+    _lastCommentText = '';
+    _commentController.clear();
+    _post = null;
+    _postAuthor = null;
+    _commentDataList = [];
+    _forum = null;
+    _currentForumRole = -1;
+    _isSendingComment = false;
+    _isDeletingPost = false;
+    _deletingCommentIds.clear();
     _loadData();
     _loadMentionUsers();
     unawaited(_restoreCommentDraft());
@@ -146,25 +161,48 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   }
 
   void _scheduleCommentDraftSave() {
+    final text = _commentController.text;
+    if (text == _lastCommentText) return;
+    _lastCommentText = text;
+    _draftRevision++;
     _draftTimer?.cancel();
-    _draftTimer = Timer(const Duration(milliseconds: 400), _saveCommentDraft);
+    final draftId = _commentDraftId;
+    _draftTimer = Timer(const Duration(milliseconds: 400), () {
+      unawaited(_saveCommentDraft(draftId, text));
+    });
   }
 
   Future<void> _restoreCommentDraft() async {
-    final draft = await DraftService.instance.loadDraft(
-      'forum_comment',
-      _commentDraftId,
-    );
-    if (!mounted || _commentController.text.isNotEmpty) return;
-    final text = draft?['content'] as String? ?? '';
-    if (text.isNotEmpty) _commentController.text = text;
+    final revision = _draftRevision;
+    try {
+      final draft = await DraftService.instance.loadDraft(
+        'forum_comment',
+        _commentDraftId,
+      );
+      if (!mounted || revision != _draftRevision) return;
+      final text = draft?['content'] as String? ?? '';
+      _lastCommentText = text;
+      _commentController.text = text;
+    } catch (e) {
+      talker.error('ForumPostDetail: restore comment draft failed', e);
+    }
   }
 
-  Future<void> _saveCommentDraft() => DraftService.instance.saveDraft(
-    'forum_comment',
-    _commentDraftId,
-    {'content': _commentController.text},
-  );
+  void _flushCommentDraft(String draftId) {
+    if (_draftTimer?.isActive != true) return;
+    _draftTimer?.cancel();
+    unawaited(_saveCommentDraft(draftId, _commentController.text));
+  }
+
+  Future<void> _saveCommentDraft(String draftId, String text) async {
+    try {
+      await DraftService.instance.saveDraft('forum_comment', draftId, {
+        'content': text,
+      });
+    } catch (e) {
+      talker.error('ForumPostDetail: save comment draft failed', e);
+    }
+  }
 
   Future<void> _loadMentionUsers() async {
     final uid = AuthState.instance.uid;
@@ -190,55 +228,59 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   }
 
   Future<void> _loadData({bool showLoading = true}) async {
-    // 可能在提交评论的 await 之后才被调用
     if (!mounted) return;
+    final sequence = ++_loadSequence;
     if (showLoading) setState(() => _isLoading = true);
     try {
       final fid = int.tryParse(widget.forumId);
       final pid = int.tryParse(widget.postId);
       if (fid == null || pid == null) throw Exception('Invalid IDs');
-      _post = await TfApiClient.instance.getPost(fid, pid);
-      final forums = await TfApiClient.instance.getForumList();
-      _forum = forums.cast<Forum?>().firstWhere(
-        (forum) => forum?.id == widget.forumId,
-        orElse: () => null,
-      );
+      final api = TfApiClient.instance;
       final uid = AuthState.instance.uid;
       final password = AuthState.instance.password;
-      if (uid != null && password != null) {
-        final memberships = await TfApiClient.instance.getMyMemberships(
-          uid,
-          password,
-        );
-        _currentForumRole = memberships
-            .where((membership) => membership['fid'] == fid)
-            .map((membership) => membership['role'] ?? -1)
-            .fold(-1, (current, role) => role > current ? role : current);
-      }
+      final (post, forums, memberships, comments) = await (
+        api.getPost(fid, pid),
+        api.getForumList(),
+        uid != null && password != null
+            ? api.getMyMemberships(uid, password)
+            : Future.value(const <Map<String, int>>[]),
+        api.getAllComments(fid, pid),
+      ).wait;
+      if (!mounted || sequence != _loadSequence) return;
 
-      final comments = await TfApiClient.instance.getAllComments(fid, pid);
-      _commentDataList = comments.map((c) => _CommentData(c)).toList();
-
-      // 终于修复了万能的评论超大量请求问题
-      final postAuthorUid = _post == null
-          ? null
-          : int.tryParse(_post!.authorUid);
+      final forum = forums.cast<Forum?>().firstWhere(
+        (forum) => forum?.id == fid.toString(),
+        orElse: () => null,
+      );
+      final role = memberships
+          .where((membership) => membership['fid'] == fid)
+          .map((membership) => membership['role'] ?? -1)
+          .fold(-1, (current, role) => role > current ? role : current);
+      final postAuthorUid = int.tryParse(post?.authorUid ?? '');
       final authorUids = <int>{
         ?postAuthorUid,
-        for (final cd in _commentDataList)
-          if (int.tryParse(cd.comment.authorUid) case final int uid) uid,
+        for (final comment in comments)
+          if (int.tryParse(comment.authorUid) case final int uid) uid,
       };
-      final authors = await TfApiClient.instance.getUsersByUids(authorUids);
-      _postAuthor = postAuthorUid == null ? null : authors[postAuthorUid];
-      for (final cd in _commentDataList) {
-        final uid = int.tryParse(cd.comment.authorUid);
-        if (uid != null) cd.author = authors[uid];
-      }
-
-      if (mounted) setState(() => _isLoading = false);
+      final authors = await api.getUsersByUids(authorUids);
+      final commentData = [
+        for (final comment in comments)
+          _CommentData(comment)..author = authors[int.tryParse(comment.authorUid)],
+      ];
+      if (!mounted || sequence != _loadSequence) return;
+      setState(() {
+        _post = post;
+        _forum = forum;
+        _currentForumRole = role;
+        _postAuthor = authors[postAuthorUid];
+        _commentDataList = commentData;
+        _isLoading = false;
+      });
     } catch (e) {
       talker.error('ForumPostDetail: _loadData failed', e);
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted && sequence == _loadSequence) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -246,8 +288,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   void dispose() {
     SettingsService.instance.removeListener(_onSettingsChanged);
     ForumDataBus.instance.change.removeListener(_onForumDataChanged);
-    _draftTimer?.cancel();
-    unawaited(_saveCommentDraft());
+    _flushCommentDraft(_commentDraftId);
     _commentController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -808,7 +849,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
               ),
             ),
             IconButton(
-              onPressed: _openExpandedEditor,
+              onPressed: _isSendingComment ? null : _openExpandedEditor,
               icon: const Icon(Icons.open_in_new, size: 20),
               visualDensity: VisualDensity.compact,
               tooltip: l10n.forumExpandEditor,
@@ -832,6 +873,7 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
   }
 
   void _openExpandedEditor() async {
+    final draftId = _commentDraftId;
     final result = await ForumPostComposeSheet.show(
       context,
       forumId: widget.forumId,
@@ -839,18 +881,25 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       isReply: true,
       postId: widget.postId,
       onContentChanged: (text) {
+        if (!mounted || draftId != _commentDraftId) return;
         _commentController.value = TextEditingValue(
           text: text,
           selection: TextSelection.collapsed(offset: text.length),
         );
       },
     );
-    if (!mounted || result != true) return;
+    if (!mounted || result != true || draftId != _commentDraftId) return;
+    // The expanded editor owns persistence until its background send completes.
+    _draftTimer?.cancel();
+    _lastCommentText = '';
     _commentController.clear();
   }
 
   Future<void> _submitComment() async {
-    final text = _commentController.text.trim();
+    if (_isSendingComment) return;
+    final draftId = _commentDraftId;
+    final enteredText = _commentController.text;
+    final text = enteredText.trim();
     if (text.isEmpty) return;
     final l10n = AppLocalizations.of(context)!;
     final uid = AuthState.instance.uid;
@@ -870,26 +919,24 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
         pid,
         text,
       );
-      if (!mounted) return;
-      setState(() => _isSendingComment = false);
+      if (!mounted || draftId != _commentDraftId) return;
       if (success) {
-        _commentController.clear();
-        await DraftService.instance.clearDraft(
-          'forum_comment',
-          _commentDraftId,
-        );
-        if (!mounted) return;
+        if (_commentController.text == enteredText) {
+          _commentController.clear();
+        }
         TouchFishSnackbarService.instance.show(l10n.forumCommentSuccess);
-        await _loadData();
         ForumDataBus.instance.notifyPostsChanged(postId: widget.postId);
       } else {
         TouchFishSnackbarService.instance.show(l10n.forumCommentFailed);
       }
     } catch (e) {
       talker.error('_submitComment failed', e);
-      if (mounted) {
-        setState(() => _isSendingComment = false);
+      if (mounted && draftId == _commentDraftId) {
         TouchFishSnackbarService.instance.show(l10n.forumCommentFailed);
+      }
+    } finally {
+      if (mounted && draftId == _commentDraftId) {
+        setState(() => _isSendingComment = false);
       }
     }
   }

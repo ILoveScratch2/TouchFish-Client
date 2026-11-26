@@ -28,6 +28,7 @@ class _DraftBoxScreenState extends State<DraftBoxScreen> {
   List<DraftRecord>? _drafts;
   bool _loading = true;
   String? _error;
+  int _loadSequence = 0;
 
   @override
   void initState() {
@@ -47,20 +48,22 @@ class _DraftBoxScreenState extends State<DraftBoxScreen> {
   }
 
   Future<void> _load({bool showLoading = true}) async {
+    if (!mounted) return;
+    final sequence = ++_loadSequence;
     setState(() {
       if (showLoading) _loading = true;
       _error = null;
     });
     try {
-      final drafts = await DraftService.instance.listDrafts(type: 'forum');
-      if (!mounted) return;
+      final drafts = await DraftService.instance.listDrafts(type: 'forum_post');
+      if (!mounted || sequence != _loadSequence) return;
       setState(() {
         _drafts = drafts;
         _loading = false;
       });
     } catch (e, stack) {
       talker.error('Failed to load drafts', e, stack);
-      if (!mounted) return;
+      if (!mounted || sequence != _loadSequence) return;
       setState(() {
         _loading = false;
         _error = 'loadFailed';
@@ -70,6 +73,7 @@ class _DraftBoxScreenState extends State<DraftBoxScreen> {
 
   Future<void> _openDraft(DraftRecord draft) async {
     await ForumPostComposeSheet.show(context, forumId: draft.id);
+    await _load(showLoading: false);
   }
 
   Future<void> _deleteDraft(DraftRecord draft) async {

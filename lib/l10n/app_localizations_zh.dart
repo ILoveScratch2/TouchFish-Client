@@ -340,6 +340,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get registerActivateFailed => '激活失败，请检查激活码';
 
   @override
+  String get registerResendCode => '重新发送激活码';
+
+  @override
+  String registerResendWait(int seconds) {
+    return '$seconds 秒后可重发';
+  }
+
+  @override
+  String get registerResendRequested => '已请求发送新验证码，请查收邮件。';
+
+  @override
+  String get registerResendFailed => '申请新验证码失败，请重试。';
+
+  @override
   String get forumLoadFailed => '加载论坛失败';
 
   @override

@@ -9,6 +9,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pointycastle/export.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'tf_crypto.dart';
+import 'tf_payload_crypto.dart' as payload_crypto;
 import '../../models/message_model.dart';
 import '../../constants/app_constants.dart';
 import '../../models/user_profile.dart';
@@ -1010,6 +1011,31 @@ class _PreparedSecretPostRequest {
   });
 }
 
+@visibleForTesting
+Map<String, dynamic>? decodeGroupSummary(Object? raw) {
+  if (raw is! List || raw.length < 8) return null;
+  Object? members = raw[3];
+  if (members is String) {
+    try {
+      members = jsonDecode(members);
+    } on FormatException {
+      members = null;
+    }
+  }
+  return {
+    'gid': raw[0],
+    'creater': raw[1],
+    'groupname': raw[2],
+    'members': members is List
+        ? members.map((member) => member is num ? member.toInt() : member).toList()
+        : <dynamic>[],
+    'require_review': raw.length > 8 ? raw[8] : null,
+    'enter_hint': raw[5],
+    'introduction': raw[6],
+    'allow_direct_join': raw[7],
+  };
+}
+
 /// TFV5 API CLIENT
 class TfApiClient {
   static const _defaultTimeout = Duration(seconds: 10);
@@ -1437,7 +1463,7 @@ class TfApiClient {
 
     final aesKey = TfCrypto.generateAesKey();
     final iv = TfCrypto.generateIv();
-    final encryptedContent = TfCrypto.aesEncrypt(
+    final encryptedContent = await payload_crypto.encrypt(
       jsonEncode(fullBody),
       aesKey,
       iv,
@@ -1457,11 +1483,11 @@ class TfApiClient {
     );
   }
 
-  String _decryptSecretResponse(String responseBody, Uint8List aesKey) {
+  Future<String> _decryptSecretResponse(String responseBody, Uint8List aesKey) async {
     final responseData = jsonDecode(responseBody) as Map<String, dynamic>;
     final responseIv = base64.decode(responseData['iv'] as String);
     final responseContent = base64.decode(responseData['content'] as String);
-    return TfCrypto.aesDecrypt(responseContent, aesKey, responseIv);
+    return payload_crypto.decrypt(responseContent, aesKey, responseIv);
   }
 
   Future<String?> secretPost(
@@ -1476,23 +1502,17 @@ class TfApiClient {
       // 说明是"错峰返回"的旧 401，直接重试即可，不必再轮换一次 refresh token
       // （refresh token 一次一换，重复轮换会触发风控/踢下线）。
       final tokenAtRequest = _authToken;
+      var expired = false;
       var result = await _secretPostInternal(
         path,
         body,
         uid: uid,
         password: password,
         onStatus: onStatus,
+        onDecoded: (data) => expired = data != null && ApiError.fromResponse(data).isTokenExpired,
       );
-      final data = _parseJsonMap(result);
-      if (data != null && ApiError.fromResponse(data).isTokenExpired) {
-        final handler = _tokenExpiredHandler;
-        final tokenAlreadyRotated =
-            tokenAtRequest != null && _authToken != tokenAtRequest;
-        if (handler != null && !tokenAlreadyRotated) {
-          final relogged = await handler();
-          if (!relogged) return result;
-        }
-        if (tokenAlreadyRotated || handler != null) {
+      if (expired) {
+        if (await _retryExpiredToken(tokenAtRequest)) {
           result = await _secretPostInternal(
             path,
             body,
@@ -1509,6 +1529,13 @@ class TfApiClient {
     }
   }
 
+  Future<bool> _retryExpiredToken(String? tokenAtRequest) async {
+    if (tokenAtRequest != null && _authToken != tokenAtRequest) {
+      return _authToken != null;
+    }
+    return await _tokenExpiredHandler?.call() ?? false;
+  }
+
   /// 发送加密请求但不捕获异常
   Future<String?> _secretPostInternal(
     String path,
@@ -1518,6 +1545,7 @@ class TfApiClient {
     bool skipToken = false,
     String? tokenOverride,
     void Function(int statusCode)? onStatus,
+    void Function(Map<String, dynamic>?)? onDecoded,
   }) async {
     final preparedRequest = await _prepareSecretPostRequest(
       path,
@@ -1536,9 +1564,10 @@ class TfApiClient {
     );
 
     onStatus?.call(response.statusCode);
-    final plain = _decryptSecretResponse(response.body, preparedRequest.aesKey);
+    final plain = await _decryptSecretResponse(response.body, preparedRequest.aesKey);
     final responseData = _parseJsonMap(plain);
     _captureAuthNote(responseData);
+    onDecoded?.call(responseData);
     return plain;
   }
 
@@ -1630,7 +1659,7 @@ class TfApiClient {
           String? errorMessage;
           if (response.statusCode == 200) {
             try {
-              decodedResponseBody = _decryptSecretResponse(
+              decodedResponseBody = await _decryptSecretResponse(
                 response.body,
                 preparedRequest.aesKey,
               );
@@ -2378,6 +2407,19 @@ class TfApiClient {
       return _parseBool(result);
     } catch (e) {
       talker.error('activateAccount failed', e);
+      return false;
+    }
+  }
+
+  Future<bool> resendActivation(int uid, String password) async {
+    try {
+      final result = await _secretPostInternal('/auth/resend_activation', {
+        'uid': uid,
+        'password': password,
+      }, skipToken: true);
+      return _parseBool(result);
+    } catch (e) {
+      talker.error('resendActivation failed', e);
       return false;
     }
   }
@@ -4619,42 +4661,8 @@ class TfApiClient {
       throw Exception('Group search failed');
     }
 
-    final dynamic decoded = jsonDecode(response.body);
-
-    if (decoded == null || decoded is! List) {
-      return [];
-    }
-
-    final groups = <Map<String, dynamic>>[];
-    final dynamic item = decoded;
-    if (item is! List || item.length < 8) {
-      // 服务端结构异常时跳过该项，避免整屏搜索崩溃
-      return [];
-    }
-    final List<dynamic> raw = item;
-    List<dynamic> members = const [];
-    try {
-      final rawMembers = raw[3];
-      if (rawMembers is String && rawMembers.isNotEmpty) {
-        final parsed = jsonDecode(rawMembers);
-        if (parsed is List) members = parsed;
-      } else if (rawMembers is List) {
-        members = rawMembers;
-      }
-    } catch (_) {
-      members = const [];
-    }
-    groups.add(<String, dynamic>{
-      'gid': raw[0],
-      'creater': raw[1],
-      'groupname': raw[2],
-      'members': members.map((m) => m is num ? m.toInt() : m).toList(),
-      'require_review': raw[8],
-      'enter_hint': raw[5],
-      'introduction': raw[6],
-      'allow_direct_join': raw[7],
-    });
-    return groups;
+    final group = decodeGroupSummary(jsonDecode(response.body));
+    return group == null ? [] : [group];
   }
 
   Future<List<Map<String, dynamic>>> searchGroup(String groupname) async {
@@ -4667,43 +4675,12 @@ class TfApiClient {
       throw Exception('Group search failed');
     }
 
-    final dynamic decoded = jsonDecode(response.body);
-
-    if (decoded == null || decoded is! List) {
-      return [];
-    }
-
-    final groups = <Map<String, dynamic>>[];
-    for (final item in decoded) {
-      if (item is! List || item.length < 8) {
-        // 服务端结构异常时跳过该项，避免整屏搜索崩溃
-        continue;
-      }
-      final List<dynamic> raw = item;
-      List<dynamic> members = const [];
-      try {
-        final rawMembers = raw[3];
-        if (rawMembers is String && rawMembers.isNotEmpty) {
-          final parsed = jsonDecode(rawMembers);
-          if (parsed is List) members = parsed;
-        } else if (rawMembers is List) {
-          members = rawMembers;
-        }
-      } catch (_) {
-        members = const [];
-      }
-      groups.add(<String, dynamic>{
-        'gid': raw[0],
-        'creater': raw[1],
-        'groupname': raw[2],
-        'members': members.map((m) => m is num ? m.toInt() : m).toList(),
-        'require_review': raw[8],
-        'enter_hint': raw[5],
-        'introduction': raw[6],
-        'allow_direct_join': raw[7],
-      });
-    }
-    return groups;
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List) return [];
+    return [
+      for (final item in decoded)
+        if (decodeGroupSummary(item) case final group?) group,
+    ];
   }
 
   /// 群组预览（secret）
@@ -5297,39 +5274,38 @@ class TfApiClient {
       if (expectedHash != null) 'expected_hash': expectedHash,
     };
 
-    final preparedRequest = await _prepareSecretPostRequest(
-      '/file/chunked_upload',
-      body,
-      uid: uid,
-      password: password,
-    );
-
-    try {
+    Future<Map<String, dynamic>?> sendChunk() async {
+      final preparedRequest = await _prepareSecretPostRequest(
+        '/file/chunked_upload',
+        body,
+        uid: uid,
+        password: password,
+      );
       final response = await _dioClient().post<String>(
         preparedRequest.requestUrl,
         data: preparedRequest.requestBody,
         options: Options(
           headers: {'Content-Type': 'application/json'},
           responseType: ResponseType.plain,
+          validateStatus: (status) => status != null && status < 600,
         ),
         onSendProgress: onProgress,
       );
-
       ServerConnectionStatusService.instance.reportReachable();
-
-      if (response.statusCode != 200 || response.data == null) return null;
-
-      final plain = _decryptSecretResponse(
-        response.data!,
-        preparedRequest.aesKey,
-      );
+      if (response.data == null) return null;
+      final plain = await _decryptSecretResponse(response.data!, preparedRequest.aesKey);
       final data = _parseJsonMap(plain);
       _captureAuthNote(data);
-      if (data == null) return null;
+      return data;
+    }
 
-      final success = data['success'];
-      if (success is bool && !success) return null;
-
+    try {
+      final tokenAtRequest = _authToken;
+      final data = await sendChunk();
+      if (data != null && ApiError.fromResponse(data).isTokenExpired &&
+          await _retryExpiredToken(tokenAtRequest)) {
+        return await sendChunk();
+      }
       return data;
     } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionTimeout ||
@@ -5339,6 +5315,9 @@ class TfApiClient {
         _handleConnectivityFailure();
       }
       talker.error('uploadChunk failed', e);
+      return null;
+    } on FormatException catch (e) {
+      talker.warning('Invalid response to uploadChunk', e);
       return null;
     }
   }

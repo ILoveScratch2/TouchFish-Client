@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -13,37 +15,41 @@ class MediaProxyService {
   MediaProxyService._();
 
   static const _maxCacheBytes = 2 * 1024 * 1024 * 1024;
-  static const _outboundTimeout = Duration(seconds: 60);
+  static const _timeout = Duration(seconds: 60);
+  static final _rangePattern = RegExp(r'^bytes=(\d+)-(\d*)$');
+  static final _contentRangePattern = RegExp(r'^bytes (\d+)-(\d+)/(\d+)$');
+  static final _secure = Random.secure();
 
-  /// 流式转发时远端连续空闲超过该时长即中断（防远端挂死导致永久等待）。
-  static const _streamIdleTimeout = Duration(seconds: 60);
   HttpServer? _server;
-  HttpClient _client = HttpClient()
-    ..connectionTimeout = const Duration(seconds: 30);
+  Hmac? _signer;
+  HttpClient _client = _newClient();
   Future<void>? _starting;
-  final Map<String, _ChunkCache> _chunkCaches = {};
-
-  /// 缓存文件写入锁：只串行化「检查连续性 + 追加写入 + 更新 meta」这几步，
-  /// 响应转发在锁外进行。播放器的探测/seek/moov 请求并发处理，互不阻塞。
-  final Map<String, Future<void>> _fileLocks = {};
+  final _writers = <String, _CacheWriter>{};
+  Future<void>? _clearing;
+  Future<void>? _trimming;
+  bool _trimAgain = false;
+  int _generation = 0;
 
   bool get isSupported => true;
   bool get isRunning => _server != null;
 
+  static HttpClient _newClient() => HttpClient()
+    ..connectionTimeout = const Duration(seconds: 30)
+    ..autoUncompress = false;
+
   void rebuildHttpClient() {
     _client.close(force: true);
-    _client = HttpClient();
+    _client = _newClient();
   }
 
   Future<String> resolveUrl(String remoteUrl) async {
     if (!SettingsService.instance.getValue<bool>('mediaProxyEnabled', true)) {
       return remoteUrl;
     }
-    // 只代理 http(s) 远程地址：本地文件路径（上传预览）、file hash、空串等
-    // 一律直通，否则会被包成代理 URL 后因非 http(s) scheme 而被拒绝（400）。
     final uri = Uri.tryParse(remoteUrl);
     if (uri == null ||
-        !const {'http', 'https'}.contains(uri.scheme.toLowerCase())) {
+        !uri.hasAuthority ||
+        !{'http', 'https'}.contains(uri.scheme)) {
       return remoteUrl;
     }
     try {
@@ -55,7 +61,7 @@ class MediaProxyService {
         host: InternetAddress.loopbackIPv4.address,
         port: server.port,
         path: '/media',
-        queryParameters: {'url': remoteUrl},
+        queryParameters: {'url': remoteUrl, 'sig': _signature(remoteUrl)},
       ).toString();
     } catch (error, stackTrace) {
       talker.error('Media proxy failed to start', error, stackTrace);
@@ -63,306 +69,279 @@ class MediaProxyService {
     }
   }
 
-  /// 带超时地建立出站连接，防止远端无响应时请求永久挂起。
-  Future<HttpClientRequest> _openOutbound(String method, Uri uri) async {
-    return _client
-        .openUrl(method, uri)
-        .timeout(_outboundTimeout, onTimeout: () {
-      throw TimeoutException('Media proxy outbound timeout: $uri');
-    });
+  String _signature(String url) =>
+      _signer!.convert(utf8.encode(url)).toString();
+
+  bool _accepts(String url, String? signature) {
+    if (_signer == null || signature == null || signature.length != 64) {
+      return false;
+    }
+    final expected = _signature(url);
+    var difference = 0;
+    for (var i = 0; i < expected.length; i++) {
+      difference |= expected.codeUnitAt(i) ^ signature.codeUnitAt(i);
+    }
+    return difference == 0;
   }
 
   Future<void> _ensureStarted() async {
     if (_server != null) return;
-    final starting = _starting ??= _start();
-    try {
-      await starting;
-    } finally {
-      _starting = null;
-    }
+    await (_starting ??= _start().whenComplete(() => _starting = null));
   }
 
   Future<void> _start() async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    _signer = Hmac(sha256, List.generate(32, (_) => _secure.nextInt(256)));
     _server = server;
-    // 注意：不能使用 server.forEach —— 它对每个请求串行 await 回调，
-    // 一个大文件下载会阻塞所有并发请求（播放器的探测/seek/重试），
-    // 导致客户端永远收不到数据。listen + unawaited 保证并发处理。
     server.listen(
       (request) => unawaited(_handle(request)),
-      onError: (error, stackTrace) {
-        talker.error('Media proxy listener error', error, stackTrace);
+      onError: (Object error) {
+        talker.error('Media proxy listener error', error);
       },
-      cancelOnError: false,
     );
   }
 
   Future<void> _handle(HttpRequest request) async {
+    final response = request.response;
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('Referrer-Policy', 'no-referrer');
+    response.headers.set(
+      'Content-Security-Policy',
+      "sandbox; default-src 'none'",
+    );
+    response.headers.set(HttpHeaders.cacheControlHeader, 'private, no-store');
     try {
       if (request.uri.path == '/health') {
-        request.response.write('OK');
-        await request.response.close();
+        response.write('OK');
         return;
       }
-      final rawUrl = request.uri.queryParameters['url'];
-      final remoteUri = rawUrl == null ? null : Uri.tryParse(rawUrl);
-      if (request.uri.path != '/media' ||
-          remoteUri == null ||
-          !const {'http', 'https'}.contains(remoteUri.scheme)) {
-        request.response.statusCode = HttpStatus.badRequest;
-        await request.response.close();
+      final raw = request.uri.queryParameters['url'];
+      if (request.uri.path != '/media' || raw == null) {
+        response.statusCode = HttpStatus.badRequest;
+        return;
+      }
+      if (!_accepts(raw, request.uri.queryParameters['sig'])) {
+        response.statusCode = HttpStatus.forbidden;
+        return;
+      }
+      final method = request.method;
+      if (method != 'GET' && method != 'HEAD') {
+        response.statusCode = HttpStatus.methodNotAllowed;
+        response.headers.set('Allow', 'GET, HEAD');
+        return;
+      }
+      final header = request.headers.value(HttpHeaders.rangeHeader);
+      final match = header == null ? null : _rangePattern.firstMatch(header);
+      final start = match == null ? null : int.tryParse(match[1]!);
+      final end = match == null ? null : int.tryParse(match[2]!);
+      if (header != null &&
+          (match == null ||
+              start == null ||
+              (match[2]!.isNotEmpty && (end == null || end < start)))) {
+        response.statusCode = HttpStatus.badRequest;
         return;
       }
 
-      final range = request.headers.value(HttpHeaders.rangeHeader);
-      if (range == null) {
-        await _handleFullRequest(request, remoteUri);
-      } else {
-        await _handleRangeRequest(request, remoteUri, range);
-      }
-    } catch (error, stackTrace) {
-      talker.error('Media proxy request failed', error, stackTrace);
+      final generation = _generation;
+      final key = sha256.convert(utf8.encode(raw)).toString();
+      // A missing cache volume or a disk error must still allow playback.
+      File? file;
+      _CacheEntry? entry;
       try {
-        request.response.statusCode = HttpStatus.badGateway;
-      } catch (_) {}
+        final directory = await _cacheDirectory();
+        file = File(p.join(directory.path, '$key.cache'));
+        entry = await _readEntry(file);
+      } on Exception {
+        file = null;
+      }
+      if (file != null &&
+          entry != null &&
+          entry.complete &&
+          await _serveCached(request, file, entry, start, end)) {
+        return;
+      }
+      final outbound = await _client
+          .openUrl(method, Uri.parse(raw))
+          .timeout(_timeout);
+      outbound.headers.set(HttpHeaders.acceptEncodingHeader, 'identity');
+      if (header != null) outbound.headers.set(HttpHeaders.rangeHeader, header);
+      final remote = await outbound.close().timeout(
+        _timeout,
+        onTimeout: () {
+          outbound.abort();
+          throw TimeoutException('Media response headers timed out');
+        },
+      );
+      response.statusCode = remote.statusCode;
+      for (final name in const [
+        HttpHeaders.contentTypeHeader,
+        HttpHeaders.contentLengthHeader,
+        HttpHeaders.contentRangeHeader,
+        HttpHeaders.acceptRangesHeader,
+        HttpHeaders.contentEncodingHeader,
+        HttpHeaders.etagHeader,
+        HttpHeaders.lastModifiedHeader,
+      ]) {
+        final value = remote.headers.value(name);
+        if (value != null) response.headers.set(name, value);
+      }
+
+      final body = remote.timeout(_timeout);
+      _CacheEntry? candidate;
       try {
-        await request.response.close();
-      } catch (_) {}
-    }
-  }
-
-  Future<void> _handleFullRequest(HttpRequest request, Uri remoteUri) async {
-    final cacheKey = _cacheKeyFor(remoteUri);
-    final cache = await _getOrCreateChunkCache(cacheKey);
-    if (cache.isComplete && cache.cachedFilePath != null) {
-      final file = File(cache.cachedFilePath!);
-      if (await file.exists()) {
-        final fileSize = await file.length();
-        final response = request.response;
-        response.headers.contentType = ContentType.parse(
-          cache.contentType ?? 'application/octet-stream',
-        );
-        response.headers.contentLength = fileSize;
-        response.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
-        response.headers.set(
-          HttpHeaders.cacheControlHeader,
-          'public, max-age=31536000',
-        );
-        await response.addStream(file.openRead());
-        await response.close();
+        candidate = _CacheEntry.fromResponse(remote, start, end);
+      } on Exception {
+        // Optional cache headers must never interrupt delivery.
+      }
+      final segment = candidate;
+      if (method != 'GET' ||
+          file == null ||
+          segment == null ||
+          generation != _generation ||
+          _writers.containsKey(key) ||
+          _clearing != null) {
+        await response.addStream(body);
         return;
       }
-    }
-    // 无 Range 的全量请求直接透传远端：不写缓存，避免与并发 Range 请求的
-    // 追加写入交错损坏缓存文件（播放器探测/seek 均使用 Range，不受影响）。
-    final outbound = await _openOutbound('GET', remoteUri);
-    final remote = await outbound.close();
-    final response = request.response;
-    response.statusCode = remote.statusCode;
-    for (final header in const [
-      HttpHeaders.contentTypeHeader,
-      HttpHeaders.contentLengthHeader,
-      HttpHeaders.contentRangeHeader,
-      HttpHeaders.acceptRangesHeader,
-      HttpHeaders.etagHeader,
-      HttpHeaders.lastModifiedHeader,
-    ]) {
-      final value = remote.headers.value(header);
-      if (value != null) response.headers.set(header, value);
-    }
-    await response.addStream(remote.timeout(_streamIdleTimeout));
-    await response.close();
-  }
-
-  Future<void> _handleRangeRequest(
-    HttpRequest request,
-    Uri remoteUri,
-    String rangeHeader,
-  ) async {
-    final range = _parseRangeHeader(rangeHeader);
-    if (range == null) {
-      request.response.statusCode = HttpStatus.badRequest;
-      await request.response.close();
-      return;
-    }
-
-    final cacheKey = _cacheKeyFor(remoteUri);
-    final cache = await _getOrCreateChunkCache(cacheKey);
-    if (cache.isComplete && cache.cachedFilePath != null) {
-      final file = File(cache.cachedFilePath!);
-      if (await file.exists()) {
-        await _serveSlice(request, cache, file, range);
-        return;
-      }
-    }
-    await _fetchRangeAndCache(request, remoteUri, cacheKey, range);
-  }
-
-  Future<void> _fetchRangeAndCache(
-    HttpRequest request,
-    Uri remoteUri,
-    String cacheKey,
-    _Range range,
-  ) async {
-    final cache = await _getOrCreateChunkCache(cacheKey);
-    final outbound = await _openOutbound('GET', remoteUri);
-    outbound.headers.set(
-      HttpHeaders.rangeHeader,
-      'bytes=${range.start}-${range.end ?? ""}',
-    );
-    final remote = await outbound.close();
-    final response = request.response;
-    response.statusCode = remote.statusCode;
-    for (final header in const [
-      HttpHeaders.contentTypeHeader,
-      HttpHeaders.contentLengthHeader,
-      HttpHeaders.contentRangeHeader,
-      HttpHeaders.acceptRangesHeader,
-      HttpHeaders.etagHeader,
-      HttpHeaders.lastModifiedHeader,
-    ]) {
-      final value = remote.headers.value(header);
-      if (value != null) response.headers.set(header, value);
-    }
-
-    final contentLength = remote.headers.contentLength;
-    final contentRange = remote.headers.value(HttpHeaders.contentRangeHeader);
-    final totalSize = _parseContentRangeTotal(contentRange);
-    final shouldCache = remote.statusCode == HttpStatus.partialContent &&
-        contentLength > 0 &&
-        totalSize != null &&
-        totalSize > 0 &&
-        totalSize <= _maxCacheBytes &&
-        _isMedia(remote.headers.contentType) &&
-        cache.cachedFilePath != null;
-
-    if (!shouldCache) {
-      await response.addStream(remote.timeout(_streamIdleTimeout));
-      await response.close();
-      return;
-    }
-
-    final file = File(cache.cachedFilePath!);
-    var shouldCacheThis = true;
-    var sentAny = false;
-    try {
-      // 连续性检查在锁内完成：并发请求只有当前文件长度恰好等于
-      // 本请求起始偏移时才允许追加，避免乱序分块写坏缓存。
-      shouldCacheThis = await _withFileWriteLock(cacheKey, () async {
-        if (!await file.exists()) {
-          await file.create(recursive: true);
-          cache.totalSize = totalSize;
-        } else if (await file.length() != range.start) {
-          return false;
-        }
-        return true;
-      });
-
-      if (shouldCacheThis) {
-        final raf = await file.open(mode: FileMode.append);
-        var clientGone = false;
-        unawaited(response.done.then((_) => clientGone = true));
-        try {
-          await for (final chunk in remote.timeout(_streamIdleTimeout)) {
-            // 追加写入走写锁（append 模式 + 锁内连续性保证），转发在锁外。
-            await _withFileWriteLock(cacheKey, () => raf.writeFrom(chunk));
-            response.add(chunk);
-            sentAny = true;
-            if (clientGone) break;
-          }
-          await _withFileWriteLock(cacheKey, () async {
-            cache.contentType = remote.headers.contentType?.value;
-            cache.downloadedSize = await raf.length();
-            if (cache.downloadedSize >= totalSize) {
-              cache.markComplete();
-              await _writeMeta(cacheKey, cache);
+      final writer = _CacheWriter();
+      _writers[key] = writer;
+      try {
+        await writer.perform(() async {
+          if (start == 0) {
+            final current = await _readEntry(file!);
+            if (current != null &&
+                current.complete &&
+                await file.exists() &&
+                await file.length() == current.total) {
+              return;
             }
-          });
-        } finally {
-          await raf.close();
+            await _deleteIfPresent(File('${file.path}.meta'));
+            // Keep handles of existing readers attached to their original inode.
+            await _deleteIfPresent(file);
+            writer.handle = await file.open(mode: FileMode.write);
+          } else {
+            // Re-read under the reservation. Another request may have replaced
+            // the prefix while this request was waiting for upstream headers.
+            final prefix = await _readEntry(file!);
+            if (prefix != null &&
+                !prefix.complete &&
+                segment.validator != null &&
+                prefix.validator == segment.validator &&
+                prefix.total == segment.total &&
+                await file.length() == start) {
+              writer.handle = await file.open(mode: FileMode.append);
+            }
+          }
+        });
+        if (writer.handle == null) {
+          _writers.remove(key);
+          await response.addStream(body);
+          return;
         }
-        unawaited(_trimCache());
+        var written = 0;
+        await response.addStream(
+          body.asyncMap((chunk) async {
+            await writer.perform(() async {
+              await writer.handle!.writeFrom(chunk);
+              written += chunk.length;
+            });
+            return chunk;
+          }),
+        );
+        await writer.perform(() async {
+          await writer.closeHandle();
+          if (written != remote.contentLength) return;
+          final complete = start! + written == segment.total;
+          await File('${file!.path}.meta').writeAsString(
+            jsonEncode({
+              'expires': segment.expires,
+              'total': segment.total,
+              'complete': complete,
+              'validator': segment.validator,
+              'contentType': segment.contentType,
+            }),
+            flush: true,
+          );
+        });
+      } finally {
+        await writer.cancel();
+        if (identical(_writers[key], writer)) {
+          _writers.remove(key);
+          _scheduleTrim();
+        }
       }
-    } catch (e) {
-      talker.error('Media proxy range cache write failed', e);
-    }
-
-    if (!sentAny) {
-      await response.addStream(remote.timeout(_streamIdleTimeout));
-    }
-    try {
-      await response.close();
     } catch (error) {
-      talker.debug('Media proxy close failed: $error');
-    }
-  }
-
-  Future<void> _serveSlice(
-    HttpRequest request,
-    _ChunkCache cache,
-    File file,
-    _Range range,
-  ) async {
-    final fileSize = await file.length();
-    final end = (range.end == null || range.end! >= fileSize)
-        ? fileSize - 1
-        : range.end!;
-    if (range.start >= fileSize || range.start > end) {
-      request.response.statusCode = HttpStatus.requestedRangeNotSatisfiable;
-      request.response.headers.set(
-        HttpHeaders.contentRangeHeader,
-        'bytes */$fileSize',
-      );
-      await request.response.close();
-      return;
-    }
-
-    final length = end - range.start + 1;
-    final raf = await file.open();
-    try {
-      await raf.setPosition(range.start);
-      final bytes = await raf.read(length);
-      final response = request.response;
-      response.statusCode = HttpStatus.partialContent;
-      response.headers.contentType = ContentType.parse(
-        cache.contentType ?? 'application/octet-stream',
-      );
-      response.headers.contentLength = bytes.length;
-      response.headers.set(
-        HttpHeaders.contentRangeHeader,
-        'bytes ${range.start}-$end/$fileSize',
-      );
-      response.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
-      response.headers.set(
-        HttpHeaders.cacheControlHeader,
-        'public, max-age=31536000',
-      );
-      response.add(bytes);
-      await response.close();
+      // Avoid logging media URLs, signed query strings or local capability URLs.
+      talker.debug('Media proxy request failed (${error.runtimeType})');
+      try {
+        response.statusCode = HttpStatus.badGateway;
+      } catch (_) {}
     } finally {
-      await raf.close();
+      try {
+        await response.close();
+      } catch (_) {}
     }
   }
 
-  _Range? _parseRangeHeader(String header) {
-    final match = RegExp(r'bytes=(\d+)-(\d*)').firstMatch(header);
-    if (match == null) return null;
-    final start = int.parse(match.group(1)!);
-    final endStr = match.group(2);
-    final end = endStr != null && endStr.isNotEmpty ? int.parse(endStr) : null;
-    return _Range(start, end);
+  Future<bool> _serveCached(
+    HttpRequest request,
+    File file,
+    _CacheEntry entry,
+    int? start,
+    int? end,
+  ) async {
+    // Open the file before committing headers; eviction can race this request.
+    late final RandomAccessFile reader;
+    try {
+      reader = await file.open();
+    } on FileSystemException {
+      return false;
+    }
+    try {
+      if (await reader.length() != entry.total) return false;
+      final response = request.response;
+      final first = start ?? 0;
+      final last = min(end ?? entry.total - 1, entry.total - 1);
+      if (first > last) {
+        response.statusCode = HttpStatus.requestedRangeNotSatisfiable;
+        response.headers.set(
+          HttpHeaders.contentRangeHeader,
+          'bytes */${entry.total}',
+        );
+        return true;
+      }
+      if (start != null) {
+        response.statusCode = HttpStatus.partialContent;
+        response.headers.set(
+          HttpHeaders.contentRangeHeader,
+          'bytes $first-$last/${entry.total}',
+        );
+      }
+      response.headers.contentType = ContentType.parse(entry.contentType);
+      response.headers.contentLength = last - first + 1;
+      response.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
+      if (request.method != 'HEAD') {
+        await reader.setPosition(first);
+        await response.addStream(_readBytes(reader, last - first + 1));
+      }
+      return true;
+    } finally {
+      await reader.close();
+    }
   }
 
-  int? _parseContentRangeTotal(String? contentRange) {
-    if (contentRange == null) return null;
-    final match = RegExp(r'/(\d+)$').firstMatch(contentRange);
-    return match != null ? int.tryParse(match.group(1)!) : null;
-  }
-
-  bool _isMedia(ContentType? contentType) {
-    if (contentType == null) return false;
-    final mime = contentType.mimeType;
-    return mime.startsWith('video/') || mime.startsWith('audio/');
+  static Stream<List<int>> _readBytes(
+    RandomAccessFile file,
+    int remaining,
+  ) async* {
+    while (remaining > 0) {
+      final data = await file.read(min(64 * 1024, remaining));
+      if (data.isEmpty) {
+        throw const FileSystemException('Cached media ended early');
+      }
+      remaining -= data.length;
+      yield data;
+    }
   }
 
   Future<Directory> _cacheDirectory() async {
@@ -372,192 +351,248 @@ class MediaProxyService {
     return directory;
   }
 
-  String _cacheKeyFor(Uri uri) {
-    final hash = uri.toString().codeUnits.fold<int>(
-      0x811c9dc5,
-      (hash, byte) => ((hash ^ byte) * 0x01000193) & 0x7fffffff,
-    );
-    return hash.toRadixString(16);
-  }
-
-  Future<_ChunkCache> _getOrCreateChunkCache(String cacheKey) async {
-    final existing = _chunkCaches[cacheKey];
-    if (existing != null) return existing;
-
-    final directory = await _cacheDirectory();
-    final filePath = p.join(directory.path, '$cacheKey.cache');
-    final file = File(filePath);
-    final meta = await _readMeta(cacheKey);
-
-    if (meta != null && await file.exists()) {
-      final fileSize = await file.length();
-      final cache = _ChunkCache(
-        cachedFilePath: filePath,
-        totalSize: meta.total,
-        downloadedSize: fileSize,
-        contentType: meta.contentType,
-      );
-      if (meta.complete && fileSize == meta.total) {
-        cache.markComplete();
-      } else {
-        await file.delete();
-        await File(p.join(directory.path, '$cacheKey.meta')).delete();
-        _chunkCaches[cacheKey] = _ChunkCache(cachedFilePath: filePath);
-        return _chunkCaches[cacheKey]!;
-      }
-      _chunkCaches[cacheKey] = cache;
-      return cache;
-    }
-
-    final cache = _ChunkCache(cachedFilePath: filePath);
-    _chunkCaches[cacheKey] = cache;
-    return cache;
-  }
-
-  Future<_MetaInfo?> _readMeta(String cacheKey) async {
+  Future<_CacheEntry?> _readEntry(File file) async {
     try {
-      final directory = await _cacheDirectory();
-      final file = File(p.join(directory.path, '$cacheKey.meta'));
-      if (!await file.exists()) return null;
-      final decoded = jsonDecode(await file.readAsString());
-      if (decoded is! Map) return null;
-      final total = decoded['total'];
-      final complete = decoded['complete'];
-      if (total is! int || complete is! bool) return null;
-      return _MetaInfo(
-        total: total,
-        complete: complete,
-        contentType: decoded['contentType'] as String?,
-      );
-    } catch (_) {
+      final data = jsonDecode(await File('${file.path}.meta').readAsString());
+      if (data is Map &&
+          data['total'] is int &&
+          data['total'] > 0 &&
+          data['expires'] is int &&
+          data['expires'] > DateTime.now().millisecondsSinceEpoch &&
+          data['complete'] is bool &&
+          data['contentType'] is String &&
+          (data['validator'] == null || data['validator'] is String)) {
+        return _CacheEntry(
+          data['total'],
+          data['complete'],
+          data['contentType'],
+          data['validator'],
+          data['expires'],
+        );
+      }
+    } on FileSystemException {
+      return null;
+    } on FormatException {
       return null;
     }
+    return null;
   }
 
-  Future<void> _writeMeta(String cacheKey, _ChunkCache cache) async {
-    try {
-      final directory = await _cacheDirectory();
-      final file = File(p.join(directory.path, '$cacheKey.meta'));
-      await file.writeAsString(
-        jsonEncode({
-          'total': cache.totalSize,
-          'complete': cache.isComplete,
-          'contentType': cache.contentType,
-        }),
-        flush: true,
-      );
-    } catch (_) {}
+  static Future<void> _deleteIfPresent(File file) async {
+    if (await file.exists()) await file.delete();
+  }
+
+  void _scheduleTrim() {
+    if (_clearing != null) return;
+    _trimAgain = true;
+    _trimming ??= _trimCache().whenComplete(() => _trimming = null);
   }
 
   Future<void> _trimCache() async {
-    final directory = await _cacheDirectory();
-    final files = await directory
-        .list()
-        .where((entity) => entity is File && entity.path.endsWith('.cache'))
-        .cast<File>()
-        .toList();
-    final entries = <({File file, int size, DateTime modified})>[];
-    var total = 0;
-    for (final file in files) {
-      final stat = await file.stat();
-      total += stat.size;
-      entries.add((file: file, size: stat.size, modified: stat.modified));
+    try {
+      while (_trimAgain && _clearing == null) {
+        _trimAgain = false;
+        final directory = await _cacheDirectory();
+        final entries = <({File file, int size, DateTime modified})>[];
+        var total = 0;
+        await for (final file
+            in directory
+                .list()
+                .where((f) => f is File && f.path.endsWith('.cache'))
+                .cast<File>()) {
+          final stat = await file.stat();
+          if (stat.type != FileSystemEntityType.file) continue;
+          entries.add((file: file, size: stat.size, modified: stat.modified));
+          total += stat.size;
+        }
+        if (total <= _maxCacheBytes) continue;
+        entries.sort((a, b) => a.modified.compareTo(b.modified));
+        for (final entry in entries) {
+          if (total <= _maxCacheBytes) break;
+          final key = p.basenameWithoutExtension(entry.file.path);
+          if (_writers.containsKey(key)) continue;
+          final reservation = _CacheWriter();
+          _writers[key] = reservation;
+          try {
+            await _deleteIfPresent(File('${entry.file.path}.meta'));
+            await _deleteIfPresent(
+              File(p.setExtension(entry.file.path, '.meta')),
+            );
+            await _deleteIfPresent(entry.file);
+            total -= entry.size;
+          } finally {
+            _writers.remove(key);
+          }
+        }
+      }
+    } on FileSystemException catch (error) {
+      talker.debug('Media cache maintenance failed (${error.runtimeType})');
     }
-    entries.sort((a, b) => a.modified.compareTo(b.modified));
-    for (final entry in entries) {
-      if (total <= _maxCacheBytes) break;
-      try {
-        final meta = File(
-          p.join(
-            entry.file.parent.path,
-            '${p.basenameWithoutExtension(entry.file.path)}.meta',
-          ),
-        );
-        if (await meta.exists()) await meta.delete();
-      } catch (_) {}
-      try {
-        await entry.file.delete();
-      } catch (_) {}
-      total -= entry.size;
-    }
-  }
-
-  /// 缓存文件写入互斥（按 cacheKey 细粒度）：只串行化「检查连续性 +
-  /// 追加写入 + 更新 meta」，响应转发在锁外并发进行，播放器的探测/seek
-  /// 请求不会被一个大文件下载阻塞。
-  Future<T> _withFileWriteLock<T>(String key, Future<T> Function() task) {
-    final previous = _fileLocks[key] ?? Future<void>.value();
-    final result = previous.then((_) => task());
-    // 链上吞掉错误，保证后续等待者不被前一个失败拖死。
-    _fileLocks[key] = result.then<void>(
-      (_) {},
-      onError: (Object _, StackTrace _) {},
-    );
-    return result;
   }
 
   Future<int> cacheSize() async {
     final directory = await _cacheDirectory();
     var total = 0;
-    await for (final entity in directory.list()) {
-      if (entity is File && entity.path.endsWith('.cache')) {
-        total += await entity.length();
+    await for (final entry in directory.list()) {
+      if (entry is File && entry.path.endsWith('.cache')) {
+        total += max(0, (await entry.stat()).size);
       }
     }
     return total;
   }
 
-  Future<void> clearCache() async {
-    _chunkCaches.clear();
-    _fileLocks.clear();
+  Future<void> clearCache() =>
+      _clearing ??= _clear().whenComplete(() => _clearing = null);
+
+  Future<void> _clear() async {
+    _generation++;
+    await Future.wait(_writers.values.toList().map((w) => w.cancel()));
+    await _trimming;
     final directory = await _cacheDirectory();
-    if (await directory.exists()) {
-      await directory.delete(recursive: true);
-    }
+    if (await directory.exists()) await directory.delete(recursive: true);
   }
 
   Future<void> stop() async {
+    await _starting;
     final server = _server;
     _server = null;
-    _chunkCaches.clear();
-    _fileLocks.clear();
+    _signer = null;
+    _generation++;
     await server?.close(force: true);
+    await Future.wait(_writers.values.toList().map((w) => w.cancel()));
   }
 }
 
-class _ChunkCache {
-  final String? cachedFilePath;
-  int totalSize;
-  int downloadedSize;
-  String? contentType;
-  bool _isComplete;
+class _CacheWriter {
+  RandomAccessFile? handle;
+  Future<void>? _pending;
+  bool _cancelled = false;
 
-  _ChunkCache({
-    this.cachedFilePath,
-    this.totalSize = 0,
-    this.downloadedSize = 0,
-    this.contentType,
-  }) : _isComplete = false;
+  Future<void> perform(Future<void> Function() action) async {
+    if (_cancelled) return;
+    try {
+      await (_pending = action());
+    } on FileSystemException {
+      _cancelled = true;
+      await closeHandle();
+    }
+  }
 
-  bool get isComplete => _isComplete;
+  Future<void> closeHandle() async {
+    final file = handle;
+    handle = null;
+    try {
+      await file?.close();
+    } on FileSystemException {
+      _cancelled = true;
+    }
+  }
 
-  void markComplete() {
-    _isComplete = true;
-    downloadedSize = totalSize;
+  Future<void> cancel() async {
+    _cancelled = true;
+    try {
+      await _pending;
+    } on FileSystemException {
+      // Cache I/O errors already fall back to streaming.
+    }
+    await closeHandle();
   }
 }
 
-class _Range {
-  final int start;
-  final int? end;
-
-  _Range(this.start, this.end);
-}
-
-class _MetaInfo {
+class _CacheEntry {
   final int total;
   final bool complete;
-  final String? contentType;
+  final String contentType;
+  final String? validator;
+  final int expires;
+  const _CacheEntry(
+    this.total,
+    this.complete,
+    this.contentType,
+    this.validator,
+    this.expires,
+  );
 
-  _MetaInfo({required this.total, required this.complete, this.contentType});
+  static _CacheEntry? fromResponse(
+    HttpClientResponse remote,
+    int? start,
+    int? end,
+  ) {
+    if (start == null || remote.statusCode != HttpStatus.partialContent) {
+      return null;
+    }
+    final headers = remote.headers;
+    final type = headers.contentType?.mimeType ?? '';
+    if (!type.startsWith('video/') && !type.startsWith('audio/')) return null;
+    final cacheControl = (headers[HttpHeaders.cacheControlHeader] ?? [])
+        .join(',')
+        .toLowerCase();
+    if (RegExp(
+      r'(?:^|,)\s*(?:no-store|no-cache|private)(?:\s|,|=|$)',
+    ).hasMatch(cacheControl)) {
+      return null;
+    }
+    if (headers.value(HttpHeaders.contentEncodingHeader) case final encoding?
+        when encoding != 'identity') {
+      return null;
+    }
+    final match = MediaProxyService._contentRangePattern.firstMatch(
+      headers.value(HttpHeaders.contentRangeHeader) ?? '',
+    );
+    if (match == null) return null;
+    final first = int.tryParse(match[1]!);
+    final last = int.tryParse(match[2]!);
+    final total = int.tryParse(match[3]!);
+    if (first != start ||
+        last == null ||
+        total == null ||
+        total <= 0 ||
+        total > MediaProxyService._maxCacheBytes ||
+        last != min(end ?? total - 1, total - 1) ||
+        last < start ||
+        last - start + 1 != remote.contentLength) {
+      return null;
+    }
+    // Persist only representations with an explicit freshness lifetime. A
+    // strong ETag also permits joining separately fetched byte ranges.
+    final lifespan = RegExp(
+      r'(?:^|,)\s*max-age=(\d+)\s*(?=,|$)',
+    ).firstMatch(cacheControl);
+    final seconds = int.tryParse(lifespan?.group(1) ?? '');
+    final now = DateTime.now().millisecondsSinceEpoch;
+    int? expires;
+    try {
+      final date = headers.date?.millisecondsSinceEpoch ?? now;
+      final age = int.tryParse(headers.value('age') ?? '0');
+      if (age == null || age < 0) return null;
+      final originTime = min(date, now - min(age, 2147483647) * 1000);
+      if (seconds != null) {
+        expires = originTime + min(seconds, 2147483647) * 1000;
+      } else if (headers.expires case final expiry?) {
+        expires = originTime + expiry.millisecondsSinceEpoch - date;
+      }
+    } on FormatException {
+      return null;
+    } on HttpException {
+      return null;
+    }
+    if (expires == null ||
+        expires <= now ||
+        (headers['vary'] ?? [])
+            .expand((v) => v.split(','))
+            .any((v) => v.trim() == '*')) {
+      return null;
+    }
+    final tag = headers.value(HttpHeaders.etagHeader);
+    final validator = tag != null && tag.startsWith('"') && tag.endsWith('"')
+        ? tag
+        : null;
+    return _CacheEntry(
+      total,
+      false,
+      headers.contentType!.value,
+      validator,
+      expires,
+    );
+  }
 }

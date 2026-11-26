@@ -108,7 +108,9 @@ Future<FileDownloadResult> downloadFile(
   if (response.statusCode < 200 || response.statusCode >= 300) {
     return const FileDownloadResult(FileDownloadStatus.failed);
   }
-  await File(destination).writeAsBytes(response.bodyBytes, flush: true);
+  await writeDownloadAtomically(destination, (temporaryPath) async {
+    await File(temporaryPath).writeAsBytes(response.bodyBytes, flush: true);
+  });
   return FileDownloadResult(
     FileDownloadStatus.succeeded,
     savedPath: destination,
