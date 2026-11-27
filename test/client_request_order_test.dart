@@ -69,42 +69,31 @@ void main() {
 
   setUp(pending.clear);
 
-  testWidgets('forum search ignores results from an earlier query', (
+  testWidgets('forum search discards obsolete queries and clears pending results', (
     tester,
   ) async {
     await tester.pumpWidget(_app(const ForumSearchScreen()));
     final input = find.byType(TextField);
-    await tester.enterText(input, 'first');
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.enterText(input, 'second');
-    await tester.pump(const Duration(milliseconds: 400));
-
+    for (final query in ['first', 'second']) {
+      await tester.enterText(input, query);
+      await tester.pump(const Duration(milliseconds: 400));
+    }
     pending['second']!.complete(_forumResult('Second result'));
     await tester.pump();
-    expect(find.text('Second result'), findsOneWidget);
-
     pending['first']!.complete(_forumResult('First result'));
     await tester.pump();
     expect(find.text('Second result'), findsOneWidget);
     expect(find.text('First result'), findsNothing);
-  });
 
-  testWidgets('forum search clears its spinner and ignores a late result', (
-    tester,
-  ) async {
-    await tester.pumpWidget(_app(const ForumSearchScreen()));
-    final input = find.byType(TextField);
-    await tester.enterText(input, 'first');
+    await tester.enterText(input, 'third');
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
-
     await tester.enterText(input, '');
     await tester.pump();
     expect(find.byType(LinearProgressIndicator), findsNothing);
-
-    pending['first']!.complete(_forumResult('First result'));
+    pending['third']!.complete(_forumResult('Third result'));
     await tester.pump();
-    expect(find.text('First result'), findsNothing);
+    expect(find.text('Third result'), findsNothing);
   });
 
   testWidgets('group search ignores results from an earlier submission', (

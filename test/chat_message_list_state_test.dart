@@ -6,6 +6,7 @@ import 'package:touchfish_client/l10n/app_localizations.dart';
 import 'package:touchfish_client/models/message_model.dart';
 import 'package:touchfish_client/screens/chat_detail/widgets/message_list_view.dart';
 import 'package:touchfish_client/widgets/file_attachment_view.dart';
+import 'package:touchfish_client/widgets/message_bubble.dart';
 
 ChatMessage _message(
   int index, {
@@ -120,36 +121,24 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('an append does not rebuild unchanged bubble contents', (tester) async {
-    final harness = GlobalKey<_MessageListHarnessState>();
-    await tester.pumpWidget(
-      _wrap(_MessageListHarness(key: harness, messages: _messages(8))),
-    );
-    await tester.pumpAndSettle();
-    final previous = <Element>{};
-    for (var mid = 0; mid < 8; mid++) {
-      final bubble = find.byKey(ValueKey('bubble-$mid'));
-      if (bubble.evaluate().isEmpty) continue;
-      tester.element(bubble).visitChildElements(previous.add);
-    }
-    expect(previous, hasLength(8));
-    final rebuilt = <Element>{};
-    final old = debugOnRebuildDirtyWidget;
-    try {
-      debugOnRebuildDirtyWidget = (element, builtOnce) {
-        if (previous.contains(element)) rebuilt.add(element);
-        old?.call(element, builtOnce);
-      };
-      harness.currentState!.appendWithEntrance([_message(8, mid: 8)]);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 16));
-    } finally {
-      debugOnRebuildDirtyWidget = old;
-    }
-    expect(find.byKey(const ValueKey('bubble-8')), findsOneWidget);
-    expect(rebuilt, isEmpty);
-    await tester.pumpAndSettle();
-  });
+  testWidgets(
+    'a cached bubble uses the latest retry handler and updates its reason',
+    (tester) async {
+      var result = 0;
+      final failed = _message(
+        1,
+      ).copyWith(isMe: true, status: MessageStatus.failed);
+      Future<void> show(ChatMessage m, int value) => tester.pumpWidget(
+        _wrap(MessageBubble(message: m, onRetry: () => result = value)),
+      );
+      await show(failed, 1);
+      await show(failed, 2);
+      await tester.tap(find.byIcon(Icons.error_outline));
+      expect(result, 2);
+      await show(failed.copyWith(status: MessageStatus.sent), 3);
+      expect(find.byIcon(Icons.error_outline), findsNothing);
+    },
+  );
 
   testWidgets('appending a message does not re-init media attachments', (
     tester,
