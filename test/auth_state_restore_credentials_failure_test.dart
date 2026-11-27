@@ -33,7 +33,7 @@ void main() {
 
     final restored = await AuthState.instance.restoreSavedSession();
 
-    // 不能只返回 false 停在 idle：UI 需要失败状态才能弹出带「重试」的对话框
+    // 不能只返回 false 停在 idle
     expect(restored, isFalse);
     expect(
       AuthState.instance.savedSessionRestoreStatus,
@@ -43,5 +43,27 @@ void main() {
       AuthState.instance.restoreFailureReason,
       RestoreFailureReason.credentials,
     );
+  });
+
+  test('markSavedSessionRestoreSkipped correctly updates status and stops awaiting', () async {
+    SharedPreferences.setMockInitialValues({
+      'auth_uid': 7,
+      'auth_username': 'alice',
+      'auth_token': 'token-value',
+    });
+    await AuthState.instance.init();
+
+    expect(AuthState.instance.hasStoredCredentials, isTrue);
+    expect(AuthState.instance.isLoggedIn, isFalse);
+    // 首帧
+    expect(AuthState.instance.isAwaitingSavedSession, isTrue);
+
+    AuthState.instance.markSavedSessionRestoreSkipped();
+
+    expect(
+      AuthState.instance.savedSessionRestoreStatus,
+      SavedSessionRestoreStatus.skipped,
+    );
+    expect(AuthState.instance.isAwaitingSavedSession, isFalse);
   });
 }

@@ -39,9 +39,17 @@ class _AccountScreenState extends State<AccountScreen> {
     super.initState();
     _notificationService.addListener(_onNotificationsChanged);
     TicketInboxService.instance.addListener(_onTicketInboxChanged);
+    AuthState.instance.addListener(_onAuthChanged);
     _loadUser();
     _silentRefresh();
     _refreshTicketUnread();
+  }
+
+  void _onAuthChanged() {
+    if (!mounted) return;
+    final user = AuthState.instance.currentUser;
+    if (identical(user, _currentUser)) return;
+    setState(() => _currentUser = user);
   }
 
   void _onTicketInboxChanged() {
@@ -69,6 +77,7 @@ class _AccountScreenState extends State<AccountScreen> {
   void dispose() {
     _notificationService.removeListener(_onNotificationsChanged);
     TicketInboxService.instance.removeListener(_onTicketInboxChanged);
+    AuthState.instance.removeListener(_onAuthChanged);
     super.dispose();
   }
 

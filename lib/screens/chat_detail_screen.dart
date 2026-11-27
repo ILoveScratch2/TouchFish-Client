@@ -87,6 +87,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   final List<MentionUser> _mentionUsers = [];
   bool _isInitialized = false;
   bool _wsConnected = false;
+  bool _realMessagingStarted = false;
+  bool _authListenerAttached = false;
   bool _avatarLoadFailed = false;
   bool _isLoadingOlder = false;
   bool _isLoadingMessages = false;
@@ -342,6 +344,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     unawaited(_restoreDraft(_contactUid));
     ChatDataService.instance.clearUnread(_contactUid);
     _loadChatRoom();
+    _realMessagingStarted = false;
     _startRealMessaging();
     _initMessageSync();
     _weakNetworkTimer?.cancel();
@@ -363,7 +366,6 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     unawaited(MessageSyncService.instance.markRoomFullySynced(roomId));
     unawaited(_syncRoomIfNeeded(roomId));
   }
-
   Future<void> _syncRoomIfNeeded(String roomId) async {
     final syncService = MessageSyncService.instance;
     if (syncService.lastSeqOf(roomId) != null) {
@@ -417,6 +419,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       MessageSyncService.instance.activeRoomId = null;
     }
     _detachRealtimeListeners();
+    if (_authListenerAttached) {
+      AuthState.instance.removeListener(_onAuthSessionChanged);
+      _authListenerAttached = false;
+    }
     _ackErrorSub?.cancel();
     _essenceSub?.cancel();
     _draftTimer?.cancel();
@@ -689,7 +695,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   }
 
   void _startRealMessaging() {
-    if (!AuthState.instance.isLoggedIn) return;
+    _attachAuthListener();
+    if (!AuthState.instance.isLoggedIn) {
+      return;
+    }
+    _realMessagingStarted = true;
 
     final ws = ChatWsService.instance;
     _wsConnected = ws.isAuthenticated;
@@ -702,6 +712,22 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _loadAndShowMessages();
+    });
+  }
+
+  void _attachAuthListener() {
+    if (_authListenerAttached) return;
+    AuthState.instance.addListener(_onAuthSessionChanged);
+    _authListenerAttached = true;
+  }
+
+  void _onAuthSessionChanged() {
+    if (!mounted || !_isInitialized) return;
+    if (_realMessagingStarted) return;
+    if (!AuthState.instance.isLoggedIn) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _realMessagingStarted) return;
+      _initRoom();
     });
   }
 
