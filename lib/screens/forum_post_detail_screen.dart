@@ -889,7 +889,6 @@ class _ForumPostDetailScreenState extends State<ForumPostDetailScreen> {
       },
     );
     if (!mounted || result != true || draftId != _commentDraftId) return;
-    // The expanded editor owns persistence until its background send completes.
     _draftTimer?.cancel();
     _lastCommentText = '';
     _commentController.clear();

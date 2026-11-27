@@ -125,6 +125,8 @@ String? restrictionNotice(AppLocalizations l10n, String? error) {
     case 'account_muted':
       return l10n.ticketMuted;
     case 'account_banned':
+    // 只读封禁
+    case 'account_readonly':
       return l10n.ticketBanned;
     case 'pending_activation':
       return l10n.ticketPendingActivation;

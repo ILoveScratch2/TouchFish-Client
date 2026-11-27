@@ -24,7 +24,7 @@ Map<String, dynamic> _mergeFilePayload(
 }
 
 class MessageMedia {
-  final String path; // file path, URL, or file hash
+  final String path; // file path | URL | file hash
   final String? fileName;
   final int? fileSize;
   final String? mimeType;
@@ -39,7 +39,7 @@ class MessageMedia {
 
   final bool hasThumb;
 
-  /// 语音/音频时长（毫秒）。仅音频消息有意义。
+  /// 语音/音频时长
   final int? durationMs;
 
   const MessageMedia({
@@ -249,7 +249,7 @@ class MergedForwardEntry {
   };
 }
 
-/// 合并转发消息的冻结快照（对应服务端 content_type='redirect' 的 content JSON）。
+/// 合并转发消息
 class MergedForwardPreview {
   final int version;
   final String kind;
@@ -309,7 +309,6 @@ class MergedForwardPreview {
     'messages': messages.map((m) => m.toJson()).toList(),
   };
 
-  /// 从服务端消息的 content（JSON 字符串）解析合并转发快照；失败返回 null。
   static MergedForwardPreview? parse(String? content) {
     if (content == null || content.isEmpty) return null;
     try {
@@ -351,12 +350,11 @@ class ChatMessage {
   final int? deletedBy;
   final int? roomSeq;
 
-  /// 事件行（content_type='event'）的信封解析结果；仅同步流中出现，
-  /// 不进入消息时间线，也不会被本地存储。
+  /// 事件
   final String? eventKind;
   final int? eventTargetMid;
 
-  /// 本地合成的"对方上传中"占位消息（显然是假的消息所以我们不需要 存）
+  /// 本地上传中占位消息
   final bool isPlaceholder;
   final double? uploadProgress;
 
@@ -393,16 +391,7 @@ class ChatMessage {
     this.uploadProgress,
   });
 
-  /// 消息列表排序比较器（服务端序号优先）。
-  ///
-  /// - 双方都有 [roomSeq]：按房间内服务端序号排序（与服务器时钟无关，免疫
-  ///   设备时钟偏差）；同序号时退回 [dedupKey] 保证稳定。
-  /// - 只有一方有 [roomSeq]：无序号的是本地未确认（pending）消息，排最后；
-  ///   确认消息按服务端序号互相排序。
-  /// - 都没有 [roomSeq]：退回本地时间戳比较，平局再按 [dedupKey]。
-  ///
-  /// 背景：自己发送的消息在 ack/回声回填前只有设备时钟时间戳，而收到的消息
-  /// 是服务器时钟时间戳，两种时钟混排会在时钟偏差时错序（重启拉取后消失）。
+  /// 消息列表排序比较器
   static int compareByOrder(
     ChatMessage a,
     ChatMessage b,
@@ -413,20 +402,18 @@ class ChatMessage {
     if (aSeq != null && bSeq != null && aSeq != bSeq) {
       return aSeq.compareTo(bSeq);
     }
+    final byTime = a.timestamp.compareTo(b.timestamp);
+    if (byTime != 0) return byTime;
     if (aSeq != null && bSeq == null) return -1;
     if (aSeq == null && bSeq != null) return 1;
-    final byTime = a.timestamp.compareTo(b.timestamp);
-    return byTime != 0 ? byTime : dedupKey(a).compareTo(dedupKey(b));
+    return dedupKey(a).compareTo(dedupKey(b));
   }
 
-  /// The server scopes each client-assigned message ID to its sender. Self
-  /// stays stable even before an optimistic message has a sender UID or mid.
   String get localIdentityKey {
     final client = clientMid;
     if (client == null || client.isEmpty) return 'id:$id';
     if (isMe) return 'sender:self:$client';
     if (senderUid != null) return 'sender:$senderUid:$client';
-    // Retain distinct confirmed records from legacy caches lacking a sender.
     if (mid != null) return 'mid:$mid';
     return 'unknown:${id.length}:$id:$client';
   }
@@ -546,12 +533,10 @@ class ChatMessage {
     if (a == null || b == null) return false;
 
     // 如果 bytes 都存在且相同，那么 fileHash 和 path 的变化不影响渲染
-    // （pending→uploaded 时保持渲染一致性，避免气泡重建）
     final aBytes = a.bytes;
     final bBytes = b.bytes;
     if (aBytes != null && bBytes != null) {
       if (!identical(aBytes, bBytes) && !_sameIntList(aBytes, bBytes)) return false;
-      // bytes 相同时，只比较渲染相关字段（fileName/fileSize/mimeType/aspectRatio）
       // 媒体元数据（宽高/blurhash/缩略图）变化仍需 rewrite all!
       return a.fileName == b.fileName &&
              a.fileSize == b.fileSize &&
@@ -564,7 +549,7 @@ class ChatMessage {
              a.hasThumb == b.hasThumb;
     }
 
-    // bytes 不同或不存在时，比较所有字段
+    // bytes 不同或不存在时
     if (a.path != b.path ||
         a.fileName != b.fileName ||
         a.fileSize != b.fileSize ||
@@ -651,7 +636,8 @@ class ChatMessage {
 
   /// 解析服务端 MESSAGE.NEW 推送 / /message/sync 返回的单条消息。
   ///
-  /// 载荷 == 旧的 notification.info：event/title/content/sender/mid/
+  /// 载荷 == 旧的 notification.info
+  /// event/title/content/sender/mid/
   /// client_mid/room_id/group_id/room_seq/quote_preview/forwarded/
   /// forward_preview/file/mentioned_uids/mentions_me/should_alert。
   factory ChatMessage.fromServerMessage(
@@ -939,8 +925,7 @@ class ChatMessage {
     );
   }
 
-  /// 解析事件行信封（content_type='event' 的 content）。
-  /// 格式：{"v": 1, "kind": "message.recalled", "target_mid": 123}
+  /// 解析事件
   static ({String kind, int? targetMid})? parseEventEnvelope(String content) {
     try {
       final decoded = jsonDecode(content);

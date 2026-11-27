@@ -664,7 +664,10 @@ class _TouchFishAppState extends State<TouchFishApp>
 
     // RSA 密钥变更时先让用户决策，避免用旧密钥登录失败后无法提示。
     final canRestore = await _verifyRsaKeyForSessionRestore(navigatorContext);
-    if (!canRestore) return;
+    if (!canRestore) {
+      AuthState.instance.markSavedSessionRestoreSkipped();
+      return;
+    }
 
     final restored = await AuthState.instance.restoreSavedSession();
     if (!restored || !mounted || !navigatorContext.mounted) return;
@@ -848,8 +851,17 @@ class _TouchFishAppState extends State<TouchFishApp>
         ),
         if (canRetry)
           FilledButton(
-            onPressed: () {
-              unawaited(AuthState.instance.restoreSavedSession());
+            onPressed: () async {
+              final restored = await AuthState.instance.restoreSavedSession();
+              if (!restored || !mounted) return;
+              final path = _router
+                  .routerDelegate
+                  .currentConfiguration
+                  .uri
+                  .path;
+              if (AppRoutes.isGuestOnlyPath(path)) {
+                _router.go(AppRoutes.main);
+              }
             },
             child: Text(l10n.retry),
           ),

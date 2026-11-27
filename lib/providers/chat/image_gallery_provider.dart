@@ -79,8 +79,6 @@ class ImageGallery extends _$ImageGallery {
     return next;
   }
 
-  // Index, message ID and media are everything the lightbox consumes. Message
-  // media is replaced when a download, thumbnail or attachment changes.
   bool _matchesGallery(ImageGalleryState cached, List<ChatMessage> messages) {
     var index = 0;
     for (final message in messages) {

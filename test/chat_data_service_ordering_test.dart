@@ -69,7 +69,11 @@ void main() {
     chatData.deliverIncomingMessage('U1', incoming(3));
     chatData.deliverIncomingMessage('U1', incoming(5));
     chatData.deliverIncomingMessage('U1', incoming(-1, clientMid: 'c1'));
-    expect(chatData.getMessages('U1').last.clientMid, 'c1');
+    // 待确认消息
+    expect(
+      chatData.getMessages('U1').where((m) => m.clientMid == 'c1').length,
+      1,
+    );
 
     chatData.deliverIncomingMessage('U1', incoming(4, clientMid: 'c1'));
 
@@ -77,6 +81,31 @@ void main() {
     expect(messages.length, 3);
     expect(messages.map((m) => m.roomSeq).toList(), [3, 4, 5]);
     expect(messages[1].mid, 4);
+    expect(messages[1].clientMid, 'c1');
+  });
+
+  test('pending message keeps its timeline slot instead of sinking to bottom', () {
+    final chatData = ChatDataService.instance;
+    final base = DateTime.utc(2026, 1, 1, 12);
+
+    ChatMessage at(int seq, int seconds, {String? clientMid}) => ChatMessage(
+      id: clientMid ?? '$seq',
+      mid: clientMid == null ? seq : null,
+      clientMid: clientMid,
+      roomSeq: clientMid == null ? seq : null,
+      timestamp: base.add(Duration(seconds: seconds)),
+      isMe: clientMid != null,
+      senderUid: clientMid != null ? 100 : 1,
+      text: clientMid ?? 'seq$seq',
+      status: clientMid == null ? MessageStatus.sent : MessageStatus.failed,
+    );
+
+    chatData.deliverIncomingMessage('U1', at(1, 10));
+    chatData.deliverIncomingMessage('U1', at(2, 20));
+    chatData.deliverIncomingMessage('U1', at(-1, 15, clientMid: 'fail'));
+
+    final ordered = chatData.getMessages('U1').map((m) => m.text).toList();
+    expect(ordered, ['seq1', 'fail', 'seq2']);
   });
 
   test('a message without clientMid is not folded into one that has it', () {
@@ -213,19 +242,22 @@ void main() {
   });
 
   group('cache mutability', () {
-    test('setMessages with a fixed-length list keeps realtime inserts working wyf buzhun P', () {
-      final chatData = ChatDataService.instance;
-      chatData.setMessages(
-        'U1',
-        List<ChatMessage>.of([incoming(1), incoming(2)], growable: false),
-      );
+    test(
+      'setMessages with a fixed-length list keeps realtime inserts working wyf buzhun P',
+      () {
+        final chatData = ChatDataService.instance;
+        chatData.setMessages(
+          'U1',
+          List<ChatMessage>.of([incoming(1), incoming(2)], growable: false),
+        );
 
-      expect(
-        () => chatData.deliverIncomingMessage('U1', incoming(3)),
-        returnsNormally,
-      );
-      expect(seqsOf('U1'), [1, 2, 3]);
-    });
+        expect(
+          () => chatData.deliverIncomingMessage('U1', incoming(3)),
+          returnsNormally,
+        );
+        expect(seqsOf('U1'), [1, 2, 3]);
+      },
+    );
 
     test('older-page merge then realtime insert does not throw', () {
       final chatData = ChatDataService.instance;
@@ -243,6 +275,35 @@ void main() {
         returnsNormally,
       );
       expect(seqsOf('U1'), [1, 2, 3, 4, 5]);
+    });
+
+    test('addSentMessage survives an immutable (const) cache list', () {
+      final chatData = ChatDataService.instance;
+      chatData.debugSetRawCache('U1', const <ChatMessage>[]);
+
+      ChatMessage pending(String clientMid, int seq) => ChatMessage(
+        id: clientMid,
+        clientMid: clientMid,
+        senderUid: 100,
+        timestamp: DateTime.utc(2026, 1, 2).add(Duration(seconds: seq)),
+        isMe: true,
+        text: clientMid,
+        status: MessageStatus.pending,
+        shouldAlert: false,
+      );
+
+      expect(
+        () => chatData.addSentMessage('U1', pending('c1', 1)),
+        returnsNormally,
+      );
+      expect(
+        () => chatData.addSentMessage('U1', pending('c2', 2)),
+        returnsNormally,
+      );
+      expect(
+        chatData.getMessages('U1').map((m) => m.clientMid).toList(),
+        ['c1', 'c2'],
+      );
     });
   });
 }

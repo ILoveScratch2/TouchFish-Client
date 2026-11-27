@@ -619,6 +619,13 @@ class _AttachmentPreviewState extends State<_AttachmentPreview> {
       }
     });
   }
+  double _autoOriginalImageLimitMb() {
+    final raw = SettingsService.instance.getValue<String>(
+      'autoOriginalImageMaxMb',
+      '1',
+    );
+    return double.tryParse(raw) ?? 1;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -670,10 +677,17 @@ class _AttachmentPreviewState extends State<_AttachmentPreview> {
           ? TfApiClient.thumbnailUrlFromFileUrl(url)
           : null;
       // 缩略图预览：气泡最终态用服务端缩略图，原图只在点开后加载（省流量）
+      final autoOriginalLimitMb = _autoOriginalImageLimitMb();
+      final fileSize = attachment.fileSize ?? 0;
+      final smallEnoughForOriginal =
+          autoOriginalLimitMb > 0 &&
+          fileSize > 0 &&
+          fileSize <= autoOriginalLimitMb * 1024 * 1024;
       final preferThumb = isNetworkDisplay &&
           thumbUrl != null &&
           !_thumbUnavailable &&
           !_renderedOriginal &&
+          !smallEnoughForOriginal &&
           SettingsService.instance.getValue<bool>('thumbnailPreview', true);
       if (isNetworkDisplay && !preferThumb) _renderedOriginal = true;
       // 磁盘缓存命中时直接使用本地文件（离线可看）

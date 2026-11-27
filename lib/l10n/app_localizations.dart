@@ -4006,6 +4006,12 @@ abstract class AppLocalizations {
   /// **'Back to bottom'**
   String get chatBackToBottom;
 
+  /// No description provided for @chatJumpMessageTooFar.
+  ///
+  /// In en, this message translates to:
+  /// **'That message is too far back to locate'**
+  String get chatJumpMessageTooFar;
+
   /// No description provided for @chatInputCollapse.
   ///
   /// In en, this message translates to:
@@ -4545,6 +4551,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Original message unavailable'**
   String get messageQuoteMissing;
+
+  /// No description provided for @messageQuoteMergedForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Merged forward'**
+  String get messageQuoteMergedForward;
 
   /// No description provided for @messageReplyingTo.
   ///
@@ -7132,6 +7144,12 @@ abstract class AppLocalizations {
   /// **'Failed to change role'**
   String get adminAccountRoleChangeFailed;
 
+  /// No description provided for @adminAccountUnbanFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is banned. Unban it before changing the role'**
+  String get adminAccountUnbanFirst;
+
   /// No description provided for @adminAccountRoleChangeSuccess.
   ///
   /// In en, this message translates to:
@@ -7605,6 +7623,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You have been banned and cannot send messages'**
   String get chatSendFailedBanned;
+
+  /// No description provided for @chatSendFailedMuted.
+  ///
+  /// In en, this message translates to:
+  /// **'You have been muted and cannot send messages'**
+  String get chatSendFailedMuted;
+
+  /// No description provided for @chatSendFailedReadonly.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is read-only banned and cannot send messages'**
+  String get chatSendFailedReadonly;
 
   /// No description provided for @chatSendFailedRateLimited.
   ///
@@ -8194,6 +8224,12 @@ abstract class AppLocalizations {
   /// **'Mark all read'**
   String get notificationMarkAllRead;
 
+  /// No description provided for @notificationMarkAllReadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to mark as read, please retry'**
+  String get notificationMarkAllReadFailed;
+
   /// No description provided for @notificationDelete.
   ///
   /// In en, this message translates to:
@@ -8677,8 +8713,14 @@ abstract class AppLocalizations {
   /// No description provided for @punishmentKindBan.
   ///
   /// In en, this message translates to:
-  /// **'Ban'**
+  /// **'Ban (read-only)'**
   String get punishmentKindBan;
+
+  /// No description provided for @punishmentKindBanFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Full ban'**
+  String get punishmentKindBanFull;
 
   /// No description provided for @punishmentReasonLabel.
   ///
@@ -9309,6 +9351,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Load server-generated thumbnails in chat bubbles; the original image loads only when opened (saves data)'**
   String get settingsThumbnailPreviewDesc;
+
+  /// No description provided for @settingsAutoOriginalImageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Load small images in full quality'**
+  String get settingsAutoOriginalImageTitle;
+
+  /// No description provided for @settingsAutoOriginalImageDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Images up to the selected size skip the thumbnail and load the original directly'**
+  String get settingsAutoOriginalImageDesc;
+
+  /// No description provided for @settingsAutoOriginalOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get settingsAutoOriginalOff;
+
+  /// No description provided for @settingsAutoOriginalMb1.
+  ///
+  /// In en, this message translates to:
+  /// **'1 MB'**
+  String get settingsAutoOriginalMb1;
+
+  /// No description provided for @settingsAutoOriginalMb2.
+  ///
+  /// In en, this message translates to:
+  /// **'2 MB'**
+  String get settingsAutoOriginalMb2;
+
+  /// No description provided for @settingsAutoOriginalMb5.
+  ///
+  /// In en, this message translates to:
+  /// **'5 MB'**
+  String get settingsAutoOriginalMb5;
+
+  /// No description provided for @settingsAutoOriginalMb10.
+  ///
+  /// In en, this message translates to:
+  /// **'10 MB'**
+  String get settingsAutoOriginalMb10;
 
   /// No description provided for @settingsImageCompressionTitle.
   ///

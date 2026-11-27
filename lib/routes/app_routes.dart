@@ -49,6 +49,7 @@ import '../models/message_model.dart';
 import '../services/auth_state.dart';
 import '../services/feature_flags.dart';
 import '../widgets/lock_gate.dart';
+import '../widgets/session_restore_gate.dart';
 import '../utils/talker.dart';
 import '../utils/wide_screen_helper.dart';
 
@@ -56,6 +57,10 @@ class AppRoutes {
   static const String welcome = '/welcome';
   static const String login = '/login';
   static const String main = '/';
+
+  /// 已保存会话恢复期间
+  static const String restoringSession = '/restoring';
+
   static const String chat = '/chat';
   static const String chatDetail = '/chat/:roomId';
   static const String announcement = '/announcement';
@@ -289,6 +294,31 @@ class AppRoutes {
     return login;
   }
 
+  /// 会话恢复
+  @visibleForTesting
+  static ({String? redirect, String? pendingLocation}) resolveRestoreGate({
+    required String path,
+    required String location,
+    required bool isAwaitingRestore,
+    required bool isLoggedIn,
+    String? pendingLocation,
+  }) {
+    if (path == restoringSession) {
+      if (isAwaitingRestore) {
+        return (redirect: null, pendingLocation: pendingLocation);
+      }
+      return (
+        redirect: pendingLocation ?? (isLoggedIn ? main : login),
+        pendingLocation: null,
+      );
+    }
+    if (isAwaitingRestore && !_publicPaths.contains(path)) {
+      return (redirect: restoringSession, pendingLocation: location);
+    }
+    return (redirect: null, pendingLocation: pendingLocation);
+  }
+  static bool isGuestOnlyPath(String path) => path == login || path == welcome;
+
   @visibleForTesting
   static bool isValidRegisterStep2Extra(Object? extra) {
     return extra is Map<String, dynamic> &&
@@ -356,6 +386,7 @@ class AppRoutes {
     required bool isFirstLaunch,
     required bool hasSavedSession,
   }) {
+    String? pendingRestoreLocation;
     final router = GoRouter(
       initialLocation: isFirstLaunch
           ? welcome
@@ -371,10 +402,19 @@ class AppRoutes {
         if (path.startsWith('$chat/U') && !flags.privateChat) return main;
         if (path.startsWith('$chat/G') && !flags.groupChat) return main;
         final auth = AuthState.instance;
+        final gate = resolveRestoreGate(
+          path: path,
+          location: state.uri.toString(),
+          isAwaitingRestore: auth.isAwaitingSavedSession,
+          isLoggedIn: auth.isLoggedIn,
+          pendingLocation: pendingRestoreLocation,
+        );
+        pendingRestoreLocation = gate.pendingLocation;
+        if (gate.redirect != null) return gate.redirect;
         final restoringSavedSession =
             auth.hasStoredCredentials && !auth.isLoggedIn;
         return authRedirect(
-          path: state.uri.path,
+          path: path,
           isLoggedIn: auth.isLoggedIn,
           isRestoringSavedSession: restoringSavedSession,
         );
@@ -392,6 +432,10 @@ class AppRoutes {
             GoRoute(
               path: login,
               builder: (context, state) => const LoginScreen(),
+            ),
+            GoRoute(
+              path: restoringSession,
+              builder: (context, state) => const SessionRestoreGateScreen(),
             ),
             GoRoute(
               path: permissionOnboarding,

@@ -154,16 +154,32 @@ void main() {
       expect(await get('bytes=3-', status: 206), [10, 11, 12]);
       expect(await get(null), [7, 8, 9, 10, 11, 12]);
       expect(requests, 3);
-      for (final directive in [
-        'private, max-age=60',
-        'no-store',
-        'max-age=0',
-      ]) {
-        policy = directive;
-        await get('bytes=0-', status: 206);
-        await get(null);
-      }
-      expect(requests, 9);
+
+      policy = 'private, max-age=60';
+      await proxy.clearCache();
+      expect(await get('bytes=0-2', status: 206), [7, 8, 9]);
+      await waitForMetadata(false);
+      expect(await get('bytes=3-', status: 206), [10, 11, 12]);
+      await waitForMetadata(true);
+      var before = requests;
+      expect(await get(null), [7, 8, 9, 10, 11, 12]);
+      expect(requests, before);
+
+      policy = 'no-store';
+      await proxy.clearCache();
+      before = requests;
+      expect(await get('bytes=0-2', status: 206), [7, 8, 9]);
+      expect(await get('bytes=3-', status: 206), [10, 11, 12]);
+      expect(await get(null), [7, 8, 9, 10, 11, 12]);
+      expect(requests, before + 3);
+
+      policy = 'max-age=0';
+      await proxy.clearCache();
+      before = requests;
+      expect(await get('bytes=0-2', status: 206), [7, 8, 9]);
+      expect(await get('bytes=3-', status: 206), [10, 11, 12]);
+      expect(await get(null), [7, 8, 9, 10, 11, 12]);
+      expect(requests, before + 3);
     },
   );
 }

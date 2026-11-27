@@ -181,7 +181,12 @@ class SupportTicket {
 enum PunishmentKind {
   warn('warn'),
   mute('mute'),
-  ban('ban');
+
+  /// 只读封禁
+  ban('ban'),
+
+  /// 完全封禁
+  banFull('ban_full');
 
   final String wire;
   const PunishmentKind(this.wire);

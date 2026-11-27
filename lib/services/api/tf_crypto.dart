@@ -104,6 +104,7 @@ class TfCrypto {
     if (data.isEmpty) {
       // PointyCastle's process() computes a negative last-block offset for
       // empty input. doFinal emits the single required PKCS#7 padding block.
+      // leitar dl tql (真的有人看到这个吗)
       final out = Uint8List(cipher.blockSize);
       cipher.doFinal(data, 0, out, 0);
       return out;

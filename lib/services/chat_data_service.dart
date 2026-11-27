@@ -161,8 +161,6 @@ class ChatDataService extends ChangeNotifier {
 
   static const int _groupReadCountCap = 500;
 
-  // Reset clears regular room subscriptions. Live providers reattach after a
-  // scope change, even when the next account opens the same room ID.
   final messageCacheResetRevision = ValueNotifier<int>(0);
 
   final ValueNotifier<int> readReceiptRevision = ValueNotifier<int>(0);
@@ -678,7 +676,6 @@ class ChatDataService extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     if (_generation != generation || AuthState.instance.uid != uid) return;
-    // Another room may have loaded (and already updated) the same scope.
     if (_roomPreferencesUid == uid && _roomPreferencesScope == scope) return;
     final raw = prefs.getString('chat_room_prefs_$scope');
     final loaded = <String, ChatRoomPreference>{};
@@ -1604,7 +1601,12 @@ class ChatDataService extends ChangeNotifier {
       return;
     }
 
-    if (event.type != 'NOTIFICATION.NEW' || event.notification == null) return;
+    // 瞬时通知（NOTIFICATION.EPHEMERAL）
+    if ((event.type != 'NOTIFICATION.NEW' &&
+            event.type != 'NOTIFICATION.EPHEMERAL') ||
+        event.notification == null) {
+      return;
+    }
 
     final info = NotificationInfo.fromServerJson(event.notification!);
     final eventType = info.event;
@@ -2150,6 +2152,12 @@ class ChatDataService extends ChangeNotifier {
 
   bool _sameLocalMessage(ChatMessage a, ChatMessage b) => a.matchesMessage(b);
 
+  @visibleForTesting
+  void debugSetRawCache(String roomId, List<ChatMessage> messages) {
+    _messageCache[roomId] = RoomMessageHistory(messages);
+    _touchCacheRoom(roomId);
+  }
+
   void addSentMessage(String roomId, ChatMessage msg) {
     final clientMid = msg.clientMid;
     if (clientMid != null && clientMid.isNotEmpty) {
@@ -2554,7 +2562,6 @@ class ChatDataService extends ChangeNotifier {
     const empty = MessageHistoryPage(messages: [], hasMore: false);
     final token = Object();
     _activeHistoryReads[roomId] = token;
-    // Use the same owned empty prefix for a room's first fetch and first push.
     final before = (_messageCache[roomId] ??= RoomMessageHistory()).snapshot;
     _touchCacheRoom(roomId);
     _evictCacheIfNeeded();
@@ -2563,7 +2570,7 @@ class ChatDataService extends ChangeNotifier {
       final live = getMessageSnapshot(roomId);
       return MessageHistoryPage(
         messages: _tail(live, _messagePageSize),
-        hasMore: live.isNotEmpty,
+        hasMore: false,
       );
     }
 
@@ -2577,26 +2584,28 @@ class ChatDataService extends ChangeNotifier {
         return currentPage();
       }
       final current = _messageCache[roomId]?.snapshot;
-      // A correction, deletion, recall or explicit replacement is authoritative.
-      // Discard both stale reads; the existing pagination path can fetch history.
-      if (current == null || !current.extendsSnapshot(before)) {
+      if (current == null) {
         return currentPage();
       }
 
       final fromServer = _fillSenderInfo(remote);
       var merged = _mergeMessages(fromServer, local, keepBytesFrom: current);
       var persist = fromServer;
-      if (current.length > before.length) {
-        final tail = current.sublist(before.length);
+      final beforeIds = {
+        for (final message in before) identityHashCode(message),
+      };
+      final pushed = [
+        for (final message in current)
+          if (!beforeIds.contains(identityHashCode(message))) message,
+      ];
+      if (pushed.isNotEmpty) {
         final page = RoomMessageHistory(merged);
-        for (final message in tail) {
+        for (final message in pushed) {
           final index = page.indexOfMessage(message);
           if (index == null) {
             page.add(message);
           } else if (!page[index].isDeleted &&
               !(message.mid == null && page[index].mid != null)) {
-            // Prefer a pushed/locally edited copy unless the page carries a
-            // server tombstone or the acknowledgement of a pending message.
             page[index] = message;
           }
         }
@@ -2679,7 +2688,13 @@ class ChatDataService extends ChangeNotifier {
     }
 
     final olderFilled = _fillSenderInfo(olderMsgs);
-    final currentCache = _messageCache[roomId] ?? const <ChatMessage>[];
+    final currentCache = _messageCache[roomId];
+    if (currentCache == null) {
+      talker.warning(
+        'ChatDataService: room $roomId cache evicted during loadOlder, skip',
+      );
+      return const MessageHistoryPage(messages: [], hasMore: false);
+    }
     final merged = _attachOlderMessages(
       currentCache,
       olderFilled,

@@ -51,8 +51,6 @@ class LocalMessageStore {
 
   final _roomWrites = <String, Future<void>>{};
 
-  // localStorage holds one JSON array per room. Serialize read/modify/write
-  // even when multiple WS callbacks persist independently in the same turn.
   Future<void> _modifyRoom(
     String roomId,
     Future<void> Function(SharedPreferences prefs, String scope) operation,
@@ -68,6 +66,15 @@ class LocalMessageStore {
     } finally {
       done.complete();
       if (identical(_roomWrites[key], done.future)) _roomWrites.remove(key);
+    }
+  }
+
+  Future<void> _awaitPendingWrites(String scope, String roomId) async {
+    final key = _key(scope, roomId);
+    while (true) {
+      final pending = _roomWrites[key];
+      if (pending == null) return;
+      await pending;
     }
   }
 
@@ -199,6 +206,7 @@ class LocalMessageStore {
     ChatMessage? before,
   }) async {
     final scope = _requireScope();
+    await _awaitPendingWrites(scope, roomId);
     final prefs = await SharedPreferences.getInstance();
     final messages = await _loadMessages(prefs, scope, roomId);
     messages.sort(_compareMessages);

@@ -66,21 +66,24 @@ class NotificationService extends ChangeNotifier {
   int? _activeUid;
   String? _activeBaseUrl;
 
+  Iterable<NotificationInfo> get _visibleNotifications =>
+      _allNotifications.where((n) => !n.isTransientEvent);
+
   List<NotificationInfo> get allNotifications =>
-      List.unmodifiable(_allNotifications);
+      List.unmodifiable(_visibleNotifications);
 
   int get unreadCount => _unreadCount;
 
-  List<NotificationInfo> get friendNotifications => _allNotifications
+  List<NotificationInfo> get friendNotifications => _visibleNotifications
       .where(
         (n) => n.isFriendEvent && !_handledFriendSenders.contains(n.senderUid),
       )
       .toList();
 
   List<NotificationInfo> get announcementNotifications =>
-      _allNotifications.where((n) => n.isAnnouncementEvent).toList();
+      _visibleNotifications.where((n) => n.isAnnouncementEvent).toList();
 
-  List<NotificationInfo> get inviteNotifications => _allNotifications
+  List<NotificationInfo> get inviteNotifications => _visibleNotifications
       .where(
         (n) =>
             n.isInviteEvent &&
@@ -89,11 +92,16 @@ class NotificationService extends ChangeNotifier {
       )
       .toList();
   List<NotificationInfo> get forumNotifications =>
-      _allNotifications.where((n) => n.isForumEvent).toList();
+      _visibleNotifications.where((n) => n.isForumEvent).toList();
+  List<NotificationInfo> get groupNotifications => _visibleNotifications
+      .where(
+        (n) => n.isGroupEvent && !_handledInviteKeys.contains(n.identityKey),
+      )
+      .toList();
 
   /// 系统类
   /// 不属于好友/论坛/群组的都算
-  List<NotificationInfo> get systemNotifications => _allNotifications
+  List<NotificationInfo> get systemNotifications => _visibleNotifications
       .where(
         (n) =>
             !n.isMessageEvent &&
@@ -110,6 +118,7 @@ class NotificationService extends ChangeNotifier {
 
   int get inviteUnreadCount => categoryUnreadCount(inviteNotifications);
   int get forumUnreadCount => categoryUnreadCount(forumNotifications);
+  int get groupUnreadCount => categoryUnreadCount(groupNotifications);
 
   @visibleForTesting
   static int categoryUnreadCount(Iterable<NotificationInfo> notifications) =>
@@ -228,6 +237,7 @@ class NotificationService extends ChangeNotifier {
             _allNotifications.length,
           );
         }
+        _dropTransientNotifications();
       } else if (fetched.isNotEmpty) {
         _isInitialLoad = false;
         final existingKeys = _allNotifications
@@ -235,10 +245,10 @@ class NotificationService extends ChangeNotifier {
             .toSet();
         for (final n in fetched) {
           if (existingKeys.add(n.identityKey)) {
-            if (n.event == 'group.essence.add' ||
-                n.event == 'group.essence.remove') {
+            if (n.isEssenceEvent) {
               final gid = n.groupEventGid;
               if (gid != null) _essenceChanges.add(gid);
+              continue;
             }
             _allNotifications.add(n);
             if (n.event == 'friend.accepted' && n.senderUid != null) {
@@ -318,6 +328,10 @@ class NotificationService extends ChangeNotifier {
     return current.length == incoming.length &&
         current.containsAll(incoming);
   }
+  void _dropTransientNotifications() {
+    if (!_allNotifications.any((n) => n.isTransientEvent)) return;
+    _allNotifications.removeWhere((n) => n.isTransientEvent);
+  }
 
   /// 读本地缓存
   Future<void> _loadLocalCache(String baseUrl, int uid) async {
@@ -326,6 +340,7 @@ class NotificationService extends ChangeNotifier {
     if (_activeUid != uid || _activeBaseUrl != baseUrl) return;
     final existingKeys = _allNotifications.map((n) => n.identityKey).toSet();
     for (final n in cached) {
+      if (n.isTransientEvent) continue;
       if (existingKeys.add(n.identityKey)) _allNotifications.add(n);
     }
     _allNotifications.sort((a, b) => b.timeStamp.compareTo(a.timeStamp));
@@ -574,6 +589,7 @@ class NotificationService extends ChangeNotifier {
     _activeUid = null;
     _activeBaseUrl = null;
     _lastFetchTime = 0;
+    _unreadCount = 0;
     _needsFullReload = true;
     _isInitialLoad = true;
     _isFirstFetchForSession = true;
@@ -582,26 +598,29 @@ class NotificationService extends ChangeNotifier {
     _presentedPunishments.clear();
   }
 
+  static const String ephemeralEventType = 'NOTIFICATION.EPHEMERAL';
+
   void _onWsEvent(ChatWsEvent event) {
-    if (event.type != 'NOTIFICATION.NEW' || event.notification == null) return;
+    final ephemeral = event.type == ephemeralEventType;
+    if (!ephemeral && event.type != 'NOTIFICATION.NEW') return;
+    if (event.notification == null) return;
     final notification = NotificationInfo.fromServerJson(event.notification!);
+    if (ephemeral || notification.isTransientEvent) {
+      if (notification.isEssenceEvent) {
+        final gid = notification.groupEventGid;
+        if (gid != null) _essenceChanges.add(gid);
+        if (gid != null &&
+            ChatDataService.instance.roomNotifyLevel('G$gid') != 0) {
+          return;
+        }
+      }
+      unawaited(_presentNotification(notification));
+      return;
+    }
+
     if (_allNotifications.any(
       (n) => n.identityKey == notification.identityKey,
     )) {
-      return;
-    }
-    if (notification.event == 'group.essence.add' ||
-        notification.event == 'group.essence.remove') {
-      final gid = notification.groupEventGid;
-      if (gid != null) _essenceChanges.add(gid);
-    }
-    if ((notification.event == 'group.essence.add' ||
-            notification.event == 'group.essence.remove') &&
-        notification.groupEventGid != null &&
-        ChatDataService.instance.roomNotifyLevel(
-              'G${notification.groupEventGid}',
-            ) !=
-            0) {
       return;
     }
     _allNotifications.add(notification);
@@ -706,6 +725,42 @@ class NotificationService extends ChangeNotifier {
   Future<bool> markInviteRead() => _markCategoryRead(inviteNotifications);
 
   Future<bool> markForumRead() => _markCategoryRead(forumNotifications);
+
+  Future<bool> markGroupRead() => _markCategoryRead(groupNotifications);
+
+  Future<bool> markAllRead() async {
+    final uid = AuthState.instance.uid;
+    final password = AuthState.instance.password;
+    if (uid == null || password == null) return false;
+    final baseUrl = await TfApiClient.instance.getBaseUrl();
+    if (_activeUid != uid || _activeBaseUrl != baseUrl) return false;
+
+    final success = await TfApiClient.instance.markAllNotificationsRead(
+      uid,
+      password,
+    );
+    if (!success) return false;
+
+    if (AuthState.instance.uid != uid ||
+        AuthState.instance.password != password ||
+        _activeUid != uid ||
+        _activeBaseUrl != baseUrl ||
+        await TfApiClient.instance.getBaseUrl() != baseUrl) {
+      return true;
+    }
+
+    applyReadAtByIds(
+      _allNotifications,
+      unreadNotificationIds(_allNotifications),
+      DateTime.now().millisecondsSinceEpoch / 1000,
+    );
+    _unreadCount = 0;
+    notifyListeners();
+    _schedulePersist();
+    await _refreshUnreadCount();
+    notifyListeners();
+    return true;
+  }
 
   Future<bool> handleGroupJoinRequest(
     NotificationInfo notification,

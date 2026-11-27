@@ -16,8 +16,6 @@ import '../../../theme/tokens.dart';
 import '../../../providers/chat/image_gallery_provider.dart';
 import '../../../widgets/ui/flash_highlight.dart';
 
-// Equality uses only the stable message ID. The hints travel with the mounted
-// child and remain valid on append (chronological) or prepend (reverse).
 class _MessageRowKey extends ValueKey<String> {
   final int chronologicalIndex;
   final int reverseIndex;
@@ -44,7 +42,6 @@ Set<String> newlyAppendedMessageKeys(
   if (added <= 0 || added > batchLimit || previous.isEmpty) return const {};
   final sharedPrefix = previous is RoomMessageSnapshot &&
       next is RoomMessageSnapshot && next.extendsSnapshot(previous);
-  // Arbitrary replacement lists still require checking the complete prefix.
   if (!sharedPrefix) {
     for (var i = 0; i < previous.length; i++) {
       if (identical(previous[i], next[i])) continue;
@@ -114,9 +111,6 @@ class MessageListView extends StatelessWidget {
   /// 本轮新增消息
   final Set<String> entranceKeys;
 
-  /// mid GlobalKey
-  final Map<int, GlobalKey> messageKeys;
-
   const MessageListView({
     super.key,
     required this.messages,
@@ -152,7 +146,6 @@ class MessageListView extends StatelessWidget {
     this.peerReadSeq,
     this.groupReadCounts = const {},
     this.entranceKeys = const {},
-    this.messageKeys = const {},
     this.highlightedMid,
   });
 
@@ -219,8 +212,6 @@ class MessageListView extends StatelessWidget {
       final shifted = messages.length - 1 - key.reverseIndex;
       if (shifted != index && matches(shifted)) return key.reverseIndex;
 
-      // Arbitrary replacements and deletions need the general index. Build
-      // it at most once per delegate, only when both hints miss.
       indexByStableKey ??= {
         for (var i = 0; i < messages.length; i++)
           chatMessageStableKey(messages[i]): i,
@@ -355,23 +346,17 @@ class MessageListView extends StatelessWidget {
           displayStyle: displayStyle,
         );
 
-        // 跳转定位用的 GlobalKey 只能挂在 Dismissible 之内
-        final mid = message.mid;
-        final globalKey = mid == null ? null : messageKeys[mid];
         // 落点闪烁
         final highlighted = message.mid != null && message.mid == highlightedMid
             ? FlashHighlight(active: true, child: bubble)
             : bubble;
-        final bubbleBody = globalKey == null
-            ? highlighted
-            : KeyedSubtree(key: globalKey, child: highlighted);
 
         final selectionWrapped = _SelectionWrapper(
           isSelectionMode: isSelectionMode,
           isSelected:
               isSelectionMode && selectedMessageKeys.contains(stableKey),
           onTap: () => onToggleSelection(message),
-          child: bubbleBody,
+          child: highlighted,
         );
 
         // 外层键始终存在

@@ -23,6 +23,7 @@ import '../widgets/markdown_renderer.dart';
 import '../models/settings_service.dart';
 import '../utils/haptics.dart';
 import 'package:exif/exif.dart';
+import '../utils/message_text.dart';
 import '../utils/talker.dart';
 import '../models/file_attachment.dart';
 import 'file_attachment_view.dart';
@@ -483,9 +484,6 @@ class MessageBubble extends HookWidget {
       return bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
     }, [message.media?.bytes]);
 
-    // Slivers may rebuild all mounted rows after a single append. Keep the
-    // expensive subtree when its inputs match. Actions always invoke the
-    // latest handler, even when the list has supplied a fresh closure.
     final latest = useRef(this)..value = this;
     return useMemoized(
       () => _MessageBubbleContent(
@@ -602,7 +600,6 @@ class _MessageEntranceState extends State<_MessageEntrance>
   void dispose() {
     if (_entered) {
       _progress.dispose();
-      // CurvedAnimation registers a status listener on its parent.
       _fade.dispose();
       _controller.dispose();
     }
@@ -1702,12 +1699,35 @@ class _MessageBubbleState extends State<_MessageBubbleContent>
           )
         : null;
     final quoteIsAudio = quoteAttachment?.isAudio ?? false;
+    // 引用媒体类型
+    MessageType? quoteMediaType;
+    if (quote.contentType == 'file') {
+      if (quoteAttachment == null) {
+        quoteMediaType =
+            legacyPlaceholderType(quote.content) ?? MessageType.file;
+      } else if (quoteAttachment.isImage) {
+        quoteMediaType = MessageType.image;
+      } else if (quoteAttachment.isVideo) {
+        quoteMediaType = MessageType.video;
+      } else if (quoteAttachment.isAudio) {
+        quoteMediaType = MessageType.audio;
+      } else {
+        quoteMediaType = MessageType.file;
+      }
+    }
     final text = quote.isDeleted
         ? l10n.messageQuoteRecalled
         : quote.isMissing
         ? l10n.messageQuoteMissing
-        : quote.contentType == 'file'
-        ? (quoteIsAudio ? l10n.mediaAudioMessage : l10n.mediaFileMessage)
+        : quote.contentType == 'redirect'
+        ? l10n.messageQuoteMergedForward
+        : quoteMediaType != null
+        ? mediaPreviewText(
+            quoteMediaType,
+            quote.fileName,
+            l10n,
+            fileHash: quote.fileHash,
+          )
         : quote.content;
     final senderLabel = quote.senderName?.trim().isNotEmpty == true
         ? quote.senderName!

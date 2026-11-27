@@ -10,6 +10,8 @@ import 'package:path_provider/path_provider.dart';
 import '../models/settings_service.dart';
 import '../utils/talker.dart';
 
+const _defaultFreshnessMs = 3600 * 1000;
+
 class MediaProxyService {
   static final MediaProxyService instance = MediaProxyService._();
   MediaProxyService._();
@@ -144,7 +146,6 @@ class MediaProxyService {
 
       final generation = _generation;
       final key = sha256.convert(utf8.encode(raw)).toString();
-      // A missing cache volume or a disk error must still allow playback.
       File? file;
       _CacheEntry? entry;
       try {
@@ -163,6 +164,7 @@ class MediaProxyService {
       final outbound = await _client
           .openUrl(method, Uri.parse(raw))
           .timeout(_timeout);
+      outbound.followRedirects = false;
       outbound.headers.set(HttpHeaders.acceptEncodingHeader, 'identity');
       if (header != null) outbound.headers.set(HttpHeaders.rangeHeader, header);
       final remote = await outbound.close().timeout(
@@ -181,6 +183,7 @@ class MediaProxyService {
         HttpHeaders.contentEncodingHeader,
         HttpHeaders.etagHeader,
         HttpHeaders.lastModifiedHeader,
+        HttpHeaders.locationHeader,
       ]) {
         final value = remote.headers.value(name);
         if (value != null) response.headers.set(name, value);
@@ -190,8 +193,7 @@ class MediaProxyService {
       _CacheEntry? candidate;
       try {
         candidate = _CacheEntry.fromResponse(remote, start, end);
-      } on Exception {
-        // Optional cache headers must never interrupt delivery.
+      } on Exception catch (_) {
       }
       final segment = candidate;
       if (method != 'GET' ||
@@ -216,12 +218,9 @@ class MediaProxyService {
               return;
             }
             await _deleteIfPresent(File('${file.path}.meta'));
-            // Keep handles of existing readers attached to their original inode.
             await _deleteIfPresent(file);
             writer.handle = await file.open(mode: FileMode.write);
           } else {
-            // Re-read under the reservation. Another request may have replaced
-            // the prefix while this request was waiting for upstream headers.
             final prefix = await _readEntry(file!);
             if (prefix != null &&
                 !prefix.complete &&
@@ -271,7 +270,6 @@ class MediaProxyService {
         }
       }
     } catch (error) {
-      // Avoid logging media URLs, signed query strings or local capability URLs.
       talker.debug('Media proxy request failed (${error.runtimeType})');
       try {
         response.statusCode = HttpStatus.badGateway;
@@ -290,7 +288,6 @@ class MediaProxyService {
     int? start,
     int? end,
   ) async {
-    // Open the file before committing headers; eviction can race this request.
     late final RandomAccessFile reader;
     try {
       reader = await file.open();
@@ -492,8 +489,7 @@ class _CacheWriter {
     _cancelled = true;
     try {
       await _pending;
-    } on FileSystemException {
-      // Cache I/O errors already fall back to streaming.
+    } on FileSystemException catch (_) {
     }
     await closeHandle();
   }
@@ -527,9 +523,7 @@ class _CacheEntry {
     final cacheControl = (headers[HttpHeaders.cacheControlHeader] ?? [])
         .join(',')
         .toLowerCase();
-    if (RegExp(
-      r'(?:^|,)\s*(?:no-store|no-cache|private)(?:\s|,|=|$)',
-    ).hasMatch(cacheControl)) {
+    if (RegExp(r'(?:^|,)\s*no-store(?:\s|,|=|$)').hasMatch(cacheControl)) {
       return null;
     }
     if (headers.value(HttpHeaders.contentEncodingHeader) case final encoding?
@@ -553,8 +547,6 @@ class _CacheEntry {
         last - start + 1 != remote.contentLength) {
       return null;
     }
-    // Persist only representations with an explicit freshness lifetime. A
-    // strong ETag also permits joining separately fetched byte ranges.
     final lifespan = RegExp(
       r'(?:^|,)\s*max-age=(\d+)\s*(?=,|$)',
     ).firstMatch(cacheControl);
@@ -576,8 +568,8 @@ class _CacheEntry {
     } on HttpException {
       return null;
     }
-    if (expires == null ||
-        expires <= now ||
+    expires ??= now + _defaultFreshnessMs;
+    if (expires <= now ||
         (headers['vary'] ?? [])
             .expand((v) => v.split(','))
             .any((v) => v.trim() == '*')) {

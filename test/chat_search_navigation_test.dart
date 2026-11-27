@@ -46,6 +46,7 @@ void main() {
       messenger.setMockMethodCallHandler(channel, (_) async => directory.path);
       addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
       store.configureScope('https://example.test', 1);
+      addTearDown(store.closeAllForTesting);
       addTearDown(store.clearScope);
       await store.getRoomSyncMid(room);
     });
@@ -69,6 +70,7 @@ void main() {
       find.byType(MessageListView),
     );
     expect(timeline.highlightedMid, 11);
+    await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpWidget(const SizedBox());
   });
 }

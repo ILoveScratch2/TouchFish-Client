@@ -2022,6 +2022,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatBackToBottom => '回到底部';
 
   @override
+  String get chatJumpMessageTooFar => '跨度过大，未能定位到该消息';
+
+  @override
   String get chatInputCollapse => '收起';
 
   @override
@@ -2335,6 +2338,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get messageQuoteMissing => '原消息不可用';
+
+  @override
+  String get messageQuoteMergedForward => '合并转发';
 
   @override
   String messageReplyingTo(String name) {
@@ -3690,6 +3696,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get adminAccountRoleChangeFailed => '更改角色失败';
 
   @override
+  String get adminAccountUnbanFirst => '该账号处于封禁状态，请先解封再修改角色';
+
+  @override
   String adminAccountRoleChangeSuccess(String name, String role) {
     return '$name 的角色已更改为 $role';
   }
@@ -3968,6 +3977,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get chatSendFailedBanned => '你已被封禁，无法发送消息';
+
+  @override
+  String get chatSendFailedMuted => '你已被禁言，暂时无法发送消息';
+
+  @override
+  String get chatSendFailedReadonly => '账号处于只读封禁状态，无法发送消息';
 
   @override
   String get chatSendFailedRateLimited => '发送消息过快，请稍后再试';
@@ -4274,6 +4289,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get notificationMarkAllRead => '全部已读';
 
   @override
+  String get notificationMarkAllReadFailed => '标记已读失败，请稍后重试';
+
+  @override
   String get notificationDelete => '删除通知';
 
   @override
@@ -4519,7 +4537,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get punishmentKindMute => '禁言';
 
   @override
-  String get punishmentKindBan => '封禁';
+  String get punishmentKindBan => '封禁（只读）';
+
+  @override
+  String get punishmentKindBanFull => '完全封禁';
 
   @override
   String get punishmentReasonLabel => '理由（必填）';
@@ -4856,6 +4877,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsThumbnailPreviewDesc => '气泡中加载服务端缩略图，点开后加载原图（省流量）';
+
+  @override
+  String get settingsAutoOriginalImageTitle => '小图直接看原图';
+
+  @override
+  String get settingsAutoOriginalImageDesc => '体积不超过所选上限的图片直接加载原图，不再先显示缩略图';
+
+  @override
+  String get settingsAutoOriginalOff => '关闭';
+
+  @override
+  String get settingsAutoOriginalMb1 => '1 MB';
+
+  @override
+  String get settingsAutoOriginalMb2 => '2 MB';
+
+  @override
+  String get settingsAutoOriginalMb5 => '5 MB';
+
+  @override
+  String get settingsAutoOriginalMb10 => '10 MB';
 
   @override
   String get settingsImageCompressionTitle => '发送前压缩图片';

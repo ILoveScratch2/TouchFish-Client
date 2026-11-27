@@ -121,8 +121,7 @@ class LocalMessageStore {
     } else if (version == 3) {
       version = 4;
     }
-    if (version < 5) {
-      _migrateSenderKeys(db);
+    if (version < 5 && _migrateSenderKeys(db)) {
       version = 5;
     }
     if (version != initialVersion) {
@@ -466,10 +465,9 @@ class LocalMessageStore {
 
   String _key(ChatMessage message) => message.localIdentityKey;
 
-  void _migrateSenderKeys(Database db) {
+  bool _migrateSenderKeys(Database db) {
     db.execute('BEGIN IMMEDIATE');
     try {
-      // Scan bounded pages. Preserve the original payload and the FTS rowid.
       var afterRow = 0;
       while (true) {
         final page = db.select(
@@ -484,25 +482,39 @@ class LocalMessageStore {
             final payload = jsonDecode(row['payload'] as String) as Map<String, dynamic>;
             key = _key(ChatMessage.fromJson(payload, activeUid: row['uid'] as int));
           } on Object {
-            // Keep old unreadable records in place for backup/recovery.
             continue;
           }
           final where = [row['server_key'], row['uid'], row['room_id'], row['message_key']];
           db.execute(
             'UPDATE OR IGNORE messages SET message_key = ? WHERE rowid = ?',
             [key, afterRow]);
-          if (db.updatedRows == 0) continue;
+          if (db.updatedRows == 0) {
+            db.execute('DELETE FROM messages WHERE rowid = ?', [afterRow]);
+            _deleteSearchRows(db,
+                'server_key = ? AND uid = ? AND room_id = ? AND message_key = ?',
+                where);
+            continue;
+          }
           db.execute(
             'UPDATE OR IGNORE message_search SET message_key = ? '
             'WHERE server_key = ? AND uid = ? AND room_id = ? AND message_key = ?',
             [key, ...where]);
+          if (db.updatedRows == 0) {
+            _deleteSearchRows(db,
+                'server_key = ? AND uid = ? AND room_id = ? AND message_key = ?',
+                where);
+          }
         }
       }
       db.execute('PRAGMA user_version = 5');
       db.execute('COMMIT');
-    } catch (_) {
-      db.execute('ROLLBACK');
-      rethrow;
+      return true;
+    } catch (e) {
+      try {
+        db.execute('ROLLBACK');
+      } catch (_) {}
+      talker.error('LocalMessageStore sender-key migration failed', e);
+      return false;
     }
   }
 

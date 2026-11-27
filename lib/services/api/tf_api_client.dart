@@ -2967,6 +2967,8 @@ class TfApiClient {
       if (error == null) return null;
       const restricted = {
         'account_muted',
+        // 只读封禁
+        'account_readonly',
         'account_banned',
         'pending_activation',
       };
@@ -5152,6 +5154,20 @@ class TfApiClient {
   Future<bool> manageBanUser(int uid, String password, int targetUid) async {
     final result = await secretPost(
       '/auth/manage/ban',
+      {'change_uid': targetUid},
+      uid: uid,
+      password: password,
+    );
+    return _parseBool(result);
+  }
+
+  /// 解封：撤销目标账号的完全封禁处罚（与 [manageBanUser] 对称）。
+  ///
+  /// 不能用 `manageChangeAuth(..., 'user')` 代替：那只改 users.stat 镜像，
+  /// 处罚记录仍在，用户表现为"解封了但登不上"。
+  Future<bool> manageUnbanUser(int uid, String password, int targetUid) async {
+    final result = await secretPost(
+      '/auth/manage/unban',
       {'change_uid': targetUid},
       uid: uid,
       password: password,

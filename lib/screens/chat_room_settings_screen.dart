@@ -453,7 +453,6 @@ class _ChatRoomSettingsScreenState extends State<ChatRoomSettingsScreen> {
         },
       );
     } finally {
-      // The fields remain mounted during the dismissal animation.
       await sheetRoute?.completed;
       nameController.dispose();
       descController.dispose();

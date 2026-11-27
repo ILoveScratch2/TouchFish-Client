@@ -169,7 +169,6 @@ class DraftService {
   }
 
   static String? _readDraftType(String suffix) {
-    // The type and the base64url ID can both contain underscores.
     for (final type in const ['forum_post', 'forum_comment', 'forum_create']) {
       if (suffix.startsWith('${type}_')) return type;
     }

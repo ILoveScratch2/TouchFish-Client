@@ -10,7 +10,7 @@ import 'multi_instance_guard.dart';
 import 'secure_credentials.dart';
 import 'token_refresh_manager.dart';
 
-enum SavedSessionRestoreStatus { idle, restoring, succeeded, failed }
+enum SavedSessionRestoreStatus { idle, restoring, succeeded, failed, skipped }
 
 /// 已保存会话恢复失败的原因，用于 UI 区分提示。
 enum RestoreFailureReason { none, tokenExpired, credentials, network, duplicateSession }
@@ -76,13 +76,18 @@ class AuthState extends ChangeNotifier {
   String? get rememberedPassword => _rememberedPassword;
   bool get hasStoredCredentials =>
       _rememberedUid != null && (_rememberedPassword != null || _token != null);
+  bool get isAwaitingSavedSession =>
+      hasStoredCredentials &&
+      !isLoggedIn &&
+      _savedSessionRestoreStatus != SavedSessionRestoreStatus.failed &&
+      _savedSessionRestoreStatus != SavedSessionRestoreStatus.skipped;
   SavedSessionRestoreStatus get savedSessionRestoreStatus =>
       _savedSessionRestoreStatus;
 
   /// 已保存会话恢复失败的原因
   RestoreFailureReason get restoreFailureReason => _restoreFailureReason;
 
-  /// 运行时 token 失效且无法 mastur**** 的一次性提示标志。
+  /// 运行时 token 失效且无法 mastur**** 的一次性提示标志
   bool get sessionExpiredNotice => _sessionExpiredNotice;
   bool get isLoggedIn => _currentUser != null && _uid != null;
   bool get isBanned => _currentUser?.stat == 'banned';
@@ -104,7 +109,6 @@ class AuthState extends ChangeNotifier {
     _refreshExpiresAt = prefs.getInt(_kRefreshExpiresAtKey);
     await _loadSecrets(prefs);
     if (_rememberedUid != null && _token == null && _rememberedPassword == null) {
-      // 凭据只在安全存储里时，启动时一次探测失败
       await _reloadSecretsFromSecure();
     }
     _authMode = _token != null ? TfAuthMode.jwt : TfAuthMode.legacy;
@@ -118,7 +122,7 @@ class AuthState extends ChangeNotifier {
     _restoreFailureReason = RestoreFailureReason.none;
   }
 
-  /// 强制重探安全存储并重读凭据（启动时探测失败 / 用户点"重试"的唯一补救路径）。
+  /// 强制重探安全存储并重读凭据
   Future<void> _reloadSecretsFromSecure() async {
     try {
       if (!await SecureCredentials.instance.probe(force: true)) return;
@@ -156,12 +160,12 @@ class AuthState extends ChangeNotifier {
       for (final key in keys) {
         final value = plaintext[key];
         if (value == null) {
-          // 明文里没有值（或只有一个空的占位）：清理掉空副本即可
+          // 明文里没有值（或只有一个空的占位）
           if (prefs.containsKey(key)) await prefs.remove(key);
           continue;
         }
         if (stored[key] == value) {
-          // 安全存储里已经是同一个值：明文副本可以删
+          // 安全存储里已经是同一个值
           await prefs.remove(key);
           continue;
         }
@@ -177,7 +181,7 @@ class AuthState extends ChangeNotifier {
       }
       return;
     }
-    // 平台不支持安全存储：保持旧行为（token 在 prefs），并明确记录一次
+    // 平台不支持安全存储
     _token = prefs.getString(_kTokenKey);
     _refreshToken = prefs.getString(_kRefreshTokenKey);
     _rememberedPassword = prefs.getString(_kPasswordKey);
@@ -197,12 +201,10 @@ class AuthState extends ChangeNotifier {
     _notifySessionChanged();
 
     if (!hasStoredCredentials) {
-      // 启动时安全存储探测失败过：这里（以及用户点「重试」时）强制重探一次。
+      // 启动时安全存储探测失败
       await _reloadSecretsFromSecure();
     }
     if (!hasStoredCredentials) {
-      // 凭据确实读不出来：明确报「凭据不可用」并保留重试入口，
-      // 不能静默停在登录页（用户会以为账号被登出了）。
       talker.warning(
         'AuthState.restoreSavedSession: no readable credentials for uid=$_rememberedUid',
       );
@@ -225,11 +227,11 @@ class AuthState extends ChangeNotifier {
       );
 
       if (_token != null && !legacyForced) {
-        // JWT 模式：用 token 恢复会话
+        // JWT 模式
         TfApiClient.instance.setAuthContext(token: _token, legacyMode: false);
         var valid = await TfApiClient.instance.validateToken();
         if (valid == null) {
-          // 网络/服务器异常：保留凭据
+          // 网络/服务器异常
           talker.warning(
             'AuthState.restoreSavedSession: network failure during JWT validation.',
           );
@@ -238,8 +240,6 @@ class AuthState extends ChangeNotifier {
           _notifySessionChanged();
           return false;
         }
-
-        // access token 被拒绝时，尝试用 refresh token 轮换恢复
         if (valid == false && _refreshToken != null && _refreshToken!.isNotEmpty) {
           _rememberedUsername ??= profile?.username;
           if (await refreshAccessToken(uid: savedUid)) {
@@ -248,7 +248,7 @@ class AuthState extends ChangeNotifier {
         }
 
         if (valid == true && profile != null) {
-          // 多开互斥：同一服务器同一账号已被其它实例登录时，不在此实例恢复。
+          // 多开互斥
           final acquired = await MultiInstanceGuard.instance.acquire(
             uid: savedUid,
             username: profile.username,
@@ -292,7 +292,7 @@ class AuthState extends ChangeNotifier {
           'AuthState.restoreSavedSession: saved JWT was rejected by the server.',
         );
       } else if (_rememberedPassword != null) {
-        // 旧版（兼容）模式：密码重login
+        // 旧版（兼容）模式
         final savedPassword = _rememberedPassword!;
         final result = await TfApiClient.instance.login(
           savedUid,
@@ -348,7 +348,6 @@ class AuthState extends ChangeNotifier {
           );
 
           _notifySessionChanged();
-          // 恢复成功后补一次本人资料刷新（含被隐藏的邮箱与 public_email 开关）
           unawaited(refreshProfile());
           return true;
         }
@@ -385,7 +384,16 @@ class AuthState extends ChangeNotifier {
       return;
     }
 
-    _savedSessionRestoreStatus = SavedSessionRestoreStatus.idle;
+    _savedSessionRestoreStatus = SavedSessionRestoreStatus.skipped;
+    _restoreFailureReason = RestoreFailureReason.none;
+    _notifySessionChanged();
+  }
+  void markSavedSessionRestoreSkipped() {
+    if (_savedSessionRestoreStatus == SavedSessionRestoreStatus.succeeded ||
+        _savedSessionRestoreStatus == SavedSessionRestoreStatus.skipped) {
+      return;
+    }
+    _savedSessionRestoreStatus = SavedSessionRestoreStatus.skipped;
     _restoreFailureReason = RestoreFailureReason.none;
     _notifySessionChanged();
   }

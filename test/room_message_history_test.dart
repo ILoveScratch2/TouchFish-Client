@@ -147,6 +147,7 @@ void main() {
       addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
       addTearDown(() => directory.delete(recursive: true));
       store.configureScope('https://history.test', 3);
+      addTearDown(store.closeAllForTesting);
       addTearDown(store.clearScope);
 
       const room = 'U23';

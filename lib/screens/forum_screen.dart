@@ -45,10 +45,23 @@ class _ForumScreenState extends State<ForumScreen> {
   List<Forum> get _exploreForums =>
       _allForums?.where((f) => !_joinedIds.contains(f.id)).toList() ?? [];
 
+  /// 上次加载时
+  late bool _loggedInWhenLoaded;
+
   @override
   void initState() {
     super.initState();
+    _loggedInWhenLoaded = AuthState.instance.isLoggedIn;
+    AuthState.instance.addListener(_onAuthChanged);
     _loadForums();
+  }
+
+  void _onAuthChanged() {
+    if (!mounted) return;
+    final loggedIn = AuthState.instance.isLoggedIn;
+    if (loggedIn == _loggedInWhenLoaded) return;
+    _loggedInWhenLoaded = loggedIn;
+    _loadForums(showLoading: false);
   }
 
   @override
@@ -67,12 +80,12 @@ class _ForumScreenState extends State<ForumScreen> {
 
   @override
   void dispose() {
+    AuthState.instance.removeListener(_onAuthChanged);
     _router?.routerDelegate.removeListener(_onRouteChanged);
     super.dispose();
   }
 
-  /// 宽屏下详情页返回列表（location 回到 `/forum`）时刷新，补齐「加入论坛」
-  /// 后 Joined/Explore 分栏的即时同步。
+  /// 宽屏下详情页返回列表
   void _onRouteChanged() {
     final router = _router;
     if (router == null) return;
@@ -91,10 +104,7 @@ class _ForumScreenState extends State<ForumScreen> {
     );
   }
 
-  /// 拉取论坛列表。
-  ///
-  /// [showLoading] 为假时保留当前列表（从详情返回、下拉刷新、建完论坛这些
-  /// 刷新路径）：否则整块内容会被换成转圈，闪一下白屏还丢滚动位置。
+  /// 拉取论坛列表
   Future<void> _loadForums({bool showLoading = true}) async {
     setState(() {
       if (showLoading) _isLoading = true;
@@ -129,10 +139,7 @@ class _ForumScreenState extends State<ForumScreen> {
     }
   }
 
-  /// 打开论坛详情。
-  ///
-  /// 宽屏（[isAside]）用 `go` 切换右侧面板，返回列表时由路由监听刷新；
-  /// 窄屏用 `push` 并 await，pop 后立即刷新。
+  /// 打开论坛详情
   Future<void> _openForum(Forum forum) async {
     if (widget.isAside) {
       context.go('/forum/${forum.id}');
@@ -312,7 +319,6 @@ class _ForumScreenState extends State<ForumScreen> {
     );
   }
 
-  /// 宽屏两栏左侧的常驻列表：紧凑头部 + TabBar + 列表，不含大 AppBar / FAB。
   Widget _buildAside(BuildContext context, AppLocalizations l10n) {
     final isLoggedIn = AuthState.instance.isLoggedIn;
     final theme = Theme.of(context);

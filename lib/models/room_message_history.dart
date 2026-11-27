@@ -1,8 +1,6 @@
 import 'dart:collection';
 import 'message_model.dart';
 
-/// Fixed-length snapshot. The owner may append beyond its end; editing the
-/// published prefix first detaches the backing list.
 class RoomMessageSnapshot extends UnmodifiableListView<ChatMessage> {
   final List<ChatMessage> _source;
   final bool hasDuplicateMids;
@@ -27,10 +25,16 @@ class RoomMessageSnapshot extends UnmodifiableListView<ChatMessage> {
 
   int peerReadMarker(int peerReadSeq) {
     if (!_sequencesSorted) {
-      for (final index in _outgoingSequenced.reversed) {
-        if (this[index].roomSeq! <= peerReadSeq) return index;
+      var best = -1;
+      var bestSeq = -1;
+      for (final index in _outgoingSequenced) {
+        final seq = this[index].roomSeq!;
+        if (seq <= peerReadSeq && seq > bestSeq) {
+          bestSeq = seq;
+          best = index;
+        }
       }
-      return -1;
+      return best;
     }
     var low = 0;
     var high = _outgoingSequenced.length;
@@ -62,9 +66,6 @@ class RoomMessageSnapshot extends UnmodifiableListView<ChatMessage> {
   }
 }
 
-/// The live CDS list remains mutable for existing callers. Append-only writes
-/// preserve every published prefix. A rare edit, prepend or trim starts a new
-/// backing list and rebuilds its indexes on the next lookup or publication.
 class RoomMessageHistory extends ListBase<ChatMessage> {
   List<ChatMessage> _items;
   RoomMessageSnapshot? _published;
@@ -124,7 +125,6 @@ class RoomMessageHistory extends ListBase<ChatMessage> {
     if (_published == null && _indexed == 0) return;
     if (_published != null) _items = List.of(_items);
     _published = null;
-    // Old snapshots still consult these append-only indexes.
     _byMid = {};
     _outgoingSequenced = [];
     _sequencesSorted = true;

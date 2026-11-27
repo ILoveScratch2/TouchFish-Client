@@ -1,4 +1,4 @@
-/// 搜索框输入解析
+// 搜索框输入解析
 
 class TfSearchQuery {
   final String raw;
