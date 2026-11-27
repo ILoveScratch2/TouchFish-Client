@@ -2591,12 +2591,10 @@ class ChatDataService extends ChangeNotifier {
       final fromServer = _fillSenderInfo(remote);
       var merged = _mergeMessages(fromServer, local, keepBytesFrom: current);
       var persist = fromServer;
-      final beforeIds = {
-        for (final message in before) identityHashCode(message),
-      };
+      final beforeSet = Set<ChatMessage>.identity()..addAll(before);
       final pushed = [
         for (final message in current)
-          if (!beforeIds.contains(identityHashCode(message))) message,
+          if (!beforeSet.contains(message)) message,
       ];
       if (pushed.isNotEmpty) {
         final page = RoomMessageHistory(merged);

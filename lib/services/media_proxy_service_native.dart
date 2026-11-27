@@ -186,7 +186,14 @@ class MediaProxyService {
         HttpHeaders.locationHeader,
       ]) {
         final value = remote.headers.value(name);
-        if (value != null) response.headers.set(name, value);
+        if (value != null) {
+          response.headers.set(
+            name,
+            name == HttpHeaders.locationHeader
+                ? Uri.parse(raw).resolve(value).toString()
+                : value,
+          );
+        }
       }
 
       final body = remote.timeout(_timeout);
