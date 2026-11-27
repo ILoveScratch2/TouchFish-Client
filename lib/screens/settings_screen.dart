@@ -2396,6 +2396,20 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsThumbnailPreviewTitle;
       case 'settingsThumbnailPreviewDesc':
         return l10n.settingsThumbnailPreviewDesc;
+      case 'settingsAutoOriginalImageTitle':
+        return l10n.settingsAutoOriginalImageTitle;
+      case 'settingsAutoOriginalImageDesc':
+        return l10n.settingsAutoOriginalImageDesc;
+      case 'settingsAutoOriginalOff':
+        return l10n.settingsAutoOriginalOff;
+      case 'settingsAutoOriginalMb1':
+        return l10n.settingsAutoOriginalMb1;
+      case 'settingsAutoOriginalMb2':
+        return l10n.settingsAutoOriginalMb2;
+      case 'settingsAutoOriginalMb5':
+        return l10n.settingsAutoOriginalMb5;
+      case 'settingsAutoOriginalMb10':
+        return l10n.settingsAutoOriginalMb10;
       case 'settingsImageCompressionTitle':
         return l10n.settingsImageCompressionTitle;
       case 'settingsImageCompressionDesc':
@@ -2590,6 +2604,12 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsBrowserSearchEngineTitle;
       case 'settingsBrowserSearchEngineDesc':
         return l10n.settingsBrowserSearchEngineDesc;
+      case 'settingsBrowserSearchEngineBing':
+        return l10n.settingsBrowserSearchEngineBing;
+      case 'settingsBrowserSearchEngineDuckduckgo':
+        return l10n.settingsBrowserSearchEngineDuckduckgo;
+      case 'settingsBrowserSearchEngineBaidu':
+        return l10n.settingsBrowserSearchEngineBaidu;
       case 'settingsBrowserMixedContentTitle':
         return l10n.settingsBrowserMixedContentTitle;
       case 'settingsBrowserMixedContentDesc':
@@ -2614,6 +2634,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         return l10n.settingsLinkOpenModeInapp;
       case 'settingsLinkOpenModeExternal':
         return l10n.settingsLinkOpenModeExternal;
+      // Storage
+      case 'settingsLocalStorageTitle':
+        return l10n.settingsLocalStorageTitle;
       // Multi-instance
       case 'settingsAllowMultiInstanceTitle':
         return l10n.settingsAllowMultiInstanceTitle;
