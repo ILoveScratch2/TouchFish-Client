@@ -5,7 +5,7 @@ class UploadSession {
   /// 服务端返回的会话 ID（`file_id`）。
   final String sessionId;
 
-  /// 本地文件路径（作为会话唯一键）。
+  /// 本地文件路径。
   final String filePath;
 
   final String fileName;
@@ -48,6 +48,22 @@ class UploadSession {
   int get remainingChunks => totalChunks - uploadedChunks.length;
 
   bool get isComplete => uploadedChunks.length >= totalChunks;
+
+  bool canResume({
+    required String hash,
+    required String name,
+    required int size,
+    required int bytesPerChunk,
+    required int chunks,
+  }) =>
+      sessionId.isNotEmpty &&
+      expectedHash == hash &&
+      fileName == name &&
+      fileSize == size &&
+      chunkSize == bytesPerChunk &&
+      totalChunks == chunks &&
+      (uploadedChunks.isEmpty || uploadedChunks.contains(0)) &&
+      uploadedChunks.every((index) => index >= 0 && index < chunks - 1);
 
   double get progress =>
       totalChunks <= 0 ? 0 : uploadedChunks.length / totalChunks;

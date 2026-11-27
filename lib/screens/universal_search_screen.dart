@@ -8,6 +8,7 @@ import '../models/api_error.dart';
 import '../models/group_join_policy.dart';
 import '../models/local_message_search_result.dart';
 import '../models/search_result.dart';
+import '../routes/app_routes.dart';
 import '../services/api/api_error_localization.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/auth_state.dart';
@@ -41,13 +42,16 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
   int _minLength = 2;
   String _query = '';
   bool _searching = false;
+
   /// 本地消息库扫描是否仍在进行
   bool _localSearching = false;
   String? _baseUrl;
 
   /// 请求序号
   int _requestToken = 0;
-  String? _serverErrorText;
+  String? _userErrorText;
+  String? _groupErrorText;
+  String? _localErrorText;
 
   List<UserSearchEntry> _users = const [];
   List<GroupSearchEntry> _groups = const [];
@@ -68,10 +72,18 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
 
   Future<void> _initConfig() async {
     try {
-      _baseUrl = await TfApiClient.instance.getBaseUrl();
+      final baseUrl = await TfApiClient.instance.getBaseUrl();
+      if (!mounted) return;
+      setState(() => _baseUrl = baseUrl);
       final config = await TfApiClient.instance.fetchServerInfo();
-      if (config != null && mounted) {
-        setState(() => _minLength = config.minSearchLength > 0 ? config.minSearchLength : 1);
+      if (config == null || !mounted) return;
+      final query = TfSearchQuery.parse(_controller.text);
+      final wasTooShort = _isTooShort(query);
+      setState(() {
+        _minLength = config.minSearchLength > 0 ? config.minSearchLength : 1;
+      });
+      if (query.raw.isNotEmpty && wasTooShort != _isTooShort(query)) {
+        unawaited(_refresh());
       }
     } catch (e) {
       talker.debug('UniversalSearch: init failed', e);
@@ -88,76 +100,67 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
 
   void _onQueryChanged(String raw) {
     _debounce?.cancel();
+    final parsed = TfSearchQuery.parse(raw);
+    final canSearch = parsed.raw.isNotEmpty && !_isTooShort(parsed);
+    ++_requestToken;
+    setState(() {
+      _clearResults(parsed.raw);
+      _searching = canSearch;
+      _localSearching = canSearch;
+      _loadingMoreGroups = false;
+      _groupsHasMore = false;
+      _userErrorText = null;
+      _groupErrorText = null;
+      _localErrorText = null;
+    });
+    if (!canSearch) return;
     _debounce = Timer(const Duration(milliseconds: 350), () {
-      unawaited(_search(raw));
+      unawaited(_search(parsed));
     });
   }
 
   bool _isTooShort(TfSearchQuery query) =>
-      !query.isIdentifier && query.raw.length < _minLength;
+      !query.isIdentifier && query.raw.runes.length < _minLength;
 
-  Future<void> _search(String raw) async {
-    final parsed = TfSearchQuery.parse(raw);
+  void _clearResults(String query) {
+    _query = query;
+    _users = const [];
+    _groups = const [];
+    _local = const [];
+  }
+
+  Future<void> _search(TfSearchQuery parsed) async {
     final query = parsed.raw;
-    if (query.isEmpty) {
-      _requestToken++;
-      if (mounted) {
-        setState(() {
-          _query = '';
-          _users = const [];
-          _groups = const [];
-          _local = const [];
-          _groupsHasMore = false;
-          _searching = false;
-          _localSearching = false;
-          _serverErrorText = null;
-        });
-      }
-      return;
-    }
-    if (_isTooShort(parsed)) {
-      _requestToken++;
-      if (mounted) {
-        setState(() {
-          _query = query;
-          _users = const [];
-          _groups = const [];
-          _local = const [];
-          _groupsHasMore = false;
-          _searching = false;
-          _localSearching = false;
-          _serverErrorText = null;
-        });
-      }
-      return;
-    }
+    final canSearch = query.isNotEmpty && !_isTooShort(parsed);
+    final token = ++_requestToken;
+    setState(() {
+      if (!canSearch || query != _query) _clearResults(query);
+      _searching = canSearch;
+      _localSearching = canSearch;
+      _loadingMoreGroups = false;
+      _groupsHasMore = false;
+      _userErrorText = null;
+      _groupErrorText = null;
+      _localErrorText = null;
+    });
+    if (!canSearch) return;
 
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
-
-    final token = ++_requestToken;
-    if (mounted) {
-      setState(() {
-        _query = query;
-        _searching = true;
-        _localSearching = true;
-        _serverErrorText = null;
-      });
-    }
-
-    final localFuture = ChatDataService.instance.searchAllRoomsMessages(query);
+    final localSearch = _searchLocal(query, token);
     final userSearchAllowed =
         parsed.allowsUserSearch &&
-        (parsed.uid != null || query.length >= _minLength);
+        (parsed.uid != null || query.runes.length >= _minLength);
     final usersFuture = (uid == null || password == null || !userSearchAllowed)
         ? Future<List<UserSearchEntry>>.value(const [])
         : TfApiClient.instance.searchUsers(
-          uid,
-          password,
-          query,
-          limit: _kUserSearchLimit,
-        );
-    final groupsFuture = (!FeatureFlags.instance.groupChat ||
+            uid,
+            password,
+            query,
+            limit: _kUserSearchLimit,
+          );
+    final groupsFuture =
+        (!FeatureFlags.instance.groupChat ||
             uid == null ||
             password == null ||
             !parsed.allowsGroupSearch)
@@ -166,67 +169,71 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
           )
         : TfApiClient.instance.searchGroups(uid, password, query);
 
-    // 服务端搜索失败
-    ApiError? serverError;
-    var serverFailed = false;
-    var users = const <UserSearchEntry>[];
-    var groupPage = const GroupSearchPage(groups: [], hasMore: false);
-    try {
-      final serverResults = await Future.wait<Object>([
-        usersFuture,
-        groupsFuture,
-      ]);
-      users = serverResults[0] as List<UserSearchEntry>;
-      groupPage = serverResults[1] as GroupSearchPage;
-    } on ApiErrorException catch (e) {
-      serverError = e.error;
-    } catch (e) {
-      talker.error('UniversalSearch: server search failed', e);
-      serverFailed = true;
-    }
-
+    final ((users, userError), (groupPage, groupError)) = await (
+      _readRemoteResult(usersFuture),
+      _readRemoteResult(groupsFuture),
+    ).wait;
     if (!mounted || token != _requestToken) return;
-    if (_controller.text.trim() != query) {
-      setState(() {
-        _searching = false;
-        _localSearching = false;
-      });
-      return;
-    }
-
-    final errorText = serverError != null
-        ? localizeApiError(context, serverError)
-        : serverFailed
-        ? AppLocalizations.of(context)!.commonLoadFailed
-        : null;
 
     setState(() {
-      _users = users;
-      _groups = groupPage.groups;
-      _groupsHasMore = groupPage.hasMore;
-      _serverErrorText = errorText;
+      _users = users ?? const [];
+      _groups = groupPage?.groups ?? const [];
+      _groupsHasMore = groupPage?.hasMore == true && _groups.isNotEmpty;
+      _userErrorText = userError;
+      _groupErrorText = groupError;
       _searching = false;
     });
 
-    final local = await localFuture;
-    if (!mounted || token != _requestToken) return;
-    if (_controller.text.trim() != query) {
-      setState(() => _localSearching = false);
-      return;
-    }
-    setState(() {
-      _local = local;
-      _localSearching = false;
-    });
+    await localSearch;
   }
 
-  Future<void> _refresh() => _search(_controller.text);
+  Future<(T?, String?)> _readRemoteResult<T>(Future<T> request) async {
+    try {
+      return (await request, null);
+    } on ApiErrorException catch (e) {
+      return (null, mounted ? localizeApiError(context, e.error) : null);
+    } catch (e) {
+      talker.error('UniversalSearch: server search failed', e);
+      return (
+        null,
+        mounted ? AppLocalizations.of(context)!.commonLoadFailed : null,
+      );
+    }
+  }
+
+  Future<void> _searchLocal(String query, int token) async {
+    try {
+      final results = await ChatDataService.instance.searchAllRoomsMessages(
+        query,
+      );
+      if (!mounted || token != _requestToken) return;
+      setState(() => _local = results);
+    } catch (e) {
+      talker.error('UniversalSearch: local search failed', e);
+      if (mounted && token == _requestToken) {
+        setState(() {
+          _local = const [];
+          _localErrorText = AppLocalizations.of(context)!.commonLoadFailed;
+        });
+      }
+    } finally {
+      if (mounted && token == _requestToken) {
+        setState(() => _localSearching = false);
+      }
+    }
+  }
+
+  Future<void> _refresh() {
+    _debounce?.cancel();
+    return _search(TfSearchQuery.parse(_controller.text));
+  }
 
   Future<void> _loadMoreGroups() async {
-    if (_loadingMoreGroups || !_groupsHasMore) return;
+    if (_searching || _loadingMoreGroups || !_groupsHasMore) return;
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
+    final token = _requestToken;
     setState(() => _loadingMoreGroups = true);
     try {
       final page = await TfApiClient.instance.searchGroups(
@@ -235,14 +242,14 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
         _query,
         offset: _groups.length,
       );
-      if (!mounted) return;
+      if (!mounted || token != _requestToken) return;
       setState(() {
         _groups = [..._groups, ...page.groups];
-        _groupsHasMore = page.hasMore;
+        _groupsHasMore = page.hasMore && page.groups.isNotEmpty;
         _loadingMoreGroups = false;
       });
     } on ApiErrorException catch (e) {
-      if (!mounted) return;
+      if (!mounted || token != _requestToken) return;
       setState(() => _loadingMoreGroups = false);
       TouchFishSnackbarService.instance.show(
         localizeApiError(context, e.error),
@@ -250,7 +257,7 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
       );
     } catch (e) {
       talker.error('UniversalSearch: load more groups failed', e);
-      if (!mounted) return;
+      if (!mounted || token != _requestToken) return;
       setState(() => _loadingMoreGroups = false);
       TouchFishSnackbarService.instance.show(
         AppLocalizations.of(context)!.commonFailedOperation,
@@ -299,8 +306,8 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
                 autofocus: true,
                 debounce: Duration.zero,
                 onChanged: _onQueryChanged,
-                onSubmitted: (value) => unawaited(_search(value)),
-                onClear: () => unawaited(_search('')),
+                onSubmitted: (_) => unawaited(_refresh()),
+                onClear: () => _onQueryChanged(''),
               ),
             ),
             if (_searching) const LinearProgressIndicator(),
@@ -323,7 +330,7 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
     if (_users.isEmpty) {
       return PullToRefresh.content(
         onRefresh: _refresh,
-        child: _emptyIfSettled(l10n),
+        child: _emptyIfSettled(l10n, errorText: _userErrorText),
       );
     }
     final truncated = _users.length >= _kUserSearchLimit;
@@ -358,7 +365,7 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
               radius: 24,
               backgroundColor: colorScheme.primaryContainer,
               backgroundImage: _avatarProvider('user', user.uid),
-              onBackgroundImageError: (_, _) {},
+              onBackgroundImageError: _baseUrl != null ? (_, _) {} : null,
               child: _baseUrl == null
                   ? Icon(Icons.person, color: colorScheme.onPrimaryContainer)
                   : null,
@@ -388,7 +395,7 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
     if (_groups.isEmpty) {
       return PullToRefresh.content(
         onRefresh: _refresh,
-        child: _emptyIfSettled(l10n),
+        child: _emptyIfSettled(l10n, errorText: _groupErrorText),
       );
     }
     return PullToRefresh.list(
@@ -414,55 +421,55 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
               );
             }
             final group = _groups[index];
-          return ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 6,
-            ),
-            leading: CircleAvatar(
-              radius: 24,
-              backgroundColor: colorScheme.primaryContainer,
-              backgroundImage: _avatarProvider('group', group.gid),
-              onBackgroundImageError: (_, _) {},
-              child: _baseUrl == null
-                  ? Icon(Icons.groups, color: colorScheme.onPrimaryContainer)
-                  : null,
-            ),
-            title: Text(
-              group.groupname,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    _badge(colorScheme, _groupJoinLabel(l10n, group)),
-                    const SizedBox(width: 8),
+            return ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 6,
+              ),
+              leading: CircleAvatar(
+                radius: 24,
+                backgroundColor: colorScheme.primaryContainer,
+                backgroundImage: _avatarProvider('group', group.gid),
+                onBackgroundImageError: _baseUrl != null ? (_, _) {} : null,
+                child: _baseUrl == null
+                    ? Icon(Icons.groups, color: colorScheme.onPrimaryContainer)
+                    : null,
+              ),
+              title: Text(
+                group.groupname,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _badge(colorScheme, _groupJoinLabel(l10n, group)),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.searchGroupMemberCount(group.memberCount),
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                  if (group.introduction.isNotEmpty)
                     Text(
-                      l10n.searchGroupMemberCount(group.memberCount),
+                      group.introduction,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
-                  ],
-                ),
-                if (group.introduction.isNotEmpty)
-                  Text(
-                    group.introduction,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: colorScheme.onSurfaceVariant),
-                  ),
-              ],
-            ),
-            onTap: () => context.push(
-              '/group/${group.gid}',
-              extra: <String, dynamic>{
-                'initialData': {'groupname': group.groupname},
-                'groupName': group.groupname,
-              },
-            ),
-          );
-        },
+                ],
+              ),
+              onTap: () => context.push(
+                '/group/${group.gid}',
+                extra: <String, dynamic>{
+                  'initialData': {'groupname': group.groupname},
+                  'groupName': group.groupname,
+                },
+              ),
+            );
+          },
         ),
       ),
     );
@@ -499,7 +506,11 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
     if (_local.isEmpty) {
       return PullToRefresh.content(
         onRefresh: _refresh,
-        child: _emptyIfSettled(l10n, serverBacked: false),
+        child: _emptyIfSettled(
+          l10n,
+          serverBacked: false,
+          errorText: _localErrorText,
+        ),
       );
     }
     return PullToRefresh.list(
@@ -534,23 +545,29 @@ class _UniversalSearchScreenState extends State<UniversalSearchScreen> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            onTap: () => context.push('/chat/${result.roomId}'),
+            onTap: () => context.push(
+              AppRoutes.chatMessagePath(result.roomId, result.message),
+            ),
           );
         },
       ),
     );
   }
 
-  Widget _emptyIfSettled(AppLocalizations l10n, {bool serverBacked = true}) {
-    if (serverBacked && _serverErrorText != null && _query.isNotEmpty) {
+  Widget _emptyIfSettled(
+    AppLocalizations l10n, {
+    bool serverBacked = true,
+    String? errorText,
+  }) {
+    if (errorText != null && _query.isNotEmpty) {
       return ErrorState(
         title: l10n.commonLoadFailed,
-        description: _serverErrorText,
+        description: errorText == l10n.commonLoadFailed ? null : errorText,
         onRetry: _refresh,
         retryLabel: l10n.retry,
       );
     }
-    final settled = serverBacked ? !_searching : !(_searching || _localSearching);
+    final settled = serverBacked ? !_searching : !_localSearching;
     if (!settled) {
       return EmptyState(
         icon: Icons.hourglass_empty,

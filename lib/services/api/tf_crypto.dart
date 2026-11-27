@@ -45,7 +45,7 @@ class TfCrypto {
         .replaceAll('\r', '')
         .replaceAll(' ', '')
         .trim();
-    return Uint8List.fromList(base64.decode(base64Str));
+    return base64.decode(base64Str);
   }
 
   /// 计算 RSA 公钥指纹：对规范 PEM 文本（UTF-8 字节）求 SHA-256，
@@ -53,7 +53,7 @@ class TfCrypto {
   static String rsaPublicKeyFingerprint(String pem) {
     final normalized = normalizePem(pem);
     final digest = SHA256Digest();
-    final bytes = Uint8List.fromList(utf8.encode(normalized));
+    final bytes = utf8.encode(normalized);
     final hash = Uint8List(digest.digestSize);
     digest.update(bytes, 0, bytes.length);
     digest.doFinal(hash, 0);
@@ -89,7 +89,7 @@ class TfCrypto {
   }
 
   static Uint8List aesEncrypt(String plaintext, Uint8List key, Uint8List iv) {
-    final data = Uint8List.fromList(utf8.encode(plaintext));
+    final data = utf8.encode(plaintext);
     final cipher = PaddedBlockCipherImpl(
       PKCS7Padding(),
       CBCBlockCipher(AESEngine()),
@@ -101,6 +101,14 @@ class TfCrypto {
         null,
       ),
     );
+    if (data.isEmpty) {
+      // PointyCastle's process() computes a negative last-block offset for
+      // empty input. doFinal emits the single required PKCS#7 padding block.
+      // leitar dl tql (真的有人看到这个吗)
+      final out = Uint8List(cipher.blockSize);
+      cipher.doFinal(data, 0, out, 0);
+      return out;
+    }
     return cipher.process(data);
   }
 

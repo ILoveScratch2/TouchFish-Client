@@ -156,7 +156,7 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
     if (!confirmed || !mounted) return;
 
     try {
-      // 解封必须撤销处罚（事实来源），只改 stat 会出现"解封了但登不上"
+      // 解封必须撤销处罚
       final success = isBanned
           ? await TfApiClient.instance.manageUnbanUser(
               uid,
@@ -241,12 +241,11 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
   void _showRoleChangeDialog(UserProfile user) {
     final l10n = AppLocalizations.of(context)!;
     final currentStat = user.normalizedStat;
-    // 封禁是处罚不是角色：被封禁的账号要先解封，改角色不能绕过处罚
+    // 封禁是处罚
     if (currentStat == 'banned') {
       TouchFishSnackbarService.instance.show(l10n.adminAccountUnbanFirst);
       return;
     }
-    // 封禁是处罚，不是角色：这里只列真正的角色，封禁走"封禁"按钮/处罚面板
     final availableRoles = AuthState.instance.currentUser?.isRoot == true
         ? const ['user', 'admin', 'root']
         : const ['user'];
@@ -341,7 +340,7 @@ class _AccountManagementScreenState extends State<AccountManagementScreen> {
     final introductionController = TextEditingController();
     var role = 'user';
     var obscurePassword = true;
-    // 新建账号只设角色；封禁（处罚）在建号之后单独操作
+    // 新建账号只设角色
     final roles = AuthState.instance.currentUser?.isRoot == true
         ? const ['user', 'admin', 'root']
         : const ['user'];

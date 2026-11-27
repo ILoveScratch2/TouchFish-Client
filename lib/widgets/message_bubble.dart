@@ -479,35 +479,79 @@ class MessageBubble extends HookWidget {
   Widget build(BuildContext context) {
     // print("msg: $message, ispinned: $isPinned, isessence: $isEssence");
     final cachedBytes = useMemoized<Uint8List?>(() {
-      final media = message.media;
-      return media?.bytes != null ? Uint8List.fromList(media!.bytes!) : null;
+      final bytes = message.media?.bytes;
+      if (bytes == null) return null;
+      return bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
     }, [message.media?.bytes]);
 
-    return _MessageBubbleContent(
-      message: message,
-      cachedBytes: cachedBytes,
-      animateEntrance: animateEntrance,
-      onReply: onReply,
-      onForward: onForward,
-      onRecall: onRecall,
-      onDelete: onDelete,
-      onQuoteTap: onQuoteTap,
-      showAvatar: showAvatar,
-      canRecall: canRecall,
-      isPinned: isPinned,
-      isEssence: isEssence,
-      canPin: canPin,
-      canEssence: canEssence,
-      essenceEnabled: essenceEnabled,
-      onPinToggle: onPinToggle,
-      onEssenceToggle: onEssenceToggle,
-      onRetry: onRetry,
-      readReceiptLabel: readReceiptLabel,
-      galleryItems: galleryItems,
-      galleryIndex: galleryIndex,
-      isSelectionMode: isSelectionMode,
-      onEnterSelectionMode: onEnterSelectionMode,
-      displayStyle: displayStyle,
+    final latest = useRef(this)..value = this;
+    return useMemoized(
+      () => _MessageBubbleContent(
+        message: message,
+        cachedBytes: cachedBytes,
+        animateEntrance: animateEntrance,
+        onReply: onReply == null ? null : (m) => latest.value.onReply?.call(m),
+        onForward: onForward == null
+            ? null
+            : (m) => latest.value.onForward?.call(m),
+        onRecall: onRecall == null
+            ? null
+            : (m) => latest.value.onRecall?.call(m),
+        onDelete: onDelete == null
+            ? null
+            : (m) => latest.value.onDelete?.call(m),
+        onQuoteTap: onQuoteTap == null
+            ? null
+            : (mid) => latest.value.onQuoteTap?.call(mid),
+        showAvatar: showAvatar,
+        canRecall: canRecall,
+        isPinned: isPinned,
+        isEssence: isEssence,
+        canPin: canPin,
+        canEssence: canEssence,
+        essenceEnabled: essenceEnabled,
+        onPinToggle: onPinToggle == null
+            ? null
+            : () => latest.value.onPinToggle?.call(),
+        onEssenceToggle: onEssenceToggle == null
+            ? null
+            : () => latest.value.onEssenceToggle?.call(),
+        onRetry: onRetry == null ? null : () => latest.value.onRetry?.call(),
+        readReceiptLabel: readReceiptLabel,
+        galleryItems: galleryItems,
+        galleryIndex: galleryIndex,
+        isSelectionMode: isSelectionMode,
+        onEnterSelectionMode: onEnterSelectionMode == null
+            ? null
+            : () => latest.value.onEnterSelectionMode?.call(),
+        displayStyle: displayStyle,
+      ),
+      [
+        message,
+        cachedBytes,
+        animateEntrance,
+        showAvatar,
+        canRecall,
+        isPinned,
+        isEssence,
+        canPin,
+        canEssence,
+        essenceEnabled,
+        readReceiptLabel,
+        galleryItems,
+        galleryIndex,
+        isSelectionMode,
+        displayStyle,
+        onReply != null,
+        onForward != null,
+        onRecall != null,
+        onDelete != null,
+        onQuoteTap != null,
+        onPinToggle != null,
+        onEssenceToggle != null,
+        onRetry != null,
+        onEnterSelectionMode != null,
+      ],
     );
   }
 }
@@ -533,7 +577,7 @@ class _MessageEntranceState extends State<_MessageEntrance>
     parent: _controller,
     curve: Curves.easeOutQuart,
   );
-  late final Animation<double> _fade = CurvedAnimation(
+  late final CurvedAnimation _fade = CurvedAnimation(
     parent: _controller,
     curve: const Interval(0.1, 1, curve: Curves.easeOut),
   );
@@ -549,17 +593,16 @@ class _MessageEntranceState extends State<_MessageEntrance>
   void initState() {
     super.initState();
     _entered = widget.animate;
-    if (_entered) {
-      _controller.forward();
-    } else {
-      _controller.value = 1;
-    }
+    if (_entered) _controller.forward();
   }
 
   @override
   void dispose() {
-    _progress.dispose();
-    _controller.dispose();
+    if (_entered) {
+      _progress.dispose();
+      _fade.dispose();
+      _controller.dispose();
+    }
     super.dispose();
   }
 

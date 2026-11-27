@@ -362,6 +362,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'Activation failed, please check the code';
 
   @override
+  String get registerResendCode => 'Resend activation code';
+
+  @override
+  String registerResendWait(int seconds) {
+    return 'Resend in ${seconds}s';
+  }
+
+  @override
+  String get registerResendRequested => 'New code requested. Check your email.';
+
+  @override
+  String get registerResendFailed =>
+      'Could not request a new code. Please try again.';
+
+  @override
   String get forumLoadFailed => 'Failed to load forums';
 
   @override

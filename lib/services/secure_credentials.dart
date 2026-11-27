@@ -60,6 +60,7 @@ class SecureCredentials extends ChangeNotifier {
   static bool Function() webIsSecureContext = () => isSecureWebContext;
 
   bool? _available;
+  Future<bool>? _probeInFlight;
   DateTime? _unavailableAt;
   SecureStorageStatus _status = SecureStorageStatus.unknown;
 
@@ -100,6 +101,10 @@ class SecureCredentials extends ChangeNotifier {
         DateTime.now().difference(unavailableAt) < unavailableRetryDelay) {
       return false;
     }
+    return _probeInFlight ??= _probeStorage().whenComplete(() => _probeInFlight = null);
+  }
+
+  Future<bool> _probeStorage() async {
     try {
       await _storage.write(key: _probeKey, value: '1');
       final value = await _storage.read(key: _probeKey);

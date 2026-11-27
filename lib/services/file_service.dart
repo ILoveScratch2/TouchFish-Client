@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/file_task.dart';
@@ -180,6 +183,15 @@ class FileService {
   }) async {
     final totalChunks = (bytes.length / kUploadChunkSize).ceil();
     final expectedHash = await computeSha256(bytes);
+    final baseUrl = filePath == null
+        ? null
+        : await TfApiClient.instance.getBaseUrl();
+    final sessionKey = filePath == null
+        ? null
+        : '$_kSessionKeyPrefix${jsonEncode([baseUrl, uid, filePath, expectedHash, fileName])}';
+    final prefs = sessionKey == null
+        ? null
+        : await SharedPreferences.getInstance();
 
     // 秒传预检：服务端已存在同内容时直接返回哈希，跳过逐块上传。
     final instant = await TfApiClient.instance.instantUpload(
@@ -188,115 +200,131 @@ class FileService {
       fileName,
       expectedHash,
     );
-    if (instant != null && instant['instant'] == true) {
-      final hash = (instant['file_hash'] ?? instant['hash']) as String?;
-      if (hash != null) {
-        if (filePath != null) await _clearSession(filePath);
-        onProgress(bytes.length);
-        return hash;
-      }
+    final instantHash = instant?['file_hash'] ?? instant?['hash'];
+    if (instant?['instant'] == true && instantHash == expectedHash) {
+      if (prefs != null && sessionKey != null) await prefs.remove(sessionKey);
+      onProgress(bytes.length);
+      return expectedHash;
     }
 
-    // 尝试恢复断点续传会话。
-    UploadSession? session;
-    if (filePath != null) {
-      session = await _loadSession(filePath);
+    var session = prefs == null || sessionKey == null
+        ? null
+        : UploadSession.decode(prefs.getString(sessionKey));
+    if (session != null &&
+        !session.canResume(
+          hash: expectedHash,
+          name: fileName,
+          size: bytes.length,
+          bytesPerChunk: kUploadChunkSize,
+          chunks: totalChunks,
+        )) {
+      session = null;
+      await prefs!.remove(sessionKey!);
     }
 
-    String? fileId = session?.sessionId;
+    var retryFromStart = session != null;
+    String fileId = session?.sessionId ?? _newUploadId();
     final uploadedChunks = <int>{...?session?.uploadedChunks};
     var transferredBase = uploadedChunks.length * kUploadChunkSize;
 
+    Future<void> persistSession() async {
+      if (prefs == null || sessionKey == null || filePath == null) return;
+      final now = DateTime.now();
+      final updated = UploadSession(
+        sessionId: fileId,
+        filePath: filePath,
+        fileName: fileName,
+        fileSize: bytes.length,
+        chunkSize: kUploadChunkSize,
+        totalChunks: totalChunks,
+        uploadedChunks: uploadedChunks,
+        expectedHash: expectedHash,
+        createdAt: session?.createdAt ?? now,
+        expiresAt: now.add(const Duration(hours: 1)),
+      );
+      session = updated;
+      await prefs.setString(sessionKey, updated.encode());
+    }
+
+    if (session == null) await persistSession();
     for (var i = 0; i < totalChunks; i++) {
       if (uploadedChunks.contains(i)) continue;
 
       final start = i * kUploadChunkSize;
-      final end = (i + 1) * kUploadChunkSize > bytes.length
-          ? bytes.length
-          : (i + 1) * kUploadChunkSize;
+      final end = (start + kUploadChunkSize).clamp(0, bytes.length);
       final chunkBytes = bytes.sublist(start, end);
-      final chunkBase64 = base64Encode(chunkBytes);
-
-      // 分块内进度：当前块已传输字节 + 已完成块字节。
       final result = await TfApiClient.instance.uploadChunk(
         uid: uid,
         password: password,
         fileName: fileName,
         chunkIndex: i,
         chunkTotal: totalChunks,
-        chunkData: chunkBase64,
+        chunkData: base64Encode(chunkBytes),
         fileId: fileId,
         expectedHash: expectedHash,
         onProgress: (sent, total) {
-          final withinChunk = total > 0 ? (sent / total) * chunkBytes.length : 0;
+          final withinChunk = total > 0
+              ? (sent / total) * chunkBytes.length
+              : 0;
           onProgress(
             (transferredBase + withinChunk).clamp(0, bytes.length).toInt(),
           );
         },
       );
 
-      if (result == null) {
-        // 传输失败：保留已成功分块记录，等待下次续传。
-        if (filePath != null && fileId != null) {
-          await _saveSession(
-            UploadSession(
-              sessionId: fileId,
-              filePath: filePath,
-              fileName: fileName,
-              fileSize: bytes.length,
-              chunkSize: kUploadChunkSize,
-              totalChunks: totalChunks,
-              uploadedChunks: uploadedChunks,
-              expectedHash: expectedHash,
-              createdAt: session?.createdAt ?? DateTime.now(),
-              expiresAt: session?.expiresAt ??
-                  DateTime.now().add(const Duration(hours: 1)),
-            ),
-          );
+      if (result == null) return null;
+      final error = result['error'];
+      if (result['success'] == false || error != null) {
+        final invalidSession = switch (error) {
+          'FILE_INVALID_FILE_ID' ||
+          'FILE_NAME_MISMATCH' ||
+          'FILE_CHUNK_TOTAL_MISMATCH' ||
+          'FILE_HASH_MISMATCH' ||
+          'FILE_HASH_VERIFICATION_FAILED' ||
+          'FILE_MISSING_CHUNK' => true,
+          _ => false,
+        };
+        if (invalidSession && prefs != null && sessionKey != null) {
+          await prefs.remove(sessionKey);
         }
-        return null;
+        if (!invalidSession || !retryFromStart) return null;
+        retryFromStart = false;
+        session = null;
+        fileId = _newUploadId();
+        uploadedChunks.clear();
+        transferredBase = 0;
+        onProgress(0);
+        await persistSession();
+        i = -1;
+        continue;
       }
 
-      // 首次分块：服务端返回 file_id（会话 ID）。
-      final returnedFileId = result['file_id'] as String?;
-      if (returnedFileId != null) {
-        fileId = returnedFileId;
+      final hash = result['file_hash'] ?? result['hash'];
+      if (hash == expectedHash) {
+        if (prefs != null && sessionKey != null) await prefs.remove(sessionKey);
+        onProgress(bytes.length);
+        return expectedHash;
       }
 
+      if (i == totalChunks - 1) return null;
+      final uploadId = result['file_id'];
+      if (uploadId is! String || uploadId.isEmpty) return null;
+      fileId = uploadId;
       uploadedChunks.add(i);
-      transferredBase = uploadedChunks.length * kUploadChunkSize;
-      onProgress(transferredBase.clamp(0, bytes.length).toInt());
+      transferredBase += chunkBytes.length;
+      onProgress(transferredBase);
 
-      // 持久化会话（用于断点续传）。
-      if (filePath != null && fileId != null) {
-        await _saveSession(
-          UploadSession(
-            sessionId: fileId,
-            filePath: filePath,
-            fileName: fileName,
-            fileSize: bytes.length,
-            chunkSize: kUploadChunkSize,
-            totalChunks: totalChunks,
-            uploadedChunks: uploadedChunks,
-            expectedHash: expectedHash,
-            createdAt: session?.createdAt ?? DateTime.now(),
-            expiresAt: session?.expiresAt ??
-                DateTime.now().add(const Duration(hours: 1)),
-          ),
-        );
-      }
-
-      // 最后一个分块：返回 file_hash。
-      if (i == totalChunks - 1) {
-        final hash = result['file_hash'] as String? ?? result['hash'] as String?;
-        if (hash != null) {
-          await _clearSession(filePath);
-          return hash;
-        }
-      }
+      await persistSession();
     }
 
     return null;
+  }
+
+  String _newUploadId() {
+    final random = Random.secure();
+    return sha256
+        .convert(List.generate(32, (_) => random.nextInt(256)))
+        .toString();
   }
 
   /// 下载文件到本地路径，返回保存路径与任务 ID；失败时 savedPath 为 null。
@@ -326,38 +354,30 @@ class FileService {
       // `.download()` 的 response.data 是 ResponseBody（无 length），不能拿它当字节数；
       // 用进度回调累计的 received 作为真实已传输字节。
       var receivedBytes = 0;
-      final response = await _downloadDio.download(
-        url,
-        savePath,
-        onReceiveProgress: (received, total) {
-          receivedBytes = received;
-          taskManager.updateTask(
-            taskId,
-            status: FileTaskStatus.transferring,
-            bytesTransferred: received,
-          );
-        },
-        options: Options(
-          responseType: ResponseType.bytes,
-          followRedirects: true,
-        ),
-      );
-
-      final statusCode = response.statusCode ?? 0;
-      if (statusCode < 200 || statusCode >= 300) {
-        taskManager.updateTask(
-          taskId,
-          status: FileTaskStatus.failed,
-          errorMessage: 'http_$statusCode',
+      await writeDownloadAtomically(savePath, (temporaryPath) async {
+        await _downloadDio.download(
+          url,
+          temporaryPath,
+          onReceiveProgress: (received, total) {
+            receivedBytes = received;
+            taskManager.updateTask(
+              taskId,
+              status: FileTaskStatus.transferring,
+              bytesTransferred: received,
+            );
+          },
+          options: Options(
+            responseType: ResponseType.bytes,
+            followRedirects: true,
+          ),
         );
-        return (savedPath: null, taskId: taskId);
-      }
+      });
 
       taskManager.updateTask(
         taskId,
         status: FileTaskStatus.completed,
         savePath: savePath,
-        bytesTransferred: expectedSize > 0 ? expectedSize : receivedBytes,
+        bytesTransferred: receivedBytes,
       );
       return (savedPath: savePath, taskId: taskId);
     } catch (e) {
@@ -376,35 +396,32 @@ class FileService {
   /// 计算字节的 SHA256（十六进制字符串）。
   Future<String> computeSha256(List<int> bytes) {
     // 大文件哈希在 isolate 中计算，避免阻塞 UI。
-    return compute(
-      _sha256Isolate,
-      Uint8List.fromList(bytes),
-    );
+    return compute(_sha256Isolate, Uint8List.fromList(bytes));
   }
 
   static String _sha256Isolate(Uint8List bytes) {
     return sha256.convert(bytes).toString();
   }
+}
 
-  // --- 会话持久化 ---
-
-  Future<UploadSession?> _loadSession(String filePath) async {
-    final prefs = await SharedPreferences.getInstance();
-    return UploadSession.decode(prefs.getString('$_kSessionKeyPrefix$filePath'));
-  }
-
-  Future<void> _saveSession(UploadSession session) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      '$_kSessionKeyPrefix${session.filePath}',
-      session.encode(),
-    );
-  }
-
-  Future<void> _clearSession(String? filePath) async {
-    if (filePath == null) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('$_kSessionKeyPrefix$filePath');
+Future<void> writeDownloadAtomically(
+  String savePath,
+  Future<void> Function(String temporaryPath) write,
+) async {
+  final destination = File(savePath).absolute;
+  final temporaryDirectory = await destination.parent.createTemp(
+    '.touchfish-download-',
+  );
+  try {
+    final temporaryFile = File(p.join(temporaryDirectory.path, 'download'));
+    await write(temporaryFile.path);
+    await temporaryFile.rename(destination.path);
+  } finally {
+    try {
+      await temporaryDirectory.delete(recursive: true);
+    } on FileSystemException catch (error) {
+      talker.warning('Failed to clean up temporary download', error);
+    }
   }
 }
 

@@ -161,10 +161,11 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
       ],
     );
     if (!mounted) return;
-    if (restore != true) {
+    if (restore == false) {
       await DraftService.instance.clearDraft(_draftType, _draftId);
       return;
     }
+    if (restore != true) return;
 
     if (_titleController.text.isEmpty) {
       _titleController.text = draftTitle;
@@ -236,8 +237,8 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
 
   @override
   void dispose() {
+    if (!_didSubmit && _draftTimer?.isActive == true) unawaited(_saveDraft());
     _draftTimer?.cancel();
-    if (!_didSubmit) unawaited(_saveDraft());
     if (widget.onContentChanged != null) {
       _contentController.removeListener(_reportContentChange);
     }
@@ -662,7 +663,10 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
 
   Future<void> _handleClipboardPasteForForum() async {
     final service = ClipboardAttachmentService.instance;
-    final files = await service.checkAndReadFiles();
+    final files = widget.isReply
+        ? const <ClipboardFileData>[]
+        : await service.checkAndReadFiles();
+    if (!mounted) return;
     if (files.isEmpty) {
       // Clipboard only has text – insert it manually.
       final text = await readTextFromClipboard();
@@ -683,12 +687,14 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
   }
 
   Future<void> _uploadClipboardFiles(List<ClipboardFileData> files) async {
+    if (!mounted || _isUploadingAttachment) return;
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
     setState(() => _isUploadingAttachment = true);
     try {
       for (final file in files) {
+        if (!mounted) return;
         final maxSize = await TfApiClient.instance.getMaxFileSize();
         if (maxSize != null && file.bytes.length > maxSize) {
           if (mounted) {
@@ -712,7 +718,10 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
           fileName: uploadName,
           bytes: uploadBytes,
         );
-        if (hash == null || hash.isEmpty || !mounted) continue;
+        if (hash == null || hash.isEmpty || !mounted ||
+            _attachments.any((file) => file.hash == hash)) {
+          continue;
+        }
         setState(() {
           _attachments.add(
             FileAttachment(
@@ -738,18 +747,20 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
   }
 
   Future<void> _pickAttachments() async {
-    final result = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
-      withData: true,
-      type: FileType.any,
-    );
-    if (result == null || result.files.isEmpty) return;
+    if (_isUploadingAttachment) return;
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     if (uid == null || password == null) return;
     setState(() => _isUploadingAttachment = true);
     try {
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        withData: true,
+        type: FileType.any,
+      );
+      if (!mounted || result == null || result.files.isEmpty) return;
       for (final file in result.files) {
+        if (!mounted) return;
         final bytes = file.bytes;
         if (bytes == null) continue;
         final maxSize = await TfApiClient.instance.getMaxFileSize();
@@ -775,7 +786,10 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
           fileName: uploadName,
           bytes: uploadBytes,
         );
-        if (hash == null || hash.isEmpty || !mounted) continue;
+        if (hash == null || hash.isEmpty || !mounted ||
+            _attachments.any((file) => file.hash == hash)) {
+          continue;
+        }
         setState(() {
           _attachments.add(
             FileAttachment(
@@ -801,9 +815,9 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting || _isUploadingAttachment) return;
     final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
-    if (_isUploadingAttachment) return;
     final hasContent = _contentController.text.trim().isNotEmpty;
     final hasTitle = widget.isReply || _titleController.text.trim().isNotEmpty;
     if (!hasContent && !hasTitle) {
@@ -850,6 +864,7 @@ class _ForumPostComposeSheetState extends State<ForumPostComposeSheet> {
       _isSubmitting = true;
       _didSubmit = true;
     });
+    _draftTimer?.cancel();
     Navigator.pop(context, true);
     unawaited(
       _submitInBackground(

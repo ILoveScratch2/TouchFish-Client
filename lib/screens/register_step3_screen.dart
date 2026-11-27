@@ -1,6 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:smart_form_guard/smart_form_guard.dart';
 import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../services/api/tf_api_client.dart';
@@ -10,34 +11,57 @@ import '../utils/talker.dart';
 class RegisterStep3Screen extends StatefulWidget {
   final String username;
   final int uid;
+  final Future<bool> Function()? resendCode;
 
   const RegisterStep3Screen({
     super.key,
     required this.username,
     required this.uid,
+    this.resendCode,
   });
+
+  static Future<void> show(
+    BuildContext context, {
+    required String username,
+    required int uid,
+    required Future<bool> Function() resendCode,
+  }) {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => RegisterStep3Screen(
+          username: username,
+          uid: uid,
+          resendCode: resendCode,
+        ),
+      ),
+    );
+  }
 
   @override
   State<RegisterStep3Screen> createState() => _RegisterStep3ScreenState();
 }
 
 class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
+  final _formKey = GlobalKey<FormState>();
   final _verificationCodeController = TextEditingController();
   bool _isLoading = false;
+  bool _isResending = false;
+  int _resendCooldown = 0;
+  Timer? _resendTimer;
 
   @override
   void dispose() {
+    _resendTimer?.cancel();
     _verificationCodeController.dispose();
     super.dispose();
   }
 
   Future<void> _activate() async {
+    if (_isLoading || _isResending) return;
+    if (_formKey.currentState?.validate() != true) return;
     final l10n = AppLocalizations.of(context)!;
     final code = int.tryParse(_verificationCodeController.text.trim());
-    if (code == null) {
-      TouchFishSnackbarService.instance.show(l10n.registerErrorVerificationCodeInvalid);
-      return;
-    }
+    if (code == null) return;
     setState(() => _isLoading = true);
     try {
       final success = await TfApiClient.instance.activateAccount(
@@ -60,6 +84,41 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
     }
   }
 
+  Future<void> _resend() async {
+    final resendCode = widget.resendCode;
+    if (resendCode == null ||
+        _isLoading ||
+        _isResending ||
+        _resendCooldown > 0) {
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _isResending = true);
+    try {
+      final sent = await resendCode();
+      if (!mounted) return;
+      if (sent) {
+        _verificationCodeController.clear();
+        setState(() => _resendCooldown = 60);
+        _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+          setState(() => _resendCooldown--);
+          if (_resendCooldown == 0) timer.cancel();
+        });
+      }
+      TouchFishSnackbarService.instance.show(
+        sent ? l10n.registerResendRequested : l10n.registerResendFailed,
+      );
+    } catch (e) {
+      talker.error('RegisterStep3: resend failed', e);
+      if (mounted) {
+        TouchFishSnackbarService.instance.show(l10n.registerResendFailed);
+      }
+    } finally {
+      if (mounted) setState(() => _isResending = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -73,8 +132,8 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
             margin: const EdgeInsets.all(16),
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: SmartForm(
-                onValid: () => _activate(),
+              child: Form(
+                key: _formKey,
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -106,34 +165,51 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
                       const SizedBox(height: 24),
 
                       // Verification Code field
-                      SmartField(
+                      TextFormField(
                         controller: _verificationCodeController,
-                        label: l10n.registerVerificationCode,
-                        prefixIcon: Icons.verified_user_outlined,
                         keyboardType: TextInputType.number,
-                        validator: SmartValidators.compose([
-                          SmartValidators.required(
-                            l10n.registerErrorVerificationCodeRequired,
-                          ),
-                          (value) {
-                            if (value == null || value.isEmpty) return null;
-                            if (!RegExp(r'^\d{6}$').hasMatch(value)) {
-                              return l10n.registerErrorVerificationCodeInvalid;
-                            }
-                            return null;
-                          },
-                        ]),
+                        textInputAction: TextInputAction.done,
+                        decoration: InputDecoration(
+                          labelText: l10n.registerVerificationCode,
+                          prefixIcon: const Icon(Icons.verified_user_outlined),
+                          errorMaxLines: 2,
+                        ),
+                        onFieldSubmitted: (_) => unawaited(_activate()),
+                        validator: (value) {
+                          final code = value?.trim() ?? '';
+                          if (code.isEmpty) {
+                            return l10n.registerErrorVerificationCodeRequired;
+                          }
+                          if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+                            return l10n.registerErrorVerificationCodeInvalid;
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 24),
 
                       // Register button
-                      _isLoading
+                      _isLoading || _isResending
                           ? const CircularProgressIndicator()
-                          : SmartSubmitButton(
-                              text: l10n.registerComplete,
-                              icon: Icons.check_circle,
+                          : FilledButton.icon(
+                              onPressed: _activate,
+                              icon: const Icon(Icons.check_circle),
+                              label: Text(l10n.registerComplete),
                             ),
                       const SizedBox(height: 12),
+
+                      if (widget.resendCode != null)
+                        TextButton(
+                          onPressed:
+                              _isLoading || _isResending || _resendCooldown > 0
+                              ? null
+                              : _resend,
+                          child: Text(
+                            _resendCooldown > 0
+                                ? l10n.registerResendWait(_resendCooldown)
+                                : l10n.registerResendCode,
+                          ),
+                        ),
 
                       // Back button
                       TextButton(

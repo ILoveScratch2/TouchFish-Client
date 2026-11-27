@@ -50,27 +50,60 @@ void main() {
     expect(state.indexById[imageGalleryKey(second)], 1);
   });
 
-  test(
-    'index survives a rebuild with new instances sharing the same mid',
-    () {
-      final container = containerWith([
-        _imageMessage(mid: 10),
-        _imageMessage(mid: 11),
-      ]);
-      container.read(imageGalleryProvider(roomId));
-      final rebuiltFirst = _imageMessage(mid: 10);
-      final rebuiltSecond = _imageMessage(mid: 11);
+  test('index survives a rebuild with new instances sharing the same mid', () {
+    final container = containerWith([
+      _imageMessage(mid: 10),
+      _imageMessage(mid: 11),
+    ]);
+    container.read(imageGalleryProvider(roomId));
+    final rebuiltFirst = _imageMessage(mid: 10);
+    final rebuiltSecond = _imageMessage(mid: 11);
 
-      final state = container.read(imageGalleryProvider(roomId));
+    final state = container.read(imageGalleryProvider(roomId));
 
-      expect(state.indexById[imageGalleryKey(rebuiltFirst)], 0);
-      expect(
-        state.indexById[imageGalleryKey(rebuiltSecond)],
-        1,
-        reason: 'should locate to 1 not 0 (not Chengdu)',
-      );
-    },
-  );
+    expect(state.indexById[imageGalleryKey(rebuiltFirst)], 0);
+    expect(
+      state.indexById[imageGalleryKey(rebuiltSecond)],
+      1,
+      reason: 'should locate to 1 not 0 (not Chengdu)',
+    );
+  });
+
+  test('refreshes replaced media and reuses unaffected lightbox entries', () {
+    final first = _imageMessage(mid: 10, bytes: [1, 2]);
+    final second = _imageMessage(mid: 11, bytes: [3, 4]);
+    final source = StateProvider<List<ChatMessage>>((_) => [first, second]);
+    final container = ProviderContainer(
+      overrides: [
+        imageMessagesProvider(roomId).overrideWith((ref) => ref.watch(source)),
+      ],
+    );
+    addTearDown(container.dispose);
+    final subscription = container.listen(
+      imageGalleryProvider(roomId),
+      (_, _) {},
+    );
+    addTearDown(subscription.close);
+    final original = subscription.read();
+    final replacement = second.copyWith(
+      media: second.media!.copyWith(
+        path: '/updated.jpg',
+        width: 640,
+        bytes: [7, 8],
+      ),
+    );
+    container.read(source.notifier).state = [first, replacement];
+    final refreshed = subscription.read();
+    expect(refreshed.items[1].media, same(replacement.media));
+    expect(refreshed.items[1].bytes, [7, 8]);
+    expect(refreshed.items[0], same(original.items[0]));
+
+    container.read(source.notifier).state = [
+      first.copyWith(text: 'a'),
+      replacement,
+    ];
+    expect(subscription.read(), same(refreshed));
+  });
 
   test('falls back to the local id when mid is missing', () {
     final a = ChatMessage(

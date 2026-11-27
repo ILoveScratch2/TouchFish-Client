@@ -83,6 +83,51 @@ void main() {
     await root.delete(recursive: true);
   });
 
+  test('v4 scoped keys preserve group senders, search rows, imports and self echoes', () async {
+    const server = 'https://sender-keys.test';
+    const uid = 9;
+    const room = 'G15';
+    final store = LocalMessageStore.instance;
+    store.configureScope(server, uid);
+    final path = (await store.databasePath())!;
+    store.closeAllForTesting();
+    ChatMessage msg(int? mid, int? sender, bool self) => ChatMessage(
+      id: mid?.toString() ?? 'shared', mid: mid, clientMid: 'shared', senderUid: sender,
+      timestamp: DateTime.utc(2026), text: 'sender body $mid', isMe: self,
+      status: mid == null ? MessageStatus.pending : MessageStatus.sent);
+    final old = msg(11, 0, false);
+    final seed = sqlite3.open(path);
+    seed.execute('PRAGMA user_version = 4');
+    seed.execute('INSERT INTO messages VALUES (?, ?, ?, ?, ?, ?)',
+        [server, uid, room, 'client:shared', 1, jsonEncode(old.toJson())]);
+    seed.execute('INSERT INTO message_search VALUES (?, ?, ?, ?, ?)',
+        [server, uid, room, 'client:shared', old.text]);
+    seed.dispose();
+
+    store.configureScope(server, uid);
+    expect((await store.findMessageByMid(room, 11))?.senderUid, 0);
+    expect((await store.searchAllRooms('sender body')).length, 1);
+    await Future.wait([store.saveMessage(room, msg(null, 0, true)), store.saveMessage(room, msg(12, 7, false))]);
+    await store.saveMessage(room, msg(13, uid, true));
+    final backup = {
+      'messages': [
+        {'roomId': room, 'messageKey': 'client:shared', 'timestamp': 2, 'payload': msg(14, 8, false).toJson()},
+        {'roomId': room, 'messageKey': 'client:shared', 'timestamp': 3, 'payload': msg(15, null, false).toJson()},
+      ],
+    };
+    await store.importSnapshot(backup);
+    await store.saveMessage(room, msg(15, 17, false));
+    store.closeAllForTesting();
+    store.configureScope(server, uid);
+    final saved = await store.loadMessages(room);
+    expect(saved.map((m) => m.mid).toSet(), {11, 12, 13, 14, 15});
+    expect(saved.length, 5);
+    expect((await store.searchAllRooms('sender body')).length, 5);
+    await store.deleteMessage(room, old);
+    expect((await store.loadMessages(room)).length, 4);
+    expect(await store.findMessageByMid(room, 11), isNull);
+  });
+
   test('a v0 database from the previous release gets indexed on open', () async {
     const server = 'https://v0.test';
     const uid = 9;
@@ -110,7 +155,7 @@ void main() {
     final short = await store.searchAllRooms('摸鱼');
     expect(short, hasLength(1));
 
-    expect(_userVersion(dbFile), 4);
+    expect(_userVersion(dbFile), 5);
   });
 
   test('a v3 database re-indexes history from the payload text field', () async {
@@ -165,7 +210,7 @@ void main() {
     final short = await store.searchAllRooms('摸鱼');
     expect(short, hasLength(1));
 
-    expect(_userVersion(dbFile), 4, reason: 'v3 必须迁移到 v4 并重建索引');
+    expect(_userVersion(dbFile), 5, reason: '升级旧库时须重建搜索索引');
 
     final check = sqlite3.open(dbFile);
     try {

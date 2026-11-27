@@ -17,16 +17,42 @@ void main() {
     expect(identical(ChatMessage.dedupeByMid(messages), messages), isTrue);
   });
 
-  test('drops duplicate mids but keeps the first occurrence and null-mid items',
-      () {
-    final first = message(1, 'first');
-    final duplicate = message(1, 'duplicate');
-    final pending = message(null, 'pending');
+  test(
+    'receipt, sender, failure and attachment changes invalidate rendered content',
+    () {
+      final m = message(1, 'hello').copyWith(
+        media: MessageMedia(
+          path: 'picture',
+          bytes: [0, 1],
+          width: 50,
+          height: 50,
+        ),
+      );
+      expect(ChatMessage.sameRenderedContent(m, m.copyWith()), isTrue);
+      for (final changed in [
+        m.copyWith(isMe: true),
+        m.copyWith(roomSeq: 1),
+        m.copyWith(ackError: 'failed'),
+        m.copyWith(media: m.media!.copyWith(width: 100)),
+        m.copyWith(media: m.media!.copyWith(bytes: [0, 2])),
+      ]) {
+        expect(ChatMessage.sameRenderedContent(m, changed), isFalse);
+      }
+    },
+  );
 
-    final deduped = ChatMessage.dedupeByMid([first, duplicate, pending]);
+  test(
+    'drops duplicate mids but keeps the first occurrence and null-mid items',
+    () {
+      final first = message(1, 'first');
+      final duplicate = message(1, 'duplicate');
+      final pending = message(null, 'pending');
 
-    expect(deduped, hasLength(2));
-    expect(identical(deduped[0], first), isTrue);
-    expect(identical(deduped[1], pending), isTrue);
-  });
+      final deduped = ChatMessage.dedupeByMid([first, duplicate, pending]);
+
+      expect(deduped, hasLength(2));
+      expect(identical(deduped[0], first), isTrue);
+      expect(identical(deduped[1], pending), isTrue);
+    },
+  );
 }

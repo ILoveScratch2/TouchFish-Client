@@ -75,6 +75,16 @@ set_target_properties(${BINARY_NAME}
 include(flutter/generated_plugins.cmake)
 
 
+# The pinned WebRTC plugin sets g_host_messenger for other platforms. Newer
+# Clang releases report the unused Linux global under -Wall.
+if(TARGET flutter_webrtc_plugin AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  include(CheckCXXCompilerFlag)
+  check_cxx_compiler_flag("-Wunused-but-set-global" HAS_UNUSED_BUT_SET_GLOBAL)
+  if(HAS_UNUSED_BUT_SET_GLOBAL)
+    target_compile_options(flutter_webrtc_plugin PRIVATE -Wno-error=unused-but-set-global)
+  endif()
+endif()
+
 # libayatana-appindicator3 (Ubuntu 24.04) 将 app_indicator_new 标记废弃
 # 而 tray_manager 0.5.3 仍然调用它
 foreach(plugin ${FLUTTER_PLUGIN_LIST})

@@ -4,38 +4,15 @@ import '../models/typing_status.dart';
 import '../services/chat_data_service.dart';
 
 /// 打字指示器
-class TypingIndicator extends StatefulWidget {
+class TypingIndicator extends StatelessWidget {
   final List<TypingStatus> typingStatuses;
 
   const TypingIndicator({super.key, required this.typingStatuses});
 
   @override
-  State<TypingIndicator> createState() => _TypingIndicatorState();
-}
-
-class _TypingIndicatorState extends State<TypingIndicator>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    if (l10n == null || widget.typingStatuses.isEmpty) {
+    if (l10n == null || typingStatuses.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -47,10 +24,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 1),
-            child: _ChatActivityLine(
-              l10n: l10n,
-              statuses: widget.typingStatuses,
-            ),
+            child: _ChatActivityLine(l10n: l10n, statuses: typingStatuses),
           ),
         ],
       ),
@@ -87,7 +61,7 @@ class _ChatActivityLine extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 2, right: 8),
-          child: _TypingIndicatorDots(isUploading: false),
+          child: const _TypingIndicatorDots(),
         ),
         Expanded(
           child: Text(
@@ -107,9 +81,7 @@ class _ChatActivityLine extends StatelessWidget {
 }
 
 class _TypingIndicatorDots extends StatefulWidget {
-  final bool isUploading;
-
-  const _TypingIndicatorDots({required this.isUploading});
+  const _TypingIndicatorDots();
 
   @override
   State<_TypingIndicatorDots> createState() => _TypingIndicatorDotsState();
@@ -134,9 +106,32 @@ class _TypingIndicatorDotsState extends State<_TypingIndicatorDots>
     super.dispose();
   }
 
+  @override
+  Widget build(BuildContext context) => RepaintBoundary(
+    child: CustomPaint(
+      size: const Size(28, 12),
+      painter: _TypingDotsPainter(
+        _controller,
+        Theme.of(context).colorScheme.onSurfaceVariant,
+        Directionality.of(context),
+      ),
+    ),
+  );
+}
+
+class _TypingDotsPainter extends CustomPainter {
+  final Animation<double> phase;
+  final Color color;
+  final TextDirection direction;
+  final Paint _paint = Paint();
+  final List<double> _diameters = List.filled(3, 0);
+
+  _TypingDotsPainter(this.phase, this.color, this.direction)
+    : super(repaint: phase);
+
   double _dotProgress(int index) {
     final offset = index * 0.14;
-    final progress = (_controller.value - offset) % 1.0;
+    final progress = (phase.value - offset) % 1.0;
     if (progress < 0.55) {
       return Curves.easeOutCubic.transform(progress / 0.55);
     }
@@ -145,7 +140,7 @@ class _TypingIndicatorDotsState extends State<_TypingIndicatorDots>
 
   double _dotLift(int index) {
     final offset = index * 0.16;
-    final progress = (_controller.value - offset) % 1.0;
+    final progress = (phase.value - offset) % 1.0;
     if (progress < 0.5) {
       return Curves.easeOut.transform(progress / 0.5);
     }
@@ -153,49 +148,35 @@ class _TypingIndicatorDotsState extends State<_TypingIndicatorDots>
   }
 
   @override
-  Widget build(BuildContext context) {
-    final baseColor = Theme.of(context).colorScheme.onSurfaceVariant;
-    final activeColor = widget.isUploading
-        ? Theme.of(context).colorScheme.primary
-        : baseColor;
-
-    return SizedBox(
-      width: 28,
-      height: 12,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(3, (index) {
-              final progress = _dotProgress(index);
-              final lift = _dotLift(index);
-              final size = widget.isUploading
-                  ? 3.0 + (progress * 2.1)
-                  : 3.4 + (progress * 1.8);
-
-              return Transform.translate(
-                offset: Offset(0, -lift * (widget.isUploading ? 1.4 : 1.0)),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                  width: size,
-                  height: size,
-                  decoration: BoxDecoration(
-                    color: Color.lerp(
-                      activeColor.withValues(
-                        alpha: widget.isUploading ? 0.24 : 0.32,
-                      ),
-                      activeColor,
-                      progress,
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              );
-            }),
-          );
-        },
-      ),
-    );
+  void paint(Canvas canvas, Size size) {
+    const spacing = 3.0;
+    var width = 2 * spacing;
+    for (var i = 0; i < _diameters.length; i++) {
+      _diameters[i] = 3.4 + _dotProgress(i) * 1.8;
+      width += _diameters[i];
+    }
+    var x = (size.width - width) / 2;
+    for (var i = 0; i < _diameters.length; i++) {
+      final diameter = _diameters[i];
+      final radius = diameter / 2;
+      final progress = (diameter - 3.4) / 1.8;
+      _paint.color = color.withValues(
+        alpha: 0.32 + (color.a - 0.32) * progress,
+      );
+      final center = x + radius;
+      canvas.drawCircle(
+        Offset(
+          direction == TextDirection.ltr ? center : size.width - center,
+          size.height / 2 - _dotLift(i),
+        ),
+        radius,
+        _paint,
+      );
+      x += diameter + spacing;
+    }
   }
+
+  @override
+  bool shouldRepaint(_TypingDotsPainter old) =>
+      old.phase != phase || old.color != color || old.direction != direction;
 }

@@ -47,10 +47,11 @@ class ChatWsService extends ChangeNotifier {
   ChatWsState get state => _state;
 
   /// 当前限流窗口内已经尝试过的重连次数
-  int get reconnectAttempt =>
-      _reconnectCount < 0 ? 0 : (_reconnectCount > _maxReconnectsPerMinute
-          ? _maxReconnectsPerMinute
-          : _reconnectCount);
+  int get reconnectAttempt => _reconnectCount < 0
+      ? 0
+      : (_reconnectCount > _maxReconnectsPerMinute
+            ? _maxReconnectsPerMinute
+            : _reconnectCount);
   int get maxReconnectsPerMinute => _maxReconnectsPerMinute;
   int? _authenticatedUid;
   bool get isAuthenticated =>
@@ -64,7 +65,7 @@ class ChatWsService extends ChangeNotifier {
   StreamSubscription? _subscription;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   bool _intentionalClose = false;
-  bool _tryingConnectionCandidates = false;
+  int _connectionGeneration = 0;
 
   // 曼巴精神！永不言弃！
   static const int _maxReconnectsPerMinute = 5;
@@ -94,24 +95,34 @@ class ChatWsService extends ChangeNotifier {
   Future<bool> connect() {
     final pending = _connectFuture;
     if (pending != null) return pending;
+    _intentionalClose = false;
+    _reconnectTimer?.cancel();
+    final generation = ++_connectionGeneration;
     // 存进字段的就是返回给调用方的那个 future：清除时只清自己那一次，
     // 也不会出现「上一次的旧结果被当成这一次的建连结果」。
     late final Future<bool> future;
-    future = _connectInternal().whenComplete(() {
-      if (identical(_connectFuture, future)) _connectFuture = null;
-    });
+    future = Future<bool>.microtask(() => _connectInternal(generation))
+        .whenComplete(() {
+          if (identical(_connectFuture, future)) _connectFuture = null;
+        });
     _connectFuture = future;
     return future;
   }
 
-  Future<bool> _connectInternal() async {
+  Future<bool> _connectInternal(int generation) async {
+    if (generation != _connectionGeneration) return false;
     final uid = AuthState.instance.uid;
     final password = AuthState.instance.password;
     final jwtMode = AuthState.instance.isJwtMode;
     if (uid == null) return false;
     if (!jwtMode && password == null) return false;
 
-    if (!await _hasNetworkConnectivity()) {
+    _ensureConnectivityWatch();
+    final hasNetwork = await _hasNetworkConnectivity();
+    if (generation != _connectionGeneration || uid != AuthState.instance.uid) {
+      return false;
+    }
+    if (!hasNetwork) {
       talker.info('ChatWsService connect refused: no network connectivity');
       _setState(ChatWsState.disconnected);
       _scheduleReconnect();
@@ -126,10 +137,7 @@ class ChatWsService extends ChangeNotifier {
       _teardownForReconnect();
     }
 
-    _intentionalClose = false;
     _setState(ChatWsState.connecting);
-
-    _tryingConnectionCandidates = true;
 
     try {
       final host = await _resolveHost();
@@ -137,18 +145,26 @@ class ChatWsService extends ChangeNotifier {
       final tryWss = await TfApiClient.instance.shouldTryWss();
       var reloginAttempted = false;
       for (final uri in candidateWebSocketUris(host, tcpPort, tryWss: tryWss)) {
-        final result = await _connectToCandidate(uri, uid, password);
+        if (generation != _connectionGeneration ||
+            uid != AuthState.instance.uid) {
+          return false;
+        }
+        var result = await _connectToCandidate(uri, uid, password, generation);
+        if (generation != _connectionGeneration) return false;
+        if (result == _CandidateConnectionResult.authenticationFailed &&
+            AuthState.instance.isJwtMode &&
+            !reloginAttempted) {
+          reloginAttempted = true;
+          if (await AuthState.instance.relogin() &&
+              generation == _connectionGeneration &&
+              uid == AuthState.instance.uid) {
+            result = await _connectToCandidate(uri, uid, password, generation);
+          }
+        }
         if (result == _CandidateConnectionResult.authenticated) {
           return true;
         }
         if (result == _CandidateConnectionResult.authenticationFailed) {
-          // JWT 模式：token 失效时静默重登一次并重试
-          if (AuthState.instance.isJwtMode &&
-              !reloginAttempted &&
-              await AuthState.instance.relogin()) {
-            reloginAttempted = true;
-            continue;
-          }
           break;
         }
       }
@@ -158,10 +174,9 @@ class ChatWsService extends ChangeNotifier {
         error,
         stackTrace,
       );
-    } finally {
-      _tryingConnectionCandidates = false;
     }
 
+    if (generation != _connectionGeneration) return false;
     if (_state != ChatWsState.authenticated) {
       _disconnectCleanup();
     }
@@ -176,11 +191,7 @@ class ChatWsService extends ChangeNotifier {
         'token': AuthState.instance.token,
       });
     }
-    return jsonEncode({
-      'type': 'AUTH.LOGIN',
-      'uid': uid,
-      'password': password,
-    });
+    return jsonEncode({'type': 'AUTH.LOGIN', 'uid': uid, 'password': password});
   }
 
   @visibleForTesting
@@ -197,28 +208,53 @@ class ChatWsService extends ChangeNotifier {
     Uri uri,
     int uid,
     String? password,
+    int generation,
   ) async {
     WebSocketChannel? candidateChannel;
-    var transportConnected = false;
+    bool isCurrent() => generation == _connectionGeneration;
     try {
       _setState(ChatWsState.connecting);
+      if (!isCurrent()) return _CandidateConnectionResult.connectionFailed;
       talker.info('ChatWsService connecting to $uri');
       final channel = WebSocketChannel.connect(uri);
       candidateChannel = channel;
       await channel.ready.timeout(const Duration(seconds: 5));
-      transportConnected = true;
+      if (!isCurrent()) {
+        channel.sink.close().ignore();
+        return _CandidateConnectionResult.connectionFailed;
+      }
 
       _channel = channel;
-      _setState(ChatWsState.connected);
-      _authCompleter = Completer<bool>();
+      var closed = false;
+      var transportFailed = false;
+      final completer = Completer<bool>();
+      _authCompleter = completer;
       _subscription = channel.stream.listen(
-        _onData,
-        onError: _onError,
-        onDone: _onDone,
+        (data) {
+          if (identical(_channel, channel)) _onData(data);
+        },
+        onError: (Object error) {
+          transportFailed = true;
+          if (identical(_channel, channel)) _onError(error);
+        },
+        onDone: () {
+          closed = true;
+          if (identical(_channel, channel)) _onDone();
+        },
         cancelOnError: false,
       );
+      _setState(ChatWsState.connected);
+      if (!isCurrent()) return _CandidateConnectionResult.connectionFailed;
 
       final pubKey = await TfApiClient.instance.getRsaPublicKey();
+      if (!isCurrent() || uid != AuthState.instance.uid) {
+        if (isCurrent()) _disconnectCleanup();
+        return _CandidateConnectionResult.connectionFailed;
+      }
+      if (closed) {
+        _disconnectCleanup();
+        return _CandidateConnectionResult.connectionFailed;
+      }
       final aesKey = TfCrypto.generateAesKey();
       _sessionAesKey = aesKey;
       final encryptedAesKey = TfCrypto.rsaEncrypt(aesKey, pubKey);
@@ -228,19 +264,25 @@ class ChatWsService extends ChangeNotifier {
           'aes_key': base64.encode(encryptedAesKey),
         }),
       );
-      _sendEncrypted(
-        _buildAuthLoginPayload(uid, password),
-      );
+      _sendEncrypted(_buildAuthLoginPayload(uid, password));
 
-      final success = await _authCompleter!.future.timeout(
+      final success = await completer.future.timeout(
         const Duration(seconds: 10),
         onTimeout: () {
+          transportFailed = true;
           talker.warning('ChatWsService auth timeout for $uri');
           return false;
         },
       );
+      if (!isCurrent()) return _CandidateConnectionResult.connectionFailed;
       _authCompleter = null;
 
+      if (transportFailed ||
+          uid != AuthState.instance.uid ||
+          (success && closed)) {
+        _disconnectCleanup();
+        return _CandidateConnectionResult.connectionFailed;
+      }
       if (!success) {
         _disconnectCleanup();
         return _CandidateConnectionResult.authenticationFailed;
@@ -248,13 +290,13 @@ class ChatWsService extends ChangeNotifier {
 
       _authenticatedUid = uid;
       _setState(ChatWsState.authenticated);
+      if (!isCurrent()) return _CandidateConnectionResult.connectionFailed;
       _lastPongAt = DateTime.now();
       _pongReplies = 0;
       _pingUnsupported = false;
       _reconnectCount = 0;
       _reconnectWindowStart = null;
       _startPing();
-      _ensureConnectivityWatch();
       talker.info(
         'ChatWsService authenticated over ${uri.scheme.toUpperCase()}',
       );
@@ -265,12 +307,11 @@ class ChatWsService extends ChangeNotifier {
         error,
         stackTrace,
       );
-      candidateChannel?.sink.close();
-      _authCompleter = null;
-      _disconnectCleanup();
-      return transportConnected
-          ? _CandidateConnectionResult.authenticationFailed
-          : _CandidateConnectionResult.connectionFailed;
+      if (candidateChannel != null && !identical(_channel, candidateChannel)) {
+        candidateChannel.sink.close().ignore();
+      }
+      if (isCurrent()) _disconnectCleanup();
+      return _CandidateConnectionResult.connectionFailed;
     }
   }
 
@@ -279,7 +320,11 @@ class ChatWsService extends ChangeNotifier {
     if (data is String) {
       text = data;
     } else if (data is List<int>) {
-      text = utf8.decode(data);
+      try {
+        text = utf8.decode(data);
+      } on FormatException {
+        return;
+      }
     } else {
       return;
     }
@@ -326,7 +371,7 @@ class ChatWsService extends ChangeNotifier {
   void _onDone() {
     talker.info('ChatWsService stream closed');
     _completeAuthentication(false);
-    if (!_intentionalClose && !_tryingConnectionCandidates) {
+    if (_state == ChatWsState.authenticated) {
       _scheduleReconnect();
     }
   }
@@ -478,9 +523,11 @@ class ChatWsService extends ChangeNotifier {
   }
 
   void _disconnectCleanup() {
+    _completeAuthentication(false);
+    _authCompleter = null;
     _subscription?.cancel();
     _subscription = null;
-    _channel?.sink.close();
+    _channel?.sink.close().ignore();
     _channel = null;
     _sessionAesKey = null;
     _authenticatedUid = null;
@@ -501,20 +548,25 @@ class ChatWsService extends ChangeNotifier {
   }
 
   void _ensureConnectivityWatch() {
-    _connectivitySubscription ??= Connectivity()
-        .onConnectivityChanged
-        .listen((results) {
-      final hasNetwork = results.any((r) => r != ConnectivityResult.none);
-      if (!hasNetwork) {
-        talker.info('ChatWsService: network lost, pausing reconnect');
-        _reconnectTimer?.cancel();
-        _reconnectTimer = null;
-        _setState(ChatWsState.disconnected);
-      } else if (_state != ChatWsState.authenticated && !_intentionalClose) {
-        talker.info('ChatWsService: network restored, reconnecting');
-        _scheduleReconnect();
-      }
-    });
+    _connectivitySubscription ??= Connectivity().onConnectivityChanged.listen(
+      (results) {
+        final hasNetwork = results.any((r) => r != ConnectivityResult.none);
+        if (!hasNetwork) {
+          talker.info('ChatWsService: network lost, pausing reconnect');
+          _reconnectTimer?.cancel();
+          _reconnectTimer = null;
+          _cancelConnectionAttempt();
+        } else if (_state == ChatWsState.disconnected &&
+            _connectFuture == null &&
+            !_intentionalClose) {
+          talker.info('ChatWsService: network restored, reconnecting');
+          _scheduleReconnect();
+        }
+      },
+      onError: (Object error) {
+        talker.warning('ChatWsService connectivity watch failed', error);
+      },
+    );
   }
 
   void _scheduleReconnect() {
@@ -546,12 +598,12 @@ class ChatWsService extends ChangeNotifier {
       return;
     }
 
-    final backoffMs = (_baseReconnectDelay.inMilliseconds *
-            (1 << (_reconnectCount - 1)))
-        .clamp(
-          _baseReconnectDelay.inMilliseconds,
-          _maxReconnectDelay.inMilliseconds,
-        );
+    final backoffMs =
+        (_baseReconnectDelay.inMilliseconds * (1 << (_reconnectCount - 1)))
+            .clamp(
+              _baseReconnectDelay.inMilliseconds,
+              _maxReconnectDelay.inMilliseconds,
+            );
     final jitter = Random().nextInt(200) - 100;
     final delayMs = (backoffMs + jitter).clamp(
       100,
@@ -726,6 +778,12 @@ class ChatWsService extends ChangeNotifier {
     _reconnectTimer?.cancel();
     _connectivitySubscription?.cancel();
     _connectivitySubscription = null;
+    _cancelConnectionAttempt();
+  }
+
+  void _cancelConnectionAttempt() {
+    _connectionGeneration++;
+    _connectFuture = null;
     _disconnectCleanup();
   }
 

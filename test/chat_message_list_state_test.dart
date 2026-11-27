@@ -6,6 +6,7 @@ import 'package:touchfish_client/l10n/app_localizations.dart';
 import 'package:touchfish_client/models/message_model.dart';
 import 'package:touchfish_client/screens/chat_detail/widgets/message_list_view.dart';
 import 'package:touchfish_client/widgets/file_attachment_view.dart';
+import 'package:touchfish_client/widgets/message_bubble.dart';
 
 ChatMessage _message(
   int index, {
@@ -120,6 +121,25 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets(
+    'a cached bubble uses the latest retry handler and updates its reason',
+    (tester) async {
+      var result = 0;
+      final failed = _message(
+        1,
+      ).copyWith(isMe: true, status: MessageStatus.failed);
+      Future<void> show(ChatMessage m, int value) => tester.pumpWidget(
+        _wrap(MessageBubble(message: m, onRetry: () => result = value)),
+      );
+      await show(failed, 1);
+      await show(failed, 2);
+      await tester.tap(find.byIcon(Icons.error_outline));
+      expect(result, 2);
+      await show(failed.copyWith(status: MessageStatus.sent), 3);
+      expect(find.byIcon(Icons.error_outline), findsNothing);
+    },
+  );
+
   testWidgets('appending a message does not re-init media attachments', (
     tester,
   ) async {
@@ -164,7 +184,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final bubble = find.byKey(const ValueKey('bubble-c1'));
+    final bubble = find.byKey(const ValueKey('bubble-sender:1:c1'));
     final before = tester.element(bubble);
 
     // pending -> sent：clientMid 不变，只是回填了 mid

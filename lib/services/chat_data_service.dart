@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/chat_model.dart';
 import '../models/app_notification.dart';
 import '../models/message_model.dart';
+import '../models/room_message_history.dart';
 import '../models/search_result.dart';
 import '../models/local_message_search_result.dart';
 import '../models/notification_model.dart';
@@ -113,10 +114,12 @@ class ChatDataService extends ChangeNotifier {
 
   /// 新增写入路径必须同时满足：有序 可增长
   /// we need DS(data structure)(not dpsk)
-  final Map<String, List<ChatMessage>> _messageCache = {};
-  final List<String> _cacheAccessOrder = [];
+  final Map<String, RoomMessageHistory> _messageCache = {};
+  final _cacheAccessOrder = <String>{};
+  final _activeHistoryReads = <String, Object>{};
   final Map<String, UserProfile> _userCache = {};
   final Map<String, ChatRoomPreference> _roomPreferences = {};
+  final Map<String, Future<void>> _roomPreferenceWrites = {};
   bool _isLoading = false;
   StreamSubscription? _wsSubscription;
   final LocalMessageStore _localStore = LocalMessageStore.instance;
@@ -157,6 +160,8 @@ class ChatDataService extends ChangeNotifier {
   final Map<int, int> _groupReadCounts = {};
 
   static const int _groupReadCountCap = 500;
+
+  final messageCacheResetRevision = ValueNotifier<int>(0);
 
   final ValueNotifier<int> readReceiptRevision = ValueNotifier<int>(0);
 
@@ -220,8 +225,11 @@ class ChatDataService extends ChangeNotifier {
   void _evictCacheIfNeeded() {
     final limit = _maxCachedRooms;
     while (_messageCache.length > limit && _cacheAccessOrder.isNotEmpty) {
-      final oldest = _cacheAccessOrder.removeAt(0);
+      final oldest = _cacheAccessOrder.first;
+      _cacheAccessOrder.remove(oldest);
+      _activeHistoryReads.remove(oldest);
       _messageCache.remove(oldest);
+      _notifyRoom(oldest);
       _midToRoom.removeWhere((_, room) => room == oldest);
       _hashToRooms.removeWhere((_, rooms) {
         rooms.remove(oldest);
@@ -311,7 +319,7 @@ class ChatDataService extends ChangeNotifier {
   /// 批量模式下延迟
   void _persistEntry(String roomId, ChatMessage message) {
     if (_batchIngest) {
-      (_pendingIngest[roomId] ??= {})[_messageDedupKey(message)] = message;
+      (_pendingIngest[roomId] ??= {})[RoomMessageHistory.localKey(message)] = message;
     } else {
       unawaited(_localStore.saveMessage(roomId, message));
     }
@@ -328,6 +336,13 @@ class ChatDataService extends ChangeNotifier {
   List<ChatMessage> getMessages(String roomId) {
     if (_messageCache.containsKey(roomId)) _touchCacheRoom(roomId);
     return _messageCache[roomId] ?? [];
+  }
+
+  List<ChatMessage> getMessageSnapshot(String roomId) {
+    final history = _messageCache[roomId];
+    if (history == null) return const [];
+    _touchCacheRoom(roomId);
+    return history.snapshot;
   }
 
   /// 本会话内可搜索的消息（本地库 + 内存缓存)
@@ -467,7 +482,8 @@ class ChatDataService extends ChangeNotifier {
   }
 
   void setMessages(String roomId, List<ChatMessage> msgs) {
-    final cache = List<ChatMessage>.of(msgs, growable: true);
+    _activeHistoryReads.remove(roomId);
+    final cache = RoomMessageHistory(msgs);
     _messageCache[roomId] = cache;
     _touchCacheRoom(roomId);
     _evictCacheIfNeeded();
@@ -635,7 +651,7 @@ class ChatDataService extends ChangeNotifier {
         return message;
       }).toList();
       if (changed) {
-        _messageCache[entry.key] = messages;
+        _messageCache[entry.key] = RoomMessageHistory(messages);
         unawaited(_localStore.saveMessages(entry.key, messages));
         _notifyRoom(entry.key);
       }
@@ -644,6 +660,7 @@ class ChatDataService extends ChangeNotifier {
   }
 
   Future<void> _ensureRoomPreferencesLoaded() async {
+    final generation = _generation;
     final uid = AuthState.instance.uid;
     if (uid == null) {
       _roomPreferences.clear();
@@ -653,12 +670,13 @@ class ChatDataService extends ChangeNotifier {
       return;
     }
     final baseUrl = await TfApiClient.instance.getBaseUrl();
-    if (AuthState.instance.uid != uid) return;
+    if (_generation != generation || AuthState.instance.uid != uid) return;
     final scope = '${base64Url.encode(utf8.encode(baseUrl))}:$uid';
     if (_roomPreferencesUid == uid && _roomPreferencesScope == scope) return;
 
     final prefs = await SharedPreferences.getInstance();
-    if (AuthState.instance.uid != uid) return;
+    if (_generation != generation || AuthState.instance.uid != uid) return;
+    if (_roomPreferencesUid == uid && _roomPreferencesScope == scope) return;
     final raw = prefs.getString('chat_room_prefs_$scope');
     final loaded = <String, ChatRoomPreference>{};
 
@@ -680,7 +698,6 @@ class ChatDataService extends ChangeNotifier {
         talker.error('ChatDataService load room preferences failed', e);
       }
     }
-    if (AuthState.instance.uid != uid) return;
     _roomPreferences
       ..clear()
       ..addAll(loaded);
@@ -701,8 +718,8 @@ class ChatDataService extends ChangeNotifier {
       return;
     }
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('chat_room_prefs_$scope', text);
-    _roomPreferencesEncoded = text;
+    final saved = await prefs.setString('chat_room_prefs_$scope', text);
+    if (saved && _roomPreferencesScope == scope) _roomPreferencesEncoded = text;
   }
 
   Future<bool> updateRoomPreference(
@@ -716,42 +733,56 @@ class ChatDataService extends ChangeNotifier {
     final password = AuthState.instance.password;
     final generation = _generation;
     if (uid == null) return false;
-    await _ensureRoomPreferencesLoaded();
-    if (_generation != generation || AuthState.instance.uid != uid) {
-      return false;
-    }
-    final current = getRoomPreference(roomId);
-    final updated = current.copyWith(
-      isPinned: isPinned,
-      notifyLevel: notifyLevel,
-      alias: alias,
-      description: description,
-    );
-    if (isPinned != null ||
-        notifyLevel != null ||
-        alias != null ||
-        description != null) {
-      if (password == null) return false;
-      final saved = await TfApiClient.instance.updateChatPreference(
-        uid,
-        password,
-        roomId,
+    final previous = _roomPreferenceWrites[roomId];
+    final completion = Completer<void>();
+    _roomPreferenceWrites[roomId] = completion.future;
+    try {
+      if (previous != null) await previous;
+      if (_generation != generation || AuthState.instance.uid != uid) {
+        return false;
+      }
+      await _ensureRoomPreferencesLoaded();
+      if (_generation != generation || AuthState.instance.uid != uid) {
+        return false;
+      }
+      if (isPinned != null ||
+          notifyLevel != null ||
+          alias != null ||
+          description != null) {
+        if (password == null) return false;
+        final saved = await TfApiClient.instance.updateChatPreference(
+          uid,
+          password,
+          roomId,
+          isPinned: isPinned,
+          notifyLevel: notifyLevel,
+          alias: alias,
+          description: description,
+        );
+        if (!saved ||
+            _generation != generation ||
+            AuthState.instance.uid != uid) {
+          return false;
+        }
+      }
+      final updated = getRoomPreference(roomId).copyWith(
         isPinned: isPinned,
         notifyLevel: notifyLevel,
         alias: alias,
         description: description,
       );
-      if (!saved) return false;
-      if (_generation != generation || AuthState.instance.uid != uid) {
-        return false;
+      await _applyRoomPreferenceLocally(
+        roomId,
+        updated,
+        resetUnread: notifyLevel != null && notifyLevel != 0,
+      );
+      return true;
+    } finally {
+      completion.complete();
+      if (identical(_roomPreferenceWrites[roomId], completion.future)) {
+        _roomPreferenceWrites.remove(roomId);
       }
     }
-    await _applyRoomPreferenceLocally(
-      roomId,
-      updated,
-      resetUnread: notifyLevel != null && notifyLevel != 0,
-    );
-    return true;
   }
 
   Future<void> _applyRoomPreferenceLocally(
@@ -760,7 +791,6 @@ class ChatDataService extends ChangeNotifier {
     required bool resetUnread,
   }) async {
     _roomPreferences[roomId] = updated;
-    await _saveRoomPreferences();
 
     final roomIdx = _rooms.indexWhere((room) => room.id == roomId);
     if (roomIdx >= 0) {
@@ -783,8 +813,10 @@ class ChatDataService extends ChangeNotifier {
       );
     }
     _sortRooms();
+    final save = _saveRoomPreferences();
     _notifyRoom(roomId);
     notifyListeners();
+    await save;
   }
 
   /// 偏好
@@ -815,6 +847,7 @@ class ChatDataService extends ChangeNotifier {
   }
 
   Future<void> clearRoomLocalData(String roomId) async {
+    _activeHistoryReads.remove(roomId);
     final generation = _generation;
     // 消息缓存
     _messageCache.remove(roomId);
@@ -839,6 +872,7 @@ class ChatDataService extends ChangeNotifier {
     final generation = ++_generation;
     await _wsSubscription?.cancel();
     if (_generation != generation || AuthState.instance.uid != uid) return;
+    _activeHistoryReads.clear();
     _messageCache.clear();
     _cacheAccessOrder.clear();
     _userCache.clear();
@@ -846,6 +880,7 @@ class ChatDataService extends ChangeNotifier {
     _rooms.clear();
     _contacts.clear();
     _initializedUid = uid;
+    messageCacheResetRevision.value++;
     _cacheSelfProfile();
     _wsSubscription = ChatWsService.instance.eventStream.listen(_onWsEvent);
     ChatWsService.instance.addListener(_onWsStateChanged);
@@ -917,6 +952,7 @@ class ChatDataService extends ChangeNotifier {
 
   Future<void> reset() async {
     final generation = ++_generation;
+    _roomPreferenceWrites.clear();
     await _wsSubscription?.cancel();
     if (_generation != generation) return;
     _wsSubscription = null;
@@ -927,6 +963,7 @@ class ChatDataService extends ChangeNotifier {
     _roomPreferencesScope = null;
     _roomPreferencesEncoded = null;
     _pendingClientMidRooms.clear();
+    _activeHistoryReads.clear();
     _messageCache.clear();
     _cacheAccessOrder.clear();
     _userCache.clear();
@@ -939,14 +976,19 @@ class ChatDataService extends ChangeNotifier {
     _rooms.clear();
     _contacts.clear();
     _roomListeners.clear();
+    messageCacheResetRevision.value++;
     _isLoading = false;
     notifyListeners();
   }
 
   Future<void> clearLocalMessageDatabase() async {
+    _activeHistoryReads.clear();
     await _localStore.clearDatabase();
+    _activeHistoryReads.clear();
     _messageCache.clear();
+    _cacheAccessOrder.clear();
     _clearMessageIndexes();
+    messageCacheResetRevision.value++;
     notifyListeners();
   }
 
@@ -1016,48 +1058,18 @@ class ChatDataService extends ChangeNotifier {
     return !serverTime.isBefore(localTime);
   }
 
-  String _messageDedupKey(ChatMessage message) {
-    final clientMid = message.clientMid;
-    if (clientMid != null && clientMid.isNotEmpty) {
-      return 'client:$clientMid';
-    }
-    return 'id:${message.id}';
-  }
-
   static List<ChatMessage> _tail(List<ChatMessage> list, int count) =>
       list.length <= count ? list : list.sublist(list.length - count);
 
   int _compareMessages(ChatMessage a, ChatMessage b) =>
-      ChatMessage.compareByOrder(a, b, _messageDedupKey);
-
-  bool _containsMessage(List<ChatMessage> messages, ChatMessage candidate) =>
-      _indexOfMessage(messages, candidate) != null;
-
-  /// 定位同一条消息在列表中的下标
-  int? _indexOfMessage(List<ChatMessage> messages, ChatMessage candidate) {
-    final candidateClientMid = candidate.clientMid;
-    final hasClientMid =
-        candidateClientMid != null && candidateClientMid.isNotEmpty;
-    final candidateId = candidate.id;
-    final candidateMid = candidate.mid;
-    for (var i = 0; i < messages.length; i++) {
-      final message = messages[i];
-      if (hasClientMid) {
-        if (message.clientMid == candidateClientMid) return i;
-      } else {
-        final otherClientMid = message.clientMid;
-        if ((otherClientMid == null || otherClientMid.isEmpty) &&
-            message.id == candidateId) {
-          return i;
-        }
-      }
-      if (candidateMid != null && message.mid == candidateMid) return i;
-    }
-    return null;
-  }
+      ChatMessage.compareByOrder(a, b, RoomMessageHistory.localKey);
 
   /// 把消息插入已排序列表
   void _insertSorted(List<ChatMessage> mutable, ChatMessage message) {
+    if (mutable.isEmpty || _compareMessages(mutable.last, message) < 0) {
+      mutable.add(message);
+      return;
+    }
     var lo = 0;
     var hi = mutable.length;
     while (lo < hi) {
@@ -1294,7 +1306,7 @@ class ChatDataService extends ChangeNotifier {
         : _messageCache.keys;
     for (final roomId in roomIds) {
       final msgs = _messageCache[roomId]!;
-      final idx = msgs.indexWhere((m) => m.clientMid == clientMid);
+      final idx = msgs.indexWhere((m) => m.isMe && m.clientMid == clientMid);
       if (idx != -1) {
         final existing = msgs[idx];
         final changed = existing.copyWith(
@@ -1308,7 +1320,7 @@ class ChatDataService extends ChangeNotifier {
         final updated = roomSeq != null && roomSeq != existing.roomSeq
             ? _replaceSorted(msgs, idx, changed)
             : (List<ChatMessage>.from(msgs, growable: true)..[idx] = changed);
-        _messageCache[roomId] = updated;
+        _messageCache[roomId] = RoomMessageHistory(updated);
         _pendingClientMidRooms.remove(clientMid);
         _indexMessages(roomId, [changed]);
         unawaited(_localStore.saveMessage(roomId, changed));
@@ -1346,7 +1358,7 @@ class ChatDataService extends ChangeNotifier {
     for (final message in byteSources) {
       final bytes = message.media?.bytes;
       if (bytes != null && bytes.isNotEmpty) {
-        localBytes[_messageDedupKey(message)] = bytes;
+        localBytes[RoomMessageHistory.localKey(message)] = bytes;
       }
     }
     final seen = <String>{};
@@ -1356,7 +1368,7 @@ class ChatDataService extends ChangeNotifier {
     for (final m in [...server, ...local]) {
       final mid = m.mid;
       if (mid != null && !seenMids.add(mid)) continue;
-      final key = _messageDedupKey(m);
+      final key = RoomMessageHistory.localKey(m);
       if (!seen.add(key)) continue;
       final bytes = localBytes[key];
       final media = m.media;
@@ -1383,28 +1395,22 @@ class ChatDataService extends ChangeNotifier {
     List<ChatMessage> local,
   ) {
     final knownMids = <int>{};
-    final knownClientMids = <String>{};
-    final knownBareIds = <String>{};
+    final knownKeys = <String>{};
     for (final message in cached) {
       final mid = message.mid;
       if (mid != null) knownMids.add(mid);
-      final clientMid = message.clientMid;
-      if (clientMid != null && clientMid.isNotEmpty) {
-        knownClientMids.add(clientMid);
-      } else {
-        knownBareIds.add(message.id);
-      }
+      knownKeys.add(message.localIdentityKey);
     }
 
     final incoming = <ChatMessage>[];
     for (final message in older) {
-      if (!_claimIncoming(message, knownMids, knownClientMids, knownBareIds)) {
+      if (!_claimIncoming(message, knownMids, knownKeys)) {
         continue;
       }
       incoming.add(message);
     }
     for (final message in local) {
-      if (!_claimIncoming(message, knownMids, knownClientMids, knownBareIds)) {
+      if (!_claimIncoming(message, knownMids, knownKeys)) {
         continue;
       }
       incoming.add(message);
@@ -1424,18 +1430,15 @@ class ChatDataService extends ChangeNotifier {
   static bool _claimIncoming(
     ChatMessage message,
     Set<int> knownMids,
-    Set<String> knownClientMids,
-    Set<String> knownBareIds,
+    Set<String> knownKeys,
   ) {
-    final clientMid = message.clientMid;
-    final hasClientMid = clientMid != null && clientMid.isNotEmpty;
-    if (hasClientMid) {
-      if (!knownClientMids.add(clientMid)) return false;
-    } else if (!knownBareIds.add(message.id)) {
+    final key = message.localIdentityKey;
+    final mid = message.mid;
+    if (knownKeys.contains(key) || (mid != null && knownMids.contains(mid))) {
       return false;
     }
-    final mid = message.mid;
-    if (mid != null && !knownMids.add(mid)) return false;
+    knownKeys.add(key);
+    if (mid != null) knownMids.add(mid);
     return true;
   }
 
@@ -1702,13 +1705,13 @@ class ChatDataService extends ChangeNotifier {
     ChatMessage msg, {
     bool countUnread = true,
   }) {
-    final cached = _messageCache[roomId] ?? [];
-    final matchIdx = _indexOfMessage(cached, msg);
+    final cached = _messageCache[roomId] ?? RoomMessageHistory();
+    final matchIdx = cached.indexOfMessage(msg);
     var listChanged = false;
     if (matchIdx == null) {
-      final updated = _insertIntoCache(roomId, cached, msg);
-      _messageCache[roomId] = updated;
-      _trimRoomMessages(roomId, updated);
+      _insertSorted(cached, msg);
+      _trimRoomMessages(roomId, cached);
+      _messageCache[roomId] = cached;
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
       _indexMessages(roomId, [msg]);
@@ -1718,7 +1721,7 @@ class ChatDataService extends ChangeNotifier {
       final upgraded = _adoptServerFields(cached[matchIdx], msg);
       if (!identical(upgraded, cached[matchIdx])) {
         final updated = _replaceSorted(cached, matchIdx, upgraded);
-        _messageCache[roomId] = updated;
+        _messageCache[roomId] = RoomMessageHistory(updated);
         _touchCacheRoom(roomId);
         _evictCacheIfNeeded();
         _indexMessages(roomId, [upgraded]);
@@ -1779,13 +1782,13 @@ class ChatDataService extends ChangeNotifier {
   }
 
   void _addToCache(String roomId, ChatMessage msg) {
-    final cached = _messageCache[roomId] ?? [];
-    final matchIdx = _indexOfMessage(cached, msg);
+    final cached = _messageCache[roomId] ?? RoomMessageHistory();
+    final matchIdx = cached.indexOfMessage(msg);
     var listChanged = false;
     if (matchIdx == null) {
-      final updated = _insertIntoCache(roomId, cached, msg);
-      _messageCache[roomId] = updated;
-      _trimRoomMessages(roomId, updated);
+      _insertSorted(cached, msg);
+      _trimRoomMessages(roomId, cached);
+      _messageCache[roomId] = cached;
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
       _indexMessages(roomId, [msg]);
@@ -1795,7 +1798,7 @@ class ChatDataService extends ChangeNotifier {
       final upgraded = _adoptServerFields(cached[matchIdx], msg);
       if (!identical(upgraded, cached[matchIdx])) {
         final updated = _replaceSorted(cached, matchIdx, upgraded);
-        _messageCache[roomId] = updated;
+        _messageCache[roomId] = RoomMessageHistory(updated);
         _touchCacheRoom(roomId);
         _evictCacheIfNeeded();
         _indexMessages(roomId, [upgraded]);
@@ -2108,7 +2111,7 @@ class ChatDataService extends ChangeNotifier {
       return next;
     }).toList();
     if (changed) {
-      _messageCache[roomId] = updated;
+      _messageCache[roomId] = RoomMessageHistory(updated);
       _localStore.saveMessages(roomId, updated);
       _notifyRoom(roomId);
     }
@@ -2116,6 +2119,7 @@ class ChatDataService extends ChangeNotifier {
 
   /// 删除本机未发送/发送失败的消息
   void deleteLocalMessage(String roomId, ChatMessage message) {
+    _activeHistoryReads.remove(roomId);
     var changed = false;
     final cached = _messageCache[roomId];
     if (cached != null) {
@@ -2123,7 +2127,7 @@ class ChatDataService extends ChangeNotifier {
           .where((m) => !_sameLocalMessage(m, message))
           .toList();
       if (updated.length != cached.length) {
-        _messageCache[roomId] = updated;
+        _messageCache[roomId] = RoomMessageHistory(updated);
         unawaited(_localStore.deleteMessage(roomId, message));
         _notifyRoom(roomId);
         changed = true;
@@ -2146,33 +2150,11 @@ class ChatDataService extends ChangeNotifier {
     if (changed) notifyListeners();
   }
 
-  bool _sameLocalMessage(ChatMessage a, ChatMessage b) {
-    if (a.clientMid != null && b.clientMid != null) {
-      return a.clientMid == b.clientMid;
-    }
-    return a.id == b.id;
-  }
-  List<ChatMessage> _insertIntoCache(
-    String roomId,
-    List<ChatMessage> current,
-    ChatMessage message,
-  ) {
-    try {
-      _insertSorted(current, message);
-      return current;
-    } on UnsupportedError {
-      final growable = List<ChatMessage>.of(current, growable: true);
-      _insertSorted(growable, message);
-      talker.warning(
-        'ChatDataService: cache list for $roomId was immutable, normalized',
-      );
-      return growable;
-    }
-  }
+  bool _sameLocalMessage(ChatMessage a, ChatMessage b) => a.matchesMessage(b);
 
   @visibleForTesting
   void debugSetRawCache(String roomId, List<ChatMessage> messages) {
-    _messageCache[roomId] = messages;
+    _messageCache[roomId] = RoomMessageHistory(messages);
     _touchCacheRoom(roomId);
   }
 
@@ -2181,9 +2163,10 @@ class ChatDataService extends ChangeNotifier {
     if (clientMid != null && clientMid.isNotEmpty) {
       _pendingClientMidRooms[clientMid] = roomId;
     }
-    final cached = _messageCache[roomId] ?? [];
-    if (!_containsMessage(cached, msg)) {
-      _messageCache[roomId] = _insertIntoCache(roomId, cached, msg);
+    final cached = _messageCache[roomId] ?? RoomMessageHistory();
+    if (cached.indexOfMessage(msg) == null) {
+      _insertSorted(cached, msg);
+      _messageCache[roomId] = cached;
       _touchCacheRoom(roomId);
       _evictCacheIfNeeded();
       _indexMessages(roomId, [msg]);
@@ -2253,7 +2236,7 @@ class ChatDataService extends ChangeNotifier {
         changedMessages.add(patched);
       }
       if (updated == null) continue;
-      _messageCache[id] = updated;
+      _messageCache[id] = RoomMessageHistory(updated);
       if (changedMessages.isNotEmpty) {
         unawaited(_localStore.appendMessages(id, changedMessages));
       }
@@ -2294,6 +2277,11 @@ class ChatDataService extends ChangeNotifier {
     DateTime? deletedAt,
     int? deletedBy,
   }) {
+    if (roomId == null) {
+      _activeHistoryReads.clear();
+    } else {
+      _activeHistoryReads.remove(roomId);
+    }
     _forgetRecalledSeqFromSync(mid);
     var changed = false;
     var cachedTargetFound = false;
@@ -2317,7 +2305,7 @@ class ChatDataService extends ChangeNotifier {
         changed = true;
       }
       if (identical(updated, messages)) continue;
-      _messageCache[id] = updated;
+      _messageCache[id] = RoomMessageHistory(updated);
       unawaited(_localStore.saveMessages(id, updated));
       _notifyRoom(id);
       changed = true;
@@ -2526,11 +2514,13 @@ class ChatDataService extends ChangeNotifier {
   }
 
   Future<void> removeRoom(String roomId) async {
+    _activeHistoryReads.remove(roomId);
     _roomListGeneration++;
     _rooms.removeWhere((room) => room.id == roomId);
     _contacts.removeWhere((contact) => contact.id == roomId);
     _messageCache.remove(roomId);
     _cacheAccessOrder.remove(roomId);
+    _notifyRoom(roomId);
     _userCache.remove(roomId);
     _roomPreferences.remove(roomId);
     await _saveRoomPreferences();
@@ -2545,54 +2535,111 @@ class ChatDataService extends ChangeNotifier {
       return const MessageHistoryPage(messages: [], hasMore: false);
     }
     final generation = _generation;
-
     final rk = roomKey(roomId);
-    final serverMsgs = await TfApiClient.instance.queryMessageHistory(
-      uid,
-      password,
-      rk > 0 ? rk : 0,
-      groupId: rk < 0 ? -rk : null,
-      limit: _messagePageSize,
-    );
-    if (_generation != generation || AuthState.instance.uid != uid) {
-      return const MessageHistoryPage(messages: [], hasMore: false);
-    }
-
-    final serverFilled = _fillSenderInfo(serverMsgs);
-    final localMsgs = await _localStore.loadMessages(
+    return refreshFirstPage(
       roomId,
-      limit: _messagePageSize,
+      loadServer: () => TfApiClient.instance.queryMessageHistory(
+        uid,
+        password,
+        rk > 0 ? rk : 0,
+        groupId: rk < 0 ? -rk : null,
+        limit: _messagePageSize,
+      ),
+      loadLocal: () =>
+          _localStore.loadMessages(roomId, limit: _messagePageSize),
+      sameAccount: () =>
+          generation == _generation && AuthState.instance.uid == uid,
     );
-    if (_generation != generation || AuthState.instance.uid != uid) {
-      return const MessageHistoryPage(messages: [], hasMore: false);
-    }
-    final merged = _mergeMessages(
-      serverFilled,
-      localMsgs,
-      keepBytesFrom: _messageCache[roomId],
-    );
-    merged.sort(_compareMessages);
-    final visible = merged.length <= _messagePageSize
-        ? merged
-        : merged.sublist(merged.length - _messagePageSize);
+  }
 
-    // 缓存保留完整 merged
-    if (merged.isNotEmpty || !_messageCache.containsKey(roomId)) {
-      _messageCache[roomId] = merged;
-      _touchCacheRoom(roomId);
-      _evictCacheIfNeeded();
-      _indexMessages(roomId, merged);
-      _notifyRoom(roomId);
+  @visibleForTesting
+  Future<MessageHistoryPage> refreshFirstPage(
+    String roomId, {
+    required Future<List<ChatMessage>> Function() loadServer,
+    required Future<List<ChatMessage>> Function() loadLocal,
+    required bool Function() sameAccount,
+  }) async {
+    const empty = MessageHistoryPage(messages: [], hasMore: false);
+    final token = Object();
+    _activeHistoryReads[roomId] = token;
+    final before = (_messageCache[roomId] ??= RoomMessageHistory()).snapshot;
+    _touchCacheRoom(roomId);
+    _evictCacheIfNeeded();
+    MessageHistoryPage currentPage() {
+      if (!sameAccount()) return empty;
+      final live = getMessageSnapshot(roomId);
+      return MessageHistoryPage(
+        messages: _tail(live, _messagePageSize),
+        hasMore: false,
+      );
     }
-    _ensureSenderProfiles(merged, roomId);
-    await _localStore.saveMessages(roomId, serverFilled);
-    notifyListeners();
-    return MessageHistoryPage(
-      messages: visible,
-      hasMore:
-          serverMsgs.length == _messagePageSize ||
-          localMsgs.length == _messagePageSize,
-    );
+
+    try {
+      final remote = await loadServer();
+      if (!sameAccount() || _activeHistoryReads[roomId] != token) {
+        return currentPage();
+      }
+      final local = await loadLocal();
+      if (!sameAccount() || _activeHistoryReads[roomId] != token) {
+        return currentPage();
+      }
+      final current = _messageCache[roomId]?.snapshot;
+      if (current == null) {
+        return currentPage();
+      }
+
+      final fromServer = _fillSenderInfo(remote);
+      var merged = _mergeMessages(fromServer, local, keepBytesFrom: current);
+      var persist = fromServer;
+      final beforeSet = Set<ChatMessage>.identity()..addAll(before);
+      final pushed = [
+        for (final message in current)
+          if (!beforeSet.contains(message)) message,
+      ];
+      if (pushed.isNotEmpty) {
+        final page = RoomMessageHistory(merged);
+        for (final message in pushed) {
+          final index = page.indexOfMessage(message);
+          if (index == null) {
+            page.add(message);
+          } else if (!page[index].isDeleted &&
+              !(message.mid == null && page[index].mid != null)) {
+            page[index] = message;
+          }
+        }
+        merged = page.toList();
+        final recalls = {
+          for (final m in merged)
+            if (m.isDeleted && m.mid != null) m.mid!,
+        };
+        merged = applyRecallsToMessages(merged, recalls);
+        persist = merged;
+      }
+      merged.sort(_compareMessages);
+      final visible = _tail(merged, _messagePageSize);
+      if (merged.isNotEmpty) {
+        _messageCache[roomId] = RoomMessageHistory(merged);
+        _indexMessages(roomId, merged);
+      }
+      final saved = _localStore.saveMessages(roomId, persist);
+      _notifyRoom(roomId);
+      _ensureSenderProfiles(merged, roomId);
+      await saved;
+      if (_activeHistoryReads[roomId] != token || !sameAccount()) {
+        return currentPage();
+      }
+      notifyListeners();
+      return MessageHistoryPage(
+        messages: visible,
+        hasMore:
+            remote.length == _messagePageSize ||
+            local.length == _messagePageSize,
+      );
+    } finally {
+      if (_activeHistoryReads[roomId] == token) {
+        _activeHistoryReads.remove(roomId);
+      }
+    }
   }
 
   Future<MessageHistoryPage> loadOlderMessages(String roomId) async {
@@ -2652,9 +2699,7 @@ class ChatDataService extends ChangeNotifier {
       localMsgs,
     );
 
-    _messageCache[roomId] = identical(merged, currentCache)
-        ? currentCache
-        : merged;
+    _messageCache[roomId] = merged is RoomMessageHistory ? merged : RoomMessageHistory(merged);
     _touchCacheRoom(roomId);
     await _localStore.saveMessages(roomId, olderFilled);
     _ensureSenderProfiles(olderFilled, roomId);

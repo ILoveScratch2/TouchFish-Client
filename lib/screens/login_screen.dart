@@ -24,6 +24,7 @@ import '../widgets/network_indicator.dart';
 import '../widgets/provider_mark.dart';
 import '../widgets/sheet_scaffold.dart';
 import '../utils/talker.dart';
+import 'register_step3_screen.dart';
 
 /// 外部登录的三条通道
 enum _ExternalAuthChannel { inApp, systemBrowser, manual }
@@ -129,6 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _login() async {
+    if (_isLoading) return;
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
     final l10n = AppLocalizations.of(context)!;
@@ -149,6 +151,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final error = await AuthState.instance.login(username, password);
     if (!mounted) return;
+    if (error == 'pendingActivation') {
+      final profile = await TfApiClient.instance.getUserByUsername(username);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      final uid = int.tryParse(profile?.uid ?? '');
+      if (uid == null) {
+        TouchFishSnackbarService.instance.show(l10n.loginErrorPendingActivation);
+        return;
+      }
+      await RegisterStep3Screen.show(
+        context,
+        username: username,
+        uid: uid,
+        resendCode: () => TfApiClient.instance.resendActivation(uid, password),
+      );
+      return;
+    }
     setState(() => _isLoading = false);
 
     if (error == null) {
@@ -166,7 +185,6 @@ class _LoginScreenState extends State<LoginScreen> {
         'invalidCredentials' => l10n.loginErrorInvalidCredentials,
         'sessionLimitReached' => l10n.loginErrorSessionLimit,
         'duplicateLogin' => l10n.loginErrorDuplicateInstance,
-        'pendingActivation' => l10n.loginErrorPendingActivation,
         'accountBanned' => l10n.loginErrorBanned,
         'networkError' => l10n.loginErrorNetwork,
         'serverError' => l10n.loginErrorServer,

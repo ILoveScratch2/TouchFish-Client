@@ -75,6 +75,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   bool _loadMoreFailed = false;
 
   int _listSeq = 0;
+  bool _isRefreshing = false;
+  bool _refreshQueued = false;
 
   @override
   void initState() {
@@ -158,7 +160,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   }
 
   Future<void> _loadMorePosts() async {
-    if (_isLoadingMore || !_hasMorePosts) return;
+    if (_isRefreshing || _isLoadingMore || !_hasMorePosts) return;
+    final sequence = _listSeq;
     final fid = int.tryParse(widget.forumId);
     if (fid == null) return;
     final beforePid = _nextBeforePid;
@@ -179,7 +182,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         beforePid: beforePid,
         limit: _postPageSize,
       );
-      if (!mounted || widget.forumId != fid.toString()) return;
+      if (!mounted || sequence != _listSeq) return;
       final known = _posts.map((post) => post.id).toSet();
       setState(() {
         if (_pinnedPosts.isEmpty) {
@@ -194,14 +197,20 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             (post) => !post.isPinned && !known.contains(post.id),
           ),
         ]..sort(ForumPost.compareNewestFirst);
-        _hasMorePosts = page.hasMore;
-        _nextBeforePid = page.nextBeforePid;
+        final nextBeforePid = page.nextBeforePid;
+        _hasMorePosts =
+            page.hasMore && nextBeforePid != null && nextBeforePid < beforePid;
+        _nextBeforePid = nextBeforePid;
       });
     } catch (e) {
       talker.error('ForumDetailScreen: load more posts failed', e);
-      if (mounted) setState(() => _loadMoreFailed = true);
+      if (mounted && sequence == _listSeq) {
+        setState(() => _loadMoreFailed = true);
+      }
     } finally {
-      if (mounted) setState(() => _isLoadingMore = false);
+      if (mounted && sequence == _listSeq) {
+        setState(() => _isLoadingMore = false);
+      }
     }
   }
 
@@ -232,9 +241,11 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   /// 拉取论坛帖子列表。
   Future<void> _loadData({bool showLoading = true}) async {
-    _listSeq++;
+    final sequence = ++_listSeq;
+    _isRefreshing = true;
     setState(() {
       if (showLoading) _isLoading = true;
+      _isLoadingMore = false;
       _error = null;
     });
     try {
@@ -250,15 +261,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         if (uid != null && password != null)
           TfApiClient.instance.getMyMemberships(uid, password),
       ]);
+      if (!mounted || sequence != _listSeq) return;
 
-      try {
-        _forum = (results[0] as List<Forum>).firstWhere(
-          (f) => f.id == widget.forumId,
-        );
-      } catch (_) {
-        _forum = null;
-      }
-
+      final forum = (results[0] as List<Forum>).cast<Forum?>().firstWhere(
+        (forum) => forum?.id == fid.toString(),
+        orElse: () => null,
+      );
       final postPage =
           results[1]
               as ({
@@ -272,32 +280,40 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         postPage.posts,
         postPage.pinnedPid,
       );
-      _pinnedPosts = split.pinned;
-      _posts = split.normal;
-      _hasMorePosts = postPage.hasMore;
-      _nextBeforePid = postPage.nextBeforePid;
-      _isLoadingMore = false;
-      _loadMoreFailed = false;
+      if (!mounted || sequence != _listSeq) return;
 
-      // 自己在版块里的角色
-      //不在成员表里 = 未加入
-      //0 成员 / 50 管理员 / 100 版主
+      // 不在成员表里 = 未加入。0 成员 / 50 管理员 / 100 版主。
       var myRole = -1;
       if (results.length > 2 && results[2] is List<Map<String, int>>) {
         for (final membership in results[2] as List<Map<String, int>>) {
-          if (membership['fid'].toString() != widget.forumId) continue;
+          if (membership['fid'] != fid) continue;
           final role = membership['role'] ?? -1;
           if (role > myRole) myRole = role;
         }
-        _isMember = myRole >= 0;
       }
 
-      _members = const [];
-      _identity = null;
+      await _prefetchProfiles([
+        ...split.pinned,
+        ...split.normal,
+      ]).timeout(const Duration(milliseconds: 900), onTimeout: () {});
+      if (!mounted || sequence != _listSeq) return;
+      setState(() {
+        _forum = forum;
+        _pinnedPosts = split.pinned;
+        _posts = split.normal;
+        _hasMorePosts = postPage.hasMore;
+        _nextBeforePid = postPage.nextBeforePid;
+        _loadMoreFailed = false;
+        _members = const [];
+        _identity = null;
+        _isMember = myRole >= 0;
+        _isLoading = false;
+      });
+
       if (myRole >= 50 && uid != null && password != null) {
         unawaited(
           _fetchMembersSafe(uid, password, fid).then((members) {
-            if (!mounted || widget.forumId != fid.toString()) return;
+            if (!mounted || _forum != forum) return;
             setState(() {
               _members = members;
               _identity = members.cast<ForumMember?>().firstWhere(
@@ -308,20 +324,25 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           }),
         );
       }
-
-      await _prefetchProfiles([
-        ...split.pinned,
-        ...split.normal,
-      ]).timeout(const Duration(milliseconds: 900), onTimeout: () {});
-      if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       talker.error('ForumDetailScreen: _loadData failed', e);
-      if (mounted) {
+      if (mounted && sequence == _listSeq) {
         setState(() {
           _isLoading = false;
           _error = 'loadFailed';
         });
       }
+    } finally {
+      _finishRefresh(sequence);
+    }
+  }
+
+  void _finishRefresh(int sequence) {
+    if (!mounted || sequence != _listSeq) return;
+    _isRefreshing = false;
+    if (_refreshQueued) {
+      _refreshQueued = false;
+      _scheduleRefresh();
     }
   }
 
@@ -383,6 +404,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   /// 只刷新帖子列表
   Future<void> _refreshPostsOnly() async {
+    if (_isRefreshing) {
+      _refreshQueued = true;
+      return;
+    }
     final fid = int.tryParse(widget.forumId);
     if (fid == null) return;
     // 已经翻过页时保持深度
@@ -390,17 +415,16 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     final limit = loaded > _postPageSize
         ? (loaded > 100 ? 100 : loaded)
         : _postPageSize;
-    final seq = ++_listSeq;
+    final sequence = ++_listSeq;
+    _isRefreshing = true;
+    if (_isLoadingMore) setState(() => _isLoadingMore = false);
     try {
       final page = await TfApiClient.instance.getPostList(fid, limit: limit);
-      if (!mounted || widget.forumId != fid.toString()) return;
+      if (!mounted || sequence != _listSeq) return;
       final split = await _resolvePinned(fid, page.posts, page.pinnedPid);
-      // 期间又发起了更新的刷新（或整页加载），丢弃本次结果
-      if (seq != _listSeq || !mounted || widget.forumId != fid.toString()) {
-        return;
-      }
+      if (!mounted || sequence != _listSeq) return;
       await _prefetchProfiles([...split.pinned, ...split.normal]);
-      if (seq != _listSeq || !mounted) return;
+      if (!mounted || sequence != _listSeq) return;
       setState(() {
         _pinnedPosts = split.pinned;
         _posts = split.normal;
@@ -411,6 +435,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       });
     } catch (e) {
       talker.error('ForumDetailScreen: refresh posts failed', e);
+    } finally {
+      _finishRefresh(sequence);
     }
   }
 

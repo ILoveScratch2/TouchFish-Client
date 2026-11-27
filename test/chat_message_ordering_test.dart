@@ -222,4 +222,20 @@ void main() {
     ]);
     expect(ids(chatData, 'U1'), ['1', '2', '3', '4']);
   });
+  test('distinct group senders retain separate IDs through realtime, sync and older history', () {
+    final data = ChatDataService.instance;
+    final date = DateTime.utc(2026);
+    final self = msg(90, clientMid: 'shared', timestamp: date, senderUid: 100, status: MessageStatus.pending);
+    final other = msg(11, mid: 11, clientMid: 'shared', timestamp: date, roomSeq: 1, senderUid: 0);
+    final another = msg(12, mid: 12, clientMid: 'shared', timestamp: date, roomSeq: 2, senderUid: 7);
+    final echo = msg(13, mid: 13, clientMid: 'shared', timestamp: date, roomSeq: 3, senderUid: 100);
+    data.addSentMessage('G15', self);
+    data.deliverIncomingMessage('G15', other);
+    data.processSyncedMessages('G15', [another, echo, other]);
+    final current = data.getMessages('G15');
+    expect(current.map((m) => m.mid), [11, 12, 13]);
+    expect(current.singleWhere((m) => m.isMe).mid, 13);
+    expect(data.debugAttachOlderMessages([echo], [other, another], []).map((m) => m.mid), [11, 12, 13]);
+  });
+
 }

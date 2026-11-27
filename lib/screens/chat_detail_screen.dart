@@ -62,8 +62,17 @@ import '../providers/task/task_manager_provider.dart';
 
 class ChatDetailScreen extends ConsumerStatefulWidget {
   final String roomId;
+  final int? initialMessageMid;
+  final String? initialMessageId;
+  final String? initialMessageClientMid;
 
-  const ChatDetailScreen({super.key, required this.roomId});
+  const ChatDetailScreen({
+    super.key,
+    required this.roomId,
+    this.initialMessageMid,
+    this.initialMessageId,
+    this.initialMessageClientMid,
+  });
 
   @override
   ConsumerState<ChatDetailScreen> createState() => _ChatDetailScreenState();
@@ -273,6 +282,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     if (!_isInitialized) {
       _initRoom();
       _isInitialized = true;
+      _scheduleInitialMessageJump();
     }
   }
 
@@ -283,6 +293,12 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       _draftTimer?.cancel();
       unawaited(_saveDraftForRoom(oldWidget.roomId));
       _initRoom();
+    }
+    if (oldWidget.roomId != widget.roomId ||
+        oldWidget.initialMessageMid != widget.initialMessageMid ||
+        oldWidget.initialMessageId != widget.initialMessageId ||
+        oldWidget.initialMessageClientMid != widget.initialMessageClientMid) {
+      _scheduleInitialMessageJump();
     }
   }
 
@@ -2795,6 +2811,59 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
     final result = await _locateMessageInHistory(
       (messages) => messages.indexWhere((message) => message.mid == targetMid),
+      token: token,
+    );
+    final index = result.index;
+    if (index == null) {
+      _handleLocateMiss(token, result);
+      return;
+    }
+    _landOnMessage(index, token: token);
+  }
+
+  void _scheduleInitialMessageJump() {
+    final mid = widget.initialMessageMid;
+    final id = widget.initialMessageId;
+    final clientMid = widget.initialMessageClientMid;
+    if (mid == null && id == null && clientMid == null) return;
+    final roomGeneration = _roomGeneration;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted ||
+          !_treeActive ||
+          roomGeneration != _roomGeneration ||
+          mid != widget.initialMessageMid ||
+          id != widget.initialMessageId ||
+          clientMid != widget.initialMessageClientMid) {
+        return;
+      }
+      unawaited(_jumpToMessageRefs(mid: mid, id: id, clientMid: clientMid));
+    });
+  }
+
+  Future<void> _jumpToMessageRefs({
+    int? mid,
+    String? id,
+    String? clientMid,
+  }) async {
+    if (!mounted) return;
+    _follower.stopFollowing();
+    final token = _beginJump();
+    bool matches(ChatMessage message) =>
+        (mid != null && message.mid == mid) ||
+        (id != null && message.id == id) ||
+        (clientMid != null && message.clientMid == clientMid);
+    final indexNow = _messages.indexWhere(matches);
+    if (indexNow >= 0) {
+      _landOnMessage(indexNow, token: token);
+      return;
+    }
+    if (mid == null) {
+      _finishJump(token);
+      _showJumpMessageNotFound();
+      return;
+    }
+    final result = await _locateMessageInHistory(
+      (messages) => messages.indexWhere(matches),
       token: token,
     );
     final index = result.index;

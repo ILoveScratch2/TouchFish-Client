@@ -754,6 +754,30 @@ abstract class AppLocalizations {
   /// **'Activation failed, please check the code'**
   String get registerActivateFailed;
 
+  /// No description provided for @registerResendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend activation code'**
+  String get registerResendCode;
+
+  /// No description provided for @registerResendWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend in {seconds}s'**
+  String registerResendWait(int seconds);
+
+  /// No description provided for @registerResendRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'New code requested. Check your email.'**
+  String get registerResendRequested;
+
+  /// No description provided for @registerResendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not request a new code. Please try again.'**
+  String get registerResendFailed;
+
   /// No description provided for @forumLoadFailed.
   ///
   /// In en, this message translates to:

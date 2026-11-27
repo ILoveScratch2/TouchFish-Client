@@ -338,6 +338,20 @@ class AppLocalizationsOch extends AppLocalizations {
   String get registerActivateFailed => '激活未成，請查激活碼';
 
   @override
+  String get registerResendCode => '再寄激活碼';
+
+  @override
+  String registerResendWait(int seconds) {
+    return '$seconds 秒後可再寄';
+  }
+
+  @override
+  String get registerResendRequested => '已請重寄驗證碼，請查收郵函。';
+
+  @override
+  String get registerResendFailed => '請寄驗證碼未成，請重試。';
+
+  @override
   String get forumLoadFailed => '載論壇未成';
 
   @override

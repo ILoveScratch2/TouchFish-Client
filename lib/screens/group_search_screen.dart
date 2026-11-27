@@ -9,6 +9,7 @@ import '../utils/search_query.dart';
 import '../utils/talker.dart';
 import '../widgets/optimized_image.dart';
 import '../widgets/ui/empty_state.dart';
+import '../widgets/ui/error_state.dart';
 import '../widgets/ui/loading_indicator.dart';
 import '../widgets/ui/refreshable.dart';
 
@@ -25,6 +26,8 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
   List<Map<String, dynamic>> _results = const [];
   bool _loading = false;
   bool _hasSearched = false;
+  bool _failed = false;
+  int _searchSequence = 0;
   String? _baseUrl;
 
   @override
@@ -35,7 +38,8 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
 
   Future<void> _initBaseUrl() async {
     try {
-      _baseUrl = await TfApiClient.instance.getBaseUrl();
+      final baseUrl = await TfApiClient.instance.getBaseUrl();
+      if (mounted) setState(() => _baseUrl = baseUrl);
     } catch (e) {
       talker.debug('GroupSearch: getBaseUrl failed', e);
     }
@@ -49,16 +53,20 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
 
   Future<void> _search() async {
     final keyword = _controller.text.trim();
+    final sequence = ++_searchSequence;
     if (keyword.isEmpty) {
       setState(() {
         _results = const [];
         _hasSearched = false;
+        _loading = false;
+        _failed = false;
       });
       return;
     }
     setState(() {
       _loading = true;
       _hasSearched = true;
+      _failed = false;
     });
     try {
       final parsed = TfSearchQuery.parse(keyword);
@@ -66,17 +74,18 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
       final results = gid != null
           ? await TfApiClient.instance.infoGroup(gid)
           : await TfApiClient.instance.searchGroup(parsed.keyword);
-      if (!mounted) return;
+      if (!mounted || sequence != _searchSequence) return;
       setState(() {
         _results = results;
         _loading = false;
       });
     } catch (e) {
       talker.error('GroupSearch: searchGroup failed', e);
-      if (mounted) {
+      if (mounted && sequence == _searchSequence) {
         setState(() {
           _results = const [];
           _loading = false;
+          _failed = true;
         });
       }
     }
@@ -124,9 +133,15 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
           Expanded(
             child: _loading
                 ? const LoadingIndicator()
+                : _failed
+                ? ErrorState(
+                    title: l10n.commonLoadFailed,
+                    onRetry: _search,
+                    retryLabel: l10n.retry,
+                  )
                 : _results.isEmpty
-                    ? _buildEmptyState(context, l10n)
-                    : _buildResultList(context, l10n, colorScheme),
+                ? _buildEmptyState(context, l10n)
+                : _buildResultList(context, l10n, colorScheme),
           ),
         ],
       ),
@@ -136,10 +151,11 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
     return EmptyState(
       icon: Icons.search,
-      title: _hasSearched ? l10n.groupSearchNotFound : l10n.groupSearchStartHint,
+      title: _hasSearched
+          ? l10n.groupSearchNotFound
+          : l10n.groupSearchStartHint,
     );
   }
-
 
   static bool _truthy(dynamic value) {
     if (value == null) return false;
@@ -206,7 +222,7 @@ class _GroupSearchScreenState extends State<GroupSearchScreen> {
                     height: 48,
                   )
                 : null,
-            onBackgroundImageError: (_, _) {},
+            onBackgroundImageError: avatarUrl != null ? (_, _) {} : null,
           ),
           title: Text(
             groupname,

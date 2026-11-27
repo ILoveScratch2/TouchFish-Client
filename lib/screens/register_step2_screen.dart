@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../services/api/tf_api_client.dart';
 import '../services/snackbar_service.dart';
+import 'register_step3_screen.dart';
 
 class RegisterStep2Screen extends StatefulWidget {
   final String username;
@@ -31,6 +32,7 @@ class RegisterStep2Screen extends StatefulWidget {
 class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
   final _emailController = TextEditingController();
   bool _isLoading = false;
+  bool _registered = false;
 
   @override
   void dispose() {
@@ -39,60 +41,58 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
   }
 
   Future<void> _nextStep() async {
+    if (_isLoading) return;
     final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
 
-    if (!widget.requiresEmail) {
-      final result = await TfApiClient.instance.register(
-        widget.username,
-        widget.password,
-        captchaStamp: widget.captchaStamp,
-        captchaCode: widget.captchaCode,
-        captchaToken: widget.captchaToken,
-      );
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      if (result == RegisterResult.success) {
-        context.go(AppRoutes.registerSuccess);
-      } else if (result == RegisterResult.captchaInvalid) {
-        // 验证码错误返回上一步刷新
-        TouchFishSnackbarService.instance.show(l10n.registerErrorCaptchaInvalid);
-        context.pop(true);
-      } else {
-        TouchFishSnackbarService.instance.show(l10n.registerErrorFailed);
+    try {
+      if (!_registered) {
+        final result = await TfApiClient.instance.register(
+          widget.username,
+          widget.password,
+          email: widget.requiresEmail ? _emailController.text.trim() : null,
+          captchaStamp: widget.captchaStamp,
+          captchaCode: widget.captchaCode,
+          captchaToken: widget.captchaToken,
+        );
+        if (!mounted) return;
+        if (result == RegisterResult.captchaInvalid) {
+          // 验证码错误返回上一步刷新
+          TouchFishSnackbarService.instance.show(
+            l10n.registerErrorCaptchaInvalid,
+          );
+          context.pop(true);
+          return;
+        }
+        if (result != RegisterResult.success) {
+          TouchFishSnackbarService.instance.show(l10n.registerErrorFailed);
+          return;
+        }
+        if (!widget.requiresEmail) {
+          context.go(AppRoutes.registerSuccess);
+          return;
+        }
+        _registered = true;
       }
-      return;
-    }
 
-    final result = await TfApiClient.instance.register(
-      widget.username,
-      widget.password,
-      email: _emailController.text,
-      captchaStamp: widget.captchaStamp,
-      captchaCode: widget.captchaCode,
-      captchaToken: widget.captchaToken,
-    );
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    if (result == RegisterResult.success) {
       final profile = await TfApiClient.instance.getUserByUsername(
         widget.username,
       );
       if (!mounted) return;
-      if (profile == null) {
+      final uid = int.tryParse(profile?.uid ?? '');
+      if (uid == null) {
         TouchFishSnackbarService.instance.show(l10n.registerErrorFailed);
         return;
       }
-      context.push(
-        AppRoutes.registerStep3,
-        extra: {'username': widget.username, 'uid': int.parse(profile.uid)},
+      final password = widget.password;
+      RegisterStep3Screen.show(
+        context,
+        username: widget.username,
+        uid: uid,
+        resendCode: () => TfApiClient.instance.resendActivation(uid, password),
       );
-    } else if (result == RegisterResult.captchaInvalid) {
-      TouchFishSnackbarService.instance.show(l10n.registerErrorCaptchaInvalid);
-      context.pop(true);
-    } else {
-      TouchFishSnackbarService.instance.show(l10n.registerErrorFailed);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -145,6 +145,7 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
                         SmartField.email(
                           controller: _emailController,
                           label: l10n.registerEmail,
+                          enabled: !_isLoading && !_registered,
                         ),
                         const SizedBox(height: 24),
                       ],

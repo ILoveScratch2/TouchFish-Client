@@ -409,23 +409,38 @@ class ChatMessage {
     return dedupKey(a).compareTo(dedupKey(b));
   }
 
+  String get localIdentityKey {
+    final client = clientMid;
+    if (client == null || client.isEmpty) return 'id:$id';
+    if (isMe) return 'sender:self:$client';
+    if (senderUid != null) return 'sender:$senderUid:$client';
+    if (mid != null) return 'mid:$mid';
+    return 'unknown:${id.length}:$id:$client';
+  }
+
+  ChatMessage withLocalSender(int activeUid) =>
+      isMe && senderUid != activeUid && (senderUid == null || senderUid == 0)
+          ? copyWith(senderUid: activeUid)
+          : this;
+
+  bool matchesMessage(ChatMessage other) =>
+      (mid != null && mid == other.mid) ||
+      localIdentityKey == other.localIdentityKey;
+
   /// 按服务端 mid 去重，同 mid 只保留第一条
   static List<ChatMessage> dedupeByMid(List<ChatMessage> messages) {
     final seen = <int>{};
-    var hasDuplicate = false;
-    for (final message in messages) {
+    List<ChatMessage>? unique;
+    for (var i = 0; i < messages.length; i++) {
+      final message = messages[i];
       final mid = message.mid;
       if (mid != null && !seen.add(mid)) {
-        hasDuplicate = true;
-        break;
+        unique ??= messages.sublist(0, i);
+      } else {
+        unique?.add(message);
       }
     }
-    if (!hasDuplicate) return messages;
-    final seenAgain = <int>{};
-    return [
-      for (final message in messages)
-        if (message.mid == null || seenAgain.add(message.mid!)) message,
-    ];
+    return unique ?? messages;
   }
 
   /// 渲染相关内容是否一致（实例不同但 UI 无需重绘时 1
@@ -435,6 +450,9 @@ class ChatMessage {
         a.mid == b.mid &&
         a.clientMid == b.clientMid &&
         a.status == b.status &&
+        a.isMe == b.isMe &&
+        a.roomSeq == b.roomSeq &&
+        a.ackError == b.ackError &&
         a.text == b.text &&
         a.isDeleted == b.isDeleted &&
         a.type == b.type &&
@@ -456,6 +474,7 @@ class ChatMessage {
   }
 
   static bool _sameIntList(List<int> a, List<int> b) {
+    if (identical(a, b)) return true;
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {
       if (a[i] != b[i]) return false;
@@ -480,8 +499,13 @@ class ChatMessage {
     MergedForwardPreview? a,
     MergedForwardPreview? b,
   ) {
-    if (a == null || b == null) return a == b;
-    if (a.sourceRoomId != b.sourceRoomId ||
+    if (identical(a, b)) return true;
+    if (a == null || b == null) return false;
+    if (a.version != b.version ||
+        a.kind != b.kind ||
+        a.sourceIsGroup != b.sourceIsGroup ||
+        a.redirectedBy != b.redirectedBy ||
+        a.sourceRoomId != b.sourceRoomId ||
         a.sourceRoomName != b.sourceRoomName ||
         a.messageCount != b.messageCount ||
         a.messages.length != b.messages.length) {
@@ -492,6 +516,8 @@ class ChatMessage {
       final y = b.messages[i];
       if (x.mid != y.mid ||
           x.senderUid != y.senderUid ||
+          x.senderName != y.senderName ||
+          x.sendTime != y.sendTime ||
           x.content != y.content ||
           x.contentType != y.contentType ||
           x.fileHash != y.fileHash ||
@@ -503,29 +529,27 @@ class ChatMessage {
   }
 
   static bool _sameMedia(MessageMedia? a, MessageMedia? b) {
-    if (a == null || b == null) return a == b;
-    
+    if (identical(a, b)) return true;
+    if (a == null || b == null) return false;
+
     // 如果 bytes 都存在且相同，那么 fileHash 和 path 的变化不影响渲染
-    // （pending→uploaded 时保持渲染一致性，避免气泡重建）
     final aBytes = a.bytes;
     final bBytes = b.bytes;
     if (aBytes != null && bBytes != null) {
-      final bytesMatch = identical(aBytes, bBytes) ||
-                        _sameIntList(aBytes, bBytes);
-      if (bytesMatch) {
-        // bytes 相同时，只比较渲染相关字段（fileName/fileSize/mimeType/aspectRatio）
-        // 媒体元数据（宽高/blurhash/缩略图）变化仍需 rewrite all!
-        return a.fileName == b.fileName &&
-               a.fileSize == b.fileSize &&
-               a.mimeType == b.mimeType &&
-               a.aspectRatio == b.aspectRatio &&
-               a.blurhash == b.blurhash &&
-               a.durationMs == b.durationMs &&
-               a.hasThumb == b.hasThumb;
-      }
+      if (!identical(aBytes, bBytes) && !_sameIntList(aBytes, bBytes)) return false;
+      // 媒体元数据（宽高/blurhash/缩略图）变化仍需 rewrite all!
+      return a.fileName == b.fileName &&
+             a.fileSize == b.fileSize &&
+             a.mimeType == b.mimeType &&
+             a.aspectRatio == b.aspectRatio &&
+             a.width == b.width &&
+             a.height == b.height &&
+             a.blurhash == b.blurhash &&
+             a.durationMs == b.durationMs &&
+             a.hasThumb == b.hasThumb;
     }
 
-    // bytes 不同或不存在时，比较所有字段
+    // bytes 不同或不存在时
     if (a.path != b.path ||
         a.fileName != b.fileName ||
         a.fileSize != b.fileSize ||
@@ -539,8 +563,7 @@ class ChatMessage {
         a.hasThumb != b.hasThumb) {
       return false;
     }
-    return identical(aBytes, bBytes) ||
-        (aBytes != null && bBytes != null && _sameIntList(aBytes, bBytes));
+    return identical(aBytes, bBytes);
   }
 
   ChatMessage copyWith({
@@ -613,7 +636,8 @@ class ChatMessage {
 
   /// 解析服务端 MESSAGE.NEW 推送 / /message/sync 返回的单条消息。
   ///
-  /// 载荷 == 旧的 notification.info：event/title/content/sender/mid/
+  /// 载荷 == 旧的 notification.info
+  /// event/title/content/sender/mid/
   /// client_mid/room_id/group_id/room_seq/quote_preview/forwarded/
   /// forward_preview/file/mentioned_uids/mentions_me/should_alert。
   factory ChatMessage.fromServerMessage(
@@ -901,8 +925,7 @@ class ChatMessage {
     );
   }
 
-  /// 解析事件行信封（content_type='event' 的 content）。
-  /// 格式：{"v": 1, "kind": "message.recalled", "target_mid": 123}
+  /// 解析事件
   static ({String kind, int? targetMid})? parseEventEnvelope(String content) {
     try {
       final decoded = jsonDecode(content);
@@ -1190,7 +1213,9 @@ class ChatMessage {
     }
     var senderUid = _asInt(json['senderUid']);
     final legacyIsMe = json['isMe'] as bool? ?? false;
-    if (senderUid == null && activeUid != null && legacyIsMe) {
+    final legacyPendingSelf = senderUid == 0 && json['mid'] == null &&
+        (status == MessageStatus.pending || status == MessageStatus.failed);
+    if ((senderUid == null || legacyPendingSelf) && activeUid != null && legacyIsMe) {
       senderUid = activeUid;
     }
     return ChatMessage(
